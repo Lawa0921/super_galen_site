@@ -3,381 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROJECT: LITTLE LION // MK-85</title>
-    <meta name="description" content="Iron Will. Solo Operator. The Drifter.">
+    <title>Little Lion - The Urban Drifter</title>
+    <meta name="description" content="我是小獅，一個從基層爬起，被社會毒打的打工人。專營人力調度、居家服務、跑腿代購。無堅不摧的萬事屋。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-    <!-- Libraries -->
+    <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
-    <style>
-        :root {
-            --bg-dark: #020205;
-            --hud-primary: #00F3FF; /* Cyan */
-            --hud-secondary: #FF003C; /* Red */
-            --hud-accent: #FCEE0A; /* Gold */
-            --hud-dim: rgba(0, 243, 255, 0.15);
-            --glass-bg: rgba(2, 2, 5, 0.6);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background-color: var(--bg-dark);
-            color: #fff;
-            font-family: 'Rajdhani', sans-serif;
-            overflow-x: hidden;
-            width: 100vw;
-            cursor: none; /* Custom cursor */
-        }
-
-        /* --- Custom Cursor --- */
-        #cursor-target {
-            position: fixed; top: 0; left: 0; width: 40px; height: 40px;
-            border: 2px solid var(--hud-primary); border-radius: 50%;
-            pointer-events: none; z-index: 9999;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: screen;
-            transition: width 0.2s, height 0.2s;
-        }
-        #cursor-dot {
-            position: fixed; top: 0; left: 0; width: 6px; height: 6px;
-            background: var(--hud-secondary); border-radius: 50%;
-            pointer-events: none; z-index: 9999;
-            transform: translate(-50%, -50%);
-        }
-        body:active #cursor-target { width: 30px; height: 30px; border-color: var(--hud-secondary); }
-
-        /* --- Canvas --- */
-        #webgl-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; pointer-events: none;
-        }
-
-        /* --- HUD Overlay --- */
-        .hud-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-        }
-
-        .hud-border {
-            position: absolute; border: 1px solid var(--hud-dim);
-        }
-        .border-top { top: 30px; left: 5%; width: 90%; height: 1px; background: linear-gradient(90deg, transparent, var(--hud-primary), transparent); border: none; }
-        .border-bottom { bottom: 30px; left: 5%; width: 90%; height: 1px; background: linear-gradient(90deg, transparent, var(--hud-primary), transparent); border: none; }
-
-        .hud-data {
-            font-family: 'Orbitron'; font-size: 0.8rem; color: var(--hud-primary);
-            position: absolute;
-        }
-        .data-tl { top: 40px; left: 5%; }
-        .data-tr { top: 40px; right: 5%; text-align: right; }
-        .data-bl { bottom: 40px; left: 5%; }
-        .data-br { bottom: 40px; right: 5%; text-align: right; }
-
-        /* --- Boot Screen --- */
-        #boot-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 10000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .boot-circle {
-            width: 100px; height: 100px; border: 4px solid var(--hud-primary);
-            border-top: 4px solid transparent; border-radius: 50%;
-            animation: spin 1s infinite linear;
-            margin-bottom: 2rem;
-        }
-        .boot-text {
-            font-family: 'Orbitron'; color: var(--hud-primary); letter-spacing: 5px;
-            animation: blink 0.5s infinite alternate;
-        }
-
-        /* --- Main Content --- */
-        main { position: relative; z-index: 20; }
-
-        section {
-            min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 2rem;
-            position: relative;
-        }
-
-        .holo-panel {
-            background: rgba(10, 20, 30, 0.4);
-            border: 1px solid var(--hud-dim);
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-            position: relative;
-            max-width: 800px; width: 100%;
-            transform: perspective(1000px) rotateX(0deg);
-            transition: transform 0.1s;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.05);
-        }
-        .holo-panel::before {
-            content: ''; position: absolute; top: -1px; left: -1px; width: 20px; height: 20px;
-            border-top: 2px solid var(--hud-primary); border-left: 2px solid var(--hud-primary);
-        }
-        .holo-panel::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px; width: 20px; height: 20px;
-            border-bottom: 2px solid var(--hud-primary); border-right: 2px solid var(--hud-primary);
-        }
-
-        /* Hero */
-        .hero-title {
-            font-family: 'Orbitron'; font-weight: 900;
-            font-size: clamp(3rem, 10vw, 8rem);
-            color: transparent; -webkit-text-stroke: 2px var(--hud-primary);
-            text-shadow: 0 0 20px var(--hud-primary);
-            margin-bottom: 1rem;
-            text-align: center;
-            opacity: 0; /* Animated in */
-        }
-        .hero-subtitle {
-            font-size: clamp(1rem, 3vw, 1.5rem);
-            color: var(--hud-accent); letter-spacing: 0.3em;
-            margin-bottom: 3rem; text-align: center;
-            opacity: 0;
-        }
-
-        .avatar-hex {
-            width: 250px; height: 250px;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            background: #000;
-            position: relative;
-            margin: 0 auto;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .avatar-img {
-            width: 96%; height: 96%;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            object-fit: cover;
-            filter: sepia(0.5) hue-rotate(180deg) saturate(1.5) contrast(1.2);
-            transition: 0.5s;
-        }
-        .avatar-hex:hover .avatar-img {
-            filter: none;
-        }
-
-        /* Service Grid */
-        .service-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem; width: 100%; margin-top: 2rem;
-        }
-        .service-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
-            border: 1px solid var(--hud-dim);
-            padding: 1.5rem;
-            transition: 0.3s;
-        }
-        .service-card:hover {
-            border-color: var(--hud-secondary);
-            background: rgba(255, 0, 60, 0.1);
-            transform: translateY(-5px);
-        }
-        .service-card i {
-            font-size: 2rem; color: var(--hud-primary); margin-bottom: 1rem;
-        }
-
-        /* Footer */
-        .finale-container {
-            text-align: center;
-            border: 2px solid var(--hud-secondary);
-            padding: 3rem;
-            position: relative;
-            background: rgba(0,0,0,0.8);
-        }
-        .social-icons {
-            display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;
-        }
-        .social-btn {
-            width: 60px; height: 60px;
-            border: 1px solid var(--hud-accent);
-            color: var(--hud-accent);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 1.5rem; text-decoration: none;
-            transition: 0.3s;
-            clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
-        }
-        .social-btn:hover {
-            background: var(--hud-accent); color: #000;
-            box-shadow: 0 0 30px var(--hud-accent);
-        }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes blink { 100% { opacity: 0.5; } }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero-title { -webkit-text-stroke: 1px var(--hud-primary); }
-            .holo-panel { padding: 1.5rem; }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- BOOT SEQUENCE -->
-    <div id="boot-screen">
-        <div class="boot-circle"></div>
-        <div class="boot-text">INITIALIZING MK-85 SYSTEM...</div>
-        <div style="margin-top: 10px; font-family: 'Share Tech Mono'; color: #666; font-size: 0.8rem;" id="boot-log">
-            LOADING ASSETS
-        </div>
-    </div>
-
-    <!-- HUD LAYERS -->
-    <div id="cursor-target"></div>
-    <div id="cursor-dot"></div>
-
-    <div class="hud-layer">
-        <div class="border-top"></div>
-        <div class="border-bottom"></div>
-
-        <div class="hud-data data-tl">
-            SYSTEM: ONLINE<br>
-            TARGET: XIAOSHI
-        </div>
-        <div class="hud-data data-tr">
-            <span id="clock">00:00:00</span><br>
-            TEMP: 36.5°C
-        </div>
-        <div class="hud-data data-bl">
-            PWR: 100%<br>
-            MODE: SOLITARY
-        </div>
-        <div class="hud-data data-br">
-            COORDS:<br>
-            25.0330° N, 121.5654° E
-        </div>
-    </div>
-
-    <!-- 3D BACKGROUND -->
-    <div id="webgl-canvas"></div>
-
-    <main>
-        <!-- NAV -->
-        <a href="/guild/" style="position: fixed; top: 2rem; left: 2rem; color: var(--hud-primary); text-decoration: none; border: 1px solid var(--hud-primary); padding: 0.5rem 1rem; font-family: 'Orbitron'; z-index: 100; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);">
-            &lt; RETURN TO BASE
-        </a>
-
-        <!-- HERO -->
-        <section id="hero">
-            <div class="avatar-hex">
-                <img src="/assets/img/guild/xiaoshi/avatar.webp" class="avatar-img" alt="Xiaoshi">
-            </div>
-            <h1 class="hero-title">LITTLE LION</h1>
-            <h2 class="hero-subtitle">THE IRON DRIFTER</h2>
-            <div class="holo-panel" style="text-align: center; max-width: 600px;">
-                <p style="font-size: 1.2rem; color: #ccc;">
-                    <span style="color: var(--hud-secondary)">// WARNING:</span> SOLO OPERATOR DETECTED.
-                </p>
-            </div>
-        </section>
-
-        <!-- ORIGIN -->
-        <section id="origin">
-            <div class="holo-panel">
-                <h3 style="color: var(--hud-primary); font-family: 'Orbitron'; margin-bottom: 1rem; border-bottom: 1px solid var(--hud-dim); padding-bottom: 0.5rem;">
-                    MISSION LOG: ORIGIN
-                </h3>
-                <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
-                    <p style="font-size: 1.1rem; line-height: 1.8; color: #ddd; font-family: 'Noto Sans TC';">
-                        我是小獅，一個從基層爬起，被社會毒打的打工人。<br>
-                        加入某奇怪論壇「跑腿幫」已經將近20年。<br><br>
-                        <span style="color: var(--hud-accent);">► 目前狀態:</span> 遊走各地的接案者<br>
-                        <span style="color: var(--hud-accent);">► 活動範圍:</span> 主要是雙北～但各地都會跑
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        <!-- CAPABILITIES -->
-        <section id="capabilities">
-            <h2 style="font-family: 'Orbitron'; font-size: 2.5rem; margin-bottom: 2rem; color: var(--hud-primary); text-shadow: 0 0 10px var(--hud-primary);">
-                SUIT CAPABILITIES
-            </h2>
-            <div class="holo-panel" style="max-width: 1000px;">
-                <div class="service-grid">
-                    <div class="service-card">
-                        <i class="fa-solid fa-broom"></i>
-                        <h4 style="font-family: 'Orbitron'; color: #fff;">CLEANUP</h4>
-                        <p style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem; font-family: 'Noto Sans TC';">
-                            居家服務 / 掃墓清潔<br>
-                            Eliminating targets (dirt).
-                        </p>
-                    </div>
-                    <div class="service-card">
-                        <i class="fa-solid fa-utensils"></i>
-                        <h4 style="font-family: 'Orbitron'; color: #fff;">PROVISIONS</h4>
-                        <p style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem; font-family: 'Noto Sans TC';">
-                            美食部落客開拓<br>
-                            Resource acquisition.
-                        </p>
-                    </div>
-                    <div class="service-card">
-                        <i class="fa-solid fa-user-clock"></i>
-                        <h4 style="font-family: 'Orbitron'; color: #fff;">LOGISTICS</h4>
-                        <p style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem; font-family: 'Noto Sans TC';">
-                            專業跑腿 / 人力調度<br>
-                            Rapid deployment.
-                        </p>
-                    </div>
-                    <div class="service-card">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <h4 style="font-family: 'Orbitron'; color: #fff;">GUARDIAN</h4>
-                        <p style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem; font-family: 'Noto Sans TC';">
-                            專業管家 / 協助陪伴<br>
-                            Asset protection.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- DIRECTIVE -->
-        <section id="directive">
-            <div class="holo-panel" style="text-align: center; border-color: var(--hud-secondary);">
-                <i class="fa-solid fa-fingerprint" style="font-size: 4rem; color: var(--hud-secondary); margin-bottom: 1.5rem;"></i>
-                <h3 style="color: var(--hud-secondary); font-family: 'Orbitron'; margin-bottom: 1.5rem;">PRIME DIRECTIVE</h3>
-                <p style="font-size: 1.3rem; line-height: 1.8; font-family: 'Noto Sans TC';">
-                    工作一切以<span style="color: var(--hud-accent); font-weight: bold; font-size: 1.5rem; margin: 0 5px;">「獨行」</span>為主。<br>
-                    有些案件的特殊性，會引起我的好奇心。<br>
-                    要是哪天真的剋死異鄉，所以趕快找尋公會加入～哈哈哈。
-                </p>
-            </div>
-        </section>
-
-        <!-- FINALE -->
-        <section id="finale">
-            <div class="finale-container">
-                <div class="avatar-hex" style="width: 100px; height: 100px; margin: 0 auto 2rem auto;">
-                    <img src="/assets/img/guild/xiaoshi/avatar.webp" class="avatar-img">
-                </div>
-                <h2 style="font-family: 'Orbitron'; font-size: 2rem; color: #fff; margin-bottom: 0.5rem;">READY FOR EXTRACTION?</h2>
-                <p style="color: var(--hud-secondary); letter-spacing: 2px;">IRON WILL // UNBREAKABLE</p>
-
-                <div class="social-icons">
-                    <a href="https://www.threads.net/@iabc5040" target="_blank" class="social-btn">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                    <a href="https://www.instagram.com/iabc5040/" target="_blank" class="social-btn">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <footer style="text-align: center; padding: 2rem; color: #555; font-size: 0.8rem;">
-            SYSTEM OFFLINE. <br>
-            DESIGNED BY SUPERGALEN.
-        </footer>
-    </main>
-
-    <!-- SCRIPTS -->
+    <!-- Three.js Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -386,231 +24,777 @@
             }
         }
     </script>
+
+    <style>
+        :root {
+            --c-bg: #050505;
+            --c-primary: #ffb700; /* Caution Yellow */
+            --c-secondary: #00f2ff; /* Cyber Cyan */
+            --c-accent: #ff3333; /* Danger Red */
+            --c-text: #e0e0e0;
+            --c-concrete: #2a2a2a;
+
+            --f-display: 'Black Ops One', cursive;
+            --f-body: 'Noto Sans TC', sans-serif;
+            --f-mono: 'Share+Tech+Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-body);
+            overflow-x: hidden;
+            overscroll-behavior: none;
+        }
+
+        /* Canvas Background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0; /* Fade in on load */
+            transition: opacity 1s ease;
+        }
+
+        /* UI Overlay / Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.3;
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        /* Navigation / HUD */
+        .hud-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 50;
+            mix-blend-mode: difference;
+        }
+
+        .hud-id {
+            font-family: var(--f-mono);
+            font-size: 0.8rem;
+            color: var(--c-primary);
+            border-left: 2px solid var(--c-primary);
+            padding-left: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .hud-status {
+            text-align: right;
+            font-family: var(--f-mono);
+            color: var(--c-secondary);
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--c-secondary);
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 5px var(--c-secondary); }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; box-shadow: 0 0 5px var(--c-secondary); }
+        }
+
+        /* Scroll Content */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            align-items: flex-start;
+            padding-left: 10vw;
+        }
+
+        .hero-title {
+            font-family: var(--f-display);
+            font-size: clamp(3rem, 12vw, 10rem);
+            line-height: 0.85;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--c-text);
+            text-transform: uppercase;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title span {
+            display: block;
+        }
+
+        .hero-title .filled {
+            color: var(--c-primary);
+            -webkit-text-stroke: 0;
+            text-shadow: 0 0 20px rgba(255, 183, 0, 0.5);
+        }
+
+        .hero-subtitle {
+            font-family: var(--f-mono);
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            margin-top: 2rem;
+            background: var(--c-primary);
+            color: #000;
+            padding: 0.5rem 1rem;
+            transform: skewX(-10deg);
+            display: inline-block;
+        }
+
+        /* Avatar Container */
+        .avatar-container {
+            position: absolute;
+            right: 10vw;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            height: 300px;
+            border: 2px solid var(--c-concrete);
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            transition: filter 0.5s ease;
+        }
+
+        .avatar-container:hover .avatar-img {
+            filter: grayscale(0%) contrast(1);
+        }
+
+        .avatar-glitch {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(transparent 0%, rgba(255, 183, 0, 0.1) 2%, transparent 4%);
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        /* Bio / Origin Section */
+        .bio-section {
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8), transparent);
+        }
+
+        .bio-container {
+            max-width: 800px;
+            border-left: 4px solid var(--c-accent);
+            padding-left: 2rem;
+            text-align: left;
+        }
+
+        .bio-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+
+        .highlight {
+            color: var(--c-primary);
+            font-weight: 700;
+        }
+
+        /* Services / Jobs Section */
+        .services-section {
+            background: rgba(5, 5, 5, 0.6);
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 2rem;
+        }
+
+        .service-card {
+            background: rgba(42, 42, 42, 0.5);
+            border: 1px solid #444;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--c-primary);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            transform-origin: bottom;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--c-primary);
+        }
+
+        .service-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .service-icon {
+            font-family: var(--f-mono);
+            font-size: 3rem;
+            color: var(--c-secondary);
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .service-title {
+            font-family: var(--f-display);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .service-desc {
+            font-family: var(--f-body);
+            font-size: 0.95rem;
+            color: #aaa;
+        }
+
+        /* Philosophy Section */
+        .philosophy-section {
+            align-items: flex-end;
+            padding-right: 10vw;
+            text-align: right;
+        }
+
+        .quote-box {
+            background: var(--c-primary);
+            color: #000;
+            padding: 3rem;
+            max-width: 600px;
+            transform: rotate(-2deg);
+            box-shadow: 10px 10px 0 var(--c-accent);
+        }
+
+        .quote-text {
+            font-size: 1.5rem;
+            font-weight: 900;
+            line-height: 1.4;
+        }
+
+        /* Finale / Contact */
+        .finale-section {
+            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: radial-gradient(circle at center, rgba(20,20,20,0.9) 0%, #000 100%);
+        }
+
+        .finale-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            padding: 3rem;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        .finale-card::after {
+            content: "GUILD_ID: X S";
+            position: absolute;
+            bottom: -20px;
+            right: 0;
+            font-family: var(--f-mono);
+            font-size: 3rem;
+            color: rgba(255,255,255,0.05);
+            font-weight: 700;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .social-btn {
+            color: var(--c-text);
+            text-decoration: none;
+            font-family: var(--f-mono);
+            border: 1px solid var(--c-text);
+            padding: 0.8rem 1.5rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .social-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--c-text);
+            z-index: -1;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .social-btn:hover {
+            color: #000;
+            border-color: var(--c-text);
+        }
+
+        .social-btn:hover::before {
+            transform: translateX(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 2rem;
+                align-items: center;
+                text-align: center;
+            }
+
+            .avatar-container {
+                position: relative;
+                right: auto;
+                top: auto;
+                transform: none;
+                margin: 2rem auto;
+                width: 250px;
+                height: 250px;
+            }
+
+            .hero-title {
+                font-size: clamp(3rem, 15vw, 5rem);
+            }
+
+            .bio-container {
+                border-left: none;
+                border-top: 4px solid var(--c-accent);
+                padding: 2rem 0 0 0;
+            }
+
+            .philosophy-section {
+                align-items: center;
+                padding: 2rem;
+                text-align: center;
+            }
+
+            .quote-box {
+                transform: rotate(0);
+                box-shadow: 5px 5px 0 var(--c-accent);
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--c-primary);
+            font-family: var(--f-mono);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay">
+        <div>SYSTEM INITIALIZING...</div>
+    </div>
+
+    <!-- Background WebGL -->
+    <div id="canvas-container"></div>
+    <div class="scanlines"></div>
+    <div class="noise"></div>
+
+    <!-- HUD -->
+    <header class="hud-header">
+        <div class="hud-id">
+            <span>OPERATOR: XIAOSHI</span>
+            <span>CLASS: DRIFTER</span>
+        </div>
+        <div class="hud-status">
+            <div><span class="status-dot"></span>ONLINE</div>
+            <div style="font-size: 0.7rem; opacity: 0.7;">LOC: TWIN CITIES</div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero -->
+        <section class="hero-section">
+            <h1 class="hero-title">
+                <span>Little</span>
+                <span class="filled">Lion</span>
+                <span>Drifter</span>
+            </h1>
+            <div class="avatar-container">
+                <img src="/assets/img/guild/xiaoshi/avatar.webp" alt="Xiaoshi Avatar" class="avatar-img">
+                <div class="avatar-glitch"></div>
+            </div>
+            <div class="hero-subtitle">
+                // IRON WILL // STREET SOUL
+            </div>
+        </section>
+
+        <!-- Origin -->
+        <section class="bio-section">
+            <div class="bio-container">
+                <h2 style="font-family: var(--f-display); font-size: 3rem; margin-bottom: 2rem; color: var(--c-secondary);">LOG: ORIGIN</h2>
+                <p class="bio-text">
+                    我是小獅，一個從<span class="highlight">基層爬起</span>，被社會毒打的打工人。<br>
+                    加入某奇怪論壇跑腿幫，已經將近20年。<br>
+                    目前是遊走各地的接案者，主要是雙北，但各地都會跑。
+                </p>
+                <p class="bio-text">
+                    有些案件的特殊性，會引起我的好奇心，所以工作一切以<span class="highlight">獨行</span>為主。<br>
+                    要是哪天真的剋死異鄉... 所以趕快找尋公會加入～哈哈哈。
+                </p>
+            </div>
+        </section>
+
+        <!-- Services -->
+        <section class="services-section">
+            <h2 style="font-family: var(--f-display); font-size: 4rem; margin-bottom: 3rem; text-align: center; color: #fff;">ACTIVE SERVICES</h2>
+            <div class="service-grid">
+                <div class="service-card">
+                    <div class="service-icon">01</div>
+                    <h3 class="service-title">人力調度</h3>
+                    <p class="service-desc">Manpower Dispatch. 需要人手？我就是你最好的援軍。</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">02</div>
+                    <h3 class="service-title">居家服務</h3>
+                    <p class="service-desc">Home Services. 掃墓清潔到各式雜務，無所不包。</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">03</div>
+                    <h3 class="service-title">跑腿代購</h3>
+                    <p class="service-desc">Errand Runner. 上至掃墓，下至掃完好吃的限量美食。</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">04</div>
+                    <h3 class="service-title">專業管家</h3>
+                    <p class="service-desc">Professional Butler. 協助陪伴，打理一切。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy -->
+        <section class="philosophy-section">
+            <div class="quote-box">
+                <p class="quote-text">
+                    "我用鋼鐵人代表我無堅不摧的頭像。<br>
+                    無論生活如何重擊，<br>
+                    我依然站立，依然前行。"
+                </p>
+            </div>
+        </section>
+
+        <!-- Finale -->
+        <section class="finale-section">
+            <div class="finale-card">
+                <h2 style="font-family: var(--f-display); font-size: 2.5rem; margin-bottom: 1rem;">INITIATE CONTACT</h2>
+                <p style="margin-bottom: 2rem; color: #aaa;">法號：樂天a小獅<br>隨時準備接單</p>
+
+                <div class="social-links">
+                    <a href="https://www.threads.com/@iabc5040" target="_blank" class="social-btn">Threads</a>
+                    <a href="https://www.instagram.com/iabc5040/" target="_blank" class="social-btn">Instagram</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Scripts -->
     <script type="module">
         import * as THREE from 'three';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- System Boot ---
-        const bootScreen = document.getElementById('boot-screen');
-        const bootLog = document.getElementById('boot-log');
+        // --- Configuration ---
+        const CONFIG = {
+            rainCount: 2000,
+            fogColor: 0x050505,
+            fogDensity: 0.003,
+            speed: 0.5
+        };
 
-        const logs = ["INITIALIZING CORE...", "CALIBRATING REPULSORS...", "ESTABLISHING UPLINK...", "SYSTEM GREEN."];
-        let logIdx = 0;
-
-        const logInterval = setInterval(() => {
-            if(logIdx < logs.length) {
-                bootLog.innerText = logs[logIdx];
-                logIdx++;
-            }
-        }, 400);
-
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                clearInterval(logInterval);
-                gsap.to(bootScreen, {
-                    opacity: 0,
-                    duration: 0.8,
-                    ease: "power2.inOut",
-                    onComplete: () => {
-                        bootScreen.style.display = 'none';
-                        revealHero();
-                    }
-                });
-            }, 2000);
-        });
-
-        function revealHero() {
-            gsap.to(".hero-title", { opacity: 1, duration: 1, y: 0, ease: "power2.out" });
-            gsap.to(".hero-subtitle", { opacity: 1, duration: 1, delay: 0.3, ease: "power2.out" });
-            gsap.from(".hud-layer", { scale: 1.1, opacity: 0, duration: 1.5, ease: "back.out(1.7)" });
-        }
-
-        // --- Clock ---
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', {hour12: false});
-        }, 1000);
-
-        // --- Mouse Interaction ---
-        const cursorTarget = document.getElementById('cursor-target');
-        const cursorDot = document.getElementById('cursor-dot');
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('mousemove', (e) => {
-            gsap.to(cursorTarget, { x: e.clientX, y: e.clientY, duration: 0.1 });
-            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0 });
-
-            // Normalize mouse for Three.js (-1 to 1)
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        // --- THREE.JS SCENE ---
-        const container = document.getElementById('webgl-canvas');
+        // --- Init ---
+        const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.02);
+        scene.fog = new THREE.FogExp2(CONFIG.fogColor, CONFIG.fogDensity);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 10;
+        camera.position.y = 2;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimize
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Bloom) ---
+        // --- Post Processing ---
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.1;
-        bloomPass.strength = 1.2; // Intense bloom
+        bloomPass.threshold = 0;
+        bloomPass.strength = 0.6; // Subtle bloom for neon vibes
         bloomPass.radius = 0.5;
 
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
         composer.addPass(bloomPass);
 
-        // --- Objects ---
+        // --- Objects: Rain ---
+        const rainGeo = new THREE.BufferGeometry();
+        const rainPos = [];
+        const rainVel = [];
 
-        // 1. Reactor Core Rings
-        const rings = [];
-        const ringGroup = new THREE.Group();
-        scene.add(ringGroup);
-
-        for (let i = 0; i < 5; i++) {
-            const geometry = new THREE.TorusGeometry(3 + i * 1.5, 0.05, 16, 100);
-            const material = new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x00F3FF : 0xFF003C });
-            const ring = new THREE.Mesh(geometry, material);
-
-            ring.rotation.x = Math.random() * Math.PI;
-            ring.rotation.y = Math.random() * Math.PI;
-
-            ringGroup.add(ring);
-            rings.push({ mesh: ring, speed: (Math.random() - 0.5) * 0.02 });
+        for(let i=0; i<CONFIG.rainCount; i++) {
+            rainPos.push(
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 80 + 20, // Start higher
+                (Math.random() - 0.5) * 60
+            );
+            rainVel.push(0.5 + Math.random() * 0.5); // Random speed
         }
 
-        // 2. Particle Tunnel
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 2000;
-        const posArray = new Float32Array(particlesCount * 3);
+        rainGeo.setAttribute('position', new THREE.Float32BufferAttribute(rainPos, 3));
 
-        for(let i = 0; i < particlesCount * 3; i+=3) {
-            // Cylinder distribution
-            const theta = Math.random() * Math.PI * 2;
-            const r = 5 + Math.random() * 20; // Radius
-            const z = (Math.random() - 0.5) * 100;
-
-            posArray[i] = r * Math.cos(theta);
-            posArray[i+1] = r * Math.sin(theta);
-            posArray[i+2] = z;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.05,
-            color: 0x00F3FF,
+        const rainMat = new THREE.PointsMaterial({
+            color: 0xaaaaaa,
+            size: 0.2,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.6,
             blending: THREE.AdditiveBlending
         });
 
-        const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particleSystem);
+        const rainSystem = new THREE.Points(rainGeo, rainMat);
+        scene.add(rainSystem);
 
-        // 3. Floating Data Blocks (Instanced)
-        const blockGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const blockMat = new THREE.MeshBasicMaterial({ color: 0xFCEE0A, wireframe: true });
-        const blocks = new THREE.InstancedMesh(blockGeo, blockMat, 50);
-        scene.add(blocks);
+        // --- Objects: Ground (Wet Asphalt) ---
+        const groundGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
+        // Add some noise to vertices for puddles/roughness
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0x111111,
+            roughness: 0.1, // Wet look
+            metalness: 0.8,
+            wireframe: false
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -2;
+        scene.add(ground);
 
-        const dummy = new THREE.Object3D();
-        for (let i = 0; i < 50; i++) {
-            dummy.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 60
+        // --- Objects: Street Lights (Neon) ---
+        // Create random "City Lights" floating in distance
+        const lightGeo = new THREE.BufferGeometry();
+        const lightPos = [];
+        const lightColors = [];
+        const colorPalette = [
+            new THREE.Color('#ffb700'), // Yellow
+            new THREE.Color('#ff3333'), // Red
+            new THREE.Color('#00f2ff'), // Cyan
+            new THREE.Color('#ffffff')  // White
+        ];
+
+        for(let i=0; i<200; i++) {
+            lightPos.push(
+                (Math.random() - 0.5) * 100, // Wide spread
+                (Math.random() * 20) - 2,    // Ground to sky
+                (Math.random() * -100) - 10   // Far distance
             );
-            dummy.rotation.set(Math.random(), Math.random(), Math.random());
-            dummy.updateMatrix();
-            blocks.setMatrixAt(i, dummy.matrix);
+            const col = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+            lightColors.push(col.r, col.g, col.b);
         }
 
-        // --- Animation ---
+        lightGeo.setAttribute('position', new THREE.Float32BufferAttribute(lightPos, 3));
+        lightGeo.setAttribute('color', new THREE.Float32BufferAttribute(lightColors, 3));
+
+        const lightMat = new THREE.PointsMaterial({
+            size: 0.5,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const cityLights = new THREE.Points(lightGeo, lightMat);
+        scene.add(cityLights);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0x00f2ff, 1, 100);
+        pointLight.position.set(0, 5, 5);
+        scene.add(pointLight);
+
+        // --- Animation Loop ---
+        const positions = rainSystem.geometry.attributes.position.array;
+        const lightPositions = cityLights.geometry.attributes.position.array;
 
         function animate() {
-            // Rotate Rings
-            rings.forEach((r, i) => {
-                r.mesh.rotation.x += r.speed;
-                r.mesh.rotation.y += r.speed * 0.5;
-                // React to mouse
-                r.mesh.rotation.z += mouse.x * 0.001 * (i+1);
-            });
+            // composer.render(); // Use composer for bloom
+            // Or use standard renderer if performance is bad. Let's try composer first.
 
-            // Pulse Reactor
-            const scale = 1 + Math.sin(Date.now() * 0.002) * 0.05;
-            ringGroup.scale.set(scale, scale, scale);
+            // Rain Animation
+            for(let i=1; i<CONFIG.rainCount*3; i+=3) {
+                positions[i] -= 0.5; // Fall down
+                if (positions[i] < -2) {
+                    positions[i] = 40; // Reset height
+                }
+            }
+            rainSystem.geometry.attributes.position.needsUpdate = true;
 
-            // Move Tunnel
-            particleSystem.rotation.z += 0.001;
+            // City Lights "Passing By" effect
+            for(let i=2; i<lightPositions.length; i+=3) {
+                lightPositions[i] += CONFIG.speed; // Move towards camera
+                if (lightPositions[i] > 10) {
+                    lightPositions[i] = -100; // Reset to far distance
+                }
+            }
+            cityLights.geometry.attributes.position.needsUpdate = true;
 
-            // Mouse Parallax for Group
-            ringGroup.rotation.x = mouse.y * 0.1;
-            ringGroup.rotation.y = mouse.x * 0.1;
+            // Camera subtle sway
+            const time = Date.now() * 0.001;
+            camera.position.x = Math.sin(time * 0.5) * 0.5;
+            camera.rotation.z = Math.sin(time * 0.2) * 0.02;
 
             composer.render();
             requestAnimationFrame(animate);
         }
+
         animate();
 
-        // --- Scroll Interaction (Camera Fly) ---
+        // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Fly camera through tunnel
-        gsap.to(camera.position, {
-            z: -30,
-            ease: "none",
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // Rotate particles on scroll
-        gsap.to(particleSystem.rotation, {
-            z: 2,
-            ease: "none",
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // Tilt Holo Panels
-        document.querySelectorAll('.holo-panel').forEach(panel => {
-            panel.addEventListener('mousemove', (e) => {
-                const rect = panel.getBoundingClientRect();
-                const x = e.clientX - rect.left; // x position within the element.
-                const y = e.clientY - rect.top;  // y position within the element.
-
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-
-                const rotateX = ((y - centerY) / centerY) * -5; // Max 5 deg
-                const rotateY = ((x - centerX) / centerX) * 5;
-
-                gsap.to(panel, { transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`, duration: 0.5 });
-            });
-            panel.addEventListener('mouseleave', () => {
-                gsap.to(panel, { transform: `perspective(1000px) rotateX(0deg) rotateY(0deg)`, duration: 0.5 });
+        // Loading Screen
+        window.addEventListener('load', () => {
+            gsap.to('.loading-overlay', {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => {
+                    document.querySelector('.loading-overlay').style.display = 'none';
+                    document.getElementById('canvas-container').style.opacity = 1;
+                    initPageAnimations();
+                }
             });
         });
 
-        // Resize
+        function initPageAnimations() {
+            // Hero Text Split
+            gsap.from('.hero-title span', {
+                y: 100,
+                opacity: 0,
+                stagger: 0.2,
+                duration: 1.5,
+                ease: 'power4.out'
+            });
+
+            gsap.from('.avatar-container', {
+                x: 100,
+                opacity: 0,
+                duration: 1.5,
+                delay: 0.5,
+                ease: 'power4.out'
+            });
+
+            // Services Stagger
+            gsap.from('.service-card', {
+                scrollTrigger: {
+                    trigger: '.services-section',
+                    start: 'top 70%'
+                },
+                y: 50,
+                opacity: 0,
+                stagger: 0.1,
+                duration: 0.8,
+                ease: 'power2.out'
+            });
+
+            // Quote Rotate
+            gsap.from('.quote-box', {
+                scrollTrigger: {
+                    trigger: '.philosophy-section',
+                    start: 'top 70%',
+                    scrub: 1
+                },
+                rotate: 10,
+                y: 100,
+                opacity: 0
+            });
+        }
+
+        // Window Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
