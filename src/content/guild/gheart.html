@@ -26,10 +26,11 @@
     <style>
         /* Base Styles */
         :root {
-            --c-dark: #020408;
-            --c-gold: #e0c38e;
-            --c-green: #3a5f45;
-            --c-text: #f0f0f0;
+            --c-dark: #1a1510; /* Deep Earth */
+            --c-gold: #d4b07f; /* Wood/Rattan */
+            --c-green: #7d8c56; /* Dried Leaf */
+            --c-text: #f3e9d8; /* Rice Paper */
+            --c-accent: #c2694b; /* Clay/Brick */
         }
 
         body {
@@ -69,14 +70,14 @@
         }
 
         .text-bubble {
-            background: rgba(10, 20, 30, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(224, 195, 142, 0.3);
+            background: rgba(30, 26, 22, 0.85); /* Dark Wood */
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(212, 176, 127, 0.3);
             padding: 2.5rem;
             max-width: 600px;
             width: 90%;
-            border-radius: 4px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            border-radius: 2px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             text-align: center;
             transform: translateY(50px);
             pointer-events: auto;
@@ -84,13 +85,16 @@
             overflow: hidden;
         }
 
-        /* Weave Decoration on Bubble */
-        .text-bubble::before {
+        /* Weave Decoration on Bubble - Top and Bottom */
+        .text-bubble::before, .text-bubble::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, transparent, var(--c-gold), transparent);
+            left: 10%; width: 80%; height: 1px;
+            background: var(--c-gold);
+            opacity: 0.5;
         }
+        .text-bubble::before { top: 1.5rem; }
+        .text-bubble::after { bottom: 1.5rem; }
 
         h1, h2, h3 {
             font-family: 'Cormorant Garamond', serif;
@@ -101,11 +105,11 @@
             letter-spacing: 0.1em;
         }
 
-        h1 { font-size: clamp(3rem, 10vw, 6rem); line-height: 1; text-shadow: 0 0 20px rgba(224, 195, 142, 0.5); }
-        h2 { font-size: clamp(2rem, 5vw, 3.5rem); }
-        p { font-size: 1.1rem; line-height: 1.8; color: #ccc; font-weight: 300; }
+        h1 { font-size: clamp(3rem, 10vw, 6rem); line-height: 1; color: var(--c-gold); text-shadow: 2px 2px 0px rgba(0,0,0,0.5); }
+        h2 { font-size: clamp(2rem, 5vw, 3.5rem); color: var(--c-text); }
+        p { font-size: 1.1rem; line-height: 1.9; color: #d0c5b6; font-weight: 300; letter-spacing: 0.05em; }
 
-        .highlight { color: var(--c-green); font-style: italic; }
+        .highlight { color: var(--c-green); font-style: italic; font-weight: 600; }
 
         /* Loader */
         #loader {
@@ -267,7 +271,11 @@
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020408, 0.02); // Deep fog
+        scene.fog = new THREE.FogExp2(0x1a1510, 0.03); // Deep Earth Fog
+
+        // Add ambient light for warmth
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -297,65 +305,76 @@
 
         const tubeGeometry = new THREE.TubeGeometry(curve, 200, 6, 32, false);
 
-        // Custom Shader for "Weave" Effect
+        // Custom Shader for "Organic Wicker" Effect
         const weaveMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: 0 },
-                color: { value: new THREE.Color(0xe0c38e) }, // Gold
-                baseColor: { value: new THREE.Color(0x3a5f45) }, // Green
-                glowColor: { value: new THREE.Color(0x00f3ff) } // Cyan glow
+                color1: { value: new THREE.Color(0x8b5a2b) }, // Dark Wood
+                color2: { value: new THREE.Color(0xd2b48c) }, // Light Rattan
+                color3: { value: new THREE.Color(0x556b2f) }  // Moss Green
             },
             side: THREE.BackSide,
             transparent: true,
-            blending: THREE.AdditiveBlending,
+            // standard blending for solid looking material
             vertexShader: `
                 varying vec2 vUv;
-                varying vec3 vPos;
+                varying float vNoise;
                 uniform float time;
+
+                // Simple noise
+                float rand(vec2 n) {
+                    return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+                }
 
                 void main() {
                     vUv = uv;
-                    vPos = position;
 
-                    // Complex breathing effect
                     vec3 p = position;
-                    float wave = sin(uv.x * 30.0 + time) * 0.1 + cos(uv.y * 20.0 + time * 0.5) * 0.1;
-                    p += normal * wave;
+
+                    // Twist/Organic distortion
+                    float twist = sin(uv.x * 10.0 + time * 0.2) * 2.0;
+                    p.x += twist;
+
+                    // "Breathing" tube
+                    float breath = sin(uv.x * 20.0 - time * 0.5) * 0.5;
+                    p += normal * breath;
+
+                    vNoise = rand(uv * 10.0);
 
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
                 }
             `,
             fragmentShader: `
-                uniform float time;
-                uniform vec3 color;
-                uniform vec3 baseColor;
-                uniform vec3 glowColor;
+                uniform vec3 color1;
+                uniform vec3 color2;
+                uniform vec3 color3;
                 varying vec2 vUv;
+                varying float vNoise;
 
                 void main() {
-                    // Create weave pattern
-                    // Use repeats
-                    float rX = vUv.x * 80.0;
-                    float rY = vUv.y * 20.0;
+                    // Wicker Pattern
+                    // Create diagonal cross hatch
+                    float scale = 40.0;
+                    float diag1 = sin(vUv.x * scale + vUv.y * scale * 4.0);
+                    float diag2 = sin(vUv.x * scale - vUv.y * scale * 4.0);
 
-                    float weave = sin(rX) + sin(rY);
+                    float pattern = diag1 * diag2;
+                    float woven = smoothstep(0.1, 0.3, pattern);
 
-                    // Create gaps
-                    float strength = smoothstep(0.0, 0.2, weave);
+                    // Mix colors based on pattern
+                    vec3 fiberColor = mix(color1, color2, woven);
 
-                    // Moving energy
-                    float energy = sin(vUv.x * 20.0 - time * 3.0);
-                    energy = pow(energy * 0.5 + 0.5, 5.0); // Sharpen peak
+                    // Add "Moss" in patches
+                    float moss = sin(vUv.x * 5.0) * sin(vUv.y * 2.0);
+                    fiberColor = mix(fiberColor, color3, smoothstep(0.6, 0.9, moss));
 
-                    vec3 finalColor = mix(baseColor, color, strength);
-                    finalColor += glowColor * energy; // Add energy pulse
+                    // Add noise for roughness
+                    fiberColor *= (0.8 + 0.4 * vNoise);
 
-                    float alpha = strength * 0.3 + energy * 0.5;
+                    // Fade alpha slightly for transparency in gaps
+                    float alpha = 0.8 + 0.2 * woven;
 
-                    // Distance fade (fade in at start, fade out at end of tube view)
-                    // We don't really need distance fade if fog handles it, but let's add vignette
-
-                    gl_FragColor = vec4(finalColor, alpha);
+                    gl_FragColor = vec4(fiberColor, alpha);
                 }
             `
         });
@@ -363,61 +382,79 @@
         const tunnel = new THREE.Mesh(tubeGeometry, weaveMaterial);
         scene.add(tunnel);
 
-        // --- Particles (Forest Spirits/Stars) ---
-        const particleCount = 1500;
+        // --- Particles (Falling Leaves) ---
+        const particleCount = 400;
         const particlesGeo = new THREE.BufferGeometry();
         const posArray = new Float32Array(particleCount * 3);
         const randomArray = new Float32Array(particleCount);
+        const colorArray = new Float32Array(particleCount * 3);
+
+        const c1 = new THREE.Color(0x7d8c56); // Green
+        const c2 = new THREE.Color(0xd4b07f); // Gold
 
         for(let i=0; i<particleCount; i++) {
             const i3 = i * 3;
-            // Spread particles around the tube path
-            // Simple approach: Random box, but centered on path would be better.
-            // Let's just do a long box for now, simplified.
-            posArray[i3] = (Math.random() - 0.5) * 60; // x
-            posArray[i3+1] = (Math.random() - 0.5) * 60; // y
+            posArray[i3] = (Math.random() - 0.5) * 80; // x
+            posArray[i3+1] = (Math.random() - 0.5) * 80; // y
             posArray[i3+2] = Math.random() * -180; // z
 
             randomArray[i] = Math.random();
+
+            // Mix colors
+            const c = Math.random() > 0.5 ? c1 : c2;
+            colorArray[i3] = c.r;
+            colorArray[i3+1] = c.g;
+            colorArray[i3+2] = c.b;
         }
 
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         particlesGeo.setAttribute('aRandom', new THREE.BufferAttribute(randomArray, 1));
+        particlesGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
         const particlesMat = new THREE.ShaderMaterial({
             uniforms: {
-                time: { value: 0 },
-                color: { value: new THREE.Color(0xe0c38e) }
+                time: { value: 0 }
             },
             transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
+            // No additive blending, leaves are solid-ish
+            side: THREE.DoubleSide,
             vertexShader: `
                 uniform float time;
                 attribute float aRandom;
+                attribute vec3 color;
+                varying vec3 vColor;
                 varying float vAlpha;
+
                 void main() {
+                    vColor = color;
                     vec3 p = position;
-                    // Float up
-                    p.y += sin(time * aRandom + p.x) * 2.0;
+
+                    // Swaying motion
+                    float sway = sin(time * 0.5 + aRandom * 10.0) * 2.0;
+                    p.x += sway;
+                    p.y -= mod(time * 2.0, 10.0); // Fall down slowly
 
                     vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
                     gl_Position = projectionMatrix * mvPosition;
-                    gl_PointSize = (4.0 * aRandom + 2.0) * (10.0 / -mvPosition.z);
-                    vAlpha = 0.5 + 0.5 * sin(time * 2.0 + aRandom * 10.0);
+
+                    // Scale size based on distance
+                    gl_PointSize = (8.0 + aRandom * 5.0) * (20.0 / -mvPosition.z);
+
+                    // Fade out if too close or too far
+                    vAlpha = 1.0;
                 }
             `,
             fragmentShader: `
-                uniform vec3 color;
+                varying vec3 vColor;
                 varying float vAlpha;
                 void main() {
-                    // Circular particle
-                    float r = distance(gl_PointCoord, vec2(0.5));
-                    if (r > 0.5) discard;
+                    // Leaf Shape (Diamond)
+                    vec2 coord = gl_PointCoord - vec2(0.5);
+                    float d = abs(coord.x) + abs(coord.y); // Diamond shape distance
 
-                    // Glow center
-                    float glow = 1.0 - (r * 2.0);
-                    gl_FragColor = vec4(color, vAlpha * glow);
+                    if (d > 0.5) discard;
+
+                    gl_FragColor = vec4(vColor, vAlpha);
                 }
             `
         });
