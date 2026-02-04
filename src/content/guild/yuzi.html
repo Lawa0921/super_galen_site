@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yuzi | Solar Velocity</title>
     <meta name="description" content="柚子 Yuzi - Solar Explorer. A journey through space, nature, and connection.">
+    <meta property="og:image" content="/assets/img/guild/yuzi/gallery_3.webp">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -67,8 +68,8 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 900vh; /* Long scroll for speed */
-            width: 100%; position: absolute; top: 0; left: 0;
+            height: 550vh; /* Reduced from 900vh for tighter density */
+            width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
 
@@ -77,6 +78,26 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 10;
         }
+
+        /* Brand Mark (Logo) */
+        .brand-mark {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            display: flex; align-items: center; gap: 10px;
+            pointer-events: auto; mix-blend-mode: difference;
+            text-decoration: none;
+        }
+        .mark-symbol {
+            width: 40px; height: 40px; border: 2px solid var(--c-solar);
+            display: grid; place-items: center;
+            font-family: 'Kanit'; font-weight: 800; font-size: 1.2rem; color: var(--c-solar);
+            transform: rotate(45deg);
+        }
+        .mark-symbol span { transform: rotate(-45deg); }
+        .mark-text {
+            font-family: 'Kanit'; font-weight: 700; font-size: 1rem; letter-spacing: 0.1em;
+            color: var(--c-solar); display: flex; flex-direction: column; line-height: 1;
+        }
+        .mark-text span { font-size: 0.7rem; opacity: 0.7; font-weight: 400; }
 
         /* Typography & Layout */
         .hero-container {
@@ -138,14 +159,6 @@
         }
         .data-item strong { color: #fff; display: block; font-size: 1.1rem; }
 
-        /* Navigation */
-        .nav-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: var(--c-solar); font-family: 'Kanit'; font-weight: 800; font-size: 1.2rem;
-            text-decoration: none; pointer-events: auto;
-            mix-blend-mode: difference;
-        }
-
         /* HUD Elements */
         .hud-line {
             position: fixed; background: var(--c-solar); opacity: 0.2; pointer-events: none;
@@ -184,7 +197,7 @@
             .content-card { width: 92%; padding: 1.5rem; left: 4% !important; right: auto !important; transform: none !important; margin-top: 20vh; }
             .data-grid { grid-template-columns: 1fr; }
             .big-text { font-size: 15vw; }
-            .nav-back { top: 1rem; left: 1rem; }
+            .brand-mark { top: 1rem; left: 1rem; }
             .hud-v { left: 0; }
         }
 
@@ -196,7 +209,13 @@
     <div id="webgl-container"></div>
     <div id="scroll-spacer"></div>
 
-    <a href="/guild/" class="nav-back">GUILD // YUZI</a>
+    <a href="/guild/" class="brand-mark">
+        <div class="mark-symbol"><span>Y</span></div>
+        <div class="mark-text">
+            YUZI
+            <span>SOLAR EXPLORER</span>
+        </div>
+    </a>
 
     <div class="hud-line hud-v"></div>
     <div class="hud-line hud-h"></div>
@@ -264,7 +283,7 @@
 
     <!-- Finale Screen -->
     <div id="finale">
-        <img src="/assets/img/guild/yuzi/avatar.webp" class="finale-avatar">
+        <img src="/assets/img/guild/yuzi/gallery_3.webp" class="finale-avatar">
         <h2 style="font-family: 'Kanit'; font-size: clamp(3rem, 8vw, 6rem); color: #000; line-height: 0.9; margin-bottom: 1rem;">LET'S CONNECT</h2>
         <p style="font-size: 1.5rem; color: #000; font-weight: 700; margin-bottom: 0.5rem;">能深聊、能玩、也能一起安靜</p>
         <p style="color: #444;">也許，我們會相處得不錯。</p>
@@ -314,10 +333,9 @@
 
         // 1. Hyper-Speed Particles
         const pGeo = new THREE.BufferGeometry();
-        const pCount = 4000;
+        const pCount = 3000; // Optimized count
         const pPos = new Float32Array(pCount * 3);
         const pCol = new Float32Array(pCount * 3);
-        const pSpd = new Float32Array(pCount);
 
         for(let i=0; i<pCount; i++) {
             const r = 5 + Math.random() * 40;
@@ -328,7 +346,6 @@
             pPos[i*3+1] = Math.sin(theta) * r;
             pPos[i*3+2] = z;
 
-            // Palette: Yellow, White, Orange
             const seed = Math.random();
             if(seed > 0.6) { // Yellow
                 pCol[i*3] = 1.0; pCol[i*3+1] = 0.86; pCol[i*3+2] = 0.0;
@@ -337,13 +354,10 @@
             } else { // Orange tint
                 pCol[i*3] = 1.0; pCol[i*3+1] = 0.5; pCol[i*3+2] = 0.0;
             }
-
-            pSpd[i] = 0.2 + Math.random() * 0.5;
         }
 
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
         pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
-        pGeo.setAttribute('aSpeed', new THREE.BufferAttribute(pSpd, 1));
 
         const pMat = new THREE.PointsMaterial({
             size: 0.15, vertexColors: true, transparent: true, opacity: 0.9,
@@ -363,80 +377,86 @@
             });
             const mesh = new THREE.Mesh(planeGeo, planeMat);
 
-            // Layout: Spiral tunnel
-            // We want them to appear as we fly through
-            const zPos = -30 - (i * 25);
-            // Alternating sides
+            // Compressed Z distance
+            const zPos = -20 - (i * 20);
             const xPos = (i % 2 === 0 ? 1 : -1) * (8 + Math.random() * 4);
             const yPos = (Math.random() - 0.5) * 10;
 
             mesh.position.set(xPos, yPos, zPos);
-            mesh.lookAt(0, 0, zPos + 20); // Look at track ahead
+            mesh.lookAt(0, 0, zPos + 20);
 
-            // Frame
             const borderGeo = new THREE.EdgesGeometry(planeGeo);
             const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, linewidth: 2 });
             const border = new THREE.LineSegments(borderGeo, borderMat);
             mesh.add(border);
 
-            // Connector Line to center (Simulate neural link)
-            const lineGeo = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0,0,0), new THREE.Vector3(-xPos, -yPos, 0) // Local cords
-            ]);
-            const lineMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.2 });
-            const connector = new THREE.Line(lineGeo, lineMat);
-            // mesh.add(connector); // Maybe too messy, skipped
-
             photoGroup.add(mesh);
         });
 
-        // 3. Central Sun/Compass
-        const sunGeo = new THREE.IcosahedronGeometry(2, 1);
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, wireframe: true });
-        const sun = new THREE.Mesh(sunGeo, sunMat);
-        sun.position.z = -250;
-        sun.scale.set(5,5,5);
-        worldGroup.add(sun);
+        // 3. Central Core: "Solar Gyroscope"
+        const coreGroup = new THREE.Group();
+        coreGroup.position.z = -200;
+        coreGroup.scale.set(5, 5, 5);
+        worldGroup.add(coreGroup);
+
+        // Inner Star
+        const innerGeo = new THREE.IcosahedronGeometry(2, 0);
+        const innerMat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, wireframe: true, wireframeLinewidth: 2 });
+        const innerStar = new THREE.Mesh(innerGeo, innerMat);
+        coreGroup.add(innerStar);
+
+        // Ring 1
+        const ring1Geo = new THREE.TorusGeometry(3.5, 0.1, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.5 });
+        const ring1 = new THREE.Mesh(ring1Geo, ringMat);
+        coreGroup.add(ring1);
+
+        // Ring 2
+        const ring2Geo = new THREE.TorusGeometry(5, 0.15, 16, 100);
+        const ring2 = new THREE.Mesh(ring2Geo, ringMat);
+        ring2.rotation.x = Math.PI / 2;
+        coreGroup.add(ring2);
+
+        // Ring 3 (Orbit)
+        const ring3Geo = new THREE.TorusGeometry(7, 0.05, 16, 100);
+        const ring3Mat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.3 });
+        const ring3 = new THREE.Mesh(ring3Geo, ring3Mat);
+        ring3.rotation.y = Math.PI / 4;
+        coreGroup.add(ring3);
 
         // --- GSAP Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        const totalScrollZ = 220; // Distance to travel
+        const totalScrollZ = 180; // Shorter distance due to reduced scroll height
 
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "#scroll-spacer",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 0.1 // Low scrub for "Velocity" feel (snappy)
+                scrub: 0.1
             }
         });
 
         // Camera Move
         tl.to(camera.position, { z: -totalScrollZ, ease: "none" });
-        // Camera Roll (Barrel roll effect)
         tl.to(camera.rotation, { z: Math.PI, ease: "none" }, "<");
 
-        // Particle Streaking Effect (Speed lines)
-        tl.to(particles.scale, { z: 8, ease: "power2.in" }, 0);
+        // Speed effect
+        tl.to(particles.scale, { z: 5, ease: "power2.in" }, 0);
         tl.to(particles.scale, { z: 1, ease: "power2.out" }, 0.9);
 
-        // Sun Explosion at end
-        tl.to(sun.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
-        tl.to(sun.rotation, { y: 10, x: 5 }, 0);
+        // Core explosion
+        tl.to(coreGroup.scale, { x: 40, y: 40, z: 40, ease: "expo.in" }, 0.85);
+        tl.to(coreGroup.rotation, { y: 10, x: 5 }, 0);
 
-        // --- Text Reveals ---
-        // Map scroll percentage to Z position roughly
-        // 0% = z:5, 100% = z:-215
-        // Range = 220 units.
-        // Card 1 @ z:-30 -> ~15% travel + start offset
-
+        // Reveals - Tighter pacing
         function revealCard(id, startPct, endPct) {
             gsap.fromTo(id,
                 { opacity: 0, scale: 0.8, x: 100, filter: 'blur(10px)' },
                 {
                     opacity: 1, scale: 1, x: 0, filter: 'blur(0px)',
-                    duration: 0.6,
+                    duration: 0.5,
                     ease: "power4.out",
                     scrollTrigger: {
                         trigger: "#scroll-spacer",
@@ -448,22 +468,20 @@
             );
         }
 
-        // Hero fade out
         gsap.to("#hero-text", {
             opacity: 0, scale: 1.5, filter: "blur(20px)",
-            scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "10% top", scrub: true }
+            scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "5% top", scrub: true }
         });
 
-        // Sequence
-        revealCard("#card-origin", 10, 25);
-        revealCard("#card-path", 30, 45);
-        revealCard("#card-vitality", 50, 65);
-        revealCard("#card-core", 75, 90);
+        revealCard("#card-origin", 5, 20);
+        revealCard("#card-path", 25, 40);
+        revealCard("#card-vitality", 45, 60);
+        revealCard("#card-core", 65, 80);
 
-        // Finale trigger
+        // Finale
         ScrollTrigger.create({
             trigger: "#scroll-spacer",
-            start: "96% top",
+            start: "90% bottom",
             onEnter: () => document.getElementById('finale').classList.add('active'),
             onLeaveBack: () => document.getElementById('finale').classList.remove('active')
         });
@@ -474,19 +492,20 @@
         function animate() {
             const t = clock.getElapsedTime();
 
-            // Constant forward motion of particles (stars passing by)
-            const positions = particles.geometry.attributes.position.array;
-            for(let i=0; i<pCount; i++) {
-                // Move z towards camera to simulate speed even when static
-                // Just aesthetic rotation here
-            }
-            worldGroup.rotation.z = t * 0.05; // Gentle rotation of whole world
+            worldGroup.rotation.z = t * 0.05;
 
-            // Sun pulse
+            // Core Gyroscope Animation
+            innerStar.rotation.y = t;
+            innerStar.rotation.z = t * 0.5;
+            ring1.rotation.x = t * 0.8;
+            ring1.rotation.y = t * 0.2;
+            ring2.rotation.y = t * 0.6;
+            ring3.rotation.z = t * 0.3;
+
+            // Pulse
             const pulse = 1 + Math.sin(t * 8) * 0.1;
-            sun.scale.multiplyScalar(pulse / sun.scale.x * (5 + (camera.position.z < -150 ? (camera.position.z + 150)*-0.5 : 0)));
+            coreGroup.scale.multiplyScalar(pulse / coreGroup.scale.x * (5 + (camera.position.z < -100 ? (camera.position.z + 100)*-0.5 : 0)));
 
-            // Float photos
             photoGroup.children.forEach((mesh, i) => {
                 mesh.position.y += Math.sin(t * 3 + i) * 0.005;
                 mesh.rotation.z += Math.cos(t * 2 + i) * 0.002;
@@ -498,7 +517,6 @@
         animate();
 
         // --- Interactions ---
-        // Custom Cursor
         const cursor = document.getElementById('cursor');
         document.addEventListener('mousemove', (e) => {
             gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
@@ -508,7 +526,6 @@
             el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
         });
 
-        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
