@@ -183,10 +183,10 @@
             background: url('/assets/img/guild/liloyee/avatar.webp') no-repeat center/cover;
             border: 3px solid var(--c-accent);
             box-shadow: 0 0 20px var(--c-accent);
-            z-index: 100;
-            opacity: 0; /* Hidden initially, fades in */
+            z-index: 999; /* Increased z-index */
+            opacity: 1; /* Always visible */
             pointer-events: none;
-            transition: opacity 0.5s;
+            transition: transform 0.5s;
         }
         .mermaid-guide::after {
             content: 'Follow Me!';
@@ -206,13 +206,13 @@
         }
 
         #site-footer {
-            background: transparent; /* Updated to transparent */
-            color: #ddd;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); /* Gradient contrast */
+            color: #fff;
             padding: 4rem 2rem;
             text-align: center;
             position: relative;
             z-index: 20;
-            /* border-top: removed to blend */
+            text-shadow: 0 0 10px #000;
         }
 
         #site-footer h3 {
@@ -220,34 +220,35 @@
             color: #fff;
             margin-bottom: 2rem;
             text-shadow: 0 0 10px black;
+            font-size: 1.5rem;
         }
 
-        /* Social Icons hidden inside Chest initially */
+        /* Social Icons hidden initially */
         .chest-social-icons {
-            position: absolute;
+            position: fixed; /* Fixed position for stability */
+            bottom: 15%; left: 50%; transform: translateX(-50%) scale(0);
             display: flex; gap: 1rem;
             pointer-events: none;
             opacity: 0;
-            transform: scale(0);
             transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 50;
+            z-index: 9999;
         }
         .chest-social-icons.active {
             opacity: 1;
-            transform: scale(1) translateY(-100px); /* Pop up */
+            transform: translateX(-50%) scale(1);
             pointer-events: auto;
         }
         .chest-btn {
-            width: 60px; height: 60px; border-radius: 50%;
+            width: 70px; height: 70px; border-radius: 50%;
             background: rgba(255,215,0,0.2);
             border: 2px solid var(--c-gold);
             color: var(--c-gold);
             display: flex; justify-content: center; align-items: center;
-            font-size: 1.5rem; text-decoration: none;
+            font-size: 2rem; text-decoration: none;
             backdrop-filter: blur(5px);
             transition: 0.3s;
         }
-        .chest-btn:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 20px var(--c-gold); }
+        .chest-btn:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 20px var(--c-gold); transform: scale(1.1); }
 
 
         /* --- MODALS --- */
@@ -304,6 +305,7 @@
             .content-box { padding: 1.5rem; }
             .bubble-container { transform: scale(0.9); }
             .mermaid-guide { width: 60px; height: 60px; right: 10px; }
+            .chest-btn { width: 50px; height: 50px; font-size: 1.5rem; }
         }
 
     </style>
@@ -354,7 +356,7 @@
         <section id="sand-section">
             <div class="content-box" style="max-width: 500px; margin-bottom: 5rem; background: transparent; box-shadow: none; border: none;">
                 <!-- Replaced text with visual cue for chest -->
-                <p style="text-shadow: 0 0 10px black; opacity: 0.8;">(點擊寶箱打開秘密)</p>
+                <p style="text-shadow: 0 0 10px black; opacity: 0.8; font-size: 1.2rem;">(點擊寶箱打開秘密)</p>
             </div>
         </section>
 
@@ -514,20 +516,28 @@
         }
         createTreasureChest();
 
-        // --- TREASURES ---
+        // --- TREASURES (Updated Geometry) ---
         const treasures = [];
-        const treasureGeoms = [
-            new THREE.IcosahedronGeometry(1.2, 0),
-            new THREE.OctahedronGeometry(1.2, 0),
-            new THREE.DodecahedronGeometry(1.2, 0)
+
+        // Define varied treasure types
+        const treasureTypes = [
+            { // Coin
+                geom: new THREE.CylinderGeometry(0.5, 0.5, 0.1, 20),
+                mat: new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1, roughness: 0.2 })
+            },
+            { // Gem (Ruby)
+                geom: new THREE.OctahedronGeometry(0.6),
+                mat: new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.9 })
+            },
+            { // Pearl
+                geom: new THREE.SphereGeometry(0.5, 32, 32),
+                mat: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.1, emissive: 0x222222 })
+            },
+            { // Crystal (Sapphire)
+                geom: new THREE.ConeGeometry(0.3, 1, 6),
+                mat: new THREE.MeshStandardMaterial({ color: 0x00f3ff, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.8 })
+            }
         ];
-        const treasureMat = new THREE.MeshStandardMaterial({
-            color: 0xffd700,
-            metalness: 1,
-            roughness: 0.1,
-            emissive: 0xaa4400,
-            emissiveIntensity: 0.5
-        });
 
         function spawnTreasure(screenX, screenY) {
             // Cap limit
@@ -551,12 +561,17 @@
 
                 const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
 
-                const geom = treasureGeoms[Math.floor(Math.random() * treasureGeoms.length)];
-                const mesh = new THREE.Mesh(geom, treasureMat);
+                // Randomly select type
+                const type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
+                const mesh = new THREE.Mesh(type.geom, type.mat);
+
                 mesh.position.copy(spawnPos);
-                mesh.position.x += (Math.random()-0.5)*2; // Jitter spawn
+                mesh.position.x += (Math.random()-0.5)*2;
                 mesh.position.y += (Math.random()-0.5)*2;
                 mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+
+                // Fix orientation for coins (Cylinders lie flat usually)
+                if (type.geom.type === 'CylinderGeometry') mesh.rotation.x = Math.PI/2;
 
                 scene.add(mesh);
 
@@ -609,7 +624,11 @@
             b.style.width = size + 'px';
             b.style.height = size + 'px';
 
-            const top = (i / galleryImages.length) * 85 + 5;
+            // Updated Distribution: Concentrate in middle (30vh to 150vh range)
+            // 350vh total height.
+            // Map i 0..17 to 10% .. 60% of container height?
+            // Let's use 5% to 60% to ensure they are reachable before the bottom.
+            const top = (i / galleryImages.length) * 55 + 5;
             const left = Math.random() * 80 + 10;
 
             b.style.top = top + '%';
@@ -665,16 +684,9 @@
             maxScroll = document.body.scrollHeight - window.innerHeight;
 
             // Mermaid Guide Animation
-            if (scrollY < 100) {
-                mermaid.style.opacity = 0;
-            } else {
-                mermaid.style.opacity = 1;
-            }
+            // Removed opacity logic as requested, always visible now (controlled by CSS)
 
-            // Sync Social Icons Position to Chest if Open?
-            if (isChestOpen) {
-                 updateSocialIconsPos();
-            }
+            // Sync Social Icons Position to Chest if Open? No, using fixed now.
         });
 
         // Mermaid Swim Animation
@@ -709,19 +721,6 @@
             }
         });
 
-        function updateSocialIconsPos() {
-            // Project Chest position to screen
-            const vector = new THREE.Vector3(0, sandY + 5, -5);
-            vector.project(camera);
-
-            const x = (vector.x * .5 + .5) * window.innerWidth;
-            const y = (-(vector.y * .5) + .5) * window.innerHeight;
-
-            const icons = document.getElementById('chest-socials');
-            icons.style.left = (x - icons.offsetWidth/2) + 'px';
-            icons.style.top = (y - icons.offsetHeight) + 'px';
-        }
-
         function toggleChest() {
             isChestOpen = !isChestOpen;
             const icons = document.getElementById('chest-socials');
@@ -734,7 +733,6 @@
                 gsap.to(pileLight, { intensity: 5, color: '#ffdd00', duration: 0.5, yoyo: true, repeat: 1 });
 
                 // Show Icons
-                updateSocialIconsPos(); // Set initial pos
                 icons.classList.add('active');
 
             } else {
@@ -770,8 +768,6 @@
                     t.rotationSpeed.set(0, 0, 0);
                 }
             });
-
-            if(isChestOpen) updateSocialIconsPos();
 
             renderer.render(scene, camera);
         }
