@@ -68,7 +68,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 550vh; /* Reduced from 900vh for tighter density */
+            height: 700vh; /* Increased for better pacing */
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -129,14 +129,18 @@
             border: 1px solid var(--c-solar);
             border-left: 5px solid var(--c-solar);
             padding: 2.5rem;
-            max-width: 650px;
+            max-width: 550px; /* Reduced width */
             width: 85%;
             backdrop-filter: blur(10px);
             opacity: 0;
-            transform: translateY(100px);
             pointer-events: auto;
             box-shadow: 0 0 30px rgba(255, 221, 0, 0.1);
+            position: absolute;
         }
+
+        .card-left { left: 8%; top: 50%; transform: translateY(-50%); }
+        .card-right { right: 8%; top: 50%; transform: translateY(-50%); }
+        .card-center { left: 50%; top: 80%; transform: translate(-50%, -50%); width: 90%; max-width: 700px; text-align: center; }
 
         .content-card h3 {
             font-family: 'Kanit', sans-serif;
@@ -194,7 +198,8 @@
         .socials a:hover { transform: scale(1.2) rotate(-10deg); color: #fff; }
 
         @media (max-width: 768px) {
-            .content-card { width: 92%; padding: 1.5rem; left: 4% !important; right: auto !important; transform: none !important; margin-top: 20vh; }
+            .content-card { width: 90%; max-width: none; padding: 1.5rem; left: 5% !important; right: auto !important; top: 60% !important; transform: translateY(0) !important; }
+            .card-center { top: 60% !important; transform: translate(-50%, 0) !important; }
             .data-grid { grid-template-columns: 1fr; }
             .big-text { font-size: 15vw; }
             .brand-mark { top: 1rem; left: 1rem; }
@@ -230,8 +235,8 @@
             <div class="sub-hero">EXPLORER CLASS // YUZI</div>
         </div>
 
-        <!-- 1. Profile Data -->
-        <div id="card-origin" class="content-card" style="position: absolute; left: 15%; top: 15%;">
+        <!-- 1. Profile Data (LEFT, Image RIGHT) -->
+        <div id="card-origin" class="content-card card-left">
             <h3>// 01 PROFILE <span>DATA LOG</span></h3>
 
             <div class="data-grid">
@@ -247,8 +252,8 @@
             <p>畢業於<span class="highlight">輔仁大學景觀設計</span>，我不只設計環境，更在乎人與空間的連結。從園丁到社群引導者，我的職涯路徑雖然任性，但目標一致：<br><strong>創造安全、被接納的連結。</strong></p>
         </div>
 
-        <!-- 2. Trajectory -->
-        <div id="card-path" class="content-card" style="position: absolute; right: 10%; top: 35%;">
+        <!-- 2. Trajectory (RIGHT, Image LEFT) -->
+        <div id="card-path" class="content-card card-right">
             <h3>// 02 TRAJECTORY <span>CAREER PATH</span></h3>
             <p>我喜歡陪伴正在成形中的東西：一個空間、一個團隊、一段關係。</p>
             <ul style="list-style: none; line-height: 2; margin-top: 1rem; font-family: 'Kanit';">
@@ -258,8 +263,8 @@
             </ul>
         </div>
 
-        <!-- 3. Vitality (Husky) -->
-        <div id="card-vitality" class="content-card" style="position: absolute; left: 8%; top: 60%;">
+        <!-- 3. Vitality (LEFT, Image RIGHT) -->
+        <div id="card-vitality" class="content-card card-left">
             <h3>// 03 VITALITY <span>HUSKY ENERGY</span></h3>
             <p>身體派的孩子，聽說個性像<span class="highlight">哈士奇</span>。</p>
             <p>喜歡讓身體感受山海風日。旅行不是逃離，而是回到自己。</p>
@@ -272,8 +277,8 @@
             </div>
         </div>
 
-        <!-- 4. Core -->
-        <div id="card-core" class="content-card" style="position: absolute; left: 50%; top: 80%; transform: translate(-50%, -50%); text-align: center;">
+        <!-- 4. Core (CENTER/BOTTOM) -->
+        <div id="card-core" class="content-card card-center">
             <h3>// 04 CORE VALUE <span>PHILOSOPHY</span></h3>
             <p style="font-size: 1.3rem; color: #fff;"><strong>「多重伴侶關係實踐者」</strong></p>
             <p>愛有很多樣貌，核心是誠實、尊重與陪伴。</p>
@@ -327,13 +332,30 @@
 
         const textures = imgUrls.map(url => textureLoader.load(url));
 
+        // --- Helper: Emoji Sprite ---
+        function createEmojiTexture(emoji) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '100px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#FFDD00'; // Fallback
+            ctx.fillText(emoji, 64, 70); // Offset slightly
+            const tex = new THREE.CanvasTexture(canvas);
+            return tex;
+        }
+
+        const emojis = ['🏐', '🥁', '🐕', '🌿', '🌊', '⚡', '⛰️'];
+        const emojiMaterials = emojis.map(e => new THREE.SpriteMaterial({ map: createEmojiTexture(e), transparent: true }));
+
         // --- Scene Objects ---
         const worldGroup = new THREE.Group();
         scene.add(worldGroup);
 
         // 1. Hyper-Speed Particles
         const pGeo = new THREE.BufferGeometry();
-        const pCount = 3000; // Optimized count
+        const pCount = 3000;
         const pPos = new Float32Array(pCount * 3);
         const pCol = new Float32Array(pCount * 3);
 
@@ -366,24 +388,56 @@
         const particles = new THREE.Points(pGeo, pMat);
         worldGroup.add(particles);
 
-        // 2. Memory Monoliths
+        // 2. Personal Symbol Cloud
+        const symbolGroup = new THREE.Group();
+        worldGroup.add(symbolGroup);
+
+        for(let i=0; i<60; i++) {
+            const mat = emojiMaterials[Math.floor(Math.random() * emojiMaterials.length)];
+            const sprite = new THREE.Sprite(mat);
+
+            // Random scatter
+            const x = (Math.random() - 0.5) * 50;
+            const y = (Math.random() - 0.5) * 30;
+            const z = -20 - (Math.random() * 350);
+
+            sprite.position.set(x, y, z);
+            sprite.scale.set(3, 3, 3);
+
+            // Add slight randomness to make it feel organic
+            sprite.userData = {
+                speed: 0.01 + Math.random() * 0.02,
+                offset: Math.random() * Math.PI * 2
+            };
+
+            symbolGroup.add(sprite);
+        }
+
+
+        // 3. Memory Monoliths
         const photoGroup = new THREE.Group();
         worldGroup.add(photoGroup);
 
         textures.forEach((tex, i) => {
-            const planeGeo = new THREE.PlaneGeometry(6, 4);
+            const planeGeo = new THREE.PlaneGeometry(8, 5.3); // Slightly larger
             const planeMat = new THREE.MeshBasicMaterial({
-                map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0.85
+                map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0.9
             });
             const mesh = new THREE.Mesh(planeGeo, planeMat);
 
-            // Compressed Z distance
-            const zPos = -20 - (i * 20);
-            const xPos = (i % 2 === 0 ? 1 : -1) * (8 + Math.random() * 4);
-            const yPos = (Math.random() - 0.5) * 10;
+            // Layout Strategy:
+            // Text Card 1 (Left) -> Image 1 should be Right
+            // Text Card 2 (Right) -> Image 2 should be Left
+            // i=0 corresponds to Reveal 1 (Left Card) -> Image Right
+
+            const isRight = i % 2 === 0; // True for 0, 2...
+
+            const zPos = -70 - (i * 70); // Deep spacing to keep images ahead of camera
+            const xPos = isRight ? 12 : -12; // Further out from center
+            const yPos = (Math.random() - 0.5) * 5;
 
             mesh.position.set(xPos, yPos, zPos);
-            mesh.lookAt(0, 0, zPos + 20);
+            mesh.lookAt(0, 0, zPos + 30); // Slight inward angle
 
             const borderGeo = new THREE.EdgesGeometry(planeGeo);
             const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, linewidth: 2 });
@@ -393,9 +447,9 @@
             photoGroup.add(mesh);
         });
 
-        // 3. Central Core: "Solar Gyroscope"
+        // 4. Central Core: "Solar Gyroscope"
         const coreGroup = new THREE.Group();
-        coreGroup.position.z = -200;
+        coreGroup.position.z = -300; // Further back
         coreGroup.scale.set(5, 5, 5);
         worldGroup.add(coreGroup);
 
@@ -405,29 +459,24 @@
         const innerStar = new THREE.Mesh(innerGeo, innerMat);
         coreGroup.add(innerStar);
 
-        // Ring 1
-        const ring1Geo = new THREE.TorusGeometry(3.5, 0.1, 16, 100);
+        // Rings
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.5 });
-        const ring1 = new THREE.Mesh(ring1Geo, ringMat);
+        const ring1 = new THREE.Mesh(new THREE.TorusGeometry(3.5, 0.1, 16, 100), ringMat);
         coreGroup.add(ring1);
 
-        // Ring 2
-        const ring2Geo = new THREE.TorusGeometry(5, 0.15, 16, 100);
-        const ring2 = new THREE.Mesh(ring2Geo, ringMat);
+        const ring2 = new THREE.Mesh(new THREE.TorusGeometry(5, 0.15, 16, 100), ringMat);
         ring2.rotation.x = Math.PI / 2;
         coreGroup.add(ring2);
 
-        // Ring 3 (Orbit)
-        const ring3Geo = new THREE.TorusGeometry(7, 0.05, 16, 100);
         const ring3Mat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.3 });
-        const ring3 = new THREE.Mesh(ring3Geo, ring3Mat);
+        const ring3 = new THREE.Mesh(new THREE.TorusGeometry(7, 0.05, 16, 100), ring3Mat);
         ring3.rotation.y = Math.PI / 4;
         coreGroup.add(ring3);
 
         // --- GSAP Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        const totalScrollZ = 180; // Shorter distance due to reduced scroll height
+        const totalScrollZ = 280; // Matches core position roughly
 
         const tl = gsap.timeline({
             scrollTrigger: {
@@ -442,18 +491,16 @@
         tl.to(camera.position, { z: -totalScrollZ, ease: "none" });
         tl.to(camera.rotation, { z: Math.PI, ease: "none" }, "<");
 
-        // Speed effect
+        // Effects
         tl.to(particles.scale, { z: 5, ease: "power2.in" }, 0);
         tl.to(particles.scale, { z: 1, ease: "power2.out" }, 0.9);
-
-        // Core explosion
-        tl.to(coreGroup.scale, { x: 40, y: 40, z: 40, ease: "expo.in" }, 0.85);
+        tl.to(coreGroup.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
         tl.to(coreGroup.rotation, { y: 10, x: 5 }, 0);
 
-        // Reveals - Tighter pacing
-        function revealCard(id, startPct, endPct) {
+        // Reveals
+        function revealCard(id, startPct, endPct, xOffset) {
             gsap.fromTo(id,
-                { opacity: 0, scale: 0.8, x: 100, filter: 'blur(10px)' },
+                { opacity: 0, scale: 0.8, x: xOffset, filter: 'blur(10px)' },
                 {
                     opacity: 1, scale: 1, x: 0, filter: 'blur(0px)',
                     duration: 0.5,
@@ -473,15 +520,23 @@
             scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "5% top", scrub: true }
         });
 
-        revealCard("#card-origin", 5, 20);
-        revealCard("#card-path", 25, 40);
-        revealCard("#card-vitality", 45, 60);
-        revealCard("#card-core", 65, 80);
+        // Adjusted Trigger Points for longer spacer
+        // Card 1 (Left) - Image 1 (Right)
+        revealCard("#card-origin", 8, 22, -100);
+
+        // Card 2 (Right) - Image 2 (Left)
+        revealCard("#card-path", 30, 45, 100);
+
+        // Card 3 (Left) - Image 3 (Right)
+        revealCard("#card-vitality", 52, 68, -100);
+
+        // Card 4 (Center)
+        revealCard("#card-core", 75, 90, 0);
 
         // Finale
         ScrollTrigger.create({
             trigger: "#scroll-spacer",
-            start: "90% bottom",
+            start: "95% bottom",
             onEnter: () => document.getElementById('finale').classList.add('active'),
             onLeaveBack: () => document.getElementById('finale').classList.remove('active')
         });
@@ -494,7 +549,7 @@
 
             worldGroup.rotation.z = t * 0.05;
 
-            // Core Gyroscope Animation
+            // Core
             innerStar.rotation.y = t;
             innerStar.rotation.z = t * 0.5;
             ring1.rotation.x = t * 0.8;
@@ -506,9 +561,16 @@
             const pulse = 1 + Math.sin(t * 8) * 0.1;
             coreGroup.scale.multiplyScalar(pulse / coreGroup.scale.x * (5 + (camera.position.z < -100 ? (camera.position.z + 100)*-0.5 : 0)));
 
+            // Photos
             photoGroup.children.forEach((mesh, i) => {
                 mesh.position.y += Math.sin(t * 3 + i) * 0.005;
                 mesh.rotation.z += Math.cos(t * 2 + i) * 0.002;
+            });
+
+            // Symbols
+            symbolGroup.children.forEach((sprite, i) => {
+                sprite.position.y += Math.sin(t * 2 + sprite.userData.offset) * 0.01;
+                sprite.position.x += Math.cos(t + sprite.userData.offset) * 0.01;
             });
 
             renderer.render(scene, camera);
