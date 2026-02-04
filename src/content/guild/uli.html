@@ -26,6 +26,7 @@
             --c-accent-teal: #1abc9c;
             --c-accent-coral: #e74c3c;
             --c-accent-gold: #f1c40f;
+            --c-deep-bg: #0a1525; /* Deep Ocean */
         }
 
         body {
@@ -36,6 +37,13 @@
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
+            transition: background-color 1s ease;
+        }
+
+        body.dark-mode {
+            background-color: var(--c-deep-bg);
+            color: #ecf0f1;
+            --c-text: #ecf0f1;
         }
 
         #p5-container {
@@ -45,7 +53,8 @@
             width: 100%;
             height: 100vh;
             z-index: -1;
-            opacity: 0.8; /* Let texture blend */
+            opacity: 1;
+            transition: filter 1s ease;
         }
 
         /* Paper Texture Overlay */
@@ -54,7 +63,7 @@
             top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 0;
-            opacity: 0.4;
+            opacity: 0.3;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E");
         }
 
@@ -79,6 +88,12 @@
             mix-blend-mode: multiply;
         }
 
+        body.dark-mode .hero-title {
+            color: #85c1e9;
+            text-shadow: 0 0 20px rgba(52, 152, 219, 0.8);
+            mix-blend-mode: normal;
+        }
+
         .section-title {
             font-size: clamp(2rem, 5vw, 4rem);
             margin-bottom: 2rem;
@@ -97,7 +112,7 @@
 
         /* Layout */
         .section {
-            min-height: 100vh;
+            min-height: 120vh; /* More space for scrolling */
             padding: 6rem 2rem;
             box-sizing: border-box;
             display: flex;
@@ -116,6 +131,7 @@
         #hero {
             align-items: center;
             text-align: center;
+            min-height: 100vh;
         }
 
         .hero-subtitle {
@@ -126,30 +142,25 @@
             border: 2px dashed var(--c-text);
             margin-top: 2rem;
             box-shadow: 5px 5px 0px var(--c-accent-gold);
+            color: #2c3e50; /* Always dark text inside box */
         }
 
         /* Cards/Panels */
         .text-panel {
-            background: rgba(255, 255, 255, 0.92);
+            background: rgba(255, 255, 255, 0.95);
             padding: 3rem;
             border-radius: 20px;
             box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
             border: 2px solid var(--c-text);
             max-width: 600px;
-            /* Default left align */
-            margin-right: auto;
-            transform: translateY(50px);
+            /* Initial state handled by GSAP */
             opacity: 0;
+            color: #2c3e50;
         }
 
         .section:nth-child(even) .text-panel {
             margin-left: auto;
             margin-right: 0;
-            transform: rotate(1deg) translateY(50px);
-        }
-
-        .section:nth-child(odd) .text-panel {
-            transform: rotate(-1deg) translateY(50px);
         }
 
         /* Specific Visuals */
@@ -189,6 +200,7 @@
         #finale {
             text-align: center;
             background: transparent;
+            min-height: 80vh;
         }
 
         .social-links {
@@ -201,10 +213,10 @@
 
         .social-btn {
             font-size: 1.5rem;
-            color: var(--c-text);
+            color: #2c3e50;
             text-decoration: none;
             padding: 1rem 2rem;
-            border: 3px solid var(--c-text);
+            border: 3px solid #2c3e50;
             border-radius: 10px;
             font-weight: 900;
             background: #fff;
@@ -221,7 +233,7 @@
             .gallery-item { width: calc(50% - 10px); }
             .hero-title { font-size: 4rem; }
             .text-panel { padding: 2rem; }
-            .section { padding: 4rem 1rem; }
+            .section { padding: 4rem 1rem; min-height: auto; }
         }
 
         /* Lightbox */
@@ -259,6 +271,10 @@
             padding: 0.5rem 1.2rem;
             border: 2px solid var(--c-text);
             border-radius: 30px;
+        }
+
+        body.dark-mode .back-btn {
+             color: #2c3e50; /* Keep btn light */
         }
 
     </style>
@@ -318,9 +334,9 @@
         <section class="section" id="artist">
             <div class="container">
                 <div class="text-panel">
-                    <h2 class="section-title">Colors & Symbols</h2>
+                    <h2 class="section-title">Colors & Mandalas</h2>
                     <p>在創作上，我以色彩作為媒介，發展出以<span class="highlight">「生命之花」</span>與「力量動物」為核心的作品。</p>
-                    <p>將動物的訊息與祝福轉化為可視的象徵，成為人與動物、人與自己之間的橋樑。</p>
+                    <p>將動物的訊息與祝福轉化為可視的象徵 (Totem)，成為人與動物、人與自己之間的橋樑。</p>
                 </div>
             </div>
         </section>
@@ -329,7 +345,7 @@
         <section class="section" id="alchemist">
             <div class="container">
                 <div class="text-panel">
-                    <h2 class="section-title">Blessings & Waves</h2>
+                    <h2 class="section-title">Deep Dive</h2>
                     <p>除了溝通與創作，我也透過 Podcast 分享經驗，並與力量動物合作製作<span class="highlight">「淨化祝福鹽」</span>，希望大家在祝福中一起越來越好。</p>
                     <p>因為熱愛潛水，海洋的寧靜與深邃也成為我內在探索的重要元素。</p>
                 </div>
@@ -363,7 +379,7 @@
 
     <script>
         // --- 1. Gallery Logic ---
-        const galleryImages = Array.from({length: 12}, (_, i) => `gallery_${i + 1}.webp`);
+        const galleryImages = Array.from({length: 19}, (_, i) => `gallery_${i + 1}.webp`);
         const galleryGrid = document.querySelector('.gallery-grid');
 
         galleryImages.forEach(img => {
@@ -398,36 +414,52 @@
         // --- 2. GSAP Content Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Animate text panels sliding in
-        gsap.utils.toArray('.text-panel').forEach(panel => {
-            gsap.to(panel, {
-                opacity: 1,
-                y: 0,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: panel,
-                    start: "top 80%",
-                    toggleActions: "play none none reverse"
+        // Animate text panels with SCRUB for smoother feel
+        gsap.utils.toArray('.text-panel').forEach((panel, i) => {
+            // Slide up and fade in
+            gsap.fromTo(panel,
+                { opacity: 0, y: 100, rotation: i % 2 === 0 ? -5 : 5 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    rotation: i % 2 === 0 ? 1 : -1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: panel,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1, // Smooth scrubbing
+                    }
                 }
-            });
+            );
+        });
+
+        // Background Parallax
+        // We can't move the canvas easily without artifacts, but we can move elements inside p5
+        // or just rely on the generative nature.
+
+        // Theme switching (Light -> Dark)
+        ScrollTrigger.create({
+            trigger: "#alchemist",
+            start: "top center",
+            onEnter: () => document.body.classList.add('dark-mode'),
+            onLeaveBack: () => document.body.classList.remove('dark-mode')
         });
 
         // --- 3. p5.js Background Visuals ---
 
         const s = (p) => {
             let canvas;
-            let sectionIndex = 0;
 
             // Generative Agents/Particles
             let agents = [];
             const numAgents = 50;
 
-            // Flower of Life config
-            let flowerSize = 0;
-            let targetFlowerSize = 0;
+            // Mandala Config
+            let mandalaAngle = 0;
 
-            // Wave config
-            let waveOffset = 0;
+            // Wave/Spirit Config
+            let noiseOffset = 0;
 
             p.setup = () => {
                 canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -438,9 +470,9 @@
                 for(let i=0; i<numAgents; i++) {
                     agents.push({
                         pos: p.createVector(p.random(p.width), p.random(p.height)),
-                        vel: p.createVector(p.random(-1,1), p.random(-1,1)),
-                        color: p.color(0),
-                        size: p.random(2, 5)
+                        vel: p.createVector(p.random(-0.5, 0.5), p.random(-0.5, 0.5)),
+                        size: p.random(2, 6),
+                        phase: p.random(p.TWO_PI)
                     });
                 }
             };
@@ -448,13 +480,9 @@
             p.draw = () => {
                 p.clear();
 
-                // Determine current section based on scroll
-                // We map ScrollTrigger progress to p5 states
-                // But simplified: check basic scroll position relative to window height
-                // Or better, let GSAP update a global 'scene' variable.
-
-                // Common style: Sketchy lines
-                p.strokeWeight(1.5);
+                // --- Scene Logic ---
+                // We'll blend visuals based on scroll, but for simplicity we switch functions
+                // The 'background' clear handles transparency to show CSS background color
 
                 if (sceneState.section === 'hero') {
                     drawHero(p);
@@ -465,11 +493,11 @@
                 } else if (sceneState.section === 'bridge') {
                     drawBridge(p);
                 } else if (sceneState.section === 'artist') {
-                    drawFlower(p);
+                    drawMandala(p);
                 } else if (sceneState.section === 'alchemist') {
-                    drawOcean(p);
+                    drawDeepOcean(p);
                 } else {
-                    drawAbstract(p);
+                    drawParticles(p);
                 }
             };
 
@@ -480,33 +508,42 @@
             // --- Visual Functions ---
 
             function drawHero(p) {
-                // Floating organic shapes (Blue/Teal)
+                // Organic flowing spirit lines
+                p.strokeWeight(1.5);
                 p.noFill();
-                p.stroke(52, 152, 219, 100); // Blue
-                let t = p.frameCount * 0.01;
 
+                let t = p.frameCount * 0.005;
+
+                // Blue Stream
+                p.stroke(52, 152, 219, 100);
                 p.beginShape();
-                for (let i = 0; i < p.width; i += 20) {
-                    let y = p.height/2 + p.sin(i * 0.01 + t) * 100 + p.sin(i*0.02 + t*2) * 50;
-                    p.vertex(i, y);
+                for (let x = 0; x < p.width; x += 10) {
+                    let n = p.noise(x * 0.002, t);
+                    let y = p.height * 0.5 + p.map(n, 0, 1, -200, 200);
+                    p.vertex(x, y);
                 }
                 p.endShape();
 
-                p.stroke(241, 196, 15, 100); // Gold
+                // Gold Stream
+                p.stroke(241, 196, 15, 80);
                 p.beginShape();
-                for (let i = 0; i < p.width; i += 20) {
-                    let y = p.height/2 + p.cos(i * 0.01 + t) * 100;
-                    p.vertex(i, y);
+                for (let x = 0; x < p.width; x += 15) {
+                    let n = p.noise(x * 0.003 + 100, t * 1.2);
+                    let y = p.height * 0.5 + p.map(n, 0, 1, -150, 150);
+                    p.vertex(x, y);
                 }
                 p.endShape();
+
+                drawParticles(p, 50); // Subtle particles
             }
 
             function drawLogic(p) {
-                // Rigid Grids transforming
-                p.stroke(44, 62, 80, 50); // Dark grey
-                let spacing = 40;
-                let offset = (p.frameCount % spacing);
+                // Rational Grid trying to contain organic forms
+                p.strokeWeight(1);
+                p.stroke(44, 62, 80, 40); // Dark grey
+                let spacing = 50;
 
+                // Draw Grid
                 for (let x = 0; x < p.width; x += spacing) {
                     p.line(x, 0, x, p.height);
                 }
@@ -514,125 +551,169 @@
                     p.line(0, y, p.width, y);
                 }
 
-                // Moving square highlights
-                p.fill(26, 188, 156, 100); // Teal
+                // Highlight active cells (Thinking process)
                 p.noStroke();
-                let rx = Math.floor(p.frameCount / 20) * spacing % p.width;
-                let ry = Math.floor(p.frameCount / 13) * spacing % p.height;
-                p.rect(rx, ry, spacing, spacing);
+                p.fill(52, 152, 219, 30); // Blue thoughts
+                let count = 5;
+                for(let i=0; i<count; i++) {
+                     let rx = Math.floor(p.noise(i, p.frameCount*0.01) * p.width / spacing) * spacing;
+                     let ry = Math.floor(p.noise(i+100, p.frameCount*0.01) * p.height / spacing) * spacing;
+                     p.rect(rx, ry, spacing, spacing);
+                }
             }
 
             function drawAwakening(p) {
-                // Chaos / Splash
-                // Logic grids breaking into particles
-                p.noStroke();
-
-                agents.forEach(a => {
-                    // Jittery movement
-                    a.pos.add(a.vel);
-                    if (a.pos.x < 0 || a.pos.x > p.width) a.vel.x *= -1;
-                    if (a.pos.y < 0 || a.pos.y > p.height) a.vel.y *= -1;
-
-                    p.fill(231, 76, 60, 150); // Coral Red (Visceral feeling)
-                    p.circle(a.pos.x, a.pos.y, a.size + p.sin(p.frameCount*0.1)*2);
-
-                    // Connect close agents
-                    agents.forEach(b => {
-                        let d = p.dist(a.pos.x, a.pos.y, b.pos.x, b.pos.y);
-                        if (d < 50) {
-                            p.stroke(231, 76, 60, 50);
-                            p.line(a.pos.x, a.pos.y, b.pos.x, b.pos.y);
-                            p.noStroke();
-                        }
-                    });
-                });
-            }
-
-            function drawBridge(p) {
-                // Sine waves (Right brain) mixing with Straight lines (Left brain)
-                p.stroke(52, 152, 219, 80);
+                // Chaos / Epiphany
+                p.translate(p.width/2, p.height/2);
                 let t = p.frameCount * 0.02;
 
-                // Left side: straight lines
-                for(let i=0; i<10; i++) {
-                    let y = p.map(i, 0, 10, p.height/3, p.height*0.6);
-                    p.line(0, y, p.width/2, y);
+                p.noFill();
+                p.strokeWeight(1.5);
+
+                // Radiation / Shockwaves
+                for(let i=0; i<8; i++) {
+                    p.stroke(231, 76, 60, 150 - i*15); // Coral
+                    let r = (t * 50 + i * 50) % (p.width * 0.6);
+                    p.circle(0, 0, r);
                 }
 
-                // Right side: waves
-                p.noFill();
+                // Random sparks
                 for(let i=0; i<10; i++) {
-                    let baseY = p.map(i, 0, 10, p.height/3, p.height*0.6);
-                    p.beginShape();
-                    for(let x = p.width/2; x < p.width; x+=10) {
-                        p.vertex(x, baseY + p.sin(x*0.02 + t)*20);
-                    }
-                    p.endShape();
-                }
-
-                // Connecting Circle
-                p.noFill();
-                p.stroke(241, 196, 15);
-                p.circle(p.width/2, p.height/2, 100 + p.sin(t)*10);
-            }
-
-            function drawFlower(p) {
-                // Recursive Circles (Flower of Life ish)
-                p.stroke(155, 89, 182, 60); // Purple
-                p.noFill();
-                p.translate(p.width/2, p.height/2);
-
-                let r = 200;
-                p.circle(0, 0, r*2);
-
-                for(let i=0; i<6; i++) {
-                    let angle = i * p.TWO_PI / 6;
-                    let x = p.cos(angle) * r;
-                    let y = p.sin(angle) * r;
-                    p.circle(x, y, r*2);
-
-                    // Inner layer
-                    if (p.frameCount % 2 === 0) { // Optimization
-                        for(let j=0; j<6; j++) {
-                            let a2 = j * p.TWO_PI / 6;
-                            p.circle(x + p.cos(a2)*r, y + p.sin(a2)*r, r*2);
-                        }
-                    }
+                    p.stroke(241, 196, 15, 200);
+                    let angle = p.random(p.TWO_PI);
+                    let dist = p.random(100, 300);
+                    let x = p.cos(angle) * dist;
+                    let y = p.sin(angle) * dist;
+                    p.point(x, y);
                 }
                 p.resetMatrix();
             }
 
-            function drawOcean(p) {
-                // Deep Blue Waves & Bubbles
-                p.background(52, 152, 219, 20); // Fade effect
-                p.noFill();
-                p.stroke(255, 255, 255, 100);
+            function drawBridge(p) {
+                // Merging Grid (Left) to Waves (Right)
+                p.strokeWeight(1);
 
-                // Vertical rising bubbles
+                for(let i=0; i<20; i++) {
+                    let y = p.map(i, 0, 20, p.height*0.2, p.height*0.8);
+                    p.beginShape();
+                    p.stroke(52, 152, 219, 60 + i*5);
+                    p.noFill();
+
+                    for(let x=0; x < p.width; x+=20) {
+                        // Blend factor: 0 at left, 1 at right
+                        let blend = p.map(x, 0, p.width, 0, 1);
+                        let wave = p.sin(x*0.05 + p.frameCount*0.05 + i) * 30 * blend;
+                        p.vertex(x, y + wave);
+                    }
+                    p.endShape();
+                }
+            }
+
+            function drawMandala(p) {
+                // GENERATIVE TOTEM (Mimicking the art style)
+                p.translate(p.width/2, p.height/2);
+
+                // Rotate slowly
+                mandalaAngle += 0.002;
+                p.rotate(mandalaAngle);
+
+                // Breathing scale
+                let scale = 1 + p.sin(p.frameCount * 0.02) * 0.05;
+                p.scale(scale);
+
+                // Layer 1: Center Blue Petals
+                p.stroke(52, 152, 219, 180); // Blue
+                p.strokeWeight(2);
+                p.noFill();
+                let petals = 8;
+                for (let i = 0; i < petals; i++) {
+                    p.push();
+                    p.rotate(i * p.TWO_PI / petals);
+                    p.beginShape();
+                    p.vertex(0, 0);
+                    p.bezierVertex(30, -30, 80, -30, 120, 0);
+                    p.bezierVertex(80, 30, 30, 30, 0, 0);
+                    p.endShape();
+
+                    // Inner detail
+                    p.strokeWeight(1);
+                    p.line(20, 0, 100, 0);
+                    p.pop();
+                }
+
+                // Layer 2: Gold/Brown Vines
+                p.stroke(180, 130, 50, 150); // Gold/Brown
+                p.strokeWeight(1.5);
+                for (let i = 0; i < petals; i++) {
+                    p.push();
+                    p.rotate((i + 0.5) * p.TWO_PI / petals);
+                    p.beginShape();
+                    p.vertex(50, 0);
+                    p.quadraticVertex(100, -40, 180, 0);
+                    p.quadraticVertex(100, 40, 50, 0);
+                    p.endShape();
+                    p.pop();
+                }
+
+                // Layer 3: Coral Accents
+                p.fill(231, 76, 60, 200);
+                p.noStroke();
+                for (let i = 0; i < petals; i++) {
+                    p.push();
+                    p.rotate(i * p.TWO_PI / petals);
+                    p.translate(140, 0);
+                    p.circle(0, 0, 10);
+                    p.pop();
+                }
+
+                p.resetMatrix();
+            }
+
+            function drawDeepOcean(p) {
+                // Dark background handled by CSS body.dark-mode
+                // Here we draw bioluminescent life
+
+                // Rising particles (Bubbles/Life)
+                p.noStroke();
                 agents.forEach(a => {
-                    a.pos.y -= a.speed * 2 || 1;
-                    if(a.pos.y < 0) a.pos.y = p.height;
+                    a.pos.y -= 1;
+                    if(a.pos.y < 0) {
+                        a.pos.y = p.height;
+                        a.pos.x = p.random(p.width);
+                    }
+
+                    // Glowing effect
+                    p.fill(26, 188, 156, 100); // Teal glow
+                    p.circle(a.pos.x, a.pos.y, a.size * 2);
+
+                    p.fill(255, 255, 255, 200); // White core
                     p.circle(a.pos.x, a.pos.y, a.size);
                 });
 
-                // Sine layers
+                // Deep currents
+                p.noFill();
+                p.strokeWeight(2);
+                p.stroke(255, 255, 255, 30);
+
+                let t = p.frameCount * 0.01;
                 for(let i=0; i<5; i++) {
-                    p.stroke(255, 255, 255, 50 - i*10);
                     p.beginShape();
-                    for(let x=0; x<p.width; x+=20) {
-                        let y = p.height - (i*50) + p.sin(x*0.01 + p.frameCount*0.02 + i)*50;
+                    for(let x=0; x<=p.width; x+=50) {
+                        let y = p.height - (i * 100) + p.sin(x*0.01 + t + i)*50;
                         p.vertex(x, y);
                     }
                     p.endShape();
                 }
             }
 
-            function drawAbstract(p) {
-                // Calm particles
-                p.fill(44, 62, 80, 50);
+            function drawParticles(p, alpha=50) {
+                p.fill(44, 62, 80, alpha);
                 p.noStroke();
                 agents.forEach(a => {
-                    p.circle(a.pos.x, a.pos.y, a.size);
+                    // Slight wiggle
+                    let x = a.pos.x + p.sin(p.frameCount*0.05 + a.phase)*10;
+                    let y = a.pos.y + p.cos(p.frameCount*0.05 + a.phase)*10;
+                    p.circle(x, y, a.size);
                 });
             }
 
@@ -650,8 +731,8 @@
         sections.forEach(id => {
             ScrollTrigger.create({
                 trigger: `#${id}`,
-                start: "top center",
-                end: "bottom center",
+                start: "top 60%", // Trigger earlier
+                end: "bottom 60%",
                 onEnter: () => sceneState.section = id,
                 onEnterBack: () => sceneState.section = id
             });
