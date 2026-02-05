@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuzi | Solar Velocity</title>
+    <meta name="description" content="柚子 Yuzi - Solar Explorer. A journey through space, nature, and connection.">
+    <meta property="og:image" content="/assets/img/guild/yuzi/gallery_3.webp">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,600;0,800;1,800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-solar: #FFDD00;
+            --c-flash: #FFFFFF;
+            --c-dark: #050505;
+            --c-energy: #FF4D00;
+            --c-glass: rgba(5, 5, 5, 0.85);
+        }
+
+        /* Optimization: Apply cursor: none only to body, not globally */
+        body {
+            margin: 0; padding: 0; box-sizing: border-box;
+            background-color: var(--c-dark);
+            color: var(--c-flash);
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            overflow-x: hidden;
+            width: 100vw;
+            cursor: none;
+        }
+
+        * { box-sizing: border-box; }
+
+        /* --- Cursor --- */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
+            background: var(--c-solar); border-radius: 50%;
+            pointer-events: none; z-index: 10000;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s, background 0.2s;
+        }
+        #cursor.hover { width: 80px; height: 80px; opacity: 0.8; background: #fff; mix-blend-mode: normal; }
+        #cursor.hover::after {
+            content: 'VIEW';
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #000; font-family: 'Kanit'; font-weight: 800; font-size: 12px;
+        }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+
+        /* --- Scroll Spacer --- */
+        #scroll-spacer {
+            height: 550vh;
+            width: 100%; position: relative;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* --- UI Overlay --- */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        /* Brand Mark (Logo) */
+        .brand-mark {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            display: flex; align-items: center; gap: 10px;
+            pointer-events: auto; mix-blend-mode: difference;
+            text-decoration: none;
+            cursor: none; /* Restore custom cursor logic */
+        }
+        .mark-symbol {
+            width: 40px; height: 40px; border: 2px solid var(--c-solar);
+            display: grid; place-items: center;
+            font-family: 'Kanit'; font-weight: 800; font-size: 1.2rem; color: var(--c-solar);
+            transform: rotate(45deg);
+        }
+        .mark-symbol span { transform: rotate(-45deg); }
+        .mark-text {
+            font-family: 'Kanit'; font-weight: 700; font-size: 1rem; letter-spacing: 0.1em;
+            color: var(--c-solar); display: flex; flex-direction: column; line-height: 1;
+        }
+        .mark-text span { font-size: 0.7rem; opacity: 0.7; font-weight: 400; }
+
+        /* Typography & Layout */
+        .hero-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; width: 100%;
+        }
+
+        .big-text {
+            font-family: 'Kanit', sans-serif;
+            font-weight: 800;
+            font-style: italic;
+            text-transform: uppercase;
+            font-size: clamp(4rem, 15vw, 12rem);
+            line-height: 0.85;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--c-solar);
+            position: relative;
+            z-index: 2;
+            white-space: nowrap;
+        }
+        .big-text.fill { color: var(--c-solar); -webkit-text-stroke: 0; text-shadow: 0 0 40px var(--c-solar); }
+        .sub-hero {
+            font-family: 'Kanit'; letter-spacing: 0.5em; margin-top: 2rem; font-size: 1.2rem;
+            color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        /* --- Content Panels (Text + Image) --- */
+        .content-panel {
+            position: absolute;
+            top: 50%; left: 0; width: 100%;
+            transform: translateY(-50%);
+            display: flex; justify-content: center; align-items: center;
+            gap: 4rem;
+            pointer-events: none;
+            padding: 0 5%;
+        }
+
+        /* Text Card */
+        .text-card {
+            background: var(--c-glass);
+            border: 1px solid var(--c-solar);
+            border-left: 5px solid var(--c-solar);
+            padding: 2rem;
+            width: 100%; max-width: 450px; /* Responsive width */
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(255, 221, 0, 0.1);
+            position: relative; z-index: 2;
+            pointer-events: auto;
+        }
+
+        /* Image Card */
+        .image-card {
+            width: 100%; max-width: 400px; height: 500px; /* Responsive width */
+            position: relative; z-index: 1;
+            border: 1px solid rgba(255, 221, 0, 0.5);
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+        .image-card img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(20%) contrast(110%);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .image-card::after {
+            content: ''; position: absolute; top: -5px; right: -5px;
+            width: 20px; height: 20px;
+            border-top: 2px solid var(--c-solar); border-right: 2px solid var(--c-solar);
+        }
+        .image-card::before {
+            content: ''; position: absolute; bottom: -5px; left: -5px;
+            width: 20px; height: 20px;
+            border-bottom: 2px solid var(--c-solar); border-left: 2px solid var(--c-solar);
+        }
+
+        /* Layout Variations */
+        .panel-left { flex-direction: row; }
+        .panel-right { flex-direction: row-reverse; }
+        .panel-center { flex-direction: column; text-align: center; gap: 2rem; }
+
+        .text-card h3 {
+            font-family: 'Kanit', sans-serif;
+            font-size: 2rem; color: var(--c-solar); margin-bottom: 1rem;
+            text-transform: uppercase; font-style: italic;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 0.5rem;
+            display: flex; justify-content: space-between;
+        }
+        .text-card h3 span { font-size: 0.9rem; opacity: 0.7; font-style: normal; align-self: center; font-weight: 400; }
+
+        .text-card p {
+            font-size: 1.05rem; line-height: 1.6; color: #eee; margin-bottom: 0.8rem;
+        }
+        .highlight { color: var(--c-solar); font-weight: 700; background: rgba(255,221,0,0.1); padding: 0 5px; }
+
+        .data-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1.2rem;
+            font-family: 'Kanit', sans-serif; color: #aaa; font-size: 0.85rem;
+        }
+        .data-item strong { color: #fff; display: block; font-size: 1rem; }
+
+        /* Floating Icons Container */
+        .icon-cloud {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
+            perspective: 1000px;
+        }
+        .floating-icon {
+            position: absolute; font-size: 3rem; color: var(--c-solar);
+            text-shadow: 0 0 10px rgba(255, 221, 0, 0.3);
+            opacity: 0;
+        }
+
+        /* HUD Elements */
+        .hud-line {
+            position: fixed; background: var(--c-solar); opacity: 0.2; pointer-events: none;
+        }
+        .hud-v { width: 1px; height: 100vh; left: 6%; top: 0; }
+        .hud-h { width: 100vw; height: 1px; top: 92%; left: 0; }
+        .hud-corner {
+            position: fixed; bottom: 2rem; right: 2rem;
+            font-family: 'Kanit'; font-size: 4rem; color: rgba(255,255,255,0.1);
+            font-weight: 800; pointer-events: none;
+        }
+
+        /* Finale */
+        #finale {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-solar); z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            clip-path: circle(0% at 50% 50%);
+            transition: clip-path 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+            pointer-events: auto; text-align: center;
+            color: #000;
+        }
+        #finale.active { clip-path: circle(150% at 50% 50%); }
+
+        .finale-avatar {
+            width: 220px; height: 220px; border-radius: 50%;
+            border: 8px solid #000;
+            object-fit: cover; margin-bottom: 2rem;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+        }
+        .socials { display: flex; gap: 2rem; font-size: 3.5rem; margin-top: 2rem; }
+        .socials a { color: #000; transition: all 0.2s; display: block; }
+        .socials a:hover { transform: scale(1.2) rotate(-10deg); color: #fff; }
+
+        @media (max-width: 900px) {
+            .content-panel { flex-direction: column !important; gap: 1rem; top: 55%; padding: 0 1rem; }
+            .text-card { width: 100%; max-width: 100%; padding: 1.5rem; }
+            .image-card { width: 100%; max-width: 100%; height: 60vw; max-height: 400px; order: -1; } /* Adaptive height */
+            .big-text { font-size: 15vw; }
+            .brand-mark { top: 1rem; left: 1rem; }
+            .hud-v { left: 0; }
+            .floating-icon { font-size: 2rem; }
+            .text-card h3 { font-size: 1.5rem; flex-direction: column; gap: 0.2rem; align-items: flex-start; }
+            .text-card h3 span { align-self: flex-start; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="cursor"></div>
+    <div id="webgl-container"></div>
+    <div id="scroll-spacer"></div>
+
+    <a href="/guild/" class="brand-mark">
+        <div class="mark-symbol"><span>Y</span></div>
+        <div class="mark-text">
+            YUZI
+            <span>SOLAR EXPLORER</span>
+        </div>
+    </a>
+
+    <div class="hud-line hud-v"></div>
+    <div class="hud-line hud-h"></div>
+    <div class="hud-corner">07</div>
+
+    <div class="icon-cloud" id="icon-cloud">
+        <!-- Icons populated by JS -->
+    </div>
+
+    <!-- Content Overlays controlled by GSAP -->
+    <div class="overlay">
+        <!-- Hero -->
+        <div id="hero-text" class="hero-container">
+            <div class="big-text">SOLAR</div>
+            <div class="big-text fill">VELOCITY</div>
+            <div class="sub-hero">EXPLORER CLASS // YUZI</div>
+        </div>
+
+        <!-- 1. Profile Data (LEFT Text, RIGHT Image) -->
+        <div id="panel-origin" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 01 PROFILE <span>DATA LOG</span></h3>
+                <div class="data-grid">
+                    <div class="data-item"><strong>NAME</strong>柚子 (謝沅佑)</div>
+                    <div class="data-item"><strong>TYPE</strong>ENFP | 牡羊座</div>
+                    <div class="data-item"><strong>AGE</strong>28 → 29</div>
+                    <div class="data-item"><strong>SPECS</strong>180cm / 65kg</div>
+                    <div class="data-item"><strong>BASE</strong>雙北 / 淡水</div>
+                    <div class="data-item"><strong>ENERGY</strong>Husky Mode 🐕</div>
+                </div>
+                <p>我是柚子，一個熱愛探索外在世界，也深潛內在宇宙的人。</p>
+                <p>畢業於<span class="highlight">輔仁大學景觀設計</span>，我不只設計環境，更在乎人與空間的連結。從園丁到社群引導者，我的職涯路徑雖然任性，但目標一致：<br><strong>創造安全、被接納的連結。</strong></p>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_1.webp" alt="Yuzi Profile" loading="eager">
+            </div>
+        </div>
+
+        <!-- 2. Trajectory (RIGHT Text, LEFT Image) -->
+        <div id="panel-path" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 02 TRAJECTORY <span>CAREER PATH</span></h3>
+                <p>我喜歡陪伴正在成形中的東西：一個空間、一個團隊、一段關係。</p>
+                <ul style="list-style: none; line-height: 2; margin-top: 1rem; font-family: 'Kanit';">
+                    <li><i class="fa-solid fa-seedling" style="color:var(--c-solar); width:20px;"></i> 台北花卉村園丁 | 理解生長節奏</li>
+                    <li><i class="fa-solid fa-cube" style="color:var(--c-solar); width:20px;"></i> 兒童程式學苑區主任 | 結構化流程</li>
+                    <li><i class="fa-solid fa-people-group" style="color:var(--c-solar); width:20px;"></i> 共識營主持 / 培訓經理 | 建立信任場域</li>
+                </ul>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_5.webp" alt="Yuzi Work" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 3. Capabilities (LEFT Text, RIGHT Image) NEW SECTION -->
+        <div id="panel-capabilities" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 03 CAPABILITIES <span>SERVICE PROTOCOLS</span></h3>
+                <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                    <div>
+                        <strong style="color:var(--c-solar); display:block; margin-bottom:0.2rem; font-family:'Kanit';">SPACE & ATMOSPHERE</strong>
+                        <span style="font-size: 0.95rem; color:#ddd; line-height: 1.4; display: block;">建立信任場域，創造安全、被接納的連結與氛圍。</span>
+                    </div>
+                    <div>
+                        <strong style="color:var(--c-solar); display:block; margin-bottom:0.2rem; font-family:'Kanit';">FACILITATION</strong>
+                        <span style="font-size: 0.95rem; color:#ddd; line-height: 1.4; display: block;">社群活動設計、共識營主持、結構化流程引導。</span>
+                    </div>
+                    <div>
+                        <strong style="color:var(--c-solar); display:block; margin-bottom:0.2rem; font-family:'Kanit';">CONSULTATION</strong>
+                        <span style="font-size: 0.95rem; color:#ddd; line-height: 1.4; display: block;">深度對話與陪伴，傾聽並轉譯感受，陪你走過卡關時刻。</span>
+                    </div>
+                </div>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_4.webp" alt="Yuzi Services" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 4. Vitality (RIGHT Text, LEFT Image) was 03 -->
+        <div id="panel-vitality" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 04 VITALITY <span>HUSKY ENERGY</span></h3>
+                <p>身體派的孩子，聽說個性像<span class="highlight">哈士奇</span>。</p>
+                <p>喜歡讓身體感受山海風日。旅行不是逃離，而是回到自己。</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem;">
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏐 排球</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🥁 爵士鼓</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏃 長跑</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🤿 潛水</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏔️ 登山</span>
+                </div>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_7.webp" alt="Yuzi Sports" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 5. Connection (LEFT Text, RIGHT Image) was 04 -->
+        <div id="panel-connect" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 05 CONNECTION <span>RELATIONAL SYNC</span></h3>
+                <p><strong>關係觀：</strong>重視誠實、界線與彼此是否被好好對待。</p>
+                <p>我喜歡建立關係的過程，而非急著定義形式。能享受溫柔的靠近，也理解快速而強烈的連結。</p>
+                <p><i class="fa-solid fa-mobile-screen" style="color:var(--c-solar);"></i> 偶爾通話，勝過大量文字。不需秒回，但希望不消失。</p>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_6.webp" alt="Yuzi Connection" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 6. Resonance (RIGHT Text, LEFT Image) was 05 -->
+        <div id="panel-resonance" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 06 RESONANCE <span>TARGET LOCK</span></h3>
+                <p>我容易和這樣的人產生連結：<br>
+                有情緒感受力，願意自我覺察與表達；對世界有好奇心，能聊感受也能聊想法。</p>
+                <div style="margin-top: 1rem; padding: 10px; border: 1px dashed var(--c-solar);">
+                    <strong>IDEAL DATE:</strong><br>
+                    散步、聊天、親近自然。<br>
+                    或者在同一個空間，各做各的事——重點是陪伴感。
+                </div>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_2.webp" alt="Yuzi Chill" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 7. Core (CENTER Text, No Image) was 06 -->
+        <div id="panel-core" class="content-panel panel-center">
+            <div class="text-card" style="width: 100%; max-width: 700px;">
+                <h3>// 07 CORE VALUE <span>PHILOSOPHY</span></h3>
+                <p style="font-size: 1.3rem; color: #fff;"><strong>「多重伴侶關係實踐者」</strong></p>
+                <p>愛有很多樣貌，核心是誠實、尊重與陪伴。</p>
+                <p>我不急著定義形式，只在乎創造有意義的連結。<br>希望能成為你生命中的陪伴者與創造者。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finale Screen -->
+    <div id="finale">
+        <img src="/assets/img/guild/yuzi/gallery_3.webp" class="finale-avatar" loading="lazy">
+        <h2 style="font-family: 'Kanit'; font-size: clamp(3rem, 8vw, 6rem); color: #000; line-height: 0.9; margin-bottom: 1rem;">LET'S CONNECT</h2>
+        <p style="font-size: 1.5rem; color: #000; font-weight: 700; margin-bottom: 0.5rem;">能深聊、能玩、也能一起安靜</p>
+        <p style="color: #444;">也許，我們會相處得不錯。</p>
+
+        <div class="socials">
+            <a href="https://www.threads.net/@rbt330" target="_blank"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/rbt330/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+        <button onclick="document.getElementById('finale').classList.remove('active')" style="margin-top: 3rem; background: #000; border: none; padding: 1rem 2rem; color: #FFDD00; font-family: 'Kanit'; font-weight: 800; font-size: 1.2rem; cursor: none; transition: transform 0.2s;">
+            RE-ENGAGE SYSTEM
+        </button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup (Optimization: Mobile Check) ---
+        const isMobile = window.innerWidth < 900;
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        // Optimization: Cap pixel ratio on mobile
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Scene Objects ---
+        const worldGroup = new THREE.Group();
+        scene.add(worldGroup);
+
+        // 1. Hyper-Speed Particles (Optimization: Reduce count on mobile)
+        const pGeo = new THREE.BufferGeometry();
+        const pCount = isMobile ? 800 : 2000;
+        const pPos = new Float32Array(pCount * 3);
+        const pCol = new Float32Array(pCount * 3);
+
+        for(let i=0; i<pCount; i++) {
+            const r = 5 + Math.random() * 40;
+            const theta = Math.random() * Math.PI * 2;
+            const z = (Math.random() - 0.5) * 400;
+
+            pPos[i*3] = Math.cos(theta) * r;
+            pPos[i*3+1] = Math.sin(theta) * r;
+            pPos[i*3+2] = z;
+
+            const seed = Math.random();
+            if(seed > 0.6) { // Yellow
+                pCol[i*3] = 1.0; pCol[i*3+1] = 0.86; pCol[i*3+2] = 0.0;
+            } else if (seed > 0.3) { // White
+                pCol[i*3] = 1.0; pCol[i*3+1] = 1.0; pCol[i*3+2] = 1.0;
+            } else { // Orange tint
+                pCol[i*3] = 1.0; pCol[i*3+1] = 0.5; pCol[i*3+2] = 0.0;
+            }
+        }
+
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+
+        const pMat = new THREE.PointsMaterial({
+            size: 0.15, vertexColors: true, transparent: true, opacity: 0.9,
+            blending: THREE.AdditiveBlending
+        });
+        const particles = new THREE.Points(pGeo, pMat);
+        worldGroup.add(particles);
+
+        // 2. DOM Icons Setup (Reduced Count)
+        const iconContainer = document.getElementById('icon-cloud');
+        const icons = [
+            'fa-solid fa-volleyball',
+            'fa-solid fa-drum',
+            'fa-solid fa-dog',
+            'fa-solid fa-leaf',
+            'fa-solid fa-water',
+            'fa-solid fa-bolt',
+            'fa-solid fa-mountain'
+        ];
+
+        // Optimization: Reduce icon count on mobile
+        const iconLimit = isMobile ? 6 : 12;
+        for(let i=0; i<iconLimit; i++) {
+            const iconClass = icons[Math.floor(Math.random() * icons.length)];
+            const el = document.createElement('i');
+            el.className = `floating-icon ${iconClass}`;
+
+            // Random initial placement
+            const left = Math.random() * 100;
+            const top = Math.random() * 100;
+            el.style.left = `${left}%`;
+            el.style.top = `${top}%`;
+
+            // Random scale
+            const scale = 0.5 + Math.random() * 1.5;
+            el.style.transform = `scale(${scale})`;
+
+            // Subtle opacity
+            el.style.opacity = 0;
+
+            iconContainer.appendChild(el);
+
+            // Animate
+            gsap.to(el, {
+                opacity: 0.4, // Lower max opacity
+                y: -100 - Math.random() * 200,
+                duration: 8 + Math.random() * 10, // Slower
+                repeat: -1,
+                ease: "none",
+                delay: Math.random() * 5
+            });
+            gsap.to(el, {
+                x: (Math.random() - 0.5) * 50,
+                duration: 5 + Math.random() * 5,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+        }
+
+        // 3. Central Core
+        // Optimization: Wrap in container for GSAP scaling
+        const coreContainer = new THREE.Group();
+        coreContainer.position.z = -550; // Further back
+        coreContainer.scale.set(5, 5, 5);
+        worldGroup.add(coreContainer);
+
+        // Use a separate group for the pulse animation to avoid fighting GSAP
+        const pulsingCore = new THREE.Group();
+        coreContainer.add(pulsingCore);
+
+        // Inner Star
+        const innerGeo = new THREE.IcosahedronGeometry(2, 0);
+        const innerMat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, wireframe: true, wireframeLinewidth: 2 });
+        const innerStar = new THREE.Mesh(innerGeo, innerMat);
+        pulsingCore.add(innerStar);
+
+        // Rings
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.5 });
+        const ring1 = new THREE.Mesh(new THREE.TorusGeometry(3.5, 0.1, 16, 100), ringMat);
+        pulsingCore.add(ring1);
+
+        const ring2 = new THREE.Mesh(new THREE.TorusGeometry(5, 0.15, 16, 100), ringMat);
+        ring2.rotation.x = Math.PI / 2;
+        pulsingCore.add(ring2);
+
+        const ring3Mat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.3 });
+        const ring3 = new THREE.Mesh(new THREE.TorusGeometry(7, 0.05, 16, 100), ring3Mat);
+        ring3.rotation.y = Math.PI / 4;
+        pulsingCore.add(ring3);
+
+        // --- GSAP Logic ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        const totalScrollZ = 450;
+
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "#scroll-spacer",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.1
+            }
+        });
+
+        // Camera Move
+        tl.to(camera.position, { z: -totalScrollZ, ease: "none" });
+        tl.to(camera.rotation, { z: Math.PI, ease: "none" }, "<");
+
+        // Effects
+        tl.to(particles.scale, { z: 5, ease: "power2.in" }, 0);
+        tl.to(particles.scale, { z: 1, ease: "power2.out" }, 0.9);
+
+        // Optimization: Animate the container, not the pulsing group
+        tl.to(coreContainer.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
+        tl.to(coreContainer.rotation, { y: 10, x: 5 }, 0);
+
+        // Reveals - Updated for 7 Panels
+        // Range: ~5% to ~90%
+        function revealPanel(id, startPct, endPct, doFadeOut = true) {
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "#scroll-spacer",
+                    start: startPct + "% top",
+                    end: endPct + "% top",
+                    scrub: 1
+                }
+            });
+
+            // Fade In + Slide In (Text and Image converge)
+            const textCard = document.querySelector(`${id} .text-card`);
+            const imageCard = document.querySelector(`${id} .image-card`);
+
+            // Set initial transforms before animation
+            if (textCard) gsap.set(textCard, { x: -50, opacity: 0 });
+            if (imageCard) gsap.set(imageCard, { x: 50, opacity: 0 });
+
+            // If panel is reversed (image left, text right), swap transforms
+            if (document.querySelector(id).classList.contains('panel-right')) {
+                 if (textCard) gsap.set(textCard, { x: 50 });
+                 if (imageCard) gsap.set(imageCard, { x: -50 });
+            }
+
+            tl.to([textCard, imageCard], {
+                x: 0, opacity: 1, duration: 1, ease: "power2.out"
+            });
+
+            if (doFadeOut) {
+                tl.to([textCard, imageCard], {
+                    opacity: 0, y: -50, filter: "blur(10px)", duration: 1, ease: "power2.in"
+                }, ">1.5"); // Short hold
+            }
+        }
+
+        gsap.to("#hero-text", {
+            opacity: 0, scale: 1.5, filter: "blur(20px)",
+            scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "8% top", scrub: true }
+        });
+
+        // SEQUENCE
+        revealPanel("#panel-origin", 5, 16);
+        revealPanel("#panel-path", 16, 27);
+        revealPanel("#panel-capabilities", 27, 38);
+        revealPanel("#panel-vitality", 38, 49);
+        revealPanel("#panel-connect", 49, 60);
+        revealPanel("#panel-resonance", 60, 71);
+        // Panel 07: Fade In from 75-85, then STAY visible.
+        // Gap from 85-99.5 ensures it is clearly readable before Finale.
+        revealPanel("#panel-core", 75, 85, false);
+
+        // Finale
+        ScrollTrigger.create({
+            trigger: "#scroll-spacer",
+            start: "99.5% bottom",
+            onEnter: () => document.getElementById('finale').classList.add('active'),
+            onLeaveBack: () => document.getElementById('finale').classList.remove('active')
+        });
+
+        // --- Animation Loop (Optimization: Use GSAP Ticker) ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const t = clock.getElapsedTime();
+
+            worldGroup.rotation.z = t * 0.05;
+
+            // Core
+            innerStar.rotation.y = t;
+            innerStar.rotation.z = t * 0.5;
+            ring1.rotation.x = t * 0.8;
+            ring1.rotation.y = t * 0.2;
+            ring2.rotation.y = t * 0.6;
+            ring3.rotation.z = t * 0.3;
+
+            // Pulse (Optimization: Clean separation of concerns)
+            // Animate only the pulsingCore group, relative to its parent
+            const pulse = 1 + Math.sin(t * 8) * 0.1;
+            pulsingCore.scale.set(pulse, pulse, pulse);
+
+            renderer.render(scene, camera);
+        }
+        // Optimization: Use gsap.ticker for better battery life and sync
+        gsap.ticker.add(animate);
+
+        // --- Interactions ---
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+        });
+        document.querySelectorAll('a, button, .text-card, .image-card, .finale-avatar').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+
+    </script>
+</body>
+</html>
