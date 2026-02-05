@@ -80,7 +80,7 @@
         /* --- Rider Overlay --- */
         #rider-container {
             position: fixed;
-            top: 20%;
+            top: 15%; /* Start higher */
             left: 50%;
             transform: translateX(-50%);
             z-index: 5; /* Below content but above canvas */
@@ -92,6 +92,7 @@
             padding: 10px;
             border-radius: 50%;
             border: 2px solid var(--accent-orange);
+            will-change: transform;
         }
 
         #route-line {
@@ -452,13 +453,15 @@
         });
 
         // 2. Move Rider Downwards (Along the line)
+        // Animate Y transform instead of 'top' for performance
+        // Distance approx 65vh (from 15% to 80%)
         gsap.to(riderIcon, {
-            top: "80%", // Move from top 20% to bottom 80%
+            y: window.innerHeight * 0.65,
             scrollTrigger: {
-                trigger: "#scroll-spacer",
+                trigger: "#scroll-spacer", // Use the explicit spacer
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 0.1
+                scrub: 0.5
             }
         });
 
