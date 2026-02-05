@@ -460,10 +460,10 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         // --- LIGHTS ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Reduced slightly to allow specular pop
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased for shine
         dirLight.position.set(0, 50, 20);
         scene.add(dirLight);
 
@@ -539,7 +539,7 @@
             // Base
             const baseGeom = new THREE.BoxGeometry(4, 3, 3);
             const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
-            const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, side: THREE.DoubleSide });
 
             const base = new THREE.Mesh(baseGeom, woodMat);
             base.position.y = 1.5;
@@ -580,19 +580,19 @@
         const treasureTypes = [
             { // Coin
                 geom: new THREE.CylinderGeometry(0.5, 0.5, 0.1, 20),
-                mat: new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1, roughness: 0.2 })
+                mat: new THREE.MeshPhongMaterial({ color: 0xffd700, specular: 0xffdd00, shininess: 80 })
             },
             { // Gem (Ruby)
                 geom: new THREE.OctahedronGeometry(0.6),
-                mat: new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.9 })
+                mat: new THREE.MeshPhongMaterial({ color: 0xff0055, specular: 0xffaaaa, shininess: 100, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
             },
             { // Pearl
                 geom: new THREE.SphereGeometry(0.5, 32, 32),
-                mat: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.1, emissive: 0x222222 })
+                mat: new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0xaaaaaa, shininess: 50 })
             },
             { // Crystal (Sapphire)
                 geom: new THREE.ConeGeometry(0.3, 1, 6),
-                mat: new THREE.MeshStandardMaterial({ color: 0x00f3ff, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.8 })
+                mat: new THREE.MeshPhongMaterial({ color: 0x00f3ff, specular: 0xccffff, shininess: 100, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
             }
         ];
 
