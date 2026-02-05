@@ -376,6 +376,11 @@
         <span style="font-size: 4rem; filter: drop-shadow(0 0 10px var(--c-accent));">🧜‍♀️</span>
     </div>
 
+    <!-- Treasure Chest (DOM) -->
+    <div id="treasure-chest" style="position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); font-size: 8rem; cursor: pointer; z-index: 50; transition: transform 0.3s; filter: drop-shadow(0 0 20px #000);">
+        🧳
+    </div>
+
     <!-- Social Icons Container (Pop from Chest) -->
     <div id="chest-socials" class="chest-social-icons">
         <a href="https://www.threads.net/@liloyee_0224" target="_blank" class="chest-btn"><i class="fa-brands fa-threads"></i></a>
@@ -539,91 +544,8 @@
         sandMesh.position.y = sandY;
         scene.add(sandMesh);
 
-        // --- TREASURE CHEST ---
-        let chestGroup, chestLid;
+        // --- TREASURE CHEST INTERACTION ---
         let isChestOpen = false;
-
-        function createTreasureChest() {
-            chestGroup = new THREE.Group();
-
-            // Materials
-            const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
-            const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, side: THREE.DoubleSide });
-            const ironMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7, metalness: 0.6 });
-
-            // --- Base ---
-            const baseGeom = new THREE.BoxGeometry(4, 3, 3);
-            const base = new THREE.Mesh(baseGeom, woodMat);
-            base.position.y = 1.5;
-            chestGroup.add(base);
-
-            // Base Straps (Vertical)
-            const strapV = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.05, 3.05), ironMat);
-            strapV.position.set(1.2, 1.5, 0);
-            chestGroup.add(strapV);
-
-            const strapV2 = strapV.clone();
-            strapV2.position.set(-1.2, 1.5, 0);
-            chestGroup.add(strapV2);
-
-            // --- Lid ---
-            chestLid = new THREE.Group();
-            // Pivot at the top-back edge of the base
-            // Base is 3 deep (Z: -1.5 to 1.5) and 3 high (Y: 0 to 3).
-            // So top-back edge is Y=3, Z=-1.5.
-            chestLid.position.set(0, 3, -1.5);
-
-            // Lid Shape: Half Cylinder (Arch)
-            const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, true, 0, Math.PI);
-            // Rotate to horizontal X axis
-            lidGeom.rotateZ(Math.PI / 2);
-            // Rotate to face arch UP
-            lidGeom.rotateX(-Math.PI / 2);
-
-            const lidMesh = new THREE.Mesh(lidGeom, woodMat);
-            // Offset Z by radius so the back edge aligns with pivot (0,0,0)
-            lidMesh.position.set(0, 0, 1.5);
-            chestLid.add(lidMesh);
-
-            // Side Caps (Circles)
-            const capGeom = new THREE.CircleGeometry(1.5, 32, 0, Math.PI);
-            capGeom.rotateZ(-Math.PI/2);
-            capGeom.rotateX(-Math.PI/2);
-
-            const cap1 = new THREE.Mesh(capGeom, woodMat);
-            cap1.position.set(2, 0, 1.5);
-            chestLid.add(cap1);
-
-            const cap2 = new THREE.Mesh(capGeom, woodMat);
-            cap2.position.set(-2, 0, 1.5);
-            cap2.rotateY(Math.PI); // Flip for other side
-            chestLid.add(cap2);
-
-            // Lid Straps (Arches)
-            const strapLidGeom = new THREE.CylinderGeometry(1.52, 1.52, 0.3, 32, 1, true, 0, Math.PI);
-            strapLidGeom.rotateZ(Math.PI / 2);
-            strapLidGeom.rotateX(-Math.PI / 2);
-
-            const strapL1 = new THREE.Mesh(strapLidGeom, ironMat);
-            strapL1.position.set(1.2, 0, 1.5);
-            chestLid.add(strapL1);
-
-            const strapL2 = strapL1.clone();
-            strapL2.position.set(-1.2, 0, 1.5);
-            chestLid.add(strapL2);
-
-            // Lock
-            const lockGeom = new THREE.BoxGeometry(0.6, 0.8, 0.2);
-            const lock = new THREE.Mesh(lockGeom, goldMat);
-            // Hanging on the front face of lid
-            lock.position.set(0, -0.2, 3.0);
-            chestLid.add(lock);
-
-            chestGroup.add(chestLid);
-            chestGroup.position.set(0, sandY + 2, -5);
-            scene.add(chestGroup);
-        }
-        createTreasureChest();
 
         // --- TREASURES (Updated Geometry) ---
         const treasures = [];
@@ -877,31 +799,19 @@
         }
 
         // --- INTERACTION: CHEST CLICK ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (event) => {
-            // Check interaction with chest
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(chestGroup.children, true);
-
-            if (intersects.length > 0) {
-                toggleChest();
-            }
-        });
+        const chestEl = document.getElementById('treasure-chest');
+        chestEl.addEventListener('click', toggleChest);
 
         function toggleChest() {
             isChestOpen = !isChestOpen;
             const icons = document.getElementById('chest-socials');
 
             if(isChestOpen) {
-                // Open Lid
-                gsap.to(chestLid.rotation, { x: -2.5, duration: 1.5, ease: "power2.out" });
+                // Open Animation (Shake/Scale)
+                gsap.to(chestEl, { scale: 1.2, rotation: 10, yoyo: true, repeat: 1, duration: 0.2 });
+                chestEl.innerText = '💎'; // Change content on open
 
-                // Light Burst (Clamped intensity to prevent washing out/darkening artifacts)
+                // Light Burst
                 const burstColor = new THREE.Color('#ffdd00');
                 gsap.to(pileLight, { intensity: 3, duration: 0.5, yoyo: true, repeat: 1 });
                 gsap.to(pileLight.color, {
@@ -917,8 +827,9 @@
                 icons.classList.add('active');
 
             } else {
-                // Close Lid
-                gsap.to(chestLid.rotation, { x: 0, duration: 0.5, ease: "power2.in" });
+                // Close
+                gsap.to(chestEl, { scale: 1, rotation: 0, duration: 0.3 });
+                chestEl.innerText = '🧳';
 
                 // Hide Icons
                 icons.classList.remove('active');
@@ -937,17 +848,17 @@
             particleSystem.rotation.y = time * 0.02;
 
             treasures.forEach(t => {
-                // Underwater physics: Low gravity, high drag
-                // Use custom gravity if set, else default
+                // Underwater physics
                 const g = t.gravity !== undefined ? t.gravity : 0.002;
                 t.velocity.y -= g;
-                t.velocity.multiplyScalar(0.98); // Drag
+                t.velocity.multiplyScalar(0.98);
 
                 t.mesh.position.add(t.velocity);
                 t.mesh.rotation.x += t.rotationSpeed.x;
                 t.mesh.rotation.y += t.rotationSpeed.y;
 
-                const floorY = sandY + 0.8;
+                // Hit floor (Raised threshold to ensure visibility on sand waves)
+                const floorY = sandY + 5.0;
                 if (t.mesh.position.y < floorY) {
                     t.mesh.position.y = floorY;
                     t.velocity.set(0, 0, 0);
