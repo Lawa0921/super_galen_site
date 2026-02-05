@@ -230,6 +230,26 @@
         }
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
+        /* Nav Back */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100; font-size: 0.9rem;
+            color: var(--c-text); text-decoration: none; font-family: 'Cormorant Garamond';
+            transition: 0.3s; letter-spacing: 0.1em;
+            border: 1px solid var(--c-gold); padding: 0.5rem 1rem; background: rgba(255, 254, 251, 0.8);
+            border-radius: 4px;
+        }
+        .nav-back:hover { background: var(--c-gold); color: white; }
+
+        /* Footer */
+        .site-footer {
+            text-align: center; padding: 2rem; margin-top: 4rem;
+            color: var(--c-sage); font-family: 'Cormorant Garamond'; font-size: 0.9rem;
+            position: relative; z-index: 10;
+        }
+        .site-footer a { color: var(--c-accent); text-decoration: none; border-bottom: 1px dotted var(--c-accent); transition: color 0.3s; }
+        .site-footer a:hover { color: var(--c-text); }
+        .site-footer .heart { color: var(--c-accent); }
+
         /* Mobile Adjustments */
         @media (max-width: 768px) {
             .journal-container {
@@ -250,6 +270,7 @@
     <div id="loader">
         <div class="loader-text">Unraveling...</div>
     </div>
+    <a href="/guild/" class="nav-back">GUILD</a>
 
     <div id="canvas-container"></div>
 
@@ -333,6 +354,10 @@
         </div>
 
     </div>
+
+    <footer class="site-footer">
+        <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
+    </footer>
 
     <script type="module">
         import * as THREE from 'three';
@@ -466,12 +491,46 @@
         });
 
         window.onload = () => {
-             gsap.to("#loader", { opacity: 0, duration: 1, onComplete: () => {
-                document.getElementById('loader').style.display = 'none';
-            }});
+             // 1. Initial Load Sequence
+             const tl = gsap.timeline();
 
-             // Fade in elements
-             gsap.from(".journal-container", { y: 50, opacity: 0, duration: 1, delay: 0.5 });
+             tl.to("#loader", { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('loader').style.display = 'none';
+             }});
+
+             tl.from(".journal-container", { y: 50, opacity: 0, duration: 1 }, "-=0.5");
+             tl.from(".profile-img", { scale: 0.8, opacity: 0, duration: 0.8, ease: "back.out(1.7)" }, "-=0.5");
+             tl.from("h1", { y: 20, opacity: 0, duration: 0.8 }, "-=0.6");
+             tl.from(".profile-header p", { y: 20, opacity: 0, duration: 0.8 }, "-=0.6");
+
+             // 2. Section Reveals
+             gsap.utils.toArray("section").forEach(section => {
+                gsap.from(section, {
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+             });
+
+             // 3. Image Interactions
+             gsap.utils.toArray(".image-block").forEach(block => {
+                gsap.from(block, {
+                    scrollTrigger: {
+                        trigger: block,
+                        start: "top 85%"
+                    },
+                    scale: 0.95,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+             });
         };
 
     </script>
