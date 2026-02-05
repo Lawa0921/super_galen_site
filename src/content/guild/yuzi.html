@@ -68,7 +68,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 700vh; /* Increased for better pacing */
+            height: 650vh; /* Compacted height */
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -128,8 +128,8 @@
             background: var(--c-glass);
             border: 1px solid var(--c-solar);
             border-left: 5px solid var(--c-solar);
-            padding: 2.5rem;
-            max-width: 550px;
+            padding: 2rem;
+            max-width: 500px; /* Slightly smaller for compactness */
             width: 85%;
             backdrop-filter: blur(10px);
             opacity: 0;
@@ -144,24 +144,25 @@
 
         .content-card h3 {
             font-family: 'Kanit', sans-serif;
-            font-size: 2.5rem; color: var(--c-solar); margin-bottom: 1.5rem;
+            font-size: 2rem; color: var(--c-solar); margin-bottom: 1rem;
             text-transform: uppercase; font-style: italic;
             border-bottom: 1px solid rgba(255,255,255,0.2);
             padding-bottom: 0.5rem;
             display: flex; justify-content: space-between;
         }
-        .content-card h3 span { font-size: 1rem; opacity: 0.7; font-style: normal; align-self: center; font-weight: 400; }
+        .content-card h3 span { font-size: 0.9rem; opacity: 0.7; font-style: normal; align-self: center; font-weight: 400; }
 
         .content-card p {
-            font-size: 1.1rem; line-height: 1.7; color: #eee; margin-bottom: 1rem;
+            font-size: 1.05rem; line-height: 1.6; color: #eee; margin-bottom: 0.8rem;
         }
+        .content-card ul { margin-bottom: 0.8rem; }
         .highlight { color: var(--c-solar); font-weight: 700; background: rgba(255,221,0,0.1); padding: 0 5px; }
 
         .data-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;
-            font-family: 'Kanit', sans-serif; color: #aaa; font-size: 0.9rem;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1.2rem;
+            font-family: 'Kanit', sans-serif; color: #aaa; font-size: 0.85rem;
         }
-        .data-item strong { color: #fff; display: block; font-size: 1.1rem; }
+        .data-item strong { color: #fff; display: block; font-size: 1rem; }
 
         /* Floating Icons Container */
         .icon-cloud {
@@ -170,8 +171,8 @@
             perspective: 1000px;
         }
         .floating-icon {
-            position: absolute; font-size: 4rem; color: var(--c-solar);
-            text-shadow: 0 0 20px rgba(255, 221, 0, 0.5);
+            position: absolute; font-size: 3rem; color: var(--c-solar);
+            text-shadow: 0 0 10px rgba(255, 221, 0, 0.3);
             opacity: 0;
         }
 
@@ -216,7 +217,7 @@
             .big-text { font-size: 15vw; }
             .brand-mark { top: 1rem; left: 1rem; }
             .hud-v { left: 0; }
-            .floating-icon { font-size: 2.5rem; }
+            .floating-icon { font-size: 2rem; }
         }
 
     </style>
@@ -237,7 +238,7 @@
 
     <div class="hud-line hud-v"></div>
     <div class="hud-line hud-h"></div>
-    <div class="hud-corner">04</div>
+    <div class="hud-corner">06</div>
 
     <div class="icon-cloud" id="icon-cloud">
         <!-- Icons populated by JS -->
@@ -294,9 +295,29 @@
             </div>
         </div>
 
-        <!-- 4. Core (CENTER/BOTTOM) -->
+        <!-- 4. Connection (RIGHT) -->
+        <div id="card-connect" class="content-card card-right">
+            <h3>// 04 CONNECTION <span>RELATIONAL SYNC</span></h3>
+            <p><strong>關係觀：</strong>重視誠實、界線與彼此是否被好好對待。</p>
+            <p>我喜歡建立關係的過程，而非急著定義形式。能享受溫柔的靠近，也理解快速而強烈的連結。</p>
+            <p><i class="fa-solid fa-mobile-screen" style="color:var(--c-solar);"></i> 偶爾通話，勝過大量文字。不需秒回，但希望不消失。</p>
+        </div>
+
+        <!-- 5. Resonance (LEFT) -->
+        <div id="card-resonance" class="content-card card-left">
+            <h3>// 05 RESONANCE <span>TARGET LOCK</span></h3>
+            <p>我容易和這樣的人產生連結：<br>
+            有情緒感受力，願意自我覺察與表達；對世界有好奇心，能聊感受也能聊想法。</p>
+            <div style="margin-top: 1rem; padding: 10px; border: 1px dashed var(--c-solar);">
+                <strong>IDEAL DATE:</strong><br>
+                散步、聊天、親近自然。<br>
+                或者在同一個空間，各做各的事——重點是陪伴感。
+            </div>
+        </div>
+
+        <!-- 6. Core (CENTER/BOTTOM) -->
         <div id="card-core" class="content-card card-center">
-            <h3>// 04 CORE VALUE <span>PHILOSOPHY</span></h3>
+            <h3>// 06 CORE VALUE <span>PHILOSOPHY</span></h3>
             <p style="font-size: 1.3rem; color: #fff;"><strong>「多重伴侶關係實踐者」</strong></p>
             <p>愛有很多樣貌，核心是誠實、尊重與陪伴。</p>
             <p>我不急著定義形式，只在乎創造有意義的連結。<br>希望能成為你生命中的陪伴者與創造者。</p>
@@ -355,7 +376,7 @@
 
         // 1. Hyper-Speed Particles
         const pGeo = new THREE.BufferGeometry();
-        const pCount = 3000;
+        const pCount = 2000; // Reduced from 3000
         const pPos = new Float32Array(pCount * 3);
         const pCol = new Float32Array(pCount * 3);
 
@@ -388,7 +409,7 @@
         const particles = new THREE.Points(pGeo, pMat);
         worldGroup.add(particles);
 
-        // 2. DOM Icons Setup
+        // 2. DOM Icons Setup (Reduced Count)
         const iconContainer = document.getElementById('icon-cloud');
         const icons = [
             'fa-solid fa-volleyball',
@@ -400,7 +421,8 @@
             'fa-solid fa-mountain'
         ];
 
-        for(let i=0; i<30; i++) {
+        // Reduced from 30 to 12 for cleaner look
+        for(let i=0; i<12; i++) {
             const iconClass = icons[Math.floor(Math.random() * icons.length)];
             const el = document.createElement('i');
             el.className = `floating-icon ${iconClass}`;
@@ -415,20 +437,23 @@
             const scale = 0.5 + Math.random() * 1.5;
             el.style.transform = `scale(${scale})`;
 
+            // Subtle opacity
+            el.style.opacity = 0;
+
             iconContainer.appendChild(el);
 
             // Animate
             gsap.to(el, {
-                opacity: 0.6,
+                opacity: 0.4, // Lower max opacity
                 y: -100 - Math.random() * 200,
-                duration: 5 + Math.random() * 5,
+                duration: 8 + Math.random() * 10, // Slower
                 repeat: -1,
                 ease: "none",
                 delay: Math.random() * 5
             });
             gsap.to(el, {
                 x: (Math.random() - 0.5) * 50,
-                duration: 3 + Math.random() * 3,
+                duration: 5 + Math.random() * 5,
                 repeat: -1,
                 yoyo: true,
                 ease: "sine.inOut"
@@ -448,8 +473,8 @@
 
             const isRight = i % 2 === 0; // True for 0, 2...
 
-            const zPos = -70 - (i * 70); // Deep spacing
-            const xPos = isRight ? 12 : -12; // Further out from center
+            const zPos = -50 - (i * 60); // Spacing for 7 items
+            const xPos = isRight ? 12 : -12;
             const yPos = (Math.random() - 0.5) * 5;
 
             mesh.position.set(xPos, yPos, zPos);
@@ -465,7 +490,7 @@
 
         // 4. Central Core
         const coreGroup = new THREE.Group();
-        coreGroup.position.z = -300;
+        coreGroup.position.z = -550; // Further back
         coreGroup.scale.set(5, 5, 5);
         worldGroup.add(coreGroup);
 
@@ -492,7 +517,7 @@
         // --- GSAP Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        const totalScrollZ = 280;
+        const totalScrollZ = 500;
 
         const tl = gsap.timeline({
             scrollTrigger: {
@@ -513,7 +538,7 @@
         tl.to(coreGroup.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
         tl.to(coreGroup.rotation, { y: 10, x: 5 }, 0);
 
-        // Reveals - Updated for Centered viewing with Fade In/Out lifecycle
+        // Reveals - Updated for Compact Centered viewing
         function revealCard(id, startPct, endPct, xOffset) {
             const tl = gsap.timeline({
                 scrollTrigger: {
@@ -534,7 +559,7 @@
             .to(id, {
                 opacity: 0, scale: 0.8, x: -xOffset * 0.5, filter: 'blur(10px)', visibility: 'hidden',
                 duration: 1, ease: "power2.in"
-            }, ">2"); // Hold phase (duration relative to fade)
+            }, ">2");
         }
 
         gsap.to("#hero-text", {
@@ -542,12 +567,20 @@
             scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "8% top", scrub: true }
         });
 
-        // Centered triggers: Content is visible during the middle of these ranges
-        // Total range is stretched to prevent overlap
-        revealCard("#card-origin", 10, 28, -50);
-        revealCard("#card-path", 32, 50, 50);
-        revealCard("#card-vitality", 54, 72, -50);
-        revealCard("#card-core", 76, 92, 0);
+        // 6 Cards Distributed Tightly
+        // Range: ~10% to ~90%
+        // Card 1: 10-22
+        // Card 2: 24-36
+        // Card 3: 38-50
+        // Card 4: 52-64
+        // Card 5: 66-78
+        // Card 6: 80-92
+        revealCard("#card-origin", 10, 22, -50);
+        revealCard("#card-path", 24, 36, 50);
+        revealCard("#card-vitality", 38, 50, -50);
+        revealCard("#card-connect", 52, 64, 50);
+        revealCard("#card-resonance", 66, 78, -50);
+        revealCard("#card-core", 80, 92, 0);
 
         // Finale
         ScrollTrigger.create({
