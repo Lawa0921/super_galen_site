@@ -437,46 +437,39 @@
         // --- 6. Scroll Interaction (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- Route Line & Rider Animation ---
         const riderIcon = document.getElementById('rider-container');
         const routeLine = document.getElementById('route-line');
+        const contentSections = document.querySelectorAll('.content-section');
 
-        // 1. Draw Line Downwards
-        gsap.to(routeLine, {
-            height: "100vh",
+        // Master Timeline linked to #scroll-spacer
+        const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "#scroll-spacer",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 0.1
+                scrub: 0.5 // Unified scrub for smoother sync
             }
         });
+
+        // 1. Draw Line Downwards (0 -> 100vh)
+        tl.to(routeLine, { height: "100vh", ease: "none" }, 0);
 
         // 2. Move Rider Downwards (Along the line)
-        // Animate Y transform instead of 'top' for performance
-        // Distance approx 65vh (from 15% to 80%)
-        gsap.to(riderIcon, {
-            y: window.innerHeight * 0.65,
-            scrollTrigger: {
-                trigger: "#scroll-spacer", // Use the explicit spacer
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 0.5
-            }
-        });
+        // Use functional value for responsive recalc
+        tl.to(riderIcon, {
+            y: () => window.innerHeight * 0.65,
+            ease: "none"
+        }, 0);
 
-        // Sections Visibility Logic
-        const contentSections = document.querySelectorAll('.content-section');
+        // 3. Sections Visibility Logic (Integrated)
         contentSections.forEach((section, index) => {
-            // Ensure first section starts active if not already handled by CSS
-            if (index === 0) {
-                 gsap.set(section, { opacity: 1, pointerEvents: 'auto' });
-            }
+            // Initial state
+            if (index === 0) gsap.set(section, { opacity: 1, pointerEvents: 'auto' });
 
-            // Using ScrollTrigger directly on spacing
+            // Trigger visibility based on spacer progress
             ScrollTrigger.create({
                 trigger: "#scroll-spacer",
-                start: `${(index) * 100}vh top`, // Trigger every 100vh
+                start: `${index * 100}vh top`,
                 end: `${(index + 1) * 100}vh top`,
                 onEnter: () => gsap.to(section, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
                 onLeave: () => gsap.to(section, { opacity: 0, pointerEvents: 'none', duration: 0.5 }),
@@ -484,7 +477,7 @@
                 onLeaveBack: () => gsap.to(section, { opacity: 0, pointerEvents: 'none', duration: 0.5 })
             });
 
-            // Animate card inside
+            // Card Animations
             const card = section.querySelector('.data-card');
             if(card) {
                 gsap.fromTo(card,
@@ -493,7 +486,7 @@
                         y: 0, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)",
                         scrollTrigger: {
                             trigger: "#scroll-spacer",
-                            start: `${(index) * 100}vh top`,
+                            start: `${index * 100}vh top`,
                             toggleActions: "play reverse play reverse"
                         }
                     }
