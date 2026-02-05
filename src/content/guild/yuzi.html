@@ -68,7 +68,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 650vh; /* Compacted height */
+            height: 400vh; /* Drastically Compacted */
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -124,25 +124,60 @@
             color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
 
-        .content-card {
+        /* --- Content Panels (Text + Image) --- */
+        .content-panel {
+            position: absolute;
+            top: 50%; left: 0; width: 100%;
+            transform: translateY(-50%);
+            display: flex; justify-content: center; align-items: center;
+            gap: 4rem; /* Significant gap */
+            opacity: 0; pointer-events: none; /* Initially hidden */
+            padding: 0 5%;
+        }
+        .content-panel.active { pointer-events: auto; }
+
+        /* Text Card */
+        .text-card {
             background: var(--c-glass);
             border: 1px solid var(--c-solar);
             border-left: 5px solid var(--c-solar);
             padding: 2rem;
-            max-width: 500px; /* Slightly smaller for compactness */
-            width: 85%;
+            width: 450px; /* Reduced width for better paired look */
             backdrop-filter: blur(10px);
-            opacity: 0;
-            pointer-events: auto;
             box-shadow: 0 0 30px rgba(255, 221, 0, 0.1);
-            position: absolute;
+            position: relative; z-index: 2;
         }
 
-        .card-left { left: 8%; top: 50%; transform: translateY(-50%); }
-        .card-right { right: 8%; top: 50%; transform: translateY(-50%); }
-        .card-center { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 700px; text-align: center; }
+        /* Image Card (New) */
+        .image-card {
+            width: 400px; height: 500px; /* Portrait Aspect */
+            position: relative; z-index: 1;
+            border: 1px solid rgba(255, 221, 0, 0.5);
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+        }
+        .image-card img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(20%) contrast(110%);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .image-card::after {
+            content: ''; position: absolute; top: -5px; right: -5px;
+            width: 20px; height: 20px;
+            border-top: 2px solid var(--c-solar); border-right: 2px solid var(--c-solar);
+        }
+        .image-card::before {
+            content: ''; position: absolute; bottom: -5px; left: -5px;
+            width: 20px; height: 20px;
+            border-bottom: 2px solid var(--c-solar); border-left: 2px solid var(--c-solar);
+        }
 
-        .content-card h3 {
+        /* Layout Variations */
+        .panel-left { flex-direction: row; } /* Text Left, Image Right */
+        .panel-right { flex-direction: row-reverse; } /* Image Left, Text Right */
+        .panel-center { flex-direction: column; text-align: center; gap: 2rem; } /* Stacked */
+
+        .text-card h3 {
             font-family: 'Kanit', sans-serif;
             font-size: 2rem; color: var(--c-solar); margin-bottom: 1rem;
             text-transform: uppercase; font-style: italic;
@@ -150,12 +185,11 @@
             padding-bottom: 0.5rem;
             display: flex; justify-content: space-between;
         }
-        .content-card h3 span { font-size: 0.9rem; opacity: 0.7; font-style: normal; align-self: center; font-weight: 400; }
+        .text-card h3 span { font-size: 0.9rem; opacity: 0.7; font-style: normal; align-self: center; font-weight: 400; }
 
-        .content-card p {
+        .text-card p {
             font-size: 1.05rem; line-height: 1.6; color: #eee; margin-bottom: 0.8rem;
         }
-        .content-card ul { margin-bottom: 0.8rem; }
         .highlight { color: var(--c-solar); font-weight: 700; background: rgba(255,221,0,0.1); padding: 0 5px; }
 
         .data-grid {
@@ -210,10 +244,10 @@
         .socials a { color: #000; transition: all 0.2s; display: block; }
         .socials a:hover { transform: scale(1.2) rotate(-10deg); color: #fff; }
 
-        @media (max-width: 768px) {
-            .content-card { width: 90%; max-width: none; padding: 1.5rem; left: 5% !important; right: auto !important; top: 60% !important; transform: translateY(0) !important; }
-            .card-center { top: 60% !important; transform: translate(-50%, 0) !important; }
-            .data-grid { grid-template-columns: 1fr; }
+        @media (max-width: 900px) {
+            .content-panel { flex-direction: column !important; gap: 1rem; top: 55%; padding: 0 1rem; }
+            .text-card { width: 100%; max-width: 500px; padding: 1.5rem; }
+            .image-card { width: 100%; max-width: 300px; height: 300px; order: -1; } /* Image First on Mobile */
             .big-text { font-size: 15vw; }
             .brand-mark { top: 1rem; left: 1rem; }
             .hud-v { left: 0; }
@@ -253,74 +287,99 @@
             <div class="sub-hero">EXPLORER CLASS // YUZI</div>
         </div>
 
-        <!-- 1. Profile Data (LEFT, Image RIGHT) -->
-        <div id="card-origin" class="content-card card-left">
-            <h3>// 01 PROFILE <span>DATA LOG</span></h3>
-
-            <div class="data-grid">
-                <div class="data-item"><strong>NAME</strong>柚子 (謝沅佑)</div>
-                <div class="data-item"><strong>TYPE</strong>ENFP | 牡羊座</div>
-                <div class="data-item"><strong>AGE</strong>28 → 29</div>
-                <div class="data-item"><strong>SPECS</strong>180cm / 65kg</div>
-                <div class="data-item"><strong>BASE</strong>雙北 / 淡水</div>
-                <div class="data-item"><strong>ENERGY</strong>Husky Mode 🐕</div>
+        <!-- 1. Profile Data (LEFT Text, RIGHT Image) -->
+        <div id="panel-origin" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 01 PROFILE <span>DATA LOG</span></h3>
+                <div class="data-grid">
+                    <div class="data-item"><strong>NAME</strong>柚子 (謝沅佑)</div>
+                    <div class="data-item"><strong>TYPE</strong>ENFP | 牡羊座</div>
+                    <div class="data-item"><strong>AGE</strong>28 → 29</div>
+                    <div class="data-item"><strong>SPECS</strong>180cm / 65kg</div>
+                    <div class="data-item"><strong>BASE</strong>雙北 / 淡水</div>
+                    <div class="data-item"><strong>ENERGY</strong>Husky Mode 🐕</div>
+                </div>
+                <p>我是柚子，一個熱愛探索外在世界，也深潛內在宇宙的人。</p>
+                <p>畢業於<span class="highlight">輔仁大學景觀設計</span>，我不只設計環境，更在乎人與空間的連結。從園丁到社群引導者，我的職涯路徑雖然任性，但目標一致：<br><strong>創造安全、被接納的連結。</strong></p>
             </div>
-
-            <p>我是柚子，一個熱愛探索外在世界，也深潛內在宇宙的人。</p>
-            <p>畢業於<span class="highlight">輔仁大學景觀設計</span>，我不只設計環境，更在乎人與空間的連結。從園丁到社群引導者，我的職涯路徑雖然任性，但目標一致：<br><strong>創造安全、被接納的連結。</strong></p>
-        </div>
-
-        <!-- 2. Trajectory (RIGHT, Image LEFT) -->
-        <div id="card-path" class="content-card card-right">
-            <h3>// 02 TRAJECTORY <span>CAREER PATH</span></h3>
-            <p>我喜歡陪伴正在成形中的東西：一個空間、一個團隊、一段關係。</p>
-            <ul style="list-style: none; line-height: 2; margin-top: 1rem; font-family: 'Kanit';">
-                <li><i class="fa-solid fa-seedling" style="color:var(--c-solar); width:20px;"></i> 台北花卉村園丁 | 理解生長節奏</li>
-                <li><i class="fa-solid fa-cube" style="color:var(--c-solar); width:20px;"></i> 兒童程式學苑區主任 | 結構化流程</li>
-                <li><i class="fa-solid fa-people-group" style="color:var(--c-solar); width:20px;"></i> 共識營主持 / 培訓經理 | 建立信任場域</li>
-            </ul>
-        </div>
-
-        <!-- 3. Vitality (LEFT, Image RIGHT) -->
-        <div id="card-vitality" class="content-card card-left">
-            <h3>// 03 VITALITY <span>HUSKY ENERGY</span></h3>
-            <p>身體派的孩子，聽說個性像<span class="highlight">哈士奇</span>。</p>
-            <p>喜歡讓身體感受山海風日。旅行不是逃離，而是回到自己。</p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem;">
-                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏐 排球</span>
-                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🥁 爵士鼓</span>
-                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏃 長跑</span>
-                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🤿 潛水</span>
-                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏔️ 登山</span>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_1.webp" alt="Yuzi Profile">
             </div>
         </div>
 
-        <!-- 4. Connection (RIGHT) -->
-        <div id="card-connect" class="content-card card-right">
-            <h3>// 04 CONNECTION <span>RELATIONAL SYNC</span></h3>
-            <p><strong>關係觀：</strong>重視誠實、界線與彼此是否被好好對待。</p>
-            <p>我喜歡建立關係的過程，而非急著定義形式。能享受溫柔的靠近，也理解快速而強烈的連結。</p>
-            <p><i class="fa-solid fa-mobile-screen" style="color:var(--c-solar);"></i> 偶爾通話，勝過大量文字。不需秒回，但希望不消失。</p>
-        </div>
-
-        <!-- 5. Resonance (LEFT) -->
-        <div id="card-resonance" class="content-card card-left">
-            <h3>// 05 RESONANCE <span>TARGET LOCK</span></h3>
-            <p>我容易和這樣的人產生連結：<br>
-            有情緒感受力，願意自我覺察與表達；對世界有好奇心，能聊感受也能聊想法。</p>
-            <div style="margin-top: 1rem; padding: 10px; border: 1px dashed var(--c-solar);">
-                <strong>IDEAL DATE:</strong><br>
-                散步、聊天、親近自然。<br>
-                或者在同一個空間，各做各的事——重點是陪伴感。
+        <!-- 2. Trajectory (RIGHT Text, LEFT Image) -->
+        <div id="panel-path" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 02 TRAJECTORY <span>CAREER PATH</span></h3>
+                <p>我喜歡陪伴正在成形中的東西：一個空間、一個團隊、一段關係。</p>
+                <ul style="list-style: none; line-height: 2; margin-top: 1rem; font-family: 'Kanit';">
+                    <li><i class="fa-solid fa-seedling" style="color:var(--c-solar); width:20px;"></i> 台北花卉村園丁 | 理解生長節奏</li>
+                    <li><i class="fa-solid fa-cube" style="color:var(--c-solar); width:20px;"></i> 兒童程式學苑區主任 | 結構化流程</li>
+                    <li><i class="fa-solid fa-people-group" style="color:var(--c-solar); width:20px;"></i> 共識營主持 / 培訓經理 | 建立信任場域</li>
+                </ul>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_5.webp" alt="Yuzi Work">
             </div>
         </div>
 
-        <!-- 6. Core (CENTER/BOTTOM) -->
-        <div id="card-core" class="content-card card-center">
-            <h3>// 06 CORE VALUE <span>PHILOSOPHY</span></h3>
-            <p style="font-size: 1.3rem; color: #fff;"><strong>「多重伴侶關係實踐者」</strong></p>
-            <p>愛有很多樣貌，核心是誠實、尊重與陪伴。</p>
-            <p>我不急著定義形式，只在乎創造有意義的連結。<br>希望能成為你生命中的陪伴者與創造者。</p>
+        <!-- 3. Vitality (LEFT Text, RIGHT Image) -->
+        <div id="panel-vitality" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 03 VITALITY <span>HUSKY ENERGY</span></h3>
+                <p>身體派的孩子，聽說個性像<span class="highlight">哈士奇</span>。</p>
+                <p>喜歡讓身體感受山海風日。旅行不是逃離，而是回到自己。</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem;">
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏐 排球</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🥁 爵士鼓</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏃 長跑</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🤿 潛水</span>
+                    <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏔️ 登山</span>
+                </div>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_7.webp" alt="Yuzi Sports">
+            </div>
+        </div>
+
+        <!-- 4. Connection (RIGHT Text, LEFT Image) -->
+        <div id="panel-connect" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 04 CONNECTION <span>RELATIONAL SYNC</span></h3>
+                <p><strong>關係觀：</strong>重視誠實、界線與彼此是否被好好對待。</p>
+                <p>我喜歡建立關係的過程，而非急著定義形式。能享受溫柔的靠近，也理解快速而強烈的連結。</p>
+                <p><i class="fa-solid fa-mobile-screen" style="color:var(--c-solar);"></i> 偶爾通話，勝過大量文字。不需秒回，但希望不消失。</p>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_6.webp" alt="Yuzi Connection">
+            </div>
+        </div>
+
+        <!-- 5. Resonance (LEFT Text, RIGHT Image) -->
+        <div id="panel-resonance" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 05 RESONANCE <span>TARGET LOCK</span></h3>
+                <p>我容易和這樣的人產生連結：<br>
+                有情緒感受力，願意自我覺察與表達；對世界有好奇心，能聊感受也能聊想法。</p>
+                <div style="margin-top: 1rem; padding: 10px; border: 1px dashed var(--c-solar);">
+                    <strong>IDEAL DATE:</strong><br>
+                    散步、聊天、親近自然。<br>
+                    或者在同一個空間，各做各的事——重點是陪伴感。
+                </div>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_2.webp" alt="Yuzi Chill">
+            </div>
+        </div>
+
+        <!-- 6. Core (CENTER Text, No Image for Climax) -->
+        <div id="panel-core" class="content-panel panel-center">
+            <div class="text-card" style="width: 100%; max-width: 700px;">
+                <h3>// 06 CORE VALUE <span>PHILOSOPHY</span></h3>
+                <p style="font-size: 1.3rem; color: #fff;"><strong>「多重伴侶關係實踐者」</strong></p>
+                <p>愛有很多樣貌，核心是誠實、尊重與陪伴。</p>
+                <p>我不急著定義形式，只在乎創造有意義的連結。<br>希望能成為你生命中的陪伴者與創造者。</p>
+            </div>
         </div>
     </div>
 
@@ -356,27 +415,13 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Assets ---
-        const textureLoader = new THREE.TextureLoader();
-        const imgUrls = [
-            '/assets/img/guild/yuzi/gallery_1.webp',
-            '/assets/img/guild/yuzi/gallery_2.webp',
-            '/assets/img/guild/yuzi/gallery_3.webp',
-            '/assets/img/guild/yuzi/gallery_4.webp',
-            '/assets/img/guild/yuzi/gallery_5.webp',
-            '/assets/img/guild/yuzi/gallery_6.webp',
-            '/assets/img/guild/yuzi/gallery_7.webp'
-        ];
-
-        const textures = imgUrls.map(url => textureLoader.load(url));
-
         // --- Scene Objects ---
         const worldGroup = new THREE.Group();
         scene.add(worldGroup);
 
         // 1. Hyper-Speed Particles
         const pGeo = new THREE.BufferGeometry();
-        const pCount = 2000; // Reduced from 3000
+        const pCount = 2000;
         const pPos = new Float32Array(pCount * 3);
         const pCol = new Float32Array(pCount * 3);
 
@@ -421,7 +466,6 @@
             'fa-solid fa-mountain'
         ];
 
-        // Reduced from 30 to 12 for cleaner look
         for(let i=0; i<12; i++) {
             const iconClass = icons[Math.floor(Math.random() * icons.length)];
             const el = document.createElement('i');
@@ -460,35 +504,7 @@
             });
         }
 
-        // 3. Memory Monoliths
-        const photoGroup = new THREE.Group();
-        worldGroup.add(photoGroup);
-
-        textures.forEach((tex, i) => {
-            const planeGeo = new THREE.PlaneGeometry(8, 5.3);
-            const planeMat = new THREE.MeshBasicMaterial({
-                map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0.9
-            });
-            const mesh = new THREE.Mesh(planeGeo, planeMat);
-
-            const isRight = i % 2 === 0; // True for 0, 2...
-
-            const zPos = -50 - (i * 60); // Spacing for 7 items
-            const xPos = isRight ? 12 : -12;
-            const yPos = (Math.random() - 0.5) * 5;
-
-            mesh.position.set(xPos, yPos, zPos);
-            mesh.lookAt(0, 0, zPos + 30);
-
-            const borderGeo = new THREE.EdgesGeometry(planeGeo);
-            const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, linewidth: 2 });
-            const border = new THREE.LineSegments(borderGeo, borderMat);
-            mesh.add(border);
-
-            photoGroup.add(mesh);
-        });
-
-        // 4. Central Core
+        // 3. Central Core
         const coreGroup = new THREE.Group();
         coreGroup.position.z = -550; // Further back
         coreGroup.scale.set(5, 5, 5);
@@ -517,7 +533,7 @@
         // --- GSAP Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        const totalScrollZ = 500;
+        const totalScrollZ = 400; // Matches reduced Scroll Spacer
 
         const tl = gsap.timeline({
             scrollTrigger: {
@@ -538,8 +554,9 @@
         tl.to(coreGroup.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
         tl.to(coreGroup.rotation, { y: 10, x: 5 }, 0);
 
-        // Reveals - Updated for Compact Centered viewing
-        function revealCard(id, startPct, endPct, xOffset) {
+        // Reveals - Updated for Compact Panel Viewing
+        // Range: ~10% to ~90% of scroll height
+        function revealPanel(id, startPct, endPct) {
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: "#scroll-spacer",
@@ -549,17 +566,26 @@
                 }
             });
 
-            tl.fromTo(id,
-                { opacity: 0, scale: 0.8, x: xOffset, filter: 'blur(10px)', visibility: 'hidden' },
-                {
-                    opacity: 1, scale: 1, x: 0, filter: 'blur(0px)', visibility: 'visible',
-                    duration: 1, ease: "power2.out"
-                }
-            )
-            .to(id, {
-                opacity: 0, scale: 0.8, x: -xOffset * 0.5, filter: 'blur(10px)', visibility: 'hidden',
-                duration: 1, ease: "power2.in"
-            }, ">2");
+            // Fade In + Slide In (Text and Image converge)
+            const textCard = document.querySelector(`${id} .text-card`);
+            const imageCard = document.querySelector(`${id} .image-card`);
+
+            // Set initial transforms before animation
+            if (textCard) gsap.set(textCard, { x: -50, opacity: 0 });
+            if (imageCard) gsap.set(imageCard, { x: 50, opacity: 0 });
+
+            // If panel is reversed (image left, text right), swap transforms
+            if (document.querySelector(id).classList.contains('panel-right')) {
+                 if (textCard) gsap.set(textCard, { x: 50 });
+                 if (imageCard) gsap.set(imageCard, { x: -50 });
+            }
+
+            tl.to([textCard, imageCard], {
+                x: 0, opacity: 1, duration: 1, ease: "power2.out"
+            })
+            .to([textCard, imageCard], {
+                opacity: 0, y: -50, filter: "blur(10px)", duration: 1, ease: "power2.in"
+            }, ">1.5"); // Short hold
         }
 
         gsap.to("#hero-text", {
@@ -567,25 +593,24 @@
             scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "8% top", scrub: true }
         });
 
-        // 6 Cards Distributed Tightly
-        // Range: ~10% to ~90%
-        // Card 1: 10-22
-        // Card 2: 24-36
-        // Card 3: 38-50
-        // Card 4: 52-64
-        // Card 5: 66-78
-        // Card 6: 80-92
-        revealCard("#card-origin", 10, 22, -50);
-        revealCard("#card-path", 24, 36, 50);
-        revealCard("#card-vitality", 38, 50, -50);
-        revealCard("#card-connect", 52, 64, 50);
-        revealCard("#card-resonance", 66, 78, -50);
-        revealCard("#card-core", 80, 92, 0);
+        // TIGHTLY SEQUENCED REVEALS
+        // Card 1: 5-18
+        // Card 2: 18-31
+        // Card 3: 31-44
+        // Card 4: 44-57
+        // Card 5: 57-70
+        // Card 6: 70-83
+        revealPanel("#panel-origin", 5, 18);
+        revealPanel("#panel-path", 18, 31);
+        revealPanel("#panel-vitality", 31, 44);
+        revealPanel("#panel-connect", 44, 57);
+        revealPanel("#panel-resonance", 57, 70);
+        revealPanel("#panel-core", 70, 83);
 
         // Finale
         ScrollTrigger.create({
             trigger: "#scroll-spacer",
-            start: "95% bottom",
+            start: "90% bottom",
             onEnter: () => document.getElementById('finale').classList.add('active'),
             onLeaveBack: () => document.getElementById('finale').classList.remove('active')
         });
@@ -610,12 +635,6 @@
             const pulse = 1 + Math.sin(t * 8) * 0.1;
             coreGroup.scale.multiplyScalar(pulse / coreGroup.scale.x * (5 + (camera.position.z < -100 ? (camera.position.z + 100)*-0.5 : 0)));
 
-            // Photos
-            photoGroup.children.forEach((mesh, i) => {
-                mesh.position.y += Math.sin(t * 3 + i) * 0.005;
-                mesh.rotation.z += Math.cos(t * 2 + i) * 0.002;
-            });
-
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
@@ -626,7 +645,7 @@
         document.addEventListener('mousemove', (e) => {
             gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
         });
-        document.querySelectorAll('a, button, .content-card, .finale-avatar').forEach(el => {
+        document.querySelectorAll('a, button, .text-card, .image-card, .finale-avatar').forEach(el => {
             el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
             el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
         });
