@@ -581,12 +581,26 @@
         // --- TREASURES (SPRITES) ---
         const treasures = [];
 
-        // fa-coins: \uf51e, fa-gem: \uf3a5
         const treasureTypes = [
-            { char: '\uf51e', color: '#ffd700' }, // Gold Coins
-            { char: '\uf3a5', color: '#ff0055' }, // Red Gem
-            { char: '\uf3a5', color: '#00f3ff' }, // Blue Gem
-            { char: '\uf51e', color: '#ffffff' }  // Silver Coins
+            // Wealth
+            { char: '\uf51e', color: '#ffd700', category: 'wealth' }, // Gold Coins
+            { char: '\uf51e', color: '#c0c0c0', category: 'wealth' }, // Silver Coins
+            { char: '\uf3a5', color: '#ff0055', category: 'wealth' }, // Red Gem
+            { char: '\uf3a5', color: '#00f3ff', category: 'wealth' }, // Blue Gem
+            { char: '\uf3a5', color: '#50c878', category: 'wealth' }, // Emerald
+            { char: '\uf521', color: '#ffd700', category: 'wealth' }, // Crown
+            { char: '\uf70b', color: '#ff69b4', category: 'wealth' }, // Ring
+            { char: '\uf091', color: '#cd7f32', category: 'wealth' }, // Trophy
+            { char: '\uf81d', color: '#85bb65', category: 'wealth' }, // Sack Dollar
+            // Artifacts
+            { char: '\uf0c3', color: '#9933cc', category: 'artifact' }, // Flask
+            { char: '\uf70e', color: '#f4a460', category: 'artifact' }, // Scroll
+            { char: '\uf3ed', color: '#708090', category: 'artifact' }, // Shield
+            { char: '\uf66d', color: '#a9a9a9', category: 'artifact' }, // Sword (Khanda)
+            { char: '\uf72f', color: '#8b0000', category: 'artifact' }, // Wine Bottle
+            { char: '\uf6fa', color: '#ffffff', category: 'artifact' }, // Mask
+            { char: '\uf644', color: '#ffd700', category: 'artifact' }, // Ankh
+            { char: '\uf6d5', color: '#ff4500', category: 'artifact' }, // Dragon
         ];
 
         // --- SPAWN INITIAL TREASURES ---
@@ -656,8 +670,9 @@
 
                 let config;
                 if(isBubble) {
-                    // Only Gold(0) or Red Gem(1)
-                    config = treasureTypes[Math.floor(Math.random() * 2)];
+                    // Only Wealth items for bubbles
+                    const wealthItems = treasureTypes.filter(t => t.category === 'wealth');
+                    config = wealthItems[Math.floor(Math.random() * wealthItems.length)];
                 } else {
                     config = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
                 }
