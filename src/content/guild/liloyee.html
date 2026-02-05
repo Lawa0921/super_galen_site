@@ -274,7 +274,7 @@
         }
         .chest-btn {
             width: 70px; height: 70px; border-radius: 50%;
-            background: rgba(255,215,0,0.2);
+            background: var(--c-deep);
             border: 2px solid var(--c-gold);
             color: var(--c-gold);
             display: flex; justify-content: center; align-items: center;
@@ -781,7 +781,16 @@
                 gsap.to(chestLid.rotation, { x: -Math.PI / 2, duration: 1, ease: "back.out(1.7)" });
 
                 // Light Burst (Clamped intensity to prevent washing out/darkening artifacts)
-                gsap.to(pileLight, { intensity: 3, color: '#ffdd00', duration: 0.5, yoyo: true, repeat: 1 });
+                const burstColor = new THREE.Color('#ffdd00');
+                gsap.to(pileLight, { intensity: 3, duration: 0.5, yoyo: true, repeat: 1 });
+                gsap.to(pileLight.color, {
+                    r: burstColor.r,
+                    g: burstColor.g,
+                    b: burstColor.b,
+                    duration: 0.5,
+                    yoyo: true,
+                    repeat: 1
+                });
 
                 // Show Icons
                 icons.classList.add('active');
