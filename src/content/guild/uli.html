@@ -136,6 +136,21 @@
             min-height: 100vh;
         }
 
+        .avatar-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid var(--c-accent-blue);
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.4);
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .avatar-img:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
         .hero-subtitle {
             font-size: 1.5rem;
             background: #fff;
@@ -205,10 +220,41 @@
         }
 
         @media (max-width: 768px) {
-            .scatter-img {
-                max-width: 150px;
-                border: 4px solid #fff;
+            .section {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
+            .scattered-images {
+                position: relative;
+                height: auto;
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+                margin-top: 2rem;
+                z-index: 5;
+                pointer-events: auto;
+                order: 2; /* Ensure images appear after text on mobile */
+            }
+            .container {
+                order: 1; /* Text first */
+            }
+
+            .scatter-img {
+                /* Override inline absolute positioning for mobile flow */
+                position: relative !important;
+                top: auto !important;
+                bottom: auto !important;
+                left: auto !important;
+                right: auto !important;
+                transform: none !important;
+                max-width: 45% !important; /* Grid-like layout */
+                width: auto !important;
+                margin: 0;
+            }
+
             .section:nth-child(even) .text-panel,
             .section:nth-child(odd) .text-panel {
                 margin: 0 auto;
@@ -216,6 +262,7 @@
             .text-panel {
                 max-width: 100%;
                 background: rgba(255,255,255,0.98); /* More opaque on mobile */
+                margin-bottom: 1rem;
             }
         }
 
@@ -306,6 +353,7 @@
 
         <!-- 1. Hero -->
         <section class="section" id="hero">
+            <img src="/assets/img/guild/uli/avatar.webp" alt="Uli Avatar" class="avatar-img scatter-img">
             <h1 class="hero-title">鄔莉 Uli</h1>
             <div class="hero-subtitle">
                 Rational Intuition & Creative Soul
@@ -394,6 +442,8 @@
                 <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 20%; left: 20%; transform: rotate(8deg); width: 280px; opacity: 0.8;">
                 <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 10%; left: 15%; transform: rotate(-8deg); width: 280px; opacity: 0.8;">
                 <img src="/assets/img/guild/uli/gallery_16.webp" class="scatter-img" style="top: 5%; left: 5%; transform: rotate(3deg); width: 180px;">
+                <!-- Added gallery_19 here for completeness -->
+                <img src="/assets/img/guild/uli/gallery_19.webp" class="scatter-img" style="bottom: 35%; left: 5%; transform: rotate(-5deg); width: 160px;">
             </div>
             <div class="container">
                 <div class="text-panel">
@@ -463,25 +513,32 @@
             // Parallax effect: Move different speeds based on random logic or class
             const speed = 0.5 + Math.random() * 0.5;
 
-            gsap.to(img, {
-                y: -100 * speed, // Move up as we scroll down
-                rotation: Math.random() * 10 - 5, // Slight rotation change
-                scrollTrigger: {
-                    trigger: img.closest('.section'),
-                    start: "top bottom",
-                    end: "bottom top",
-                    scrub: 1
-                }
+            // Only apply scroll trigger animation if NOT mobile (optional, but keep it for now as GSAP handles resize well enough usually, though layout shift might occur.
+            // Better to let them float but maybe reduce distance on mobile.
+            // For now, simple check:
+            let mm = gsap.matchMedia();
+
+            mm.add("(min-width: 769px)", () => {
+                 gsap.to(img, {
+                    y: -100 * speed, // Move up as we scroll down
+                    rotation: Math.random() * 10 - 5, // Slight rotation change
+                    scrollTrigger: {
+                        trigger: img.closest('.section'),
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: 1
+                    }
+                });
             });
 
-            // Entrance
+            // Entrance works for all
             gsap.from(img, {
                 opacity: 0,
                 scale: 0.8,
                 duration: 1,
                 scrollTrigger: {
                     trigger: img,
-                    start: "top 90%",
+                    start: "top 95%",
                 }
             });
         });
