@@ -62,29 +62,40 @@
             z-index: 1;
         }
 
-        /* The Journal Container */
-        .journal-container {
+        /* The Content Wrapper */
+        .content-wrapper {
             position: relative;
             z-index: 10;
             max-width: 800px;
             width: 90%;
-            margin: 100px auto 100px auto; /* Centered with breathing room */
-            background: var(--c-paper);
-            box-shadow:
-                0 2px 5px rgba(0,0,0,0.05),
-                0 20px 60px rgba(70, 57, 44, 0.15);
-            padding: 4rem 5rem;
-            border-radius: 4px; /* Slight rounding like a book */
+            margin: 100px auto 100px auto;
         }
 
-        /* Decorative "Stitch" border inside the paper */
-        .journal-container::before {
+        /* Individual Content Cards (Split Journal) */
+        .content-card {
+            background: var(--c-paper);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05), 0 20px 60px rgba(70, 57, 44, 0.15);
+            padding: 4rem 5rem;
+            border-radius: 4px;
+            margin-bottom: 4rem; /* Separation between cards */
+            position: relative;
+        }
+
+        /* Decorative "Stitch" border inside each card */
+        .content-card::before {
             content: '';
             position: absolute;
             top: 1.5rem; bottom: 1.5rem; left: 1.5rem; right: 1.5rem;
             border: 2px dashed #eaddcf;
             pointer-events: none;
         }
+
+        /* Specific Card Styles */
+        #card-profile {
+            padding: 3rem 5rem;
+            text-align: center;
+        }
+        #card-profile .profile-header { margin-bottom: 0; }
 
         /* Typography */
         h1, h2, h3 {
@@ -240,24 +251,28 @@
         }
         .nav-back:hover { background: var(--c-gold); color: white; }
 
-        /* Footer */
+        /* Footer - Enhanced Visibility */
         .site-footer {
-            text-align: center; padding: 2rem; margin-top: 4rem;
-            color: var(--c-sage); font-family: 'Cormorant Garamond'; font-size: 0.9rem;
-            position: relative; z-index: 10;
+            text-align: center; padding: 3rem; margin-top: 6rem;
+            color: #fff; background: rgba(70, 57, 44, 0.9); /* Dark background */
+            font-family: 'Cormorant Garamond'; font-size: 1rem;
+            position: relative; z-index: 100;
         }
-        .site-footer a { color: var(--c-accent); text-decoration: none; border-bottom: 1px dotted var(--c-accent); transition: color 0.3s; }
-        .site-footer a:hover { color: var(--c-text); }
-        .site-footer .heart { color: var(--c-accent); }
+        .site-footer a { color: var(--c-gold); text-decoration: none; border-bottom: 1px dotted var(--c-gold); transition: color 0.3s; }
+        .site-footer a:hover { color: #fff; }
+        .site-footer .heart { color: #e74c3c; }
 
         /* Mobile Adjustments */
         @media (max-width: 768px) {
-            .journal-container {
+            .content-wrapper {
                 width: 95%;
                 margin: 50px auto;
-                padding: 2.5rem 1.5rem;
             }
-            .journal-container::before {
+            .content-card {
+                padding: 2.5rem 1.5rem;
+                margin-bottom: 2rem;
+            }
+            .content-card::before {
                 top: 0.8rem; bottom: 0.8rem; left: 0.8rem; right: 0.8rem;
             }
             h1 { font-size: 3rem; }
@@ -274,83 +289,98 @@
 
     <div id="canvas-container"></div>
 
-    <div class="journal-container">
+    <div class="content-wrapper">
 
-        <div class="profile-header">
-            <img src="/assets/images/guild/gheart/profile.webp" alt="G-Heart" class="profile-img">
-            <h1>G-Heart</h1>
-            <p style="text-align:center; font-style:italic; color: var(--c-sage);">"Weaving warmth into the fabric of life."</p>
+        <!-- Card 1: Profile -->
+        <div class="content-card" id="card-profile">
+            <div class="profile-header">
+                <img src="/assets/images/guild/gheart/profile.webp" alt="G-Heart" class="profile-img">
+                <h1>G-Heart</h1>
+                <p style="text-align:center; font-style:italic; color: var(--c-sage);">"Weaving warmth into the fabric of life."</p>
+            </div>
         </div>
 
-        <section id="intro">
-            <h2>Artisan Soul</h2>
-            <p>
-                我是 <span class="highlight">G-Heart</span>，一個餐飲系畢業的手作人。
-                在木工的堅毅與美食的細膩之間尋找平衡，工作之餘，我努力編織屬於自己的溫暖世界。
-            </p>
-            <p>
-                曾經的專長是家具木工，這段經歷讓我對「結構」與「材質」有了深刻的理解。後來轉職餐飲業，則讓我學會了如何調配「風味」與「溫度」。
-                現在，我試圖將這兩者結合，創造出既有實用結構，又充滿生活溫度的手作藝品。
-            </p>
+        <!-- Card 2: Intro -->
+        <div class="content-card">
+            <section id="intro">
+                <h2>Artisan Soul</h2>
+                <p>
+                    我是 <span class="highlight">G-Heart</span>，一個餐飲系畢業的手作人。
+                    在木工的堅毅與美食的細膩之間尋找平衡，工作之餘，我努力編織屬於自己的溫暖世界。
+                </p>
+                <p>
+                    曾經的專長是家具木工，這段經歷讓我對「結構」與「材質」有了深刻的理解。後來轉職餐飲業，則讓我學會了如何調配「風味」與「溫度」。
+                    現在，我試圖將這兩者結合，創造出既有實用結構，又充滿生活溫度的手作藝品。
+                </p>
 
-            <div class="image-block">
-                <img src="/assets/images/guild/gheart/work1.webp" alt="Handmade Texture">
-                <div class="caption">Natural materials, woven with care.</div>
-            </div>
-        </section>
-
-        <section id="philosophy">
-            <h2>My Philosophy</h2>
-            <p>
-                <b>手作不只是藝術，更是一種生活態度。</b>
-            </p>
-            <p>
-                我喜歡在日常生活中找靈感——森林裡的枯木、海洋的波浪、香草植物的香氣。
-                比起完美的工業製品，我更迷戀手作留下的痕跡。那是時間的證明，也是作品與創作者之間最親密的對話。
-            </p>
-            <p>
-                希望我的作品能與人產生更強烈的連結，讓每一個物件都不只是裝飾，而是能陪伴你生活的朋友。
-                有趣又實用，是我的創作目標。
-            </p>
-        </section>
-
-        <section id="quiet">
-            <h2>Inner Quiet</h2>
-            <p>
-                我是個大 I 人 (Introvert)。我不喜歡與人面對面的喧囂交流，卻渴望心靈深處的深刻連結。
-            </p>
-            <p>
-                這就是為什麼我選擇透過網路平台，讓大家看到我的作品。
-                在這個安靜的角落，我用作品說話，也希望能聽到你的共鳴。
-            </p>
-
-            <div class="works-grid">
                 <div class="image-block">
-                    <img src="/assets/images/guild/gheart/work2.webp" alt="Work Sample 2">
+                    <img src="/assets/images/guild/gheart/work1.webp" alt="Handmade Texture">
+                    <div class="caption">Natural materials, woven with care.</div>
                 </div>
-                <div class="image-block">
-                    <img src="/assets/images/guild/gheart/work3.webp" alt="Work Sample 3">
+            </section>
+        </div>
+
+        <!-- Card 3: Philosophy -->
+        <div class="content-card">
+            <section id="philosophy">
+                <h2>My Philosophy</h2>
+                <p>
+                    <b>手作不只是藝術，更是一種生活態度。</b>
+                </p>
+                <p>
+                    我喜歡在日常生活中找靈感——森林裡的枯木、海洋的波浪、香草植物的香氣。
+                    比起完美的工業製品，我更迷戀手作留下的痕跡。那是時間的證明，也是作品與創作者之間最親密的對話。
+                </p>
+                <p>
+                    希望我的作品能與人產生更強烈的連結，讓每一個物件都不只是裝飾，而是能陪伴你生活的朋友。
+                    有趣又實用，是我的創作目標。
+                </p>
+            </section>
+        </div>
+
+        <!-- Card 4: Quiet -->
+        <div class="content-card">
+            <section id="quiet">
+                <h2>Inner Quiet</h2>
+                <p>
+                    我是個大 I 人 (Introvert)。我不喜歡與人面對面的喧囂交流，卻渴望心靈深處的深刻連結。
+                </p>
+                <p>
+                    這就是為什麼我選擇透過網路平台，讓大家看到我的作品。
+                    在這個安靜的角落，我用作品說話，也希望能聽到你的共鳴。
+                </p>
+
+                <div class="works-grid">
+                    <div class="image-block">
+                        <img src="/assets/images/guild/gheart/work2.webp" alt="Work Sample 2">
+                    </div>
+                    <div class="image-block">
+                        <img src="/assets/images/guild/gheart/work3.webp" alt="Work Sample 3">
+                    </div>
                 </div>
+            </section>
+        </div>
+
+        <!-- Card 5: Dream & Socials -->
+        <div class="content-card">
+            <section id="dream">
+                <h2>The Dream</h2>
+                <p>
+                    目前是兩個孩子的媽，生活或許忙碌，但我心中的火焰從未熄滅。
+                </p>
+                <p>
+                    期許自己未來能當個有自知之明的老人，能夠搬到有山有海的地方獨居。
+                    在那裡，我將擁有熱愛的大自然的一切，以及最嚮往的——<b>一個人的自由</b>。
+                </p>
+                <p style="text-align: center; margin-top: 2rem; font-family: 'Cormorant Garamond'; font-size: 1.2rem; color: var(--c-accent);">
+                    Wood · Sea · Herbs · Forest · Stars
+                </p>
+            </section>
+
+            <div class="social-container">
+                <a href="https://www.threads.com/@gheart1982" target="_blank" class="social-link">Threads</a>
+                <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-link">Instagram</a>
             </div>
-        </section>
-
-        <section id="dream">
-            <h2>The Dream</h2>
-            <p>
-                目前是兩個孩子的媽，生活或許忙碌，但我心中的火焰從未熄滅。
-            </p>
-            <p>
-                期許自己未來能當個有自知之明的老人，能夠搬到有山有海的地方獨居。
-                在那裡，我將擁有熱愛的大自然的一切，以及最嚮往的——<b>一個人的自由</b>。
-            </p>
-            <p style="text-align: center; margin-top: 2rem; font-family: 'Cormorant Garamond'; font-size: 1.2rem; color: var(--c-accent);">
-                Wood · Sea · Herbs · Forest · Stars
-            </p>
-        </section>
-
-        <div class="social-container">
-            <a href="https://www.threads.com/@gheart1982" target="_blank" class="social-link">Threads</a>
-            <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-link">Instagram</a>
         </div>
 
     </div>
@@ -498,20 +528,23 @@
                 document.getElementById('loader').style.display = 'none';
              }});
 
-             tl.from(".journal-container", { y: 50, opacity: 0, duration: 1 }, "-=0.5");
+             // Animate the first card (Profile) on load
+             tl.from("#card-profile", { y: 50, opacity: 0, duration: 1 }, "-=0.5");
              tl.from(".profile-img", { scale: 0.8, opacity: 0, duration: 0.8, ease: "back.out(1.7)" }, "-=0.5");
              tl.from("h1", { y: 20, opacity: 0, duration: 0.8 }, "-=0.6");
              tl.from(".profile-header p", { y: 20, opacity: 0, duration: 0.8 }, "-=0.6");
 
-             // 2. Section Reveals
-             gsap.utils.toArray("section").forEach(section => {
-                gsap.from(section, {
+             // 2. Card Reveals (Staggered Scroll)
+             // Skip the first card since it's already animated
+             const cards = gsap.utils.toArray(".content-card").slice(1);
+             cards.forEach(card => {
+                gsap.from(card, {
                     scrollTrigger: {
-                        trigger: section,
-                        start: "top 80%",
+                        trigger: card,
+                        start: "top 85%", // Trigger when top of card hits 85% of viewport
                         toggleActions: "play none none reverse"
                     },
-                    y: 50,
+                    y: 80,
                     opacity: 0,
                     duration: 1,
                     ease: "power2.out"
