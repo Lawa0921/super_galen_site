@@ -17,8 +17,7 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
@@ -34,15 +33,18 @@
             --c-glass: rgba(5, 5, 5, 0.85);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
-
+        /* Optimization: Apply cursor: none only to body, not globally */
         body {
+            margin: 0; padding: 0; box-sizing: border-box;
             background-color: var(--c-dark);
             color: var(--c-flash);
             font-family: 'Zen Kaku Gothic New', sans-serif;
             overflow-x: hidden;
             width: 100vw;
+            cursor: none;
         }
+
+        * { box-sizing: border-box; }
 
         /* --- Cursor --- */
         #cursor {
@@ -68,7 +70,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 450vh; /* Increased slightly for new section */
+            height: 450vh;
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -85,6 +87,7 @@
             display: flex; align-items: center; gap: 10px;
             pointer-events: auto; mix-blend-mode: difference;
             text-decoration: none;
+            cursor: none; /* Restore custom cursor logic */
         }
         .mark-symbol {
             width: 40px; height: 40px; border: 2px solid var(--c-solar);
@@ -306,7 +309,7 @@
                 <p>畢業於<span class="highlight">輔仁大學景觀設計</span>，我不只設計環境，更在乎人與空間的連結。從園丁到社群引導者，我的職涯路徑雖然任性，但目標一致：<br><strong>創造安全、被接納的連結。</strong></p>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/yuzi/gallery_1.webp" alt="Yuzi Profile">
+                <img src="/assets/img/guild/yuzi/gallery_1.webp" alt="Yuzi Profile" loading="eager">
             </div>
         </div>
 
@@ -322,7 +325,7 @@
                 </ul>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/yuzi/gallery_5.webp" alt="Yuzi Work">
+                <img src="/assets/img/guild/yuzi/gallery_5.webp" alt="Yuzi Work" loading="lazy">
             </div>
         </div>
 
@@ -346,7 +349,7 @@
                 </div>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/yuzi/gallery_4.webp" alt="Yuzi Services">
+                <img src="/assets/img/guild/yuzi/gallery_4.webp" alt="Yuzi Services" loading="lazy">
             </div>
         </div>
 
@@ -365,7 +368,7 @@
                 </div>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/yuzi/gallery_7.webp" alt="Yuzi Sports">
+                <img src="/assets/img/guild/yuzi/gallery_7.webp" alt="Yuzi Sports" loading="lazy">
             </div>
         </div>
 
@@ -378,7 +381,7 @@
                 <p><i class="fa-solid fa-mobile-screen" style="color:var(--c-solar);"></i> 偶爾通話，勝過大量文字。不需秒回，但希望不消失。</p>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/yuzi/gallery_6.webp" alt="Yuzi Connection">
+                <img src="/assets/img/guild/yuzi/gallery_6.webp" alt="Yuzi Connection" loading="lazy">
             </div>
         </div>
 
@@ -395,7 +398,7 @@
                 </div>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/yuzi/gallery_2.webp" alt="Yuzi Chill">
+                <img src="/assets/img/guild/yuzi/gallery_2.webp" alt="Yuzi Chill" loading="lazy">
             </div>
         </div>
 
@@ -412,7 +415,7 @@
 
     <!-- Finale Screen -->
     <div id="finale">
-        <img src="/assets/img/guild/yuzi/gallery_3.webp" class="finale-avatar">
+        <img src="/assets/img/guild/yuzi/gallery_3.webp" class="finale-avatar" loading="lazy">
         <h2 style="font-family: 'Kanit'; font-size: clamp(3rem, 8vw, 6rem); color: #000; line-height: 0.9; margin-bottom: 1rem;">LET'S CONNECT</h2>
         <p style="font-size: 1.5rem; color: #000; font-weight: 700; margin-bottom: 0.5rem;">能深聊、能玩、也能一起安靜</p>
         <p style="color: #444;">也許，我們會相處得不錯。</p>
@@ -429,7 +432,8 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- Setup ---
+        // --- Setup (Optimization: Mobile Check) ---
+        const isMobile = window.innerWidth < 900;
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x050505, 0.015);
@@ -437,18 +441,19 @@
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, alpha: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Optimization: Cap pixel ratio on mobile
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 2));
         container.appendChild(renderer.domElement);
 
         // --- Scene Objects ---
         const worldGroup = new THREE.Group();
         scene.add(worldGroup);
 
-        // 1. Hyper-Speed Particles
+        // 1. Hyper-Speed Particles (Optimization: Reduce count on mobile)
         const pGeo = new THREE.BufferGeometry();
-        const pCount = 2000;
+        const pCount = isMobile ? 800 : 2000;
         const pPos = new Float32Array(pCount * 3);
         const pCol = new Float32Array(pCount * 3);
 
@@ -493,7 +498,9 @@
             'fa-solid fa-mountain'
         ];
 
-        for(let i=0; i<12; i++) {
+        // Optimization: Reduce icon count on mobile
+        const iconLimit = isMobile ? 6 : 12;
+        for(let i=0; i<iconLimit; i++) {
             const iconClass = icons[Math.floor(Math.random() * icons.length)];
             const el = document.createElement('i');
             el.className = `floating-icon ${iconClass}`;
@@ -532,30 +539,35 @@
         }
 
         // 3. Central Core
-        const coreGroup = new THREE.Group();
-        coreGroup.position.z = -550; // Further back
-        coreGroup.scale.set(5, 5, 5);
-        worldGroup.add(coreGroup);
+        // Optimization: Wrap in container for GSAP scaling
+        const coreContainer = new THREE.Group();
+        coreContainer.position.z = -550; // Further back
+        coreContainer.scale.set(5, 5, 5);
+        worldGroup.add(coreContainer);
+
+        // Use a separate group for the pulse animation to avoid fighting GSAP
+        const pulsingCore = new THREE.Group();
+        coreContainer.add(pulsingCore);
 
         // Inner Star
         const innerGeo = new THREE.IcosahedronGeometry(2, 0);
         const innerMat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, wireframe: true, wireframeLinewidth: 2 });
         const innerStar = new THREE.Mesh(innerGeo, innerMat);
-        coreGroup.add(innerStar);
+        pulsingCore.add(innerStar);
 
         // Rings
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.5 });
         const ring1 = new THREE.Mesh(new THREE.TorusGeometry(3.5, 0.1, 16, 100), ringMat);
-        coreGroup.add(ring1);
+        pulsingCore.add(ring1);
 
         const ring2 = new THREE.Mesh(new THREE.TorusGeometry(5, 0.15, 16, 100), ringMat);
         ring2.rotation.x = Math.PI / 2;
-        coreGroup.add(ring2);
+        pulsingCore.add(ring2);
 
         const ring3Mat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.3 });
         const ring3 = new THREE.Mesh(new THREE.TorusGeometry(7, 0.05, 16, 100), ring3Mat);
         ring3.rotation.y = Math.PI / 4;
-        coreGroup.add(ring3);
+        pulsingCore.add(ring3);
 
         // --- GSAP Logic ---
         gsap.registerPlugin(ScrollTrigger);
@@ -578,8 +590,10 @@
         // Effects
         tl.to(particles.scale, { z: 5, ease: "power2.in" }, 0);
         tl.to(particles.scale, { z: 1, ease: "power2.out" }, 0.9);
-        tl.to(coreGroup.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
-        tl.to(coreGroup.rotation, { y: 10, x: 5 }, 0);
+
+        // Optimization: Animate the container, not the pulsing group
+        tl.to(coreContainer.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
+        tl.to(coreContainer.rotation, { y: 10, x: 5 }, 0);
 
         // Reveals - Updated for 7 Panels
         // Range: ~5% to ~90%
@@ -637,7 +651,7 @@
             onLeaveBack: () => document.getElementById('finale').classList.remove('active')
         });
 
-        // --- Animation Loop ---
+        // --- Animation Loop (Optimization: Use GSAP Ticker) ---
         const clock = new THREE.Clock();
 
         function animate() {
@@ -653,14 +667,15 @@
             ring2.rotation.y = t * 0.6;
             ring3.rotation.z = t * 0.3;
 
-            // Pulse
+            // Pulse (Optimization: Clean separation of concerns)
+            // Animate only the pulsingCore group, relative to its parent
             const pulse = 1 + Math.sin(t * 8) * 0.1;
-            coreGroup.scale.multiplyScalar(pulse / coreGroup.scale.x * (5 + (camera.position.z < -100 ? (camera.position.z + 100)*-0.5 : 0)));
+            pulsingCore.scale.set(pulse, pulse, pulse);
 
             renderer.render(scene, camera);
-            requestAnimationFrame(animate);
         }
-        animate();
+        // Optimization: Use gsap.ticker for better battery life and sync
+        gsap.ticker.add(animate);
 
         // --- Interactions ---
         const cursor = document.getElementById('cursor');
@@ -673,9 +688,11 @@
         });
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(width, height);
         });
 
     </script>
