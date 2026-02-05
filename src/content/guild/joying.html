@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOYING | TACTICAL GUIDE</title>
+    <meta name="description" content="Joying - Tactical Guide, Atmosphere Specialist, Sharpshooter.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Exo+2:wght@300;600&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #050510;
+            --tac-blue: #00A8E8;
+            --tac-amber: #FFAA00;
+            --tac-white: #E0E0E0;
+            --ui-glass: rgba(5, 10, 25, 0.9);
+
+            --font-display: 'Rajdhani', sans-serif;
+            --font-ui: 'Exo 2', sans-serif;
+            --font-body: 'Zen Maru Gothic', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--tac-white);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100%;
+            height: 100vh; /* Locked initially */
+            overflow: hidden;
+        }
+
+        body.unlocked {
+            height: auto;
+            overflow-y: auto;
+        }
+
+        /* --- Intro Overlay --- */
+        #intro-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .target-reticle {
+            width: 150px; height: 150px;
+            border: 2px solid var(--tac-amber);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
+            cursor: none;
+        }
+        .target-reticle::before, .target-reticle::after {
+            content: ''; position: absolute; background: var(--tac-amber);
+        }
+        .target-reticle::before { width: 100%; height: 1px; }
+        .target-reticle::after { width: 1px; height: 100%; }
+
+        .target-center {
+            width: 20px; height: 20px;
+            background: var(--tac-blue);
+            border-radius: 50%;
+            animation: pulse-target 1s infinite;
+        }
+        @keyframes pulse-target { 0% { transform: scale(1); } 50% { transform: scale(1.5); box-shadow: 0 0 20px var(--tac-blue); } 100% { transform: scale(1); } }
+
+        .intro-text {
+            margin-top: 2rem;
+            font-family: var(--font-display);
+            color: var(--tac-white);
+            letter-spacing: 2px;
+            opacity: 0.7;
+        }
+
+        /* --- Custom Cursor --- */
+        /* Z-Index increased to be above intro overlay */
+        .cursor-ring {
+            position: fixed;
+            top: 0; left: 0;
+            width: 30px; height: 30px;
+            border: 2px solid var(--tac-amber);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 20000;
+            transition: width 0.3s, height 0.3s;
+            mix-blend-mode: screen;
+            will-change: transform;
+        }
+        .cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 6px; height: 6px;
+            background: var(--tac-blue);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 20000;
+            will-change: transform;
+        }
+        .cursor-ring.active {
+            width: 60px; height: 60px;
+            background: rgba(255, 170, 0, 0.1);
+            border-color: var(--tac-blue);
+        }
+
+        /* --- Background --- */
+        #webgl-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- Nav & Route Sidebar --- */
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: var(--tac-amber);
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            padding: 10px 24px;
+            background: var(--ui-glass);
+            border-left: 4px solid var(--tac-amber);
+            border-bottom: 1px solid rgba(255, 170, 0, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            pointer-events: auto;
+            text-transform: uppercase;
+        }
+        .nav-back:hover {
+            background: rgba(255, 170, 0, 0.15);
+            padding-left: 30px;
+        }
+
+        .route-sidebar {
+            position: fixed;
+            right: 2rem; top: 50%;
+            transform: translateY(-50%);
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: flex-end;
+        }
+        .route-point {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+        .route-point.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .route-label {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            color: var(--tac-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: none;
+        }
+        .route-point.active .route-label { display: block; }
+
+        .route-dot {
+            width: 12px; height: 12px;
+            border: 1px solid var(--tac-amber);
+            background: rgba(0,0,0,0.5);
+            transform: rotate(45deg);
+            position: relative;
+        }
+        .route-point.active .route-dot {
+            background: var(--tac-amber);
+            box-shadow: 0 0 10px var(--tac-amber);
+        }
+
+        /* --- HUD --- */
+        .hud-panel {
+            position: fixed;
+            z-index: 90;
+            font-family: var(--font-display);
+            color: var(--tac-blue);
+            font-size: 1rem;
+            pointer-events: none;
+            letter-spacing: 1.5px;
+            user-select: none;
+        }
+        .hud-panel.bottom-left {
+            bottom: 2rem; left: 2rem;
+            display: flex;
+            align-items: flex-end;
+            gap: 1.5rem;
+        }
+        .hud-label { color: var(--tac-amber); opacity: 0.8; font-weight: bold; font-size: 0.8rem; }
+
+        .compass-wrap {
+            width: 70px; height: 70px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: rgba(0,0,0,0.6);
+        }
+        .compass-arrow {
+            width: 0; height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 24px solid var(--tac-amber);
+            transform-origin: 50% 100%;
+            position: absolute;
+            top: 12px;
+        }
+
+        /* --- Layout & Typography --- */
+        main { position: relative; z-index: 10; opacity: 0; /* Hidden until unlocked */ transition: opacity 1s; }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 6rem 5vw;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 10vw, 8rem);
+            font-weight: 700;
+            line-height: 0.9;
+            color: white;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+
+        h1 span {
+            color: var(--tac-blue);
+            display: block;
+            font-size: 0.3em;
+            letter-spacing: 10px;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            color: var(--tac-amber);
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        h2::before {
+            content: '';
+            width: 12px; height: 12px;
+            background: var(--tac-amber);
+            transform: rotate(45deg);
+        }
+
+        .subtitle {
+            font-family: var(--font-ui);
+            color: var(--tac-blue);
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: block;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #ddd;
+            margin-bottom: 2rem;
+        }
+
+        .highlight { color: var(--tac-amber); }
+
+        /* --- Content Panels --- */
+        .content-panel {
+            background: var(--ui-glass);
+            border-top: 4px solid var(--tac-blue);
+            border-bottom: 1px solid rgba(0, 168, 232, 0.3);
+            padding: 3rem;
+            position: relative;
+            max-width: 800px;
+            margin-left: auto;
+            transform: translateX(100px);
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+        .content-panel.left {
+            margin-left: 0; margin-right: auto;
+            transform: translateX(-100px);
+        }
+        .content-panel.center {
+            margin: 0 auto;
+            transform: translateY(100px);
+        }
+        .content-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 40px; height: 4px;
+            background: var(--tac-amber);
+        }
+
+        /* Avatar */
+        .avatar-frame {
+            position: relative;
+            width: 250px;
+            border: 2px solid rgba(255,255,255,0.2);
+            padding: 8px;
+        }
+        .avatar-img {
+            width: 100%; display: block;
+            filter: sepia(20%) contrast(1.1);
+        }
+
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .service-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+        .service-card:hover {
+            border-color: var(--tac-amber);
+            background: rgba(255, 170, 0, 0.1);
+            transform: translateY(-5px);
+        }
+        .service-icon {
+            font-size: 2rem;
+            color: var(--tac-blue);
+            margin-bottom: 1rem;
+        }
+        .service-title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--tac-white);
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
+        }
+
+        /* Archive Grid */
+        .archive-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 250px);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .archive-item {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.5s;
+        }
+        .archive-item:first-child { grid-column: 1 / 3; }
+
+        .archive-item img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s;
+            filter: grayscale(0.5);
+        }
+        .archive-item:hover img { transform: scale(1.1); filter: grayscale(0); }
+        .archive-tag {
+            position: absolute;
+            bottom: 0; left: 0;
+            background: var(--tac-blue);
+            color: #000;
+            padding: 3px 8px;
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        /* Campaign Nodes */
+        .campaign-node {
+            background: rgba(0, 168, 232, 0.05);
+            border-left: 4px solid var(--tac-blue);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .campaign-title {
+            font-family: var(--font-display);
+            color: var(--tac-amber);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* --- Secret/Idol Interaction --- */
+        .secret-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid var(--tac-amber);
+            background: rgba(0,0,0,0.5);
+            padding: 2rem;
+            text-align: center;
+            overflow: hidden;
+            transition: all 0.5s;
+        }
+        .secret-container:hover {
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+            border-color: var(--tac-white);
+        }
+        .secret-lock-ui {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            transition: opacity 0.5s;
+        }
+        .secret-content {
+            display: none;
+            opacity: 0;
+            margin-top: 2rem;
+        }
+        .lock-icon {
+            font-size: 3rem;
+            color: var(--tac-amber);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; text-shadow: 0 0 10px var(--tac-amber); } 100% { opacity: 0.6; } }
+
+        /* Idol Grid */
+        .idol-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .idol-card {
+            border: 1px solid var(--tac-amber);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+            aspect-ratio: 3/4;
+        }
+        .idol-card:hover { transform: scale(1.02); }
+        .idol-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .idol-label {
+            position: absolute;
+            bottom: 0; right: 0;
+            background: var(--tac-amber);
+            color: #000;
+            padding: 3px 8px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        /* Finale Section */
+        #sector-finale {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        /* Landing Zone Effect */
+        .landing-zone {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px; height: 600px;
+            border: 2px dashed rgba(255, 170, 0, 0.4);
+            border-radius: 50%;
+            animation: rotate-landing 20s linear infinite;
+            pointer-events: none;
+            box-shadow: 0 0 30px rgba(255, 170, 0, 0.1);
+        }
+        .landing-zone::before {
+            content: ''; position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px; height: 400px;
+            border: 1px solid rgba(0, 168, 232, 0.5);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 168, 232, 0.1);
+        }
+        @keyframes rotate-landing { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        .finale-text-bg {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-display);
+            font-size: 15vw;
+            color: rgba(255,255,255,0.05);
+            font-weight: 900;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            text-shadow: 0 0 10px rgba(255,255,255,0.1);
+        }
+
+        /* Footer */
+        .site-footer {
+            text-align: center;
+            padding: 6rem 2rem 8rem 2rem;
+            color: #888;
+            font-size: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: #050510;
+        }
+        .footer-social {
+            display: flex;
+            gap: 3rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+        .social-link {
+            color: #fff;
+            font-size: 2rem;
+            transition: 0.3s;
+        }
+        .social-link:hover { color: var(--tac-amber); }
+
+        /* RWD */
+        .split-layout {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        @media (max-width: 1024px) {
+            .split-layout { flex-direction: column; align-items: flex-start; gap: 2rem; }
+            .content-panel { margin: 0; width: 100%; transform: none !important; opacity: 1 !important; padding: 2rem; }
+            .route-sidebar { display: none; }
+            .nav-back { top: 1rem; left: 1rem; padding: 8px 16px; font-size: 1rem; }
+            section { padding: 3rem 1.5rem; }
+            h1 { font-size: 3rem; margin-bottom: 1rem; }
+            h2 { font-size: 2rem; margin-bottom: 1.5rem; }
+            p { font-size: 1rem; margin-bottom: 1.5rem; }
+            .archive-grid { grid-template-columns: 1fr; grid-template-rows: auto; gap: 1rem; }
+            .archive-item:first-child { grid-column: auto; }
+            .archive-item { height: auto; aspect-ratio: 16/9; }
+            .services-grid { gap: 1rem; margin-top: 2rem; }
+            .service-card { padding: 1.5rem; }
+            .idol-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .idol-card { aspect-ratio: auto; }
+            .secret-container { padding: 1.5rem; }
+            .avatar-frame { width: 100%; max-width: 300px; margin: 0 auto; }
+            .footer-social { gap: 2rem; }
+            .site-footer { padding: 4rem 1rem 6rem 1rem; }
+            .landing-zone { width: 300px; height: 300px; }
+            .landing-zone::before { width: 200px; height: 200px; }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 2.5rem; }
+            section { padding: 3rem 1rem; }
+            .content-panel { padding: 1.5rem 1rem; }
+            .nav-back { border-left-width: 2px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Intro Overlay -->
+    <div id="intro-overlay">
+        <div class="target-reticle" id="start-target">
+            <div class="target-center"></div>
+        </div>
+        <div class="intro-text">CLICK TARGET TO ENGAGE</div>
+    </div>
+
+    <div id="webgl-canvas"></div>
+
+    <!-- Route Sidebar (Map) -->
+    <div class="route-sidebar">
+        <div class="route-point" id="route-hq">
+            <span class="route-label">HQ // Identity</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-skills">
+            <span class="route-label">Training // Skills</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-archive">
+            <span class="route-label">Logs // Archive</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-frontier">
+            <span class="route-label">Frontier // Campaign</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-obs">
+            <span class="route-label">Observatory // Idol</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-end">
+            <span class="route-label">Extraction // Finale</span>
+            <div class="route-dot"></div>
+        </div>
+    </div>
+
+    <!-- Cursor -->
+    <div class="cursor-ring"></div>
+    <div class="cursor-dot"></div>
+
+    <a href="/guild/" class="nav-back hover-target">
+        <i class="fa-solid fa-location-arrow"></i> Return to Base
+    </a>
+
+    <!-- HUD -->
+    <div class="hud-panel bottom-left">
+        <div class="compass-wrap">
+            <div class="compass-arrow"></div>
+        </div>
+        <div>
+            <div class="hud-label">BEARING</div>
+            <div id="hud-bearing" style="font-size: 1.5rem; font-family: var(--font-display);">000°</div>
+        </div>
+        <div>
+            <div class="hud-label">ELEVATION</div>
+            <div id="hud-elev" style="font-size: 1.5rem; font-family: var(--font-display);">1201 M</div>
+        </div>
+    </div>
+
+    <main>
+
+        <!-- Waypoint 1: HQ -->
+        <section id="sector-hq" data-route="route-hq">
+            <div class="container">
+                <h1><span>OPERATIVE 1201</span>JOYING</h1>
+                <p class="subtitle" style="color: var(--tac-amber); margin-bottom: 4rem;">// TACTICAL GUIDE // ATMOSPHERE SPECIALIST</p>
+
+                <div class="split-layout">
+                    <div class="avatar-frame">
+                        <img src="/assets/img/guild/joying/avatar.webp" class="avatar-img" alt="Joying">
+                    </div>
+
+                    <div class="content-panel">
+                        <h2><i class="fa-regular fa-id-card"></i> MISSION PROFILE</h2>
+                        <p>
+                            <strong>Operative 1201 Online.</strong><br>
+                            我是 Joying。穿梭於秩序與混亂邊界的引路人。<br>
+                            從戲劇系轉職至治安現場，我將混亂的生活現場轉化為可控的戰術地圖。
+                        </p>
+                        <p>
+                            我不只是一個執行者，更是一個觀察者。我將生活的不可預測性視為動態的戰術地圖，協助你在迷茫中建立座標，在壓力下找回節奏。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Waypoint 2: Training -->
+        <section id="sector-skills" data-route="route-skills">
+            <div class="container">
+                <div class="content-panel left">
+                    <h2><i class="fa-solid fa-layer-group"></i> MISSION CAPABILITIES</h2>
+                    <p class="highlight" style="font-size: 1.2rem; margin-bottom: 2rem;">"為你的生活帶來安全感與氛圍感。"</p>
+
+                    <div class="services-grid">
+                        <div class="service-card">
+                            <div class="service-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                            <div class="service-title">CRISIS CONTROL</div>
+                            <p>穩定輸出。處理混亂現場與突發狀況的專家。協助你在生活突發狀況中保持冷靜，進行風險評估。</p>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-icon"><i class="fa-solid fa-crosshairs"></i></div>
+                            <div class="service-title">PRECISION FOCUS</div>
+                            <p>空氣手槍般的精準度。我能協助你排除雜訊，鎖定人生關鍵目標，用比扛槍更穩定的心態面對壓力。</p>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-icon"><i class="fa-solid fa-music"></i></div>
+                            <div class="service-title">VIBE MAKER</div>
+                            <p>Vocal 擔當。用歌聲與熱情點亮聚會氛圍。無論是 KTV 還是公路旅行，我負責聲音地景的策展。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Waypoint 3: Field Archive -->
+        <section id="sector-archive" data-route="route-archive">
+            <div class="container">
+                <div class="content-panel center" style="width: 100%; max-width: 1200px;">
+                    <h2><i class="fa-solid fa-images"></i> VISUAL FIELD RECORDS</h2>
+                    <p style="text-align: center; max-width: 800px; margin: 0 auto;">
+                        <strong>Life Logs.</strong><br>
+                        捕捉日常的戰術訊號。從高壓的勤務現場到放鬆的音樂頻率，每一個瞬間都是構成生活地圖的關鍵節點。
+                    </p>
+
+                    <div class="archive-grid">
+                        <div class="archive-item">
+                            <img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy" alt="Duty Log">
+                            <div class="archive-tag">LOG_01: DUTY</div>
+                        </div>
+                        <div class="archive-item">
+                            <img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy" alt="Signal Log">
+                            <div class="archive-tag">LOG_02: SIGNAL</div>
+                        </div>
+                        <div class="archive-item">
+                            <img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy" alt="Off-Duty Log">
+                            <div class="archive-tag">LOG_04: OFF-DUTY</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Waypoint 4: Frontier -->
+        <section id="sector-frontier" data-route="route-frontier">
+            <div class="container">
+                <div class="content-panel">
+                    <h2><i class="fa-solid fa-map-location-dot"></i> ACTIVE CAMPAIGNS</h2>
+                    <p>
+                        <strong>Navigation Status: Dynamic.</strong><br>
+                        目前正處於人生戰術的轉折點。面對統調返鄉後的職場重置，以及遠距關係的訊號同步，我正在重新校準我的導航系統。
+                    </p>
+                    <p style="color: var(--tac-amber); font-style: italic;">
+                        "如果你也覺得人生像一齣劇，那我願意陪你一起排練這場沒有劇本的即興演出。"
+                    </p>
+
+                    <div style="margin-top: 3rem;">
+                        <div class="campaign-node">
+                            <div class="campaign-title">
+                                <span>CAMPAIGN 01: HOMECOMING</span>
+                                <i class="fa-solid fa-route"></i>
+                            </div>
+                            <p>應對統調後的環境變遷。重新建立職場人際雷達，適應新的工作壓力係數。</p>
+                        </div>
+                        <div class="campaign-node">
+                            <div class="campaign-title">
+                                <span>CAMPAIGN 02: LONG-RANGE COMMS</span>
+                                <i class="fa-solid fa-heart"></i>
+                            </div>
+                            <p>遠距關係的訊號維持。評估雙方能量續航力，計算共同走下去的機率模型。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Waypoint 5: Observatory (Secret Interaction) -->
+        <section id="sector-obs" data-route="route-obs">
+            <div class="container" style="text-align: center;">
+                <div class="content-panel center">
+                    <h2><i class="fa-solid fa-star"></i> STAR OBSERVATORY</h2>
+
+                    <div id="secret-trigger" class="secret-container">
+                        <!-- Locked State -->
+                        <div class="secret-lock-ui">
+                            <i class="fa-solid fa-lock lock-icon"></i>
+                            <div style="font-family: var(--font-display); letter-spacing: 2px; color: var(--tac-amber);">
+                                RESTRICTED ACCESS: PRIVATE FREQUENCY
+                            </div>
+                            <div style="font-size: 0.9rem; color: #aaa;">[CLICK TO DECRYPT]</div>
+                        </div>
+
+                        <!-- Revealed Content -->
+                        <div class="secret-content">
+                            <p class="subtitle" style="justify-content: center; display: flex; color: var(--tac-blue);">DECRYPTED: TNT // LIU YUNING</p>
+                            <p>
+                                在混亂的世界中，我們都需要一個仰望的座標。<br>提供高品質的偶像觀察報告與心動瞬間分享。
+                            </p>
+
+                            <div class="idol-grid">
+                                <div class="idol-card hover-target">
+                                    <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" alt="Liu Yuning">
+                                    <div class="idol-label">PRIMARY TARGET</div>
+                                </div>
+                                <div class="idol-card hover-target">
+                                    <img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy" alt="Identity Log">
+                                    <div class="idol-label">IDENTITY LOG</div>
+                                </div>
+                                <div class="idol-card hover-target">
+                                    <img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy" alt="Frequency Log">
+                                    <div class="idol-label">FREQUENCY LOG</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Finale: Extraction -->
+        <section id="sector-finale" data-route="route-end">
+            <div class="container">
+                <div class="content-panel center" style="background: rgba(5,10,25,0.8); border: 1px solid var(--tac-blue); position: relative; z-index: 5; backdrop-filter: blur(10px);">
+                    <div class="landing-zone"></div>
+                    <div class="finale-text-bg">MISSION COMPLETE</div>
+
+                    <h2 style="color: var(--tac-white); text-shadow: 0 0 10px var(--tac-blue);">MISSION DEBRIEF</h2>
+                    <div style="font-family: var(--font-display); font-size: 2rem; color: var(--tac-amber); letter-spacing: 4px; margin-top: 1rem; text-shadow: 0 0 20px var(--tac-amber); animation: pulse-text 2s infinite;">
+                        STATUS: STANDING BY
+                    </div>
+                    <style>
+                        @keyframes pulse-text { 0% { opacity: 0.8; } 50% { opacity: 1; text-shadow: 0 0 30px var(--tac-amber); } 100% { opacity: 0.8; } }
+                    </style>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="site-footer">
+            <div class="footer-social">
+                <a href="https://www.threads.net/@joying_1201" target="_blank" class="social-link hover-target">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-link hover-target">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+            </div>
+            <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
+        </footer>
+
+    </main>
+
+    <script>
+        // --- Initialization ---
+        window.addEventListener('load', () => {
+            initThreeJS();
+            initAnimations();
+        });
+
+        // --- Animations ---
+        function initAnimations() {
+            gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+            // Cursor
+            const cursorRing = document.querySelector('.cursor-ring');
+            const cursorDot = document.querySelector('.cursor-dot');
+            const pos = { x: window.innerWidth/2, y: window.innerHeight/2 };
+            const mouse = { x: pos.x, y: pos.y };
+
+            window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+
+            gsap.ticker.add(() => {
+                const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
+                pos.x += (mouse.x - pos.x) * dt;
+                pos.y += (mouse.y - pos.y) * dt;
+                cursorRing.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+                cursorDot.style.transform = `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
+            });
+
+            document.querySelectorAll('.hover-target, a').forEach(el => {
+                el.addEventListener('mouseenter', () => cursorRing.classList.add('active'));
+                el.addEventListener('mouseleave', () => cursorRing.classList.remove('active'));
+            });
+
+            // Section Slide-In Animations (Desktop only)
+            if(window.innerWidth > 1024) {
+                gsap.utils.toArray('.content-panel').forEach(panel => {
+                    gsap.to(panel, {
+                        x: 0,
+                        y: 0,
+                        opacity: 1,
+                        duration: 1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: panel.parentElement,
+                            start: "top 60%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+                });
+            }
+
+            // Route Sidebar Active State
+            const routePoints = document.querySelectorAll('.route-point');
+            const sections = document.querySelectorAll('section');
+
+            sections.forEach(section => {
+                ScrollTrigger.create({
+                    trigger: section,
+                    start: "top center",
+                    end: "bottom center",
+                    onToggle: self => {
+                        if(self.isActive) {
+                            const id = section.getAttribute('data-route');
+                            routePoints.forEach(p => p.classList.remove('active'));
+                            const activePoint = document.getElementById(id);
+                            if(activePoint) activePoint.classList.add('active');
+                        }
+                    }
+                });
+            });
+
+            // Secret Interaction
+            const secretContainer = document.getElementById('secret-trigger');
+            const lockUI = document.querySelector('.secret-lock-ui');
+            const secretContent = document.querySelector('.secret-content');
+            let isUnlocked = false;
+
+            secretContainer.addEventListener('click', () => {
+                if(isUnlocked) return;
+                isUnlocked = true;
+
+                const tl = gsap.timeline();
+                tl.to(lockUI, { opacity: 0, duration: 0.3, display: 'none' })
+                  .to(secretContainer, {
+                      borderColor: '#00A8E8',
+                      backgroundColor: 'rgba(0, 168, 232, 0.1)',
+                      boxShadow: '0 0 40px rgba(0, 168, 232, 0.2)',
+                      duration: 0.5
+                  })
+                  .set(secretContent, { display: 'block' })
+                  .to(secretContent, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" });
+            });
+
+            // Intro Interaction
+            const introOverlay = document.getElementById('intro-overlay');
+            const startTarget = document.getElementById('start-target');
+            const mainContent = document.querySelector('main');
+
+            // Force cursor to update immediately
+            const initCursor = (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                cursorRing.style.opacity = 1;
+                cursorDot.style.opacity = 1;
+                window.removeEventListener('mousemove', initCursor);
+            };
+            window.addEventListener('mousemove', initCursor);
+
+            startTarget.addEventListener('click', () => {
+                const tl = gsap.timeline();
+                tl.to(startTarget, { scale: 1.5, opacity: 0, duration: 0.1, ease: 'power1.in' })
+                  .to(introOverlay, {
+                      opacity: 0,
+                      duration: 0.8,
+                      ease: 'power2.out',
+                      onComplete: () => {
+                          introOverlay.style.display = 'none';
+                          document.body.classList.add('unlocked');
+                          ScrollTrigger.refresh(); // Recalculate scroll positions after unlocking body
+                          gsap.to(mainContent, { opacity: 1, duration: 1 });
+                      }
+                  });
+            });
+
+            // HUD Updates
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    const bearing = Math.floor(self.progress * 360);
+                    gsap.to('.compass-arrow', { rotation: bearing, duration: 0.5 });
+                    const ele = 1201 + Math.floor(self.progress * 1000);
+                    document.getElementById('hud-bearing').innerText = `${bearing.toString().padStart(3, '0')}°`;
+                    document.getElementById('hud-elev').innerText = `${ele} M`;
+                }
+            });
+        }
+
+        // --- Three.js Lidar Terrain ---
+        function initThreeJS() {
+            const container = document.getElementById('webgl-canvas');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050510, 0.0015);
+
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const isMobile = window.innerWidth < 768;
+            const seg = isMobile ? 60 : 100;
+            const pointSize = isMobile ? 3 : 2;
+
+            // 1. Terrain
+            const geometry = new THREE.PlaneGeometry(2000, 2000, seg, seg);
+            const count = geometry.attributes.position.count;
+
+            for (let i = 0; i < count; i++) {
+                const x = geometry.attributes.position.getX(i);
+                const y = geometry.attributes.position.getY(i);
+                const z = (Math.sin(x * 0.005) * 50) + (Math.cos(y * 0.005) * 50) + (Math.sin(x*0.02 + y*0.02)*10);
+                geometry.attributes.position.setZ(i, z);
+            }
+            geometry.computeVertexNormals();
+            geometry.rotateX(-Math.PI / 2);
+
+            const material = new THREE.PointsMaterial({
+                color: 0x4466aa,
+                size: pointSize,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            const terrain = new THREE.Points(geometry, material);
+            scene.add(terrain);
+
+            // 2. The Path
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 50, 500),
+                new THREE.Vector3(-100, 80, 0),
+                new THREE.Vector3(100, 120, -500),
+                new THREE.Vector3(0, 150, -1000)
+            ]);
+
+            const points = curve.getPoints(isMobile ? 50 : 100);
+            const pathGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const pathMat = new THREE.LineBasicMaterial({ color: 0xFFAA00, transparent: true, opacity: 0.3 });
+            scene.add(new THREE.Line(pathGeo, pathMat));
+
+            // 3. Stars
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = isMobile ? 500 : 1500;
+            const starPos = [];
+            for(let i=0; i<starCount; i++) {
+                starPos.push((Math.random()-0.5)*3000, Math.random()*1000+200, (Math.random()-0.5)*3000);
+            }
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+            const starMat = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 2, transparent: true, opacity: 0.8 });
+            const stars = new THREE.Points(starGeo, starMat);
+            scene.add(stars);
+
+            // 4. Entity
+            const entity = new THREE.Mesh(new THREE.IcosahedronGeometry(3, 0), new THREE.MeshBasicMaterial({ color: 0xFFAA00, wireframe: true }));
+            entity.add(new THREE.PointLight(0xFFAA00, 2, 100));
+            scene.add(entity);
+
+            // Camera Anim
+            const camObj = { t: 0 };
+            gsap.to(camObj, {
+                t: 0.95,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                },
+                onUpdate: () => {
+                    const pos = curve.getPoint(camObj.t);
+                    const lookAtPos = curve.getPoint(Math.min(camObj.t + 0.05, 1));
+                    camera.position.set(pos.x, pos.y + 20, pos.z + 50);
+                    camera.lookAt(lookAtPos);
+
+                    const entityT = Math.min(camObj.t + 0.08, 1);
+                    entity.position.copy(curve.getPoint(entityT));
+                    entity.rotation.x += 0.02;
+                    entity.rotation.y += 0.02;
+                }
+            });
+
+            // Initial
+            const startPos = curve.getPoint(0);
+            camera.position.set(startPos.x, startPos.y + 20, startPos.z + 50);
+            entity.position.copy(curve.getPoint(0.08));
+
+            gsap.ticker.add(() => {
+                stars.rotation.y += 0.0002;
+                renderer.render(scene, camera);
+            });
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 200);
+            });
+        }
+    </script>
+</body>
+</html>

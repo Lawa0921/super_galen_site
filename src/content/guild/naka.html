@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naka | Structural Entropy</title>
+    <meta name="description" content="Naka - Civil Engineering & Architecture. Exploring Structural Entropy and Taiwanese Aesthetics.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --accent-primary: #00f3ff; /* Cyan - Structure */
+            --accent-secondary: #ff4d4d; /* Red - Heat/Entropy */
+            --accent-tertiary: #4dffb8; /* Green - Nature/Taiwan */
+            --text-color: #e0e0e0;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-sans: 'Noto Sans TC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- UI Overlay --- */
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none; /* Allow interaction via raycaster later if needed */
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            font-family: var(--font-mono); font-size: 0.9rem;
+            color: var(--accent-primary); text-decoration: none;
+            display: flex; align-items: center; gap: 0.5rem;
+            opacity: 0.7; transition: 0.3s;
+        }
+        .nav-back:hover { opacity: 1; text-shadow: 0 0 8px var(--accent-primary); }
+
+        /* --- Content Layout --- */
+        main { position: relative; z-index: 10; }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 5vw;
+            position: relative;
+            pointer-events: none; /* Pass through to canvas */
+        }
+
+        .content-block {
+            max-width: 600px;
+            background: rgba(5, 5, 5, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-left: 2px solid var(--accent-primary);
+            pointer-events: auto;
+            transform: translateY(50px);
+            opacity: 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Section Specific Alignments */
+        #sec-hero { align-items: flex-start; justify-content: center; }
+        #sec-material { align-items: flex-end; text-align: right; }
+        #sec-material .content-block { border-left: none; border-right: 2px solid var(--accent-secondary); }
+        #sec-entropy { align-items: flex-start; }
+        #sec-aesthetics { align-items: flex-end; text-align: right; }
+        #sec-aesthetics .content-block { border-left: none; border-right: 2px solid var(--accent-tertiary); }
+        #sec-services { align-items: center; justify-content: center; text-align: left; }
+        #sec-services .content-block { max-width: 800px; border-left: 2px solid var(--accent-primary); border-right: 2px solid var(--accent-primary); }
+
+        #sec-finale { align-items: center; text-align: center; min-height: 50vh; padding-top: 10vh; }
+
+        /* Typography */
+        h1 {
+            font-family: var(--font-mono);
+            font-size: clamp(3rem, 10vw, 8rem);
+            line-height: 0.9;
+            color: #fff;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .glitch {
+            position: relative;
+        }
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--accent-secondary);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--accent-primary);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 80px, 0); }
+            20% { clip: rect(100px, 9999px, 150px, 0); }
+            40% { clip: rect(5px, 9999px, 50px, 0); }
+            60% { clip: rect(120px, 9999px, 180px, 0); }
+            80% { clip: rect(60px, 9999px, 100px, 0); }
+            100% { clip: rect(10px, 9999px, 140px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(120px, 9999px, 180px, 0); }
+            20% { clip: rect(10px, 9999px, 60px, 0); }
+            40% { clip: rect(90px, 9999px, 140px, 0); }
+            60% { clip: rect(30px, 9999px, 80px, 0); }
+            80% { clip: rect(140px, 9999px, 190px, 0); }
+            100% { clip: rect(50px, 9999px, 100px, 0); }
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-mono);
+            color: var(--accent-primary);
+            font-size: 1.2rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-family: var(--font-mono);
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            color: #fff;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+
+        .highlight { color: #fff; font-weight: 700; }
+        .tech-mono { font-family: var(--font-mono); font-size: 0.8rem; opacity: 0.6; color: var(--accent-primary); margin-bottom: 0.5rem; display: block; }
+
+        /* --- Components --- */
+        .avatar-frame {
+            width: 150px; height: 150px;
+            border: 1px solid var(--accent-primary);
+            padding: 5px;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        .avatar-frame::before {
+            content: ''; position: absolute; top: -5px; left: -5px;
+            width: 20px; height: 20px; border-top: 2px solid var(--accent-primary); border-left: 2px solid var(--accent-primary);
+        }
+        .avatar-frame::after {
+            content: ''; position: absolute; bottom: -5px; right: -5px;
+            width: 20px; height: 20px; border-bottom: 2px solid var(--accent-primary); border-right: 2px solid var(--accent-primary);
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            transition: 0.5s;
+        }
+        .avatar-frame:hover .avatar-img { filter: grayscale(0%); }
+
+        .service-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .service-item h3 {
+            color: var(--accent-primary);
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .service-item p {
+            font-size: 0.95rem;
+            color: #aaa;
+        }
+
+        .social-btn {
+            font-size: 3rem;
+            color: var(--accent-primary);
+            transition: all 0.3s;
+            display: inline-block;
+            margin-top: 2rem;
+        }
+        .social-btn:hover {
+            color: #fff;
+            transform: scale(1.1);
+            text-shadow: 0 0 20px var(--accent-primary);
+        }
+
+        /* --- Footer --- */
+        .site-footer {
+            position: relative;
+            background: #000;
+            color: #444;
+            padding: 2rem;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
+        }
+        .site-footer a { color: #666; text-decoration: none; transition: 0.3s; }
+        .site-footer a:hover { color: var(--accent-primary); }
+        .heart { color: var(--accent-secondary); animation: heartbeat 1.5s infinite; display: inline-block; }
+        @keyframes heartbeat { 0%,100%{transform:scale(1);} 50%{transform:scale(1.2);} }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .loader-bar {
+            width: 200px; height: 2px; background: rgba(255,255,255,0.2);
+            margin-top: 1rem; position: relative; overflow: hidden;
+        }
+        .loader-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--accent-primary);
+        }
+        .loader-text { font-family: var(--font-mono); letter-spacing: 0.2em; font-size: 0.8rem; }
+
+        /* --- Scroll Indicator --- */
+        .scroll-hint {
+            position: fixed; bottom: 2rem; right: 2rem;
+            font-family: var(--font-mono); font-size: 0.7rem;
+            writing-mode: vertical-rl; text-orientation: mixed;
+            color: rgba(255,255,255,0.5);
+            z-index: 50;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 4rem; }
+            section { padding: 10vw 5vw; }
+            #sec-material, #sec-aesthetics { text-align: left; align-items: flex-start; }
+            #sec-material .content-block, #sec-aesthetics .content-block {
+                border-left: 2px solid; border-right: none;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-text">INITIALIZING SYSTEM</div>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
+    </div>
+
+    <a href="/guild/" class="nav-back"><i class="fa-solid fa-chevron-left"></i> GUILD // NAKA</a>
+
+    <div id="webgl-container"></div>
+    <div class="grid-overlay"></div>
+    <div class="scroll-hint">SCROLL TO ANALYZE</div>
+
+    <main>
+        <!-- Section 0: Hero -->
+        <section id="sec-hero">
+            <div class="avatar-frame">
+                <img src="/assets/img/guild/naka/avatar.jpg" alt="Naka" class="avatar-img">
+            </div>
+            <h1 class="glitch" data-text="NAKA">NAKA</h1>
+            <div class="hero-subtitle">// CIVIL ENGINEERING & ARCHITECTURE</div>
+            <div class="content-block" style="border: none; background: transparent; padding: 0;">
+                <p style="font-family: var(--font-mono); font-size: 0.9rem; max-width: 400px; color: var(--accent-primary);">
+                    > SYSTEM STATUS: ONLINE<br>
+                    > LOAD MODULE: STRUCTURAL ENTROPY<br>
+                    > TARGET: CONSTRUCTING LOGIC, DESIGNING CHAOS
+                </p>
+            </div>
+        </section>
+
+        <!-- Section 1: Materiality -->
+        <section id="sec-material">
+            <div class="content-block">
+                <span class="tech-mono">01 // ADAPTIVE SKIN</span>
+                <h2 style="color: var(--accent-secondary);">Climate Response</h2>
+                <p>
+                    台灣的氣候是嚴酷的試煉，也是設計的起點。
+                </p>
+                <p>
+                    我專注於尋找能與高溫高濕共存的<span class="highlight">「呼吸系」立面材料</span>。
+                    不依賴高耗能的主動溫控，而是透過材質本身的熱阻隔與導濕性，創造出能自我調節的建築表層。
+                    這不只是防護，而是建築對土地最直接的物理回應。
+                </p>
+                <div class="tech-mono">> SERVICE: FACADE MATERIAL CONSULTING</div>
+            </div>
+        </section>
+
+        <!-- Section 2: Entropy -->
+        <section id="sec-entropy">
+            <div class="content-block">
+                <span class="tech-mono">02 // SPATIAL ENTROPY</span>
+                <h2 style="color: var(--accent-primary);">Flow Dynamics</h2>
+                <p>
+                    <span class="highlight">「亂度」(Entropy)</span> 是衡量失序的指標。在空間設計中，我將人的行為視為能量流動。
+                </p>
+                <p>
+                    一個好的空間應該降低使用者所需的「自由能」。透過精確的動線引導與機能排列，
+                    將工作室的混亂收斂為高效的工作流，或將車站的迷宮轉化為直覺的導航。
+                    讓事件的發生，順應熱力學的自然法則。
+                </p>
+                <div class="tech-mono">> SERVICE: SPATIAL EFFICIENCY OPTIMIZATION</div>
+            </div>
+        </section>
+
+        <!-- Section 3: Aesthetics -->
+        <section id="sec-aesthetics">
+            <div class="content-block">
+                <span class="tech-mono">03 // VERNACULAR FORM</span>
+                <h2 style="color: var(--accent-tertiary);">Taiwanese Identity</h2>
+                <p>
+                    尋找屬於這座島嶼的<span class="highlight">「自明性」</span>。
+                </p>
+                <p>
+                    如同九鬼周造定義了日式美學的結構，我也在解構屬於台灣的空間語彙。
+                    這不是表象的符號拼貼，而是從雜亂中提煉秩序，從亞熱帶的生活感性中，
+                    建構出一套專屬於我們的美學系統。
+                </p>
+                <div class="tech-mono">> SERVICE: CULTURAL DESIGN STRATEGY</div>
+            </div>
+        </section>
+
+        <!-- Section 4: Services -->
+        <section id="sec-services">
+            <div class="content-block">
+                <span class="tech-mono">04 // SYSTEM OFFERINGS</span>
+                <h2 style="color: #fff;">Services</h2>
+                <p style="margin-bottom: 2rem;">
+                    結合土木工程的理性邏輯與建築設計的感性思維，提供全方位的空間解決方案。
+                </p>
+                <ul class="service-list">
+                    <li class="service-item">
+                        <h3><i class="fa-solid fa-compass-drafting"></i> Architecture</h3>
+                        <p>建築設計規劃 / 結構系統整合 / 3D 建模與視覺化</p>
+                    </li>
+                    <li class="service-item">
+                        <h3><i class="fa-solid fa-route"></i> Spatial Strategy</h3>
+                        <p>動線效能優化 / 使用者行為分析 / 空間熱力學佈局</p>
+                    </li>
+                    <li class="service-item">
+                        <h3><i class="fa-solid fa-layer-group"></i> Materiality</h3>
+                        <p>氣候適應性立面諮詢 / 綠建材應用 / 耐久性評估</p>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Finale -->
+        <section id="sec-finale">
+            <div style="text-align: center; pointer-events: auto;">
+                <h2 style="font-size: 2rem; margin-bottom: 1rem;">CONNECT THE DOTS</h2>
+                <p style="color: #888;">讓我們一起建構未來的空間想像</p>
+                <a href="https://www.threads.net/@naka.3333" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+            </div>
+        </section>
+
+        <footer class="site-footer">
+            <p>Made with <span class="heart">♥</span> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+        </footer>
+
+    </main>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Configuration ---
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const PARTICLE_COUNT = isMobile ? 6000 : 20000;
+        const CONTAINER = document.getElementById('webgl-container');
+
+        // --- Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 15;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        CONTAINER.appendChild(renderer.domElement);
+
+        // --- Geometry & Attributes ---
+        const geometry = new THREE.BufferGeometry();
+
+        const posArray = new Float32Array(PARTICLE_COUNT * 3);
+        const target1 = new Float32Array(PARTICLE_COUNT * 3); // Chaos (Sphere)
+        const target2 = new Float32Array(PARTICLE_COUNT * 3); // Grid (Wall)
+        const target3 = new Float32Array(PARTICLE_COUNT * 3); // Flow (Noise Field)
+        const target4 = new Float32Array(PARTICLE_COUNT * 3); // Arch (Roof)
+        const colors = new Float32Array(PARTICLE_COUNT * 3);
+        const randoms = new Float32Array(PARTICLE_COUNT);
+
+        // Helper: Random Sphere
+        function getSpherePoint(r) {
+            const u = Math.random();
+            const v = Math.random();
+            const theta = 2 * Math.PI * u;
+            const phi = Math.acos(2 * v - 1);
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+            return [x, y, z];
+        }
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const i3 = i * 3;
+            randoms[i] = Math.random();
+
+            // 1. Chaos (Explosion/Sphere)
+            const [sx, sy, sz] = getSpherePoint(10 + Math.random() * 5);
+            posArray[i3] = sx;
+            posArray[i3+1] = sy;
+            posArray[i3+2] = sz;
+
+            target1[i3] = sx;
+            target1[i3+1] = sy;
+            target1[i3+2] = sz;
+
+            // 2. Grid (Wall) - Represents Facade/Material
+            const gx = (Math.random() - 0.5) * 30;
+            const gy = (Math.random() - 0.5) * 15;
+            target2[i3] = gx;
+            target2[i3+1] = gy;
+            target2[i3+2] = (Math.random() - 0.5) * 0.5; // Thin layer
+
+            // 3. Flow (Stream) - Represents Entropy
+            // Arrange in a cylinder/tube flow
+            const fx = (Math.random() - 0.5) * 40;
+            const fy = (Math.random() - 0.5) * 10;
+            const fz = Math.sin(fx * 0.5) * 5 + (Math.random() - 0.5) * 5;
+            target3[i3] = fx;
+            target3[i3+1] = fy;
+            target3[i3+2] = fz;
+
+            // 4. Arch (Roof) - Represents Aesthetics
+            // Traditional Roof Curve (Catenary-ish)
+            const ax = (Math.random() - 0.5) * 20;
+            const az = (Math.random() - 0.5) * 10;
+            // Roof curve function: y = -a * x^2
+            const ay = 5 - 0.05 * (ax * ax) - 0.05 * (az * az) + (Math.random() - 0.5);
+            target4[i3] = ax;
+            target4[i3+1] = ay;
+            target4[i3+2] = az;
+
+            // Base Colors (Cyan to White)
+            colors[i3] = 0.0; // R
+            colors[i3+1] = 0.95 + Math.random() * 0.05; // G
+            colors[i3+2] = 1.0; // B
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        geometry.setAttribute('aTarget1', new THREE.BufferAttribute(target1, 3));
+        geometry.setAttribute('aTarget2', new THREE.BufferAttribute(target2, 3));
+        geometry.setAttribute('aTarget3', new THREE.BufferAttribute(target3, 3));
+        geometry.setAttribute('aTarget4', new THREE.BufferAttribute(target4, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
+
+        // --- Shader Material ---
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uMix1: { value: 1 }, // Chaos
+                uMix2: { value: 0 }, // Grid
+                uMix3: { value: 0 }, // Flow
+                uMix4: { value: 0 }, // Arch
+                uMouse: { value: new THREE.Vector3(0, 0, 0) },
+                uColorHot: { value: new THREE.Color(0xff4d4d) },
+                uColorCool: { value: new THREE.Color(0x00f3ff) },
+                uColorNature: { value: new THREE.Color(0x4dffb8) }
+            },
+            vertexShader: `
+                uniform float uTime;
+                uniform float uMix1;
+                uniform float uMix2;
+                uniform float uMix3;
+                uniform float uMix4;
+                uniform vec3 uMouse;
+
+                attribute vec3 aTarget1;
+                attribute vec3 aTarget2;
+                attribute vec3 aTarget3;
+                attribute vec3 aTarget4;
+                attribute float aRandom;
+                attribute vec3 color;
+
+                varying vec3 vColor;
+                varying float vDist;
+
+                // Noise function
+                float random(vec2 st) {
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
+
+                void main() {
+                    // Mix positions
+                    vec3 pos = aTarget1 * uMix1 + aTarget2 * uMix2 + aTarget3 * uMix3 + aTarget4 * uMix4;
+
+                    // Add dynamic noise based on state
+                    // Flow state (3) needs movement
+                    if (uMix3 > 0.01) {
+                        float speed = 2.0;
+                        float offset = sin(pos.x * 0.5 + uTime * speed) * 2.0 * uMix3;
+                        pos.y += offset;
+                        pos.z += cos(pos.x * 0.5 + uTime) * uMix3;
+                    }
+
+                    // Chaos state (1) breathing
+                    if (uMix1 > 0.01) {
+                        vec3 sphereNormal = normalize(aTarget1);
+                        pos += sphereNormal * sin(uTime + aRandom * 10.0) * 0.5 * uMix1;
+                    }
+
+                    // Mouse Interaction (Repulsion/Heat)
+                    float d = distance(pos.xy, uMouse.xy * 20.0); // Simple projection
+                    vDist = d;
+
+                    if (d < 5.0) {
+                        vec3 dir = normalize(pos - vec3(uMouse.xy * 20.0, 0.0));
+                        pos += dir * (5.0 - d) * 0.5;
+                    }
+
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    gl_Position = projectionMatrix * mvPosition;
+
+                    // Size attenuation
+                    gl_PointSize = (4.0 * uMix2 + 2.0 * uMix1 + 3.0 * uMix3 + 3.0 * uMix4) * (15.0 / -mvPosition.z);
+
+                    // Pass color
+                    vColor = color;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 uColorHot;
+                uniform vec3 uColorCool;
+                uniform vec3 uColorNature;
+                uniform float uMix2; // Material
+                uniform float uMix4; // Nature/Arch
+
+                varying vec3 vColor;
+                varying float vDist;
+
+                void main() {
+                    // Circle shape
+                    vec2 coord = gl_PointCoord - vec2(0.5);
+                    if(length(coord) > 0.5) discard;
+
+                    vec3 finalColor = vColor;
+
+                    // Heat effect in Grid state (Materiality)
+                    if (uMix2 > 0.5) {
+                        float heat = smoothstep(5.0, 0.0, vDist);
+                        finalColor = mix(uColorCool, uColorHot, heat);
+                    }
+
+                    // Nature effect in Arch state
+                    if (uMix4 > 0.5) {
+                        finalColor = mix(finalColor, uColorNature, uMix4 * 0.8);
+                    }
+
+                    gl_FragColor = vec4(finalColor, 0.8);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // --- Interaction ---
+        // Optimization: Throttled mouse updates
+        const targetMouse = new THREE.Vector2();
+
+        window.addEventListener('mousemove', (event) => {
+            targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }, { passive: true });
+
+        // --- Animation Loop ---
+        // Optimization: Use gsap.ticker for better performance and auto-sleep
+        function tick(time, deltaTime) {
+            material.uniforms.uTime.value = time;
+
+            // Smoothly interpolate mouse uniform
+            const uMouse = material.uniforms.uMouse.value;
+            uMouse.x += (targetMouse.x - uMouse.x) * 0.1;
+            uMouse.y += (targetMouse.y - uMouse.y) * 0.1;
+
+            // Gentle Rotation
+            particles.rotation.y = time * 0.05;
+
+            renderer.render(scene, camera);
+        }
+
+        gsap.ticker.add(tick);
+
+        // --- GSAP ScrollTrigger ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Timeline for Morphs
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "main",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // 0 -> 1 (Chaos to Grid)
+        tl.to(material.uniforms.uMix1, { value: 0, duration: 1 })
+          .to(material.uniforms.uMix2, { value: 1, duration: 1 }, "<")
+          .to(camera.position, { z: 20, duration: 1 }, "<"); // Zoom out slightly
+
+        // 1 -> 2 (Grid to Flow)
+        tl.to(material.uniforms.uMix2, { value: 0, duration: 1 })
+          .to(material.uniforms.uMix3, { value: 1, duration: 1 }, "<")
+          .to(camera.position, { z: 25, duration: 1 }, "<");
+
+        // 2 -> 3 (Flow to Arch)
+        tl.to(material.uniforms.uMix3, { value: 0, duration: 1 })
+          .to(material.uniforms.uMix4, { value: 1, duration: 1 }, "<")
+          .to(camera.position, { z: 15, y: -5, duration: 1 }, "<");
+
+        // 3 -> 4 (Services: Rotate Arch)
+        // Maintain Mix4 (Arch) but move camera
+        tl.to(camera.position, { z: 12, y: -2, duration: 1 })
+          .to(camera.rotation, { z: 0.2, duration: 1 }, "<")
+          .to(particles.rotation, { x: 0.5, duration: 1 }, "<");
+
+        // Content Animation
+        gsap.utils.toArray('.content-block').forEach(block => {
+            gsap.to(block, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                scrollTrigger: {
+                    trigger: block,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // Loader
+        window.addEventListener('load', () => {
+            const loadTl = gsap.timeline();
+            loadTl.to(".loader-progress", { width: "100%", duration: 1 })
+                  .to("#loader", { opacity: 0, duration: 0.5, onComplete: () => {
+                      document.getElementById('loader').style.display = 'none';
+                  }})
+                  .from("h1", { opacity: 0, scale: 1.2, duration: 1, ease: "power4.out" });
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, { passive: true });
+
+    </script>
+</body>
+</html>

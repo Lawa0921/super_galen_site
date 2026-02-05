@@ -572,6 +572,18 @@ members:
       - id: "skiing"
         label: "Skiing"
 
+  - id: "liloyee"
+    name: "Liloyee"
+    avatar: "/assets/img/guild/liloyee/avatar.webp"
+    page: "/guild/liloyee.html"
+    tags:
+      - id: "math_teacher"
+        label: "奧數老師"
+      - id: "writer"
+        label: "作家"
+      - id: "cosplay"
+        label: "Cosplay"
+
   - id: "corbeau_z"
     name: "Corbeau.Z"
     avatar: "/assets/img/guild/corbeau_z/avatar.jpg"
@@ -595,3 +607,39 @@ members:
         label: "理性直覺"
       - id: "ocean_diver"
         label: "海洋潛水"
+
+  - id: "naka"
+    name: "Naka"
+    avatar: "/assets/img/guild/naka/avatar.jpg"
+    page: "/guild/naka.html"
+    tags:
+      - id: "architect"
+        label: "建築設計"
+      - id: "structural_eng"
+        label: "結構工程"
+      - id: "thermodynamics"
+        label: "熱力學"
+
+  - id: "ah_shui"
+    name: "阿水 Ah Shui"
+    avatar: "/assets/img/guild/ah_shui/avatar.webp"
+    page: "/guild/ah_shui.html"
+    tags:
+      - id: "event_host"
+        label: "活動主持人"
+      - id: "pipa_musician"
+        label: "琵琶演奏家"
+      - id: "culture_promoter"
+        label: "歌仔戲推廣"
+
+  - id: "joying"
+    name: "Joying"
+    avatar: "/assets/img/guild/joying/avatar.webp"
+    page: "/guild/joying.html"
+    tags:
+      - id: "tactical_guide"
+        label: "戰術嚮導"
+      - id: "atmosphere_specialist"
+        label: "氛圍專家"
+      - id: "crisis_control"
+        label: "危機控管"
