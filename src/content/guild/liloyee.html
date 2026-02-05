@@ -552,8 +552,10 @@
 
             // Lid Geometry
             const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, false, 0, Math.PI);
+            lidGeom.rotateZ(Math.PI / 2);
+            lidGeom.rotateX(-Math.PI / 2);
+
             const lidMesh = new THREE.Mesh(lidGeom, woodMat);
-            lidMesh.rotation.z = Math.PI / 2;
             lidMesh.position.set(0, 0, 1.5); // Offset to match hinge
             lidMesh.name = "ChestLid";
             chestLid.add(lidMesh);
