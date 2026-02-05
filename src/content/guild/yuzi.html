@@ -641,12 +641,12 @@
         revealPanel("#panel-vitality", 41, 53);
         revealPanel("#panel-connect", 53, 65);
         revealPanel("#panel-resonance", 65, 77);
-        revealPanel("#panel-core", 77, 89);
+        revealPanel("#panel-core", 77, 98);
 
         // Finale
         ScrollTrigger.create({
             trigger: "#scroll-spacer",
-            start: "90% bottom",
+            start: "99.5% bottom",
             onEnter: () => document.getElementById('finale').classList.add('active'),
             onLeaveBack: () => document.getElementById('finale').classList.remove('active')
         });
