@@ -131,10 +131,10 @@
             transform: translateY(-50%);
             display: flex; justify-content: center; align-items: center;
             gap: 4rem; /* Significant gap */
-            opacity: 0; pointer-events: none; /* Initially hidden */
+            pointer-events: none; /* Container passes events through */
             padding: 0 5%;
         }
-        .content-panel.active { pointer-events: auto; }
+        /* .content-panel.active { pointer-events: auto; } Removed to rely on children */
 
         /* Text Card */
         .text-card {
@@ -146,6 +146,7 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 0 30px rgba(255, 221, 0, 0.1);
             position: relative; z-index: 2;
+            pointer-events: auto; /* Ensure interactivity */
         }
 
         /* Image Card (New) */
@@ -155,6 +156,7 @@
             border: 1px solid rgba(255, 221, 0, 0.5);
             padding: 10px;
             background: rgba(0,0,0,0.5);
+            pointer-events: auto; /* Ensure interactivity */
         }
         .image-card img {
             width: 100%; height: 100%; object-fit: cover;
