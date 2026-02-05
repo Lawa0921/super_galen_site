@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uli | Rational Intuition</title>
+    <meta name="description" content="Animal Communicator bridging Logic and Feeling.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #fdfbf7; /* Paper White */
+            --c-text: #2c3e50; /* Pencil Lead */
+            --c-accent-blue: #3498db;
+            --c-accent-teal: #1abc9c;
+            --c-accent-coral: #e74c3c;
+            --c-accent-gold: #f1c40f;
+            --c-deep-bg: #0a1525; /* Deep Ocean */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            overflow-x: hidden;
+            width: 100vw;
+            transition: background-color 1.5s ease-in-out;
+        }
+
+        body.dark-mode {
+            background-color: var(--c-deep-bg);
+            color: #ecf0f1;
+            --c-text: #ecf0f1;
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            opacity: 1;
+            transition: filter 1s ease;
+        }
+
+        /* Paper Texture Overlay */
+        .texture-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E");
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-weight: 900;
+            margin: 0;
+        }
+
+        .hero-title {
+            font-size: clamp(4rem, 15vw, 10rem);
+            color: var(--c-accent-blue);
+            line-height: 0.9;
+            /* Sketchy Shadow */
+            text-shadow: 4px 4px 0px rgba(44, 62, 80, 0.2);
+            mix-blend-mode: multiply;
+        }
+
+        body.dark-mode .hero-title {
+            color: #85c1e9;
+            text-shadow: 0 0 20px rgba(52, 152, 219, 0.8);
+            mix-blend-mode: normal;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 2rem;
+            color: var(--c-accent-teal);
+            border-bottom: 3px solid var(--c-accent-gold);
+            display: inline-block;
+            transform: rotate(-1deg);
+        }
+
+        p {
+            font-size: 1.25rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        /* Layout */
+        .section {
+            min-height: 120vh; /* More space for scrolling */
+            padding: 6rem 2rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden; /* Contain floating images */
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Hero */
+        #hero {
+            align-items: center;
+            text-align: center;
+            min-height: 100vh;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            background: #fff;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            border: 2px dashed var(--c-text);
+            margin-top: 2rem;
+            box-shadow: 5px 5px 0px var(--c-accent-gold);
+            color: #2c3e50; /* Always dark text inside box */
+        }
+
+        /* Cards/Panels */
+        .text-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+            border: 2px solid var(--c-text);
+            max-width: 500px; /* Slightly narrower to allow room for images */
+            /* Initial state handled by GSAP */
+            opacity: 0;
+            color: #2c3e50;
+            position: relative;
+            z-index: 10;
+        }
+
+        .section:nth-child(even) .text-panel {
+            margin-left: auto;
+            margin-right: 10%;
+        }
+        .section:nth-child(odd) .text-panel {
+            margin-left: 10%;
+        }
+
+        /* Specific Visuals */
+        .highlight {
+            color: var(--c-accent-coral);
+            font-weight: 900;
+            text-decoration: underline wavy var(--c-accent-gold);
+        }
+
+        /* Scattered Images */
+        .scattered-images {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1; /* Behind text panel (z-index 10) but in front of body */
+        }
+
+        .scatter-img {
+            position: absolute;
+            opacity: 0.9;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.15);
+            border: 8px solid #fff;
+            transition: transform 0.3s;
+            max-width: 300px;
+            pointer-events: auto; /* Allow clicking for lightbox */
+            cursor: pointer;
+        }
+
+        .scatter-img:hover {
+            transform: scale(1.05) rotate(0deg) !important;
+            z-index: 20;
+        }
+
+        @media (max-width: 768px) {
+            .scatter-img {
+                max-width: 150px;
+                border: 4px solid #fff;
+            }
+            .section:nth-child(even) .text-panel,
+            .section:nth-child(odd) .text-panel {
+                margin: 0 auto;
+            }
+            .text-panel {
+                max-width: 100%;
+                background: rgba(255,255,255,0.98); /* More opaque on mobile */
+            }
+        }
+
+        /* Footer / Finale */
+        #finale {
+            text-align: center;
+            background: transparent;
+            min-height: 80vh;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .social-btn {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border: 3px solid #2c3e50;
+            border-radius: 10px;
+            font-weight: 900;
+            background: #fff;
+            box-shadow: 5px 5px 0px var(--c-accent-blue);
+            transition: all 0.2s;
+        }
+
+        .social-btn:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 8px 8px 0px var(--c-accent-coral);
+        }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(253, 251, 247, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #lightbox.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #lightbox img {
+            max-width: 90vw;
+            max-height: 85vh;
+            border: 10px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1.5rem; left: 1.5rem;
+            z-index: 100;
+            font-weight: bold;
+            text-decoration: none;
+            color: var(--c-text);
+            background: #fff;
+            padding: 0.5rem 1.2rem;
+            border: 2px solid var(--c-text);
+            border-radius: 30px;
+        }
+
+        body.dark-mode .back-btn {
+             color: #2c3e50; /* Keep btn light */
+        }
+
+    </style>
+</head>
+<body>
+
+    <a href="/guild" class="back-btn">← Guild</a>
+    <div class="texture-overlay"></div>
+    <div id="p5-container"></div>
+    <div id="lightbox"><img src="" alt="Art"></div>
+
+    <div class="content-layer">
+
+        <!-- 1. Hero -->
+        <section class="section" id="hero">
+            <h1 class="hero-title">鄔莉 Uli</h1>
+            <div class="hero-subtitle">
+                Rational Intuition & Creative Soul
+            </div>
+            <p style="margin-top: 2rem; font-size: 1rem; color: var(--c-accent-blue);">↓ Scroll to Draw the Story ↓</p>
+        </section>
+
+        <!-- 2. Logic (Rational) -->
+        <section class="section" id="logic">
+            <div class="scattered-images">
+                <!-- Group 1: Early/Logic -->
+                <img src="/assets/img/guild/uli/gallery_1.webp" class="scatter-img" style="top: 10%; right: 10%; transform: rotate(5deg); width: 250px;">
+                <img src="/assets/img/guild/uli/gallery_2.webp" class="scatter-img" style="bottom: 10%; left: 5%; transform: rotate(-3deg); width: 200px;">
+                <img src="/assets/img/guild/uli/gallery_3.webp" class="scatter-img" style="top: 40%; right: 5%; transform: rotate(2deg); width: 180px;">
+            </div>
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">The Analytical Mind</h2>
+                    <p>我是鄔莉，結合理性思維與直覺感知的動物溝通工作者。我並非天生「感受型」，而是擁有清晰邏輯背景的人，習慣以<span class="highlight">理解與分析</span>來認識世界。</p>
+                    <p>在學習初期，我曾歷經長時間的卡關與自我懷疑。我的大腦總是試圖尋找證據，而不是信任流動的感受。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Awakening (Intuition) -->
+        <section class="section" id="awakening">
+             <div class="scattered-images">
+                <!-- Group 2: Awakening/Shock -->
+                <img src="/assets/img/guild/uli/gallery_4.webp" class="scatter-img" style="top: 5%; left: 10%; transform: rotate(-5deg); width: 220px;">
+                <img src="/assets/img/guild/uli/gallery_5.webp" class="scatter-img" style="bottom: 20%; right: 8%; transform: rotate(4deg); width: 260px;">
+            </div>
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">The Cockroach Epiphany</h2>
+                    <p>轉折來自一次練習中，當我接收到貓咪傳來<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
+                    <p>那是一種超越邏輯的衝擊，那個瞬間，「直覺」不再是虛無縹緲的概念，而是真實存在的頻率。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. The Bridge (Teaching) -->
+        <section class="section" id="bridge">
+             <div class="scattered-images">
+                <!-- Group 3: Teaching/Connection -->
+                <img src="/assets/img/guild/uli/gallery_6.webp" class="scatter-img" style="top: 15%; right: 15%; transform: rotate(3deg); width: 240px;">
+                <img src="/assets/img/guild/uli/gallery_7.webp" class="scatter-img" style="bottom: 5%; left: 15%; transform: rotate(-2deg); width: 210px;">
+                <img src="/assets/img/guild/uli/gallery_8.webp" class="scatter-img" style="top: 50%; left: 5%; transform: rotate(6deg); width: 180px;">
+            </div>
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">Bridging Left & Right Brain</h2>
+                    <p>從那之後，我開始以理性角度拆解直覺運作的機制。結合心理學、生物本能與能量感知，我整理出一套<span class="highlight">讓左腦也能理解</span>、能安心使用的動物溝通邏輯。</p>
+                    <p>自 2017 年開始教學至今，已服務上千組家庭，讓更多「理性腦」也能找回與動物連結的本能。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. The Artist (Flower of Life) -->
+        <section class="section" id="artist">
+             <div class="scattered-images">
+                <!-- Group 4: Art/Mandala - The big collage -->
+                <img src="/assets/img/guild/uli/gallery_9.webp" class="scatter-img" style="top: 0%; left: 0%; transform: rotate(-10deg); width: 200px;">
+                <img src="/assets/img/guild/uli/gallery_10.webp" class="scatter-img" style="top: 10%; right: 0%; transform: rotate(10deg); width: 220px;">
+                <img src="/assets/img/guild/uli/gallery_11.webp" class="scatter-img" style="bottom: 0%; left: 5%; transform: rotate(5deg); width: 240px;">
+                <img src="/assets/img/guild/uli/gallery_12.webp" class="scatter-img" style="bottom: 10%; right: 5%; transform: rotate(-5deg); width: 210px;">
+                <img src="/assets/img/guild/uli/gallery_13.webp" class="scatter-img" style="top: 40%; left: -5%; transform: rotate(-15deg); width: 160px;">
+            </div>
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">Colors & Mandalas</h2>
+                    <p>在創作上，我以色彩作為媒介，發展出以<span class="highlight">「生命之花」</span>與「力量動物」為核心的作品。</p>
+                    <p>將動物的訊息與祝福轉化為可視的象徵 (Totem)，成為人與動物、人與自己之間的橋樑。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. The Alchemist (Salt/Podcast) -->
+        <section class="section" id="alchemist">
+             <div class="scattered-images">
+                <!-- Group 5: Ocean/Final -->
+                <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 20%; left: 20%; transform: rotate(8deg); width: 280px; opacity: 0.8;">
+                <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 20%; right: 20%; transform: rotate(-8deg); width: 280px; opacity: 0.8;">
+                <img src="/assets/img/guild/uli/gallery_16.webp" class="scatter-img" style="top: 10%; right: 10%; transform: rotate(3deg); width: 180px;">
+            </div>
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">Deep Dive</h2>
+                    <p>除了溝通與創作，我也透過 Podcast 分享經驗，並與力量動物合作製作<span class="highlight">「淨化祝福鹽」</span>，希望大家在祝福中一起越來越好。</p>
+                    <p>因為熱愛潛水，海洋的寧靜與深邃也成為我內在探索的重要元素。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Finale -->
+        <section class="section" id="finale">
+             <div class="scattered-images">
+                <!-- Final decorative elements -->
+                <img src="/assets/img/guild/uli/gallery_17.webp" class="scatter-img" style="top: 10%; left: 10%; width: 150px; opacity: 0.5;">
+                <img src="/assets/img/guild/uli/gallery_18.webp" class="scatter-img" style="top: 10%; right: 10%; width: 150px; opacity: 0.5;">
+            </div>
+            <div class="container">
+                <h2 class="hero-title" style="font-size: clamp(3rem, 8vw, 6rem);">Connect</h2>
+                <p>Let's explore the unseen together.</p>
+                <div class="social-links">
+                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" class="social-btn">Threads</a>
+                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" class="social-btn">Instagram</a>
+                </div>
+                <p style="margin-top: 4rem; opacity: 0.6; font-size: 0.9rem;">© 2024 Uli. Rational Intuition.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // Lightbox Logic
+        const lightbox = document.getElementById('lightbox');
+        const lbImg = lightbox.querySelector('img');
+
+        document.querySelectorAll('.scatter-img').forEach(img => {
+            img.addEventListener('click', (e) => {
+                lbImg.src = e.target.src;
+                lightbox.classList.add('visible');
+            });
+        });
+        lightbox.addEventListener('click', () => lightbox.classList.remove('visible'));
+
+        // --- GSAP Content Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // 1. Text Panels (Slide Up)
+        gsap.utils.toArray('.text-panel').forEach((panel, i) => {
+            gsap.fromTo(panel,
+                { opacity: 0, y: 100 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: panel,
+                        start: "top 85%",
+                        end: "top 50%",
+                        scrub: 1,
+                    }
+                }
+            );
+        });
+
+        // 2. Scattered Images (Parallax & Float)
+        gsap.utils.toArray('.scatter-img').forEach((img, i) => {
+            // Parallax effect: Move different speeds based on random logic or class
+            const speed = 0.5 + Math.random() * 0.5;
+
+            gsap.to(img, {
+                y: -100 * speed, // Move up as we scroll down
+                rotation: Math.random() * 10 - 5, // Slight rotation change
+                scrollTrigger: {
+                    trigger: img.closest('.section'),
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            // Entrance
+            gsap.from(img, {
+                opacity: 0,
+                scale: 0.8,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: img,
+                    start: "top 90%",
+                }
+            });
+        });
+
+        // Theme switching (Light -> Dark)
+        ScrollTrigger.create({
+            trigger: "#alchemist",
+            start: "top 60%", // Earlier trigger
+            onEnter: () => document.body.classList.add('dark-mode'),
+            onLeaveBack: () => document.body.classList.remove('dark-mode')
+        });
+
+        // --- p5.js Background Visuals (Smooth Transitions) ---
+
+        // Scene Alpha States (0 to 1)
+        const sceneWeights = {
+            hero: 1,
+            logic: 0,
+            awakening: 0,
+            bridge: 0,
+            artist: 0,
+            alchemist: 0
+        };
+
+        // Create scroll triggers to crossfade scene weights
+        const sections = ['hero', 'logic', 'awakening', 'bridge', 'artist', 'alchemist'];
+
+        sections.forEach((id, index) => {
+            ScrollTrigger.create({
+                trigger: `#${id}`,
+                start: "top 50%",
+                end: "bottom 50%",
+                onEnter: () => fadeToScene(id),
+                onEnterBack: () => fadeToScene(id)
+            });
+        });
+
+        function fadeToScene(targetId) {
+            // Tween all weights to 0 except target to 1
+            const targetValues = {};
+            sections.forEach(s => targetValues[s] = (s === targetId ? 1 : 0));
+
+            gsap.to(sceneWeights, {
+                ...targetValues,
+                duration: 1.5, // Slow, smooth blend
+                ease: "power1.inOut"
+            });
+        }
+
+        const s = (p) => {
+            let canvas;
+            let agents = [];
+            let mandalaAngle = 0;
+            const numAgents = 60;
+
+            p.setup = () => {
+                canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noFill();
+
+                // Initialize particles
+                for(let i=0; i<numAgents; i++) {
+                    agents.push({
+                        pos: p.createVector(p.random(p.width), p.random(p.height)),
+                        vel: p.createVector(p.random(-0.5, 0.5), p.random(-0.5, 0.5)),
+                        size: p.random(2, 6),
+                        phase: p.random(p.TWO_PI)
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.clear(); // Transparent background
+
+                // We draw ALL scenes if they have weight > 0
+
+                if (sceneWeights.hero > 0.01) {
+                    p.push();
+                    drawHero(p, sceneWeights.hero);
+                    p.pop();
+                }
+
+                if (sceneWeights.logic > 0.01) {
+                    p.push();
+                    drawLogic(p, sceneWeights.logic);
+                    p.pop();
+                }
+
+                if (sceneWeights.awakening > 0.01) {
+                    p.push();
+                    drawAwakening(p, sceneWeights.awakening);
+                    p.pop();
+                }
+
+                if (sceneWeights.bridge > 0.01) {
+                    p.push();
+                    drawBridge(p, sceneWeights.bridge);
+                    p.pop();
+                }
+
+                if (sceneWeights.artist > 0.01) {
+                    p.push();
+                    drawMandala(p, sceneWeights.artist);
+                    p.pop();
+                }
+
+                if (sceneWeights.alchemist > 0.01) {
+                    p.push();
+                    drawDeepOcean(p, sceneWeights.alchemist);
+                    p.pop();
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            // --- Scene Functions (accept alpha) ---
+
+            function drawHero(p, alpha) {
+                // Subtle flow
+                p.strokeWeight(1.5);
+                p.noFill();
+                let t = p.frameCount * 0.005;
+
+                let aVal = alpha * 255;
+
+                p.stroke(52, 152, 219, aVal * 0.4);
+                p.beginShape();
+                for (let x = 0; x < p.width; x += 10) {
+                    let n = p.noise(x * 0.002, t);
+                    let y = p.height * 0.5 + p.map(n, 0, 1, -200, 200);
+                    p.vertex(x, y);
+                }
+                p.endShape();
+
+                // Particles
+                drawParticles(p, alpha * 50);
+            }
+
+            function drawLogic(p, alpha) {
+                p.strokeWeight(1);
+                p.stroke(44, 62, 80, alpha * 40);
+                let spacing = 60;
+
+                // Floating Grid
+                for (let x = 0; x < p.width; x += spacing) {
+                    p.line(x, 0, x, p.height);
+                }
+                for (let y = 0; y < p.height; y += spacing) {
+                    p.line(0, y, p.width, y);
+                }
+
+                // Active Cells
+                p.noStroke();
+                p.fill(52, 152, 219, alpha * 30);
+                let count = 6;
+                for(let i=0; i<count; i++) {
+                     let rx = Math.floor(p.noise(i, p.frameCount*0.01) * p.width / spacing) * spacing;
+                     let ry = Math.floor(p.noise(i+100, p.frameCount*0.01) * p.height / spacing) * spacing;
+                     p.rect(rx, ry, spacing, spacing);
+                }
+            }
+
+            function drawAwakening(p, alpha) {
+                p.translate(p.width/2, p.height/2);
+                let t = p.frameCount * 0.02;
+                p.noFill();
+                p.strokeWeight(1.5);
+
+                for(let i=0; i<8; i++) {
+                    p.stroke(231, 76, 60, alpha * (150 - i*15));
+                    let r = (t * 50 + i * 50) % (p.width * 0.6);
+                    p.circle(0, 0, r);
+                }
+            }
+
+            function drawBridge(p, alpha) {
+                p.strokeWeight(1);
+                for(let i=0; i<15; i++) {
+                    let y = p.map(i, 0, 15, p.height*0.2, p.height*0.8);
+                    p.beginShape();
+                    p.stroke(52, 152, 219, alpha * (60 + i*5));
+                    p.noFill();
+                    for(let x=0; x < p.width; x+=20) {
+                        let blend = p.map(x, 0, p.width, 0, 1);
+                        let wave = p.sin(x*0.05 + p.frameCount*0.05 + i) * 30 * blend;
+                        p.vertex(x, y + wave);
+                    }
+                    p.endShape();
+                }
+            }
+
+            function drawMandala(p, alpha) {
+                p.translate(p.width/2, p.height/2);
+                mandalaAngle += 0.002;
+                p.rotate(mandalaAngle);
+
+                let scale = 1 + p.sin(p.frameCount * 0.02) * 0.05;
+                p.scale(scale);
+
+                // Layer 1
+                p.stroke(52, 152, 219, alpha * 180);
+                p.strokeWeight(2);
+                p.noFill();
+                let petals = 8;
+                for (let i = 0; i < petals; i++) {
+                    p.push();
+                    p.rotate(i * p.TWO_PI / petals);
+                    p.beginShape();
+                    p.vertex(0, 0);
+                    p.bezierVertex(30, -30, 80, -30, 120, 0);
+                    p.bezierVertex(80, 30, 30, 30, 0, 0);
+                    p.endShape();
+                    p.pop();
+                }
+
+                // Layer 2
+                p.stroke(180, 130, 50, alpha * 150);
+                p.strokeWeight(1.5);
+                for (let i = 0; i < petals; i++) {
+                    p.push();
+                    p.rotate((i + 0.5) * p.TWO_PI / petals);
+                    p.beginShape();
+                    p.vertex(50, 0);
+                    p.quadraticVertex(100, -40, 180, 0);
+                    p.quadraticVertex(100, 40, 50, 0);
+                    p.endShape();
+                    p.pop();
+                }
+
+                // Layer 3 (Coral Dots)
+                p.fill(231, 76, 60, alpha * 200);
+                p.noStroke();
+                for (let i = 0; i < petals; i++) {
+                    p.push();
+                    p.rotate(i * p.TWO_PI / petals);
+                    p.translate(140, 0);
+                    p.circle(0, 0, 10);
+                    p.pop();
+                }
+            }
+
+            function drawDeepOcean(p, alpha) {
+                // Particles with trails/glow
+                p.noStroke();
+                agents.forEach(a => {
+                    // Update physics only if this scene is active to save calc?
+                    // No, update always for continuity, draw based on alpha
+                    a.pos.y -= 1;
+                    if(a.pos.y < 0) {
+                        a.pos.y = p.height;
+                        a.pos.x = p.random(p.width);
+                    }
+
+                    p.fill(26, 188, 156, alpha * 100);
+                    p.circle(a.pos.x, a.pos.y, a.size * 2);
+
+                    p.fill(255, 255, 255, alpha * 200);
+                    p.circle(a.pos.x, a.pos.y, a.size);
+                });
+
+                // Flow lines
+                p.noFill();
+                p.strokeWeight(2);
+                p.stroke(255, 255, 255, alpha * 30);
+                let t = p.frameCount * 0.01;
+                for(let i=0; i<5; i++) {
+                    p.beginShape();
+                    for(let x=0; x<=p.width; x+=50) {
+                        let y = p.height - (i * 100) + p.sin(x*0.01 + t + i)*50;
+                        p.vertex(x, y);
+                    }
+                    p.endShape();
+                }
+            }
+
+            function drawParticles(p, alpha) {
+                p.fill(44, 62, 80, alpha);
+                p.noStroke();
+                agents.forEach(a => {
+                    let x = a.pos.x + p.sin(p.frameCount*0.05 + a.phase)*10;
+                    let y = a.pos.y + p.cos(p.frameCount*0.05 + a.phase)*10;
+                    p.circle(x, y, a.size);
+                });
+            }
+        };
+
+        const myp5 = new p5(s);
+
+    </script>
+</body>
+</html>
