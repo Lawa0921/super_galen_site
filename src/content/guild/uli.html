@@ -208,12 +208,18 @@
             z-index: 10;
         }
 
+        /* Standard alternating layout */
         .section:nth-child(even) .text-panel {
             margin-left: auto;
             margin-right: 10%;
         }
         .section:nth-child(odd) .text-panel {
             margin-left: 10%;
+        }
+
+        /* Centered layout for heavy image sections */
+        #artist .text-panel, #alchemist .text-panel {
+            margin: 0 auto !important;
         }
 
         /* Specific Visuals */
@@ -500,13 +506,16 @@
         <!-- 5. The Artist (Flower of Life) -->
         <section class="section" id="artist">
              <div class="scattered-images">
-                <!-- Group 4: Art/Mandala - The big collage -->
-                <!-- Text Left -> Images Right -->
-                <img src="/assets/img/guild/uli/gallery_9.webp" class="scatter-img" style="top: 5%; right: 5%; transform: rotate(-10deg); width: 180px;">
-                <img src="/assets/img/guild/uli/gallery_10.webp" class="scatter-img" style="top: 25%; right: -2%; transform: rotate(10deg); width: 200px;">
-                <img src="/assets/img/guild/uli/gallery_11.webp" class="scatter-img" style="bottom: 5%; right: 5%; transform: rotate(5deg); width: 210px;">
-                <img src="/assets/img/guild/uli/gallery_12.webp" class="scatter-img" style="bottom: 25%; right: 0%; transform: rotate(-5deg); width: 190px;">
-                <img src="/assets/img/guild/uli/gallery_13.webp" class="scatter-img" style="top: 45%; right: 8%; transform: rotate(-15deg); width: 160px;">
+                <!-- Group 4: Art/Mandala - Split Sides Layout -->
+
+                <!-- Left Side -->
+                <img src="/assets/img/guild/uli/gallery_9.webp" class="scatter-img" style="top: 0%; left: 5%; transform: rotate(-10deg); width: 180px;">
+                <img src="/assets/img/guild/uli/gallery_13.webp" class="scatter-img" style="bottom: 10%; left: 2%; transform: rotate(8deg); width: 160px;">
+
+                <!-- Right Side -->
+                <img src="/assets/img/guild/uli/gallery_10.webp" class="scatter-img" style="top: 10%; right: 2%; transform: rotate(10deg); width: 200px;">
+                <img src="/assets/img/guild/uli/gallery_12.webp" class="scatter-img" style="top: 45%; right: 5%; transform: rotate(-5deg); width: 190px;">
+                <img src="/assets/img/guild/uli/gallery_11.webp" class="scatter-img" style="bottom: 5%; right: 2%; transform: rotate(5deg); width: 210px;">
             </div>
             <div class="container">
                 <div class="text-panel">
@@ -520,13 +529,15 @@
         <!-- 6. The Alchemist (Salt/Podcast) -->
         <section class="section" id="alchemist">
              <div class="scattered-images">
-                <!-- Group 5: Ocean/Final -->
-                <!-- Text Right -> Images Left -->
+                <!-- Group 5: Ocean/Final - Split Sides Layout -->
+
+                <!-- Left Side -->
                 <img src="/assets/img/guild/uli/gallery_16.webp" class="scatter-img" style="top: 5%; left: 2%; transform: rotate(3deg); width: 160px;">
-                <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 25%; left: 5%; transform: rotate(8deg); width: 240px; opacity: 0.8;">
-                <!-- Added gallery_19 here for completeness -->
-                <img src="/assets/img/guild/uli/gallery_19.webp" class="scatter-img" style="top: 50%; left: 0%; transform: rotate(-5deg); width: 150px;">
-                <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 10%; left: 5%; transform: rotate(-8deg); width: 240px; opacity: 0.8;">
+                <img src="/assets/img/guild/uli/gallery_19.webp" class="scatter-img" style="bottom: 15%; left: 5%; transform: rotate(-5deg); width: 150px;">
+
+                <!-- Right Side -->
+                <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 20%; right: 5%; transform: rotate(8deg); width: 220px; opacity: 0.8;">
+                <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 5%; right: 2%; transform: rotate(-8deg); width: 220px; opacity: 0.8;">
             </div>
             <div class="container">
                 <div class="text-panel">
