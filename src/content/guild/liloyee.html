@@ -557,44 +557,38 @@
             base.position.y = 1.5;
             chestGroup.add(base);
 
-            // Base Straps
-            const strapV = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.05, 3.05), ironMat);
-            strapV.position.set(1.5, 1.5, 0);
+            // Base Straps (Vertical)
+            const strapV = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.05, 3.05), ironMat);
+            strapV.position.set(1.2, 1.5, 0);
             chestGroup.add(strapV);
 
             const strapV2 = strapV.clone();
-            strapV2.position.set(-1.5, 1.5, 0);
+            strapV2.position.set(-1.2, 1.5, 0);
             chestGroup.add(strapV2);
 
-
-            // --- Lid (Pivot Group) ---
+            // --- Lid ---
             chestLid = new THREE.Group();
-            chestLid.position.set(0, 3, -1.5); // Hinge at back (Top-Back of base)
+            // Pivot at the top-back edge of the base
+            // Base is 3 deep (Z: -1.5 to 1.5) and 3 high (Y: 0 to 3).
+            // So top-back edge is Y=3, Z=-1.5.
+            chestLid.position.set(0, 3, -1.5);
 
-            // Lid Geometry (Half Cylinder)
-            // Radius 1.5, Height 4 (matches box width)
-            // Default Cylinder is vertical.
-            // We want it horizontal along X. -> rotateZ(90)
-            // We want the flat side down (when closed).
-            // Default thetaStart=0, length=PI creates a half cylinder starting at +Z going counter-clockwise?
-            // Let's rely on standard rotation.
+            // Lid Shape: Half Cylinder (Arch)
             const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, true, 0, Math.PI);
+            // Rotate to horizontal X axis
             lidGeom.rotateZ(Math.PI / 2);
-            // Now axis is X.
-            // We need to rotate it so the arc is UP (+Y) and flat is DOWN (-Y).
-            // Currently it might be facing Back (-Z).
+            // Rotate to face arch UP
             lidGeom.rotateX(-Math.PI / 2);
 
-            // Add thickness (inner side provided by DoubleSide material)
-            // Or add side caps.
             const lidMesh = new THREE.Mesh(lidGeom, woodMat);
-            lidMesh.position.set(0, 0, 1.5); // Offset Z by Radius (1.5) so pivot (0,0,0) is at the edge
+            // Offset Z by radius so the back edge aligns with pivot (0,0,0)
+            lidMesh.position.set(0, 0, 1.5);
             chestLid.add(lidMesh);
 
-            // Lid Side Caps
+            // Side Caps (Circles)
             const capGeom = new THREE.CircleGeometry(1.5, 32, 0, Math.PI);
-            capGeom.rotateZ(-Math.PI/2); // Face X
-            capGeom.rotateX(-Math.PI/2); // Align with cylinder arc
+            capGeom.rotateZ(-Math.PI/2);
+            capGeom.rotateX(-Math.PI/2);
 
             const cap1 = new THREE.Mesh(capGeom, woodMat);
             cap1.position.set(2, 0, 1.5);
@@ -602,30 +596,30 @@
 
             const cap2 = new THREE.Mesh(capGeom, woodMat);
             cap2.position.set(-2, 0, 1.5);
-            cap2.rotateY(Math.PI);
+            cap2.rotateY(Math.PI); // Flip for other side
             chestLid.add(cap2);
 
-            // Lid Straps (Torus segments or just Boxes slightly larger)
-            const strapLidGeom = new THREE.CylinderGeometry(1.55, 1.55, 0.2, 32, 1, true, 0, Math.PI);
+            // Lid Straps (Arches)
+            const strapLidGeom = new THREE.CylinderGeometry(1.52, 1.52, 0.3, 32, 1, true, 0, Math.PI);
             strapLidGeom.rotateZ(Math.PI / 2);
             strapLidGeom.rotateX(-Math.PI / 2);
 
             const strapL1 = new THREE.Mesh(strapLidGeom, ironMat);
-            strapL1.position.set(1.5, 0, 1.5);
+            strapL1.position.set(1.2, 0, 1.5);
             chestLid.add(strapL1);
 
             const strapL2 = strapL1.clone();
-            strapL2.position.set(-1.5, 0, 1.5);
+            strapL2.position.set(-1.2, 0, 1.5);
             chestLid.add(strapL2);
 
-            chestGroup.add(chestLid);
-
             // Lock
-            const lockGeom = new THREE.BoxGeometry(0.5, 0.6, 0.2);
+            const lockGeom = new THREE.BoxGeometry(0.6, 0.8, 0.2);
             const lock = new THREE.Mesh(lockGeom, goldMat);
-            lock.position.set(0, -0.3, 3); // Relative to lid pivot, hanging down front
+            // Hanging on the front face of lid
+            lock.position.set(0, -0.2, 3.0);
             chestLid.add(lock);
 
+            chestGroup.add(chestLid);
             chestGroup.position.set(0, sandY + 2, -5);
             scene.add(chestGroup);
         }
@@ -700,7 +694,7 @@
                 let spawnPos;
 
                 if (isBubble) {
-                    // Spawn closer to camera for visibility (Z ~ 15)
+                    // Spawn at fixed depth Z = -2 (Near chest at -5)
                     vec.set(
                         (screenX / window.innerWidth) * 2 - 1,
                         -(screenY / window.innerHeight) * 2 + 1,
@@ -708,7 +702,13 @@
                     );
                     vec.unproject(camera);
                     vec.sub(camera.position).normalize();
-                    spawnPos = camera.position.clone().add(vec.multiplyScalar(5)); // 5 units in front of camera
+
+                    // Ray intersect plane at Z = -2
+                    // P = origin + dir * t
+                    // P.z = origin.z + dir.z * t = -2
+                    // t = (-2 - origin.z) / dir.z
+                    const t = (-2 - camera.position.z) / vec.z;
+                    spawnPos = camera.position.clone().add(vec.multiplyScalar(t));
                 } else {
                     vec.set(
                         (screenX / window.innerWidth) * 2 - 1,
@@ -899,7 +899,7 @@
 
             if(isChestOpen) {
                 // Open Lid
-                gsap.to(chestLid.rotation, { x: -2, duration: 1.5, ease: "power2.out" });
+                gsap.to(chestLid.rotation, { x: -2.5, duration: 1.5, ease: "power2.out" });
 
                 // Light Burst (Clamped intensity to prevent washing out/darkening artifacts)
                 const burstColor = new THREE.Color('#ffdd00');
