@@ -643,3 +643,15 @@ members:
         label: "氛圍專家"
       - id: "crisis_control"
         label: "危機控管"
+
+  - id: "gheart"
+    name: "G-Heart"
+    avatar: "/assets/images/guild/gheart/profile.webp"
+    page: "/guild/gheart.html"
+    tags:
+      - id: "handmade_artisan"
+        label: "手作職人"
+      - id: "weaver"
+        label: "編織者"
+      - id: "wood_craft"
+        label: "木工魂"
