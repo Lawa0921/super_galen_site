@@ -7,7 +7,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
 
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -24,14 +24,14 @@
     </script>
 
     <style>
-        /* Base Styles - Cozy Palette */
+        /* Base Styles */
         :root {
-            --c-bg: #fffbf0; /* Warm Rice Paper */
-            --c-text: #4a3b2a; /* Deep Coffee */
-            --c-accent: #c07a5d; /* Terracotta */
-            --c-gold: #cba367; /* Muted Gold */
-            --c-green: #8da376; /* Sage */
-            --c-card-bg: rgba(255, 253, 247, 0.95);
+            --c-bg: #eaddcf; /* Raw Linen Background */
+            --c-paper: #fffefb; /* Clean Paper */
+            --c-text: #46392c; /* Dark Wood */
+            --c-accent: #b06e4f; /* Rust/Terracotta */
+            --c-gold: #c8a165; /* Matte Gold */
+            --c-sage: #8fa082; /* Dried Sage */
         }
 
         body {
@@ -40,262 +40,207 @@
             background-color: var(--c-bg);
             color: var(--c-text);
             font-family: 'Noto Serif TC', serif;
-            overscroll-behavior: none;
         }
 
-        /* Fabric Texture Overlay */
-        .fabric-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3h1v1H1V3zm2-2h1v1H3V1z' fill='%23d68c6d' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        /* Canvas Container */
+        /* Canvas Container (Background) */
         #canvas-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
+            z-index: 0;
+            /* Texture overlay handled by CSS or 3D? Let's use CSS for fine grain */
+        }
+
+        #canvas-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
             z-index: 1;
         }
 
-        /* Content Overlay */
-        .content-layer {
+        /* The Journal Container */
+        .journal-container {
             position: relative;
             z-index: 10;
-            pointer-events: none;
-        }
-
-        .scroll-section {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            padding: 4rem 0;
-        }
-
-        /* Text Styling - High Readability */
-        .text-card {
-            background: var(--c-card-bg);
-            /* Soft, thick shadow for depth */
-            box-shadow:
-                0 4px 6px rgba(0,0,0,0.02),
-                0 12px 24px rgba(74, 59, 42, 0.08);
-            padding: 3rem;
-            max-width: 600px;
+            max-width: 800px;
             width: 90%;
-            border-radius: 8px;
-            border-top: 4px solid var(--c-accent);
-            pointer-events: auto;
-            opacity: 0;
-            transform: translateY(30px);
-            position: relative;
+            margin: 100px auto 100px auto; /* Centered with breathing room */
+            background: var(--c-paper);
+            box-shadow:
+                0 2px 5px rgba(0,0,0,0.05),
+                0 20px 60px rgba(70, 57, 44, 0.15);
+            padding: 4rem 5rem;
+            border-radius: 4px; /* Slight rounding like a book */
         }
 
-        /* "Stitch" decoration */
-        .text-card::after {
+        /* Decorative "Stitch" border inside the paper */
+        .journal-container::before {
             content: '';
             position: absolute;
-            top: 10px; bottom: 10px; left: 10px; right: 10px;
-            border: 1px dashed rgba(192, 122, 93, 0.3);
-            border-radius: 4px;
+            top: 1.5rem; bottom: 1.5rem; left: 1.5rem; right: 1.5rem;
+            border: 2px dashed #eaddcf;
             pointer-events: none;
         }
 
+        /* Typography */
         h1, h2, h3 {
-            font-family: 'Marcellus', serif;
-            font-weight: 400;
-            margin: 0 0 1.5rem 0;
+            font-family: 'Cormorant Garamond', serif;
             color: var(--c-text);
-            letter-spacing: 0.05em;
+            margin-top: 0;
         }
 
         h1 {
-            font-size: clamp(3rem, 8vw, 5.5rem);
-            color: var(--c-accent);
+            font-size: clamp(3rem, 6vw, 4.5rem);
             text-align: center;
-            text-shadow: 2px 2px 0px rgba(255,255,255,1);
+            line-height: 1;
+            margin-bottom: 3rem;
+            color: var(--c-accent);
+            font-style: italic;
         }
 
         h2 {
-            font-size: clamp(1.8rem, 4vw, 2.5rem);
-            color: var(--c-text);
-            position: relative;
+            font-size: 2rem;
+            border-bottom: 2px solid var(--c-gold);
+            padding-bottom: 0.5rem;
+            margin-top: 4rem;
+            margin-bottom: 1.5rem;
             display: inline-block;
         }
 
-        h2::before {
-            content: '';
-            position: absolute;
-            bottom: -5px; left: 0; width: 40px; height: 2px;
-            background: var(--c-accent);
+        h3 {
+            font-size: 1.4rem;
+            color: var(--c-accent);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
         }
 
         p {
             font-size: 1.15rem;
-            line-height: 2;
-            color: #5d4d3c;
-            font-weight: 400;
+            line-height: 2.1; /* Relaxed reading */
             margin-bottom: 1.5rem;
+            color: #5d4d3c;
         }
 
-        ul.service-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        ul.service-list li {
-            margin-bottom: 0.8rem;
-            padding-left: 1.5rem;
-            position: relative;
-            font-size: 1.1rem;
-        }
-        ul.service-list li::before {
-            content: '•';
+        .highlight {
             color: var(--c-accent);
-            position: absolute;
-            left: 0;
-            font-size: 1.5rem;
-            line-height: 1;
-            top: -2px;
+            font-weight: 700;
         }
 
-        .highlight { color: var(--c-accent); font-weight: 700; border-bottom: 1px solid rgba(192, 122, 93, 0.3); }
+        /* Profile Section */
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .profile-img {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 6px solid var(--c-paper);
+            box-shadow: 0 0 0 2px var(--c-gold), 0 10px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        /* Images / Gallery */
+        .image-block {
+            margin: 3rem 0;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 2px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            position: relative;
+        }
+
+        .image-block img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 1s ease;
+        }
+
+        .image-block:hover img {
+            transform: scale(1.03);
+        }
+
+        .caption {
+            text-align: center;
+            font-family: 'Cormorant Garamond';
+            font-style: italic;
+            margin-top: 0.5rem;
+            color: var(--c-sage);
+            font-size: 0.95rem;
+        }
+
+        /* Grid for smaller works */
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .works-grid .image-block { margin: 0; height: 250px; }
+        .works-grid img { height: 100%; object-fit: cover; }
+
+        /* Socials */
+        .social-container {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .social-link {
+            text-decoration: none;
+            color: var(--c-text);
+            font-family: 'Cormorant Garamond';
+            font-size: 1.1rem;
+            border: 1px solid var(--c-gold);
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            transition: all 0.3s;
+        }
+        .social-link:hover {
+            background: var(--c-gold);
+            color: white;
+        }
 
         /* Loader */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-bg);
+            background: var(--c-paper);
             z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        .loader-knot {
-            width: 60px; height: 60px;
-            border: 5px solid var(--c-thread);
-            border-top: 5px solid var(--c-accent);
-            border-radius: 50%;
-            animation: spin 2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+        .loader-text {
+            font-family: 'Cormorant Garamond';
+            font-size: 2rem;
+            color: var(--c-accent);
+            animation: pulse 1.5s infinite ease-in-out;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* Section Specifics */
-        #sec-hero .text-card {
-            background: rgba(255,255,255,0.6);
-            backdrop-filter: blur(2px);
-            border: none;
-            box-shadow: none;
-            text-align: center;
-        }
-        #sec-hero .text-card::after { display: none; }
-
-        #sec-intro { justify-content: flex-start; padding-left: 5%; }
-        #sec-connect { justify-content: flex-end; padding-right: 5%; }
-
-        #sec-works {
-            height: auto;
-            min-height: 100vh;
-            flex-direction: column;
-            justify-content: flex-start;
-            padding-top: 10vh;
-        }
-
-        /* HTML Gallery Overlay (for readability/visibility) */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            width: 90%;
-            max-width: 1200px;
-            margin: 0 auto;
-            pointer-events: auto;
-            z-index: 20;
-        }
-
-        .gallery-item {
-            background: white;
-            padding: 1rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transform: translateY(50px);
-            opacity: 0; /* GSAP */
-            transition: transform 0.3s;
-        }
-        .gallery-item:hover {
-            transform: translateY(-10px) !important;
-        }
-        .gallery-img {
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-            border-bottom: 2px solid var(--c-accent);
-        }
-        .gallery-caption {
-            padding-top: 1rem;
-            text-align: center;
-            font-family: 'Marcellus';
-            color: var(--c-text);
-        }
-
-        /* Finale */
-        #sec-finale {
-            min-height: 100vh;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .profile-img {
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 8px solid white;
-            box-shadow: 0 0 0 4px var(--c-accent), 0 20px 40px rgba(0,0,0,0.15);
-            margin-bottom: 2rem;
-        }
-
-        .social-btn {
-            display: inline-block;
-            margin: 0.5rem;
-            padding: 1rem 2.5rem;
-            background: white;
-            color: var(--c-text);
-            border: 1px solid var(--c-accent);
-            text-decoration: none;
-            transition: all 0.3s;
-            font-family: 'Marcellus', serif;
-            font-weight: 600;
-            letter-spacing: 1px;
-            font-size: 0.9rem;
-        }
-        .social-btn:hover {
-            background: var(--c-accent);
-            color: white;
-            box-shadow: 0 5px 15px rgba(192, 122, 93, 0.4);
-        }
-
-        .scroll-hint {
-            position: fixed;
-            bottom: 2rem;
-            width: 100%;
-            text-align: center;
-            color: var(--c-text);
-            font-size: 0.8rem;
-            letter-spacing: 3px;
-            animation: bounce 2s infinite;
-            opacity: 0.6;
-        }
-
+        /* Mobile Adjustments */
         @media (max-width: 768px) {
-            #sec-intro, #sec-connect { padding: 2rem 0; justify-content: center; }
-            .text-card { width: 90%; padding: 2rem 1.5rem; }
-            h1 { font-size: 3.5rem; }
+            .journal-container {
+                width: 95%;
+                margin: 50px auto;
+                padding: 2.5rem 1.5rem;
+            }
+            .journal-container::before {
+                top: 0.8rem; bottom: 0.8rem; left: 0.8rem; right: 0.8rem;
+            }
+            h1 { font-size: 3rem; }
         }
 
     </style>
@@ -303,97 +248,89 @@
 <body>
 
     <div id="loader">
-        <div class="loader-knot"></div>
+        <div class="loader-text">Unraveling...</div>
     </div>
 
-    <div class="fabric-overlay"></div>
     <div id="canvas-container"></div>
-    <div class="scroll-hint">SCROLL TO UNRAVEL</div>
 
-    <div class="content-layer">
+    <div class="journal-container">
 
-        <section id="sec-hero" class="scroll-section">
-            <div class="text-card">
-                <h1>G-Heart</h1>
-                <p>HANDCRAFTED STORIES · WOVEN WITH SOUL</p>
+        <div class="profile-header">
+            <img src="/assets/images/guild/gheart/profile.webp" alt="G-Heart" class="profile-img">
+            <h1>G-Heart</h1>
+            <p style="text-align:center; font-style:italic; color: var(--c-sage);">"Weaving warmth into the fabric of life."</p>
+        </div>
+
+        <section id="intro">
+            <h2>Artisan Soul</h2>
+            <p>
+                我是 <span class="highlight">G-Heart</span>，一個餐飲系畢業的手作人。
+                在木工的堅毅與美食的細膩之間尋找平衡，工作之餘，我努力編織屬於自己的溫暖世界。
+            </p>
+            <p>
+                曾經的專長是家具木工，這段經歷讓我對「結構」與「材質」有了深刻的理解。後來轉職餐飲業，則讓我學會了如何調配「風味」與「溫度」。
+                現在，我試圖將這兩者結合，創造出既有實用結構，又充滿生活溫度的手作藝品。
+            </p>
+
+            <div class="image-block">
+                <img src="/assets/images/guild/gheart/work1.webp" alt="Handmade Texture">
+                <div class="caption">Natural materials, woven with care.</div>
             </div>
         </section>
 
-        <section id="sec-intro" class="scroll-section">
-            <div class="text-card">
-                <h2>Artisan Soul</h2>
-                <p>我是 G-Heart，一個餐飲系畢業的手作人。<br>
-                在木工的堅毅與美食的細膩之間尋找平衡，<br>
-                工作之餘，我努力編織屬於自己的溫暖世界。</p>
-
-                <h3>Philosophy</h3>
-                <p>手作不只是藝術，更是一種生活態度。<br>
-                我喜歡在日常中尋找靈感——木頭的紋路、海洋的波動、香草的氣息。<br>
-                每一件作品，都是與自然對話的結果。</p>
-            </div>
+        <section id="philosophy">
+            <h2>My Philosophy</h2>
+            <p>
+                <b>手作不只是藝術，更是一種生活態度。</b>
+            </p>
+            <p>
+                我喜歡在日常生活中找靈感——森林裡的枯木、海洋的波浪、香草植物的香氣。
+                比起完美的工業製品，我更迷戀手作留下的痕跡。那是時間的證明，也是作品與創作者之間最親密的對話。
+            </p>
+            <p>
+                希望我的作品能與人產生更強烈的連結，讓每一個物件都不只是裝飾，而是能陪伴你生活的朋友。
+                有趣又實用，是我的創作目標。
+            </p>
         </section>
 
-        <section id="sec-connect" class="scroll-section">
-            <div class="text-card">
-                <h2>Inner Quiet</h2>
-                <p>我是個大 I 人 (Introvert)。<br>
-                我不擅長面對面的喧囂，卻渴望心靈深處的連結。<br>
-                透過網路平台，讓這些有趣又實用的作品替我說話。</p>
+        <section id="quiet">
+            <h2>Inner Quiet</h2>
+            <p>
+                我是個大 I 人 (Introvert)。我不喜歡與人面對面的喧囂交流，卻渴望心靈深處的深刻連結。
+            </p>
+            <p>
+                這就是為什麼我選擇透過網路平台，讓大家看到我的作品。
+                在這個安靜的角落，我用作品說話，也希望能聽到你的共鳴。
+            </p>
 
-                <h3>What I Offer</h3>
-                <ul class="service-list">
-                    <li><b>Handmade Decor</b> - 居家溫暖擺飾</li>
-                    <li><b>Wooden Crafts</b> - 實用木製小物</li>
-                    <li><b>Textile Art</b> - 編織與纖維藝術</li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- Works Section: Use HTML Grid for clarity, but 3D background continues -->
-        <section id="sec-works" class="scroll-section">
-            <div style="text-align: center; margin-bottom: 3rem; pointer-events: auto;">
-                <div class="text-card" style="margin: 0 auto; text-align: center;">
-                    <h2>Selected Works</h2>
-                    <p>讓創作與人之間產生更強烈的連結。</p>
+            <div class="works-grid">
+                <div class="image-block">
+                    <img src="/assets/images/guild/gheart/work2.webp" alt="Work Sample 2">
                 </div>
-            </div>
-
-            <div class="gallery-grid">
-                <div class="gallery-item">
-                    <img src="/assets/images/guild/gheart/work1.webp" class="gallery-img" alt="Work 1">
-                    <div class="gallery-caption">Natural Texture</div>
-                </div>
-                <div class="gallery-item">
-                    <img src="/assets/images/guild/gheart/work2.webp" class="gallery-img" alt="Work 2">
-                    <div class="gallery-caption">Woven Warmth</div>
-                </div>
-                <div class="gallery-item">
-                    <img src="/assets/images/guild/gheart/work3.webp" class="gallery-img" alt="Work 3">
-                    <div class="gallery-caption">Everyday Art</div>
+                <div class="image-block">
+                    <img src="/assets/images/guild/gheart/work3.webp" alt="Work Sample 3">
                 </div>
             </div>
         </section>
 
-        <section id="sec-dream" class="scroll-section">
-            <div class="text-card" style="text-align: center;">
-                <h2>The Dream</h2>
-                <p>曾經的家具木工，現在是兩個孩子的媽。<br>
-                期許自己未來能成為有自知之明的老人，<br>
-                搬到有山有海的地方獨居，享受絕對的自由。</p>
-                <p class="highlight" style="margin-top: 1rem;">熱愛：木頭 · 海 · 香草 · 森林 · 星空</p>
-            </div>
+        <section id="dream">
+            <h2>The Dream</h2>
+            <p>
+                目前是兩個孩子的媽，生活或許忙碌，但我心中的火焰從未熄滅。
+            </p>
+            <p>
+                期許自己未來能當個有自知之明的老人，能夠搬到有山有海的地方獨居。
+                在那裡，我將擁有熱愛的大自然的一切，以及最嚮往的——<b>一個人的自由</b>。
+            </p>
+            <p style="text-align: center; margin-top: 2rem; font-family: 'Cormorant Garamond'; font-size: 1.2rem; color: var(--c-accent);">
+                Wood · Sea · Herbs · Forest · Stars
+            </p>
         </section>
 
-        <section id="sec-finale" class="scroll-section">
-            <div style="position: relative; z-index: 20; pointer-events: auto;">
-                <img src="/assets/images/guild/gheart/profile.webp" alt="G-Heart" class="profile-img">
-                <h2>G-Heart</h2>
-                <div style="margin-top: 2rem;">
-                    <a href="https://www.threads.com/@gheart1982" target="_blank" class="social-btn">Threads</a>
-                    <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-btn">Instagram</a>
-                </div>
-            </div>
-        </section>
+        <div class="social-container">
+            <a href="https://www.threads.com/@gheart1982" target="_blank" class="social-link">Threads</a>
+            <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-link">Instagram</a>
+        </div>
 
     </div>
 
@@ -403,12 +340,10 @@
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xfffbf0); // Warm Rice Paper
-        // Soft fog to blend threads into distance
-        scene.fog = new THREE.Fog(0xfffbf0, 10, 40);
+        scene.background = new THREE.Color(0xeaddcf); // Match body bg
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 25);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 100);
+        camera.position.set(0, 0, 30);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -419,104 +354,78 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffe0b5, 0.8);
+        const dirLight = new THREE.DirectionalLight(0xffeacc, 0.8);
         dirLight.position.set(10, 10, 10);
         scene.add(dirLight);
 
-        // --- "The Macrame Curtain" ---
-        // Using InstancedMesh for performance
-        // We will create clusters of threads (Knots)
+        // --- "Macro Weave" Background ---
+        // Huge cylinders criss-crossing to look like fabric under a microscope
 
-        const knotCount = 150;
-        const knotGeo = new THREE.TorusKnotGeometry(0.6, 0.1, 64, 8, 2, 3); // Organic knot shape
-        const knotMat = new THREE.MeshStandardMaterial({
-            color: 0xc07a5d, // Terracotta
-            roughness: 1.0,
-            flatShading: false
+        const threadGroup = new THREE.Group();
+        scene.add(threadGroup);
+
+        const tRadius = 0.5;
+        const tLen = 60;
+        const tSpace = 1.2;
+        const count = 30; // Number of threads
+
+        const geo = new THREE.CylinderGeometry(tRadius, tRadius, tLen, 16);
+        const matV = new THREE.MeshStandardMaterial({ color: 0xd9cbb6, roughness: 0.8 }); // Light warp
+        const matH = new THREE.MeshStandardMaterial({ color: 0xcfbca0, roughness: 0.9 }); // Dark weft
+
+        // Vertical Threads (Warp)
+        for(let i=0; i<count; i++) {
+            const mesh = new THREE.Mesh(geo, matV);
+            mesh.position.x = (i - count/2) * tSpace;
+            // Wave them slightly in Z
+            mesh.position.z = Math.sin(i) * 0.2;
+            threadGroup.add(mesh);
+        }
+
+        // Horizontal Threads (Weft)
+        for(let i=0; i<count; i++) {
+            const mesh = new THREE.Mesh(geo, matH);
+            mesh.rotation.z = Math.PI / 2;
+            mesh.position.y = (i - count/2) * tSpace;
+            // Weave over/under
+            mesh.position.z = Math.cos(i) * 0.2 + 0.5; // Offset slightly front
+            threadGroup.add(mesh);
+        }
+
+        // Tilt the whole fabric
+        threadGroup.rotation.z = 0.2;
+        threadGroup.rotation.x = -0.1;
+
+        // --- "The Needle" ---
+        // A golden needle floating on the side
+        const needleGeo = new THREE.ConeGeometry(0.2, 8, 16);
+        const needleMat = new THREE.MeshStandardMaterial({
+            color: 0xc8a165,
+            metalness: 0.8,
+            roughness: 0.2
         });
+        const needle = new THREE.Mesh(needleGeo, needleMat);
+        needle.rotation.z = -0.5;
+        needle.position.set(12, 10, 5); // Start position
+        scene.add(needle);
 
-        const knots = new THREE.InstancedMesh(knotGeo, knotMat, knotCount);
-        scene.add(knots);
+        // --- "Gold Thread" Trail ---
+        // A curve that follows the needle?
+        // Or just a thick decorative thread weaving through the background?
 
-        const dummy = new THREE.Object3D();
-        const knotSpeeds = [];
-
-        // Randomly place knots
-        for(let i=0; i<knotCount; i++) {
-            dummy.position.set(
-                (Math.random()-0.5) * 40,
-                (Math.random()-0.5) * 60, // Tall spread
-                (Math.random()-0.5) * 20 - 10
-            );
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-
-            // Varied scales for "handmade" imperfection
-            const s = 0.5 + Math.random() * 0.8;
-            dummy.scale.set(s, s, s);
-
-            dummy.updateMatrix();
-            knots.setMatrixAt(i, dummy.matrix);
-
-            // Color variation
-            const r = Math.random();
-            if(r > 0.7) knots.setColorAt(i, new THREE.Color(0x8da376)); // Sage
-            else if (r > 0.4) knots.setColorAt(i, new THREE.Color(0xcba367)); // Gold
-            else knots.setColorAt(i, new THREE.Color(0xc07a5d)); // Terracotta
-
-            knotSpeeds.push(Math.random() * 0.002 + 0.001);
+        const curvePoints = [];
+        for(let i=0; i<10; i++) {
+            curvePoints.push(new THREE.Vector3(
+                Math.sin(i)*5,
+                (i-5)*5,
+                2
+            ));
         }
-        knots.instanceColor.needsUpdate = true;
-
-        // --- "Woven Ribbons" (Thicker, more obvious) ---
-        // Create distinct flowing lines that cross the screen
-        const ribbonGroup = new THREE.Group();
-        scene.add(ribbonGroup);
-
-        function createRibbon(y, color, width) {
-            const path = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(-30, y-2, -5),
-                new THREE.Vector3(-10, y+2, 0),
-                new THREE.Vector3(10, y-2, -5),
-                new THREE.Vector3(30, y+2, 0)
-            ]);
-
-            // Use Tube but flattened scale to look like ribbon
-            const geo = new THREE.TubeGeometry(path, 64, width, 8, false);
-            const mat = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.9,
-                side: THREE.DoubleSide
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            // Flatten
-            mesh.scale.set(1, 1, 0.2);
-            return mesh;
-        }
-
-        const r1 = createRibbon(10, 0x8da376, 0.4); // Sage
-        const r2 = createRibbon(0, 0xcba367, 0.3); // Gold
-        const r3 = createRibbon(-10, 0xc07a5d, 0.5); // Terracotta
-
-        ribbonGroup.add(r1, r2, r3);
-
-        // --- Vertical Ropes (Cylinders) ---
-        // Background texture
-        const ropeGeo = new THREE.CylinderGeometry(0.05, 0.05, 100, 5);
-        const ropeMat = new THREE.MeshBasicMaterial({ color: 0xe6dcc8 });
-        const ropes = new THREE.InstancedMesh(ropeGeo, ropeMat, 50);
-        scene.add(ropes);
-
-        for(let i=0; i<50; i++) {
-            dummy.position.set(
-                (Math.random()-0.5) * 50,
-                0,
-                -15 + (Math.random() * 5)
-            );
-            dummy.scale.set(1, 1, 1);
-            dummy.rotation.set(0,0, (Math.random()-0.5)*0.1);
-            dummy.updateMatrix();
-            ropes.setMatrixAt(i, dummy.matrix);
-        }
+        const goldCurve = new THREE.CatmullRomCurve3(curvePoints);
+        const goldGeo = new THREE.TubeGeometry(goldCurve, 64, 0.1, 8, false);
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xc8a165, metalness: 0.5 });
+        const goldThread = new THREE.Mesh(goldGeo, goldMat);
+        // scene.add(goldThread); // Maybe too messy, let's stick to the needle
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
@@ -524,55 +433,28 @@
         function animate() {
             const time = clock.getElapsedTime();
 
-            // Rotate Knots slightly (requires re-updating matrix, expensive? No, we can rotate the WHOLE group for simplicity or use shader)
-            // Let's just rotate the whole group gently
-            knots.rotation.y = Math.sin(time * 0.1) * 0.1;
-
-            // Wave Ribbons
-            r1.position.y = 10 + Math.sin(time * 0.5) * 1;
-            r2.position.y = 0 + Math.sin(time * 0.4 + 1) * 1;
-            r3.position.y = -10 + Math.sin(time * 0.6 + 2) * 1;
+            // Subtle fabric breathing
+            threadGroup.position.z = -5 + Math.sin(time * 0.5) * 0.5;
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
         animate();
 
-        // --- GSAP ---
+        // --- GSAP Scroll ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Parallax Camera
-        gsap.to(camera.position, {
-            y: -15, // Move down
+        // Move Needle down the page
+        gsap.to(needle.position, {
+            y: -15,
+            x: 8,
+            rotation: -0.2, // Needle turns slightly
             ease: "none",
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
                 scrub: 1
-            }
-        });
-
-        // Text Entrance
-        gsap.utils.toArray('.text-card').forEach(card => {
-            gsap.to(card, {
-                opacity: 1, y: 0,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top 80%",
-                }
-            });
-        });
-
-        // Gallery Stagger
-        gsap.to(".gallery-item", {
-            opacity: 1, y: 0,
-            duration: 0.8,
-            stagger: 0.2,
-            scrollTrigger: {
-                trigger: ".gallery-grid",
-                start: "top 70%",
             }
         });
 
@@ -587,6 +469,9 @@
              gsap.to("#loader", { opacity: 0, duration: 1, onComplete: () => {
                 document.getElementById('loader').style.display = 'none';
             }});
+
+             // Fade in elements
+             gsap.from(".journal-container", { y: 50, opacity: 0, duration: 1, delay: 0.5 });
         };
 
     </script>
