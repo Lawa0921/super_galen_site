@@ -349,6 +349,18 @@
     <a href="/guild/" id="nav-back"><i class="fa-solid fa-arrow-left"></i> 回公會</a>
     <div id="canvas-container"></div>
 
+    <!-- Intro Overlay -->
+    <div id="intro-overlay" style="position: fixed; top:0; left:0; width:100%; height:100%; background: var(--c-deep); z-index: 10000; display: flex; flex-direction:column; justify-content: center; align-items: center; transition: opacity 1s;">
+        <h1 style="font-size: 5rem; text-shadow: 0 0 30px var(--c-accent); margin-bottom: 2rem;">Liloyee</h1>
+        <button id="enter-btn" style="background: transparent; border: 2px solid var(--c-accent); color: var(--c-accent); padding: 1rem 3rem; font-size: 1.5rem; border-radius: 50px; cursor: pointer; transition: 0.3s; font-family: var(--f-title);">
+            <i class="fa-solid fa-water"></i> DIVE IN
+        </button>
+    </div>
+
+    <audio id="bgm" loop>
+        <source src="/assets/audio/underwater.mp3" type="audio/mpeg">
+    </audio>
+
     <!-- Modals -->
     <div id="lightbox"><img src="" alt="Full Image"></div>
     <div id="text-modal">
@@ -400,9 +412,7 @@
         <!-- BUBBLE GALLERY -->
         <div id="bubble-zone">
             <!-- Bubbles injected by JS -->
-            <div style="position: absolute; width: 100%; top: 5%; text-align: center; pointer-events: none; z-index: 20;">
-                <h2 style="text-shadow: 0 0 20px black; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; display:inline-block;">戳破泡泡，閱讀我的故事 🫧</h2>
-            </div>
+
             <!-- Sea Creatures Container -->
             <div id="sea-creatures"></div>
         </div>
@@ -536,36 +546,84 @@
         function createTreasureChest() {
             chestGroup = new THREE.Group();
 
-            // Base
-            const baseGeom = new THREE.BoxGeometry(4, 3, 3);
+            // Materials
             const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
             const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9, side: THREE.DoubleSide });
+            const ironMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7, metalness: 0.6 });
 
+            // --- Base ---
+            const baseGeom = new THREE.BoxGeometry(4, 3, 3);
             const base = new THREE.Mesh(baseGeom, woodMat);
             base.position.y = 1.5;
-            base.name = "ChestBase";
             chestGroup.add(base);
 
-            // Lid (Pivot Group)
-            chestLid = new THREE.Group();
-            chestLid.position.set(0, 3, -1.5); // Hinge at back
+            // Base Straps
+            const strapV = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.05, 3.05), ironMat);
+            strapV.position.set(1.5, 1.5, 0);
+            chestGroup.add(strapV);
 
-            // Lid Geometry
-            const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, false, 0, Math.PI);
+            const strapV2 = strapV.clone();
+            strapV2.position.set(-1.5, 1.5, 0);
+            chestGroup.add(strapV2);
+
+
+            // --- Lid (Pivot Group) ---
+            chestLid = new THREE.Group();
+            chestLid.position.set(0, 3, -1.5); // Hinge at back (Top-Back of base)
+
+            // Lid Geometry (Half Cylinder)
+            // Radius 1.5, Height 4 (matches box width)
+            // Default Cylinder is vertical.
+            // We want it horizontal along X. -> rotateZ(90)
+            // We want the flat side down (when closed).
+            // Default thetaStart=0, length=PI creates a half cylinder starting at +Z going counter-clockwise?
+            // Let's rely on standard rotation.
+            const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, true, 0, Math.PI);
             lidGeom.rotateZ(Math.PI / 2);
+            // Now axis is X.
+            // We need to rotate it so the arc is UP (+Y) and flat is DOWN (-Y).
+            // Currently it might be facing Back (-Z).
             lidGeom.rotateX(-Math.PI / 2);
 
+            // Add thickness (inner side provided by DoubleSide material)
+            // Or add side caps.
             const lidMesh = new THREE.Mesh(lidGeom, woodMat);
-            lidMesh.position.set(0, 0, 1.5); // Offset to match hinge
-            lidMesh.name = "ChestLid";
+            lidMesh.position.set(0, 0, 1.5); // Offset Z by Radius (1.5) so pivot (0,0,0) is at the edge
             chestLid.add(lidMesh);
+
+            // Lid Side Caps
+            const capGeom = new THREE.CircleGeometry(1.5, 32, 0, Math.PI);
+            capGeom.rotateZ(-Math.PI/2); // Face X
+            capGeom.rotateX(-Math.PI/2); // Align with cylinder arc
+
+            const cap1 = new THREE.Mesh(capGeom, woodMat);
+            cap1.position.set(2, 0, 1.5);
+            chestLid.add(cap1);
+
+            const cap2 = new THREE.Mesh(capGeom, woodMat);
+            cap2.position.set(-2, 0, 1.5);
+            cap2.rotateY(Math.PI);
+            chestLid.add(cap2);
+
+            // Lid Straps (Torus segments or just Boxes slightly larger)
+            const strapLidGeom = new THREE.CylinderGeometry(1.55, 1.55, 0.2, 32, 1, true, 0, Math.PI);
+            strapLidGeom.rotateZ(Math.PI / 2);
+            strapLidGeom.rotateX(-Math.PI / 2);
+
+            const strapL1 = new THREE.Mesh(strapLidGeom, ironMat);
+            strapL1.position.set(1.5, 0, 1.5);
+            chestLid.add(strapL1);
+
+            const strapL2 = strapL1.clone();
+            strapL2.position.set(-1.5, 0, 1.5);
+            chestLid.add(strapL2);
 
             chestGroup.add(chestLid);
 
             // Lock
-            const lockGeom = new THREE.BoxGeometry(0.5, 0.8, 0.2);
+            const lockGeom = new THREE.BoxGeometry(0.5, 0.6, 0.2);
             const lock = new THREE.Mesh(lockGeom, goldMat);
-            lock.position.set(0, 0, 3); // Relative to lid pivot
+            lock.position.set(0, -0.3, 3); // Relative to lid pivot, hanging down front
             chestLid.add(lock);
 
             chestGroup.position.set(0, sandY + 2, -5);
@@ -595,6 +653,30 @@
                 mat: new THREE.MeshPhongMaterial({ color: 0x00f3ff, specular: 0xccffff, shininess: 100, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
             }
         ];
+
+        // --- SPAWN INITIAL TREASURES ---
+        function spawnInitialTreasures() {
+            for(let i=0; i<50; i++) {
+                const type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
+                const mesh = new THREE.Mesh(type.geom, type.mat);
+
+                // Scatter around chest
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 15 + 3; // 3 to 18 units away
+
+                mesh.position.set(
+                    Math.cos(angle) * radius,
+                    sandY + 0.5, // Resting on sand
+                    -5 + Math.sin(angle) * radius
+                );
+
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                if (type.geom.type === 'CylinderGeometry') mesh.rotation.x = Math.PI/2;
+
+                scene.add(mesh);
+            }
+        }
+        spawnInitialTreasures();
 
         function spawnTreasure(screenX, screenY) {
             // Cap limit (Increased for abundance)
@@ -850,15 +932,26 @@
             });
         });
 
-        // --- UI CLOSERS ---
+        // --- INTRO & UI CLOSERS ---
+        document.getElementById('enter-btn').addEventListener('click', () => {
+            const overlay = document.getElementById('intro-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 1000);
+
+            const audio = document.getElementById('bgm');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log("Audio play failed", e));
+
+            gsap.to('#canvas-container', { opacity: 1, duration: 2 });
+        });
+
         document.getElementById('lightbox').addEventListener('click', () => {
             document.getElementById('lightbox').classList.remove('active');
         });
         document.getElementById('text-modal').addEventListener('click', () => {
             document.getElementById('text-modal').classList.remove('active');
         });
-
-        gsap.to('#canvas-container', { opacity: 1, duration: 2 });
+        // Initial canvas fade in moved to enter button
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
