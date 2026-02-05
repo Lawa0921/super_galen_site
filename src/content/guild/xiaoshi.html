@@ -181,6 +181,37 @@
         p { line-height: 1.8; margin-bottom: 1rem; color: #bbb; font-size: 1.1rem; }
         strong { color: #fff; font-weight: 500; border-bottom: 1px solid var(--accent-orange); }
 
+        /* Stats Section */
+        .stat-row { display: flex; align-items: center; margin-bottom: 1rem; }
+        .stat-label { width: 120px; font-family: 'Oswald'; color: #fff; letter-spacing: 0.05em; }
+        .stat-bar-bg { flex: 1; height: 10px; background: rgba(255,255,255,0.1); position: relative; }
+        .stat-bar-fill { height: 100%; background: var(--accent-orange); width: 0%; transition: width 1s ease-out; }
+        .stat-val { width: 40px; text-align: right; color: var(--accent-orange); font-weight: 700; margin-left: 10px; }
+
+        /* Missions Section */
+        .mission-card {
+            border-left: 4px solid var(--accent-orange);
+            background: rgba(255,255,255,0.03);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .mission-title { font-family: 'Oswald'; color: #fff; font-size: 1.3rem; margin-bottom: 0.5rem; }
+        .mission-meta { font-size: 0.8rem; color: #666; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+        /* Quote Section */
+        .quote-block {
+            font-size: 1.8rem;
+            font-family: 'Oswald';
+            color: #fff;
+            text-align: center;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 3rem 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.5);
+        }
+
         /* Service Grid */
         .service-grid {
             display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem;
@@ -338,6 +369,45 @@
             </div>
         </section>
 
+        <!-- 2.5. Stats -->
+        <section id="sec-stats">
+            <div class="data-card">
+                <div class="tape-label">Attributes</div>
+                <h3 style="margin-bottom: 2rem; color: #fff;">IRON WILL PROTOCOL</h3>
+
+                <div class="stat-row">
+                    <div class="stat-label">STAMINA</div>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 95%"></div></div>
+                    <div class="stat-val">S</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">NAVIGATION</div>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 88%"></div></div>
+                    <div class="stat-val">A+</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">ADAPTABILITY</div>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 90%"></div></div>
+                    <div class="stat-val">S</div>
+                </div>
+                <div class="stat-row">
+                    <div class="stat-label">IRON HEAD</div>
+                    <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 100%"></div></div>
+                    <div class="stat-val">MAX</div>
+                </div>
+                <p style="margin-top: 2rem; font-size: 0.9rem;">
+                    * Certified "Iron Man" skull hardness. Indestructible determination.
+                </p>
+            </div>
+        </section>
+
+        <!-- 2.8. Quote -->
+        <section style="min-height: 50vh;">
+            <div class="quote-block">
+                "SOME CASES SPARK CURIOSITY.<br>THAT'S WHY I RIDE ALONE."
+            </div>
+        </section>
+
         <!-- 3. Services -->
         <section id="sec-services">
             <div class="data-card">
@@ -373,6 +443,31 @@
                         <div class="service-title">DRIFTER</div>
                         <div class="service-desc">萬事屋風格，只要有趣，使命必達。</div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3.5. Mission Archives -->
+        <section id="sec-missions">
+            <div class="data-card">
+                <div class="tape-label">Mission Archives</div>
+
+                <div class="mission-card">
+                    <div class="mission-title">CASE 09: THE LIMITLESS QUEUE</div>
+                    <div class="mission-meta">TYPE: ENDURANCE / LOCATION: TAIPEI / DURATION: 48H</div>
+                    <p>Camped out for two days straight to secure a limited edition release for a client. Rain or shine, the spot was held. Mission Accomplished.</p>
+                </div>
+
+                <div class="mission-card">
+                    <div class="mission-title">CASE 24: SILENT SWEEPER</div>
+                    <div class="mission-meta">TYPE: CLEANING / LOCATION: REMOTE MOUNTAIN / TARGET: ANCESTRAL TOMB</div>
+                    <p>Deep cleaning of an overgrown ancestral site. Restoring dignity to the past through sweat and labor. Respect given, job done.</p>
+                </div>
+
+                <div class="mission-card">
+                    <div class="mission-title">CASE 47: MIDNIGHT RUNNER</div>
+                    <div class="mission-meta">TYPE: DELIVERY / LOCATION: CROSS-COUNTRY / STATUS: URGENT</div>
+                    <p>Emergency document delivery across three counties in a single night. Navigating backroads to beat the deadline. The motorcycle never stops.</p>
                 </div>
             </div>
         </section>
