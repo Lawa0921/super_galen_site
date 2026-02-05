@@ -678,7 +678,7 @@
         }
         spawnInitialTreasures();
 
-function spawnTreasure(screenX, screenY) {
+        function spawnTreasure(screenX, screenY) {
             spawnTreasureInternal(screenX, screenY, false);
         }
 
@@ -691,27 +691,38 @@ function spawnTreasure(screenX, screenY) {
             if(treasures.length > 150) {
                 const old = treasures.shift();
                 scene.remove(old.mesh);
-                // Do NOT dispose geometry/material here as they are shared references from treasureTypes
             }
 
-            // Spawn random multiple items (1-10)
             const count = isBubble ? 3 : (Math.floor(Math.random() * 10) + 1);
+
             for(let k=0; k<count; k++) {
                 const vec = new THREE.Vector3();
-                vec.set(
-                    (screenX / window.innerWidth) * 2 - 1,
-                    -(screenY / window.innerHeight) * 2 + 1,
-                    0.5
-                );
-                vec.unproject(camera);
-                vec.sub(camera.position).normalize();
+                let spawnPos;
 
-                const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
+                if (isBubble) {
+                    // Spawn closer to camera for visibility (Z ~ 15)
+                    vec.set(
+                        (screenX / window.innerWidth) * 2 - 1,
+                        -(screenY / window.innerHeight) * 2 + 1,
+                        0.5
+                    );
+                    vec.unproject(camera);
+                    vec.sub(camera.position).normalize();
+                    spawnPos = camera.position.clone().add(vec.multiplyScalar(5)); // 5 units in front of camera
+                } else {
+                    vec.set(
+                        (screenX / window.innerWidth) * 2 - 1,
+                        -(screenY / window.innerHeight) * 2 + 1,
+                        0.5
+                    );
+                    vec.unproject(camera);
+                    vec.sub(camera.position).normalize();
+                    spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
+                }
 
-                // Randomly select type
                 let type;
                 if(isBubble) {
-                    type = treasureTypes[Math.floor(Math.random() * 2)]; // 0 or 1 (Coin or Gem)
+                    type = treasureTypes[Math.floor(Math.random() * 2)];
                 } else {
                     type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
                 }
@@ -723,7 +734,6 @@ function spawnTreasure(screenX, screenY) {
                 mesh.position.y += (Math.random()-0.5)*1;
                 mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
 
-                // Fix orientation for coins (Cylinders lie flat usually)
                 if (type.geom.type === 'CylinderGeometry') mesh.rotation.x = Math.PI/2;
 
                 scene.add(mesh);
@@ -739,81 +749,8 @@ function spawnTreasure(screenX, screenY) {
                 let gravityScale = 1.0;
 
                 if (isBubble) {
-                    speed = 0.05 + Math.random() * 0.05; // Very slow/gentle
-                    gravityScale = 0.1; // Reduced gravity
-                } else {
-                    speed = 0.4 + Math.random() * 0.3;
-                }
-
-                treasures.push({
-                    mesh: mesh,
-                    velocity: direction.multiplyScalar(speed),
-                    rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0),
-                    gravity: 0.002 * gravityScale
-                });
-            }
-        }
-
-        function spawnBubbleTreasure(screenX, screenY) {
-            spawnTreasureInternal(screenX, screenY, true);
-        }
-
-        function spawnTreasureInternal(screenX, screenY, isBubble) {
-            // Cap limit (Increased for abundance)
-            if(treasures.length > 150) {
-                const old = treasures.shift();
-                scene.remove(old.mesh);
-                // Do NOT dispose geometry/material here as they are shared references from treasureTypes
-            }
-
-            // Spawn random multiple items (1-10)
-            const count = isBubble ? 3 : (Math.floor(Math.random() * 10) + 1);
-
-            for(let k=0; k<count; k++) {
-                const vec = new THREE.Vector3();
-                vec.set(
-                    (screenX / window.innerWidth) * 2 - 1,
-                    -(screenY / window.innerHeight) * 2 + 1,
-                    0.5
-                );
-                vec.unproject(camera);
-                vec.sub(camera.position).normalize();
-
-                const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
-
-                // Randomly select type
-                let type;
-                if(isBubble) {
-                    type = treasureTypes[Math.floor(Math.random() * 2)]; // 0 or 1 (Coin or Gem)
-                } else {
-                    type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
-                }
-
-                const mesh = new THREE.Mesh(type.geom, type.mat);
-
-                mesh.position.copy(spawnPos);
-                mesh.position.x += (Math.random()-0.5)*1; // Reduced jitter for immediate feel
-                mesh.position.y += (Math.random()-0.5)*1;
-                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-
-                // Fix orientation for coins (Cylinders lie flat usually)
-                if (type.geom.type === 'CylinderGeometry') mesh.rotation.x = Math.PI/2;
-
-                scene.add(mesh);
-
-                const targetPos = new THREE.Vector3(
-                    (Math.random() - 0.5) * 12,
-                    sandY,
-                    -5 + (Math.random() - 0.5) * 8
-                );
-                const direction = targetPos.clone().sub(spawnPos).normalize();
-
-                let speed;
-                let gravityScale = 1.0;
-
-                if (isBubble) {
-                    speed = 0.05 + Math.random() * 0.05; // Very slow/gentle
-                    gravityScale = 0.1; // Reduced gravity
+                    speed = 0.05 + Math.random() * 0.05;
+                    gravityScale = 0.1;
                 } else {
                     speed = 0.4 + Math.random() * 0.3;
                 }
