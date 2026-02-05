@@ -41,9 +41,7 @@
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             width: 100vw;
-            scrollbar-width: none;
         }
-        body::-webkit-scrollbar { display: none; }
 
         h1, h2, h3, .street-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
 
@@ -56,14 +54,42 @@
             pointer-events: none;
         }
 
-        /* --- Scroll Spacer --- */
-        #scroll-spacer {
-            height: 600vh; /* Increased for longer ride */
-            width: 100%;
-            position: absolute;
-            top: 0; left: 0;
-            z-index: -1;
+        /* --- Route UI (Fixed Overlay) --- */
+        #route-ui {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 100vh;
+            z-index: 5;
             pointer-events: none;
+        }
+
+        #route-line-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 183, 0, 0.1);
+        }
+
+        #route-line-progress {
+            position: absolute; top: 0; left: 0; width: 100%; height: 0%;
+            background: var(--accent-orange);
+            box-shadow: 0 0 10px var(--accent-orange);
+        }
+
+        #rider-container {
+            position: absolute;
+            top: 0%; /* Will be animated via GSAP */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: var(--accent-orange);
+            text-shadow: 0 5px 10px rgba(0,0,0,0.8);
+            background: #000;
+            padding: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-orange);
+            will-change: top;
         }
 
         /* --- Navigation --- */
@@ -77,55 +103,26 @@
         }
         .nav-back:hover { transform: rotate(0deg) scale(1.1); }
 
-        /* --- Rider Overlay --- */
-        #rider-container {
-            position: fixed;
-            top: 15%; /* Start higher */
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 5; /* Below content but above canvas */
-            font-size: 3rem;
-            color: var(--accent-orange);
-            text-shadow: 0 5px 10px rgba(0,0,0,0.8);
-            pointer-events: none;
-            background: #000;
-            padding: 10px;
-            border-radius: 50%;
-            border: 2px solid var(--accent-orange);
-            will-change: transform;
-        }
-
-        #route-line {
-            position: fixed;
-            top: 0;
-            left: 50%;
-            width: 4px;
-            height: 0; /* Animated */
-            background: var(--accent-orange);
-            transform: translateX(-50%);
-            z-index: 4;
-            box-shadow: 0 0 10px var(--accent-orange);
-        }
-
-        /* --- Content Sections --- */
-        .content-section {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
+        /* --- Main Content Flow --- */
+        main {
+            position: relative;
             z-index: 10;
-            opacity: 0;
+            width: 100%;
+        }
+
+        section {
+            min-height: 100vh;
+            width: 100%;
             display: flex;
-            padding: 5vw;
-            transition: opacity 0.5s ease;
             justify-content: center;
             align-items: center;
+            padding: 5rem 1rem;
+            position: relative;
         }
-        .content-section.active { pointer-events: auto; opacity: 1; }
 
         /* --- Cards & UI --- */
         .data-card {
-            background: rgba(10, 10, 12, 0.8);
+            background: rgba(10, 10, 12, 0.85);
             border: 1px solid #333;
             padding: 3rem;
             max-width: 600px;
@@ -133,7 +130,9 @@
             position: relative;
             backdrop-filter: blur(10px);
             box-shadow: 0 10px 40px rgba(0,0,0,0.9);
-            transform: translateY(20px);
+            /* Initial State for Animation */
+            opacity: 0;
+            transform: translateY(50px);
         }
 
         /* Tape Effect */
@@ -240,127 +239,131 @@
 
     <a href="/guild/" class="nav-back">GUILD</a>
     <div id="webgl-container"></div>
-    <div id="scroll-spacer"></div>
+
+    <!-- Route UI Overlay -->
+    <div id="route-ui">
+        <div id="route-line-bg"></div>
+        <div id="route-line-progress"></div>
+        <div id="rider-container">
+            <i class="fa-solid fa-motorcycle"></i>
+        </div>
+    </div>
 
     <!-- Lightbox -->
     <div id="lightbox" onclick="this.classList.remove('active')">
         <img id="lightbox-img" src="">
     </div>
 
-    <!-- Route UI -->
-    <div id="route-line"></div>
-    <div id="rider-container">
-        <i class="fa-solid fa-motorcycle"></i>
-    </div>
-
-    <!-- 1. Hero -->
-    <div id="sec-hero" class="content-section active">
-        <div style="text-align: center;">
-            <div class="avatar-frame">
-                <img src="/assets/img/guild/xiaoshi/avatar.webp" class="avatar-img" alt="Xiaoshi">
+    <main>
+        <!-- 1. Hero -->
+        <section id="sec-hero">
+            <div style="text-align: center;">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/xiaoshi/avatar.webp" class="avatar-img" alt="Xiaoshi">
+                </div>
+                <h1 class="hero-title">XIAOSHI</h1>
+                <div class="hero-subtitle">The Happy-Go-Lucky Drifter</div>
             </div>
-            <h1 class="hero-title">XIAOSHI</h1>
-            <div class="hero-subtitle">The Happy-Go-Lucky Drifter</div>
-        </div>
-    </div>
+        </section>
 
-    <!-- 2. Profile / Bio -->
-    <div id="sec-profile" class="content-section">
-        <div class="data-card">
-            <div class="tape-label">Who I Am</div>
-            <p style="margin-top: 1rem;">
-                我是<strong>小獅</strong>。<br>
-                一個從基層爬起，被社會毒打的打工人。
-            </p>
-            <p>
-                加入某奇怪論壇跑腿幫，已經將近20年。<br>
-                目前是遊走各地的接案者，主要是雙北～但各地都會跑。
-            </p>
-            <p>
-                有些案件的特殊性，會引起我的好奇心，所以工作一切以獨行為主。<br>
-                要是那天真的剋死異鄉，所以趕快找尋公會加入～哈哈哈。
-            </p>
-            <p style="text-align: right; margin-top: 2rem; font-style: italic; color: var(--accent-orange);">
-                法號～樂天a小獅
-            </p>
-        </div>
-    </div>
+        <!-- 2. Profile / Bio -->
+        <section id="sec-profile">
+            <div class="data-card">
+                <div class="tape-label">Who I Am</div>
+                <p style="margin-top: 1rem;">
+                    我是<strong>小獅</strong>。<br>
+                    一個從基層爬起，被社會毒打的打工人。
+                </p>
+                <p>
+                    加入某奇怪論壇跑腿幫，已經將近20年。<br>
+                    目前是遊走各地的接案者，主要是雙北～但各地都會跑。
+                </p>
+                <p>
+                    有些案件的特殊性，會引起我的好奇心，所以工作一切以獨行為主。<br>
+                    要是那天真的剋死異鄉，所以趕快找尋公會加入～哈哈哈。
+                </p>
+                <p style="text-align: right; margin-top: 2rem; font-style: italic; color: var(--accent-orange);">
+                    法號～樂天a小獅
+                </p>
+            </div>
+        </section>
 
-    <!-- 3. Services -->
-    <div id="sec-services" class="content-section">
-        <div class="data-card">
-            <div class="tape-label">What I Do</div>
-            <div class="service-grid">
-                <div class="service-item">
-                    <i class="fa-solid fa-people-carry-box service-icon"></i>
-                    <div class="service-title">MANPOWER</div>
-                    <div class="service-desc">人力調度，各類臨時支援。</div>
-                </div>
-                <div class="service-item">
-                    <i class="fa-solid fa-broom service-icon"></i>
-                    <div class="service-title">CLEANING</div>
-                    <div class="service-desc">居家服務，掃墓清潔，深層清理。</div>
-                </div>
-                <div class="service-item">
-                    <i class="fa-solid fa-stopwatch service-icon"></i>
-                    <div class="service-title">QUEUING</div>
-                    <div class="service-desc">代排隊，限量美食，活動搶票。</div>
-                </div>
-                <div class="service-item">
-                    <i class="fa-solid fa-utensils service-icon"></i>
-                    <div class="service-title">FOOD SCOUT</div>
-                    <div class="service-desc">美食獵人，部落客開拓，專業吃貨。</div>
-                </div>
-                <div class="service-item">
-                    <i class="fa-solid fa-user-tie service-icon"></i>
-                    <div class="service-title">BUTLER</div>
-                    <div class="service-desc">專業管家服務，協助陪伴，代跑腿。</div>
-                </div>
-                <div class="service-item">
-                    <i class="fa-solid fa-motorcycle service-icon"></i>
-                    <div class="service-title">DRIFTER</div>
-                    <div class="service-desc">萬事屋風格，只要有趣，使命必達。</div>
+        <!-- 3. Services -->
+        <section id="sec-services">
+            <div class="data-card">
+                <div class="tape-label">What I Do</div>
+                <div class="service-grid">
+                    <div class="service-item">
+                        <i class="fa-solid fa-people-carry-box service-icon"></i>
+                        <div class="service-title">MANPOWER</div>
+                        <div class="service-desc">人力調度，各類臨時支援。</div>
+                    </div>
+                    <div class="service-item">
+                        <i class="fa-solid fa-broom service-icon"></i>
+                        <div class="service-title">CLEANING</div>
+                        <div class="service-desc">居家服務，掃墓清潔，深層清理。</div>
+                    </div>
+                    <div class="service-item">
+                        <i class="fa-solid fa-stopwatch service-icon"></i>
+                        <div class="service-title">QUEUING</div>
+                        <div class="service-desc">代排隊，限量美食，活動搶票。</div>
+                    </div>
+                    <div class="service-item">
+                        <i class="fa-solid fa-utensils service-icon"></i>
+                        <div class="service-title">FOOD SCOUT</div>
+                        <div class="service-desc">美食獵人，部落客開拓，專業吃貨。</div>
+                    </div>
+                    <div class="service-item">
+                        <i class="fa-solid fa-user-tie service-icon"></i>
+                        <div class="service-title">BUTLER</div>
+                        <div class="service-desc">專業管家服務，協助陪伴，代跑腿。</div>
+                    </div>
+                    <div class="service-item">
+                        <i class="fa-solid fa-motorcycle service-icon"></i>
+                        <div class="service-title">DRIFTER</div>
+                        <div class="service-desc">萬事屋風格，只要有趣，使命必達。</div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- 4. Visual Logs -->
-    <div id="sec-gallery" class="content-section">
-        <div class="data-card" style="max-width: 900px; padding: 2rem;">
-            <div class="tape-label">Drifter Logs</div>
-            <div class="gallery-container">
-                <img src="/assets/img/guild/xiaoshi/gallery_01.webp" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/xiaoshi/gallery_02.webp" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/xiaoshi/gallery_03.webp" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/xiaoshi/gallery_04.webp" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/xiaoshi/gallery_05.webp" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/xiaoshi/gallery_06.webp" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/xiaoshi/gallery_07.webp" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/xiaoshi/gallery_08.webp" class="gallery-img" onclick="openLightbox(this.src)">
+        <!-- 4. Visual Logs -->
+        <section id="sec-gallery">
+            <div class="data-card" style="max-width: 900px; padding: 2rem;">
+                <div class="tape-label">Drifter Logs</div>
+                <div class="gallery-container">
+                    <img src="/assets/img/guild/xiaoshi/gallery_01.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                    <img src="/assets/img/guild/xiaoshi/gallery_02.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                    <img src="/assets/img/guild/xiaoshi/gallery_03.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                    <img src="/assets/img/guild/xiaoshi/gallery_04.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                    <img src="/assets/img/guild/xiaoshi/gallery_05.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                    <img src="/assets/img/guild/xiaoshi/gallery_06.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                    <img src="/assets/img/guild/xiaoshi/gallery_07.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                    <img src="/assets/img/guild/xiaoshi/gallery_08.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.9rem; text-align: center; color: #666;">
+                    <i class="fa-solid fa-arrow-left"></i> SCROLL <i class="fa-solid fa-arrow-right"></i>
+                </p>
             </div>
-            <p style="margin-top: 1rem; font-size: 0.9rem; text-align: center; color: #666;">
-                <i class="fa-solid fa-arrow-left"></i> SCROLL <i class="fa-solid fa-arrow-right"></i>
-            </p>
-        </div>
-    </div>
+        </section>
 
-    <!-- 5. Finale -->
-    <div id="sec-finale" class="content-section">
-        <div class="finale-container">
-            <h1 class="hero-title" style="font-size: 3rem;">CONTACT</h1>
-            <p style="font-size: 1.5rem; margin-bottom: 2rem; font-family: 'Oswald';">"Have a weird job? Call me."</p>
+        <!-- 5. Finale -->
+        <section id="sec-finale">
+            <div class="finale-container">
+                <h1 class="hero-title" style="font-size: 3rem;">CONTACT</h1>
+                <p style="font-size: 1.5rem; margin-bottom: 2rem; font-family: 'Oswald';">"Have a weird job? Call me."</p>
 
-            <div class="social-links">
-                <a href="https://www.threads.net/@iabc5040" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/iabc5040/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                <div class="social-links">
+                    <a href="https://www.threads.net/@iabc5040" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/iabc5040/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+
+                <div style="margin-top: 4rem; opacity: 0.5; font-size: 0.8rem;">
+                    © 2024 Xiaoshi. All Rights Reserved.
+                </div>
             </div>
-
-            <div style="margin-top: 4rem; opacity: 0.5; font-size: 0.8rem;">
-                © 2024 Xiaoshi. All Rights Reserved.
-            </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script>
         function openLightbox(src) {
@@ -375,10 +378,10 @@
         // --- 1. Scene Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.03); // Deep fog for infinite look
+        scene.fog = new THREE.FogExp2(0x050505, 0.03);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3, 6); // Behind and slightly above
+        camera.position.set(0, 3, 6);
         camera.lookAt(0, 1, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -386,25 +389,16 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- 2. Simple Rain Environment (Static Road) ---
-        // Just keeping the atmosphere, removing speed elements
-
-        // --- 4. Lighting ---
+        // --- 2. Environment (Rain/Atmosphere) ---
         const ambientLight = new THREE.AmbientLight(0x404040, 2);
         scene.add(ambientLight);
-
-        // --- 5. Animation Loop ---
-        // Simple rain shader updates handled in shader logic if we added it back,
-        // but currently we just have an empty scene. Let's add simple stars/rain particles.
 
         const particlesGeo = new THREE.BufferGeometry();
         const particleCount = 2000;
         const posArray = new Float32Array(particleCount * 3);
-
         for(let i=0; i<particleCount*3; i++) {
             posArray[i] = (Math.random() - 0.5) * 100;
         }
-
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         const particleMat = new THREE.PointsMaterial({
             size: 0.1, color: 0x4a6fa5, transparent: true, opacity: 0.8
@@ -412,90 +406,73 @@
         const particles = new THREE.Points(particlesGeo, particleMat);
         scene.add(particles);
 
-        function animate(time) {
-            // Gentle rain fall without forward speed
+        function animate() {
+            // Gentle rain fall
             const positions = particles.geometry.attributes.position.array;
             for(let i=1; i<particleCount*3; i+=3) {
-                positions[i] -= 0.1;
+                positions[i] -= 0.2;
                 if(positions[i] < -50) positions[i] = 50;
             }
             particles.geometry.attributes.position.needsUpdate = true;
-
             renderer.render(scene, camera);
         }
-
-        // Use GSAP ticker
         gsap.ticker.add(animate);
 
-        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- 6. Scroll Interaction (GSAP) ---
+        // --- 3. Scroll Interaction (Vertical Flow) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        const riderIcon = document.getElementById('rider-container');
-        const routeLine = document.getElementById('route-line');
-        const contentSections = document.querySelectorAll('.content-section');
-
-        // Master Timeline linked to #scroll-spacer
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "#scroll-spacer",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 0.5 // Unified scrub for smoother sync
-            }
-        });
-
-        // 1. Draw Line Downwards (0 -> 100vh)
-        tl.to(routeLine, { height: "100vh", ease: "none" }, 0);
-
-        // 2. Move Rider Downwards (Along the line)
-        // Use functional value for responsive recalc
-        tl.to(riderIcon, {
-            y: () => window.innerHeight * 0.65,
-            ease: "none"
-        }, 0);
-
-        // 3. Sections Visibility Logic (Integrated)
-        contentSections.forEach((section, index) => {
-            // Initial state
-            if (index === 0) gsap.set(section, { opacity: 1, pointerEvents: 'auto' });
-
-            // Trigger visibility based on spacer progress
-            ScrollTrigger.create({
-                trigger: "#scroll-spacer",
-                start: `${index * 100}vh top`,
-                end: `${(index + 1) * 100}vh top`,
-                onEnter: () => gsap.to(section, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
-                onLeave: () => gsap.to(section, { opacity: 0, pointerEvents: 'none', duration: 0.5 }),
-                onEnterBack: () => gsap.to(section, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
-                onLeaveBack: () => gsap.to(section, { opacity: 0, pointerEvents: 'none', duration: 0.5 })
+        // Animation: Reveal Data Cards
+        gsap.utils.toArray('.data-card').forEach(card => {
+            gsap.to(card, {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%", // Reveal when top of card hits 80% of viewport
+                    toggleActions: "play none none reverse"
+                }
             });
+        });
 
-            // Card Animations
-            const card = section.querySelector('.data-card');
-            if(card) {
-                gsap.fromTo(card,
-                    { y: 100, opacity: 0, rotation: 5 },
-                    {
-                        y: 0, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)",
-                        scrollTrigger: {
-                            trigger: "#scroll-spacer",
-                            start: `${index * 100}vh top`,
-                            toggleActions: "play reverse play reverse"
-                        }
-                    }
-                );
+        // Animation: Route Line & Rider Progress
+        // Based on the total scroll progress of 'main' relative to viewport
+
+        const riderIcon = document.getElementById('rider-container');
+        const routeProgress = document.getElementById('route-line-progress');
+
+        // We want the rider to move from top:0% to top:100% of the VIEWPORT
+        // as the user scrolls from top of page to bottom of page.
+
+        ScrollTrigger.create({
+            trigger: document.body,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.1,
+            onUpdate: (self) => {
+                const p = self.progress * 100;
+                // Move rider down the line
+                riderIcon.style.top = `${p}%`;
+                // Fill the line behind
+                routeProgress.style.height = `${p}%`;
             }
         });
 
-        // Initial Refresh to ensure triggers are correct
-        ScrollTrigger.refresh();
+        // Bobbing Effect for Rider
+        gsap.to(riderIcon, {
+            scale: 1.1,
+            duration: 0.8,
+            yoyo: true,
+            repeat: -1,
+            ease: "sine.inOut"
+        });
 
     </script>
 </body>
