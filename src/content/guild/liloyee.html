@@ -373,7 +373,7 @@
 
     <!-- Swimming Mermaid Guide -->
     <div class="mermaid-guide" id="mermaid">
-        <i class="fa-solid fa-person-swimming" style="transform: rotate(-30deg);"></i>
+        <span style="font-size: 4rem; filter: drop-shadow(0 0 10px var(--c-accent));">🧜‍♀️</span>
     </div>
 
     <!-- Social Icons Container (Pop from Chest) -->
@@ -678,7 +678,15 @@
         }
         spawnInitialTreasures();
 
-        function spawnTreasure(screenX, screenY) {
+function spawnTreasure(screenX, screenY) {
+            spawnTreasureInternal(screenX, screenY, false);
+        }
+
+        function spawnBubbleTreasure(screenX, screenY) {
+            spawnTreasureInternal(screenX, screenY, true);
+        }
+
+        function spawnTreasureInternal(screenX, screenY, isBubble) {
             // Cap limit (Increased for abundance)
             if(treasures.length > 150) {
                 const old = treasures.shift();
@@ -687,7 +695,7 @@
             }
 
             // Spawn random multiple items (1-10)
-            const count = Math.floor(Math.random() * 10) + 1;
+            const count = isBubble ? 3 : (Math.floor(Math.random() * 10) + 1);
             for(let k=0; k<count; k++) {
                 const vec = new THREE.Vector3();
                 vec.set(
@@ -701,12 +709,18 @@
                 const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
 
                 // Randomly select type
-                const type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
+                let type;
+                if(isBubble) {
+                    type = treasureTypes[Math.floor(Math.random() * 2)]; // 0 or 1 (Coin or Gem)
+                } else {
+                    type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
+                }
+
                 const mesh = new THREE.Mesh(type.geom, type.mat);
 
                 mesh.position.copy(spawnPos);
-                mesh.position.x += (Math.random()-0.5)*2;
-                mesh.position.y += (Math.random()-0.5)*2;
+                mesh.position.x += (Math.random()-0.5)*1;
+                mesh.position.y += (Math.random()-0.5)*1;
                 mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
 
                 // Fix orientation for coins (Cylinders lie flat usually)
@@ -721,10 +735,94 @@
                 );
                 const direction = targetPos.clone().sub(spawnPos).normalize();
 
+                let speed;
+                let gravityScale = 1.0;
+
+                if (isBubble) {
+                    speed = 0.05 + Math.random() * 0.05; // Very slow/gentle
+                    gravityScale = 0.1; // Reduced gravity
+                } else {
+                    speed = 0.4 + Math.random() * 0.3;
+                }
+
                 treasures.push({
                     mesh: mesh,
-                    velocity: direction.multiplyScalar(0.4 + Math.random()*0.3),
-                    rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0)
+                    velocity: direction.multiplyScalar(speed),
+                    rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0),
+                    gravity: 0.002 * gravityScale
+                });
+            }
+        }
+
+        function spawnBubbleTreasure(screenX, screenY) {
+            spawnTreasureInternal(screenX, screenY, true);
+        }
+
+        function spawnTreasureInternal(screenX, screenY, isBubble) {
+            // Cap limit (Increased for abundance)
+            if(treasures.length > 150) {
+                const old = treasures.shift();
+                scene.remove(old.mesh);
+                // Do NOT dispose geometry/material here as they are shared references from treasureTypes
+            }
+
+            // Spawn random multiple items (1-10)
+            const count = isBubble ? 3 : (Math.floor(Math.random() * 10) + 1);
+
+            for(let k=0; k<count; k++) {
+                const vec = new THREE.Vector3();
+                vec.set(
+                    (screenX / window.innerWidth) * 2 - 1,
+                    -(screenY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
+
+                const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
+
+                // Randomly select type
+                let type;
+                if(isBubble) {
+                    type = treasureTypes[Math.floor(Math.random() * 2)]; // 0 or 1 (Coin or Gem)
+                } else {
+                    type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
+                }
+
+                const mesh = new THREE.Mesh(type.geom, type.mat);
+
+                mesh.position.copy(spawnPos);
+                mesh.position.x += (Math.random()-0.5)*1; // Reduced jitter for immediate feel
+                mesh.position.y += (Math.random()-0.5)*1;
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+
+                // Fix orientation for coins (Cylinders lie flat usually)
+                if (type.geom.type === 'CylinderGeometry') mesh.rotation.x = Math.PI/2;
+
+                scene.add(mesh);
+
+                const targetPos = new THREE.Vector3(
+                    (Math.random() - 0.5) * 12,
+                    sandY,
+                    -5 + (Math.random() - 0.5) * 8
+                );
+                const direction = targetPos.clone().sub(spawnPos).normalize();
+
+                let speed;
+                let gravityScale = 1.0;
+
+                if (isBubble) {
+                    speed = 0.05 + Math.random() * 0.05; // Very slow/gentle
+                    gravityScale = 0.1; // Reduced gravity
+                } else {
+                    speed = 0.4 + Math.random() * 0.3;
+                }
+
+                treasures.push({
+                    mesh: mesh,
+                    velocity: direction.multiplyScalar(speed),
+                    rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0),
+                    gravity: 0.002 * gravityScale
                 });
             }
         }
@@ -785,7 +883,7 @@
                     b.style.visibility = 'hidden';
                 }});
 
-                spawnTreasure(e.clientX, e.clientY);
+                spawnBubbleTreasure(e.clientX, e.clientY);
 
                 if (content) {
                     const modal = document.getElementById('text-modal');
@@ -819,7 +917,11 @@
             scrollY = window.scrollY;
             maxScroll = document.body.scrollHeight - window.innerHeight;
 
-            // Mermaid Guide Animation: Always visible, no opacity logic
+            // Mermaid Guide follows scroll
+            // Moves from top: 20% to top: 80% based on scroll progress
+            const progress = Math.min(scrollY / maxScroll, 1);
+            const targetTop = 20 + (progress * 60);
+            mermaid.style.top = targetTop + '%';
         });
 
         // Mermaid Swim Animation
@@ -899,7 +1001,9 @@
 
             treasures.forEach(t => {
                 // Underwater physics: Low gravity, high drag
-                t.velocity.y -= 0.002;
+                // Use custom gravity if set, else default
+                const g = t.gravity !== undefined ? t.gravity : 0.002;
+                t.velocity.y -= g;
                 t.velocity.multiplyScalar(0.98); // Drag
 
                 t.mesh.position.add(t.velocity);
@@ -939,7 +1043,7 @@
             setTimeout(() => overlay.remove(), 1000);
 
             const audio = document.getElementById('bgm');
-            audio.volume = 0.5;
+            audio.volume = 0.2;
             audio.play().catch(e => console.log("Audio play failed", e));
 
             gsap.to('#canvas-container', { opacity: 1, duration: 2 });
