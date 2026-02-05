@@ -376,11 +376,6 @@
         <span style="font-size: 4rem; filter: drop-shadow(0 0 10px var(--c-accent));">🧜‍♀️</span>
     </div>
 
-    <!-- Treasure Chest (DOM) -->
-    <div id="treasure-chest" style="position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%); font-size: 8rem; cursor: pointer; z-index: 50; transition: transform 0.3s; filter: drop-shadow(0 0 20px #000);">
-        🧳
-    </div>
-
     <!-- Social Icons Container (Pop from Chest) -->
     <div id="chest-socials" class="chest-social-icons">
         <a href="https://www.threads.net/@liloyee_0224" target="_blank" class="chest-btn"><i class="fa-brands fa-threads"></i></a>
@@ -522,13 +517,35 @@
         const particleSystem = new THREE.Points(particlesGeom, particlesMat);
         scene.add(particleSystem);
 
+        // --- ENVIRONMENT MAP (For Luster) ---
+        function createEnvMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, 512);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.5, '#00f3ff');
+            grad.addColorStop(1, '#001e36');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,512,512);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.mapping = THREE.EquirectangularReflectionMapping;
+            return tex;
+        }
+        scene.environment = createEnvMap();
+
         // --- SAND DUNE ---
         const sandY = -70;
+        function getSandHeight(x, z) {
+            // Note: In PlaneGeometry, 'y' coord is mapped to Z in world space due to rotation
+            return Math.sin(x * 0.1) * 2 + Math.cos(z * 0.1) * 2 + Math.sin(x*0.3 + z*0.2)*1;
+        }
+
         const sandGeom = new THREE.PlaneGeometry(200, 100, 64, 64);
         const pos = sandGeom.attributes.position;
         for (let i = 0; i < pos.count; i++) {
             const x = pos.getX(i);
-            const y = pos.getY(i);
+            const y = pos.getY(i); // This corresponds to world Z before rotation
             const height = Math.sin(x * 0.1) * 2 + Math.cos(y * 0.1) * 2 + Math.sin(x*0.3 + y*0.2)*1;
             pos.setZ(i, height);
         }
@@ -544,29 +561,58 @@
         sandMesh.position.y = sandY;
         scene.add(sandMesh);
 
-        // --- TREASURE CHEST INTERACTION ---
+        // --- TREASURE CHEST (SPRITE) ---
+        let chestSprite;
         let isChestOpen = false;
 
-        // --- TREASURES (Updated Geometry) ---
+        function createEmojiTexture(emoji) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '200px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'white'; // Not used if emoji has color?
+            // Draw shadow
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 20;
+            ctx.fillText(emoji, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const chestTexClosed = createEmojiTexture('🧳');
+        const chestTexOpen = createEmojiTexture('💎');
+
+        const chestMat = new THREE.SpriteMaterial({ map: chestTexClosed });
+        chestSprite = new THREE.Sprite(chestMat);
+        // Position on sand: getSandHeight(0, -5) -> approx 4?
+        const chestBaseY = getSandHeight(0, -5) + sandY + 3; // +3 size offset
+        chestSprite.position.set(0, chestBaseY, -5);
+        chestSprite.scale.set(8, 8, 1);
+        chestSprite.name = 'ChestSprite';
+        scene.add(chestSprite);
+
+
+        // --- TREASURES (Updated Materials) ---
         const treasures = [];
 
-        // Define varied treasure types
+        // Define varied treasure types (PBR)
         const treasureTypes = [
             { // Coin
                 geom: new THREE.CylinderGeometry(0.5, 0.5, 0.1, 20),
-                mat: new THREE.MeshPhongMaterial({ color: 0xffd700, specular: 0xffdd00, shininess: 80 })
+                mat: new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1.0, roughness: 0.2 })
             },
             { // Gem (Ruby)
                 geom: new THREE.OctahedronGeometry(0.6),
-                mat: new THREE.MeshPhongMaterial({ color: 0xff0055, specular: 0xffaaaa, shininess: 100, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+                mat: new THREE.MeshPhysicalMaterial({ color: 0xff0055, metalness: 0.1, roughness: 0.05, transmission: 0.6, thickness: 1.0 })
             },
             { // Pearl
                 geom: new THREE.SphereGeometry(0.5, 32, 32),
-                mat: new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0xaaaaaa, shininess: 50 })
+                mat: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.2 })
             },
             { // Crystal (Sapphire)
                 geom: new THREE.ConeGeometry(0.3, 1, 6),
-                mat: new THREE.MeshPhongMaterial({ color: 0x00f3ff, specular: 0xccffff, shininess: 100, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+                mat: new THREE.MeshPhysicalMaterial({ color: 0x00f3ff, metalness: 0.1, roughness: 0.05, transmission: 0.6, thickness: 1.0 })
             }
         ];
 
@@ -799,17 +845,30 @@
         }
 
         // --- INTERACTION: CHEST CLICK ---
-        const chestEl = document.getElementById('treasure-chest');
-        chestEl.addEventListener('click', toggleChest);
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            // Check interaction with chest sprite
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(chestSprite);
+
+            if (intersects.length > 0) {
+                toggleChest();
+            }
+        });
 
         function toggleChest() {
             isChestOpen = !isChestOpen;
             const icons = document.getElementById('chest-socials');
 
             if(isChestOpen) {
-                // Open Animation (Shake/Scale)
-                gsap.to(chestEl, { scale: 1.2, rotation: 10, yoyo: true, repeat: 1, duration: 0.2 });
-                chestEl.innerText = '💎'; // Change content on open
+                // Open Animation
+                chestSprite.material.map = chestTexOpen;
+                gsap.to(chestSprite.scale, { x: 10, y: 10, duration: 0.2, yoyo: true, repeat: 1 });
 
                 // Light Burst
                 const burstColor = new THREE.Color('#ffdd00');
@@ -823,15 +882,13 @@
                     repeat: 1
                 });
 
-                // Show Icons
                 icons.classList.add('active');
 
             } else {
                 // Close
-                gsap.to(chestEl, { scale: 1, rotation: 0, duration: 0.3 });
-                chestEl.innerText = '🧳';
+                chestSprite.material.map = chestTexClosed;
+                gsap.to(chestSprite.scale, { x: 8, y: 8, duration: 0.3 });
 
-                // Hide Icons
                 icons.classList.remove('active');
             }
         }
@@ -857,8 +914,10 @@
                 t.mesh.rotation.x += t.rotationSpeed.x;
                 t.mesh.rotation.y += t.rotationSpeed.y;
 
-                // Hit floor (Raised threshold to ensure visibility on sand waves)
-                const floorY = sandY + 5.0;
+                // Exact Floor Collision
+                const floorHeight = getSandHeight(t.mesh.position.x, t.mesh.position.z);
+                const floorY = sandY + floorHeight + 0.5; // + radius
+
                 if (t.mesh.position.y < floorY) {
                     t.mesh.position.y = floorY;
                     t.velocity.set(0, 0, 0);
