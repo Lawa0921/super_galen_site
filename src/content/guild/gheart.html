@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -202,7 +203,7 @@
         .social-container {
             display: flex;
             justify-content: center;
-            gap: 1.5rem;
+            gap: 2rem;
             margin-top: 3rem;
             padding-top: 2rem;
             border-top: 1px solid #eee;
@@ -211,16 +212,18 @@
         .social-link {
             text-decoration: none;
             color: var(--c-text);
-            font-family: 'Cormorant Garamond';
-            font-size: 1.1rem;
+            font-size: 1.5rem;
+            width: 50px; height: 50px;
+            display: flex; justify-content: center; align-items: center;
             border: 1px solid var(--c-gold);
-            padding: 0.5rem 1.5rem;
-            border-radius: 2rem;
+            border-radius: 50%;
             transition: all 0.3s;
         }
         .social-link:hover {
             background: var(--c-gold);
             color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(200, 161, 101, 0.4);
         }
 
         /* Loader */
@@ -251,16 +254,17 @@
         }
         .nav-back:hover { background: var(--c-gold); color: white; }
 
-        /* Footer - Enhanced Visibility */
+        /* Footer - Enhanced Visibility & Contrast */
         .site-footer {
             text-align: center; padding: 3rem; margin-top: 6rem;
-            color: #fff; background: rgba(70, 57, 44, 0.9); /* Dark background */
-            font-family: 'Cormorant Garamond'; font-size: 1rem;
+            color: #f0f0f0; background: #2c241b; /* Solid Dark Brown for max contrast */
+            font-family: 'Cormorant Garamond'; font-size: 1.1rem;
             position: relative; z-index: 100;
+            border-top: 4px solid var(--c-gold);
         }
-        .site-footer a { color: var(--c-gold); text-decoration: none; border-bottom: 1px dotted var(--c-gold); transition: color 0.3s; }
-        .site-footer a:hover { color: #fff; }
-        .site-footer .heart { color: #e74c3c; }
+        .site-footer a { color: var(--c-gold); text-decoration: none; border-bottom: 1px dotted var(--c-gold); transition: color 0.3s; font-weight: 600; }
+        .site-footer a:hover { color: #fff; border-bottom: 1px solid #fff; }
+        .site-footer .heart { color: #ff6b6b; font-size: 1.2em; vertical-align: middle; }
 
         /* Mobile Adjustments */
         @media (max-width: 768px) {
@@ -378,8 +382,8 @@
             </section>
 
             <div class="social-container">
-                <a href="https://www.threads.com/@gheart1982" target="_blank" class="social-link">Threads</a>
-                <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-link">Instagram</a>
+                <a href="https://www.threads.net/@gheart1982" target="_blank" class="social-link" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-link" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
             </div>
         </div>
 
