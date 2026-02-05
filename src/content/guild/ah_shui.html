@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿水 Ah Shui | The Shape of Water</title>
+    <meta name="description" content="阿水 Ah Shui - 16年資歷活動主持人 / 琵琶演奏家 / 歌仔戲推廣者。提供專業主持、音樂演出與藝術行政服務。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=Cinzel:wght@400;700&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Lenis for smooth scrolling -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <style>
+        :root {
+            --c-surface: #F0F8FF; /* AliceBlue */
+            --c-shallow: #B0E0E6; /* PowderBlue */
+            --c-deep: #001f3f;    /* Navy */
+            --c-abyss: #000000;   /* Black */
+            --c-foam: #ffffff;
+            --c-accent: #7DF9FF;  /* Electric Blue */
+
+            --font-main: 'Zen Old Mincho', serif;
+            --font-title: 'Noto Serif TC', serif;
+            --font-eng: 'Cinzel', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--c-surface); /* Start light */
+            color: var(--c-deep);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            width: 100vw;
+            transition: background-color 0.5s;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid #000; /* High contrast on light bg */
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s, border-color 0.3s;
+            mix-blend-mode: normal;
+        }
+        #cursor.bubble {
+            width: 80px; height: 80px;
+            background: rgba(125, 249, 255, 0.1);
+            backdrop-filter: blur(2px);
+            border-color: var(--c-accent);
+        }
+
+        /* --- Canvas --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- UI Elements --- */
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: var(--c-deep);
+            text-decoration: none;
+            font-family: var(--font-eng);
+            font-weight: 700;
+        }
+
+        /* --- Scrollytelling Layout --- */
+        .section {
+            min-height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Typography */
+        h1 {
+            font-family: var(--font-title);
+            font-size: clamp(3rem, 15vw, 12rem);
+            line-height: 0.8;
+            font-weight: 900;
+            text-align: center;
+            white-space: nowrap;
+            opacity: 1;
+            perspective: 1000px;
+        }
+
+        .char { display: inline-block; }
+
+        .subtitle {
+            font-family: var(--font-eng);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-top: 1rem;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        h2 {
+            font-family: var(--font-title);
+            font-size: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 2;
+            margin-bottom: 1.5rem;
+            max-width: 600px;
+        }
+
+        /* --- Hero --- */
+        #hero { height: 100vh; }
+        .water-mark {
+            position: absolute;
+            font-size: 20rem;
+            opacity: 0.05;
+            z-index: -1;
+            font-family: var(--font-title);
+            pointer-events: none;
+        }
+
+        /* --- Story Sections --- */
+        .story-block {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+            margin: 10vh 0;
+        }
+        .story-block.reverse { flex-direction: row-reverse; }
+
+        .story-img-wrapper {
+            flex: 1;
+            height: 500px;
+            position: relative;
+            overflow: hidden;
+            clip-path: circle(0% at 50% 50%);
+            border-radius: 20px;
+        }
+
+        .story-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scale(1.2);
+        }
+
+        .story-content { flex: 1; opacity: 0; }
+        .role-tag {
+            display: inline-block;
+            padding: 5px 15px;
+            border: 1px solid currentColor;
+            border-radius: 50px;
+            font-family: var(--font-eng);
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Wave Separators --- */
+        .wave-separator {
+            position: absolute;
+            left: 0; width: 100%; overflow: hidden; line-height: 0; z-index: 1;
+        }
+        .wave-separator svg { display: block; width: calc(100% + 1.3px); height: 150px; }
+        .wave-top { top: -1px; transform: rotate(180deg); }
+        .wave-bottom { bottom: -1px; }
+
+        /* --- Gallery Grid (Full) --- */
+        .full-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            padding: 2rem 0;
+        }
+
+        .gallery-card {
+            position: relative;
+            aspect-ratio: 3/4;
+            overflow: hidden;
+            border-radius: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .gallery-card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-card:hover img { transform: scale(1.1); }
+
+        /* --- Services --- */
+        .service-list {
+            margin-top: 4rem;
+            width: 100%;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.3s;
+        }
+
+        .service-item:hover {
+            background: rgba(255,255,255,0.05);
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .s-title { font-size: 1.5rem; font-weight: bold; color: var(--c-accent); }
+        .s-desc { color: rgba(255,255,255,0.7); max-width: 500px; text-align: right; }
+
+        @media (max-width: 768px) {
+            .story-block, .story-block.reverse { flex-direction: column; text-align: center; }
+            .story-img-wrapper { width: 100%; height: 300px; }
+            h1 { font-size: 5rem; }
+            .service-item { flex-direction: column; text-align: center; gap: 1rem; }
+            .s-desc { text-align: center; }
+        }
+
+        footer { padding: 6rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: center; }
+        footer .container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
+        footer p { color: rgba(255,255,255,0.5); font-family: var(--font-eng); margin-top: 2rem; font-size: 0.8rem; }
+
+        .footer-link {
+            color: var(--c-accent);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .footer-link:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--c-accent);
+        }
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0; width: 0%; height: 1px;
+            background: var(--c-accent);
+            transition: width 0.3s;
+        }
+        .footer-link:hover::after { width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div id="cursor"></div>
+    <div id="canvas-container"></div>
+
+    <a href="/guild/" class="nav-back hover-target">← GUILD</a>
+
+    <!-- HERO -->
+    <section id="hero" class="section">
+        <div class="water-mark">水</div>
+        <div class="container">
+            <div class="hero-text" style="position: relative;">
+                <h1 id="hero-title">阿水</h1>
+                <p class="subtitle" id="hero-subtitle">AH SHUI</p>
+                <div style="width: 1px; height: 100px; background: currentColor; margin: 2rem auto;"></div>
+                <p style="text-align: center; font-style: italic; opacity: 0.8;">
+                    「上善若水，水善利萬物而不爭。」<br>
+                    Water takes the shape of its container.
+                </p>
+
+            </div>
+        </div>
+        <div style="position: absolute; bottom: 2rem; animation: float 2s infinite ease-in-out;">
+            <i class="fas fa-chevron-down"></i> DIVE DEEP
+        </div>
+    </section>
+
+    <!-- STORY 1: HOST -->
+    <section id="host" class="section">
+        <div class="container">
+            <div class="story-block">
+                <div class="story-img-wrapper hover-target">
+                    <img src="/assets/img/guild/ah_shui/gallery_1.webp" class="story-img" alt="Host">
+                </div>
+                <div class="story-content">
+                    <span class="role-tag">01. THE BRIDGE</span>
+                    <h2>掌控流動的引路人</h2>
+                    <p>
+                        主持至今 16 年，舞台對我來說，就像一條流動的河。<br>
+                        我負責掌控現場的每一個呼吸、每一個節奏。<br>
+                        但我更享受的，是成為台上與台下之間的橋樑。<br>
+                        無論是音樂會的優雅導聆，還是活動的熱情串場，<br>
+                        我都在引導那股看不見的水流，流進觀眾心裡。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STORY 2: MUSICIAN -->
+    <section id="musician" class="section">
+        <div class="container">
+            <div class="story-block reverse">
+                <div class="story-img-wrapper hover-target" style="border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;">
+                    <img src="/assets/img/guild/ah_shui/gallery_3.webp" class="story-img" alt="Pipa">
+                </div>
+                <div class="story-content">
+                    <span class="role-tag">02. THE RESONANCE</span>
+                    <h2>潤物細無聲</h2>
+                    <p>
+                        想讓更多人知道，音樂不難懂。<br>
+                        即使你不小心睡著了，那也是它給予你的放鬆與療癒。<br>
+                        琵琶是我的聲音，音樂是水的另一種型態。<br>
+                        它能激昂如瀑布，也能溫柔如細雨。<br>
+                        我想用演奏，把心裡的話，說給你們聽。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STORY 3: ADMIN -->
+    <section id="admin" class="section">
+        <div class="container">
+            <div class="story-block">
+                <div class="story-img-wrapper hover-target" style="border-radius: 50% 50% 20% 20%;">
+                    <img src="/assets/img/guild/ah_shui/gallery_5.webp" class="story-img" alt="Admin">
+                </div>
+                <div class="story-content">
+                    <span class="role-tag">03. THE FOUNDATION</span>
+                    <h2>文化的底蘊</h2>
+                    <p>
+                        在歌仔戲推廣基金會，我潛入深海，構築文化的基石。<br>
+                        藝術行政不只是文書，更是將傳統戲曲與國樂推向大眾的浪潮。<br>
+                        從事演出策劃、教學與欣賞推廣，讓文化的根扎得更深。<br>
+                        因為深刻了解，所以更能精準推廣。
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="wave-separator wave-bottom" style="color: var(--c-surface); opacity: 0.05;">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path></svg>
+        </div>
+    </section>
+
+    <!-- SERVICES LIST -->
+    <section id="services" class="section">
+        <div class="container">
+            <h2 style="text-align: center; color: var(--c-accent);">// PROFESSIONAL SERVICES //</h2>
+            <div class="service-list">
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-microphone-lines"></i> 活動主持 Event Hosting</div>
+                    <div class="s-desc">音樂會導聆、婚禮主持、記者會、各類藝文活動。擅長掌控現場氛圍與流程節奏。</div>
+                </div>
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-music"></i> 琵琶演出 Pipa Performance</div>
+                    <div class="s-desc">個人獨奏、室內樂重奏、跨界合作、商業演出。用音樂傳遞情感與故事。</div>
+                </div>
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-chalkboard-user"></i> 文化推廣 Cultural Promotion</div>
+                    <div class="s-desc">國樂欣賞講座、歌仔戲教學、藝術行政顧問。致力於傳統藝術的普及與教育。</div>
+                </div>
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-hand-holding-droplet"></i> 療癒工作坊 Healing Workshop</div>
+                    <div class="s-desc">結合音樂與放鬆引導，探索聲音與情緒的連結，提供深度的身心療癒體驗。</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FULL GALLERY -->
+    <section id="life-gallery" class="section">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 2rem;">// LIFE ON STAGE</h2>
+            <div class="full-gallery">
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_2.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_4.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_6.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_7.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_8.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_9.webp" alt="Life"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER (Standardized) -->
+    <footer class="site-footer">
+        <div class="container">
+            <div style="margin-bottom: 2rem;">
+                <a href="https://www.threads.com/@yagired" target="_blank" class="hover-target" style="color: var(--c-accent); font-size: 2rem; margin: 0 1rem;"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/yagired/" target="_blank" class="hover-target" style="color: var(--c-accent); font-size: 2rem; margin: 0 1rem;"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p>
+                © Ah Shui. Designed by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a>.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Setup Lenis Smooth Scroll ---
+        const lenis = new Lenis({
+            duration: 1.5,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // --- Helper: Split Text ---
+        const splitText = (selector) => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                const text = el.innerText;
+                el.innerHTML = text.split('').map(char => `<span class="char">${char}</span>`).join('');
+            });
+        };
+        splitText('.split-text');
+        splitText('#hero-title');
+
+        // --- Custom Cursor ---
+        const cursor = document.getElementById('cursor');
+        const hoverTargets = document.querySelectorAll('.hover-target, button, a');
+
+        document.addEventListener('mousemove', (e) => {
+            gsap.to(cursor, {
+                x: e.clientX,
+                y: e.clientY,
+                duration: 0.1,
+                ease: 'power2.out'
+            });
+        });
+
+        // Delegate hover for dynamically created elements
+        document.body.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.hover-target') || e.target.tagName === 'BUTTON' || e.target.tagName === 'A') {
+                cursor.classList.add('bubble');
+            } else {
+                cursor.classList.remove('bubble');
+            }
+        });
+
+        // Toggle Cursor Color based on Scroll
+        ScrollTrigger.create({
+            trigger: "#host", // Dark section starts roughly here
+            start: "top center",
+            onEnter: () => {
+                // Dark Background: Use Accent (Cyan) or Difference
+                cursor.style.borderColor = "var(--c-accent)";
+                cursor.style.mixBlendMode = "difference";
+            },
+            onLeaveBack: () => {
+                // Light Background: Use Solid Black for max contrast
+                cursor.style.borderColor = "#000000";
+                cursor.style.mixBlendMode = "normal";
+            }
+        });
+
+
+        // --- Three.js: Fluid Dynamics ---
+        const initThree = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0xF0F8FF, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            camera.position.z = 5;
+
+            // Helper: Create Soft Circle Texture
+            const getSoftParticleTexture = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 32; canvas.height = 32;
+                const context = canvas.getContext('2d');
+                const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+                gradient.addColorStop(0, 'rgba(255,255,255,1)');
+                gradient.addColorStop(0.4, 'rgba(255,255,255,0.5)'); // Soft core
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                context.fillStyle = gradient;
+                context.fillRect(0, 0, 32, 32);
+                return new THREE.CanvasTexture(canvas);
+            };
+
+            // 1. SURFACE WATER
+            const surfaceGeo = new THREE.PlaneGeometry(40, 40, 128, 128);
+            const surfaceMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uColor: { value: new THREE.Color(0xB0E0E6) },
+                    uMouse: { value: new THREE.Vector2(0, 0) },
+                    uScrollVelocity: { value: 0 }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    uniform float uTime;
+                    uniform vec2 uMouse;
+                    uniform float uScrollVelocity;
+
+                    void main() {
+                        vUv = uv;
+                        vec3 pos = position;
+
+                        // Optimized Wave (Sin/Cos Superposition)
+                        float wave1 = sin(pos.x * 1.5 + uTime) * 0.5;
+                        float wave2 = cos(pos.y * 1.0 + uTime * 0.8) * 0.5;
+                        float wave3 = sin(pos.x * 0.5 + pos.y * 0.5 + uTime * 0.5) * 0.2; // Low freq detail
+
+                        // Mouse Ripple
+                        float dist = distance(uv, uMouse);
+                        float ripple = sin(dist * 20.0 - uTime * 5.0) * exp(-dist * 5.0) * 0.5;
+
+                        // Scroll Distortion (Simplified)
+                        float scrollDistort = sin(pos.x * 5.0 + uTime * 5.0) * uScrollVelocity * 2.0;
+
+                        pos.z += wave1 + wave2 + wave3 + ripple + scrollDistort;
+
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec2 vUv;
+                    uniform vec3 uColor;
+                    void main() {
+                        float alpha = 1.0 - smoothstep(0.0, 0.7, distance(vUv, vec2(0.5)));
+                        gl_FragColor = vec4(uColor, alpha * 0.6);
+                    }
+                `,
+                transparent: true,
+                wireframe: false
+            });
+            const surface = new THREE.Mesh(surfaceGeo, surfaceMat);
+            surface.rotation.x = -0.5;
+            scene.add(surface);
+
+            // 2. DEEP PARTICLES
+            const particlesCount = 3000;
+            const posArray = new Float32Array(particlesCount * 3);
+            for(let i=0; i<particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 60;
+            }
+            const particlesGeo = new THREE.BufferGeometry();
+            particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMat = new THREE.PointsMaterial({
+                size: 0.5, // Increased size for soft texture
+                map: getSoftParticleTexture(),
+                color: 0x7DF9FF,
+                transparent: true,
+                opacity: 0,
+                depthWrite: false, // Important for overlapping soft particles
+                blending: THREE.AdditiveBlending
+            });
+            const particles = new THREE.Points(particlesGeo, particlesMat);
+            scene.add(particles);
+
+            // SCROLL INTERACTION
+            gsap.registerPlugin(ScrollTrigger);
+
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
+            tl.to("body", { backgroundColor: "#001f3f", color: "#E0F7FA" }, 0);
+
+            // Fix: GSAP cannot tween THREE.Color objects directly in this manner effectively for WebGL uniforms sometimes
+            // Instead, tween a proxy object and update the Three.js color manually
+            const fogColor = { r: scene.fog.color.r, g: scene.fog.color.g, b: scene.fog.color.b };
+            tl.to(fogColor, {
+                r: 0, g: 0, b: 0,
+                onUpdate: () => {
+                    scene.fog.color.setRGB(fogColor.r, fogColor.g, fogColor.b);
+                }
+            }, 0);
+
+            tl.to(scene.fog, { density: 0.05 }, 0);
+            tl.to(".nav-back", { color: "#7DF9FF" }, 0);
+
+            tl.to(surfaceMat, { opacity: 0 }, 0);
+            tl.to(particlesMat, { opacity: 0.8, size: 0.3 }, 0);
+            tl.to(camera.position, { y: -25, z: 15 }, 0);
+            tl.to(surface.rotation, { x: 0 }, 0);
+
+            // Animation Loop
+            let lastScrollY = window.scrollY;
+            const mouse = new THREE.Vector2();
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX / window.innerWidth;
+                mouse.y = 1.0 - (e.clientY / window.innerHeight);
+                gsap.to(surfaceMat.uniforms.uMouse.value, { x: mouse.x, y: mouse.y, duration: 1 });
+            });
+
+            const clock = new THREE.Clock();
+            function animate() {
+                const t = clock.getElapsedTime();
+                const currentScrollY = window.scrollY;
+                const scrollVel = Math.abs(currentScrollY - lastScrollY) * 0.01;
+                lastScrollY = currentScrollY;
+
+                surfaceMat.uniforms.uTime.value = t;
+                surfaceMat.uniforms.uScrollVelocity.value += (scrollVel - surfaceMat.uniforms.uScrollVelocity.value) * 0.1;
+                particles.rotation.y = t * 0.05;
+                particles.position.y = Math.sin(t * 0.2) * 2;
+
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 100);
+            });
+        };
+
+        // --- GSAP Content Animations ---
+        const initContentAnims = () => {
+            gsap.from("#hero-title .char", {
+                y: 100, opacity: 0, rotationX: -90, stagger: 0.05, duration: 1.5, ease: "back.out(1.7)"
+            });
+
+            // Story Blocks
+            const blocks = document.querySelectorAll('.story-block');
+            blocks.forEach(block => {
+                const imgWrapper = block.querySelector('.story-img-wrapper');
+                const img = block.querySelector('.story-img');
+                const content = block.querySelector('.story-content');
+                gsap.to(imgWrapper, { clipPath: "circle(150% at 50% 50%)", scrollTrigger: { trigger: block, start: "top 80%", end: "top 30%", scrub: 1 } });
+                gsap.to(img, { y: 50, scale: 1, scrollTrigger: { trigger: block, start: "top bottom", end: "bottom top", scrub: true } });
+
+                // Content Entrance
+                gsap.fromTo(content,
+                    { opacity: 0, x: block.classList.contains('reverse') ? -50 : 50 },
+                    { opacity: 1, x: 0, duration: 1, scrollTrigger: { trigger: block, start: "top 70%" } }
+                );
+
+                // Enhancement: Ensure Text Contrast on Mobile/Transitions
+                // Force text to white + shadow when active
+                gsap.to(content, {
+                    color: "#ffffff",
+                    textShadow: "0 2px 20px rgba(0, 31, 63, 0.8)", // Deep Navy shadow
+                    scrollTrigger: {
+                        trigger: block,
+                        start: "top 60%", // Activate earlier
+                        end: "bottom 40%",
+                        toggleActions: "play reverse play reverse"
+                    }
+                });
+            });
+
+            // Gallery
+            gsap.to(".gallery-card", {
+                opacity: 1, y: 0, stagger: 0.1, duration: 1,
+                scrollTrigger: { trigger: "#life-gallery", start: "top 70%" }
+            });
+        };
+
+        window.onload = () => {
+            initThree();
+            initContentAnims();
+        };
+
+    </script>
+</body>
+</html>

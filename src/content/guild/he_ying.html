@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>何穎 He Ying | The Liberated Queen</title>
+    <meta name="description" content="何穎 He Ying - 女王調教 / 天體活動推廣 / 模特 / 療傷與自由的追尋者">
+
+    <!-- Preload Critical Assets -->
+    <link rel="preload" href="/assets/img/guild/he_ying/avatar.webp" as="image">
+    <link rel="preload" href="/assets/img/guild/he_ying/hero_bg.webp" as="image">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050000;
+            --text-color: #e0e0e0;
+            --accent-red: #ff003c; /* Cyber Red */
+            --accent-gold: #ffd700; /* Pure Gold */
+            --font-display: 'Orbitron', sans-serif;
+            --font-elegant: 'Cinzel', serif;
+            --font-body: 'Zen Old Mincho', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100%;
+            margin: 0;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid var(--accent-red);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, border-color 0.2s;
+            mix-blend-mode: exclusion;
+        }
+        #cursor.hovered {
+            width: 80px; height: 80px;
+            background: rgba(255, 0, 60, 0.1);
+            border-color: var(--accent-gold);
+            border-width: 1px;
+        }
+
+        /* --- Canvas & Overlays --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0; /* Start hidden for pop-in */
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 2;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(255, 0, 60, 0.1) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            position: fixed;
+            bottom: 100%;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--font-display);
+            font-size: 15vw; /* MASSIVE */
+            line-height: 0.8;
+            color: transparent;
+            -webkit-text-stroke: 2px rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: -5px;
+            position: relative;
+            z-index: 5;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+            text-align: center;
+            width: 100%;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Glitch Text Effect (CSS Only) */
+        .glitch-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.8;
+            mix-blend-mode: hard-light;
+            clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%);
+            transform: translate(-2px, 2px);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+            color: var(--accent-red);
+            pointer-events: none;
+        }
+        .glitch-layer:nth-child(2) {
+            color: var(--accent-gold);
+            clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+            transform: translate(2px, -2px);
+            animation-duration: 3s;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip-path: inset(80% 0 0 0); transform: translate(-2px, 2px); }
+            20% { clip-path: inset(10% 0 60% 0); transform: translate(2px, -2px); }
+            40% { clip-path: inset(40% 0 40% 0); transform: translate(-2px, 2px); }
+            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+            80% { clip-path: inset(20% 0 70% 0); transform: translate(-2px, 2px); }
+            100% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -2px); }
+        }
+
+        /* --- Sections --- */
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 2rem;
+            position: relative;
+        }
+
+        /* Hero */
+        #hero {
+            height: 100vh;
+            justify-content: center;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .hero-avatar {
+            width: clamp(250px, 30vw, 400px);
+            height: clamp(250px, 30vw, 400px);
+            margin: 0 auto 3rem;
+            border-radius: 50%;
+            position: relative;
+            transition: transform 0.5s;
+            z-index: 10;
+        }
+
+        /* Cyber Rings */
+        .hero-avatar::before, .hero-avatar::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            border: 2px dashed var(--accent-red);
+            animation: rotate-ring 10s linear infinite;
+            pointer-events: none;
+        }
+        .hero-avatar::after {
+            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            border: 1px solid var(--accent-gold);
+            border-left-color: transparent;
+            border-right-color: transparent;
+            animation: rotate-ring-rev 15s linear infinite;
+        }
+
+        @keyframes rotate-ring { 100% { transform: rotate(360deg); } }
+        @keyframes rotate-ring-rev { 100% { transform: rotate(-360deg); } }
+
+        .hero-avatar-inner {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid #fff;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-avatar img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(120%);
+            transition: 0.5s;
+        }
+        .hero-avatar:hover img {
+            filter: grayscale(0%) contrast(100%);
+            transform: scale(1.1);
+        }
+        .hero-avatar:hover::before { border-color: var(--accent-gold); animation-duration: 2s; }
+
+        /* Social Icons */
+        .icon-link {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: 1px solid #fff;
+            color: #fff;
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: 0.3s;
+            background: rgba(0,0,0,0.5);
+        }
+        .icon-link:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 20px #fff;
+            transform: scale(1.1);
+        }
+
+        /* Panels */
+        .glass-panel {
+            background: rgba(10, 5, 5, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-red);
+        }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+        .gallery-item {
+            height: 400px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            transition: 0.5s;
+        }
+        .gallery-item:hover img { opacity: 1; transform: scale(1.05); }
+
+        /* Warning Overlay */
+        #warning-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: default;
+        }
+        .warning-btn {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--accent-red);
+            background: transparent;
+            border: 2px solid var(--accent-red);
+            padding: 1rem 4rem;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 2rem;
+            text-transform: uppercase;
+        }
+        .warning-btn:hover { background: var(--accent-red); color: #000; box-shadow: 0 0 30px var(--accent-red); }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            h1 { font-size: 20vw; -webkit-text-stroke: 1px rgba(255,255,255,0.8); }
+            h2 { font-size: 2.5rem; }
+            .hero-avatar { width: 150px; height: 150px; }
+            #cursor { display: none; }
+            * { cursor: auto; }
+        }
+
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: #fff;
+            mix-blend-mode: difference;
+            text-decoration: none;
+            font-family: var(--font-display);
+        }
+
+        .footer {
+            padding: 4rem 0;
+            text-align: center;
+            background: #000;
+            color: #444;
+            border-top: 1px solid #222;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cursor"></div>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+
+    <div id="warning-overlay">
+        <h1 style="font-size: 3rem; -webkit-text-stroke: 0; color: var(--accent-red); margin-bottom: 0;">RESTRICTED AREA</h1>
+        <p style="color: #666; margin-top: 1rem;">MATURE CONTENT // MENTAL HEALTH // NUDITY</p>
+        <button class="warning-btn" onclick="enterSite()">ACCESS</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <a href="/guild/" class="nav-back hover-target">← GUILD</a>
+
+    <main>
+        <!-- HERO -->
+        <section id="hero">
+            <div class="hero-content">
+                <div class="hero-avatar hover-target">
+                    <div class="hero-avatar-inner">
+                        <img src="/assets/img/guild/he_ying/avatar.webp" alt="He Ying">
+                    </div>
+                </div>
+
+                <div style="position: relative; display: inline-block;">
+                    <h1>HE YING</h1>
+                    <div class="glitch-layer" aria-hidden="true">HE YING</div>
+                    <div class="glitch-layer" aria-hidden="true">HE YING</div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- INTRO -->
+        <section id="identity">
+            <div class="container glass-panel">
+                <h2 style="color: var(--accent-red);">// SYSTEM: IDENTITY</h2>
+                <p style="font-size: 1.2rem; line-height: 1.8; color: #ccc; max-width: 800px;">
+                    我是何穎。我的工作也許你會覺得複雜，但對我來說很簡單：<br>
+                    <span style="color: #fff; background: var(--accent-red); padding: 0 5px;">我在把成人的知識講清楚。</span>
+                </p>
+                <div class="gallery-grid" style="margin-top: 2rem;">
+                    <div class="gallery-item hover-target">
+                        <img src="/assets/img/guild/he_ying/gallery_1.webp" alt="Work">
+                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; color: var(--accent-red); font-family: var(--font-display);">
+                            > WORK_LOG
+                        </div>
+                    </div>
+                    <div style="padding: 1rem;">
+                        <p style="font-family: 'Courier New', monospace; color: #888;">
+                            > LOADING HISTORY DATA...<br>
+                            > SUBJECT: ADULT EDUCATION SPECIALIST<br>
+                            > STATUS: ACTIVE
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SERVICES -->
+        <section id="services">
+            <div class="container glass-panel">
+                <h2 style="color: var(--accent-red); border-bottom: 1px solid #333; padding-bottom: 1rem; width: 100%;">// AVAILABLE SERVICES</h2>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+                    <!-- Service 1 -->
+                    <div class="hover-target" style="border: 1px solid #333; padding: 1.5rem; background: rgba(0,0,0,0.5); position: relative;">
+                        <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">[ MASSAGE ]</h3>
+                        <p style="color: #888; font-size: 0.9rem;">按摩 / 越式洗頭</p>
+                        <p style="color: var(--accent-red); font-size: 0.8rem; margin-top: 0.5rem;">> 中式 / 泰式 / 情慾</p>
+                        <div style="position: absolute; top: 0; right: 0; padding: 2px 5px; background: var(--accent-red); color: #000; font-size: 0.7rem; font-family: sans-serif;">01</div>
+                    </div>
+
+                    <!-- Service 2 -->
+                    <div class="hover-target" style="border: 1px solid #333; padding: 1.5rem; background: rgba(0,0,0,0.5); position: relative;">
+                        <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">[ MODEL ]</h3>
+                        <p style="color: #888; font-size: 0.9rem;">大尺度模特</p>
+                        <p style="color: var(--accent-red); font-size: 0.8rem; margin-top: 0.5rem;">> 全裸 / 拍片 / 多人</p>
+                        <div style="position: absolute; top: 0; right: 0; padding: 2px 5px; background: var(--accent-red); color: #000; font-size: 0.7rem; font-family: sans-serif;">02</div>
+                    </div>
+
+                    <!-- Service 3 -->
+                    <div class="hover-target" style="border: 1px solid #333; padding: 1.5rem; background: rgba(0,0,0,0.5); position: relative;">
+                        <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">[ PHONE ]</h3>
+                        <p style="color: #888; font-size: 0.9rem;">電話交友</p>
+                        <p style="color: var(--accent-red); font-size: 0.8rem; margin-top: 0.5rem;">> 0204 / 語音互動</p>
+                        <div style="position: absolute; top: 0; right: 0; padding: 2px 5px; background: var(--accent-red); color: #000; font-size: 0.7rem; font-family: sans-serif;">03</div>
+                    </div>
+
+                    <!-- Service 4 -->
+                    <div class="hover-target" style="border: 1px solid #333; padding: 1.5rem; background: rgba(0,0,0,0.5); position: relative;">
+                        <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">[ NATURISM ]</h3>
+                        <p style="color: #888; font-size: 0.9rem;">天體活動推廣</p>
+                        <p style="color: var(--accent-red); font-size: 0.8rem; margin-top: 0.5rem;">> Podcast / 經驗分享</p>
+                        <div style="position: absolute; top: 0; right: 0; padding: 2px 5px; background: var(--accent-red); color: #000; font-size: 0.7rem; font-family: sans-serif;">04</div>
+                    </div>
+
+                    <!-- Service 5 -->
+                    <div class="hover-target" style="border: 1px solid #333; padding: 1.5rem; background: rgba(0,0,0,0.5); position: relative;">
+                        <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem;">[ BLOG ]</h3>
+                        <p style="color: #888; font-size: 0.9rem;">戲劇部落格</p>
+                        <p style="color: var(--accent-red); font-size: 0.8rem; margin-top: 0.5rem;">> 4年全職戲劇廣告經驗</p>
+                        <div style="position: absolute; top: 0; right: 0; padding: 2px 5px; background: var(--accent-red); color: #000; font-size: 0.7rem; font-family: sans-serif;">05</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RECOVERY -->
+        <section id="recovery">
+            <div class="container glass-panel" style="border-left: 4px solid var(--accent-gold);">
+                <h2 style="color: var(--accent-gold);">// SYSTEM: RECOVERY</h2>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 2rem;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <p style="color: #ccc; font-size: 1.1rem; margin-bottom: 1.5rem;">
+                            我有領過重大傷病卡的<span style="color: var(--accent-gold);">思覺失調</span>。<br>
+                            也因為自殺導致<span style="color: var(--accent-red);">單眼失明</span>。
+                        </p>
+                        <p style="color: #ccc; font-size: 1.1rem;">
+                            但我用自己的方式研究身體到不需服藥。<br>
+                            (有定期心理諮商，不會危害社會)
+                        </p>
+                        <p style="font-style: italic; color: #666; margin-top: 2rem;">
+                            "以我的立場是社會病了。"
+                        </p>
+                    </div>
+                    <div class="gallery-item hover-target" style="flex: 1; min-width: 300px; height: 300px;">
+                        <img src="/assets/img/guild/he_ying/gallery_2.webp" alt="Portrait">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FREEDOM -->
+        <section id="freedom" style="min-height: 80vh;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3;">
+                <img src="/assets/img/guild/he_ying/hero_bg.webp" style="width: 100%; height: 100%; object-fit: cover; filter: hue-rotate(90deg);" alt="BG">
+            </div>
+            <div class="container" style="text-align: center;">
+                <div id="magnetic-text-container" style="perspective: 1000px; display: inline-block;">
+                    <h1 class="magnetic-text" style="font-size: 8vw; color: #fff; -webkit-text-stroke: 0; mix-blend-mode: normal; position: relative;">
+                        ABSOLUTE<br>FREEDOM
+                        <span class="magnetic-layer layer-r" aria-hidden="true">ABSOLUTE<br>FREEDOM</span>
+                        <span class="magnetic-layer layer-b" aria-hidden="true">ABSOLUTE<br>FREEDOM</span>
+                    </h1>
+                </div>
+
+                <style>
+                    .magnetic-layer {
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        opacity: 0.6;
+                        pointer-events: none;
+                        mix-blend-mode: screen;
+                        transition: transform 0.1s;
+                    }
+                    .layer-r { color: #ff0000; z-index: -1; }
+                    .layer-b { color: #00ffff; z-index: -2; }
+                </style>
+
+                <p style="color: #fff; font-size: 1.5rem; margin-top: 2rem;">
+                    我因為裸體爬樹被強制送醫過。<br>
+                    但我依然在推廣天體沙灘、開放式關係。
+                </p>
+                <div style="margin-top: 4rem;">
+                    <a href="https://www.instagram.com/partyoungo" target="_blank" class="warning-btn hover-target" style="border-color: #fff; color: #fff;">FOLLOW THE JOURNEY</a>
+                </div>
+
+                <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.2); width: 100%;">
+                    <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; letter-spacing: 2px;">CONNECT_LINK</h3>
+                    <div class="social-icons" style="display: flex; justify-content: center; gap: 2rem;">
+                        <a href="https://linktr.ee/38e.cup" target="_blank" class="icon-link hover-target" aria-label="Linktree">
+                            <i class="fa-solid fa-link"></i>
+                        </a>
+                        <a href="https://www.threads.com/@partyoungo" target="_blank" class="icon-link hover-target" aria-label="Threads">
+                            <i class="fa-brands fa-threads"></i>
+                        </a>
+                        <a href="https://x.com/partyoungo" target="_blank" class="icon-link hover-target" aria-label="Twitter">
+                            <i class="fa-brands fa-x-twitter"></i>
+                        </a>
+                        <a href="https://www.instagram.com/partyoungo" target="_blank" class="icon-link hover-target" aria-label="Instagram">
+                            <i class="fa-brands fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <p>Made with <span style="color: var(--accent-red);">♥</span> by <a href="/guild/" style="color: #fff; text-decoration: none;">SuperGalen's Dungeon</a></p>
+    </footer>
+
+    <script>
+        // --- Warning Overlay ---
+        function enterSite() {
+            const overlay = document.getElementById('warning-overlay');
+            gsap.to(overlay, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    overlay.style.display = 'none';
+                    document.body.style.overflow = 'auto'; // Enable scroll
+                    initThree(); // Start the heavy lifting
+                    initGSAP();
+                    initCursor();
+                }
+            });
+        }
+
+        // --- Custom Cursor ---
+        function initCursor() {
+            const cursor = document.getElementById('cursor');
+            const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            const mouse = { x: pos.x, y: pos.y };
+
+            const xSet = gsap.quickSetter(cursor, "x", "px");
+            const ySet = gsap.quickSetter(cursor, "y", "px");
+
+            window.addEventListener("mousemove", e => {
+                mouse.x = e.x;
+                mouse.y = e.y;
+            });
+
+            gsap.ticker.add(() => {
+                const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
+                pos.x += (mouse.x - pos.x) * dt;
+                pos.y += (mouse.y - pos.y) * dt;
+                xSet(pos.x);
+                ySet(pos.y);
+            });
+
+            const hoverTargets = document.querySelectorAll('.hover-target');
+            hoverTargets.forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+            });
+
+            // Magnetic Text
+            const magContainer = document.getElementById('magnetic-text-container');
+            const magText = document.querySelector('.magnetic-text');
+            const layerR = document.querySelector('.layer-r');
+            const layerB = document.querySelector('.layer-b');
+
+            if(magContainer) {
+                magContainer.addEventListener('mousemove', (e) => {
+                    const rect = magContainer.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+
+                    gsap.to(magText, {
+                        x: x * 0.1,
+                        y: y * 0.1,
+                        rotationX: -y * 0.05,
+                        rotationY: x * 0.05,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    });
+
+                    gsap.to(layerR, {
+                        x: x * 0.15,
+                        y: y * 0.15,
+                        duration: 0.4
+                    });
+
+                    gsap.to(layerB, {
+                        x: x * 0.05,
+                        y: y * 0.05,
+                        duration: 0.4
+                    });
+                });
+
+                magContainer.addEventListener('mouseleave', () => {
+                    gsap.to([magText, layerR, layerB], {
+                        x: 0, y: 0, rotationX: 0, rotationY: 0,
+                        duration: 1, ease: "elastic.out(1, 0.3)"
+                    });
+                });
+            }
+        }
+
+        // --- Three.js Explosion ---
+        let scene, camera, renderer, points;
+        let mouseX = 0, mouseY = 0;
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+
+            // Fade in canvas
+            gsap.to(container, { opacity: 1, duration: 2, delay: 0.5 });
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050000, 0.002);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 100;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // --- PLEXUS GEOMETRY ---
+            const particlesCount = 1200;
+            const posArray = new Float32Array(particlesCount * 3);
+            const originalPos = [];
+
+            // Helper: Heart Shape Function
+            function getHeartPosition() {
+                const t = Math.random() * Math.PI * 2;
+                const r = Math.sqrt(Math.random()) * 5; // Radius variance
+                // Heart formula
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                // Extrude z for 3D depth
+                const z = (Math.random() - 0.5) * 10;
+
+                return {
+                    x: x * r * 0.2, // Scale down initial heart
+                    y: y * r * 0.2,
+                    z: z
+                };
+            }
+
+            // Generate soft circle texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 32, 32);
+            const texture = new THREE.CanvasTexture(canvas);
+
+            // Initial Heart cluster (Trapped/Broken)
+            for(let i = 0; i < particlesCount; i++) {
+                const heartPos = getHeartPosition();
+
+                // Add some "broken" offset
+                if(Math.random() > 0.8) {
+                    heartPos.x += (Math.random() - 0.5) * 10;
+                    heartPos.y += (Math.random() - 0.5) * 10;
+                }
+
+                posArray[i*3] = heartPos.x;
+                posArray[i*3+1] = heartPos.y;
+                posArray[i*3+2] = heartPos.z;
+
+                // Target expanded positions (Galaxy/Spiral)
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 50 + Math.random() * 200;
+                originalPos.push({
+                    x: Math.cos(angle) * radius,
+                    y: (Math.random() - 0.5) * 200,
+                    z: Math.sin(angle) * radius
+                });
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 1.5,
+                map: texture, // Soft dots
+                color: 0xff003c,
+                transparent: true,
+                opacity: 0.9,
+                sizeAttenuation: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            points = new THREE.Points(geometry, material);
+            scene.add(points);
+
+            // --- EXPLOSION ANIMATION ---
+            const positions = points.geometry.attributes.position.array;
+
+            // Animate points to their "original" (expanded) positions
+            for(let i = 0; i < particlesCount; i++) {
+                const target = originalPos[i];
+                gsap.to(positions, {
+                    [i*3]: target.x,
+                    [i*3+1]: target.y,
+                    [i*3+2]: target.z,
+                    duration: 3,
+                    ease: "power4.out",
+                    delay: Math.random() * 0.5,
+                    onUpdate: () => points.geometry.attributes.position.needsUpdate = true
+                });
+            }
+
+            // Mouse interaction
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX - window.innerWidth / 2) * 0.1;
+                mouseY = (e.clientY - window.innerHeight / 2) * 0.1;
+            });
+
+            // Resize (Debounced)
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 100);
+            });
+
+            // Unified Animation Loop via GSAP Ticker
+            gsap.ticker.add(animate);
+        }
+
+        function animate(time, deltaTime, frame) {
+            if(points) {
+                points.rotation.y += 0.001;
+                points.rotation.x += 0.0005;
+
+                // Gentle float
+                const t = Date.now() * 0.0005;
+                points.position.y = Math.sin(t) * 5;
+
+                camera.position.x += (mouseX - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- GSAP SCROLL ---
+        function initGSAP() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // COLOR SHIFT: Red (Trauma) -> Gold (Healing)
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: true,
+                onUpdate: (self) => {
+                    if(points) {
+                        // Interpolate color
+                        const color = new THREE.Color(0xff003c);
+                        const targetColor = new THREE.Color(0xffd700);
+                        color.lerp(targetColor, self.progress);
+                        points.material.color = color;
+
+                        // Increase Chaos
+                        points.rotation.z = self.progress * Math.PI;
+                        points.scale.setScalar(1 + self.progress);
+                    }
+                }
+            });
+
+            // Reveal Sections
+            const panels = gsap.utils.toArray(".glass-panel");
+            panels.forEach(panel => {
+                gsap.from(panel, {
+                    scrollTrigger: {
+                        trigger: panel,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 100,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power3.out"
+                });
+            });
+
+            // Image Parallax inside containers
+            gsap.utils.toArray(".gallery-item img").forEach(img => {
+                gsap.to(img, {
+                    scrollTrigger: {
+                        trigger: img.parentElement,
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: true
+                    },
+                    y: -50,
+                    scale: 1.2,
+                    ease: "none"
+                });
+            });
+        }
+    </script>
+</body>
+</html>
