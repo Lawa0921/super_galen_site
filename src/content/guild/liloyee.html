@@ -656,7 +656,7 @@
 
         // --- SPAWN INITIAL TREASURES ---
         function spawnInitialTreasures() {
-            for(let i=0; i<50; i++) {
+            for(let i=0; i<200; i++) {
                 const type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
                 const mesh = new THREE.Mesh(type.geom, type.mat);
 
@@ -962,7 +962,7 @@ function spawnTreasure(screenX, screenY) {
 
             if(isChestOpen) {
                 // Open Lid
-                gsap.to(chestLid.rotation, { x: -Math.PI / 2, duration: 1, ease: "back.out(1.7)" });
+                gsap.to(chestLid.rotation, { x: -2, duration: 1.5, ease: "power2.out" });
 
                 // Light Burst (Clamped intensity to prevent washing out/darkening artifacts)
                 const burstColor = new THREE.Color('#ffdd00');
