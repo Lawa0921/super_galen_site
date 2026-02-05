@@ -136,19 +136,50 @@
             min-height: 100vh;
         }
 
+        @keyframes avatar-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+                transform: scale(1);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(52, 152, 219, 0);
+                transform: scale(1.02);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+                transform: scale(1);
+            }
+        }
+
         .avatar-img {
-            width: 150px;
-            height: 150px;
+            width: 180px;
+            height: 180px;
             border-radius: 50%;
             object-fit: cover;
-            border: 5px solid var(--c-accent-blue);
-            box-shadow: 0 0 20px rgba(52, 152, 219, 0.4);
+            border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
             margin-bottom: 2rem;
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: all 0.5s ease;
+            position: relative;
+            z-index: 20;
         }
+
         .avatar-img:hover {
             transform: scale(1.1) rotate(5deg);
+            border-color: var(--c-accent-gold);
+            box-shadow: 0 0 40px var(--c-accent-gold);
+        }
+
+        /* Mobile Coolness */
+        @media (max-width: 768px) {
+            .avatar-img {
+                width: 220px;
+                height: 220px;
+                border: 6px solid var(--c-accent-blue);
+                animation: avatar-pulse 2s infinite;
+                box-shadow: 0 0 30px var(--c-accent-teal);
+            }
         }
 
         .hero-subtitle {
@@ -303,11 +334,11 @@
         #lightbox {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(253, 251, 247, 0.95);
+            background: rgba(10, 21, 37, 0.95); /* Darker background for better contrast */
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 99999; /* Ensure it's on top of everything */
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
@@ -319,8 +350,27 @@
         #lightbox img {
             max-width: 90vw;
             max-height: 85vh;
-            border: 10px solid #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 5px solid #fff;
+            box-shadow: 0 0 50px rgba(52, 152, 219, 0.3);
+            border-radius: 8px;
+        }
+
+        .lightbox-close-btn {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 3rem;
+            cursor: pointer;
+            z-index: 100000;
+            line-height: 1;
+        }
+
+        .lightbox-close-btn:hover {
+            color: var(--c-accent-coral);
+            transform: scale(1.1);
         }
 
         .back-btn {
@@ -347,13 +397,17 @@
     <a href="/guild" class="back-btn">← Guild</a>
     <div class="texture-overlay"></div>
     <div id="p5-container"></div>
-    <div id="lightbox"><img src="" alt="Art"></div>
+
+    <div id="lightbox">
+        <button class="lightbox-close-btn" aria-label="Close Lightbox">&times;</button>
+        <img src="" alt="Art">
+    </div>
 
     <div class="content-layer">
 
         <!-- 1. Hero -->
         <section class="section" id="hero">
-            <img src="/assets/img/guild/uli/avatar.webp" alt="Uli Avatar" class="avatar-img scatter-img">
+            <img src="/assets/img/guild/uli/gallery_7.webp" alt="Uli Avatar" class="avatar-img scatter-img">
             <h1 class="hero-title">鄔莉 Uli</h1>
             <div class="hero-subtitle">
                 Rational Intuition & Creative Soul
@@ -402,7 +456,7 @@
                 <!-- Group 3: Teaching/Connection -->
                 <!-- Text Right -> Images Left -->
                 <img src="/assets/img/guild/uli/gallery_6.webp" class="scatter-img" style="top: 15%; left: 15%; transform: rotate(3deg); width: 240px;">
-                <img src="/assets/img/guild/uli/gallery_7.webp" class="scatter-img" style="bottom: 5%; left: 15%; transform: rotate(-2deg); width: 210px;">
+                <img src="/assets/img/guild/uli/avatar.webp" class="scatter-img" style="bottom: 5%; left: 15%; transform: rotate(-2deg); width: 210px;">
                 <img src="/assets/img/guild/uli/gallery_8.webp" class="scatter-img" style="top: 50%; left: 5%; transform: rotate(6deg); width: 180px;">
             </div>
             <div class="container">
@@ -478,14 +532,40 @@
         // Lightbox Logic
         const lightbox = document.getElementById('lightbox');
         const lbImg = lightbox.querySelector('img');
+        const closeBtn = lightbox.querySelector('.lightbox-close-btn');
 
-        document.querySelectorAll('.scatter-img').forEach(img => {
+        function openLightbox(src) {
+            lbImg.src = src;
+            lightbox.classList.add('visible');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+
+        // Attach to all scatter images AND the avatar explicitly if needed
+        document.querySelectorAll('.scatter-img, .avatar-img').forEach(img => {
             img.addEventListener('click', (e) => {
-                lbImg.src = e.target.src;
-                lightbox.classList.add('visible');
+                e.stopPropagation();
+                openLightbox(e.target.src);
             });
         });
-        lightbox.addEventListener('click', () => lightbox.classList.remove('visible'));
+
+        closeBtn.addEventListener('click', closeLightbox);
+
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('visible')) {
+                closeLightbox();
+            }
+        });
 
         // --- GSAP Content Animations ---
         gsap.registerPlugin(ScrollTrigger);
