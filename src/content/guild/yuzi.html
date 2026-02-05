@@ -68,7 +68,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 400vh; /* Drastically Compacted */
+            height: 450vh; /* Increased slightly for new section */
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -130,11 +130,10 @@
             top: 50%; left: 0; width: 100%;
             transform: translateY(-50%);
             display: flex; justify-content: center; align-items: center;
-            gap: 4rem; /* Significant gap */
-            pointer-events: none; /* Container passes events through */
+            gap: 4rem;
+            pointer-events: none;
             padding: 0 5%;
         }
-        /* .content-panel.active { pointer-events: auto; } Removed to rely on children */
 
         /* Text Card */
         .text-card {
@@ -142,21 +141,21 @@
             border: 1px solid var(--c-solar);
             border-left: 5px solid var(--c-solar);
             padding: 2rem;
-            width: 450px; /* Reduced width for better paired look */
+            width: 100%; max-width: 450px; /* Responsive width */
             backdrop-filter: blur(10px);
             box-shadow: 0 0 30px rgba(255, 221, 0, 0.1);
             position: relative; z-index: 2;
-            pointer-events: auto; /* Ensure interactivity */
+            pointer-events: auto;
         }
 
-        /* Image Card (New) */
+        /* Image Card */
         .image-card {
-            width: 400px; height: 500px; /* Portrait Aspect */
+            width: 100%; max-width: 400px; height: 500px; /* Responsive width */
             position: relative; z-index: 1;
             border: 1px solid rgba(255, 221, 0, 0.5);
             padding: 10px;
             background: rgba(0,0,0,0.5);
-            pointer-events: auto; /* Ensure interactivity */
+            pointer-events: auto;
         }
         .image-card img {
             width: 100%; height: 100%; object-fit: cover;
@@ -175,9 +174,9 @@
         }
 
         /* Layout Variations */
-        .panel-left { flex-direction: row; } /* Text Left, Image Right */
-        .panel-right { flex-direction: row-reverse; } /* Image Left, Text Right */
-        .panel-center { flex-direction: column; text-align: center; gap: 2rem; } /* Stacked */
+        .panel-left { flex-direction: row; }
+        .panel-right { flex-direction: row-reverse; }
+        .panel-center { flex-direction: column; text-align: center; gap: 2rem; }
 
         .text-card h3 {
             font-family: 'Kanit', sans-serif;
@@ -248,12 +247,14 @@
 
         @media (max-width: 900px) {
             .content-panel { flex-direction: column !important; gap: 1rem; top: 55%; padding: 0 1rem; }
-            .text-card { width: 100%; max-width: 500px; padding: 1.5rem; }
-            .image-card { width: 100%; max-width: 300px; height: 300px; order: -1; } /* Image First on Mobile */
+            .text-card { width: 100%; max-width: 100%; padding: 1.5rem; }
+            .image-card { width: 100%; max-width: 100%; height: 60vw; max-height: 400px; order: -1; } /* Adaptive height */
             .big-text { font-size: 15vw; }
             .brand-mark { top: 1rem; left: 1rem; }
             .hud-v { left: 0; }
             .floating-icon { font-size: 2rem; }
+            .text-card h3 { font-size: 1.5rem; flex-direction: column; gap: 0.2rem; align-items: flex-start; }
+            .text-card h3 span { align-self: flex-start; }
         }
 
     </style>
@@ -274,7 +275,7 @@
 
     <div class="hud-line hud-v"></div>
     <div class="hud-line hud-h"></div>
-    <div class="hud-corner">06</div>
+    <div class="hud-corner">07</div>
 
     <div class="icon-cloud" id="icon-cloud">
         <!-- Icons populated by JS -->
@@ -325,10 +326,34 @@
             </div>
         </div>
 
-        <!-- 3. Vitality (LEFT Text, RIGHT Image) -->
-        <div id="panel-vitality" class="content-panel panel-left">
+        <!-- 3. Capabilities (LEFT Text, RIGHT Image) NEW SECTION -->
+        <div id="panel-capabilities" class="content-panel panel-left">
             <div class="text-card">
-                <h3>// 03 VITALITY <span>HUSKY ENERGY</span></h3>
+                <h3>// 03 CAPABILITIES <span>SERVICE PROTOCOLS</span></h3>
+                <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                    <div>
+                        <strong style="color:var(--c-solar); display:block; margin-bottom:0.2rem; font-family:'Kanit';">SPACE & ATMOSPHERE</strong>
+                        <span style="font-size: 0.95rem; color:#ddd; line-height: 1.4; display: block;">建立信任場域，創造安全、被接納的連結與氛圍。</span>
+                    </div>
+                    <div>
+                        <strong style="color:var(--c-solar); display:block; margin-bottom:0.2rem; font-family:'Kanit';">FACILITATION</strong>
+                        <span style="font-size: 0.95rem; color:#ddd; line-height: 1.4; display: block;">社群活動設計、共識營主持、結構化流程引導。</span>
+                    </div>
+                    <div>
+                        <strong style="color:var(--c-solar); display:block; margin-bottom:0.2rem; font-family:'Kanit';">CONSULTATION</strong>
+                        <span style="font-size: 0.95rem; color:#ddd; line-height: 1.4; display: block;">深度對話與陪伴，傾聽並轉譯感受，陪你走過卡關時刻。</span>
+                    </div>
+                </div>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/yuzi/gallery_4.webp" alt="Yuzi Services">
+            </div>
+        </div>
+
+        <!-- 4. Vitality (RIGHT Text, LEFT Image) was 03 -->
+        <div id="panel-vitality" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 04 VITALITY <span>HUSKY ENERGY</span></h3>
                 <p>身體派的孩子，聽說個性像<span class="highlight">哈士奇</span>。</p>
                 <p>喜歡讓身體感受山海風日。旅行不是逃離，而是回到自己。</p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem;">
@@ -344,10 +369,10 @@
             </div>
         </div>
 
-        <!-- 4. Connection (RIGHT Text, LEFT Image) -->
-        <div id="panel-connect" class="content-panel panel-right">
+        <!-- 5. Connection (LEFT Text, RIGHT Image) was 04 -->
+        <div id="panel-connect" class="content-panel panel-left">
             <div class="text-card">
-                <h3>// 04 CONNECTION <span>RELATIONAL SYNC</span></h3>
+                <h3>// 05 CONNECTION <span>RELATIONAL SYNC</span></h3>
                 <p><strong>關係觀：</strong>重視誠實、界線與彼此是否被好好對待。</p>
                 <p>我喜歡建立關係的過程，而非急著定義形式。能享受溫柔的靠近，也理解快速而強烈的連結。</p>
                 <p><i class="fa-solid fa-mobile-screen" style="color:var(--c-solar);"></i> 偶爾通話，勝過大量文字。不需秒回，但希望不消失。</p>
@@ -357,10 +382,10 @@
             </div>
         </div>
 
-        <!-- 5. Resonance (LEFT Text, RIGHT Image) -->
-        <div id="panel-resonance" class="content-panel panel-left">
+        <!-- 6. Resonance (RIGHT Text, LEFT Image) was 05 -->
+        <div id="panel-resonance" class="content-panel panel-right">
             <div class="text-card">
-                <h3>// 05 RESONANCE <span>TARGET LOCK</span></h3>
+                <h3>// 06 RESONANCE <span>TARGET LOCK</span></h3>
                 <p>我容易和這樣的人產生連結：<br>
                 有情緒感受力，願意自我覺察與表達；對世界有好奇心，能聊感受也能聊想法。</p>
                 <div style="margin-top: 1rem; padding: 10px; border: 1px dashed var(--c-solar);">
@@ -374,10 +399,10 @@
             </div>
         </div>
 
-        <!-- 6. Core (CENTER Text, No Image for Climax) -->
+        <!-- 7. Core (CENTER Text, No Image) was 06 -->
         <div id="panel-core" class="content-panel panel-center">
             <div class="text-card" style="width: 100%; max-width: 700px;">
-                <h3>// 06 CORE VALUE <span>PHILOSOPHY</span></h3>
+                <h3>// 07 CORE VALUE <span>PHILOSOPHY</span></h3>
                 <p style="font-size: 1.3rem; color: #fff;"><strong>「多重伴侶關係實踐者」</strong></p>
                 <p>愛有很多樣貌，核心是誠實、尊重與陪伴。</p>
                 <p>我不急著定義形式，只在乎創造有意義的連結。<br>希望能成為你生命中的陪伴者與創造者。</p>
@@ -535,7 +560,7 @@
         // --- GSAP Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        const totalScrollZ = 400; // Matches reduced Scroll Spacer
+        const totalScrollZ = 450;
 
         const tl = gsap.timeline({
             scrollTrigger: {
@@ -556,8 +581,8 @@
         tl.to(coreGroup.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
         tl.to(coreGroup.rotation, { y: 10, x: 5 }, 0);
 
-        // Reveals - Updated for Compact Panel Viewing
-        // Range: ~10% to ~90% of scroll height
+        // Reveals - Updated for 7 Panels
+        // Range: ~5% to ~90%
         function revealPanel(id, startPct, endPct) {
             const tl = gsap.timeline({
                 scrollTrigger: {
@@ -595,19 +620,14 @@
             scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "8% top", scrub: true }
         });
 
-        // TIGHTLY SEQUENCED REVEALS
-        // Card 1: 5-18
-        // Card 2: 18-31
-        // Card 3: 31-44
-        // Card 4: 44-57
-        // Card 5: 57-70
-        // Card 6: 70-83
-        revealPanel("#panel-origin", 5, 18);
-        revealPanel("#panel-path", 18, 31);
-        revealPanel("#panel-vitality", 31, 44);
-        revealPanel("#panel-connect", 44, 57);
-        revealPanel("#panel-resonance", 57, 70);
-        revealPanel("#panel-core", 70, 83);
+        // SEQUENCE
+        revealPanel("#panel-origin", 5, 17);
+        revealPanel("#panel-path", 17, 29);
+        revealPanel("#panel-capabilities", 29, 41);
+        revealPanel("#panel-vitality", 41, 53);
+        revealPanel("#panel-connect", 53, 65);
+        revealPanel("#panel-resonance", 65, 77);
+        revealPanel("#panel-core", 77, 89);
 
         // Finale
         ScrollTrigger.create({
