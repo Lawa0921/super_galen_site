@@ -70,7 +70,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 450vh;
+            height: 550vh;
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -597,7 +597,7 @@
 
         // Reveals - Updated for 7 Panels
         // Range: ~5% to ~90%
-        function revealPanel(id, startPct, endPct) {
+        function revealPanel(id, startPct, endPct, doFadeOut = true) {
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: "#scroll-spacer",
@@ -623,10 +623,13 @@
 
             tl.to([textCard, imageCard], {
                 x: 0, opacity: 1, duration: 1, ease: "power2.out"
-            })
-            .to([textCard, imageCard], {
-                opacity: 0, y: -50, filter: "blur(10px)", duration: 1, ease: "power2.in"
-            }, ">1.5"); // Short hold
+            });
+
+            if (doFadeOut) {
+                tl.to([textCard, imageCard], {
+                    opacity: 0, y: -50, filter: "blur(10px)", duration: 1, ease: "power2.in"
+                }, ">1.5"); // Short hold
+            }
         }
 
         gsap.to("#hero-text", {
@@ -635,13 +638,15 @@
         });
 
         // SEQUENCE
-        revealPanel("#panel-origin", 5, 17);
-        revealPanel("#panel-path", 17, 29);
-        revealPanel("#panel-capabilities", 29, 41);
-        revealPanel("#panel-vitality", 41, 53);
-        revealPanel("#panel-connect", 53, 65);
-        revealPanel("#panel-resonance", 65, 77);
-        revealPanel("#panel-core", 77, 98);
+        revealPanel("#panel-origin", 5, 16);
+        revealPanel("#panel-path", 16, 27);
+        revealPanel("#panel-capabilities", 27, 38);
+        revealPanel("#panel-vitality", 38, 49);
+        revealPanel("#panel-connect", 49, 60);
+        revealPanel("#panel-resonance", 60, 71);
+        // Panel 07: Fade In from 75-85, then STAY visible.
+        // Gap from 85-99.5 ensures it is clearly readable before Finale.
+        revealPanel("#panel-core", 75, 85, false);
 
         // Finale
         ScrollTrigger.create({
