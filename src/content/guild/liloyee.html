@@ -150,31 +150,27 @@
             pointer-events: none;
         }
 
-        .bubble-wrapper {
+        .bubble-container {
             position: absolute;
-            pointer-events: auto; /* Wrapper captures events to pass down */
-            z-index: 15;
-        }
-
-        .bubble-visual {
-            width: 100%; height: 100%;
             border-radius: 50%;
             cursor: pointer;
+            pointer-events: auto;
             display: flex; justify-content: center; align-items: center;
             background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 70%);
             box-shadow: inset 0 0 20px rgba(255,255,255,0.3), 0 0 10px rgba(255,255,255,0.1);
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255,255,255,0.3);
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: box-shadow 0.3s; /* Removed transform transition to avoid GSAP conflict */
             overflow: hidden;
+            z-index: 15;
         }
 
-        .bubble-visual:hover {
-            transform: scale(1.1);
+        .bubble-container:hover {
+            /* Transform handled by GSAP */
             box-shadow: inset 0 0 30px rgba(255,255,255,0.5), 0 0 20px rgba(0,243,255,0.4);
         }
 
-        .bubble-visual img {
+        .bubble-container img {
             width: 100%; height: 100%; object-fit: cover;
             opacity: 0.6;
             transition: 0.5s;
@@ -182,7 +178,7 @@
             filter: blur(2px);
         }
 
-        .bubble-visual:hover img {
+        .bubble-container:hover img {
             opacity: 1;
             filter: blur(0);
         }
@@ -696,23 +692,18 @@
         }
 
         galleryImages.forEach((src, i) => {
-            // Wrapper for GSAP Floating
-            const wrapper = document.createElement('div');
-            wrapper.className = 'bubble-wrapper';
+            const b = document.createElement('div');
+            b.className = 'bubble-container';
             const size = Math.random() * 80 + 100;
-            wrapper.style.width = size + 'px';
-            wrapper.style.height = size + 'px';
+            b.style.width = size + 'px';
+            b.style.height = size + 'px';
 
             // Updated Distribution: Concentrate in middle (5% to 60% of container height)
             const top = (i / galleryImages.length) * 55 + 5;
             const left = Math.random() * 80 + 10;
 
-            wrapper.style.top = top + '%';
-            wrapper.style.left = left + '%';
-
-            // Inner Visual for CSS Hover
-            const b = document.createElement('div');
-            b.className = 'bubble-visual';
+            b.style.top = top + '%';
+            b.style.left = left + '%';
 
             const content = contentMap[i];
 
@@ -724,9 +715,17 @@
                 b.innerHTML = `<img src="${src}" alt="Memory">`;
             }
 
+            // GSAP Hover Effect (Integrated with Floating)
+            b.addEventListener('mouseenter', () => {
+                gsap.to(b, { scale: 1.1, duration: 0.3, overwrite: 'auto' });
+            });
+            b.addEventListener('mouseleave', () => {
+                gsap.to(b, { scale: 1, duration: 0.3, overwrite: 'auto' });
+            });
+
             b.addEventListener('click', (e) => {
                 gsap.to(b, { scale: 1.5, opacity: 0, duration: 0.3, onComplete: () => {
-                    wrapper.style.visibility = 'hidden';
+                    b.style.visibility = 'hidden';
                 }});
 
                 spawnTreasure(e.clientX, e.clientY);
@@ -743,10 +742,10 @@
                 }
             });
 
-            wrapper.appendChild(b);
-            bubbleZone.appendChild(wrapper);
+            bubbleZone.appendChild(b);
 
-            gsap.to(wrapper, {
+            // Floating Animation (y) - Coexists with Scale thanks to GSAP
+            gsap.to(b, {
                 y: '-=50',
                 duration: 2 + Math.random()*2,
                 repeat: -1,
