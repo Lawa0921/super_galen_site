@@ -18,8 +18,7 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
@@ -471,9 +470,8 @@
         const threadCurve = new THREE.CatmullRomCurve3(pathPoints);
 
         // 2. The Thread Mesh (Tube)
-        // We use a high segment count for smoothness.
-        // We will control `setDrawRange` to animate it being drawn.
-        const tubularSegments = 400;
+        // We control `setDrawRange` to animate it being drawn.
+        const tubularSegments = 300;
         const threadGeo = new THREE.TubeGeometry(threadCurve, tubularSegments, 0.1, 8, false);
         const threadMat = new THREE.MeshStandardMaterial({
             color: 0xc8a165,
