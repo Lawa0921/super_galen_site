@@ -250,6 +250,14 @@
             z-index: 20;
         }
 
+        /* Intermediate breakpoint for Laptops/Tablets */
+        @media (min-width: 769px) and (max-width: 1200px) {
+            .scatter-img {
+                /* Scale down images slightly to prevent overlap with centered text */
+                max-width: 180px !important;
+            }
+        }
+
         @media (max-width: 768px) {
             .section {
                 display: flex;
@@ -494,11 +502,11 @@
              <div class="scattered-images">
                 <!-- Group 4: Art/Mandala - The big collage -->
                 <!-- Text Left -> Images Right -->
-                <img src="/assets/img/guild/uli/gallery_9.webp" class="scatter-img" style="top: 0%; right: 15%; transform: rotate(-10deg); width: 200px;">
-                <img src="/assets/img/guild/uli/gallery_10.webp" class="scatter-img" style="top: 20%; right: 0%; transform: rotate(10deg); width: 220px;">
-                <img src="/assets/img/guild/uli/gallery_11.webp" class="scatter-img" style="bottom: 0%; right: 10%; transform: rotate(5deg); width: 240px;">
-                <img src="/assets/img/guild/uli/gallery_12.webp" class="scatter-img" style="bottom: 20%; right: 0%; transform: rotate(-5deg); width: 210px;">
-                <img src="/assets/img/guild/uli/gallery_13.webp" class="scatter-img" style="top: 45%; right: 5%; transform: rotate(-15deg); width: 160px;">
+                <img src="/assets/img/guild/uli/gallery_9.webp" class="scatter-img" style="top: 5%; right: 5%; transform: rotate(-10deg); width: 180px;">
+                <img src="/assets/img/guild/uli/gallery_10.webp" class="scatter-img" style="top: 25%; right: -2%; transform: rotate(10deg); width: 200px;">
+                <img src="/assets/img/guild/uli/gallery_11.webp" class="scatter-img" style="bottom: 5%; right: 5%; transform: rotate(5deg); width: 210px;">
+                <img src="/assets/img/guild/uli/gallery_12.webp" class="scatter-img" style="bottom: 25%; right: 0%; transform: rotate(-5deg); width: 190px;">
+                <img src="/assets/img/guild/uli/gallery_13.webp" class="scatter-img" style="top: 45%; right: 8%; transform: rotate(-15deg); width: 160px;">
             </div>
             <div class="container">
                 <div class="text-panel">
@@ -514,11 +522,11 @@
              <div class="scattered-images">
                 <!-- Group 5: Ocean/Final -->
                 <!-- Text Right -> Images Left -->
-                <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 20%; left: 20%; transform: rotate(8deg); width: 280px; opacity: 0.8;">
-                <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 10%; left: 15%; transform: rotate(-8deg); width: 280px; opacity: 0.8;">
-                <img src="/assets/img/guild/uli/gallery_16.webp" class="scatter-img" style="top: 5%; left: 5%; transform: rotate(3deg); width: 180px;">
+                <img src="/assets/img/guild/uli/gallery_16.webp" class="scatter-img" style="top: 5%; left: 2%; transform: rotate(3deg); width: 160px;">
+                <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 25%; left: 5%; transform: rotate(8deg); width: 240px; opacity: 0.8;">
                 <!-- Added gallery_19 here for completeness -->
-                <img src="/assets/img/guild/uli/gallery_19.webp" class="scatter-img" style="bottom: 35%; left: 5%; transform: rotate(-5deg); width: 160px;">
+                <img src="/assets/img/guild/uli/gallery_19.webp" class="scatter-img" style="top: 50%; left: 0%; transform: rotate(-5deg); width: 150px;">
+                <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 10%; left: 5%; transform: rotate(-8deg); width: 240px; opacity: 0.8;">
             </div>
             <div class="container">
                 <div class="text-panel">
