@@ -667,3 +667,15 @@ members:
         label: "編織者"
       - id: "wood_craft"
         label: "木工魂"
+
+  - id: "xmasfun689"
+    name: "XmasFun"
+    avatar: "/assets/img/guild/xmasfun689/avatar.webp"
+    page: "/guild/xmasfun689.html"
+    tags:
+      - id: "construction_mage"
+        label: "營造法師"
+      - id: "heavy_machinery"
+        label: "重機械操作"
+      - id: "warrior_physique"
+        label: "戰士體質"
