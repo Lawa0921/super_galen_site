@@ -667,3 +667,15 @@ members:
         label: "編織者"
       - id: "wood_craft"
         label: "木工魂"
+
+  - id: "ariel"
+    name: "Ariel"
+    avatar: "/assets/img/guild/ariel/avatar.webp"
+    page: "/guild/ariel.html"
+    tags:
+      - id: "ra_manager"
+        label: "RA Manager"
+      - id: "tarot_reader"
+        label: "Tarot Reader"
+      - id: "weaver"
+        label: "Weaver"

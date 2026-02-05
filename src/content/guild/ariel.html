@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ariel | The Mystic Regulator</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;500;700&family=Oswald:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --c-bg: #1a0b2e;
+            --c-text: #e0d4fc;
+            --c-gold: #ffd700;
+            --c-accent: #9d4edd;
+            --c-paper: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        /* Overlay UI */
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Navigation */
+        .nav-back {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            color: var(--c-gold);
+            text-decoration: none;
+            font-family: 'Cinzel', serif;
+            border: 1px solid var(--c-gold);
+            padding: 0.5rem 1rem;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .nav-back:hover {
+            background: var(--c-gold);
+            color: var(--c-bg);
+        }
+
+        /* Sections */
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .content-card {
+            background: rgba(26, 11, 46, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            padding: 3rem;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(157, 78, 221, 0.2);
+            opacity: 0; /* Animated in */
+            transform: translateY(30px);
+        }
+
+        h1, h2, h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--c-gold);
+            margin-top: 0;
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        h2 {
+            font-size: 2rem;
+            border-bottom: 1px solid var(--c-accent);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight {
+            color: var(--c-gold);
+            font-weight: bold;
+        }
+
+        /* Avatar */
+        .avatar-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .avatar {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 3px solid var(--c-gold);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            object-fit: cover;
+        }
+
+        /* Interactive Elements */
+        .tarot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .tarot-card-ui {
+            background: linear-gradient(135deg, #2d1b4e, #1a0b2e);
+            border: 1px solid var(--c-gold);
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 8px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .tarot-card-ui:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.2);
+        }
+        .tarot-icon {
+            font-size: 2rem;
+            color: var(--c-accent);
+            margin-bottom: 1rem;
+        }
+        .tarot-title {
+            font-family: 'Cinzel', serif;
+            color: var(--c-gold);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .tarot-desc {
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        /* Footer */
+        .site-footer {
+            text-align: center;
+            padding: 3rem;
+            background: #0d0518;
+            border-top: 1px solid var(--c-gold);
+            position: relative;
+            z-index: 10;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .social-btn {
+            color: var(--c-gold);
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: transform 0.3s;
+        }
+        .social-btn:hover {
+            transform: scale(1.2);
+            color: #fff;
+        }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--c-gold);
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            transition: opacity 1s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">Summoning The Mystic...</div>
+
+    <a href="/guild/" class="nav-back">GUILD</a>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+
+        <!-- Section 1: Hero -->
+        <section id="hero">
+            <div class="content-card" style="text-align: center;">
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/ariel/avatar.webp" alt="Ariel" class="avatar">
+                </div>
+                <h1>Ariel</h1>
+                <p style="font-style: italic; color: var(--c-accent);">The Mystic Regulator</p>
+                <hr style="border: 0; border-top: 1px solid rgba(255,215,0,0.3); margin: 1.5rem 0;">
+                <p>
+                    左手拿法規與數據<br>
+                    右手拿塔羅與鉤針
+                </p>
+            </div>
+        </section>
+
+        <!-- Section 2: The Regulator (Left) -->
+        <section id="regulator" style="justify-content: flex-start;">
+            <div class="content-card" style="margin-left: 5vw;">
+                <h2><i class="fa-solid fa-scale-balanced"></i> The Regulator</h2>
+                <p>
+                    深耕醫藥產業 15 年的 <span class="highlight">RA Manager</span>。
+                    專長於小分子原料藥 (API)、DMF 與 CMC 法規實務。
+                </p>
+                <p>
+                    我不喜歡墨守成規，而是熱衷於當那個「解決問題的人」。
+                    利用 <span class="highlight">Gemini + Excel VBA</span> 開發自動化工具，讓團隊從文書地獄中解脫，是我最大的成就感。
+                </p>
+                <p>
+                    <b>「僕人式領導」</b>是我的信仰：管理不是發號施令，而是賦能與服務。
+                </p>
+            </div>
+        </section>
+
+        <!-- Section 3: The Mystic (Right) -->
+        <section id="mystic" style="justify-content: flex-end;">
+            <div class="content-card" style="margin-right: 5vw;">
+                <h2><i class="fa-solid fa-eye"></i> The Mystic</h2>
+                <p>
+                    看似嚴肅的法規人，其實是標準的 <span class="highlight">INFP (調停者)</span>。
+                    內心柔軟、重視和諧，相信在條條框框的法規世界裡，也能找到充滿人情味的解決方案。
+                </p>
+                <p>
+                    我也是神秘學愛好者，熱愛研究 <span class="highlight">人類圖、紫微斗數與塔羅</span>。
+                    這些工具不只是興趣，更幫助我在職場上識人善任，同理他人。
+                </p>
+            </div>
+        </section>
+
+        <!-- Section 4: The Weaver (Center) -->
+        <section id="weaver">
+            <div class="content-card">
+                <h2><i class="fa-solid fa-wand-magic-sparkles"></i> The Weaver</h2>
+                <p>
+                    最近沉迷於 <span class="highlight">鉤針手作</span>。
+                    在與絲線的糾纏中找到平靜的秩序。就像法規工作一樣，在一團混亂中理出頭緒，編織成美麗的結構。
+                </p>
+                <p>
+                    作為兩個寶寶的媽媽，我希望他們成為善良但有原則的人。
+                    現在的我，正在尋找各種職業的可能性，期待在未來的連結中創造更多價值。
+                </p>
+
+                <div class="tarot-grid">
+                    <div class="tarot-card-ui">
+                        <div class="tarot-icon"><i class="fa-solid fa-brain"></i></div>
+                        <div class="tarot-title">Logic</div>
+                        <div class="tarot-desc">Regulatory Strategy & API/DMF Expertise</div>
+                    </div>
+                    <div class="tarot-card-ui">
+                        <div class="tarot-icon"><i class="fa-solid fa-heart"></i></div>
+                        <div class="tarot-title">Empathy</div>
+                        <div class="tarot-desc">Servant Leadership & INFP Soul</div>
+                    </div>
+                    <div class="tarot-card-ui">
+                        <div class="tarot-icon"><i class="fa-solid fa-robot"></i></div>
+                        <div class="tarot-title">Tech</div>
+                        <div class="tarot-desc">Automation Wizardry (VBA/AI)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <div class="social-links">
+                <a href="https://www.threads.net/@iabc5040" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/iabc5040/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p style="color: #666; font-size: 0.9rem;">Made with love by <a href="/guild/" style="color: var(--c-gold); text-decoration: none;">SuperGalen's Dungeon</a></p>
+        </footer>
+
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        // import { FontLoader } from 'three/addons/loaders/FontLoader.js'; // Optional if needed
+
+        // --- Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a0b2e);
+        scene.fog = new THREE.FogExp2(0x1a0b2e, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Lights ---
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambLight);
+
+        const spotLight = new THREE.SpotLight(0xffd700, 2);
+        spotLight.position.set(5, 10, 5);
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.5;
+        scene.add(spotLight);
+
+        const purpleLight = new THREE.PointLight(0x9d4edd, 2, 20);
+        purpleLight.position.set(-5, -2, 5);
+        scene.add(purpleLight);
+
+        // --- Objects ---
+
+        // 1. The Scale (Libra)
+        const scaleGroup = new THREE.Group();
+        scene.add(scaleGroup);
+
+        const goldMat = new THREE.MeshStandardMaterial({
+            color: 0xffd700, metalness: 0.8, roughness: 0.2
+        });
+
+        // Base
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.2, 0.5, 32), goldMat);
+        base.position.y = -3;
+        scaleGroup.add(base);
+
+        // Pillar
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 6, 16), goldMat);
+        pillar.position.y = 0;
+        scaleGroup.add(pillar);
+
+        // Crossbar Pivot (The part that tilts)
+        const pivotGroup = new THREE.Group();
+        pivotGroup.position.y = 3;
+        scaleGroup.add(pivotGroup);
+
+        const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 5, 16), goldMat);
+        crossbar.rotation.z = Math.PI / 2;
+        pivotGroup.add(crossbar);
+
+        // Pans & Chains
+        function createPan(xOffset) {
+            const panGroup = new THREE.Group();
+            panGroup.position.x = xOffset;
+
+            // Chains (Lines)
+            const chainGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(-0.8, -2, 0),
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(0.8, -2, 0),
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(0, -2, 0.8),
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(0, -2, -0.8)
+            ]);
+            const chainMat = new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.5 });
+            const chains = new THREE.LineSegments(chainGeo, chainMat);
+            panGroup.add(chains);
+
+            // Pan Dish
+            const dish = new THREE.Mesh(new THREE.CylinderGeometry(1, 0.1, 0.5, 32, 1, true), goldMat);
+            dish.material.side = THREE.DoubleSide; // Show inside
+            dish.position.y = -2.25;
+            panGroup.add(dish);
+
+            // Objects in Pan
+            const contents = new THREE.Group();
+            contents.position.y = -2.2;
+            panGroup.add(contents);
+
+            // Keep the pan upright even when crossbar tilts
+            // We'll update rotation in animation loop
+            panGroup.userData = { isPan: true };
+
+            return { group: panGroup, contents: contents };
+        }
+
+        const leftPan = createPan(-2.5);
+        const rightPan = createPan(2.5);
+        pivotGroup.add(leftPan.group);
+        pivotGroup.add(rightPan.group);
+
+        // Add Logic items to Left Pan (Documents)
+        const docGeo = new THREE.BoxGeometry(0.6, 0.05, 0.8);
+        const docMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        for(let i=0; i<5; i++) {
+            const doc = new THREE.Mesh(docGeo, docMat);
+            doc.position.y = i * 0.06;
+            doc.rotation.y = Math.random() * 0.5;
+            leftPan.contents.add(doc);
+        }
+
+        // Add Intuition items to Right Pan (Crystal Sphere)
+        const orb = new THREE.Mesh(
+            new THREE.SphereGeometry(0.4, 32, 32),
+            new THREE.MeshPhysicalMaterial({
+                color: 0x9d4edd, transmission: 0.8, opacity: 1, roughness: 0, metalness: 0, thickness: 1
+            })
+        );
+        orb.position.y = 0.4;
+        rightPan.contents.add(orb);
+
+
+        // 2. Floating Cards (Tarot)
+        const cardsGroup = new THREE.Group();
+        scene.add(cardsGroup);
+
+        const cardGeo = new THREE.PlaneGeometry(1, 1.6);
+        const cardMat = new THREE.MeshStandardMaterial({
+            color: 0x2d1b4e, side: THREE.DoubleSide,
+            emissive: 0x1a0b2e, emissiveIntensity: 0.5
+        });
+
+        for(let i=0; i<8; i++) {
+            const card = new THREE.Mesh(cardGeo, cardMat);
+            card.position.set(
+                (Math.random() - 0.5) * 15,
+                (Math.random() - 0.5) * 15,
+                (Math.random() - 0.5) * 5 - 5 // Background depth
+            );
+            card.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            card.userData = {
+                rotSpeed: (Math.random() * 0.01) + 0.005,
+                floatSpeed: (Math.random() * 0.005) + 0.002
+            };
+            cardsGroup.add(card);
+        }
+
+
+        // 3. The Thread (Weaving)
+        const threadCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(-10, 0, -5),
+            new THREE.Vector3(-5, 5, 0),
+            new THREE.Vector3(0, -5, 2),
+            new THREE.Vector3(5, 5, 0),
+            new THREE.Vector3(10, 0, -5)
+        ]);
+        const threadGeo = new THREE.TubeGeometry(threadCurve, 100, 0.05, 8, false);
+        const threadMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+        const threadMesh = new THREE.Mesh(threadGeo, threadMat);
+        scene.add(threadMesh);
+
+        // 4. Particles (Stardust)
+        const particleGeo = new THREE.BufferGeometry();
+        const pCount = 500;
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) {
+            pPos[i] = (Math.random() - 0.5) * 30;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({ color: 0xffd700, size: 0.05 });
+        const particles = new THREE.Points(particleGeo, pMat);
+        scene.add(particles);
+
+
+        // --- Animation Loop ---
+        function animate() {
+            // Constant Floating
+            cardsGroup.children.forEach(c => {
+                c.rotation.x += c.userData.rotSpeed;
+                c.rotation.y += c.userData.rotSpeed;
+                c.position.y += Math.sin(Date.now() * 0.001 * c.userData.floatSpeed) * 0.01;
+            });
+
+            // Particles Rotate
+            particles.rotation.y += 0.001;
+
+            // Maintain Pan Uprightness
+            // If crossbar rotates Z, we rotate pans -Z to compensate
+            const tilt = pivotGroup.rotation.z;
+            leftPan.group.rotation.z = -tilt;
+            rightPan.group.rotation.z = -tilt;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+
+        // --- Scroll Animations (GSAP) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Initial Load
+        window.onload = () => {
+            gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('loader').style.display = 'none';
+            }});
+
+            gsap.to('.content-card', {
+                y: 0, opacity: 1, duration: 1, stagger: 0.2, ease: "power2.out"
+            });
+        };
+
+        // Scroll Timeline
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // 1. Move Scale & Tilt
+        // Hero -> Regulator (Left)
+        tl.to(scaleGroup.position, { x: 3, y: -1, z: 2 }, 0); // Move Scale Right
+        tl.to(pivotGroup.rotation, { z: -0.3 }, 0); // Tip Left (Heavy on Logic)
+
+        // Regulator -> Mystic (Right)
+        tl.to(scaleGroup.position, { x: -3, y: 1 }, 0.4); // Move Scale Left
+        tl.to(pivotGroup.rotation, { z: 0.3 }, 0.4); // Tip Right (Heavy on Intuition)
+
+        // Mystic -> Weaver (Center)
+        tl.to(scaleGroup.position, { x: 0, y: -4, z: -5 }, 0.8); // Center & Back
+        tl.to(pivotGroup.rotation, { z: 0 }, 0.8); // Balance
+
+        // Thread Animation (Draw out)
+        // We can simulate drawing by scaling or masking, but simple opacity/position is easier for now
+        // Let's make the thread "glow" or pulse
+        tl.to(threadMat, { opacity: 0.8, strokeWidth: 2 }, 0.5);
+
+
+        // Card Reveals
+        gsap.utils.toArray('.content-card').forEach(card => {
+            gsap.fromTo(card,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1, y: 0, duration: 1,
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+
+        // Resize Handle
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

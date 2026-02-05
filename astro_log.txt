@@ -1,0 +1,33 @@
+
+> my-portfolio-blog@1.0.0 dev
+> astro dev
+
+▶ Astro collects anonymous usage data.
+  This information helps us improve Astro.
+  Run "astro telemetry disable" to opt-out.
+  https://astro.build/telemetry
+
+16:34:17 [types] Generated 1ms
+
+ update  ▶ New version of Astro available: 5.17.1
+  Run npx @astrojs/upgrade to update
+
+16:34:18 [content] Syncing content
+16:34:22 [content] Synced content
+
+ astro  v5.16.15 ready in 5224 ms
+
+┃ Local    http://localhost:4321/
+┃ Network  use --host to expose
+
+16:34:22 watching for file changes...
+16:34:23 [ERROR] [vite] Error: The following dependencies are imported but could not be resolved:
+
+  three (imported by /app/src/content/guild/naka.html?id=0)
+  three/addons/environments/RoomEnvironment.js (imported by /app/src/content/guild/leya.html?id=0)
+
+Are they installed?
+    at file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:14849:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:47014:28
+16:35:21 [200] /guild/ariel 24ms
