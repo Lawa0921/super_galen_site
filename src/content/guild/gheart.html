@@ -376,9 +376,6 @@
                     期許自己未來能當個有自知之明的老人，能夠搬到有山有海的地方獨居。
                     在那裡，我將擁有熱愛的大自然的一切，以及最嚮往的——<b>一個人的自由</b>。
                 </p>
-                <p style="text-align: center; margin-top: 2rem; font-family: 'Cormorant Garamond'; font-size: 1.2rem; color: var(--c-accent);">
-                    Wood · Sea · Herbs · Forest · Stars
-                </p>
             </section>
 
             <div class="social-container">
@@ -455,36 +452,56 @@
         threadGroup.rotation.z = 0.2;
         threadGroup.rotation.x = -0.1;
 
-        // --- "The Needle" ---
-        // A golden needle floating on the side
-        const needleGeo = new THREE.ConeGeometry(0.2, 8, 16);
-        const needleMat = new THREE.MeshStandardMaterial({
+        // --- "The Needle" & "The Thread" ---
+
+        // 1. Create the Path (The Thread's shape)
+        // A long, elegant curve that weaves down the page
+        const pathPoints = [];
+        const curveHeight = 40; // Vertical span
+        const turns = 4; // How many weaves
+
+        for (let i = 0; i <= 50; i++) {
+            const t = i / 50;
+            const x = Math.sin(t * Math.PI * turns) * 6 + 5; // Weave left/right, offset to right
+            const y = 15 - (t * curveHeight); // Start high, go low
+            const z = Math.cos(t * Math.PI * turns * 2) * 2; // Depth weave
+            pathPoints.push(new THREE.Vector3(x, y, z));
+        }
+
+        const threadCurve = new THREE.CatmullRomCurve3(pathPoints);
+
+        // 2. The Thread Mesh (Tube)
+        // We use a high segment count for smoothness.
+        // We will control `setDrawRange` to animate it being drawn.
+        const tubularSegments = 400;
+        const threadGeo = new THREE.TubeGeometry(threadCurve, tubularSegments, 0.1, 8, false);
+        const threadMat = new THREE.MeshStandardMaterial({
             color: 0xc8a165,
-            metalness: 0.8,
-            roughness: 0.2
+            metalness: 0.6,
+            roughness: 0.3,
+            emissive: 0x8a6e45,
+            emissiveIntensity: 0.2
+        });
+        const threadMesh = new THREE.Mesh(threadGeo, threadMat);
+
+        // Setup draw range for animation (start hidden)
+        threadGeo.setDrawRange(0, 0);
+        scene.add(threadMesh);
+
+        // 3. The Needle Mesh
+        const needleGeo = new THREE.ConeGeometry(0.15, 6, 16);
+        needleGeo.translate(0, -3, 0); // Offset so pivot is at the "eye" (top)
+        const needleMat = new THREE.MeshStandardMaterial({
+            color: 0xffd700, // Brighter gold
+            metalness: 0.9,
+            roughness: 0.1
         });
         const needle = new THREE.Mesh(needleGeo, needleMat);
-        needle.rotation.z = -0.5;
-        needle.position.set(12, 10, 5); // Start position
         scene.add(needle);
 
-        // --- "Gold Thread" Trail ---
-        // A curve that follows the needle?
-        // Or just a thick decorative thread weaving through the background?
-
-        const curvePoints = [];
-        for(let i=0; i<10; i++) {
-            curvePoints.push(new THREE.Vector3(
-                Math.sin(i)*5,
-                (i-5)*5,
-                2
-            ));
-        }
-        const goldCurve = new THREE.CatmullRomCurve3(curvePoints);
-        const goldGeo = new THREE.TubeGeometry(goldCurve, 64, 0.1, 8, false);
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xc8a165, metalness: 0.5 });
-        const goldThread = new THREE.Mesh(goldGeo, goldMat);
-        // scene.add(goldThread); // Maybe too messy, let's stick to the needle
+        // Set initial position to start of curve
+        const startPoint = threadCurve.getPointAt(0);
+        needle.position.copy(startPoint);
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
@@ -500,20 +517,48 @@
         }
         animate();
 
-        // --- GSAP Scroll ---
+        // --- GSAP Scroll (Needle & Thread Animation) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Move Needle down the page
-        gsap.to(needle.position, {
-            y: -15,
-            x: 8,
-            rotation: -0.2, // Needle turns slightly
+        // Object to hold animation state
+        const animState = { progress: 0 };
+
+        gsap.to(animState, {
+            progress: 1,
             ease: "none",
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1
+                scrub: 1,
+                onUpdate: () => {
+                    const p = animState.progress;
+
+                    // 1. Reveal Thread
+                    // Calculate how many indices to show based on progress
+                    // TubeGeometry indices = segments * 6 (2 triangles per segment) * 3 vertices?
+                    // Actually setDrawRange uses counts of *vertices* in the BufferGeometry.
+                    // For TubeGeometry, it's roughly (tubularSegments + 1) * (radialSegments + 1).
+                    // Easier heuristic: just map progress to total index count.
+                    const count = threadGeo.index.count;
+                    threadGeo.setDrawRange(0, Math.floor(p * count));
+
+                    // 2. Move Needle
+                    // Get position on curve
+                    // We look slightly ahead to orient the needle correctly
+                    const point = threadCurve.getPointAt(p);
+                    const lookAtPoint = threadCurve.getPointAt(Math.min(p + 0.01, 1));
+
+                    if (point && lookAtPoint) {
+                        needle.position.copy(point);
+                        needle.lookAt(lookAtPoint);
+                        // Needle logic: The cone points UP by default (Y+).
+                        // lookAt aligns Z+. We need to rotate X by -PI/2 to align Y with Z path?
+                        // Or simpler: just rotate the needle mesh geometry or container.
+                        // Let's adjust rotation manually after lookAt.
+                        needle.rotateX(Math.PI / 2);
+                    }
+                }
             }
         });
 
