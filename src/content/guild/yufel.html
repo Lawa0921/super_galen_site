@@ -7,13 +7,12 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Kurenaido&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Kurenaido&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <!-- Three.js Import Map -->
     <script type="importmap">
@@ -27,18 +26,18 @@
     <style>
         /* --- CORE VARIABLES --- */
         :root {
-            --c-bg: #050505;
-            --c-text: #e0e0e0;
-            --c-dim: #888;
-            --c-accent: #ff0055; /* Glitch Red */
-            --c-accent2: #00ccff; /* Cyber Blue */
-            --c-gold: #ffaa00; /* Yarn Gold */
-            --c-hud-bg: rgba(10, 15, 20, 0.65);
-            --c-hud-border: rgba(0, 204, 255, 0.3);
+            --c-bg: #0a0a0c;
+            --c-text: #f0f0f0;
+            --c-dim: #a0a0a0;
+
+            /* Warm / Craft Palette */
+            --c-accent: #ff6b6b; /* Soft Red */
+            --c-accent2: #4ecdc4; /* Soft Teal */
+            --c-gold: #ffe66d; /* Yarn Gold */
+            --c-paper: rgba(255, 255, 255, 0.08);
 
             --f-mono: 'Courier Prime', monospace;
             --f-serif: 'Noto Serif TC', serif;
-            --f-display: 'Orbitron', sans-serif;
             --f-hand: 'Zen Kurenaido', sans-serif;
         }
 
@@ -55,7 +54,7 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100vh;
             z-index: 0;
-            pointer-events: none; /* Let clicks pass through if needed */
+            pointer-events: none;
         }
 
         .scrolly-container {
@@ -67,164 +66,174 @@
             min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center; /* Centered by default */
+            justify-content: center;
             padding: 2rem;
             box-sizing: border-box;
             position: relative;
         }
 
-        /* Alternating Layouts */
         section.align-left { justify-content: flex-start; padding-left: 10%; }
         section.align-right { justify-content: flex-end; padding-right: 10%; }
 
         /* --- NAVIGATION --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-family: var(--f-display);
-            font-size: 0.8rem; letter-spacing: 2px;
-            color: var(--c-accent2); text-decoration: none;
-            padding: 0.5rem 1rem;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid var(--c-accent2);
-            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            font-family: var(--f-hand);
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--c-text); text-decoration: none;
+            padding: 0.5rem 1.2rem;
+            background: rgba(0,0,0,0.6);
+            border: 2px dashed var(--c-dim);
+            border-radius: 30px;
             transition: 0.3s;
         }
         .nav-back:hover {
-            background: var(--c-accent2); color: #000;
-            box-shadow: 0 0 15px var(--c-accent2);
+            background: var(--c-text); color: var(--c-bg);
+            border-color: var(--c-text);
         }
 
-        /* --- HUD CARDS (Professional Design) --- */
-        .hud-card {
-            background: var(--c-hud-bg);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--c-hud-border);
+        /* --- CRAFT CARDS (Handmade Feel) --- */
+        .craft-card {
+            background: rgba(20, 20, 25, 0.85); /* Dark Matte */
+            backdrop-filter: blur(12px);
+            border: 2px dashed var(--c-dim); /* Stitch effect */
+            border-radius: 12px;
             padding: 3rem;
             max-width: 600px;
             width: 100%;
             position: relative;
-            /* Cyberpunk Corners */
-            clip-path: polygon(
-                20px 0, 100% 0,
-                100% calc(100% - 20px), calc(100% - 20px) 100%,
-                0 100%, 0 20px
-            );
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: border-color 0.3s;
+        }
+        .craft-card:hover {
+            border-color: var(--c-gold);
         }
 
-        /* Decorative HUD Elements */
-        .hud-card::before {
-            content: ''; position: absolute; top: 0; left: 20px; width: 100px; height: 2px; background: var(--c-accent2);
-        }
-        .hud-card::after {
-            content: 'SYS.LOG'; position: absolute; bottom: 5px; right: 25px;
-            font-family: var(--f-display); font-size: 0.6rem; color: var(--c-dim); letter-spacing: 2px;
+        /* Tape / Pin decoration */
+        .craft-card::before {
+            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 100px; height: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(-50%) rotate(-2deg);
+            pointer-events: none;
         }
 
-        .hud-header {
-            display: flex; align-items: baseline; justify-content: space-between;
-            margin-bottom: 2rem; border-bottom: 1px dashed var(--c-dim); padding-bottom: 0.5rem;
+        .card-header {
+            display: flex; flex-direction: column;
+            margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;
         }
 
         h2 {
-            font-family: var(--f-display);
-            color: var(--c-text);
-            font-size: 1.8rem; margin: 0; text-transform: uppercase; letter-spacing: 2px;
+            font-family: var(--f-hand);
+            color: var(--c-gold);
+            font-size: 2.5rem; margin: 0;
+            letter-spacing: 1px;
         }
 
-        .sys-id { font-family: var(--f-mono); color: var(--c-accent); font-size: 0.9rem; }
+        .tag-line {
+            font-family: var(--f-mono); color: var(--c-accent2); font-size: 0.9rem; margin-top: 0.5rem;
+        }
 
         p {
-            font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem; color: #ddd;
+            font-size: 1.1rem; line-height: 1.9; margin-bottom: 1.5rem; color: #ddd;
             text-align: justify;
         }
 
-        .highlight-code { color: var(--c-accent2); font-family: var(--f-mono); background: rgba(0,204,255,0.1); padding: 0 4px; }
-        .highlight-yarn { color: var(--c-gold); font-weight: bold; }
+        .highlight-code { color: var(--c-accent2); font-family: var(--f-mono); background: rgba(78, 205, 196, 0.1); padding: 0 4px; border-radius: 4px; }
+        .highlight-yarn { color: var(--c-accent); font-weight: bold; }
 
         /* --- HERO SECTION --- */
-        #hero { min-height: 100vh; text-align: center; display: flex; flex-direction: column; }
+        #hero { min-height: 100vh; text-align: center; display: flex; flex-direction: column; justify-content: center;}
 
         .profile-container {
-            position: relative; width: 220px; height: 220px; margin: 0 auto 2rem;
+            position: relative; width: 200px; height: 200px; margin: 0 auto 2rem;
         }
         .profile-img {
             width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
-            border: 2px solid var(--c-text); filter: grayscale(20%) contrast(1.2);
+            border: 4px solid var(--c-text);
             z-index: 2; position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        .profile-ring {
-            position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
-            border: 2px dashed var(--c-accent2); border-radius: 50%;
-            animation: spin 20s linear infinite; z-index: 1; opacity: 0.6;
+        /* Wool threads circling */
+        .thread-ring {
+            position: absolute; border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--c-gold);
+            border-bottom-color: var(--c-accent2);
+            animation: spin-slow 15s linear infinite;
         }
-        .profile-ring:nth-child(2) {
-            width: 140%; height: 140%; top: -20%; left: -20%;
-            border-color: var(--c-accent); animation-direction: reverse; animation-duration: 30s;
-        }
+        .tr-1 { top: -10px; left: -10px; right: -10px; bottom: -10px; opacity: 0.6; animation-duration: 20s; }
+        .tr-2 { top: -20px; left: -20px; right: -20px; bottom: -20px; opacity: 0.4; animation-direction: reverse; animation-duration: 25s; border-left-color: var(--c-accent); border-right-color: transparent;}
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
 
-        .glitch-text {
-            font-family: var(--f-display); font-size: 4rem; font-weight: 900;
-            color: var(--c-text); position: relative; display: inline-block;
+        .hero-title {
+            font-family: var(--f-hand); font-size: 5rem; font-weight: bold;
+            color: var(--c-text); margin: 0; line-height: 1;
         }
-        /* Simple CSS Glitch/Shake */
-        .glitch-text:hover { animation: shake 0.2s infinite; color: var(--c-accent); }
-        @keyframes shake { 0% { transform: translate(1px, 1px); } 100% { transform: translate(-1px, -1px); } }
-
-        .sub-glitch {
-            font-family: var(--f-mono); color: var(--c-gold); margin-top: 1rem; letter-spacing: 3px; font-size: 1.2rem;
+        .hero-subtitle {
+            font-family: var(--f-mono); color: var(--c-dim); margin-top: 1.5rem;
+            font-size: 1.1rem; letter-spacing: 2px;
         }
 
         /* --- STATS & GALLERY --- */
         .stats-row { display: flex; gap: 1rem; margin-top: 2rem; justify-content: space-between; flex-wrap: wrap; }
         .stat-box {
-            flex: 1; min-width: 100px; background: rgba(0,0,0,0.3); padding: 1rem; border-left: 2px solid var(--c-dim);
-            transition: 0.3s;
+            flex: 1; min-width: 100px; padding: 1rem;
+            border: 1px dashed var(--c-dim); border-radius: 8px;
+            text-align: center;
         }
-        .stat-box:hover { border-left-color: var(--c-gold); background: rgba(255,170,0,0.1); }
-        .stat-num { font-family: var(--f-display); font-size: 1.5rem; color: var(--c-text); }
-        .stat-label { font-family: var(--f-mono); font-size: 0.8rem; color: var(--c-dim); margin-top: 0.2rem; }
+        .stat-num { font-family: var(--f-hand); font-size: 2rem; color: var(--c-gold); font-weight: bold; }
+        .stat-label { font-family: var(--f-mono); font-size: 0.75rem; color: var(--c-dim); margin-top: 0.2rem; text-transform: uppercase;}
 
         .gallery-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 2rem;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 2rem;
         }
         .gallery-item {
-            aspect-ratio: 1; overflow: hidden; position: relative; border: 1px solid #333;
+            aspect-ratio: 1; overflow: hidden; position: relative; border-radius: 8px;
+            border: 1px solid #333;
         }
         .gallery-item img {
-            width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1);
+            width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease;
         }
-        .gallery-item:hover img { transform: scale(1.1); }
+        .gallery-item:hover img { transform: scale(1.05); }
 
         /* --- BOTTOM MANIFESTO --- */
         #manifesto {
             text-align: center;
         }
+        /* Destination Glow */
+        #destination-glow {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center bottom, rgba(255, 230, 109, 0.15) 0%, transparent 70%);
+            pointer-events: none; z-index: -1;
+        }
+
         .manifesto-box {
             max-width: 800px; padding: 4rem 2rem;
-            border: 1px solid var(--c-text);
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.95) 100%);
+            border: none; background: transparent;
         }
         .big-quote {
-            font-family: var(--f-hand); font-size: 2.5rem; line-height: 1.4; color: var(--c-gold); margin-bottom: 2rem;
+            font-family: var(--f-serif); font-size: 2.2rem; line-height: 1.5; color: var(--c-text); margin-bottom: 2rem;
+            font-weight: 700;
         }
+        .big-quote span { color: var(--c-gold); font-family: var(--f-hand); }
 
         .social-dock {
             display: flex; gap: 2rem; justify-content: center; margin-top: 3rem;
         }
         .social-icon {
-            width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--c-text);
+            width: 60px; height: 60px; border-radius: 50%;
+            border: 2px dashed var(--c-text);
             display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; color: var(--c-text); text-decoration: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: #000;
         }
         .social-icon:hover {
-            transform: translateY(-5px) scale(1.1);
-            background: var(--c-accent); border-color: var(--c-accent); color: #fff;
-            box-shadow: 0 10px 20px rgba(255, 0, 85, 0.4);
+            transform: translateY(-5px);
+            border-color: var(--c-gold); color: var(--c-gold);
+            border-style: solid;
         }
 
         /* --- FOOTER --- */
@@ -235,16 +244,16 @@
 
         /* Mobile */
         @media (max-width: 768px) {
-            .glitch-text { font-size: 2.5rem; }
+            .hero-title { font-size: 3.5rem; }
             section.align-left, section.align-right { justify-content: center; padding: 2rem 1rem; }
-            .hud-card { padding: 2rem 1.5rem; clip-path: none; border-radius: 4px; border: 1px solid var(--c-hud-border); }
+            .craft-card { padding: 2rem 1.5rem; }
         }
     </style>
 </head>
 <body>
 
     <!-- Back Button -->
-    <a href="/guild/" class="nav-back"><i class="fa-solid fa-chevron-left"></i> GUILD_NET</a>
+    <a href="/guild/" class="nav-back"><i class="fa-solid fa-arrow-left"></i> Guild</a>
 
     <!-- 3D Background -->
     <div id="canvas-container"></div>
@@ -254,27 +263,25 @@
         <!-- 1. HERO -->
         <section id="hero">
             <div class="profile-container">
-                <div class="profile-ring"></div>
-                <div class="profile-ring"></div>
+                <div class="thread-ring tr-1"></div>
+                <div class="thread-ring tr-2"></div>
                 <img src="/assets/img/guild/yufel/avatar.webp" class="profile-img" alt="Yufel">
             </div>
 
-            <h1 class="glitch-text">STRANGE_CRAZY</h1>
-            <div class="sub-glitch">// YUFEL v2.0 // WEAVER // CODER</div>
+            <h1 class="hero-title">Strange & Crazy</h1>
+            <div class="hero-subtitle">-- YUFEL'S LOOM --</div>
 
-            <p style="margin-top: 2rem; max-width: 600px; color: #aaa; font-family: var(--f-mono); font-size: 0.9rem;">
-                > INITIALIZING CHAOS PROTOCOLS...<br>
-                > LOADING SKILL_MATRIX... [COMPLETE]<br>
-                > WELCOME TO THE MIND OF A MAD LEARNER.
+            <p style="margin-top: 2rem; color: #888; font-family: var(--f-mono); font-size: 0.9rem;">
+                Scroll to unravel the thread ↓
             </p>
         </section>
 
         <!-- 2. THE LEARNER (Left) -->
         <section id="learner" class="align-left">
-            <div class="hud-card">
-                <div class="hud-header">
+            <div class="craft-card">
+                <div class="card-header">
                     <h2>The Library</h2>
-                    <span class="sys-id">DATA_SOURCE: SELF_TAUGHT</span>
+                    <span class="tag-line">Pattern: Self-Taught Loop</span>
                 </div>
                 <p>
                     <span class="highlight-yarn">「我是一個奇怪的瘋子，喜歡四處學習。」</span>
@@ -288,11 +295,11 @@
                 <div class="stats-row">
                     <div class="stat-box">
                         <div class="stat-num">8+</div>
-                        <div class="stat-label">YEARS_EXP</div>
+                        <div class="stat-label">Years Learning</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-num">∞</div>
-                        <div class="stat-label">CURIOSITY</div>
+                        <div class="stat-label">Chaos Factor</div>
                     </div>
                 </div>
             </div>
@@ -300,10 +307,10 @@
 
         <!-- 3. THE MAKER (Right) -->
         <section id="maker" class="align-right">
-            <div class="hud-card">
-                <div class="hud-header">
+            <div class="craft-card">
+                <div class="card-header">
                     <h2>The Fabricator</h2>
-                    <span class="sys-id">MODE: CREATIVE</span>
+                    <span class="tag-line">Material: Yarn & Pixels</span>
                 </div>
                 <p>
                     我的雙手是將代碼實體化的印表機。
@@ -312,7 +319,7 @@
                 </p>
                 <p>
                     目前也有在背誦日文單字，試圖解鎖新的語言模組。
-                    雖然 <span class="highlight-code">Japanese.level < N1</span>，但持續迭代中。
+                    <span class="highlight-code">Japanese.loading...</span>
                 </p>
                 <div class="gallery-grid">
                     <div class="gallery-item"><img src="/assets/img/guild/yufel/work1.webp" alt="Work"></div>
@@ -323,10 +330,10 @@
 
         <!-- 4. THE CODER (Left) -->
         <section id="coder" class="align-left">
-            <div class="hud-card">
-                <div class="hud-header">
+            <div class="craft-card">
+                <div class="card-header">
                     <h2>The Architect</h2>
-                    <span class="sys-id">LANG: CPP / PYTHON</span>
+                    <span class="tag-line">Tool: C++ / Python</span>
                 </div>
                 <p>
                     遊走在邏輯與感性之間，我是代碼的詩人。
@@ -336,30 +343,26 @@
                     看得懂程式碼，不僅是一種技能，更是一種透視世界運作規律的方式。
                     無論是編織毛線還是編寫迴圈，本質都是將微小的單元組合成宏大的結構。
                 </p>
-                <div style="margin-top: 1.5rem; padding: 1rem; background: #000; border: 1px solid #333; font-family: var(--f-mono); font-size: 0.8rem; color: var(--c-accent2);">
-                    def create_future(skills, passion):<br>
-                    &nbsp;&nbsp;while True:<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;try:<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;learn(new_thing)<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;build(something_cool)<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;except Failure:<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;continue # Never stop<br>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.3); border-left: 2px solid var(--c-accent2); font-family: var(--f-mono); font-size: 0.8rem; color: #ccc;">
+                    while(alive) {<br>
+                    &nbsp;&nbsp;learn();<br>
+                    &nbsp;&nbsp;create();<br>
+                    &nbsp;&nbsp;if (fails) unpick_and_retry();<br>
+                    }
                 </div>
             </div>
         </section>
 
-        <!-- 5. MANIFESTO (Bottom) -->
+        <!-- 5. MANIFESTO (Bottom) - The Destination -->
         <section id="manifesto">
-            <div class="manifesto-box hud-card" style="max-width: 800px; clip-path: none; border-color: var(--c-text);">
-                <div class="hud-header" style="justify-content: center;">
-                    <h2>System Status: Rebooting</h2>
-                </div>
+            <div id="destination-glow"></div>
+            <div class="manifesto-box craft-card" style="border: none; background: transparent; box-shadow: none;">
 
                 <p class="big-quote">
-                    "期待獨立。<br>在這瘋狂的世界，<br>尋找屬於我的座標。"
+                    "期待獨立。<br>在這瘋狂的世界，<br><span>尋找屬於我的座標。</span>"
                 </p>
 
-                <p>
+                <p style="text-align: center; max-width: 600px; margin: 0 auto;">
                     剛離職，目前處於<b>自由求職</b>狀態。
                     我正在尋找一個能讓這個「奇怪的瘋子」發揮所長的地方。
                     如果你需要一個懂程式、會手作、愛學習，且思維不受限的創造者，
@@ -374,8 +377,8 @@
             </div>
         </section>
 
-        <!-- Spacer -->
-        <div style="height: 10vh;"></div>
+        <!-- Spacer to ensure we can scroll to the very end comfortably -->
+        <div style="height: 15vh;"></div>
     </div>
 
     <footer>
@@ -388,37 +391,56 @@
         // --- 1. SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Deep space fog
-        scene.fog = new THREE.FogExp2(0x050505, 0.015);
+        // Warmer fog for "Cozy/Mystic" feel
+        scene.fog = new THREE.FogExp2(0x0a0a0c, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // Start position: slightly high, ready to dive
         camera.position.set(0, 0, 5);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Physically correct lights
+        renderer.useLegacyLights = false;
         container.appendChild(renderer.domElement);
 
-        // --- 2. TUNNEL OF CHAOS (LINES) ---
+        // --- 2. LIGHTING (Essential for StandardMaterial) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+
+        // Headlamp (attached to camera)
+        const pointLight = new THREE.PointLight(0xffaa00, 20, 30);
+        pointLight.position.set(0, 0, 0); // At camera
+        camera.add(pointLight);
+        scene.add(camera);
+
+        // Deep tunnel lights (Teal/Pink)
+        const light1 = new THREE.PointLight(0x4ecdc4, 10, 50);
+        light1.position.set(10, 5, -50);
+        scene.add(light1);
+
+        const light2 = new THREE.PointLight(0xff6b6b, 10, 50);
+        light2.position.set(-10, -5, -80);
+        scene.add(light2);
+
+
+        // --- 3. TUNNEL OF THREADS ---
         const lineGroup = new THREE.Group();
         scene.add(lineGroup);
 
-        const tunnelLength = 120; // How deep the tunnel goes
-        const lineCount = 80; // Number of "strands"
+        const tunnelLength = 120;
+        const lineCount = 100;
 
-        // Helper to create random curve along Z
         function createChaosCurve(zStart, zEnd) {
             const points = [];
-            const segments = 10;
+            const segments = 15; // Smoother
             const segmentLen = (zStart - zEnd) / segments;
 
             for(let i=0; i<=segments; i++) {
-                // Spiral/Wiggle logic
                 const z = zStart - (i * segmentLen);
-                // Radius varies to create "chambers"
-                const radius = 5 + Math.random() * 15;
-                const angle = i * 0.5 + Math.random();
+                // Organic wiggle
+                const radius = 6 + Math.sin(i*0.5)*2 + Math.random();
+                const angle = i * 0.4 + Math.random() * 0.5;
 
                 points.push(new THREE.Vector3(
                     Math.cos(angle) * radius,
@@ -429,123 +451,126 @@
             return new THREE.CatmullRomCurve3(points);
         }
 
+        // Shared Geometries to save memory? TubeGeo is unique per curve though.
+        // But materials can be shared.
+        const matGold = new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.6, metalness: 0.1 });
+        const matTeal = new THREE.MeshStandardMaterial({ color: 0x4ecdc4, roughness: 0.6, metalness: 0.1 });
+        const matWool = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.9, metalness: 0 }); // Matte
+
         for (let i = 0; i < lineCount; i++) {
             const zStart = 10;
-            const zEnd = -tunnelLength - (Math.random() * 20); // Stagger ends
+            const zEnd = -tunnelLength - (Math.random() * 20);
 
             const curve = createChaosCurve(zStart, zEnd);
-            const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.05 + Math.random()*0.1, 3, false);
+            // Thinner tubes -> Threads
+            const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.03 + Math.random()*0.05, 4, false);
 
-            // Neon Colors: Cyber Blue, Glitch Red, Yarn Gold
+            let mat = matWool;
             const r = Math.random();
-            let color = 0x00ccff; // Blue
-            if(r > 0.7) color = 0xff0055; // Red
-            if(r > 0.9) color = 0xffaa00; // Gold
+            if(r > 0.7) mat = matGold;
+            else if(r > 0.4) mat = matTeal;
 
-            const tubeMat = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: 0.4 + Math.random() * 0.4,
-                wireframe: Math.random() > 0.8 // Some wireframe for tech feel
-            });
-
-            const mesh = new THREE.Mesh(tubeGeo, tubeMat);
+            const mesh = new THREE.Mesh(tubeGeo, mat);
             lineGroup.add(mesh);
         }
 
-        // --- 3. FLOATING DATA BITS (PARTICLES) ---
-        // Instead of books, let's use geometric shapes to represent "Packets"
-        const particlesGeo = new THREE.BufferGeometry();
-        const pCount = 300;
-        const pPos = [];
-        for(let i=0; i<pCount; i++) {
-            pPos.push(
-                (Math.random()-0.5) * 40, // x
-                (Math.random()-0.5) * 40, // y
-                10 - Math.random() * tunnelLength // z (spread along tunnel)
+        // --- 4. FLOATING PARTICLES (Dust/Cotton) ---
+        // Using Sprites for soft blurred look
+        const partGeo = new THREE.BufferGeometry();
+        const partCount = 400;
+        const partPos = [];
+        for(let i=0; i<partCount; i++) {
+            partPos.push(
+                (Math.random()-0.5) * 30,
+                (Math.random()-0.5) * 30,
+                10 - Math.random() * tunnelLength
             );
         }
-        particlesGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
-        const particlesMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.15,
+        partGeo.setAttribute('position', new THREE.Float32BufferAttribute(partPos, 3));
+
+        // Simple circle canvas for texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(16,16,0, 16,16,16);
+        grad.addColorStop(0, 'rgba(255,255,255,1)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,32,32);
+        const texture = new THREE.CanvasTexture(canvas);
+
+        const partMat = new THREE.PointsMaterial({
+            map: texture,
+            size: 0.4,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.6,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
         });
-        const particleSystem = new THREE.Points(particlesGeo, particlesMat);
+        const particleSystem = new THREE.Points(partGeo, partMat);
         scene.add(particleSystem);
 
-        // --- 4. LIGHTING ---
-        // Just ambient, since we use BasicMaterial for neon lines
-        // But let's add point lights that move with camera for fog illumination if we used StandardMaterial
-        // For now, simple is efficient.
 
-        // --- 5. ANIMATION LOOP ---
+        // --- 5. THE DESTINATION (The Core) ---
+        // A dense cluster of light/particles at the end
+        const coreGeo = new THREE.SphereGeometry(1, 32, 32);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffe66d, wireframe: true, transparent: true, opacity: 0.3 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.set(0, 0, -tunnelLength + 5);
+        core.scale.set(10, 10, 10); // Big sphere
+        scene.add(core);
+
+        // Core light
+        const coreLight = new THREE.PointLight(0xffaa00, 30, 40);
+        coreLight.position.set(0, 0, -tunnelLength + 5);
+        scene.add(coreLight);
+
+
+        // --- 6. ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate tunnel slightly for dizziness/chaos
-            lineGroup.rotation.z += 0.0005;
-            particleSystem.rotation.z -= 0.0002;
+            // Rotate tunnel slowly
+            lineGroup.rotation.z += 0.0003;
+            particleSystem.rotation.z -= 0.0001;
+
+            // Pulse the core
+            const scale = 10 + Math.sin(Date.now() * 0.001) * 0.5;
+            core.scale.set(scale, scale, scale);
+            core.rotation.y += 0.002;
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 6. SCROLL INTERACTION (GSAP) ---
+        // --- 7. SCROLL INTERACTION (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
         // A. Camera Flight (The "Dive")
-        // We map scroll 0 -> 100% to Z position 5 -> -100
+        // Stop exactly at the core
         gsap.to(camera.position, {
-            z: -tunnelLength + 20, // Stop before the absolute end to avoid clipping
+            z: -tunnelLength + 18, // Stop slightly before the core center
             ease: "none",
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 0.5 // Smooth scrubbing
+                scrub: 0.5
             }
         });
 
-        // B. Camera Rotation (Twist)
-        gsap.to(camera.rotation, {
-            z: Math.PI / 4, // Slight tilt
-            ease: "none",
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // C. HUD Reveals
-        gsap.utils.toArray(".hud-card").forEach(card => {
+        // B. HUD Reveals
+        gsap.utils.toArray(".craft-card").forEach(card => {
             gsap.from(card, {
                 scrollTrigger: {
                     trigger: card,
                     start: "top 85%",
                     toggleActions: "play none none reverse"
                 },
-                scale: 0.9,
+                y: 50,
                 opacity: 0,
-                filter: "blur(10px)",
                 duration: 0.8,
                 ease: "power2.out"
-            });
-        });
-
-        // D. Mouse Parallax (Subtle)
-        document.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
-            const y = (e.clientY / window.innerHeight - 0.5) * 2;
-
-            gsap.to(camera.position, {
-                x: x * 2,
-                y: -y * 2,
-                duration: 1,
-                overwrite: 'auto' // Don't conflict with scroll too much
             });
         });
 
