@@ -29,7 +29,7 @@
             --c-earth: #8B4513;
             --c-water: #00BFFF;
             --c-electric: #7DF9FF;
-            --c-dark: #111111;
+            --c-dark: #050505;
             --c-concrete: #2a2a2a;
         }
 
@@ -50,270 +50,142 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 600vh; /* Long scroll for heavy feel */
+            height: 800vh; /* Extended for more "flight" time */
             width: 100%;
         }
 
-        /* --- HUD / UI --- */
+        /* --- UI Overlay --- */
         .hud-border {
-            position: fixed;
-            pointer-events: none;
-            z-index: 10;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            width: calc(100% - 40px);
-            height: calc(100% - 40px);
+            position: fixed; pointer-events: none; z-index: 10;
+            border: 2px solid rgba(255, 215, 0, 0.2);
+            width: calc(100% - 40px); height: calc(100% - 40px);
             top: 20px; left: 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 10%, transparent 90%, rgba(0,0,0,0.8) 100%);
         }
-        .hud-border::before {
-            content: "SYSTEM: ONLINE";
-            position: absolute; top: -10px; left: 20px;
-            background: var(--c-dark);
-            padding: 0 10px;
-            color: var(--c-safety);
-            font-family: 'Black Ops One';
-            font-size: 0.8rem;
-        }
-        .hud-corner {
-            position: absolute; width: 20px; height: 20px;
-            border: 4px solid var(--c-safety);
-        }
-        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-        .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
-        .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
-        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
-        /* --- Typography --- */
         .hero-title {
             position: fixed; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             font-family: 'Black Ops One', cursive;
-            font-size: clamp(3rem, 10vw, 8rem);
+            font-size: clamp(3rem, 12vw, 10rem);
             color: transparent;
             -webkit-text-stroke: 2px var(--c-safety);
             text-align: center;
-            z-index: 5;
-            pointer-events: none;
+            z-index: 5; pointer-events: none;
             white-space: nowrap;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
         }
-        .hero-title.fill {
-            color: var(--c-safety);
-            -webkit-text-stroke: 0;
-            opacity: 0; /* Animated by GSAP */
-        }
+        .hero-title.fill { color: var(--c-safety); -webkit-text-stroke: 0; opacity: 0; mix-blend-mode: overlay; }
 
-        .hero-subtitle {
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.5rem;
-            background: var(--c-safety);
-            color: #000;
-            padding: 5px 15px;
-            margin-top: 20px;
-            display: inline-block;
-            font-weight: 700;
-            transform: skew(-10deg);
-        }
-
-        /* --- Content Panels --- */
+        /* --- Cards --- */
         .panel {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            opacity: 0;
-            z-index: 20;
-            padding: 20px;
-            box-sizing: border-box;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; opacity: 0; z-index: 20; padding: 20px;
         }
 
         .card {
-            background: rgba(10, 10, 10, 0.85);
-            border: 2px solid var(--c-safety);
-            padding: 2rem;
-            max-width: 500px;
-            width: 100%;
-            position: relative;
-            backdrop-filter: blur(10px);
+            background: rgba(10, 10, 10, 0.8);
+            border-left: 5px solid var(--c-safety);
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            border-right: 1px solid #333;
+            padding: 2.5rem;
+            max-width: 500px; width: 100%;
+            backdrop-filter: blur(5px);
             pointer-events: auto;
-            box-shadow: 10px 10px 0px var(--c-safety);
-            transform: skew(-2deg);
+            transform: skew(-5deg);
+            box-shadow: 15px 15px 0px rgba(255, 215, 0, 0.1);
         }
 
         .card h2 {
-            font-family: 'Black Ops One';
-            color: var(--c-safety);
-            margin: 0 0 1rem 0;
-            font-size: 2rem;
-            text-transform: uppercase;
-            border-bottom: 1px dashed #555;
-            padding-bottom: 0.5rem;
+            font-family: 'Black Ops One'; color: var(--c-safety);
+            margin: 0 0 1rem 0; font-size: 2.5rem; text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
+        .card p { font-size: 1.2rem; line-height: 1.8; color: #ddd; transform: skew(5deg); }
 
-        .card p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: #ccc;
-        }
-
-        .card .highlight {
-            color: var(--c-water);
-            font-weight: bold;
-        }
-        .card .highlight-elec {
-            color: var(--c-electric);
-            font-weight: bold;
-            text-shadow: 0 0 5px var(--c-electric);
-        }
-
-        /* Visual Elements floating near cards */
-        .float-img {
-            position: absolute;
-            width: 200px;
-            border: 5px solid #fff;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            z-index: 25;
-            opacity: 0; /* Controlled by GSAP */
-        }
+        .highlight { color: #fff; background: rgba(255, 215, 0, 0.2); padding: 0 5px; }
 
         /* Back Button */
         .back-btn {
             position: fixed; top: 30px; left: 30px;
-            color: var(--c-safety);
-            font-family: 'Black Ops One';
-            text-decoration: none;
-            font-size: 1.2rem;
-            z-index: 100;
-            border: 1px solid var(--c-safety);
-            padding: 10px 20px;
-            background: rgba(0,0,0,0.8);
-            transition: all 0.3s;
-            pointer-events: auto;
-        }
-        .back-btn:hover {
-            background: var(--c-safety);
-            color: #000;
+            color: var(--c-safety); font-family: 'Black Ops One'; text-decoration: none;
+            font-size: 1.2rem; z-index: 100;
+            border: 1px solid var(--c-safety); padding: 10px 20px;
+            background: rgba(0,0,0,0.8); pointer-events: auto;
         }
 
-        /* --- Finale --- */
+        /* Finale */
         #finale {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-dark);
-            z-index: 99;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transform: translateY(100%);
-            transition: transform 0.5s ease-out;
-            pointer-events: auto;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-dark); z-index: 99;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
         }
-        #finale.active {
-            transform: translateY(0);
-        }
+        #finale.active { opacity: 1; pointer-events: auto; }
 
         .avatar-circle {
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            border: 5px solid var(--c-safety);
-            overflow: hidden;
-            margin-bottom: 2rem;
-            box-shadow: 0 0 30px var(--c-safety);
+            width: 250px; height: 250px; border-radius: 50%;
+            border: 8px solid var(--c-safety); overflow: hidden; margin-bottom: 2rem;
+            box-shadow: 0 0 50px var(--c-safety);
+            animation: pulse 2s infinite;
         }
+        @keyframes pulse { 0% { box-shadow: 0 0 30px var(--c-safety); } 50% { box-shadow: 0 0 60px var(--c-safety); } 100% { box-shadow: 0 0 30px var(--c-safety); } }
         .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
 
-        .social-links {
-            display: flex; gap: 2rem;
-            margin-top: 2rem;
-        }
-        .social-icon {
-            font-size: 3rem;
-            color: #fff;
-            transition: all 0.3s;
-        }
-        .social-icon:hover {
-            color: var(--c-safety);
-            transform: scale(1.2) rotate(10deg);
-            text-shadow: 0 0 20px var(--c-safety);
-        }
-
-        /* Loading Overlay */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 999;
-            display: flex; justify-content: center; align-items: center;
-            color: var(--c-safety); font-family: 'Black Ops One'; font-size: 2rem;
-        }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .hero-title { font-size: 12vw; white-space: normal; line-height: 1; }
-            .card { padding: 1.5rem; width: 90%; }
-            .float-img { width: 120px; }
-        }
+        .social-links a { color: #fff; font-size: 3rem; margin: 0 1rem; transition: 0.3s; }
+        .social-links a:hover { color: var(--c-safety); transform: scale(1.2); text-shadow: 0 0 20px var(--c-safety); }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">INITIALIZING SITE...</div>
     <a href="/guild/" class="back-btn">GUILD // EXIT</a>
     <div id="webgl-container"></div>
     <div id="scroll-spacer"></div>
 
-    <div class="hud-border">
-        <div class="hud-corner tl"></div>
-        <div class="hud-corner tr"></div>
-        <div class="hud-corner bl"></div>
-        <div class="hud-corner br"></div>
-    </div>
+    <div class="hud-border"></div>
 
-    <!-- Hero Title -->
+    <!-- Hero -->
     <div class="hero-title" id="hero-outline">CONSTRUCTION<br>MAGE</div>
     <div class="hero-title fill" id="hero-fill">CONSTRUCTION<br>MAGE</div>
-    <div style="position: fixed; top: 60%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 6; opacity: 0;" id="hero-name">
-        <div class="hero-subtitle">XMASFUN // SITE MANAGER</div>
-    </div>
 
-    <!-- Panel 1: Intro + Excavator -->
-    <div class="panel" id="panel-1">
-        <div class="card" style="margin-right: auto; margin-left: 10%;">
-            <h2>// Site Manager</h2>
-            <p>目前在營造公司擔任工地主任，從業 8 年。</p>
-            <p>喜歡<span class="highlight">實作</span>跟<span class="highlight">重機械</span>，會開怪手、吊車還有自走車。</p>
-            <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 1rem;">*雖然差一點就考到證照了 🥺</p>
+    <!-- Panel 1: Machinery -->
+    <div class="panel" id="panel-1" style="justify-content: flex-start; padding-left: 10%;">
+        <div class="card">
+            <h2>// Heavy Gear</h2>
+            <p><strong>工地主任</strong> / <strong>重機械操作員</strong></p>
+            <p>喜歡實作與重型機械的浪漫。<br>會開怪手、吊車、自走車。</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: #888;">(雖然差一點就考到證照了...)</p>
         </div>
-        <img src="/assets/img/guild/xmasfun689/excavator.webp" class="float-img" style="right: 10%; top: 20%; transform: rotate(5deg);">
     </div>
 
-    <!-- Panel 2: Skills (Water/Elec/Earth) -->
-    <div class="panel" id="panel-2">
-        <div class="card" style="margin-left: auto; margin-right: 10%;">
-            <h2>// Triple Threat</h2>
-            <p>朋友都說我是 <span style="color:var(--c-water)">水</span> & <span class="highlight-elec">電</span> & <span style="color:var(--c-earth)">土</span> 系混合法師。</p>
-            <p>擁有水電證照，斜槓水電工。</p>
-            <div style="margin-top: 1rem; display: flex; gap: 10px;">
-                <i class="fa-solid fa-bolt" style="color: var(--c-electric); font-size: 1.5rem;"></i>
-                <i class="fa-solid fa-droplet" style="color: var(--c-water); font-size: 1.5rem;"></i>
-                <i class="fa-solid fa-cubes" style="color: var(--c-earth); font-size: 1.5rem;"></i>
+    <!-- Panel 2: Elements -->
+    <div class="panel" id="panel-2" style="justify-content: flex-end; padding-right: 10%;">
+        <div class="card">
+            <h2>// Elemental</h2>
+            <p>朋友口中的 <strong style="color:var(--c-water)">水</strong> & <strong style="color:var(--c-electric)">電</strong> & <strong style="color:var(--c-earth)">土</strong> 三系法師。</p>
+            <p>擁有水電證照的斜槓水電工。</p>
+            <div style="margin-top:1rem; font-size: 2rem; display: flex; gap: 1rem;">
+                <i class="fa-solid fa-bolt" style="color:var(--c-electric)"></i>
+                <i class="fa-solid fa-droplet" style="color:var(--c-water)"></i>
+                <i class="fa-solid fa-cubes" style="color:var(--c-earth)"></i>
             </div>
         </div>
-        <img src="/assets/img/guild/xmasfun689/roller.webp" class="float-img" style="left: 10%; bottom: 20%; transform: rotate(-5deg);">
     </div>
 
-    <!-- Panel 3: Warrior/Personal -->
+    <!-- Panel 3: Personal -->
     <div class="panel" id="panel-3">
-        <div class="card">
-            <h2>// Warrior Build</h2>
-            <p>雖然被說是法師，但我自己覺得應該是<span style="color: #ff4444; font-weight: bold;">戰士類</span>。</p>
-            <p>畢竟我從小胖到現在……擁有厚實的 HP 條。</p>
-            <hr style="border-color: #333; margin: 1.5rem 0;">
-            <p>最愛的兩個夥伴：猴子布偶 & Kururu 曹長。</p>
-            <p>遊戲偏好：召喚師 (因為習慣一個人玩)。</p>
+        <div class="card" style="text-align: center; max-width: 600px;">
+            <h2>// Warrior Soul</h2>
+            <p>雖然被說是法師，但擁有<strong>戰士的體質</strong>。</p>
+            <p>從小胖到現在，HP 條極厚。</p>
+            <hr style="border-color: #444; margin: 2rem 0;">
+            <p>喜歡 <strong>猴子布偶</strong> & <strong>Kururu 曹長</strong></p>
+            <p>遊戲偏好：召喚師 (Solo Player)</p>
         </div>
-        <img src="/assets/img/guild/xmasfun689/plushies.webp" class="float-img" style="top: -10%; right: -5%; border-radius: 50%; width: 150px;">
     </div>
 
     <!-- Finale -->
@@ -321,15 +193,12 @@
         <div class="avatar-circle">
             <img src="/assets/img/guild/xmasfun689/avatar.webp" alt="Avatar">
         </div>
-        <h2 style="font-family: 'Black Ops One'; font-size: 3rem; color: var(--c-safety); margin: 0;">XMASFUN</h2>
-        <p style="color: #888;">CONSTRUCTION MAGE // LEVEL 8</p>
-
+        <h1 style="font-family: 'Black Ops One'; font-size: 4rem; color: var(--c-safety); margin: 0; text-transform: uppercase;">XmasFun</h1>
+        <p style="font-family: 'Oswald'; font-size: 1.5rem; letter-spacing: 0.5em; color: #888; margin-bottom: 2rem;">SITE MANAGER // LEVEL 8</p>
         <div class="social-links">
-            <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.threads.net/@xmasfun689" target="_blank"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/xmasfun689/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
         </div>
-
-        <p style="margin-top: 3rem; font-size: 0.8rem; color: #444;">Made with love by SuperGalen's Dungeon</p>
     </div>
 
     <script type="module">
@@ -338,108 +207,103 @@
         // --- Init ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111);
-        scene.fog = new THREE.FogExp2(0x111111, 0.02); // Dense fog for atmosphere
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x050505, 0.015);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1, 5);
+        camera.position.set(0, 2, 10);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xFFD700, 2, 50); // Construction Yellow Light
-        pointLight.position.set(2, 5, 2);
-        scene.add(pointLight);
-
-        const blueLight = new THREE.PointLight(0x00BFFF, 1.5, 50); // Water/Magic Blue
-        blueLight.position.set(-2, 3, -5);
-        scene.add(blueLight);
+        // --- Assets ---
+        const textureLoader = new THREE.TextureLoader();
+        const texExcavator = textureLoader.load('/assets/img/guild/xmasfun689/excavator.webp');
+        const texRoller = textureLoader.load('/assets/img/guild/xmasfun689/roller.webp');
+        const texPlushies = textureLoader.load('/assets/img/guild/xmasfun689/plushies.webp');
 
         // --- Objects ---
 
-        // 1. Ground (Rough Terrain)
-        const groundGeo = new THREE.PlaneGeometry(100, 400, 50, 200);
-        // Deform vertices for roughness
-        const posAttribute = groundGeo.attributes.position;
-        for (let i = 0; i < posAttribute.count; i++) {
-            const z = posAttribute.getZ(i);
-            // Random height map
-            posAttribute.setZ(i, z + Math.random() * 0.5);
-        }
-        groundGeo.computeVertexNormals();
+        // 1. Grid Floor (Infinite Construction Site)
+        const gridHelper = new THREE.GridHelper(200, 100, 0x333333, 0x111111);
+        scene.add(gridHelper);
 
-        const groundMat = new THREE.MeshStandardMaterial({
-            color: 0x2a2a2a,
-            roughness: 0.9,
-            metalness: 0.1,
-            wireframe: true // Matrix style grid
+        // Hazard Stripes on Floor
+        const planeGeo = new THREE.PlaneGeometry(200, 200);
+        const planeMat = new THREE.MeshBasicMaterial({ color: 0x050505, side: THREE.DoubleSide }); // Dark floor to hide below grid
+        const floor = new THREE.Mesh(planeGeo, planeMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.1;
+        scene.add(floor);
+
+        // 2. Heavy Machinery (Floating Planes)
+        function createSpritePlane(texture, width, height, x, y, z) {
+            const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+            const geo = new THREE.PlaneGeometry(width, height);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            scene.add(mesh);
+            return mesh;
+        }
+
+        const excavator = createSpritePlane(texExcavator, 12, 12, 5, 4, -20);
+        const roller = createSpritePlane(texRoller, 10, 10, -5, 3, -25); // Start hidden further back
+        const plushies = createSpritePlane(texPlushies, 8, 8, 0, 3, -100);
+
+        // 3. Elemental Groups
+        const earthGroup = new THREE.Group();
+        const waterGroup = new THREE.Group();
+        const thunderGroup = new THREE.Group();
+        scene.add(earthGroup);
+        scene.add(waterGroup);
+        scene.add(thunderGroup);
+
+        // Earth: Floating Rocks
+        const rockGeo = new THREE.IcosahedronGeometry(1, 0);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.9, flatShading: true });
+        for(let i=0; i<15; i++) {
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.set((Math.random()-0.5)*30, Math.random()*10, -40 + (Math.random()*20));
+            rock.scale.setScalar(0.5 + Math.random());
+            rock.rotation.set(Math.random(), Math.random(), Math.random());
+            earthGroup.add(rock);
+        }
+
+        // Water: Bubbles
+        const bubbleGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const bubbleMat = new THREE.MeshPhysicalMaterial({
+            color: 0x00BFFF, transmission: 0.9, opacity: 1, transparent: true, roughness: 0, metalness: 0.1
         });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.z = -100; // Extend far back
-        scene.add(ground);
-
-        // 2. Particles (Rain + Dust)
-        const particlesCount = 2000;
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(particlesCount * 3);
-        const pCol = new Float32Array(particlesCount * 3);
-
-        for(let i=0; i<particlesCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 50; // x
-            pPos[i*3+1] = Math.random() * 20;       // y
-            pPos[i*3+2] = (Math.random() - 0.5) * 200; // z
-
-            const type = Math.random();
-            if(type > 0.6) { // Water (Blue)
-                pCol[i*3] = 0.0; pCol[i*3+1] = 0.7; pCol[i*3+2] = 1.0;
-            } else if (type > 0.3) { // Earth (Brown)
-                pCol[i*3] = 0.5; pCol[i*3+1] = 0.3; pCol[i*3+2] = 0.1;
-            } else { // Spark (Yellow/White)
-                pCol[i*3] = 1.0; pCol[i*3+1] = 1.0; pCol[i*3+2] = 0.0;
-            }
-        }
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
-
-        const pMat = new THREE.PointsMaterial({
-            size: 0.1, vertexColors: true, transparent: true, opacity: 0.8
-        });
-        const particleSystem = new THREE.Points(pGeo, pMat);
-        scene.add(particleSystem);
-
-        // 3. Magic Circles (Torus) - "Summoner" aspect
-        const ringsGroup = new THREE.Group();
-        scene.add(ringsGroup);
-
-        function createRing(radius, color, zPos) {
-            const geo = new THREE.TorusGeometry(radius, 0.05, 16, 100);
-            const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.5 });
-            const ring = new THREE.Mesh(geo, mat);
-            ring.position.z = zPos;
-            ringsGroup.add(ring);
-            return ring;
+        for(let i=0; i<30; i++) {
+            const bubble = new THREE.Mesh(bubbleGeo, bubbleMat);
+            bubble.position.set((Math.random()-0.5)*20, Math.random()*15, -45 + (Math.random()*15));
+            waterGroup.add(bubble);
         }
 
-        const ring1 = createRing(3, 0x00BFFF, -10);
-        const ring2 = createRing(5, 0xFFD700, -30);
-        const ring3 = createRing(2, 0x7DF9FF, -50);
+        // Thunder: Lightning Bolts (Lines)
+        // We will create dynamic lightning in animation loop, but here is static "energy"
+        const lightningGeo = new THREE.BufferGeometry();
+        const lightningCount = 50;
+        const lPos = new Float32Array(lightningCount * 3);
+        // ... just random points for now, updated in loop
+        lightningGeo.setAttribute('position', new THREE.BufferAttribute(lPos, 3));
+        const lightningMat = new THREE.PointsMaterial({ color: 0x7DF9FF, size: 0.5, transparent: true });
+        const lightning = new THREE.Points(lightningGeo, lightningMat);
+        lightning.position.z = -50;
+        thunderGroup.add(lightning);
 
-        // --- GSAP Scroll Logic ---
+        // Lights
+        const light = new THREE.PointLight(0xFFD700, 2, 50);
+        light.position.set(0, 10, 10);
+        scene.add(light);
+        const ambient = new THREE.AmbientLight(0x404040, 2); // Brighter ambient
+        scene.add(ambient);
+
+        // --- GSAP Timeline ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Loader
-        window.onload = () => {
-            gsap.to("#loader", { opacity: 0, duration: 1, onComplete: () => document.getElementById("loader").remove() });
-        };
-
-        // Main Timeline
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "#scroll-spacer",
@@ -449,63 +313,47 @@
             }
         });
 
-        // 1. Camera Movement (Travel through the tunnel/site)
-        tl.to(camera.position, { z: -80, ease: "none" }, 0);
+        // 0. Hero (Fade out)
+        tl.to(["#hero-outline", "#hero-fill"], { opacity: 0, scale: 2, z: 100, duration: 0.5 }); // Fly into text
 
-        // 2. Hero Text Fade Out
-        tl.to(["#hero-outline", "#hero-fill", "#hero-name"], { opacity: 0, scale: 0.8, duration: 0.05 }, 0);
+        // 1. Move to Machinery Section (z: 0 -> -20)
+        tl.to(camera.position, { z: -15, ease: "none", duration: 2 });
+        // Animate Excavator
+        tl.fromTo(excavator.position, { x: 20 }, { x: 5, ease: "power2.out", duration: 2 }, "<");
+        tl.fromTo(excavator.rotation, { y: Math.PI/2 }, { y: -0.2, duration: 2 }, "<");
 
-        // 3. Ground movement (Parallax)
-        tl.to(ground.position, { z: 50, ease: "none" }, 0);
+        // Panel 1 Reveal
+        tl.to("#panel-1", { opacity: 1, duration: 0.5 }, "-=1.5");
+        tl.to("#panel-1", { opacity: 0, duration: 0.5 }, "-=0.5");
 
-        // 4. Particle movement
-        tl.to(particleSystem.rotation, { z: 2, ease: "none" }, 0);
+        // 2. Move to Elemental Section (z: -15 -> -45)
+        tl.to(camera.position, { z: -40, ease: "none", duration: 2 });
+        // Roller enters from left
+        tl.fromTo(roller.position, { x: -20, z: -40 }, { x: -6, z: -35, ease: "power2.out", duration: 2 }, "<");
+        tl.to(roller.rotation, { y: 0.5, duration: 2 }, "<");
 
-        // --- Content Reveals ---
-        // Helper
-        function setupPanel(id, start, end) {
-            // Card
-            gsap.fromTo(`${id} .card`,
-                { opacity: 0, y: 50, rotationY: 45 },
-                {
-                    opacity: 1, y: 0, rotationY: 0,
-                    scrollTrigger: { trigger: "#scroll-spacer", start: `${start}% top`, end: `${start+5}% top`, scrub: 1 }
-                }
-            );
-            gsap.to(`${id} .card`, {
-                opacity: 0, y: -50,
-                scrollTrigger: { trigger: "#scroll-spacer", start: `${end-5}% top`, end: `${end}% top`, scrub: 1 }
-            });
+        // Reveal Elements
+        tl.from(earthGroup.position, { y: -20, duration: 1 }, "<"); // Rocks rise
+        tl.from(waterGroup.scale, { x:0, y:0, z:0, duration: 1 }, "<0.5"); // Bubbles expand
 
-            // Image
-            gsap.fromTo(`${id} .float-img`,
-                { opacity: 0, scale: 0.5, x: 100 },
-                {
-                    opacity: 1, scale: 1, x: 0,
-                    scrollTrigger: { trigger: "#scroll-spacer", start: `${start}% top`, end: `${start+5}% top`, scrub: 1 }
-                }
-            );
-            gsap.to(`${id} .float-img`, {
-                opacity: 0, scale: 0.5, x: -100,
-                scrollTrigger: { trigger: "#scroll-spacer", start: `${end-5}% top`, end: `${end}% top`, scrub: 1 }
-            });
-        }
+        // Panel 2 Reveal
+        tl.to("#panel-2", { opacity: 1, duration: 0.5 }, "-=1.5");
+        tl.to("#panel-2", { opacity: 0, duration: 0.5 }, "-=0.5");
 
-        // Hero Init
-        gsap.to("#hero-fill", { opacity: 1, duration: 1, repeat: -1, yoyo: true });
-        gsap.to("#hero-name", { opacity: 1, delay: 0.5, duration: 1 });
+        // 3. Move to Personal Section (z: -40 -> -90)
+        tl.to(camera.position, { z: -85, ease: "none", duration: 2 });
 
-        setupPanel("#panel-1", 10, 30);
-        setupPanel("#panel-2", 35, 60);
-        setupPanel("#panel-3", 65, 85);
+        // Plushies Appear
+        tl.fromTo(plushies.position, { y: 20, z: -100 }, { y: 3, z: -90, duration: 2 }, "<");
+        tl.to(plushies.rotation, { z: 0.2, yoyo: true, repeat: 3, duration: 0.5 }, "<");
 
-        // Finale
-        ScrollTrigger.create({
-            trigger: "#scroll-spacer",
-            start: "95% bottom",
-            onEnter: () => document.getElementById("finale").classList.add("active"),
-            onLeaveBack: () => document.getElementById("finale").classList.remove("active")
-        });
+        // Panel 3 Reveal
+        tl.to("#panel-3", { opacity: 1, duration: 0.5 }, "-=1.5");
+        tl.to("#panel-3", { opacity: 0, duration: 0.5 }, "-=0.5");
+
+        // 4. Finale (Avatar)
+        tl.to("#finale", { opacity: 1, pointerEvents: "auto", duration: 1 });
+
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
@@ -513,18 +361,39 @@
         function animate() {
             const t = clock.getElapsedTime();
 
-            // Rotate rings
-            ring1.rotation.z = t * 0.5;
-            ring2.rotation.z = -t * 0.3;
-            ring3.rotation.x = t;
+            // Hover effects
+            excavator.position.y = 4 + Math.sin(t) * 0.2;
+            roller.position.y = 3 + Math.sin(t + 1) * 0.2;
+            plushies.position.y = 3 + Math.sin(t + 2) * 0.3;
 
-            // Camera shake (Subtle)
-            camera.position.x = Math.sin(t * 10) * 0.02;
-            camera.position.y = 1 + Math.cos(t * 12) * 0.02;
+            // Rotate Elements
+            earthGroup.children.forEach((rock, i) => {
+                rock.rotation.x += 0.01;
+                rock.rotation.y += 0.02;
+            });
+            waterGroup.children.forEach((b, i) => {
+                b.position.y += Math.sin(t + i) * 0.02;
+            });
+
+            // Lightning Flash (Simple)
+            if (Math.random() > 0.95) {
+                lightningMat.opacity = 1;
+                lightningMat.color.setHex(0xFFFFFF);
+                // Scramble positions
+                const positions = lightningGeo.attributes.position.array;
+                for(let i=0; i<lightningCount*3; i+=3) {
+                    positions[i] = (Math.random()-0.5)*20;
+                    positions[i+1] = Math.random()*20;
+                    positions[i+2] = (Math.random()-0.5)*10;
+                }
+                lightningGeo.attributes.position.needsUpdate = true;
+            } else {
+                lightningMat.opacity *= 0.9; // Fade out
+                lightningMat.color.setHex(0x7DF9FF);
+            }
 
             renderer.render(scene, camera);
         }
-
         gsap.ticker.add(animate);
 
         // Resize
