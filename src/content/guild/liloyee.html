@@ -357,9 +357,7 @@
         </button>
     </div>
 
-    <audio id="bgm" loop>
-        <source src="/assets/audio/underwater.mp3" type="audio/mpeg">
-    </audio>
+    <!-- Audio Context managed via JS for seamless looping -->
 
     <!-- Modals -->
     <div id="lightbox"><img src="" alt="Full Image"></div>
@@ -442,12 +440,34 @@
 
         // --- CONTENT DATA ---
         const contentMap = {
-            0: { title: "我是誰?", text: "喲呼 (｀・ω・´)ゞ<br>我是一名畢業於社會心理系的學生，是個馬來西亞人。<br>目前是一名奧數數學老師，也非常熱愛過去就讀的社會學和心理學相關的知識🤩" },
-            3: { title: "我的夢想", text: "這輩子最想要成為一名作家✏️<br>我想把畢生的經歷都用溫柔幽默的文字寫下，想把故事哼成一首一首的曲子，讓我的故事不止能被看見還能用聲音走進大家的心裡❤️" },
-            5: { title: "多夢症候群", text: "多夢症讓我經常在夢裡旅行。<br>夢裡的世界有顏色、有觸覺、有溫度、有痛覺。<br>每次睡覺會像抽盲盒一樣好玩喔！🤣" },
-            8: { title: "關於解夢", text: "我有自己研究解夢和人格分析，會從夢境情緒、場景、生活環境和近況分析個人狀態。<br>對我而言都是好玩有趣有意義的事🥰" },
-            12: { title: "幸運 S 級", text: "我運氣非常好🍀<br>這輩子抽過手機、耳機，也沒遇到過壞朋友。<br>可能日子偶爾有點挑戰，但總會有些幸運幸福的好事❣️" },
-            15: { title: "興趣愛好", text: "矮矮偏日系還有點動漫宅，也喜歡做手帳、寫日記、整理東西、裝扮、唱歌。<br>還有我最最最喜歡史迪奇了💙" }
+            0: {
+                title: "關於我 (About Me)",
+                text: "喲呼 (｀・ω・´)ゞ<br>來自馬來西亞的社會心理系畢業生，目前是奧數老師。<br>理性邏輯與感性知識的混合體，熱愛社會學與心理學。<br>雖然人生規劃有變，但目前非常享受「老師」這個療癒的身分👩🏻‍🏫"
+            },
+            3: {
+                title: "作家夢 (Writer Dream)",
+                text: "這輩子最大的願望是用溫柔幽默的文字，寫下畢生的經歷。<br>想把故事哼成曲子，讓聲音走進大家的心裡❤️<br>矮矮偏日系還有點動漫宅，最喜歡史迪奇了💙"
+            },
+            5: {
+                title: "多夢症候群",
+                text: "夢裡的世界有顏色、觸覺、溫度甚至痛覺。<br>每天睡覺都像開盲盒一樣精彩！<br>不怕鬼，家裡還收藏科幻故事喔👽"
+            },
+            8: {
+                title: "✨ 服務：解夢分析",
+                text: "結合心理學專業與天賦，為你分析夢境情緒、場景與生活狀態。<br>這是我覺得最好玩也最有意義的事！<br>想了解潛意識狀態？歡迎來找我🥰"
+            },
+            11: {
+                title: "✨ 價值：溫柔陪伴",
+                text: "曾任自閉症陪讀、參與無數社團與義工活動。<br>我擅長與小朋友相處，也想成為溫暖的助人工作者。<br>希望能成為你生活中的小幸運🍀"
+            },
+            14: {
+                title: "幸運 S 級",
+                text: "從小到大抽獎運爆棚（手機、耳機都中過！）。<br>雖然生活有挑戰，但總能遇到好人好事。<br>就像今天遇見你一樣❣️"
+            },
+            17: {
+                title: "終極宗旨",
+                text: "「希望成為天上的天使前，也可以是人間的天使。」🧚🏻‍♀️"
+            }
         };
 
         const galleryImages = [];
@@ -961,15 +981,49 @@
             });
         });
 
+        // --- AUDIO SYSTEM (Web Audio API for Seamless Loop) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioBuffer = null;
+        let audioSource = null;
+        let gainNode = null;
+
+        async function initAudio() {
+            try {
+                const response = await fetch('/assets/audio/underwater.mp3');
+                const arrayBuffer = await response.arrayBuffer();
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            } catch (e) {
+                console.warn("Audio load failed:", e);
+            }
+        }
+        initAudio(); // Start loading immediately
+
+        function playSeamlessAudio() {
+            if (!audioBuffer) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            audioSource = audioCtx.createBufferSource();
+            audioSource.buffer = audioBuffer;
+            audioSource.loop = true; // Gapless looping
+
+            gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.2;
+
+            audioSource.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            audioSource.start(0);
+        }
+
         // --- INTRO & UI CLOSERS ---
         document.getElementById('enter-btn').addEventListener('click', () => {
             const overlay = document.getElementById('intro-overlay');
             overlay.style.opacity = '0';
             setTimeout(() => overlay.remove(), 1000);
 
-            const audio = document.getElementById('bgm');
-            audio.volume = 0.2;
-            audio.play().catch(e => console.log("Audio play failed", e));
+            // Play Audio
+            playSeamlessAudio();
 
             gsap.to('#canvas-container', { opacity: 1, duration: 2 });
         });
