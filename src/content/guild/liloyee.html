@@ -559,6 +559,19 @@
             return new THREE.CanvasTexture(canvas);
         }
 
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 221, 0, 1)');
+            gradient.addColorStop(0.5, 'rgba(255, 221, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
         // --- TREASURES CONFIG ---
         const treasures = [];
         const treasureTypes = [
@@ -584,7 +597,7 @@
         ];
 
         // --- TREASURE CHEST (SPRITE) ---
-        let chestSprite;
+        let chestSprite, chestGlowSprite;
         let isChestOpen = false;
         let chestTexClosed, chestTexOpen;
 
@@ -601,6 +614,24 @@
             chestSprite.scale.set(8, 8, 1);
             chestSprite.name = 'ChestSprite';
             scene.add(chestSprite);
+
+            // Chest Glow
+            const glowTex = createGlowTexture();
+            const glowMat = new THREE.SpriteMaterial({
+                map: glowTex,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+            chestGlowSprite = new THREE.Sprite(glowMat);
+            chestGlowSprite.position.copy(chestSprite.position);
+            chestGlowSprite.position.z -= 0.5; // Slightly behind
+            chestGlowSprite.scale.set(15, 15, 1);
+            scene.add(chestGlowSprite);
+
+            // Pulse Glow
+            gsap.to(chestGlowSprite.scale, { x: 18, y: 18, duration: 1.5, yoyo: true, repeat: -1, ease: "sine.inOut" });
+            gsap.to(chestGlowSprite.material, { opacity: 0.2, duration: 1.5, yoyo: true, repeat: -1, ease: "sine.inOut" });
 
             // 2. Cache Treasure Textures
             treasureTypes.forEach(t => {
