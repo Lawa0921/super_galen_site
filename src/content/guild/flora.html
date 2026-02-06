@@ -7,17 +7,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Updated to 6.5.1 for Threads Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            /* Palette Refresh */
-            --c-bg: #2B331F; /* Deep Forest Green (Richer) */
-            --c-bg-transparent: rgba(43, 51, 31, 0.85);
-            --c-text: #FDFCF5; /* Vanilla Cream */
-            --c-brand: #A4C639; /* Brighter Olive / Chartreuse */
-            --c-gold: #E5C558; /* Soft Gold */
-            --c-dim: rgba(253, 252, 245, 0.6);
+            /* Palette Refresh: Cream & Matcha (Light Theme) */
+            --c-bg: #F9F7F2; /* Warm Vanilla Paper */
+            --c-bg-transparent: rgba(255, 255, 255, 0.65); /* Frosted Glass */
+            --c-text: #5D4037; /* Dark Roast Coffee */
+            --c-text-light: #8D6E63; /* Milk Coffee */
+
+            --c-brand: #78866B; /* Sage Green (Muted Olive) */
+            --c-accent: #A4C639; /* Fresh Matcha (Highlights) */
+            --c-warm: #D4A373; /* Caramel / Gold */
+            --c-berry: #C27867; /* Dried Berry (Pop color) */
 
             --font-display: 'Cinzel', serif;
             --font-body: 'Noto Serif TC', serif;
@@ -36,7 +40,13 @@
             overflow-x: hidden;
             opacity: 0;
             transition: opacity 1s ease;
-            cursor: crosshair; /* Fallback */
+            cursor: crosshair;
+        }
+
+        /* Selection Color */
+        ::selection {
+            background: var(--c-brand);
+            color: white;
         }
 
         /* Custom "Whisk" Cursor Effect */
@@ -49,9 +59,8 @@
             transform: translate(-50%, -50%);
             opacity: 0;
             transition: opacity 0.2s;
-            mix-blend-mode: overlay;
-            color: var(--c-gold);
-            text-shadow: 0 0 10px var(--c-brand);
+            mix-blend-mode: multiply; /* Better for light bg */
+            color: var(--c-brand);
         }
 
         body:hover #custom-cursor-follower {
@@ -67,10 +76,10 @@
             position: fixed;
             top: 0; left: 0;
             height: 6px;
-            background: linear-gradient(90deg, var(--c-brand), var(--c-gold));
+            background: linear-gradient(90deg, var(--c-brand), var(--c-warm));
             width: 0%;
             z-index: 1000;
-            box-shadow: 0 0 10px var(--c-brand);
+            box-shadow: 0 2px 10px rgba(120, 134, 107, 0.3);
             border-radius: 0 4px 4px 0;
         }
 
@@ -81,7 +90,6 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            /* No opacity on canvas itself, we control scene transparency */
         }
 
         main {
@@ -114,7 +122,8 @@
             color: var(--c-brand);
             text-align: center;
             margin-bottom: 0.5rem;
-            text-shadow: 0 0 30px rgba(164, 198, 57, 0.2);
+            /* Softer shadow for light theme */
+            text-shadow: 2px 2px 0px rgba(164, 198, 57, 0.2);
             position: relative;
             display: inline-block;
         }
@@ -122,7 +131,7 @@
         h2 {
             font-size: clamp(2rem, 5vw, 4rem);
             margin-bottom: 3rem;
-            color: var(--c-gold);
+            color: var(--c-brand);
             text-transform: uppercase;
             letter-spacing: 0.1em;
             text-align: center;
@@ -134,13 +143,13 @@
             display: block;
             width: 60px;
             height: 3px;
-            background: var(--c-brand);
+            background: var(--c-warm);
             margin: 1rem auto 0;
         }
 
         h3 {
             font-size: 1.5rem;
-            color: var(--c-brand);
+            color: var(--c-text);
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
@@ -151,26 +160,30 @@
             font-size: 1.15rem;
             line-height: 2;
             margin-bottom: 1.5rem;
-            color: rgba(253, 252, 245, 0.9);
-            font-weight: 300;
+            color: var(--c-text-light);
+            font-weight: 400;
         }
 
         .highlight {
-            color: var(--c-brand);
+            color: var(--c-berry);
             font-weight: 700;
+            background: linear-gradient(120deg, rgba(194, 120, 103, 0.1) 0%, rgba(194, 120, 103, 0) 100%);
+            padding: 0 4px;
         }
 
         /* Layout Utilities */
         .glass-panel {
             background: var(--c-bg-transparent);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(164, 198, 57, 0.3);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             padding: 3rem;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            /* Soft, paper-like shadow */
+            box-shadow: 0 20px 60px rgba(93, 64, 55, 0.08), inset 0 0 0 1px rgba(255,255,255,0.5);
             margin-bottom: 4rem;
             transform: translateY(50px);
-            opacity: 0; /* GSAP reveals this */
+            opacity: 0;
             position: relative;
             overflow: hidden;
         }
@@ -178,8 +191,15 @@
         .glass-panel::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 5px;
-            background: linear-gradient(90deg, var(--c-brand), var(--c-gold));
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: repeating-linear-gradient(
+                45deg,
+                var(--c-brand),
+                var(--c-brand) 10px,
+                var(--c-bg) 10px,
+                var(--c-bg) 20px
+            );
+            opacity: 0.5;
         }
 
         .grid-2 {
@@ -208,6 +228,7 @@
             padding: 8px;
             border: 2px dashed var(--c-brand);
             position: relative;
+            background: white;
         }
 
         .avatar-frame img {
@@ -216,16 +237,17 @@
             border-radius: 50%;
             object-fit: cover;
             border: 4px solid var(--c-bg);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(93, 64, 55, 0.15);
         }
 
         .hero-tagline {
             font-size: 1.2rem;
             letter-spacing: 0.3em;
             text-transform: uppercase;
-            color: var(--c-gold);
+            color: var(--c-text-light);
             margin-bottom: 2rem;
             text-align: center;
+            font-weight: 700;
         }
 
         /* Stats Section */
@@ -239,40 +261,42 @@
             margin-bottom: 0.5rem;
             font-family: var(--font-display);
             color: var(--c-brand);
+            font-weight: 700;
         }
 
         .stat-bar-bg {
             width: 100%;
             height: 8px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(93, 64, 55, 0.1);
             border-radius: 4px;
             overflow: hidden;
         }
 
         .stat-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--c-brand), var(--c-gold));
-            width: 0%; /* GSAP fills this */
+            background: linear-gradient(90deg, var(--c-brand), var(--c-warm));
+            width: 0%;
         }
 
         /* Services / Alchemy */
         .alchemy-card {
-            background: rgba(255,255,255,0.03);
+            background: rgba(255,255,255,0.6);
             padding: 2rem;
             border-radius: 12px;
-            border: 1px solid rgba(164, 198, 57, 0.1);
-            transition: transform 0.3s ease;
+            border: 1px solid rgba(120, 134, 107, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .alchemy-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255,255,255,0.06);
-            border-color: var(--c-brand);
+            transform: translateY(-8px);
+            background: white;
+            box-shadow: 0 15px 30px rgba(93, 64, 55, 0.08);
+            border-color: var(--c-warm);
         }
 
         .alchemy-icon {
             font-size: 2.5rem;
-            color: var(--c-gold);
+            color: var(--c-brand);
             margin-bottom: 1rem;
         }
 
@@ -288,19 +312,22 @@
             position: relative;
             overflow: hidden;
             border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
             cursor: pointer;
+            background: white;
+            padding: 10px; /* Polaroid style frame */
         }
 
         .g-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            border-radius: 4px;
             transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1);
         }
 
         .g-item:hover img {
-            transform: scale(1.1) rotate(2deg);
+            transform: scale(1.05);
         }
 
         .g-1 { grid-column: span 6; }
@@ -317,6 +344,7 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
+            background: white;
             border: 2px solid var(--c-brand);
             display: flex;
             align-items: center;
@@ -327,6 +355,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
 
         .social-circle::before {
@@ -336,13 +365,22 @@
             background: var(--c-brand);
             transform: scale(0);
             transition: transform 0.3s ease;
-            z-index: -1;
+            z-index: 1; /* Under icon but above bg */
             border-radius: 50%;
         }
 
+        .social-circle i {
+            position: relative;
+            z-index: 2;
+            transition: color 0.3s;
+        }
+
         .social-circle:hover {
-            color: var(--c-bg);
             border-color: var(--c-brand);
+        }
+
+        .social-circle:hover i {
+            color: white;
         }
 
         .social-circle:hover::before {
@@ -354,7 +392,7 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: var(--c-bg);
-            z-index: 999;
+            z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -365,7 +403,7 @@
         .spinner {
             font-size: 3rem;
             color: var(--c-brand);
-            animation: spin 2s linear infinite;
+            animation: spin 2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite; /* Jelly Spin */
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -378,8 +416,8 @@
     <div id="custom-cursor-follower"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
 
     <div id="loader">
-        <i class="fa-solid fa-circle-notch spinner"></i>
-        <div style="margin-top: 1rem; font-family: var(--font-display); color: var(--c-gold);">FLORA'S PATISSERIE</div>
+        <i class="fa-solid fa-cookie-bite spinner"></i>
+        <div style="margin-top: 1rem; font-family: var(--font-display); color: var(--c-text-light); letter-spacing: 2px;">FLORA'S PATISSERIE</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -393,11 +431,11 @@
                 </div>
                 <div class="hero-tagline">丰饶甜食店 | Est. 17 Years</div>
                 <h1>Flora 芙老師</h1>
-                <p style="max-width: 600px; margin: 2rem auto; font-style: italic; border-left: 3px solid var(--c-brand); padding-left: 1rem; text-align: left;">
+                <p style="max-width: 600px; margin: 2rem auto; font-style: italic; border-left: 3px solid var(--c-brand); padding-left: 1rem; text-align: left; background: rgba(255,255,255,0.4); padding: 1.5rem; border-radius: 0 10px 10px 0;">
                     "甜點是通往幸福的最短途徑，是連結人、土地與情感的最佳入口。"
                 </p>
                 <div style="margin-top: 2rem;">
-                     <i class="fa-solid fa-angles-down" style="font-size: 2rem; color: var(--c-brand); animation: bounce 2s infinite;"></i>
+                     <i class="fa-solid fa-angles-down" style="font-size: 2rem; color: var(--c-text-light); animation: bounce 2s infinite;"></i>
                 </div>
             </div>
         </section>
@@ -407,7 +445,7 @@
             <div class="glass-panel">
                 <div class="grid-2">
                     <div>
-                        <h2><i class="fa-solid fa-user-graduate" style="font-size: 0.8em; margin-right: 10px;"></i> Master Chef</h2>
+                        <h2><i class="fa-solid fa-seedling" style="font-size: 0.8em; margin-right: 10px; color: var(--c-brand);"></i> Master Chef</h2>
                         <p>
                             我是 <span class="highlight">Flora 芙老師</span>，品牌是豐饒甜食店。
                             在甜點領域深耕 17 年，從台灣到海外，走過教學、研發、品牌經營三條戰線。
@@ -441,7 +479,7 @@
 
         <!-- ALCHEMY / SERVICES -->
         <section id="alchemy">
-            <h2><i class="fa-solid fa-flask" style="font-size: 0.8em; margin-right: 15px;"></i> The Sweet Alchemy</h2>
+            <h2><i class="fa-solid fa-mortar-pestle" style="font-size: 0.8em; margin-right: 15px;"></i> The Sweet Alchemy</h2>
             <div class="grid-3">
                 <div class="alchemy-card">
                     <div class="alchemy-icon"><i class="fa-solid fa-utensils"></i></div>
@@ -454,7 +492,7 @@
                     <p>課程模組化設計。將複雜的甜點工藝拆解為系統化知識，跨越年齡與國界的專業教學。</p>
                 </div>
                 <div class="alchemy-card">
-                    <div class="alchemy-icon"><i class="fa-solid fa-book-atlas"></i></div>
+                    <div class="alchemy-icon"><i class="fa-solid fa-book-open-reader"></i></div>
                     <h3>Culture 文化</h3>
                     <p>融入永續與在地議題。用企業經營的角度操作甜點，讓產品成為連結土地情感的載體。</p>
                 </div>
@@ -463,14 +501,14 @@
 
         <!-- STORY -->
         <section id="story">
-            <div class="glass-panel" style="text-align: center; border-color: var(--c-gold);">
-                <i class="fa-solid fa-feather-pointed" style="font-size: 3rem; color: var(--c-brand); margin-bottom: 2rem;"></i>
+            <div class="glass-panel" style="text-align: center; border-color: var(--c-warm);">
+                <i class="fa-solid fa-earth-asia" style="font-size: 3rem; color: var(--c-brand); margin-bottom: 2rem;"></i>
                 <h2>台灣的故事</h2>
-                <p style="max-width: 800px; margin: 0 auto; font-size: 1.3rem;">
+                <p style="max-width: 800px; margin: 0 auto; font-size: 1.3rem; color: var(--c-text);">
                     現在，我聚焦在用甜點說出台灣的故事。<br>
                     把<span class="highlight">海洋、土地、文化、教育</span>放進產品裡。
                 </p>
-                <div style="margin: 3rem 0; height: 1px; background: rgba(255,255,255,0.2); width: 100%;"></div>
+                <div style="margin: 3rem auto; height: 1px; background: rgba(93, 64, 55, 0.1); width: 100px;"></div>
                 <p>
                     讓每一份甜點不只是商品，而是一個可以被理解、被記住、也被分享的價值載體。
                 </p>
@@ -493,10 +531,10 @@
             <div style="text-align: center;">
                 <h2 style="font-size: 2rem; color: var(--c-text);">Connect with Flora</h2>
                 <div class="social-links" style="display: flex; justify-content: center; gap: 2rem; margin: 3rem 0;">
-                    <a href="https://www.threads.com/@flora_setsuna_tw" target="_blank" class="social-circle">
+                    <a href="https://www.threads.com/@flora_setsuna_tw" target="_blank" class="social-circle" aria-label="Threads">
                         <i class="fa-brands fa-threads"></i>
                     </a>
-                    <a href="https://www.facebook.com/FlowGateau" target="_blank" class="social-circle">
+                    <a href="https://www.facebook.com/FlowGateau" target="_blank" class="social-circle" aria-label="Facebook">
                         <i class="fa-brands fa-facebook-f"></i>
                     </a>
                 </div>
@@ -536,8 +574,9 @@
         // --- THREE.JS SCENE SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Fog matches the new lighter/richer bg color
-        scene.fog = new THREE.FogExp2(0x2B331F, 0.03);
+        // Light Cream Fog for Paper aesthetic
+        scene.fog = new THREE.FogExp2(0xF9F7F2, 0.02);
+        //scene.background = new THREE.Color(0xF9F7F2); // Let CSS handle BG, use alpha for renderer
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 10;
@@ -554,75 +593,55 @@
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
 
-            // FontAwesome font family needs to be loaded first
             ctx.font = '900 80px "Font Awesome 6 Free"';
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Wait a tick for fonts or ensure they are ready,
-            // but for simplicity in this script we draw immediately.
-            // If icons are missing, it's usually a font loading race condition.
             ctx.fillText(iconChar, 64, 64);
 
             const tex = new THREE.CanvasTexture(canvas);
             return tex;
         }
 
-        // --- CREATE ICONS ---
-        // FontAwesome Unicodes:
-        // 🍰 f1fd (Cake)
-        // 🧁 f810 (Cupcake)
-        // 🍪 f563 (Cookie)
-        // 🍋 f094 (Lemon)
-        // 🍓 f7ef (Strawberry - actually not in Free set usually? Let's use leaf or apple)
-        // 🍎 f179 (Apple)
-        // 📖 f02d (Book)
-        // 🎓 f19d (Graduation Cap)
-
+        // --- CREATE ICONS (Pastry Palette) ---
         const icons = [
-            { char: '\uf1fd', color: '#A4C639' }, // Cake (Brand Olive)
-            { char: '\uf810', color: '#E5C558' }, // Cupcake (Gold)
-            { char: '\uf563', color: '#FDFCF5' }, // Cookie (Cream)
-            { char: '\uf094', color: '#A4C639' }, // Lemon (Brand Olive)
-            { char: '\uf179', color: '#E5C558' }, // Apple (Gold)
-            { char: '\uf02d', color: '#FDFCF5' }, // Book (Cream)
+            { char: '\uf1fd', color: '#78866B' }, // Cake (Sage)
+            { char: '\uf810', color: '#D4A373' }, // Cupcake (Caramel)
+            { char: '\uf563', color: '#8D6E63' }, // Cookie (Cocoa)
+            { char: '\uf094', color: '#A4C639' }, // Lemon (Matcha)
+            { char: '\uf179', color: '#C27867' }, // Apple (Berry)
+            { char: '\uf02d', color: '#78866B' }, // Book (Sage)
         ];
 
         const sprites = [];
         const group = new THREE.Group();
         scene.add(group);
 
-        // Wait for fonts to be ready before generating textures
         document.fonts.ready.then(() => {
-
-            // Create materials cache
             const materials = icons.map(icon => {
                 const map = createIconTexture(icon.char, icon.color);
-                return new THREE.SpriteMaterial({ map: map, transparent: true, opacity: 0.8 });
+                return new THREE.SpriteMaterial({ map: map, transparent: true, opacity: 0.9 });
             });
 
-            // Spawn Sprites
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 70; i++) { // Slightly more density for pop
                 const matIndex = Math.floor(Math.random() * materials.length);
                 const sprite = new THREE.Sprite(materials[matIndex]);
 
-                // Random position spread
                 sprite.position.set(
                     (Math.random() - 0.5) * 25,
-                    (Math.random() - 0.5) * 30, // Taller vertical spread
+                    (Math.random() - 0.5) * 35,
                     (Math.random() - 0.5) * 15
                 );
 
-                // Random scale
-                const scale = Math.random() * 0.8 + 0.5;
+                const scale = Math.random() * 0.7 + 0.4;
                 sprite.scale.set(scale, scale, 1);
 
-                // Animation Data
                 sprite.userData = {
                     floatSpeed: (Math.random() * 0.01) + 0.005,
                     floatOffset: Math.random() * Math.PI * 2,
-                    initialY: sprite.position.y
+                    initialY: sprite.position.y,
+                    initialX: sprite.position.x
                 };
 
                 group.add(sprite);
@@ -630,28 +649,34 @@
             }
         });
 
-        // --- PARTICLE SYSTEM (CLICK BURST) ---
-        const particleCount = 100;
+        // --- PARTICLE SYSTEM (CONFETTI BURST) ---
+        const particleCount = 150;
         const particleGeo = new THREE.BufferGeometry();
         const particlePositions = new Float32Array(particleCount * 3);
+        const particleColors = new Float32Array(particleCount * 3);
         const particleVelocities = [];
-        const particleLife = new Float32Array(particleCount); // 0 = dead
+        const particleLife = new Float32Array(particleCount);
 
         particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
 
         const particleMat = new THREE.PointsMaterial({
-            color: 0xE5C558,
-            size: 0.2,
+            size: 0.15,
+            vertexColors: true,
             transparent: true,
-            opacity: 0,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending
+            opacity: 0
         });
 
         const particleSystem = new THREE.Points(particleGeo, particleMat);
         scene.add(particleSystem);
 
-        // Init particles as "dead"
+        const paletteColors = [
+            new THREE.Color('#78866B'),
+            new THREE.Color('#D4A373'),
+            new THREE.Color('#C27867'),
+            new THREE.Color('#A4C639')
+        ];
+
         for(let i=0; i<particleCount; i++) {
             particleLife[i] = 0;
             particleVelocities.push(new THREE.Vector3());
@@ -660,15 +685,19 @@
         function triggerBurst(x, y, z) {
             let activeCount = 0;
             for(let i=0; i<particleCount; i++) {
-                if(particleLife[i] <= 0 && activeCount < 20) { // Spawn batch of 20
+                if(particleLife[i] <= 0 && activeCount < 25) {
                     particleLife[i] = 1.0;
 
-                    // Set Position
                     particlePositions[i*3] = x;
                     particlePositions[i*3+1] = y;
                     particlePositions[i*3+2] = z;
 
-                    // Random Velocity (Explosion)
+                    // Random color from palette
+                    const col = paletteColors[Math.floor(Math.random() * paletteColors.length)];
+                    particleColors[i*3] = col.r;
+                    particleColors[i*3+1] = col.g;
+                    particleColors[i*3+2] = col.b;
+
                     const theta = Math.random() * Math.PI * 2;
                     const phi = Math.random() * Math.PI;
                     const speed = Math.random() * 0.2 + 0.1;
@@ -683,21 +712,17 @@
                 }
             }
             particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.geometry.attributes.color.needsUpdate = true;
         }
 
-        // --- INTERACTION LOGIC ---
-        const mouse = new THREE.Vector2();
-        const raycaster = new THREE.Raycaster();
-        const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0); // Plane at Z=0 for math interaction
-
         // --- ANIMATION LOOP ---
+        const mouse = new THREE.Vector2();
         const clock = new THREE.Clock();
 
         function animate() {
             const time = clock.getElapsedTime();
 
-            // 1. Sprite "Stirring" Logic
-            // Calculate mouse position in world space (approximate projection for interaction)
+            // 1. Sprite Physics
             const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
             vector.unproject(camera);
             const dir = vector.sub(camera.position).normalize();
@@ -705,59 +730,61 @@
             const worldMouse = camera.position.clone().add(dir.multiplyScalar(distance));
 
             sprites.forEach(sprite => {
-                // Base Float
                 const baseY = sprite.userData.initialY + Math.sin(time + sprite.userData.floatOffset) * 0.5;
 
-                // Mouse Repulsion/Swirl
-                const dx = sprite.position.x - worldMouse.x * 10; // Scale mouse influence
+                // Gentle sway
+                sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, sprite.userData.initialX + Math.cos(time * 0.5 + sprite.userData.floatOffset) * 0.5, 0.05);
+
+                // Mouse interaction
+                const dx = sprite.position.x - worldMouse.x * 10;
                 const dy = sprite.position.y - worldMouse.y * 10;
                 const dist = Math.sqrt(dx*dx + dy*dy);
 
-                if(dist < 5) {
-                    const force = (5 - dist) * 0.5;
+                if(dist < 4) {
+                    const force = (4 - dist) * 0.8;
                     sprite.position.x += dx * force * 0.05;
                     sprite.position.y += dy * force * 0.05;
+                    sprite.scale.x = THREE.MathUtils.lerp(sprite.scale.x, 1.2, 0.1);
+                    sprite.scale.y = THREE.MathUtils.lerp(sprite.scale.y, 1.2, 0.1);
                 } else {
-                    // Return to origin x (drift back)
-                    sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, sprite.userData.initialX || sprite.position.x, 0.02);
+                    // Normalize scale
+                    sprite.scale.x = THREE.MathUtils.lerp(sprite.scale.x, sprite.scale.x > 0.8 ? 0.6 : sprite.scale.x, 0.1);
+                    sprite.scale.y = THREE.MathUtils.lerp(sprite.scale.y, sprite.scale.y > 0.8 ? 0.6 : sprite.scale.y, 0.1);
                 }
 
-                // Apply calculated Y (blending float + interaction)
                 sprite.position.y = THREE.MathUtils.lerp(sprite.position.y, baseY, 0.1);
             });
 
-            // 2. Particle System Update
+            // 2. Particles
             const positions = particleSystem.geometry.attributes.position.array;
             let activeParticles = false;
 
             for(let i=0; i<particleCount; i++) {
                 if(particleLife[i] > 0) {
                     activeParticles = true;
-                    particleLife[i] -= 0.02; // Decay
+                    particleLife[i] -= 0.015;
 
-                    // Move
                     positions[i*3] += particleVelocities[i].x;
                     positions[i*3+1] += particleVelocities[i].y;
                     positions[i*3+2] += particleVelocities[i].z;
 
-                    // Gravity
-                    particleVelocities[i].y -= 0.005;
+                    particleVelocities[i].y -= 0.003; // Light gravity
+                    particleVelocities[i].x *= 0.98; // Drag
+                    particleVelocities[i].z *= 0.98;
                 } else {
-                    // Hide
                     positions[i*3] = 9999;
                 }
             }
             if(activeParticles) {
                 particleSystem.geometry.attributes.position.needsUpdate = true;
-                particleMat.opacity = 1; // Simplification: fade whole system or use shader for per-particle opacity.
-                // For 'sparkle' effect, blinking on/off is okay.
+                particleMat.opacity = 1;
             } else {
                 particleMat.opacity = 0;
             }
 
-            // 3. Group Parallax
-            group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, mouse.x * 0.15, 0.05);
-            group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, mouse.y * 0.1, 0.05);
+            // 3. Camera/Group Parallax
+            group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, mouse.x * 0.1, 0.05);
+            group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, mouse.y * 0.05, 0.05);
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -775,22 +802,31 @@
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-            // Cursor follower hack for CSS ::after
-            document.body.style.setProperty('--cursor-x', e.clientX + 'px');
-            document.body.style.setProperty('--cursor-y', e.clientY + 'px');
-
-            // Inject dynamic style rule for cursor (simpler than CSS var if pseudo-element)
-            // Actually, let's just use JS to move a real element if we wanted complex physics,
-            // but for simple 'sparkle' cursor, let's just update a custom variable on body
-            // and use it in CSS if we can.
-            // Or simpler:
             const cursor = document.getElementById('custom-cursor-follower');
             if(cursor) {
                 gsap.to(cursor, {x: e.clientX, y: e.clientY, duration: 0.1});
             }
         });
 
-        // --- SCROLL PROGRESS ---
+        window.addEventListener('click', (e) => {
+            const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+            vec.unproject(camera);
+            const dir = vec.sub(camera.position).normalize();
+            const pos = camera.position.clone().add(dir.multiplyScalar(8));
+
+            triggerBurst(pos.x, pos.y, pos.z);
+
+            // Pop nearby sprites
+            sprites.forEach(sprite => {
+                if(sprite.position.distanceTo(pos) < 6) {
+                    gsap.to(sprite.scale, { x: 1.0, y: 1.0, duration: 0.15, yoyo: true, repeat: 1 });
+                    sprite.userData.floatOffset += Math.PI / 2;
+                }
+            });
+        });
+
+        // --- SCROLL ANIMATIONS ---
+
         gsap.to("#piping-progress", {
             width: "100%",
             ease: "none",
@@ -802,72 +838,22 @@
             }
         });
 
-        // --- GALLERY TILT EFFECT ---
-        const cards = document.querySelectorAll('.g-item');
-        cards.forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-
-                const rotateX = ((y - centerY) / centerY) * -10; // Max 10deg
-                const rotateY = ((x - centerX) / centerX) * 10;
-
-                gsap.to(card.querySelector('img'), {
-                    transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.1)`,
-                    duration: 0.5
-                });
-            });
-
-            card.addEventListener('mouseleave', () => {
-                gsap.to(card.querySelector('img'), {
-                    transform: `perspective(1000px) rotateX(0) rotateY(0) scale(1)`,
-                    duration: 0.5
-                });
-            });
-        });
-
-        window.addEventListener('click', (e) => {
-            // Spawn particles at random depth in front of camera
-            // To make it feel "screen space", we project a bit in front of camera
-            const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-            vec.unproject(camera);
-            const dir = vec.sub(camera.position).normalize();
-            const pos = camera.position.clone().add(dir.multiplyScalar(8)); // 8 units in front
-
-            triggerBurst(pos.x, pos.y, pos.z);
-
-            // Also "Jump" nearby sprites
-            sprites.forEach(sprite => {
-                if(sprite.position.distanceTo(pos) < 5) {
-                    gsap.to(sprite.scale, { x: 1.5, y: 1.5, duration: 0.1, yoyo: true, repeat: 1 });
-                    sprite.userData.floatOffset += Math.PI; // Change phase
-                }
-            });
-        });
-
-        // --- GSAP ANIMATIONS ---
-
-        // 1. Reveal Panel
         gsap.utils.toArray('.glass-panel').forEach(panel => {
             gsap.fromTo(panel,
-                { opacity: 0, y: 100 },
+                { opacity: 0, y: 60 },
                 {
                     opacity: 1,
                     y: 0,
-                    duration: 1,
+                    duration: 1.2,
+                    ease: "power3.out",
                     scrollTrigger: {
                         trigger: panel,
-                        start: "top 80%"
+                        start: "top 85%"
                     }
                 }
             );
         });
 
-        // 2. Animate Stat Bars
         gsap.utils.toArray('.stat-bar-fill').forEach(bar => {
             gsap.to(bar, {
                 width: bar.getAttribute('data-width'),
@@ -880,22 +866,22 @@
             });
         });
 
-        // 3. Stagger Alchemy Cards
         gsap.from('.alchemy-card', {
             y: 50,
             opacity: 0,
-            stagger: 0.2,
+            stagger: 0.1,
             duration: 0.8,
+            ease: "back.out(1.7)",
             scrollTrigger: {
                 trigger: '.grid-3',
                 start: "top 80%"
             }
         });
 
-        // 4. Stagger Gallery
         gsap.from('.g-item', {
-            scale: 0.8,
+            scale: 0.9,
             opacity: 0,
+            rotation: 5,
             stagger: 0.1,
             duration: 0.8,
             scrollTrigger: {
@@ -904,10 +890,10 @@
             }
         });
 
-        // 5. Deep Scroll Parallax (Move Camera)
+        // Deep Dive Camera
         gsap.to(camera.position, {
-            z: 2, // Zoom in
-            y: -10, // Move down
+            z: 4,
+            y: -15,
             scrollTrigger: {
                 trigger: 'body',
                 start: "top top",
@@ -916,23 +902,7 @@
             }
         });
 
-        // 6. "Alchemy" Section Trigger (Theme Shift)
-        ScrollTrigger.create({
-            trigger: "#alchemy",
-            start: "top center",
-            end: "bottom center",
-            onEnter: () => {
-                gsap.to(scene.fog, { density: 0.05, duration: 1 }); // Thicken fog
-                // Spin the group faster for a moment
-                gsap.to(group.rotation, { z: Math.PI / 4, duration: 2, ease: "power2.inOut" });
-            },
-            onLeaveBack: () => {
-                gsap.to(scene.fog, { density: 0.03, duration: 1 });
-                gsap.to(group.rotation, { z: 0, duration: 2, ease: "power2.inOut" });
-            }
-        });
-
-        // --- LOADER REMOVAL ---
+        // --- PAGE LOAD ---
         window.addEventListener('load', () => {
             document.body.classList.add('loaded');
             const loader = document.getElementById('loader');
@@ -942,6 +912,5 @@
         });
 
     </script>
-
 </body>
 </html>
