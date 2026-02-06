@@ -895,9 +895,25 @@
             ease: "sine.inOut"
         });
 
-        // --- INTERACTION: CHEST CLICK ---
+        // --- INTERACTION: CHEST CLICK & HOVER ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
+
+        window.addEventListener('mousemove', (event) => {
+            if (!chestSprite) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(chestSprite);
+
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.body.style.cursor = 'default';
+            }
+        });
 
         window.addEventListener('click', (event) => {
             if (!chestSprite) return;
