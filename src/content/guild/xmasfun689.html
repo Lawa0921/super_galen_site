@@ -74,7 +74,7 @@
         #content-sidebar {
             position: relative;
             z-index: 10;
-            padding-bottom: 50vh; /* Spacer */
+            padding-bottom: 70vh; /* Increased spacer for centering final content */
         }
 
         /* HUD Header (Fixed) */
@@ -209,6 +209,7 @@
             #content-sidebar {
                 margin-top: 45vh; /* Push content down */
                 padding: 1rem;
+                padding-bottom: 50vh;
                 background: linear-gradient(to bottom, transparent, var(--c-black) 20%);
             }
             #hud-header { width: 100%; }
@@ -375,7 +376,7 @@
         // --- Init Scene ---
         const container = document.getElementById('canvas-wrapper');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.03); // Deep fog
+        scene.fog = new THREE.FogExp2(0x000000, 0.02); // Reduced fog for better visibility
 
         const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
         camera.position.set(0, 5, 10);
@@ -389,8 +390,8 @@
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.2;
-        bloomPass.strength = 1.2; // Glowy
-        bloomPass.radius = 0.5;
+        bloomPass.strength = 1.8; // Increased Glow
+        bloomPass.radius = 0.6;
 
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
@@ -400,29 +401,44 @@
         const ambientLight = new THREE.AmbientLight(0x404040, 2);
         scene.add(ambientLight);
 
-        const blueLight = new THREE.PointLight(0x00F3FF, 2, 20);
+        const blueLight = new THREE.PointLight(0x00F3FF, 3, 30);
         blueLight.position.set(-5, 5, -5);
         scene.add(blueLight);
 
-        const yellowLight = new THREE.PointLight(0xFFD700, 2, 20);
+        const yellowLight = new THREE.PointLight(0xFFD700, 3, 30);
         yellowLight.position.set(5, 2, 5);
         scene.add(yellowLight);
 
-        // --- Environment: The Grid Pit ---
-        const gridHelper = new THREE.GridHelper(100, 100, 0x333333, 0x111111);
+        // --- Environment: The Grid Pit & Terrain ---
+        const gridHelper = new THREE.GridHelper(200, 100, 0x444444, 0x111111);
         gridHelper.position.y = -2;
         scene.add(gridHelper);
+
+        // Wireframe Terrain
+        const terrainGeo = new THREE.PlaneGeometry(200, 200, 40, 40);
+        const pos = terrainGeo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const z = pos.getZ(i);
+            pos.setZ(i, z + Math.random() * 2); // Random spikes
+        }
+        terrainGeo.computeVertexNormals();
+        const terrainMat = new THREE.MeshBasicMaterial({ color: 0x222222, wireframe: true, transparent: true, opacity: 0.3 });
+        const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.position.y = -5;
+        scene.add(terrain);
+
 
         // Add some vertical grid lines to simulate a "Site" or "Hangar"
         const vertGridGeo = new THREE.BufferGeometry();
         const vertPoints = [];
-        for(let i=0; i<20; i++) {
-            const x = (Math.random() - 0.5) * 40;
-            const z = (Math.random() - 0.5) * 40;
-            vertPoints.push(x, -10, z, x, 20, z);
+        for(let i=0; i<30; i++) {
+            const x = (Math.random() - 0.5) * 60;
+            const z = (Math.random() - 0.5) * 60;
+            vertPoints.push(x, -10, z, x, 30, z);
         }
         vertGridGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertPoints, 3));
-        const vertGridMat = new THREE.LineBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.5 });
+        const vertGridMat = new THREE.LineBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.4 });
         const vertLines = new THREE.LineSegments(vertGridGeo, vertGridMat);
         scene.add(vertLines);
 
@@ -445,7 +461,7 @@
             texture.colorSpace = THREE.SRGBColorSpace;
 
             // Frame
-            const frameGeo = new THREE.PlaneGeometry(width + 0.2, height + 0.2);
+            const frameGeo = new THREE.PlaneGeometry(width + 0.3, height + 0.3);
             const frameMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
             const frame = new THREE.Mesh(frameGeo, frameMat);
 
@@ -461,20 +477,29 @@
 
         // --- 1. Intro Objects (Magic Circle) ---
         function createMagicCircle() {
-            const map = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/sprites/snowflake2.png'); // Placeholder texture for particles
-            // Actually let's just draw rings
             const group = new THREE.Group();
-
-            const r1 = new THREE.RingGeometry(3, 3.1, 64);
+            const r1 = new THREE.RingGeometry(4, 4.1, 64);
             const m1 = new THREE.MeshBasicMaterial({ color: 0xFFD700, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
             const mesh1 = new THREE.Mesh(r1, m1);
             mesh1.rotation.x = -Math.PI/2;
             group.add(mesh1);
 
-            const r2 = new THREE.RingGeometry(2, 2.05, 32);
+            const r2 = new THREE.RingGeometry(2.5, 2.55, 32);
             const mesh2 = new THREE.Mesh(r2, m1);
             mesh2.rotation.x = -Math.PI/2;
             group.add(mesh2);
+
+            // Runes or Text Ring (Simplified as particles)
+            const pGeo = new THREE.BufferGeometry();
+            const pPos = [];
+            for(let i=0; i<36; i++) {
+                const theta = (i / 36) * Math.PI * 2;
+                pPos.push(Math.cos(theta)*3.5, 0, Math.sin(theta)*3.5);
+            }
+            pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+            const pMat = new THREE.PointsMaterial({color: 0x00F3FF, size: 0.2});
+            const runes = new THREE.Points(pGeo, pMat);
+            group.add(runes);
 
             return group;
         }
@@ -482,63 +507,81 @@
         magicCircle.position.y = -1.9;
         groupIntro.add(magicCircle);
 
-        // --- 2. Machines Objects ---
-        const machine1 = createHoloImage(ASSETS.excavator, 5, 3.5, 0xFFD700);
-        machine1.position.set(-2, 0, 0);
+        // --- 2. Machines Objects (SCALED UP) ---
+        // Excavator
+        const machine1 = createHoloImage(ASSETS.excavator, 8, 5.6, 0xFFD700);
+        machine1.position.set(-3, 1, 0); // Raised slightly
         machine1.rotation.y = 0.2;
         groupMachines.add(machine1);
 
-        const machine2 = createHoloImage(ASSETS.roller, 4, 3, 0xCD853F);
-        machine2.position.set(3, -1, 2);
+        // Roller
+        const machine2 = createHoloImage(ASSETS.roller, 6, 4.5, 0xCD853F);
+        machine2.position.set(4, -1, 3);
         machine2.rotation.y = -0.3;
         groupMachines.add(machine2);
 
-        // Floating Debris
-        const debrisGeo = new THREE.DodecahedronGeometry(0.2);
-        const debrisMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8 });
-        for(let i=0; i<10; i++) {
+        // Floating Debris (More prominent)
+        const debrisGeo = new THREE.TetrahedronGeometry(0.4);
+        const debrisMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8 });
+        for(let i=0; i<20; i++) {
             const m = new THREE.Mesh(debrisGeo, debrisMat);
-            m.position.set((Math.random()-0.5)*10, (Math.random()-0.5)*5, (Math.random()-0.5)*5);
+            m.position.set((Math.random()-0.5)*15, (Math.random()-0.5)*8, (Math.random()-0.5)*8);
+            m.rotation.set(Math.random(), Math.random(), Math.random());
             groupMachines.add(m);
         }
 
-        // --- 3. Elements Objects (Water Pipes / Lightning) ---
-        // Water Pipe
+        // --- 3. Elements Objects (SCALED UP & MORE VFX) ---
+        // Water Pipe (Thicker, brighter)
         const pipeCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-5, -2, 0),
-            new THREE.Vector3(-2, 1, 0),
-            new THREE.Vector3(2, 1, 2),
-            new THREE.Vector3(5, 3, 0)
+            new THREE.Vector3(-8, -3, 0),
+            new THREE.Vector3(-3, 2, 0),
+            new THREE.Vector3(3, 2, 3),
+            new THREE.Vector3(8, 5, 0)
         ]);
-        const pipeGeo = new THREE.TubeGeometry(pipeCurve, 20, 0.2, 8, false);
-        const pipeMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF, transparent: true, opacity: 0.4, wireframe: true });
+        const pipeGeo = new THREE.TubeGeometry(pipeCurve, 40, 0.4, 12, false);
+        const pipeMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF, transparent: true, opacity: 0.6, wireframe: true });
         const pipe = new THREE.Mesh(pipeGeo, pipeMat);
         groupElements.add(pipe);
 
-        // Water Particles flowing along pipe? No, just ambient particles
+        // Water Particles (More abundant)
         const particlesGeo = new THREE.BufferGeometry();
-        const pCount = 500;
-        const pPos = new Float32Array(pCount * 3);
-        for(let i=0; i<pCount*3; i++) pPos[i] = (Math.random()-0.5) * 10;
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const particlesMat = new THREE.PointsMaterial({ color: 0x00F3FF, size: 0.05, transparent: true, blending: THREE.AdditiveBlending });
+        const pCount = 2000;
+        const pPosArr = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) pPosArr[i] = (Math.random()-0.5) * 15;
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPosArr, 3));
+        const particlesMat = new THREE.PointsMaterial({ color: 0x00F3FF, size: 0.08, transparent: true, blending: THREE.AdditiveBlending, opacity: 0.8 });
         const particles = new THREE.Points(particlesGeo, particlesMat);
         groupElements.add(particles);
 
-        // --- 4. Finale Objects ---
-        const plushieHolo = createHoloImage(ASSETS.plushies, 4, 4, 0xFF2A2A);
+        // Lightning Effects (Random Lines)
+        const lightningGeo = new THREE.BufferGeometry();
+        const lightningCount = 10;
+        const lPositions = new Float32Array(lightningCount * 6); // 2 points per line
+        lightningGeo.setAttribute('position', new THREE.BufferAttribute(lPositions, 3));
+        const lightningMat = new THREE.LineBasicMaterial({ color: 0xFFFFFF });
+        const lightning = new THREE.LineSegments(lightningGeo, lightningMat);
+        groupElements.add(lightning);
+
+        // --- 4. Finale Objects (SCALED UP) ---
+        const plushieHolo = createHoloImage(ASSETS.plushies, 7, 7, 0xFF2A2A);
         plushieHolo.position.set(0, 0, 0);
+
+        // Halo behind plushies
+        const haloGeo = new THREE.RingGeometry(4, 4.2, 64);
+        const haloMat = new THREE.MeshBasicMaterial({ color: 0xFF2A2A, side: THREE.DoubleSide });
+        const halo = new THREE.Mesh(haloGeo, haloMat);
+        halo.position.z = -1;
+        plushieHolo.add(halo); // Attach to plushie
+
         groupFinale.add(plushieHolo);
 
 
         // --- Positioning Groups ---
-        // We will move the Camera instead of groups, but let's spread groups out in space
-        // Actually, for "Turntable" feel, we might keep groups near center and fade them in/out or move camera to them.
         // Strategy: "Construction Site Tour".
         // Intro: Center (0,0,0)
-        // Machines: Offset (-10, 0, 0)
-        // Elements: Offset (10, 5, 0)
-        // Finale: Offset (0, 10, -10)
+        // Machines: Offset (-15, 0, 5)
+        // Elements: Offset (15, 5, -5)
+        // Finale: Offset (0, 15, 0)
 
         groupIntro.position.set(0, 0, 0);
         groupMachines.position.set(-15, 0, 5);
@@ -553,17 +596,40 @@
             const time = Date.now() * 0.001;
 
             // Rotate Magic Circle
-            magicCircle.rotation.z += 0.01;
+            magicCircle.rotation.z -= 0.005;
 
             // Float Machines
-            machine1.position.y = Math.sin(time) * 0.1;
-            machine2.position.y = -1 + Math.sin(time + 2) * 0.1;
+            machine1.position.y = 1 + Math.sin(time) * 0.2;
+            machine2.position.y = -1 + Math.sin(time + 2) * 0.2;
 
             // Pulse Pipe
-            pipe.material.opacity = 0.3 + Math.sin(time * 2) * 0.2;
+            pipe.material.opacity = 0.4 + Math.sin(time * 3) * 0.3;
 
-            // Particles
-            particles.rotation.y = time * 0.1;
+            // Particles Flow
+            particles.rotation.y = time * 0.05;
+
+            // Lightning Flicker
+            if(Math.random() > 0.9) {
+                const positions = lightning.geometry.attributes.position.array;
+                for(let i=0; i<lightningCount; i++) {
+                    const x = (Math.random()-0.5) * 10;
+                    const y = (Math.random()-0.5) * 10;
+                    const z = (Math.random()-0.5) * 10;
+                    positions[i*6] = x;
+                    positions[i*6+1] = y;
+                    positions[i*6+2] = z;
+                    positions[i*6+3] = x + (Math.random()-0.5)*2;
+                    positions[i*6+4] = y + (Math.random()-0.5)*2;
+                    positions[i*6+5] = z + (Math.random()-0.5)*2;
+                }
+                lightning.geometry.attributes.position.needsUpdate = true;
+                lightning.visible = true;
+            } else {
+                lightning.visible = false;
+            }
+
+            // Halo Spin
+            halo.rotation.z += 0.02;
 
             composer.render();
         }
@@ -572,7 +638,7 @@
         document.getElementById('loader').style.display = 'none';
 
         // --- Scroll Logic (GSAP) ---
-        // Camera Path
+        // Camera Path - UPDATED FOR CLOSER ZOOM
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
@@ -583,17 +649,19 @@
         });
 
         // 0 -> 1 (Intro -> Machines)
-        // Move camera from Intro view to Machine view
-        tl.to(camera.position, { x: -15, y: 2, z: 12, duration: 1 });
+        // Move camera closer to Machines (z: 12 -> 8)
+        tl.to(camera.position, { x: -15, y: 2, z: 8, duration: 1 });
         tl.to(camera.rotation, { y: 0.2, duration: 1 }, "<");
 
         // 1 -> 2 (Machines -> Elements)
-        tl.to(camera.position, { x: 15, y: 7, z: 5, duration: 1 });
+        // Move camera closer to Elements (z: 5 -> 4)
+        tl.to(camera.position, { x: 15, y: 7, z: 4, duration: 1 });
         tl.to(camera.rotation, { y: -0.5, duration: 1 }, "<");
 
         // 2 -> 3 (Elements -> Finale)
-        tl.to(camera.position, { x: 0, y: 15, z: 8, duration: 1 });
-        tl.to(camera.rotation, { y: 0, x: 0.2, duration: 1 }, "<");
+        // Finale Zoom (z: 8 -> 6)
+        tl.to(camera.position, { x: 0, y: 15, z: 6, duration: 1 });
+        tl.to(camera.rotation, { y: 0, x: 0.0, duration: 1 }, "<");
 
 
         // Content Section Highlighting
