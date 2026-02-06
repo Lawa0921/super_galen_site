@@ -87,7 +87,7 @@
         #rider-container {
             position: absolute;
             top: 0%;
-            left: 0%; /* Controlled by JS now */
+            left: 50%; /* Start at center */
             transform: translate(-50%, -50%); /* Centered on point */
             font-size: 3rem;
             color: var(--accent-orange);
@@ -596,6 +596,9 @@
             strokeDashoffset: trackLength
         });
 
+        // Init Rider Transforms (GSAP) to ensure centering works with GSAP animations
+        gsap.set(riderIcon, { xPercent: -50, yPercent: -50, transformOrigin: "center center" });
+
         // Helper: Cubic Bezier math to follow M50,0 C50,100 10,200 30,400 S90,600 90,800
         // This is complex to solve precisely without MotionPathPlugin.
         // We will approximate the "S curve" (Sigmoid/Sine like) manually to match the SVG visual.
@@ -614,7 +617,7 @@
 
                 // 2. Move Rider Vertical - STOP at 85% to avoid Footer overlap
                 const maxY = 85;
-                riderIcon.style.top = `${p * maxY}%`;
+                const topVal = p * maxY;
 
                 // 3. Move Rider Horizontal (Approximating the Curve)
                 // Curve: 50 -> 30 (at 50%) -> 90 (at 100%)
@@ -646,8 +649,12 @@
                     rot = 15 * Math.sin(np * Math.PI);
                 }
 
-                riderIcon.style.left = `${xPos}%`;
-                riderIcon.style.transform = `translate(-50%, -50%) rotate(${rot}deg)`;
+                // Use GSAP set to avoid overwriting scale/transform from other animations
+                gsap.set(riderIcon, {
+                    top: `${topVal}%`,
+                    left: `${xPos}%`,
+                    rotation: rot
+                });
             }
         });
 
