@@ -36,10 +36,42 @@
             overflow-x: hidden;
             opacity: 0;
             transition: opacity 1s ease;
+            cursor: crosshair; /* Fallback */
+        }
+
+        /* Custom "Whisk" Cursor Effect */
+        #custom-cursor-follower {
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            font-size: 24px;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            mix-blend-mode: overlay;
+            color: var(--c-gold);
+            text-shadow: 0 0 10px var(--c-brand);
+        }
+
+        body:hover #custom-cursor-follower {
+            opacity: 1;
         }
 
         body.loaded {
             opacity: 1;
+        }
+
+        /* Scroll Progress Bar (Piping Bag) */
+        #piping-progress {
+            position: fixed;
+            top: 0; left: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--c-brand), var(--c-gold));
+            width: 0%;
+            z-index: 1000;
+            box-shadow: 0 0 10px var(--c-brand);
+            border-radius: 0 4px 4px 0;
         }
 
         #canvas-container {
@@ -342,6 +374,9 @@
 </head>
 <body>
 
+    <div id="piping-progress"></div>
+    <div id="custom-cursor-follower"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+
     <div id="loader">
         <i class="fa-solid fa-circle-notch spinner"></i>
         <div style="margin-top: 1rem; font-family: var(--font-display); color: var(--c-gold);">FLORA'S PATISSERIE</div>
@@ -595,23 +630,134 @@
             }
         });
 
+        // --- PARTICLE SYSTEM (CLICK BURST) ---
+        const particleCount = 100;
+        const particleGeo = new THREE.BufferGeometry();
+        const particlePositions = new Float32Array(particleCount * 3);
+        const particleVelocities = [];
+        const particleLife = new Float32Array(particleCount); // 0 = dead
+
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+        const particleMat = new THREE.PointsMaterial({
+            color: 0xE5C558,
+            size: 0.2,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particleSystem = new THREE.Points(particleGeo, particleMat);
+        scene.add(particleSystem);
+
+        // Init particles as "dead"
+        for(let i=0; i<particleCount; i++) {
+            particleLife[i] = 0;
+            particleVelocities.push(new THREE.Vector3());
+        }
+
+        function triggerBurst(x, y, z) {
+            let activeCount = 0;
+            for(let i=0; i<particleCount; i++) {
+                if(particleLife[i] <= 0 && activeCount < 20) { // Spawn batch of 20
+                    particleLife[i] = 1.0;
+
+                    // Set Position
+                    particlePositions[i*3] = x;
+                    particlePositions[i*3+1] = y;
+                    particlePositions[i*3+2] = z;
+
+                    // Random Velocity (Explosion)
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI;
+                    const speed = Math.random() * 0.2 + 0.1;
+
+                    particleVelocities[i].set(
+                        Math.sin(phi) * Math.cos(theta) * speed,
+                        Math.sin(phi) * Math.sin(theta) * speed,
+                        Math.cos(phi) * speed
+                    );
+
+                    activeCount++;
+                }
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // --- INTERACTION LOGIC ---
+        const mouse = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+        const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0); // Plane at Z=0 for math interaction
+
         // --- ANIMATION LOOP ---
         const clock = new THREE.Clock();
-        const mouse = new THREE.Vector2();
 
         function animate() {
             const time = clock.getElapsedTime();
 
-            sprites.forEach(sprite => {
-                // Gentle floating up/down
-                sprite.position.y = sprite.userData.initialY + Math.sin(time + sprite.userData.floatOffset) * 0.5;
+            // 1. Sprite "Stirring" Logic
+            // Calculate mouse position in world space (approximate projection for interaction)
+            const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+            vector.unproject(camera);
+            const dir = vector.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            const worldMouse = camera.position.clone().add(dir.multiplyScalar(distance));
 
-                // Gentle rotation (Sprites always face camera, but we can orbit the group)
+            sprites.forEach(sprite => {
+                // Base Float
+                const baseY = sprite.userData.initialY + Math.sin(time + sprite.userData.floatOffset) * 0.5;
+
+                // Mouse Repulsion/Swirl
+                const dx = sprite.position.x - worldMouse.x * 10; // Scale mouse influence
+                const dy = sprite.position.y - worldMouse.y * 10;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if(dist < 5) {
+                    const force = (5 - dist) * 0.5;
+                    sprite.position.x += dx * force * 0.05;
+                    sprite.position.y += dy * force * 0.05;
+                } else {
+                    // Return to origin x (drift back)
+                    sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, sprite.userData.initialX || sprite.position.x, 0.02);
+                }
+
+                // Apply calculated Y (blending float + interaction)
+                sprite.position.y = THREE.MathUtils.lerp(sprite.position.y, baseY, 0.1);
             });
 
-            // Parallax Group
-            group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, mouse.x * 0.1, 0.05);
-            group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, mouse.y * 0.05, 0.05);
+            // 2. Particle System Update
+            const positions = particleSystem.geometry.attributes.position.array;
+            let activeParticles = false;
+
+            for(let i=0; i<particleCount; i++) {
+                if(particleLife[i] > 0) {
+                    activeParticles = true;
+                    particleLife[i] -= 0.02; // Decay
+
+                    // Move
+                    positions[i*3] += particleVelocities[i].x;
+                    positions[i*3+1] += particleVelocities[i].y;
+                    positions[i*3+2] += particleVelocities[i].z;
+
+                    // Gravity
+                    particleVelocities[i].y -= 0.005;
+                } else {
+                    // Hide
+                    positions[i*3] = 9999;
+                }
+            }
+            if(activeParticles) {
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+                particleMat.opacity = 1; // Simplification: fade whole system or use shader for per-particle opacity.
+                // For 'sparkle' effect, blinking on/off is okay.
+            } else {
+                particleMat.opacity = 0;
+            }
+
+            // 3. Group Parallax
+            group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, mouse.x * 0.15, 0.05);
+            group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, mouse.y * 0.1, 0.05);
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -628,6 +774,79 @@
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Cursor follower hack for CSS ::after
+            document.body.style.setProperty('--cursor-x', e.clientX + 'px');
+            document.body.style.setProperty('--cursor-y', e.clientY + 'px');
+
+            // Inject dynamic style rule for cursor (simpler than CSS var if pseudo-element)
+            // Actually, let's just use JS to move a real element if we wanted complex physics,
+            // but for simple 'sparkle' cursor, let's just update a custom variable on body
+            // and use it in CSS if we can.
+            // Or simpler:
+            const cursor = document.getElementById('custom-cursor-follower');
+            if(cursor) {
+                gsap.to(cursor, {x: e.clientX, y: e.clientY, duration: 0.1});
+            }
+        });
+
+        // --- SCROLL PROGRESS ---
+        gsap.to("#piping-progress", {
+            width: "100%",
+            ease: "none",
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.3
+            }
+        });
+
+        // --- GALLERY TILT EFFECT ---
+        const cards = document.querySelectorAll('.g-item');
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * -10; // Max 10deg
+                const rotateY = ((x - centerX) / centerX) * 10;
+
+                gsap.to(card.querySelector('img'), {
+                    transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.1)`,
+                    duration: 0.5
+                });
+            });
+
+            card.addEventListener('mouseleave', () => {
+                gsap.to(card.querySelector('img'), {
+                    transform: `perspective(1000px) rotateX(0) rotateY(0) scale(1)`,
+                    duration: 0.5
+                });
+            });
+        });
+
+        window.addEventListener('click', (e) => {
+            // Spawn particles at random depth in front of camera
+            // To make it feel "screen space", we project a bit in front of camera
+            const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+            vec.unproject(camera);
+            const dir = vec.sub(camera.position).normalize();
+            const pos = camera.position.clone().add(dir.multiplyScalar(8)); // 8 units in front
+
+            triggerBurst(pos.x, pos.y, pos.z);
+
+            // Also "Jump" nearby sprites
+            sprites.forEach(sprite => {
+                if(sprite.position.distanceTo(pos) < 5) {
+                    gsap.to(sprite.scale, { x: 1.5, y: 1.5, duration: 0.1, yoyo: true, repeat: 1 });
+                    sprite.userData.floatOffset += Math.PI; // Change phase
+                }
+            });
         });
 
         // --- GSAP ANIMATIONS ---
@@ -694,6 +913,22 @@
                 start: "top top",
                 end: "bottom bottom",
                 scrub: 1
+            }
+        });
+
+        // 6. "Alchemy" Section Trigger (Theme Shift)
+        ScrollTrigger.create({
+            trigger: "#alchemy",
+            start: "top center",
+            end: "bottom center",
+            onEnter: () => {
+                gsap.to(scene.fog, { density: 0.05, duration: 1 }); // Thicken fog
+                // Spin the group faster for a moment
+                gsap.to(group.rotation, { z: Math.PI / 4, duration: 2, ease: "power2.inOut" });
+            },
+            onLeaveBack: () => {
+                gsap.to(scene.fog, { density: 0.03, duration: 1 });
+                gsap.to(group.rotation, { z: 0, duration: 2, ease: "power2.inOut" });
             }
         });
 
