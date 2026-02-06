@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
@@ -376,6 +377,79 @@
             color: var(--c-accent-blue);
         }
 
+        /* Services Section */
+        #services {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .service-card {
+            background: #fff;
+            border: 2px solid var(--c-text);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 10px 10px 0px var(--c-accent-teal);
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            color: var(--c-accent-blue);
+            margin-bottom: 1.5rem;
+        }
+
+        .service-card h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .service-card p {
+            font-size: 1rem;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0;
+            text-align: left;
+        }
+
+        .service-card li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 0.95rem;
+            color: #444;
+        }
+
+        .service-card li::before {
+            content: "•";
+            color: var(--c-accent-gold);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
         /* Lightbox */
         #lightbox {
             position: fixed;
@@ -560,6 +634,60 @@
             </div>
         </section>
 
+        <!-- 7. Services -->
+        <section class="section" id="services">
+            <div class="container">
+                <h2 class="section-title" style="text-align: center; width: 100%; border-bottom: none;">服務項目</h2>
+                <p style="text-align: center; margin-bottom: 3rem;">理性與感性的交織，為您提供全方位的支持。</p>
+
+                <div class="services-grid">
+                    <!-- Service 1 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-paw"></i></div>
+                        <h3>動物溝通</h3>
+                        <ul>
+                            <li>在世與離世動物溝通</li>
+                            <li>家養與非家養動物皆可</li>
+                            <li>協助理解毛孩的真實想法與需求</li>
+                        </ul>
+                    </div>
+
+                    <!-- Service 2 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <h3>課程講座</h3>
+                        <ul>
+                            <li>系統化動物溝通教學</li>
+                            <li>結合心理學與生物本能</li>
+                            <li>適合「麻瓜」與理性腦的學習路徑</li>
+                        </ul>
+                    </div>
+
+                    <!-- Service 3 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-palette"></i></div>
+                        <h3>能量藝術</h3>
+                        <ul>
+                            <li>生命之花與力量動物圖騰</li>
+                            <li>個人專屬能量畫作</li>
+                            <li>將祝福轉化為可視的象徵</li>
+                        </ul>
+                    </div>
+
+                    <!-- Service 4 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <h3>淨化祝福</h3>
+                        <ul>
+                            <li>力量動物合作祝福鹽</li>
+                            <li>空間與氣場淨化</li>
+                            <li>Podcast 經驗分享與療癒</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- 8. Finale -->
         <section class="section" id="finale">
              <div class="scattered-images">
@@ -704,11 +832,12 @@
             awakening: 0,
             bridge: 0,
             artist: 0,
-            alchemist: 0
+            alchemist: 0,
+            services: 0
         };
 
         // Create scroll triggers to crossfade scene weights
-        const sections = ['hero', 'logic', 'awakening', 'bridge', 'artist', 'alchemist'];
+        const sections = ['hero', 'logic', 'awakening', 'bridge', 'artist', 'alchemist', 'services'];
 
         sections.forEach((id, index) => {
             ScrollTrigger.create({
@@ -792,6 +921,12 @@
                 if (sceneWeights.alchemist > 0.01) {
                     p.push();
                     drawDeepOcean(p, sceneWeights.alchemist);
+                    p.pop();
+                }
+
+                if (sceneWeights.services > 0.01) {
+                    p.push();
+                    drawServices(p, sceneWeights.services);
                     p.pop();
                 }
             };
@@ -957,6 +1092,29 @@
                         p.vertex(x, y);
                     }
                     p.endShape();
+                }
+            }
+
+            function drawServices(p, alpha) {
+                // Geometric Order / Building Blocks
+                p.strokeWeight(1);
+                p.stroke(241, 196, 15, alpha * 100); // Gold
+                p.noFill();
+
+                let gridSize = 100;
+                let t = p.frameCount * 0.01;
+
+                for(let x = 0; x <= p.width; x += gridSize) {
+                    for(let y = 0; y <= p.height; y += gridSize) {
+                        let off = p.sin(x*0.01 + y*0.01 + t) * 20;
+                        if(p.random() > 0.8) { // Sparse
+                            p.rect(x + off, y + off, 10, 10);
+                        }
+                        // Connecting lines
+                        if ((x+y)%200 === 0) {
+                             p.line(x, y, x + gridSize, y + gridSize);
+                        }
+                    }
                 }
             }
 
