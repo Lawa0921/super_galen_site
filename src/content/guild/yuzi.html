@@ -107,6 +107,7 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center; width: 100%;
         }
+        #hero-text { opacity: 0; /* Prevent FOUC */ }
 
         .big-text {
             font-family: 'Kanit', sans-serif;
@@ -126,6 +127,28 @@
             font-family: 'Kanit'; letter-spacing: 0.5em; margin-top: 2rem; font-size: 1.2rem;
             color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
+
+        /* --- Entrance Screen --- */
+        #entrance-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--c-dark); z-index: 10001;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.8s ease-out;
+            cursor: default;
+        }
+        .entrance-content { text-align: center; color: var(--c-solar); font-family: 'Kanit'; }
+        .entrance-title { font-size: 1.5rem; letter-spacing: 0.2em; margin-bottom: 2rem; opacity: 0.7; animation: pulse 2s infinite; }
+        .entrance-btn {
+            background: transparent; border: 2px solid var(--c-solar);
+            color: var(--c-solar); padding: 1rem 3rem;
+            font-family: 'Kanit'; font-weight: 800; font-size: 1.5rem;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        .entrance-btn:hover { background: var(--c-solar); color: #000; box-shadow: 0 0 30px var(--c-solar); }
+
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
         /* --- Content Panels (Text + Image) --- */
         .content-panel {
@@ -149,6 +172,7 @@
             box-shadow: 0 0 30px rgba(255, 221, 0, 0.1);
             position: relative; z-index: 2;
             pointer-events: auto;
+            opacity: 0; /* Prevent FOUC */
         }
 
         /* Image Card */
@@ -159,6 +183,7 @@
             padding: 10px;
             background: rgba(0,0,0,0.5);
             pointer-events: auto;
+            opacity: 0; /* Prevent FOUC */
         }
         .image-card img {
             width: 100%; height: 100%; object-fit: cover;
@@ -263,6 +288,13 @@
     </style>
 </head>
 <body>
+
+    <div id="entrance-screen">
+        <div class="entrance-content">
+            <div class="entrance-title">SYSTEM READY</div>
+            <button class="entrance-btn" id="enter-btn">INITIALIZE</button>
+        </div>
+    </div>
 
     <div id="cursor"></div>
     <div id="webgl-container"></div>
@@ -632,11 +664,6 @@
             }
         }
 
-        gsap.to("#hero-text", {
-            opacity: 0, scale: 1.5, filter: "blur(20px)",
-            scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "8% top", scrub: true }
-        });
-
         // SEQUENCE
         revealPanel("#panel-origin", 5, 16);
         revealPanel("#panel-path", 16, 27);
@@ -699,6 +726,38 @@
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
         });
+
+        // --- Entrance Logic ---
+        document.body.style.overflow = 'hidden'; // Disable scroll initially
+        const enterBtn = document.getElementById('enter-btn');
+        if (enterBtn) {
+            enterBtn.addEventListener('click', () => {
+                const overlay = document.getElementById('entrance-screen');
+
+                // Fade out overlay
+                gsap.to(overlay, {
+                    opacity: 0, duration: 1, ease: "power2.inOut",
+                    onComplete: () => overlay.remove()
+                });
+
+                // Reveal Hero Text
+                gsap.fromTo("#hero-text",
+                    { opacity: 0, scale: 0.8, filter: "blur(20px)" },
+                    {
+                        opacity: 1, scale: 1, filter: "blur(0px)", duration: 2, ease: "expo.out",
+                        onComplete: () => {
+                            document.body.style.overflow = ''; // Enable scroll
+
+                            // Init Scroll Effect
+                            gsap.to("#hero-text", {
+                                opacity: 0, scale: 1.5, filter: "blur(20px)",
+                                scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "8% top", scrub: true }
+                            });
+                        }
+                    }
+                );
+            });
+        }
 
     </script>
 </body>
