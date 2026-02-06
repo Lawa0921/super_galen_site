@@ -31,3 +31,6 @@ Are they installed?
     at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
     at async file:///app/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:47014:28
 16:35:21 [200] /guild/ariel 24ms
+04:33:11 [watch] src/content/guild/ariel.html
+04:33:48 [200] /guild/ariel 95ms
+04:37:01 [watch] src/content/guild/ariel.html

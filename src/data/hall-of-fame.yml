@@ -670,12 +670,14 @@ members:
 
   - id: "ariel"
     name: "Ariel"
-    avatar: "/assets/img/guild/ariel/avatar.webp"
+    avatar: "/assets/img/guild/ariel/avatar_main.webp"
     page: "/guild/ariel.html"
     tags:
       - id: "ra_manager"
         label: "RA Manager"
-      - id: "tarot_reader"
-        label: "Tarot Reader"
+      - id: "alchemist"
+        label: "Alchemist"
       - id: "weaver"
         label: "Weaver"
+      - id: "infp"
+        label: "INFP"
