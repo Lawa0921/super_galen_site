@@ -428,7 +428,6 @@
         <!-- FOOTER -->
         <footer id="site-footer">
             <h3><a href="/guild/" style="color: inherit; text-decoration: none;">SuperGalen's Dungeon</a></h3>
-            <p style="font-size: 0.8rem;">&copy; 2024 Liloyee Guild Page</p>
         </footer>
 
     </main>
@@ -560,27 +559,8 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- TREASURE CHEST (SPRITE) ---
-        let chestSprite;
-        let isChestOpen = false;
-
-        // fa-box-open: \uf49e, fa-gem: \uf3a5
-        const chestTexClosed = createIconTexture('\uf49e', '#ffd700');
-        const chestTexOpen = createIconTexture('\uf3a5', '#00f3ff');
-
-        const chestMat = new THREE.SpriteMaterial({ map: chestTexClosed });
-        chestSprite = new THREE.Sprite(chestMat);
-        // Position on sand
-        const chestBaseY = getSandHeight(0, -5) + sandY + 3;
-        chestSprite.position.set(0, chestBaseY, -5);
-        chestSprite.scale.set(8, 8, 1);
-        chestSprite.name = 'ChestSprite';
-        scene.add(chestSprite);
-
-
-        // --- TREASURES (SPRITES) ---
+        // --- TREASURES CONFIG ---
         const treasures = [];
-
         const treasureTypes = [
             // Wealth
             { char: '\uf51e', color: '#ffd700', category: 'wealth' }, // Gold Coins
@@ -603,13 +583,39 @@
             { char: '\uf6d5', color: '#ff4500', category: 'artifact' }, // Dragon
         ];
 
+        // --- TREASURE CHEST (SPRITE) ---
+        let chestSprite;
+        let isChestOpen = false;
+        let chestTexClosed, chestTexOpen;
+
+        document.fonts.ready.then(() => {
+            // 1. Chest Textures
+            chestTexClosed = createIconTexture('\uf49e', '#ffd700');
+            chestTexOpen = createIconTexture('\uf3a5', '#00f3ff');
+
+            const chestMat = new THREE.SpriteMaterial({ map: chestTexClosed });
+            chestSprite = new THREE.Sprite(chestMat);
+            // Position on sand
+            const chestBaseY = getSandHeight(0, -5) + sandY + 3;
+            chestSprite.position.set(0, chestBaseY, -5);
+            chestSprite.scale.set(8, 8, 1);
+            chestSprite.name = 'ChestSprite';
+            scene.add(chestSprite);
+
+            // 2. Cache Treasure Textures
+            treasureTypes.forEach(t => {
+                const tex = createIconTexture(t.char, t.color);
+                t.material = new THREE.SpriteMaterial({ map: tex });
+            });
+
+            spawnInitialTreasures();
+        });
+
         // --- SPAWN INITIAL TREASURES ---
         function spawnInitialTreasures() {
             for(let i=0; i<200; i++) {
                 const config = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
-                const tex = createIconTexture(config.char, config.color);
-                const mat = new THREE.SpriteMaterial({ map: tex });
-                const sprite = new THREE.Sprite(mat);
+                const sprite = new THREE.Sprite(config.material);
 
                 // Scatter around chest
                 const angle = Math.random() * Math.PI * 2;
@@ -625,7 +631,6 @@
                 scene.add(sprite);
             }
         }
-        spawnInitialTreasures();
 
         function spawnTreasure(screenX, screenY) {
             spawnTreasureInternal(screenX, screenY, false);
@@ -677,9 +682,7 @@
                     config = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
                 }
 
-                const tex = createIconTexture(config.char, config.color);
-                const mat = new THREE.SpriteMaterial({ map: tex });
-                const sprite = new THREE.Sprite(mat);
+                const sprite = new THREE.Sprite(config.material);
 
                 sprite.position.copy(spawnPos);
                 sprite.position.x += (Math.random()-0.5)*2;
@@ -831,6 +834,8 @@
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
+            if (!chestSprite) return;
+
             // Check interaction with chest sprite
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
