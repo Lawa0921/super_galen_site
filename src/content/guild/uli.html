@@ -784,19 +784,18 @@
         });
 
         // 2. Scattered Images (Parallax & Float)
-        gsap.utils.toArray('.scatter-img').forEach((img, i) => {
-            // Parallax effect: Move different speeds based on random logic or class
-            const speed = 0.5 + Math.random() * 0.5;
+        const scatterImages = gsap.utils.toArray('.scatter-img');
 
-            // Only apply scroll trigger animation if NOT mobile (optional, but keep it for now as GSAP handles resize well enough usually, though layout shift might occur.
-            // Better to let them float but maybe reduce distance on mobile.
-            // For now, simple check:
-            let mm = gsap.matchMedia();
+        // Mobile/Desktop Split Logic
+        let mm = gsap.matchMedia();
 
-            mm.add("(min-width: 769px)", () => {
-                 gsap.to(img, {
-                    y: -100 * speed, // Move up as we scroll down
-                    rotation: Math.random() * 10 - 5, // Slight rotation change
+        mm.add("(min-width: 769px)", () => {
+            // Desktop: Parallax Effect
+            scatterImages.forEach((img) => {
+                const speed = 0.5 + Math.random() * 0.5;
+                gsap.to(img, {
+                    y: -100 * speed,
+                    rotation: Math.random() * 10 - 5,
                     scrollTrigger: {
                         trigger: img.closest('.section'),
                         start: "top bottom",
@@ -805,8 +804,10 @@
                     }
                 });
             });
+        });
 
-            // Entrance works for all
+        // Entrance works for all (Outside matchMedia to avoid duplication or state loss)
+        scatterImages.forEach((img) => {
             gsap.from(img, {
                 opacity: 0,
                 scale: 0.8,
