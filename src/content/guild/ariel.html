@@ -27,17 +27,16 @@
 
     <style>
         :root {
-            /* Palette transforms from Clinical to Mystic */
-            --c-bg: #f4f7f6; /* Clinical White */
+            --c-bg: #f8f9fa;
             --c-text: #2c3e50;
-            --c-accent-science: #3498db; /* Science Blue */
-            --c-accent-mystic: #9b59b6; /* Mystic Purple */
+            --c-science: #2980b9;
+            --c-mystic: #8e44ad;
             --c-gold: #d4af37;
         }
 
         body {
             margin: 0;
-            background-color: var(--c-bg); /* Will animate via GSAP */
+            background-color: var(--c-bg);
             color: var(--c-text);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
@@ -48,100 +47,98 @@
             z-index: 0; pointer-events: none;
         }
 
-        /* UI Overlay */
         .ui-layer {
             position: relative; z-index: 10;
-            max-width: 1000px; margin: 0 auto;
-            pointer-events: none; /* Let clicks pass to 3D if needed, but mostly scroll */
+            max-width: 1100px; margin: 0 auto;
+            pointer-events: none;
         }
         .ui-content { pointer-events: auto; }
 
-        /* Navigation */
+        /* Nav */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-family: 'Cinzel'; font-weight: 700; color: var(--c-text);
-            text-decoration: none; border: 2px solid var(--c-text);
+            font-family: 'Cinzel'; font-weight: 700;
+            text-decoration: none; border: 2px solid #fff; color: #fff;
             padding: 0.5rem 1rem; transition: 0.3s;
-            mix-blend-mode: difference; /* Ensure visibility on dark/light */
-            color: #fff; border-color: #fff; /* Default to white for mix-blend */
+            mix-blend-mode: difference;
         }
 
         /* Typography */
-        h1, h2, h3 { font-family: 'Cinzel', serif; margin: 0; }
-        p { font-family: 'Noto Serif TC', serif; line-height: 2; font-size: 1.1rem; }
+        h1, h2, h3, h4 { font-family: 'Cinzel', serif; margin: 0; }
+        p { line-height: 1.8; font-size: 1.05rem; margin-bottom: 1.5rem; text-align: justify; }
 
-        .en-label {
+        .section-label {
             font-family: 'Lato', sans-serif; text-transform: uppercase; letter-spacing: 3px;
-            font-size: 0.8rem; opacity: 0.7; display: block; margin-bottom: 0.5rem;
-        }
-
-        /* Sections */
-        section {
-            min-height: 100vh;
-            display: flex; align-items: center;
-            padding: 2rem; box-sizing: border-box;
-            position: relative;
+            font-size: 0.8rem; opacity: 0.6; display: block; margin-bottom: 1rem; font-weight: 700;
         }
 
         /* Cards */
-        .story-card {
+        .glass-card {
             background: rgba(255, 255, 255, 0.9);
-            padding: 3rem; border-radius: 4px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            max-width: 500px;
-            border-left: 4px solid var(--c-accent-science);
-            transition: 0.5s;
-        }
-
-        /* Dark Mode style for bottom sections */
-        .story-card.mystic {
-            background: rgba(20, 10, 30, 0.8);
-            color: #f0f0f0;
-            border-left-color: var(--c-gold);
             backdrop-filter: blur(10px);
+            padding: 3rem; border-radius: 4px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--c-science);
+            transition: transform 0.3s, box-shadow 0.3s;
         }
-        .story-card.mystic p { color: #ddd; }
-        .story-card.mystic h2 { color: var(--c-gold); }
+        .glass-card:hover { transform: translateY(-5px); box-shadow: 0 20px 50px rgba(0,0,0,0.12); }
 
-        /* Hero */
-        #hero { justify-content: center; text-align: center; }
-        .hero-title {
-            font-size: 4rem; margin-bottom: 1rem;
-            background: linear-gradient(to right, #2c3e50, #3498db);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        .glass-card.mystic {
+            background: rgba(20, 15, 30, 0.85);
+            color: #f0f0f0; border-left-color: var(--c-mystic);
         }
-        .hero-subtitle { font-size: 1.2rem; letter-spacing: 2px; color: #555; margin-bottom: 2rem; }
+        .glass-card.mystic p { color: #ddd; }
+        .glass-card.mystic h2 { color: var(--c-gold); }
 
-        .scroll-hint {
-            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-            animation: bounce 2s infinite; opacity: 0.6;
+        /* Layouts */
+        section {
+            min-height: 100vh; display: flex; align-items: center; padding: 4rem 2rem; box-sizing: border-box;
         }
-        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; width: 100%; align-items: center; }
+        .col-text { max-width: 600px; }
 
-        /* Image Props */
-        .prop-img {
-            width: 100%; border-radius: 4px; margin-top: 1rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        /* Components */
+        .service-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+        .service-list li {
+            margin-bottom: 0.8rem; padding-left: 1.5rem; position: relative; font-family: 'Lato'; font-weight: 700;
         }
+        .service-list li::before {
+            content: '▹'; position: absolute; left: 0; color: var(--c-science);
+        }
+        .mystic .service-list li::before { color: var(--c-gold); }
+
+        .stat-card {
+            background: rgba(41, 128, 185, 0.1); padding: 1.5rem; border-radius: 8px;
+            margin-top: 2rem; border: 1px solid var(--c-science);
+        }
+        .stat-number { font-size: 2.5rem; font-weight: 700; color: var(--c-science); font-family: 'Lato'; }
+        .stat-desc { font-size: 0.9rem; margin: 0; opacity: 0.8; }
+
+        .mystic-badge {
+            display: inline-block; padding: 0.3rem 1rem; border: 1px solid var(--c-gold);
+            border-radius: 20px; color: var(--c-gold); font-size: 0.8rem; margin-right: 0.5rem; margin-bottom: 0.5rem;
+        }
+
+        /* Hero Specific */
+        .hero-avatar-container {
+            width: 180px; height: 180px; border-radius: 50%; border: 3px solid var(--c-science);
+            padding: 5px; margin: 0 auto 2rem auto; position: relative;
+        }
+        .hero-avatar-container::after {
+            content: ''; position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border: 1px dashed var(--c-science); border-radius: 50%; animation: spin 20s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Footer */
-        .final-footer {
-            height: 50vh; display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            background: #000; color: var(--c-gold);
+        .footer-cta {
+            text-align: center; padding: 6rem 2rem; color: var(--c-gold); background: #000;
             position: relative; z-index: 20;
         }
-        .social-row { display: flex; gap: 2rem; font-size: 2rem; margin-top: 2rem; }
-        .social-row a { color: var(--c-gold); transition: 0.3s; }
-        .social-row a:hover { transform: scale(1.2); color: #fff; }
 
-        /* Layout Utils */
-        .align-right { margin-left: auto; }
-        .align-left { margin-right: auto; }
-
-        @media (max-width: 768px) {
-            .hero-title { font-size: 3rem; }
-            .story-card { padding: 2rem; max-width: 100%; }
+        @media (max-width: 900px) {
+            .grid-2 { grid-template-columns: 1fr; gap: 2rem; }
+            h1 { font-size: 3rem; }
         }
 
     </style>
@@ -153,94 +150,118 @@
 
     <div class="ui-layer">
 
-        <!-- Scene 1: The Lab (White/Blue) -->
-        <section id="hero">
-            <div class="ui-content">
-                <span class="en-label">Regulatory Affairs Manager</span>
-                <h1 class="hero-title">ARIEL</h1>
-                <p class="hero-subtitle">The Alchemist of Structure</p>
-                <div style="width: 150px; height: 150px; margin: 0 auto; border-radius: 50%; overflow: hidden; border: 4px solid #3498db;">
-                    <img src="/assets/img/guild/ariel/avatar_main.webp" style="width: 100%; height: 100%; object-fit: cover;">
+        <!-- HERO: The Bridge -->
+        <section style="justify-content: center; text-align: center;">
+            <div class="ui-content" style="max-width: 800px;">
+                <div class="hero-avatar-container">
+                    <img src="/assets/img/guild/ariel/avatar_main.webp" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                </div>
+                <h1 style="font-size: 4rem; margin-bottom: 0.5rem; color: var(--c-text);">ARIEL</h1>
+                <h3 style="color: var(--c-science); letter-spacing: 2px; margin-bottom: 2rem;">The Bridge Between Science & Soul</h3>
+                <p style="text-align: center; font-size: 1.2rem;">
+                    "My mission is not merely to survive, but to thrive." <br>
+                    我是 Ariel，一位在醫藥法規領域深耕 15 年的專家，也是一位相信直覺的織命者。
+                    我協助企業在剛硬的法規中找到路徑，也協助個人在混亂的生活中編織秩序。
+                </p>
+                <div style="margin-top: 2rem; opacity: 0.6; font-size: 0.9rem;">SCROLL TO SYNTHESIZE</div>
+            </div>
+        </section>
+
+        <!-- PHASE 1: Regulatory Precision -->
+        <section>
+            <div class="grid-2">
+                <div class="glass-card ui-content">
+                    <span class="section-label">01. PROFESSIONAL EXPERTISE</span>
+                    <h2 style="color: var(--c-science); margin-bottom: 1.5rem;">法規事務專家 (RA)</h2>
+                    <p>
+                        在高度管制的醫藥產業，合規不僅是義務，更是競爭優勢。
+                        我專精於 <b>小分子原料藥 (API)</b>、<b>DMF</b> 與 <b>CMC</b> 實務，
+                        能精準判讀各國法規差異，為企業建構無懈可擊的註冊策略。
+                    </p>
+                    <ul class="service-list">
+                        <li>Global Registration Strategy (歐美/亞洲市場准入)</li>
+                        <li>CMC Documentation & Gap Analysis</li>
+                        <li>Post-approval Change Management</li>
+                        <li>Risk-based Compliance Auditing</li>
+                    </ul>
+                </div>
+                <!-- 3D Space on Right -->
+            </div>
+        </section>
+
+        <!-- PHASE 2: Digital Alchemy -->
+        <section>
+            <div class="grid-2">
+                <!-- 3D Space on Left -->
+                <div></div>
+                <div class="glass-card ui-content">
+                    <span class="section-label">02. PROCESS INNOVATION</span>
+                    <h2 style="color: var(--c-science); margin-bottom: 1.5rem;">流程自動化煉金術</h2>
+                    <p>
+                        我不做重複勞動的機器。我是一個「非典型」管理者，熱衷於用科技解放生產力。
+                        透過 <b>Gemini AI</b>、<b>VBA</b> 與 <b>SharePoint</b> 的整合，
+                        我將繁瑣的文書地獄轉化為自動化流水線。
+                    </p>
+                    <div class="stat-card">
+                        <div class="stat-number">-40%</div>
+                        <p class="stat-desc">Document Processing Time</p>
+                        <div style="height: 1px; background: rgba(0,0,0,0.1); margin: 0.5rem 0;"></div>
+                        <p style="font-size: 0.8rem;">*Implemented via Custom VBA & AI Tools</p>
+                    </div>
+                    <p style="margin-top: 1.5rem;">
+                        <b>價值主張：</b> 我能協助團隊從低價值勞動中釋放，轉向高價值的策略思考。
+                    </p>
                 </div>
             </div>
-            <div class="scroll-hint">Begin the Synthesis <i class="fa-solid fa-chevron-down"></i></div>
         </section>
 
-        <!-- Scene 2: The Structure (Left) -->
-        <section>
-            <div class="story-card ui-content align-left">
-                <span class="en-label">The Molecular Grid</span>
-                <h2>法規的結構美學</h2>
-                <p>
-                    在醫藥產業深耕 15 年，我處理的是最嚴謹的 <b>API</b> 與 <b>CMC</b> 法規。
-                    這裡沒有模糊地帶，每一個分子、每一個數據都必須精準到位。
-                </p>
-                <p>
-                    這看起來像是冷冰冰的科學，但對我來說，這是守護生命的安全網。
-                    我享受在混亂的數據中建立秩序，像搭建分子結構一樣，構建出無懈可擊的合規策略。
-                </p>
-            </div>
-        </section>
-
-        <!-- Scene 3: The Unraveling (Right) -->
-        <section>
-            <div class="story-card ui-content align-right">
-                <span class="en-label">Servant Leadership</span>
-                <h2>打破框架</h2>
-                <p>
-                    但規則是死的，人是活的。
-                    我不希望我的團隊變成只會填表的機器。
-                </p>
-                <p>
-                    所以我引入了 <b>Automation</b> (VBA, Gemini)。
-                    我拆解了繁瑣的流程（Unraveling），釋放出團隊的時間與創意。
-                    這就是我的「僕人式領導」——我不僅僅是指揮者，更是那個幫大家解開死結的人。
-                </p>
-            </div>
-        </section>
-
-        <!-- Scene 4: The Transformation (Center) -->
+        <!-- PHASE 3: Intuitive Insight -->
         <section style="justify-content: center;">
-            <div class="story-card mystic ui-content">
-                <span class="en-label">The Alchemist's Transmutation</span>
-                <h2>從結構到靈魂</h2>
-                <p>
-                    當理性的結構被解構後，剩下的是什麼？
-                    是 <b>直覺 (Intuition)</b>。
-                </p>
-                <p>
-                    在工作之外，我脫下了實驗袍，換上了織女的長裙。
-                    我用鉤針編織絲線，用塔羅解讀人心。
-                </p>
-            </div>
-        </section>
-
-        <!-- Scene 5: The Mystic Loom (Left) -->
-        <section>
-            <div class="story-card mystic ui-content align-left" style="border-left-color: #9b59b6;">
-                <span class="en-label">Weaver of Fate</span>
-                <h2>織命者</h2>
-                <p>
-                    <b>左手拿法規，右手拿塔羅。</b>
-                    這看似矛盾的兩面，在我身上達成了奇妙的平衡。
-                </p>
-                <p>
-                    我是 Ariel，一個在 Human 3.0 時代，嘗試將冰冷的邏輯與溫暖的魔法編織在一起的煉金術師。
-                    我的守護靈是 <b>Astro-Logical Wolf</b>，在星辰與數據之間，敏銳地嗅出未來的方向。
-                </p>
-                <img src="/assets/img/guild/ariel/material_bg.webp" class="prop-img" alt="Weaving Material">
+            <div class="glass-card mystic ui-content" style="max-width: 800px; width: 100%;">
+                <div class="grid-2" style="gap: 3rem;">
+                    <div>
+                        <span class="section-label" style="color: var(--c-gold);">03. HOLISTIC INSIGHT</span>
+                        <h2 style="margin-bottom: 1rem;">直覺與織命</h2>
+                        <p>
+                            當法規架構了骨架，人性的洞察則賦予了靈魂。
+                            作為 <b>INFP</b> 與 <b>人類圖</b> 研究者，我擁有獨特的識人天賦。
+                            我能看見每個人在團隊中的「原廠設定」，協助領導者將對的人放在對的位置。
+                        </p>
+                        <div style="margin: 1.5rem 0;">
+                            <span class="mystic-badge">Team Synergy</span>
+                            <span class="mystic-badge">Talent Mapping</span>
+                            <span class="mystic-badge">Intuitive Consulting</span>
+                        </div>
+                        <p>
+                            此外，透過 <b>鉤針 (Crochet)</b> 與 <b>塔羅</b>，我修煉專注與直覺。
+                            這讓我在處理危機時，能保持如絲線般強韌而柔軟的彈性。
+                        </p>
+                    </div>
+                    <div style="text-align: center;">
+                        <img src="/assets/img/guild/ariel/material_bg.webp" style="width: 100%; border-radius: 4px; border: 1px solid var(--c-gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);">
+                        <p style="font-size: 0.8rem; margin-top: 1rem; opacity: 0.7; color: var(--c-gold);">
+                            <i class="fa-solid fa-dog"></i> Spirit Animal: <b>Astro-Logical Wolf</b>
+                        </p>
+                    </div>
+                </div>
             </div>
         </section>
 
     </div>
 
-    <footer class="final-footer">
-        <h2 style="font-family: 'Cinzel'; letter-spacing: 5px;">THE JOURNEY CONTINUES</h2>
-        <div class="social-row">
-            <a href="https://www.threads.net/@iabc5040"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.instagram.com/iabc5040/"><i class="fa-brands fa-instagram"></i></a>
+    <footer class="footer-cta">
+        <h3>READY TO WEAVE THE FUTURE?</h3>
+        <p style="opacity: 0.7; max-width: 500px; margin: 1rem auto;">
+            無論是建立堅固的法規堡壘，還是編織靈活的團隊文化，
+            Ariel 都能為您提供獨特的視角與解決方案。
+        </p>
+        <div style="font-size: 2rem; margin-top: 2rem; display: flex; justify-content: center; gap: 2rem;">
+            <a href="https://www.threads.net/@iabc5040" style="color: var(--c-gold);"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/iabc5040/" style="color: var(--c-gold);"><i class="fa-brands fa-instagram"></i></a>
         </div>
-        <p style="margin-top: 2rem; opacity: 0.5; font-size: 0.8rem;">Made with love by SuperGalen's Dungeon</p>
+        <div style="margin-top: 4rem; font-size: 0.8rem; color: #555;">
+            Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon
+        </div>
     </footer>
 
     <script type="module">
@@ -249,7 +270,7 @@
         // --- SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf4f7f6); // Initial Lab Color
+        scene.background = new THREE.Color(0xf8f9fa); // Clinical White
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 30);
@@ -262,94 +283,71 @@
         // --- LIGHTS ---
         const ambLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambLight);
-
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
         dirLight.position.set(10, 20, 10);
         scene.add(dirLight);
 
-        // --- PART 1: THE MOLECULES (Structure) ---
-        // Instanced Mesh for performance
-        const atomCount = 200;
-        const atomGeo = new THREE.IcosahedronGeometry(0.5, 1);
-        const atomMat = new THREE.MeshStandardMaterial({ color: 0x3498db, roughness: 0.2, metalness: 0.5 });
+        // --- PART 1: MOLECULES (Science) ---
+        // Moved to Right side visually
+        const atomCount = 150;
+        const atomGeo = new THREE.IcosahedronGeometry(0.6, 1);
+        const atomMat = new THREE.MeshStandardMaterial({ color: 0x2980b9, roughness: 0.2, metalness: 0.5 });
         const atoms = new THREE.InstancedMesh(atomGeo, atomMat, atomCount);
 
         const dummy = new THREE.Object3D();
-        const atomPositions = [];
-
         for(let i=0; i<atomCount; i++) {
-            // Grid-like arrangement + some noise
-            const x = (Math.random() - 0.5) * 40;
-            const y = (Math.random() - 0.5) * 60; // Tall distribution
+            const x = (Math.random() - 0.5) * 30 + 10; // Biased to Right
+            const y = (Math.random() - 0.5) * 50;
             const z = (Math.random() - 0.5) * 20;
-
             dummy.position.set(x, y, z);
             dummy.scale.setScalar(Math.random() * 0.5 + 0.5);
             dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
             dummy.updateMatrix();
             atoms.setMatrixAt(i, dummy.matrix);
-
-            atomPositions.push({x, y, z, originalY: y});
         }
         scene.add(atoms);
 
-        // Connections (Grid Lines)
-        const gridHelper = new THREE.GridHelper(100, 50, 0xbdc3c7, 0xeef2f3);
-        gridHelper.rotation.x = Math.PI / 2; // Vertical wall
-        gridHelper.position.z = -10;
+        // Grid (Floor)
+        const gridHelper = new THREE.GridHelper(100, 40, 0xbdc3c7, 0xeef2f3);
+        gridHelper.rotation.x = Math.PI / 2;
+        gridHelper.position.z = -15;
         scene.add(gridHelper);
 
-
-        // --- PART 2: THE GOLDEN THREAD (Transition) ---
-        // A long curve that starts invisible and draws itself
+        // --- PART 2: THE THREAD (Transition) ---
+        // Biased to Left
         const curvePoints = [
-            new THREE.Vector3(0, 10, 0),
-            new THREE.Vector3(5, 0, 5),
-            new THREE.Vector3(-5, -10, 0),
-            new THREE.Vector3(8, -20, 10),
-            new THREE.Vector3(0, -30, 0), // End at Tarot
+            new THREE.Vector3(15, 10, 0),
+            new THREE.Vector3(-10, 0, 5),
+            new THREE.Vector3(-15, -15, 0),
+            new THREE.Vector3(0, -30, 0),
         ];
         const curve = new THREE.CatmullRomCurve3(curvePoints);
-        const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.1, 8, false);
+        const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.15, 8, false);
         const tubeMat = new THREE.MeshStandardMaterial({
             color: 0xd4af37, emissive: 0xaa8800, emissiveIntensity: 0.5,
             metalness: 1, roughness: 0.3
         });
         const thread = new THREE.Mesh(tubeGeo, tubeMat);
-        thread.geometry.setDrawRange(0, 0); // Start hidden
+        thread.geometry.setDrawRange(0, 0);
         scene.add(thread);
 
-
-        // --- PART 3: THE TAROT (Mystic) ---
-        // Texture from asset
-        const textureLoader = new THREE.TextureLoader();
-        const cardTexture = textureLoader.load('/assets/img/guild/ariel/material_bg.webp');
-
-        const cardGeo = new THREE.PlaneGeometry(6, 10);
-        const cardMat = new THREE.MeshStandardMaterial({
-            map: cardTexture, side: THREE.DoubleSide,
-            roughness: 0.6
-        });
-        const tarot = new THREE.Mesh(cardGeo, cardMat);
-        tarot.position.set(0, -30, 0);
-        tarot.rotation.y = Math.PI; // Back facing first
-        scene.add(tarot);
-
-        // Particle Stars for the bottom
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = [];
-        for(let i=0; i<500; i++) {
-            starPos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100 - 30, (Math.random()-0.5)*50);
+        // --- PART 3: MYSTIC ORBS (Soul) ---
+        const orbGeo = new THREE.SphereGeometry(0.2, 16, 16);
+        const orbMat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0 });
+        const orbs = new THREE.InstancedMesh(orbGeo, orbMat, 300);
+        const orbDummy = new THREE.Object3D();
+        for(let i=0; i<300; i++) {
+            orbDummy.position.set(
+                (Math.random()-0.5)*50,
+                (Math.random()-0.5)*50 - 40, // Lower down
+                (Math.random()-0.5)*30
+            );
+            orbDummy.updateMatrix();
+            orbs.setMatrixAt(i, orbDummy.matrix);
         }
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0 });
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
+        scene.add(orbs);
 
-
-        // --- GSAP ANIMATION TIMELINE ---
-
-        // Master Timeline linked to scroll
+        // --- ANIMATION ---
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
@@ -359,52 +357,39 @@
             }
         });
 
-        // Phase 1: Exploration (0-30%)
-        // Camera moves down, Atoms rotate
-        tl.to(camera.position, { y: -10, z: 20, duration: 3 });
-        tl.to(atoms.rotation, { y: 1, duration: 3 }, "<");
+        // 1. Molecule Phase
+        tl.to(atoms.rotation, { y: 1.5, duration: 3 });
+        tl.to(camera.position, { y: -10, duration: 3 }, "<");
 
-        // Phase 2: Unraveling (30-60%)
-        // Atoms scatter, Grid fades, Background darkens
-        tl.to(atoms.position, { x: 50, duration: 2, ease: "power2.in" }, "phase2"); // Fly away
-        tl.to(gridHelper.material, { opacity: 0, transparent: true, duration: 1 }, "phase2");
-
-        // Background Color Shift (White -> Deep Purple/Black)
-        const colorObj = { r: 0.95, g: 0.97, b: 0.96 }; // #f4f7f6
+        // 2. Transition Phase (Color Shift + Thread)
+        // Shift BG to Dark
+        const colorObj = { r: 0.97, g: 0.97, b: 0.98 };
         tl.to(colorObj, {
-            r: 0.05, g: 0.02, b: 0.1, // Dark Purple #0d051a
+            r: 0.08, g: 0.06, b: 0.12, // Dark #140f1e
             duration: 3,
             onUpdate: () => scene.background.setRGB(colorObj.r, colorObj.g, colorObj.b)
         }, "phase2");
 
-        // Thread Draws
-        // Tubular segments = 100, Radial = 8, Triangles = 2 per face.
-        // Index count roughly: 100 * 8 * 6 = 4800. Let's use 5000 to be safe.
+        // Hide Grid, Scatter Atoms
+        tl.to(gridHelper.material, { opacity: 0, duration: 1 }, "phase2");
+        tl.to(atoms.position, { x: 50, duration: 3, ease: "power2.in" }, "phase2");
+
+        // Draw Thread (Corrected math: 100*8*6 indices approx 4800)
         tl.to(thread.geometry, {
-            duration: 3,
+            duration: 4,
             onUpdate: function() { this.targets()[0].setDrawRange(0, Math.floor(this.progress() * 5000)); }
         }, "phase2");
 
-        // Phase 3: Mystic (60-100%)
-        // Camera follows thread to Tarot
-        tl.to(camera.position, { y: -30, z: 15, duration: 4 }, "phase3");
+        // 3. Mystic Phase
+        tl.to(camera.position, { y: -35, z: 20, duration: 4 }, "phase3");
+        tl.to(orbMat, { opacity: 0.6, duration: 2 }, "phase3");
+        tl.to(orbs.rotation, { y: 1, duration: 4 }, "phase3");
 
-        // Stars appear
-        tl.to(starMat, { opacity: 0.8, duration: 2 }, "phase3");
-
-        // Tarot Spin
-        tl.to(tarot.rotation, { y: Math.PI * 4, duration: 4, ease: "none" }, "phase3");
-        tl.to(tarot.rotation, { x: 0.2, duration: 4 }, "phase3");
-
-
-        // --- LOOP ---
+        // Render Loop
         function animate() {
             requestAnimationFrame(animate);
-
-            // Subtle idle motion
             atoms.rotation.z += 0.0005;
-            tarot.position.y = -30 + Math.sin(Date.now()*0.001)*0.5;
-
+            orbs.rotation.y -= 0.0005;
             renderer.render(scene, camera);
         }
         animate();
@@ -415,7 +400,6 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
     </script>
 </body>
 </html>
