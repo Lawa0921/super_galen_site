@@ -53,7 +53,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 600vh;
+            height: 1000vh; /* Expanded for more content */
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -79,6 +79,7 @@
         .hero-container {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center; width: 100%;
+            pointer-events: none; /* Prevent blocking */
         }
 
         .big-text {
@@ -149,9 +150,47 @@
         .text-card p {
             font-size: 1.1rem; line-height: 1.8; color: #eee; margin-bottom: 1rem;
         }
+        .text-card ul {
+            list-style: none; padding: 0; margin: 0;
+        }
+        .text-card li {
+            font-size: 1.1rem; line-height: 1.8; color: #eee;
+            margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px;
+        }
+        .text-card li i { color: var(--c-rose); }
+
         .highlight {
             color: var(--c-rose); font-weight: 900;
             background: rgba(255, 64, 129, 0.1); padding: 0 5px; border-radius: 4px;
+        }
+
+        /* --- Gallery Panel --- */
+        #panel-gallery {
+            flex-direction: column;
+            gap: 2rem;
+            width: 90%; max-width: 1200px; left: 5%;
+        }
+        .gallery-title {
+            font-family: 'Dela Gothic One'; font-size: 3rem; color: #fff;
+            text-shadow: 2px 2px 0 var(--c-tea); text-align: center;
+            opacity: 0; transform: translateY(20px);
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            pointer-events: auto;
+        }
+        .g-item {
+            border-radius: 15px; overflow: hidden;
+            height: 250px; border: 2px solid rgba(255,255,255,0.2);
+            position: relative; opacity: 0; transform: scale(0.8);
+            transition: transform 0.3s;
+        }
+        .g-item:hover { transform: scale(1.05) !important; z-index: 10; border-color: var(--c-tea); }
+        .g-item img {
+            width: 100%; height: 100%; object-fit: cover;
         }
 
         /* --- Finale --- */
@@ -205,6 +244,8 @@
             .big-text { font-size: 15vw; white-space: normal; }
             .finale-avatar { width: 150px; height: 150px; }
             .social-btn { padding: 0.8rem 1.5rem; font-size: 1.2rem; }
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+            #panel-gallery { width: 100%; left: 0; padding: 0 1rem; }
         }
     </style>
 </head>
@@ -257,10 +298,26 @@
             </div>
         </div>
 
-        <!-- 3. Values -->
+        <!-- 3. Services (New) -->
         <div id="panel-3" class="content-panel panel-left">
             <div class="text-card">
-                <h3>// 價值 VALUES</h3>
+                <h3>// 服務 SERVICES</h3>
+                <p>我們提供的不只是一杯飲料，而是一份對生活質感的承諾。</p>
+                <ul>
+                    <li><i class="fa-solid fa-seedling"></i> <strong>有機真花選材</strong>：嚴選可食用花卉，絕不使用人工糖漿。</li>
+                    <li><i class="fa-solid fa-flask"></i> <strong>花香果凍工藝</strong>：獨家研發花香系列果凍，口感Q彈，香氣天然。</li>
+                    <li><i class="fa-solid fa-heart-pulse"></i> <strong>健康把關</strong>：為每一位客人的健康著想，堅持製程透明。</li>
+                </ul>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/miglo/gallery_6.webp" alt="Healthy Ingredients">
+            </div>
+        </div>
+
+        <!-- 4. Values (Shifted) -->
+        <div id="panel-4" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 連結 CONNECTION</h3>
                 <p>對我來說，<span class="highlight">客人就像朋友一樣</span>。</p>
                 <p>我會很努力記住每個客人的口味跟喜好，甚至幫忙把關健康！</p>
                 <p>這些年從家人的反對到支持，全靠我屹立不搖的信念。我是個想做什麼就會很執著，一直堅持做下去的人！</p>
@@ -270,8 +327,8 @@
             </div>
         </div>
 
-        <!-- 4. Personality -->
-        <div id="panel-4" class="content-panel panel-right">
+        <!-- 5. Personality (Shifted) -->
+        <div id="panel-5" class="content-panel panel-left">
             <div class="text-card">
                 <h3>// 特質 TRAITS</h3>
                 <p><strong>ENFP 競選者</strong></p>
@@ -280,6 +337,22 @@
             </div>
             <div class="image-card">
                 <img src="/assets/img/guild/miglo/gallery_5.webp" alt="Miglo Product">
+            </div>
+        </div>
+
+        <!-- 6. Gallery (New) -->
+        <div id="panel-gallery" class="content-panel">
+            <div class="gallery-title">FLORAL GALLERY</div>
+            <div class="gallery-grid">
+                <!-- Using all gallery images -->
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_1.webp"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_2.webp"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_3.webp"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_4.webp"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_5.webp"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_6.webp"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_7.webp"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/avatar.webp"></div>
             </div>
         </div>
     </div>
@@ -432,11 +505,24 @@
         });
 
         function startAnimations() {
-            // Hero
+            // Hero Entrance
             gsap.fromTo(".big-text",
                 { opacity: 0, scale: 0.5, rotation: -10 },
                 { opacity: 1, scale: 1, rotation: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" }
             );
+
+            // Hero Exit (New - fixes title overlap)
+            gsap.to(".hero-container", {
+                opacity: 0,
+                y: -100,
+                scale: 1.5,
+                scrollTrigger: {
+                    trigger: "#scroll-spacer",
+                    start: "top top",
+                    end: "5% top",
+                    scrub: true
+                }
+            });
 
             // Camera Flight
             gsap.to(camera.position, {
@@ -450,12 +536,13 @@
                 }
             });
 
-            // Panels
+            // Panels - Re-calculated for 1000vh spacer and 6 panels
             const panels = [
-                { id: "#panel-1", start: 10, end: 25 },
-                { id: "#panel-2", start: 30, end: 45 },
-                { id: "#panel-3", start: 50, end: 65 },
-                { id: "#panel-4", start: 70, end: 85 }
+                { id: "#panel-1", start: 10, end: 20 },
+                { id: "#panel-2", start: 25, end: 35 },
+                { id: "#panel-3", start: 40, end: 50 }, // Services
+                { id: "#panel-4", start: 55, end: 65 }, // Connection
+                { id: "#panel-5", start: 70, end: 80 }  // Traits
             ];
 
             panels.forEach(p => {
@@ -470,7 +557,7 @@
 
                 // Entrance
                 tl.to(`${p.id} .text-card`, { opacity: 1, x: 0, rotation: 0, duration: 1 }, 0);
-                tl.to(`${p.id} .image-card`, { opacity: 1, x: 0, rotation: -3, duration: 1 }, 0); // Restore slight tilt
+                tl.to(`${p.id} .image-card`, { opacity: 1, x: 0, rotation: -3, duration: 1 }, 0);
 
                 // Exit
                 tl.to([`${p.id} .text-card`, `${p.id} .image-card`], { opacity: 0, y: -50, duration: 1 }, 2);
@@ -482,10 +569,33 @@
                 gsap.set(`${p.id} .image-card`, { opacity: 0, x: 50, rotation: 5 });
             });
 
+            // Gallery Animation (85% - 95%)
+            gsap.fromTo("#panel-gallery .gallery-title",
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0,
+                  scrollTrigger: { trigger: "#scroll-spacer", start: "85% top", end: "88% top", scrub: 1 }
+                }
+            );
+
+            const galleryItems = gsap.utils.toArray(".g-item");
+            gsap.fromTo(galleryItems,
+                { opacity: 0, scale: 0.5 },
+                {
+                    opacity: 1, scale: 1, stagger: 0.1,
+                    scrollTrigger: {
+                        trigger: "#scroll-spacer",
+                        start: "85% top",
+                        end: "92% top",
+                        scrub: 1
+                    }
+                }
+            );
+
+
             // Finale
             ScrollTrigger.create({
                 trigger: "#scroll-spacer",
-                start: "99% bottom",
+                start: "99.5% bottom", // Stricter trigger as per design pattern
                 onEnter: () => document.getElementById('finale').classList.add('active'),
                 onLeaveBack: () => document.getElementById('finale').classList.remove('active')
             });

@@ -1,38 +1,48 @@
 from playwright.sync_api import sync_playwright
+import time
 
 def verify_miglo():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
+        page.set_viewport_size({"width": 1280, "height": 800})
 
         # Navigate to the page
         url = "http://localhost:4321/guild/miglo"
         print(f"Navigating to {url}")
         page.goto(url)
 
-        # Wait for content to load (give GSAP time to potentially start)
-        page.wait_for_timeout(3000)
+        # Wait for entrance animation
+        page.wait_for_timeout(4000)
 
-        # Check title
-        title = page.title()
-        print(f"Page Title: {title}")
-        assert "Miglo Jelly" in title
+        # Verify Hero Text exists
+        assert page.locator(".big-text").count() > 0
+        print("Hero found.")
 
-        # Check for specific elements
-        # The Entrance screen might be overlaying, so we might need to click "BREWING..." or wait for it to disappear
-        # In my code: load event -> delay 0.5s -> opacity 0 -> remove.
-        # So after 3000ms it should be gone.
+        # Scroll to Services Section (approx 45%)
+        # 1000vh total. 45% of scroll height.
+        print("Scrolling to Services...")
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.45)")
+        page.wait_for_timeout(2000)
+        page.screenshot(path="verification/miglo_services.png")
 
-        # Check for "MIGLO JELLY" text
-        # It's in .big-text. GSAP reveals it.
-        # Check if it exists in DOM.
-        hero = page.locator(".big-text")
-        print("Checking for Hero Text...")
-        # Force screenshot even if verify fails later
-        page.screenshot(path="verification/miglo_screenshot.png", full_page=False)
+        # Verify Services text
+        content = page.content()
+        assert "花香果凍工藝" in content
+        print("Services section verified.")
 
-        # Verify content
-        assert hero.count() > 0
+        # Scroll to Gallery Section (approx 90%)
+        print("Scrolling to Gallery...")
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.90)")
+        page.wait_for_timeout(2000)
+        page.screenshot(path="verification/miglo_gallery.png")
+
+        # Verify Gallery images exist and are visible
+        # We look for .g-item
+        gallery_items = page.locator(".g-item")
+        count = gallery_items.count()
+        print(f"Gallery items found: {count}")
+        assert count >= 7
 
         print("Verification Successful")
         browser.close()
