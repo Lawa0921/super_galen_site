@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;500;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;500;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- GSAP -->
@@ -27,125 +27,164 @@
 
     <style>
         :root {
-            --c-bg: #f0f4f8; /* Softer Blue-Grey */
-            --c-text: #2c3e50;
-            --c-science: #2980b9;
-            --c-mystic: #8e44ad;
-            --c-gold: #d4af37;
+            --bg-color: #0c0e14;
+            --text-color: #f0f0f0;
+            --accent-science: #3498db;
+            --accent-gold: #d4af37;
+            --accent-mystic: #9b59b6;
+            --glass: rgba(20, 25, 35, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         body {
             margin: 0;
-            background-color: var(--c-bg);
-            color: var(--c-text);
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
+            line-height: 1.8;
         }
 
+        /* --- THREE.JS BACKDROP --- */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             z-index: 0; pointer-events: none;
         }
 
-        .ui-layer {
-            position: relative; z-index: 10;
-            max-width: 1000px; margin: 0 auto;
-            pointer-events: none;
-        }
-        .ui-content { pointer-events: auto; }
-
-        /* Nav */
+        /* --- NAVIGATION --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-family: 'Cinzel'; font-weight: 700;
-            text-decoration: none; border: 2px solid #2c3e50; color: #2c3e50;
-            padding: 0.5rem 1rem; transition: 0.3s;
-            background: rgba(255,255,255,0.8);
+            font-family: 'Cinzel'; font-weight: 700; text-decoration: none;
+            color: var(--accent-gold); border: 1px solid var(--accent-gold);
+            padding: 0.5rem 1rem; transition: 0.3s; background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
         }
-        .nav-back:hover { background: var(--c-text); color: #fff; }
+        .nav-back:hover { background: var(--accent-gold); color: #000; }
 
-        /* Typography */
-        h1, h2, h3, h4 { font-family: 'Cinzel', serif; margin: 0; }
-        p { line-height: 1.9; font-size: 1.1rem; margin-bottom: 1.5rem; text-align: justify; color: #444; }
+        /* --- SIDEBAR PROGRESS --- */
+        .sidebar {
+            position: fixed; right: 2rem; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 1rem; z-index: 50;
+        }
+        .sidebar-dot {
+            width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3);
+            cursor: pointer; transition: 0.3s; position: relative;
+        }
+        .sidebar-dot.active { background: var(--accent-gold); border-color: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold); }
+        .sidebar-dot::after {
+            content: attr(data-label); position: absolute; right: 20px; top: -5px;
+            font-family: 'Cinzel'; font-size: 0.7rem; color: var(--accent-gold);
+            opacity: 0; transition: 0.3s; white-space: nowrap; pointer-events: none;
+        }
+        .sidebar-dot:hover::after, .sidebar-dot.active::after { opacity: 1; }
 
-        .section-label {
-            font-family: 'Lato', sans-serif; text-transform: uppercase; letter-spacing: 3px;
-            font-size: 0.8rem; opacity: 0.6; display: block; margin-bottom: 1rem; font-weight: 700;
+        /* --- MAIN LAYOUT --- */
+        .scroller {
+            position: relative; z-index: 10;
+            width: 100%; max-width: 1000px; margin: 0 auto;
+            padding-bottom: 20vh;
         }
 
-        /* Cards - HIGH CONTRAST */
-        .glass-card {
-            background: #ffffff; /* Solid White for readability */
-            padding: 3.5rem; border-radius: 2px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
-            border-left: 6px solid var(--c-science);
-            transition: transform 0.3s;
+        /* --- SECTIONS --- */
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 4rem 2rem; box-sizing: border-box;
             position: relative;
         }
-        .glass-card::before {
-            content: ''; position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px;
-            border: 1px solid rgba(0,0,0,0.05); pointer-events: none;
+
+        /* --- TYPOGRAPHY --- */
+        h1, h2, h3, h4 { font-family: 'Cinzel', serif; margin: 0; }
+        h1 {
+            font-size: clamp(3rem, 6vw, 6rem);
+            background: linear-gradient(to right, #fff, var(--accent-gold));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem; text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+        h2 { font-size: 2.5rem; color: var(--accent-gold); margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: inline-block; padding-bottom: 0.5rem; }
+        p { margin-bottom: 1.5rem; color: #ccc; text-align: justify; }
+
+        .sub-header {
+            font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 4px;
+            font-size: 0.9rem; color: var(--accent-science); display: block; margin-bottom: 1rem;
+        }
+        .sub-header.mystic { color: var(--accent-mystic); }
+
+        /* --- CARDS & GRIDS --- */
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            padding: 3rem; border-radius: 4px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+        }
+        .glass-panel:hover { transform: translateY(-5px); border-color: var(--accent-gold); }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; width: 100%; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; width: 100%; align-items: start; }
+
+        /* Stat Blocks */
+        .stat-block { text-align: center; padding: 2rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .stat-block:hover { background: rgba(52, 152, 219, 0.1); border-color: var(--accent-science); }
+        .stat-num { font-family: 'Montserrat'; font-size: 3.5rem; font-weight: 700; color: var(--accent-science); display: block; margin-bottom: 0.5rem; }
+        .stat-label { font-family: 'Cinzel'; font-size: 0.9rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Feature List */
+        .feature-list { list-style: none; padding: 0; margin: 0; }
+        .feature-item {
+            display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-start;
+            padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.3s;
+        }
+        .feature-item:last-child { border-bottom: none; }
+        .feature-item:hover { background: rgba(255,255,255,0.02); padding-left: 1.5rem; }
+        .feature-icon {
+            font-size: 1.5rem; color: var(--accent-gold); width: 40px; text-align: center; margin-top: 5px;
+        }
+        .feature-content h4 { font-family: 'Montserrat'; font-weight: 600; font-size: 1.1rem; color: #fff; margin-bottom: 0.3rem; }
+        .feature-content p { font-size: 0.95rem; margin: 0; color: #aaa; }
+
+        /* Quote Block */
+        .quote-container {
+            position: relative; padding: 4rem 2rem; text-align: center;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5), transparent);
+        }
+        .quote-text {
+            font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.8rem;
+            color: #fff; max-width: 800px; margin: 0 auto; line-height: 1.6;
+        }
+        .quote-author {
+            font-family: 'Cinzel'; margin-top: 2rem; color: var(--accent-gold); font-size: 1rem; letter-spacing: 2px;
         }
 
-        /* Mystic Card Variant */
-        .glass-card.mystic {
-            background: rgba(25, 20, 40, 0.95); /* Deep dark */
-            color: #f0f0f0; border-left-color: var(--c-mystic);
+        /* Mystic Specifics */
+        .mystic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .mystic-card {
+            background: rgba(142, 68, 173, 0.1); border: 1px solid rgba(142, 68, 173, 0.3);
+            padding: 1.5rem; text-align: center; transition: 0.3s;
         }
-        .glass-card.mystic p { color: #ccc; }
-        .glass-card.mystic h2 { color: var(--c-gold); }
-        .glass-card.mystic .section-label { color: var(--c-gold); }
-
-        /* Layouts */
-        section {
-            min-height: 100vh; display: flex; align-items: center; padding: 6rem 2rem; box-sizing: border-box;
-        }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; width: 100%; align-items: center; }
-
-        /* Specific Layout Adjustment:
-           If background is busy, we push content to one side and utilize "empty" space of canvas */
-        .align-right { justify-content: flex-end; display: flex; }
-        .align-left { justify-content: flex-start; display: flex; }
-
-        /* Components */
-        .service-list { list-style: none; padding: 0; margin: 2rem 0; }
-        .service-list li {
-            margin-bottom: 1rem; padding-left: 2rem; position: relative; font-family: 'Lato'; font-weight: 700; font-size: 1.05rem;
-        }
-        .service-list li::before {
-            content: '▹'; position: absolute; left: 0; color: var(--c-science); font-size: 1.2rem;
-        }
-
-        .stat-block {
-            display: flex; gap: 2rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #eee;
-        }
-        .stat-item h4 { font-family: 'Lato'; font-size: 2.5rem; color: var(--c-science); }
-        .stat-item span { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-
-        .mystic-badges { display: flex; flex-wrap: wrap; gap: 0.8rem; margin: 1.5rem 0; }
-        .mystic-badge {
-            padding: 0.4rem 1.2rem; border: 1px solid var(--c-gold);
-            border-radius: 30px; color: var(--c-gold); font-size: 0.85rem;
-            background: rgba(212, 175, 55, 0.1);
-        }
+        .mystic-card:hover { transform: scale(1.05); background: rgba(142, 68, 173, 0.2); box-shadow: 0 0 20px rgba(142, 68, 173, 0.4); }
+        .mystic-icon { font-size: 2.5rem; color: var(--accent-mystic); margin-bottom: 1rem; }
 
         /* Hero Avatar */
         .hero-avatar {
-            width: 160px; height: 160px; border-radius: 50%;
-            border: 4px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem; object-fit: cover;
+            width: 200px; height: 200px; border-radius: 50%;
+            border: 2px solid var(--accent-gold); padding: 5px;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+            object-fit: cover; margin-bottom: 2rem;
+            animation: pulse-border 3s infinite;
         }
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 70% { box-shadow: 0 0 0 20px rgba(212, 175, 55, 0); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); } }
 
         /* Footer */
-        .footer-cta {
-            text-align: center; padding: 8rem 2rem; color: var(--c-gold); background: #0b0c10;
-            position: relative; z-index: 20;
+        .footer-glory {
+            text-align: center; padding: 6rem 2rem; background: #000; position: relative; z-index: 20; border-top: 1px solid var(--accent-gold);
         }
 
         @media (max-width: 900px) {
-            .grid-2 { grid-template-columns: 1fr; gap: 3rem; }
-            h1 { font-size: 3rem; }
-            .glass-card { padding: 2rem; }
+            .grid-2 { grid-template-columns: 1fr; }
+            h1 { font-size: 3.5rem; }
+            .stat-num { font-size: 2.5rem; }
         }
 
     </style>
@@ -153,103 +192,160 @@
 <body>
 
     <a href="/guild/" class="nav-back">GUILD</a>
+
+    <div class="sidebar">
+        <div class="sidebar-dot active" data-label="Hero" onclick="scrollToSec(0)"></div>
+        <div class="sidebar-dot" data-label="Architect" onclick="scrollToSec(1)"></div>
+        <div class="sidebar-dot" data-label="Alchemist" onclick="scrollToSec(2)"></div>
+        <div class="sidebar-dot" data-label="Weaver" onclick="scrollToSec(3)"></div>
+    </div>
+
     <div id="canvas-container"></div>
 
-    <div class="ui-layer">
+    <div class="scroller">
 
         <!-- HERO -->
-        <section style="justify-content: center; text-align: center;">
-            <div class="ui-content" style="max-width: 700px;">
-                <img src="/assets/img/guild/ariel/avatar_main.webp" class="hero-avatar" alt="Ariel">
-                <h1 style="font-size: 4.5rem; margin-bottom: 0.5rem; color: var(--c-text);">ARIEL</h1>
-                <h3 style="color: var(--c-science); letter-spacing: 3px; font-weight: 400; margin-bottom: 2rem;">Regulatory Architect & Weaver</h3>
-                <p style="text-align: center; font-size: 1.2rem; color: #555;">
-                    "My mission is not merely to survive, but to thrive."
-                </p>
-                <div style="height: 40px; border-left: 2px solid var(--c-science); margin: 2rem auto;"></div>
-                <p style="text-align: center;">
-                    我是 Ariel，一位在醫藥法規領域深耕 15 年的專家，也是一位相信直覺的織命者。
-                    我協助企業在剛硬的法規中找到路徑，也協助個人在混亂的生活中編織秩序。
-                </p>
+        <section id="hero" style="text-align: center; align-items: center;">
+            <img src="/assets/img/guild/ariel/avatar_main.webp" class="hero-avatar" alt="Ariel">
+            <span class="sub-header">Regulatory Affairs Manager</span>
+            <h1>ARIEL</h1>
+            <h3 style="color: #ccc; font-weight: 300; letter-spacing: 2px; margin-bottom: 2rem;">The Alchemist of Order & Chaos</h3>
+            <p style="max-width: 600px; margin: 0 auto; font-size: 1.1rem; text-align: center;">
+                "My mission in life is not merely to survive, but to thrive."
+            </p>
+            <div style="margin-top: 3rem; font-size: 2rem; color: var(--accent-gold); animation: bounce 2s infinite;">
+                <i class="fa-solid fa-chevron-down"></i>
             </div>
         </section>
 
-        <!-- PHASE 1: Regulatory Precision (Text Left) -->
-        <section class="align-left">
-            <div class="glass-card ui-content" style="max-width: 650px;">
-                <span class="section-label">01. PROFESSIONAL EXPERTISE</span>
-                <h2 style="color: var(--c-science); margin-bottom: 1.5rem;">法規事務專家 (RA)</h2>
-                <p>
-                    在高度管制的醫藥產業，合規不僅是義務，更是競爭優勢。
-                    我專精於 <b>小分子原料藥 (API)</b>、<b>DMF</b> 與 <b>CMC</b> 實務，
-                    能精準判讀各國法規差異，為企業建構無懈可擊的註冊策略。
-                </p>
-                <ul class="service-list">
-                    <li>Global Registration Strategy (歐美/亞洲市場准入)</li>
-                    <li>CMC Documentation & Gap Analysis</li>
-                    <li>Post-approval Change Management</li>
-                    <li>Risk-based Compliance Auditing</li>
-                </ul>
-            </div>
-        </section>
+        <!-- CHAPTER 1: THE REGULATORY ARCHITECT -->
+        <section id="architect">
+            <span class="sub-header">Chapter 01</span>
+            <h2>The Regulatory Architect</h2>
 
-        <!-- PHASE 2: Automation (Text Right) -->
-        <section class="align-right">
-            <div class="glass-card ui-content" style="max-width: 650px; border-left-color: #e67e22;">
-                <span class="section-label" style="color: #e67e22;">02. PROCESS INNOVATION</span>
-                <h2 style="color: #d35400; margin-bottom: 1.5rem;">流程自動化煉金術</h2>
-                <p>
-                    我不做重複勞動的機器。我是一個「非典型」管理者，熱衷於用科技解放生產力。
-                    透過 <b>Gemini AI</b>、<b>VBA</b> 與 <b>SharePoint</b> 的整合，
-                    我將繁瑣的文書地獄轉化為自動化流水線。
-                </p>
-
+            <div class="grid-3" style="margin-bottom: 3rem;">
                 <div class="stat-block">
-                    <div class="stat-item">
-                        <h4>-40%</h4>
-                        <span>Processing Time</span>
-                    </div>
-                    <div class="stat-item">
-                        <h4>100%</h4>
-                        <span>Accuracy Rate</span>
+                    <span class="stat-num">15</span>
+                    <span class="stat-label">Years Experience</span>
+                </div>
+                <div class="stat-block">
+                    <span class="stat-num">API</span>
+                    <span class="stat-label">Specialization</span>
+                </div>
+                <div class="stat-block">
+                    <span class="stat-num">CMC</span>
+                    <span class="stat-label">Core Strategy</span>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <h3 style="color: var(--accent-science); margin-bottom: 1.5rem;">The Mediator (INFP)</h3>
+                <p>
+                    法規的世界充滿了剛硬的條條框框，但我看見的是結構之美。
+                    作為一名 <b>INFP (調停者)</b>，我擅長在冰冷的法條與人性需求之間搭建橋樑。
+                </p>
+                <p>
+                    我不僅僅是審核者，更是策略夥伴。我協助企業在遵守規範的同時，
+                    找到最靈活的市場准入路徑。我相信，最好的合規策略不是「禁止」，而是「引導」。
+                </p>
+            </div>
+        </section>
+
+        <!-- CHAPTER 2: THE DIGITAL ALCHEMIST -->
+        <section id="alchemist">
+            <span class="sub-header" style="color: #e67e22;">Chapter 02</span>
+            <h2 style="color: #e67e22;">The Digital Alchemist</h2>
+
+            <div class="grid-2">
+                <div class="glass-panel" style="border-color: #e67e22;">
+                    <h3 style="color: #e67e22; margin-bottom: 1rem;">Process Innovation</h3>
+                    <p>
+                        我不做重複勞動的機器。為了將團隊從文書地獄中解放，
+                        我結合 <b>Gemini AI</b>、<b>Excel VBA</b> 與 <b>SharePoint</b>，
+                        將繁瑣流程轉化為自動化流水線。
+                    </p>
+                    <div style="margin-top: 2rem; padding: 1rem; background: rgba(230, 126, 34, 0.1); border-left: 3px solid #e67e22;">
+                        <h4 style="color: #e67e22;">Impact Metric</h4>
+                        <div style="font-size: 2.5rem; font-weight: 700; font-family: 'Montserrat';">-40%</div>
+                        <div style="font-size: 0.8rem; text-transform: uppercase;">Processing Time</div>
                     </div>
                 </div>
 
-                <p style="margin-top: 2rem; font-style: italic; color: #666;">
-                    <b>價值主張：</b> 我能協助團隊從低價值勞動中釋放，轉向高價值的策略思考。
-                </p>
+                <div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <div class="feature-icon"><i class="fa-solid fa-robot"></i></div>
+                            <div class="feature-content">
+                                <h4>Automation First</h4>
+                                <p>Automating routine compliance checks to focus on high-value strategy.</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon"><i class="fa-solid fa-users-gear"></i></div>
+                            <div class="feature-content">
+                                <h4>Servant Leadership</h4>
+                                <p>"Empowerment over Command". I serve my team by removing obstacles.</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="feature-icon"><i class="fa-solid fa-lightbulb"></i></div>
+                            <div class="feature-content">
+                                <h4>Problem Solver</h4>
+                                <p>Using "Non-Typical" methods to solve typical corporate inefficiencies.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quote Interlude -->
+            <div class="quote-container" style="margin-top: 4rem;">
+                <div class="quote-text">
+                    "I've learned that people will forget what you said, people will forget what you did, but people will never forget how you made them feel."
+                </div>
+                <div class="quote-author">— Maya Angelou</div>
             </div>
         </section>
 
-        <!-- PHASE 3: Mystic (Center) -->
-        <section style="justify-content: center;">
-            <div class="glass-card mystic ui-content" style="max-width: 900px; width: 100%;">
+        <!-- CHAPTER 3: THE MYSTIC WEAVER -->
+        <section id="weaver">
+            <span class="sub-header mystic">Chapter 03</span>
+            <h2 style="color: var(--accent-mystic);">The Mystic Weaver</h2>
+
+            <div class="glass-panel" style="border-color: var(--accent-mystic); background: rgba(20, 10, 30, 0.9);">
                 <div class="grid-2">
                     <div>
-                        <span class="section-label">03. HOLISTIC INSIGHT</span>
-                        <h2 style="margin-bottom: 1rem;">直覺與織命</h2>
+                        <h3 style="color: var(--accent-mystic); margin-bottom: 1rem;">From Structure to Soul</h3>
                         <p>
-                            當法規架構了骨架，人性的洞察則賦予了靈魂。
-                            作為 <b>INFP</b> 與 <b>人類圖</b> 研究者，我擁有獨特的識人天賦。
-                            我能看見每個人在團隊中的「原廠設定」，協助領導者將對的人放在對的位置。
+                            當理性的結構被解構後，剩下的是直覺。
+                            工作之外，我是兩個孩子的母親，也是一位神秘學愛好者。
                         </p>
-                        <div class="mystic-badges">
-                            <span class="mystic-badge">Team Synergy</span>
-                            <span class="mystic-badge">Talent Mapping</span>
-                            <span class="mystic-badge">Intuitive Consulting</span>
-                        </div>
-                        <p style="margin-top: 2rem;">
-                            此外，透過 <b>鉤針 (Crochet)</b> 與 <b>塔羅</b>，我修煉專注與直覺。
-                            這讓我在處理危機時，能保持如絲線般強韌而柔軟的彈性。
+                        <p>
+                            <b>左手拿法規數據，右手拿塔羅鉤針。</b>
+                            這看似矛盾的兩面，在我身上達成了奇妙的平衡。
+                            我用 <b>人類圖</b> 看見天賦，用 <b>塔羅</b> 洞察人心，用 <b>鉤針</b> 編織秩序。
                         </p>
-                    </div>
-                    <div style="text-align: center;">
-                         <!-- Ensure props are clean -->
-                        <div style="position: relative; display: inline-block;">
-                            <img src="/assets/img/guild/ariel/material_bg.webp" style="width: 100%; max-width: 300px; border-radius: 2px; border: 4px solid #fff; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-                            <div style="position: absolute; bottom: -20px; right: -20px; background: #000; color: var(--c-gold); padding: 0.5rem 1rem; font-family: 'Cinzel'; font-size: 0.8rem;">
-                                <i class="fa-solid fa-dog"></i> Wolf Spirit
+
+                        <div class="mystic-grid">
+                            <div class="mystic-card">
+                                <div class="mystic-icon"><i class="fa-solid fa-hand-sparkles"></i></div>
+                                <h4>Tarot</h4>
                             </div>
+                            <div class="mystic-card">
+                                <div class="mystic-icon"><i class="fa-solid fa-dna"></i></div>
+                                <h4>Human Design</h4>
+                            </div>
+                            <div class="mystic-card">
+                                <div class="mystic-icon"><i class="fa-solid fa-scroll"></i></div>
+                                <h4>Zi Wei Dou Shu</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; align-self: center;">
+                        <img src="/assets/img/guild/ariel/material_bg.webp" style="width: 100%; max-width: 300px; border: 1px solid var(--accent-mystic); box-shadow: 0 0 30px rgba(155, 89, 182, 0.3);">
+                        <div style="margin-top: 1.5rem; color: #aaa; font-size: 0.9rem;">
+                            <i class="fa-solid fa-dog"></i> Spirit Animal: <span style="color: var(--accent-mystic); font-weight: 700;">Astro-Logical Wolf</span>
                         </div>
                     </div>
                 </div>
@@ -258,31 +354,32 @@
 
     </div>
 
-    <footer class="footer-cta">
-        <h3 style="font-size: 2.5rem; margin-bottom: 1rem;">Let's Weave the Future</h3>
-        <p style="opacity: 0.7; max-width: 500px; margin: 0 auto;">
-            無論是建立堅固的法規堡壘，還是編織靈活的團隊文化，
-            Ariel 都能為您提供獨特的視角與解決方案。
-        </p>
-        <div style="font-size: 2.5rem; margin-top: 3rem; display: flex; justify-content: center; gap: 3rem;">
-            <a href="https://www.threads.net/@iabc5040" style="color: var(--c-gold);"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.instagram.com/iabc5040/" style="color: var(--c-gold);"><i class="fa-brands fa-instagram"></i></a>
+    <footer class="footer-glory">
+        <h3 style="color: var(--accent-gold); margin-bottom: 2rem;">Let's Synthesize Your Future</h3>
+        <div style="font-size: 2rem; display: flex; justify-content: center; gap: 2rem;">
+            <a href="https://www.threads.net/@iabc5040" style="color: #fff;"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/iabc5040/" style="color: #fff;"><i class="fa-brands fa-instagram"></i></a>
         </div>
-        <div style="margin-top: 6rem; font-size: 0.8rem; color: #333;">
-            Made with <i class="fa-solid fa-heart"></i> by SuperGalen's Dungeon
-        </div>
+        <p style="margin-top: 4rem; font-size: 0.8rem; color: #555;">Made with <i class="fa-solid fa-heart" style="color: #e74c3c;"></i> by SuperGalen's Dungeon</p>
     </footer>
 
     <script type="module">
         import * as THREE from 'three';
 
-        // --- SETUP ---
+        // --- SCROLL HELPER ---
+        window.scrollToSec = (index) => {
+            const sections = document.querySelectorAll('section');
+            if(sections[index]) sections[index].scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- THREE.JS SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf0f4f8); // Match CSS
+        // Dynamic fog for transitions
+        scene.fog = new THREE.FogExp2(0x0c0e14, 0.02);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 30);
+        camera.position.set(0, 0, 40);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -290,68 +387,101 @@
         container.appendChild(renderer.domElement);
 
         // --- LIGHTS ---
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.9);
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(10, 20, 20);
-        scene.add(dirLight);
 
-        // --- SCENE OBJECTS ---
+        const pointLight = new THREE.PointLight(0x3498db, 1, 50);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
 
-        // 1. Molecules (Push further back for readability)
-        const atomCount = 100; // Fewer
-        const atomGeo = new THREE.IcosahedronGeometry(0.8, 0);
-        const atomMat = new THREE.MeshStandardMaterial({ color: 0xbdc3c7, transparent: true, opacity: 0.4 }); // Grey/Transparent
-        const atoms = new THREE.InstancedMesh(atomGeo, atomMat, atomCount);
+        const goldLight = new THREE.PointLight(0xd4af37, 0, 50); // Starts off
+        goldLight.position.set(-10, -10, 10);
+        scene.add(goldLight);
 
+        // --- OBJECTS ---
+
+        // 1. Molecule Cloud (Science)
+        const molGeo = new THREE.IcosahedronGeometry(0.5, 1);
+        const molMat = new THREE.MeshStandardMaterial({
+            color: 0x3498db, roughness: 0.2, metalness: 0.6,
+            transparent: true, opacity: 0.6
+        });
+        const molecules = new THREE.InstancedMesh(molGeo, molMat, 200);
         const dummy = new THREE.Object3D();
-        for(let i=0; i<atomCount; i++) {
-            // Spread them wide and deep
-            const x = (Math.random() - 0.5) * 80;
-            const y = (Math.random() - 0.5) * 60;
-            const z = -20 - Math.random() * 30; // Behind text plane
-            dummy.position.set(x, y, z);
-            dummy.scale.setScalar(Math.random() * 1 + 0.5);
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            dummy.updateMatrix();
-            atoms.setMatrixAt(i, dummy.matrix);
-        }
-        scene.add(atoms);
 
-        // 2. Thread (The Unraveling)
-        // Path adjusted to weave AROUND text areas roughly
-        const curvePoints = [
-            new THREE.Vector3(20, 20, -10),
-            new THREE.Vector3(15, 0, -5), // Right side
-            new THREE.Vector3(-15, -20, -5), // Left side
-            new THREE.Vector3(0, -40, 0), // Center
-        ];
+        for(let i=0; i<200; i++) {
+            dummy.position.set(
+                (Math.random()-0.5)*100,
+                (Math.random()-0.5)*100,
+                (Math.random()-0.5)*50 - 20 // Push back
+            );
+            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            dummy.scale.setScalar(Math.random()*1 + 0.5);
+            dummy.updateMatrix();
+            molecules.setMatrixAt(i, dummy.matrix);
+        }
+        scene.add(molecules);
+
+        // 2. The Golden Thread (Connection)
+        // A complex knot/weave shape
+        const curvePoints = [];
+        for(let i=0; i<50; i++) {
+            const t = i * 0.5;
+            curvePoints.push(new THREE.Vector3(
+                Math.sin(t) * 10,
+                -t * 2 + 20, // Downward spiral
+                Math.cos(t) * 10
+            ));
+        }
         const curve = new THREE.CatmullRomCurve3(curvePoints);
-        const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.2, 8, false);
+        const tubeGeo = new THREE.TubeGeometry(curve, 200, 0.15, 8, false);
         const tubeMat = new THREE.MeshStandardMaterial({
-            color: 0xd4af37, emissive: 0xaa8800, emissiveIntensity: 0.3,
-            metalness: 0.8, roughness: 0.4
+            color: 0xd4af37, emissive: 0xaa8800, emissiveIntensity: 0.5,
+            metalness: 1, roughness: 0.3
         });
         const thread = new THREE.Mesh(tubeGeo, tubeMat);
+        thread.visible = false; // Hidden initially
         thread.geometry.setDrawRange(0, 0);
         scene.add(thread);
 
-        // 3. Mystic Orbs (Bottom)
-        const orbGeo = new THREE.SphereGeometry(0.3, 16, 16);
-        const orbMat = new THREE.MeshBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0 });
-        const orbs = new THREE.InstancedMesh(orbGeo, orbMat, 200);
-        for(let i=0; i<200; i++) {
-            dummy.position.set(
-                (Math.random()-0.5)*60,
-                (Math.random()-0.5)*40 - 50, // Deep bottom
-                (Math.random()-0.5)*40
+        // 3. Mystic Particles (Soul)
+        const partGeo = new THREE.BufferGeometry();
+        const partPos = [];
+        for(let i=0; i<1000; i++) {
+            partPos.push(
+                (Math.random()-0.5)*150,
+                (Math.random()-0.5)*150,
+                (Math.random()-0.5)*50
             );
-            dummy.updateMatrix();
-            orbs.setMatrixAt(i, dummy.matrix);
         }
-        scene.add(orbs);
+        partGeo.setAttribute('position', new THREE.Float32BufferAttribute(partPos, 3));
+        const partMat = new THREE.PointsMaterial({ color: 0x9b59b6, size: 0.3, transparent: true, opacity: 0 });
+        const particles = new THREE.Points(partGeo, partMat);
+        scene.add(particles);
 
-        // --- ANIMATION ---
+
+        // --- GSAP ANIMATIONS ---
+
+        // Sidebar Dot Active State
+        const sections = document.querySelectorAll('section');
+        const dots = document.querySelectorAll('.sidebar-dot');
+
+        sections.forEach((sec, i) => {
+            ScrollTrigger.create({
+                trigger: sec,
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => updateDots(i),
+                onEnterBack: () => updateDots(i)
+            });
+        });
+
+        function updateDots(index) {
+            dots.forEach(d => d.classList.remove('active'));
+            if(dots[index]) dots[index].classList.add('active');
+        }
+
+        // Master Timeline
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
@@ -361,33 +491,43 @@
             }
         });
 
-        // Phase 1 (Molecules move gently)
-        tl.to(atoms.rotation, { x: 0.5, y: 0.5, duration: 3 });
-        tl.to(camera.position, { y: -10, duration: 3 }, "<");
+        // Phase 1: Science (Hero -> Architect)
+        // Rotate molecules, move camera down
+        tl.to(molecules.rotation, { y: 1, duration: 2 });
+        tl.to(camera.position, { y: -20, duration: 2 }, "<");
 
-        // Phase 2 (Transition to Dark)
-        const colorObj = { r: 0.94, g: 0.96, b: 0.97 }; // #f0f4f8
-        tl.to(colorObj, {
-            r: 0.07, g: 0.05, b: 0.1, // #110d1a
-            duration: 3,
-            onUpdate: () => scene.background.setRGB(colorObj.r, colorObj.g, colorObj.b)
-        }, "phase2");
+        // Phase 2: Alchemy (Architect -> Alchemist)
+        // Molecules disperse, Thread appears
+        tl.to(molecules.position, { z: 50, opacity: 0, duration: 2 }, "phase2"); // Fly past camera
+        tl.to(thread, { visible: true, duration: 0 }, "phase2");
 
-        // Thread Grows
+        // Animate Thread Drawing
+        // Approx index count: 200 * 8 * 6 = 9600
         tl.to(thread.geometry, {
-            duration: 4,
-            onUpdate: function() { this.targets()[0].setDrawRange(0, Math.floor(this.progress() * 5000)); }
+            duration: 3,
+            onUpdate: function() { this.targets()[0].setDrawRange(0, Math.floor(this.progress() * 10000)); }
         }, "phase2");
 
-        // Phase 3 (Mystic)
-        tl.to(camera.position, { y: -45, z: 25, duration: 4 }, "phase3");
-        tl.to(orbMat, { opacity: 0.5, duration: 2 }, "phase3");
-        tl.to(orbs.rotation, { y: 1, duration: 4 }, "phase3");
+        // Light Shift: Blue -> Gold
+        tl.to(pointLight, { intensity: 0, duration: 1 }, "phase2");
+        tl.to(goldLight, { intensity: 1.5, duration: 1 }, "phase2");
 
+        // Phase 3: Soul (Alchemist -> Weaver)
+        // Thread fades, Particles appear
+        tl.to(camera.position, { y: -60, z: 20, duration: 3 }, "phase3");
+        tl.to(thread.material, { opacity: 0, transparent: true, duration: 1 }, "phase3");
+        tl.to(partMat, { opacity: 0.8, duration: 2 }, "phase3");
+
+        // Rotate Particles
+        tl.to(particles.rotation, { y: 2, duration: 3 }, "phase3");
+
+
+        // --- RENDER LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-            atoms.rotation.z += 0.0002;
-            orbs.rotation.y -= 0.0005;
+            molecules.rotation.z += 0.0005;
+            thread.rotation.y += 0.001;
+            particles.rotation.x -= 0.0005;
             renderer.render(scene, camera);
         }
         animate();
@@ -397,6 +537,7 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
     </script>
 </body>
 </html>
