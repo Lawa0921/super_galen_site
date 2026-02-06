@@ -408,7 +408,7 @@
         scene.add(ambientLight);
 
         // Headlamp (attached to camera)
-        const pointLight = new THREE.PointLight(0xffaa00, 20, 30);
+        const pointLight = new THREE.PointLight(0xffaa00, 15, 30);
         pointLight.position.set(0, 0, 0); // At camera
         camera.add(pointLight);
         scene.add(camera);
@@ -433,30 +433,32 @@
 
         function createConvergingCurve(zStart, zEnd) {
             const points = [];
-            const segments = 40; // High res for smoothness
+            const segments = 60; // Higher res for more tangling details
             const totalDist = Math.abs(zEnd - zStart);
 
             // Random start angle
             const startAngle = Math.random() * Math.PI * 2;
-            const startRadius = 6 + Math.random() * 4;
+            const startRadius = 6 + Math.random() * 6; // Wider start
 
-            // Swirl factor
-            const swirl = (Math.random() - 0.5) * 10; // How many radians to twist
+            // High Swirl factor for "Tangled" look
+            const swirl = (Math.random() - 0.5) * 30; // Very twisty
+
+            // Noise offset for "Knotted" feel
+            const noiseFreq = 2 + Math.random() * 3;
 
             for(let i=0; i<=segments; i++) {
                 const t = i / segments; // 0 to 1
                 const z = zStart - (t * totalDist);
 
                 // Taper logic:
-                // We want it to be wide at t=0, and exactly 0 at t=1.
-                // Using a power ease for a "funnel" shape (stays wide then drops)
-                // or linear. Let's try ease-in-out-ish.
-                // t=1 => radius=0.
+                // Instead of 0, end at a small radius (the Knot) to avoid perfect singularity
+                const endRadius = 0.5 + Math.random();
                 const radiusScale = (1 - t);
-                // Add some waviness that also dampens to 0
-                const wave = Math.sin(t * 10) * (1 - t) * 0.5;
 
-                const currentRadius = (startRadius * radiusScale) + wave;
+                // Tangling wave
+                const wave = Math.sin(t * noiseFreq * Math.PI) * 2 * Math.sin(t*Math.PI);
+
+                const currentRadius = (startRadius * radiusScale) + (endRadius * t) + wave;
 
                 const currentAngle = startAngle + (swirl * t);
 
@@ -538,14 +540,14 @@
         // --- 5. THE DESTINATION (The Core) ---
         // A dense cluster of light/particles at the end
         const coreGeo = new THREE.SphereGeometry(1, 32, 32);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffe66d, wireframe: true, transparent: true, opacity: 0.5 });
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffe66d, wireframe: true, transparent: true, opacity: 0.2 });
         const core = new THREE.Mesh(coreGeo, coreMat);
         core.position.set(0, 0, coreZ);
         core.scale.set(0.1, 0.1, 0.1); // Start small
         scene.add(core);
 
         // Core light
-        const coreLight = new THREE.PointLight(0xffaa00, 50, 60);
+        const coreLight = new THREE.PointLight(0xffaa00, 15, 60);
         coreLight.position.set(0, 0, coreZ);
         scene.add(coreLight);
 
