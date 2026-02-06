@@ -830,12 +830,20 @@
             const content = contentMap[i];
 
             if (content) {
-                b.innerHTML = `<span class="bubble-label">${content.title}</span><img src="${src}" alt="Memory" style="opacity:0.4;">`;
+                b.innerHTML = `<span class="bubble-label">${content.title}</span><img src="${src}" alt="Memory" style="opacity:0.4;" loading="lazy">`;
                 b.style.borderColor = 'var(--c-accent)';
                 b.style.boxShadow = '0 0 20px var(--c-accent)';
             } else {
-                b.innerHTML = `<img src="${src}" alt="Memory">`;
+                b.innerHTML = `<img src="${src}" alt="Memory" loading="lazy">`;
             }
+
+            // GSAP Hover Effect (Integrated with Floating)
+            b.addEventListener('mouseenter', () => {
+                gsap.to(b, { scale: 1.1, duration: 0.3, overwrite: 'auto' });
+            });
+            b.addEventListener('mouseleave', () => {
+                gsap.to(b, { scale: 1, duration: 0.3, overwrite: 'auto' });
+            });
 
             b.addEventListener('click', (e) => {
                 gsap.to(b, { scale: 1.5, opacity: 0, duration: 0.3, onComplete: () => {
@@ -858,6 +866,7 @@
 
             bubbleZone.appendChild(b);
 
+            // Floating Animation (y) - Coexists with Scale thanks to GSAP
             gsap.to(b, {
                 y: '-=50',
                 duration: 2 + Math.random()*2,
