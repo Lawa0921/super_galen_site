@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&family=Noto+Serif+TC:wght@400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Serif+TC:wght@400;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -19,7 +19,7 @@
             --c-accent: #00f3ff;
             --c-pink: #ff9aa2;
             --c-gold: #ffd700;
-            --f-title: 'Cinzel', serif;
+            --f-title: 'Zen Maru Gothic', sans-serif; /* Changed to Cute Font */
             --f-body: 'Zen Maru Gothic', sans-serif;
             --f-serif: 'Noto Serif TC', serif;
         }
@@ -30,6 +30,7 @@
             background-color: var(--c-deep);
             color: white;
             font-family: var(--f-body);
+            font-weight: 500; /* Bolder for cuteness */
             overflow-x: hidden;
             width: 100%;
         }
@@ -79,16 +80,19 @@
 
         h1 {
             font-family: var(--f-title);
+            font-weight: 900;
             font-size: 8vw;
             background: linear-gradient(to bottom, #fff, var(--c-accent));
             -webkit-background-clip: text;
             color: transparent;
             text-shadow: 0 0 30px var(--c-accent);
             margin-bottom: 1rem;
+            letter-spacing: 2px;
         }
 
         h2 {
-            font-family: var(--f-serif);
+            font-family: var(--f-title);
+            font-weight: 700;
             font-size: 2.5rem;
             color: var(--c-accent);
             margin-bottom: 1.5rem;
@@ -139,8 +143,8 @@
             transform: translateY(0) scale(1.05) !important; /* Override GSAP slightly on hover */
             box-shadow: inset 0 0 50px rgba(255,255,255,0.4), 0 0 40px rgba(0, 243, 255, 0.4);
         }
-        .story-card h3 { color: var(--c-accent); margin-bottom: 1rem; font-family: var(--f-title); }
-        .story-card p { color: #fff; font-size: 1.1rem; }
+        .story-card h3 { color: var(--c-accent); margin-bottom: 1rem; font-family: var(--f-title); font-weight: 900; }
+        .story-card p { color: #fff; font-size: 1.1rem; font-weight: 500; }
 
         /* --- BUBBLE GALLERY SECTION --- */
         #bubble-zone {
@@ -158,25 +162,36 @@
             display: flex; justify-content: center; align-items: center;
             background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 70%);
             box-shadow: inset 0 0 20px rgba(255,255,255,0.3), 0 0 10px rgba(255,255,255,0.1);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(15px); /* Strong blur initially */
             border: 1px solid rgba(255,255,255,0.3);
-            transition: transform 0.3s;
+            transition: transform 0.3s, backdrop-filter 0.5s, box-shadow 0.5s;
             will-change: transform;
             overflow: hidden;
             z-index: 15;
         }
 
-        .bubble-container:hover {
+        /* Bubbles with content get a golden glow cue */
+        .bubble-container.has-content {
+            box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.3), 0 0 10px rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .bubble-container:hover, .bubble-container.active {
             transform: scale(1.1);
+            backdrop-filter: blur(0px); /* Reveal on hover */
             box-shadow: inset 0 0 30px rgba(255,255,255,0.5), 0 0 20px rgba(0,243,255,0.4);
+        }
+
+        .bubble-container.has-content:hover {
+            box-shadow: inset 0 0 40px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.4);
         }
 
         .bubble-container img {
             width: 100%; height: 100%; object-fit: cover;
-            opacity: 0.6;
+            opacity: 0.4;
             transition: 0.5s;
             transform: scale(1.1);
-            filter: blur(2px);
+            filter: blur(5px); /* Image blurred too */
         }
 
         .bubble-container:hover img {
@@ -274,7 +289,7 @@
         }
         .chest-btn {
             width: 70px; height: 70px; border-radius: 50%;
-            background: rgba(255,215,0,0.2);
+            background: var(--c-deep);
             border: 2px solid var(--c-gold);
             color: var(--c-gold);
             display: flex; justify-content: center; align-items: center;
@@ -349,6 +364,16 @@
     <a href="/guild/" id="nav-back"><i class="fa-solid fa-arrow-left"></i> 回公會</a>
     <div id="canvas-container"></div>
 
+    <!-- Intro Overlay -->
+    <div id="intro-overlay" style="position: fixed; top:0; left:0; width:100%; height:100%; background: var(--c-deep); z-index: 10000; display: flex; flex-direction:column; justify-content: center; align-items: center; transition: opacity 1s;">
+        <h1 style="font-size: 5rem; text-shadow: 0 0 30px var(--c-accent); margin-bottom: 2rem;">Liloyee</h1>
+        <button id="enter-btn" style="background: transparent; border: 2px solid var(--c-accent); color: var(--c-accent); padding: 1rem 3rem; font-size: 1.5rem; border-radius: 50px; cursor: pointer; transition: 0.3s; font-family: var(--f-title);">
+            <i class="fa-solid fa-water"></i> DIVE IN
+        </button>
+    </div>
+
+    <!-- Audio Context managed via JS for seamless looping -->
+
     <!-- Modals -->
     <div id="lightbox"><img src="" alt="Full Image"></div>
     <div id="text-modal">
@@ -361,7 +386,7 @@
 
     <!-- Swimming Mermaid Guide -->
     <div class="mermaid-guide" id="mermaid">
-        <i class="fa-solid fa-person-swimming" style="transform: rotate(-30deg);"></i>
+        <span style="font-size: 4rem; filter: drop-shadow(0 0 10px var(--c-accent));">🧜‍♀️</span>
     </div>
 
     <!-- Social Icons Container (Pop from Chest) -->
@@ -400,9 +425,7 @@
         <!-- BUBBLE GALLERY -->
         <div id="bubble-zone">
             <!-- Bubbles injected by JS -->
-            <div style="position: absolute; width: 100%; top: 5%; text-align: center; pointer-events: none; z-index: 20;">
-                <h2 style="text-shadow: 0 0 20px black; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; display:inline-block;">戳破泡泡，閱讀我的故事 🫧</h2>
-            </div>
+
             <!-- Sea Creatures Container -->
             <div id="sea-creatures"></div>
         </div>
@@ -418,7 +441,6 @@
         <!-- FOOTER -->
         <footer id="site-footer">
             <h3><a href="/guild/" style="color: inherit; text-decoration: none;">SuperGalen's Dungeon</a></h3>
-            <p style="font-size: 0.8rem;">&copy; 2024 Liloyee Guild Page</p>
         </footer>
 
     </main>
@@ -433,12 +455,34 @@
 
         // --- CONTENT DATA ---
         const contentMap = {
-            0: { title: "我是誰?", text: "喲呼 (｀・ω・´)ゞ<br>我是一名畢業於社會心理系的學生，是個馬來西亞人。<br>目前是一名奧數數學老師，也非常熱愛過去就讀的社會學和心理學相關的知識🤩" },
-            3: { title: "我的夢想", text: "這輩子最想要成為一名作家✏️<br>我想把畢生的經歷都用溫柔幽默的文字寫下，想把故事哼成一首一首的曲子，讓我的故事不止能被看見還能用聲音走進大家的心裡❤️" },
-            5: { title: "多夢症候群", text: "多夢症讓我經常在夢裡旅行。<br>夢裡的世界有顏色、有觸覺、有溫度、有痛覺。<br>每次睡覺會像抽盲盒一樣好玩喔！🤣" },
-            8: { title: "關於解夢", text: "我有自己研究解夢和人格分析，會從夢境情緒、場景、生活環境和近況分析個人狀態。<br>對我而言都是好玩有趣有意義的事🥰" },
-            12: { title: "幸運 S 級", text: "我運氣非常好🍀<br>這輩子抽過手機、耳機，也沒遇到過壞朋友。<br>可能日子偶爾有點挑戰，但總會有些幸運幸福的好事❣️" },
-            15: { title: "興趣愛好", text: "矮矮偏日系還有點動漫宅，也喜歡做手帳、寫日記、整理東西、裝扮、唱歌。<br>還有我最最最喜歡史迪奇了💙" }
+            0: {
+                title: "關於我 (About Me)",
+                text: "喲呼 (｀・ω・´)ゞ<br>來自馬來西亞的社會心理系畢業生，目前是奧數老師。<br>理性邏輯與感性知識的混合體，熱愛社會學與心理學。<br>雖然人生規劃有變，但目前非常享受「老師」這個療癒的身分👩🏻‍🏫"
+            },
+            3: {
+                title: "作家夢 (Writer Dream)",
+                text: "這輩子最大的願望是用溫柔幽默的文字，寫下畢生的經歷。<br>想把故事哼成曲子，讓聲音走進大家的心裡❤️<br>矮矮偏日系還有點動漫宅，最喜歡史迪奇了💙"
+            },
+            5: {
+                title: "多夢症候群",
+                text: "夢裡的世界有顏色、觸覺、溫度甚至痛覺。<br>每天睡覺都像開盲盒一樣精彩！<br>不怕鬼，家裡還收藏科幻故事喔👽"
+            },
+            8: {
+                title: "✨ 服務：解夢分析",
+                text: "結合心理學專業與天賦，為你分析夢境情緒、場景與生活狀態。<br>這是我覺得最好玩也最有意義的事！<br>想了解潛意識狀態？歡迎來找我🥰"
+            },
+            11: {
+                title: "✨ 價值：溫柔陪伴",
+                text: "曾任自閉症陪讀、參與無數社團與義工活動。<br>我擅長與小朋友相處，也想成為溫暖的助人工作者。<br>希望能成為你生活中的小幸運🍀"
+            },
+            14: {
+                title: "幸運 S 級",
+                text: "從小到大抽獎運爆棚（手機、耳機都中過！）。<br>雖然生活有挑戰，但總能遇到好人好事。<br>就像今天遇見你一樣❣️"
+            },
+            17: {
+                title: "終極宗旨",
+                text: "「希望成為天上的天使前，也可以是人間的天使。」🧚🏻‍♀️"
+            }
         };
 
         const galleryImages = [];
@@ -460,10 +504,10 @@
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         // --- LIGHTS ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Reduced slightly to allow specular pop
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased for shine
         dirLight.position.set(0, 50, 20);
         scene.add(dirLight);
 
@@ -509,11 +553,16 @@
 
         // --- SAND DUNE ---
         const sandY = -70;
+        function getSandHeight(x, z) {
+            // Note: In PlaneGeometry, 'y' coord is mapped to Z in world space due to rotation
+            return Math.sin(x * 0.1) * 2 + Math.cos(z * 0.1) * 2 + Math.sin(x*0.3 + z*0.2)*1;
+        }
+
         const sandGeom = new THREE.PlaneGeometry(200, 100, 64, 64);
         const pos = sandGeom.attributes.position;
         for (let i = 0; i < pos.count; i++) {
             const x = pos.getX(i);
-            const y = pos.getY(i);
+            const y = pos.getY(i); // This corresponds to world Z before rotation
             const height = Math.sin(x * 0.1) * 2 + Math.cos(y * 0.1) * 2 + Math.sin(x*0.3 + y*0.2)*1;
             pos.setZ(i, height);
         }
@@ -529,107 +578,196 @@
         sandMesh.position.y = sandY;
         scene.add(sandMesh);
 
-        // --- TREASURE CHEST ---
-        let chestGroup, chestLid;
-        let isChestOpen = false;
-
-        function createTreasureChest() {
-            chestGroup = new THREE.Group();
-
-            // Base
-            const baseGeom = new THREE.BoxGeometry(4, 3, 3);
-            const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
-            const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });
-
-            const base = new THREE.Mesh(baseGeom, woodMat);
-            base.position.y = 1.5;
-            base.name = "ChestBase";
-            chestGroup.add(base);
-
-            // Lid (Pivot Group)
-            chestLid = new THREE.Group();
-            chestLid.position.set(0, 3, -1.5); // Hinge at back
-
-            // Lid Geometry
-            const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, false, 0, Math.PI);
-            const lidMesh = new THREE.Mesh(lidGeom, woodMat);
-            lidMesh.rotation.z = Math.PI / 2;
-            lidMesh.position.set(0, 0, 1.5); // Offset to match hinge
-            lidMesh.name = "ChestLid";
-            chestLid.add(lidMesh);
-
-            chestGroup.add(chestLid);
-
-            // Lock
-            const lockGeom = new THREE.BoxGeometry(0.5, 0.8, 0.2);
-            const lock = new THREE.Mesh(lockGeom, goldMat);
-            lock.position.set(0, 0, 3); // Relative to lid pivot
-            chestLid.add(lock);
-
-            chestGroup.position.set(0, sandY + 2, -5);
-            scene.add(chestGroup);
+        // --- ICON TEXTURE HELPER ---
+        function createIconTexture(char, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            // FontAwesome Solid
+            ctx.font = '900 150px "Font Awesome 6 Free"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 10;
+            ctx.fillText(char, 128, 128);
+            return new THREE.CanvasTexture(canvas);
         }
-        createTreasureChest();
 
-        // --- TREASURES (Updated Geometry) ---
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 221, 0, 1)');
+            gradient.addColorStop(0.5, 'rgba(255, 221, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- TREASURES CONFIG ---
         const treasures = [];
-
-        // Define varied treasure types
         const treasureTypes = [
-            { // Coin
-                geom: new THREE.CylinderGeometry(0.5, 0.5, 0.1, 20),
-                mat: new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1, roughness: 0.2 })
-            },
-            { // Gem (Ruby)
-                geom: new THREE.OctahedronGeometry(0.6),
-                mat: new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.9 })
-            },
-            { // Pearl
-                geom: new THREE.SphereGeometry(0.5, 32, 32),
-                mat: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.1, emissive: 0x222222 })
-            },
-            { // Crystal (Sapphire)
-                geom: new THREE.ConeGeometry(0.3, 1, 6),
-                mat: new THREE.MeshStandardMaterial({ color: 0x00f3ff, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.8 })
-            }
+            // Wealth
+            { char: '\uf51e', color: '#ffd700', category: 'wealth' }, // Gold Coins
+            { char: '\uf51e', color: '#c0c0c0', category: 'wealth' }, // Silver Coins
+            { char: '\uf3a5', color: '#ff0055', category: 'wealth' }, // Red Gem
+            { char: '\uf3a5', color: '#00f3ff', category: 'wealth' }, // Blue Gem
+            { char: '\uf3a5', color: '#50c878', category: 'wealth' }, // Emerald
+            { char: '\uf521', color: '#ffd700', category: 'wealth' }, // Crown
+            { char: '\uf70b', color: '#ff69b4', category: 'wealth' }, // Ring
+            { char: '\uf091', color: '#cd7f32', category: 'wealth' }, // Trophy
+            { char: '\uf81d', color: '#85bb65', category: 'wealth' }, // Sack Dollar
+            // Artifacts
+            { char: '\uf0c3', color: '#9933cc', category: 'artifact' }, // Flask
+            { char: '\uf70e', color: '#f4a460', category: 'artifact' }, // Scroll
+            { char: '\uf3ed', color: '#708090', category: 'artifact' }, // Shield
+            { char: '\uf66d', color: '#a9a9a9', category: 'artifact' }, // Sword (Khanda)
+            { char: '\uf72f', color: '#8b0000', category: 'artifact' }, // Wine Bottle
+            { char: '\uf6fa', color: '#ffffff', category: 'artifact' }, // Mask
+            { char: '\uf644', color: '#ffd700', category: 'artifact' }, // Ankh
+            { char: '\uf6d5', color: '#ff4500', category: 'artifact' }, // Dragon
         ];
 
-        function spawnTreasure(screenX, screenY) {
-            // Cap limit (Increased for abundance)
+        // --- TREASURE CHEST (SPRITE) ---
+        let chestSprite, chestGlowSprite;
+        let isChestOpen = false;
+        let chestTexClosed, diamondTex;
+        let smokeParticles = [];
+
+        // Simple Smoke Particle System
+        function createSmoke(pos) {
+            const smokeCount = 10;
+            const smokeGeom = new THREE.BufferGeometry();
+            const smokePos = new Float32Array(smokeCount * 3);
+            for(let i=0; i<smokeCount; i++) {
+                smokePos[i*3] = pos.x + (Math.random()-0.5)*2;
+                smokePos[i*3+1] = pos.y + (Math.random()-0.5)*2;
+                smokePos[i*3+2] = pos.z + (Math.random()-0.5)*2;
+            }
+            smokeGeom.setAttribute('position', new THREE.BufferAttribute(smokePos, 3));
+
+            const smokeMat = new THREE.PointsMaterial({
+                color: 0xaaaaaa,
+                size: 2,
+                map: createCircleTexture(),
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false
+            });
+            const smoke = new THREE.Points(smokeGeom, smokeMat);
+            scene.add(smoke);
+
+            // Animation for smoke
+            const s = { mesh: smoke, age: 0 };
+            smokeParticles.push(s);
+
+            gsap.to(smoke.material, { opacity: 0, duration: 1, onComplete: () => {
+                scene.remove(smoke);
+                const idx = smokeParticles.indexOf(s);
+                if(idx > -1) smokeParticles.splice(idx, 1);
+            }});
+            gsap.to(smoke.scale, { x: 3, y: 3, duration: 1 });
+        }
+
+        document.fonts.ready.then(() => {
+            // 1. Chest & Diamond Textures
+            chestTexClosed = createIconTexture('\uf49e', '#ffd700');
+            diamondTex = createIconTexture('\uf3a5', '#00f3ff'); // Big Diamond
+
+            const chestMat = new THREE.SpriteMaterial({ map: chestTexClosed });
+            chestSprite = new THREE.Sprite(chestMat);
+            // Position on sand
+            const chestBaseY = getSandHeight(0, -5) + sandY + 3;
+            chestSprite.position.set(0, chestBaseY, -5);
+            chestSprite.scale.set(8, 8, 1);
+            chestSprite.name = 'ChestSprite';
+            scene.add(chestSprite);
+
+            // Chest Glow
+            const glowTex = createGlowTexture();
+            const glowMat = new THREE.SpriteMaterial({
+                map: glowTex,
+                transparent: true,
+                opacity: 0.8, // Increased opacity
+                blending: THREE.AdditiveBlending
+            });
+            chestGlowSprite = new THREE.Sprite(glowMat);
+            chestGlowSprite.position.copy(chestSprite.position);
+            chestGlowSprite.position.z -= 0.5; // Slightly behind
+            chestGlowSprite.scale.set(18, 18, 1); // Increased base scale
+            scene.add(chestGlowSprite);
+
+            // Pulse Glow
+            gsap.to(chestGlowSprite.scale, { x: 22, y: 22, duration: 1.2, yoyo: true, repeat: -1, ease: "sine.inOut" }); // Larger pulse
+            gsap.to(chestGlowSprite.material, { opacity: 0.4, duration: 1.2, yoyo: true, repeat: -1, ease: "sine.inOut" }); // Higher min opacity
+
+            // 2. Cache Treasure Textures
+            treasureTypes.forEach(t => {
+                const tex = createIconTexture(t.char, t.color);
+                t.material = new THREE.SpriteMaterial({ map: tex });
+            });
+
+            spawnInitialTreasures();
+        });
+
+        // --- SPAWN INITIAL TREASURES ---
+        function spawnInitialTreasures() {
+            for(let i=0; i<200; i++) {
+                const config = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
+                const sprite = new THREE.Sprite(config.material);
+
+                // Scatter around chest
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 15 + 3;
+
+                const x = Math.cos(angle) * radius;
+                const z = -5 + Math.sin(angle) * radius;
+                const y = getSandHeight(x, z) + sandY + 1.5; // Slightly above sand
+
+                sprite.position.set(x, y, z);
+                sprite.scale.set(3, 3, 1);
+
+                scene.add(sprite);
+            }
+        }
+
+        function spawnBubbleTreasure(screenX, screenY) {
+            // Drop wealth items from mouse click position
             if(treasures.length > 150) {
                 const old = treasures.shift();
                 scene.remove(old.mesh);
-                // Do NOT dispose geometry/material here as they are shared references from treasureTypes
+                // Note: material is cached/shared, so no dispose needed here
             }
 
-            // Spawn random multiple items (1-10)
-            const count = Math.floor(Math.random() * 10) + 1;
+            const count = 3;
+            const wealthItems = treasureTypes.filter(t => t.category === 'wealth');
+
             for(let k=0; k<count; k++) {
-                const vec = new THREE.Vector3();
-                vec.set(
+                // Calculate spawn position at mouse depth
+                const vec = new THREE.Vector3(
                     (screenX / window.innerWidth) * 2 - 1,
                     -(screenY / window.innerHeight) * 2 + 1,
                     0.5
                 );
                 vec.unproject(camera);
                 vec.sub(camera.position).normalize();
+                const t = (-2 - camera.position.z) / vec.z; // Project to Z=-2 plane
+                const spawnPos = camera.position.clone().add(vec.multiplyScalar(t));
 
-                const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
+                const config = wealthItems[Math.floor(Math.random() * wealthItems.length)];
+                const sprite = new THREE.Sprite(config.material);
 
-                // Randomly select type
-                const type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
-                const mesh = new THREE.Mesh(type.geom, type.mat);
+                sprite.position.copy(spawnPos);
+                sprite.position.x += (Math.random()-0.5)*2;
+                sprite.position.y += (Math.random()-0.5)*2;
+                sprite.scale.set(3, 3, 1);
 
-                mesh.position.copy(spawnPos);
-                mesh.position.x += (Math.random()-0.5)*2;
-                mesh.position.y += (Math.random()-0.5)*2;
-                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                scene.add(sprite);
 
-                // Fix orientation for coins (Cylinders lie flat usually)
-                if (type.geom.type === 'CylinderGeometry') mesh.rotation.x = Math.PI/2;
-
-                scene.add(mesh);
-
+                // Aim towards bottom center roughly
                 const targetPos = new THREE.Vector3(
                     (Math.random() - 0.5) * 12,
                     sandY,
@@ -637,10 +775,13 @@
                 );
                 const direction = targetPos.clone().sub(spawnPos).normalize();
 
+                const speed = 0.05 + Math.random() * 0.05;
+
                 treasures.push({
-                    mesh: mesh,
-                    velocity: direction.multiplyScalar(0.4 + Math.random()*0.3),
-                    rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0)
+                    mesh: sprite,
+                    velocity: direction.multiplyScalar(speed),
+                    rotationSpeed: new THREE.Vector3(0,0,0),
+                    gravity: 0.002 * 0.1 // Low gravity for bubbles
                 });
             }
         }
@@ -701,7 +842,7 @@
                     b.style.visibility = 'hidden';
                 }});
 
-                spawnTreasure(e.clientX, e.clientY);
+                spawnBubbleTreasure(e.clientX, e.clientY);
 
                 if (content) {
                     const modal = document.getElementById('text-modal');
@@ -728,15 +869,22 @@
 
         // --- SCROLL LOGIC ---
         let scrollY = 0;
+        let targetCameraY = 0;
         let maxScroll = document.body.scrollHeight - window.innerHeight;
         const mermaid = document.getElementById('mermaid');
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
             maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = Math.min(scrollY / maxScroll, 1);
 
-            // Mermaid Guide Animation: Always visible, no opacity logic
-        });
+            // 1. Mermaid Guide
+            const targetTop = 20 + (progress * 60);
+            mermaid.style.top = targetTop + '%';
+
+            // 2. Camera Target Calculation
+            targetCameraY = progress * (sandY + 10);
+        }, { passive: true });
 
         // Mermaid Swim Animation
         gsap.to(mermaid, {
@@ -747,23 +895,35 @@
             ease: "sine.inOut"
         });
 
-        function updateCamera() {
-            const progress = Math.min(scrollY / maxScroll, 1);
-            const targetY = progress * (sandY + 10);
-            camera.position.y += (targetY - camera.position.y) * 0.05;
-        }
-
-        // --- INTERACTION: CHEST CLICK ---
+        // --- INTERACTION: CHEST CLICK & HOVER ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        window.addEventListener('click', (event) => {
-            // Check interaction with chest
+        window.addEventListener('mousemove', (event) => {
+            if (!chestSprite) return;
+
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(chestGroup.children, true);
+            const intersects = raycaster.intersectObject(chestSprite);
+
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        window.addEventListener('click', (event) => {
+            if (!chestSprite) return;
+
+            // Check interaction with chest sprite
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(chestSprite);
 
             if (intersects.length > 0) {
                 toggleChest();
@@ -774,21 +934,35 @@
             isChestOpen = !isChestOpen;
             const icons = document.getElementById('chest-socials');
 
+            // Smoke Effect
+            createSmoke(chestSprite.position);
+
             if(isChestOpen) {
-                // Open Lid
-                gsap.to(chestLid.rotation, { x: -Math.PI / 2, duration: 1, ease: "back.out(1.7)" });
+                // Transform to Big Diamond
+                chestSprite.material.map = diamondTex;
 
-                // Light Burst (Clamped intensity to prevent washing out/darkening artifacts)
-                gsap.to(pileLight, { intensity: 3, color: '#ffdd00', duration: 0.5, yoyo: true, repeat: 1 });
+                // Pop animation
+                gsap.fromTo(chestSprite.scale, { x: 0, y: 0 }, { x: 12, y: 12, duration: 0.5, ease: "back.out(1.7)" });
 
-                // Show Icons
+                // Light Burst
+                const burstColor = new THREE.Color('#00f3ff'); // Diamond Blue
+                gsap.to(pileLight, { intensity: 3, duration: 0.5, yoyo: true, repeat: 1 });
+                gsap.to(pileLight.color, {
+                    r: burstColor.r,
+                    g: burstColor.g,
+                    b: burstColor.b,
+                    duration: 0.5,
+                    yoyo: true,
+                    repeat: 1
+                });
+
                 icons.classList.add('active');
 
             } else {
-                // Close Lid
-                gsap.to(chestLid.rotation, { x: 0, duration: 0.5, ease: "power2.in" });
+                // Transform back to Chest
+                chestSprite.material.map = chestTexClosed;
+                gsap.fromTo(chestSprite.scale, { x: 0, y: 0 }, { x: 8, y: 8, duration: 0.5, ease: "back.out(1.7)" });
 
-                // Hide Icons
                 icons.classList.remove('active');
             }
         }
@@ -801,19 +975,36 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            updateCamera();
+            // Camera Interpolation
+            camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+
             particleSystem.rotation.y = time * 0.02;
 
+            // Animate Smoke
+            smokeParticles.forEach(s => {
+                s.mesh.position.y += 0.05;
+                const positions = s.mesh.geometry.attributes.position.array;
+                for(let i=0; i<positions.length/3; i++){
+                    positions[i*3] += (Math.random()-0.5)*0.1;
+                    positions[i*3+2] += (Math.random()-0.5)*0.1;
+                }
+                s.mesh.geometry.attributes.position.needsUpdate = true;
+            });
+
             treasures.forEach(t => {
-                // Underwater physics: Low gravity, high drag
-                t.velocity.y -= 0.002;
-                t.velocity.multiplyScalar(0.98); // Drag
+                // Underwater physics
+                const g = t.gravity !== undefined ? t.gravity : 0.002;
+                t.velocity.y -= g;
+                t.velocity.multiplyScalar(0.98);
 
                 t.mesh.position.add(t.velocity);
                 t.mesh.rotation.x += t.rotationSpeed.x;
                 t.mesh.rotation.y += t.rotationSpeed.y;
 
-                const floorY = sandY + 0.8;
+                // Exact Floor Collision
+                const floorHeight = getSandHeight(t.mesh.position.x, t.mesh.position.z);
+                const floorY = sandY + floorHeight + 0.5; // + radius
+
                 if (t.mesh.position.y < floorY) {
                     t.mesh.position.y = floorY;
                     t.velocity.set(0, 0, 0);
@@ -839,15 +1030,60 @@
             });
         });
 
-        // --- UI CLOSERS ---
+        // --- AUDIO SYSTEM (Web Audio API for Seamless Loop) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioBuffer = null;
+        let audioSource = null;
+        let gainNode = null;
+
+        async function initAudio() {
+            try {
+                const response = await fetch('/assets/audio/underwater.mp3');
+                const arrayBuffer = await response.arrayBuffer();
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            } catch (e) {
+                console.warn("Audio load failed:", e);
+            }
+        }
+        initAudio(); // Start loading immediately
+
+        function playSeamlessAudio() {
+            if (!audioBuffer) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            audioSource = audioCtx.createBufferSource();
+            audioSource.buffer = audioBuffer;
+            audioSource.loop = true; // Gapless looping
+
+            gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.2;
+
+            audioSource.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            audioSource.start(0);
+        }
+
+        // --- INTRO & UI CLOSERS ---
+        document.getElementById('enter-btn').addEventListener('click', () => {
+            const overlay = document.getElementById('intro-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 1000);
+
+            // Play Audio
+            playSeamlessAudio();
+
+            gsap.to('#canvas-container', { opacity: 1, duration: 2 });
+        });
+
         document.getElementById('lightbox').addEventListener('click', () => {
             document.getElementById('lightbox').classList.remove('active');
         });
         document.getElementById('text-modal').addEventListener('click', () => {
             document.getElementById('text-modal').classList.remove('active');
         });
-
-        gsap.to('#canvas-container', { opacity: 1, duration: 2 });
+        // Initial canvas fade in moved to enter button
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
