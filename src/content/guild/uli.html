@@ -379,7 +379,7 @@
 
         /* Services Section */
         #services {
-            background: rgba(255,255,255,0.5);
+            background: transparent; /* Removed background to match theme */
         }
 
         .services-grid {
@@ -391,19 +391,22 @@
         }
 
         .service-card {
-            background: #fff;
+            background: rgba(255, 255, 255, 0.9); /* Glassmorphism start */
+            backdrop-filter: blur(5px);
             border: 2px solid var(--c-text);
-            border-radius: 15px;
+            border-radius: 20px; /* Matched to text-panel */
             padding: 2rem;
             text-align: center;
             transition: transform 0.3s, box-shadow 0.3s;
             position: relative;
             overflow: hidden;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.1); /* Subtle sketchy shadow */
         }
 
         .service-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 10px 10px 0px var(--c-accent-teal);
+            transform: translateY(-5px) rotate(-1deg); /* Slight organic tilt */
+            box-shadow: 8px 8px 0px var(--c-accent-teal);
+            border-color: var(--c-accent-teal);
         }
 
         .service-icon {
@@ -1096,26 +1099,42 @@
             }
 
             function drawServices(p, alpha) {
-                // Geometric Order / Building Blocks
+                // Geometric Web / Interconnection
+                p.translate(p.width/2, p.height/2);
                 p.strokeWeight(1);
-                p.stroke(241, 196, 15, alpha * 100); // Gold
                 p.noFill();
 
-                let gridSize = 100;
-                let t = p.frameCount * 0.01;
+                let t = p.frameCount * 0.005;
+                let radius = Math.min(p.width, p.height) * 0.4;
 
-                for(let x = 0; x <= p.width; x += gridSize) {
-                    for(let y = 0; y <= p.height; y += gridSize) {
-                        let off = p.sin(x*0.01 + y*0.01 + t) * 20;
-                        if(p.random() > 0.8) { // Sparse
-                            p.rect(x + off, y + off, 10, 10);
-                        }
-                        // Connecting lines
-                        if ((x+y)%200 === 0) {
-                             p.line(x, y, x + gridSize, y + gridSize);
+                // Rotating Hexagon/Flower Structure
+                p.rotate(t);
+
+                // Draw 3 layers
+                for(let j=0; j<3; j++) {
+                    let r = radius * (0.5 + j*0.25);
+                    let points = 6;
+
+                    p.stroke(52, 152, 219, alpha * (100 - j*20)); // Blue fade
+                    p.beginShape();
+                    for(let i=0; i<points; i++) {
+                        let angle = p.TWO_PI / points * i;
+                        let x = p.cos(angle) * r;
+                        let y = p.sin(angle) * r;
+                        p.vertex(x, y);
+
+                        // Internal connections
+                        if (j === 1) {
+                            p.stroke(241, 196, 15, alpha * 50); // Gold trace
+                            p.line(0, 0, x, y);
                         }
                     }
+                    p.endShape(p.CLOSE);
                 }
+
+                // Reset matrix for other functions if they don't push/pop correctly (they do, but safe practice)
+                p.rotate(-t);
+                p.translate(-p.width/2, -p.height/2);
             }
 
             function drawParticles(p, alpha) {
