@@ -53,7 +53,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 1000vh; /* Expanded for more content */
+            height: 1500vh; /* Significantly expanded for better pacing */
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -169,11 +169,13 @@
             flex-direction: column;
             gap: 2rem;
             width: 90%; max-width: 1200px; left: 5%;
+            padding-bottom: 10vh; /* Extra breathing room at bottom */
         }
         .gallery-title {
             font-family: 'Dela Gothic One'; font-size: 3rem; color: #fff;
             text-shadow: 2px 2px 0 var(--c-tea); text-align: center;
             opacity: 0; transform: translateY(20px);
+            margin-bottom: 2rem;
         }
         .gallery-grid {
             display: grid;
@@ -187,6 +189,7 @@
             height: 250px; border: 2px solid rgba(255,255,255,0.2);
             position: relative; opacity: 0; transform: scale(0.8);
             transition: transform 0.3s;
+            background: rgba(0,0,0,0.3);
         }
         .g-item:hover { transform: scale(1.05) !important; z-index: 10; border-color: var(--c-tea); }
         .g-item img {
@@ -536,13 +539,13 @@
                 }
             });
 
-            // Panels - Re-calculated for 1000vh spacer and 6 panels
+            // Panels - Shifted earlier to give Gallery more space (1500vh total)
             const panels = [
-                { id: "#panel-1", start: 10, end: 20 },
-                { id: "#panel-2", start: 25, end: 35 },
-                { id: "#panel-3", start: 40, end: 50 }, // Services
-                { id: "#panel-4", start: 55, end: 65 }, // Connection
-                { id: "#panel-5", start: 70, end: 80 }  // Traits
+                { id: "#panel-1", start: 5, end: 15 },
+                { id: "#panel-2", start: 20, end: 30 },
+                { id: "#panel-3", start: 35, end: 45 }, // Services
+                { id: "#panel-4", start: 50, end: 60 }, // Connection
+                { id: "#panel-5", start: 65, end: 75 }  // Traits
             ];
 
             panels.forEach(p => {
@@ -569,11 +572,12 @@
                 gsap.set(`${p.id} .image-card`, { opacity: 0, x: 50, rotation: 5 });
             });
 
-            // Gallery Animation (85% - 95%)
+            // Gallery Animation (Starts earlier at 80%, fully visible by 90%)
+            // This leaves 90% -> 99.5% (~140vh) of pure scrolling time to view the gallery
             gsap.fromTo("#panel-gallery .gallery-title",
                 { opacity: 0, y: 50 },
                 { opacity: 1, y: 0,
-                  scrollTrigger: { trigger: "#scroll-spacer", start: "85% top", end: "88% top", scrub: 1 }
+                  scrollTrigger: { trigger: "#scroll-spacer", start: "78% top", end: "82% top", scrub: 1 }
                 }
             );
 
@@ -584,8 +588,8 @@
                     opacity: 1, scale: 1, stagger: 0.1,
                     scrollTrigger: {
                         trigger: "#scroll-spacer",
-                        start: "85% top",
-                        end: "92% top",
+                        start: "80% top",
+                        end: "90% top",
                         scrub: 1
                     }
                 }
