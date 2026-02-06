@@ -7,7 +7,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Kurenaido&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- GSAP -->
@@ -25,14 +25,21 @@
     </script>
 
     <style>
-        /* Base Styles */
+        /* --- CORE VARIABLES --- */
         :root {
-            --c-bg: #0d0d0d;
+            --c-bg: #050505;
             --c-text: #e0e0e0;
+            --c-dim: #888;
             --c-accent: #ff0055; /* Glitch Red */
             --c-accent2: #00ccff; /* Cyber Blue */
-            --c-yarn: #ffaa00; /* Warm Yarn */
-            --c-paper: rgba(20, 20, 20, 0.85);
+            --c-gold: #ffaa00; /* Yarn Gold */
+            --c-hud-bg: rgba(10, 15, 20, 0.65);
+            --c-hud-border: rgba(0, 204, 255, 0.3);
+
+            --f-mono: 'Courier Prime', monospace;
+            --f-serif: 'Noto Serif TC', serif;
+            --f-display: 'Orbitron', sans-serif;
+            --f-hand: 'Zen Kurenaido', sans-serif;
         }
 
         body {
@@ -40,37 +47,17 @@
             overflow-x: hidden;
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: 'Noto Serif TC', serif;
+            font-family: var(--f-serif);
         }
 
-        /* Canvas Container */
+        /* --- LAYOUT & CANVAS --- */
         #canvas-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
+            top: 0; left: 0; width: 100%; height: 100vh;
             z-index: 0;
+            pointer-events: none; /* Let clicks pass through if needed */
         }
 
-        /* Navigation */
-        .nav-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-family: 'Courier Prime', monospace;
-            color: var(--c-text); text-decoration: none;
-            border: 1px solid var(--c-text);
-            padding: 0.5rem 1rem;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-            transition: 0.3s;
-        }
-        .nav-back:hover {
-            background: var(--c-text);
-            color: var(--c-bg);
-            box-shadow: 0 0 10px var(--c-accent);
-        }
-
-        /* Content Wrapper */
         .scrolly-container {
             position: relative;
             z-index: 10;
@@ -80,461 +67,451 @@
             min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: center; /* Centered by default */
             padding: 2rem;
             box-sizing: border-box;
             position: relative;
         }
 
-        /* Glitch Effect Text */
-        .glitch-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .glitch {
-            font-family: 'Zen Kurenaido', sans-serif;
-            font-size: clamp(3rem, 8vw, 6rem);
-            font-weight: 900;
-            text-transform: uppercase;
-            position: relative;
-            color: var(--c-text);
-        }
-        .glitch::before, .glitch::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--c-bg);
-        }
-        .glitch::before {
-            left: 2px;
-            text-shadow: -1px 0 var(--c-accent);
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim 5s infinite linear alternate-reverse;
-        }
-        .glitch::after {
-            left: -2px;
-            text-shadow: -1px 0 var(--c-accent2);
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim2 5s infinite linear alternate-reverse;
-        }
+        /* Alternating Layouts */
+        section.align-left { justify-content: flex-start; padding-left: 10%; }
+        section.align-right { justify-content: flex-end; padding-right: 10%; }
 
-        @keyframes glitch-anim {
-            0% { clip: rect(38px, 9999px, 81px, 0); }
-            20% { clip: rect(69px, 9999px, 8px, 0); }
-            40% { clip: rect(10px, 9999px, 94px, 0); }
-            60% { clip: rect(25px, 9999px, 12px, 0); }
-            80% { clip: rect(93px, 9999px, 57px, 0); }
-            100% { clip: rect(16px, 9999px, 34px, 0); }
-        }
-        @keyframes glitch-anim2 {
-            0% { clip: rect(12px, 9999px, 45px, 0); }
-            20% { clip: rect(89px, 9999px, 2px, 0); }
-            40% { clip: rect(30px, 9999px, 78px, 0); }
-            60% { clip: rect(66px, 9999px, 19px, 0); }
-            80% { clip: rect(5px, 9999px, 31px, 0); }
-            100% { clip: rect(72px, 9999px, 98px, 0); }
-        }
-
-        /* Card Style */
-        .glass-card {
-            background: rgba(10, 10, 10, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 3rem;
-            max-width: 800px;
-            width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: transform 0.3s;
-        }
-        .glass-card:hover {
-            border-color: var(--c-accent);
-        }
-
-        /* Typography */
-        h2 {
-            font-family: 'Courier Prime', monospace;
-            color: var(--c-accent);
-            font-size: 2rem;
-            margin-top: 0;
-            border-bottom: 2px dashed var(--c-text);
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        p {
-            font-size: 1.2rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-        }
-
-        .highlight { color: var(--c-yarn); font-weight: bold; }
-
-        /* Profile Image */
-        .profile-container {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .profile-img {
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            border: 4px solid var(--c-text);
-            box-shadow: 0 0 20px var(--c-accent2);
-            object-fit: cover;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        .stat-item {
-            text-align: center;
-            background: rgba(255,255,255,0.05);
-            padding: 1rem;
-            border-radius: 4px;
-            border: 1px solid transparent;
-        }
-        .stat-item:hover {
-            border-color: var(--c-accent2);
-        }
-        .stat-val {
-            font-family: 'Courier Prime', monospace;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--c-accent2);
-        }
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        /* Gallery */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        .gallery-item {
-            position: relative;
-            overflow: hidden;
-            border-radius: 4px;
-            aspect-ratio: 1/1;
-        }
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s;
-        }
-        .gallery-item:hover img {
-            transform: scale(1.1);
-        }
-
-        /* Footer */
-        .footer-social {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        .social-btn {
-            font-size: 2rem;
-            color: var(--c-text);
+        /* --- NAVIGATION --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            font-family: var(--f-display);
+            font-size: 0.8rem; letter-spacing: 2px;
+            color: var(--c-accent2); text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--c-accent2);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
             transition: 0.3s;
         }
-        .social-btn:hover {
-            color: var(--c-accent);
-            text-shadow: 0 0 10px var(--c-accent);
-            transform: scale(1.2);
+        .nav-back:hover {
+            background: var(--c-accent2); color: #000;
+            box-shadow: 0 0 15px var(--c-accent2);
         }
 
-        /* Loader */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            flex-direction: column;
-        }
-        .loader-bar {
-            width: 200px; height: 2px; background: #333; margin-top: 1rem;
-            position: relative; overflow: hidden;
-        }
-        .loader-progress {
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
-            background: var(--c-accent);
+        /* --- HUD CARDS (Professional Design) --- */
+        .hud-card {
+            background: var(--c-hud-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--c-hud-border);
+            padding: 3rem;
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            /* Cyberpunk Corners */
+            clip-path: polygon(
+                20px 0, 100% 0,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                0 100%, 0 20px
+            );
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
+        /* Decorative HUD Elements */
+        .hud-card::before {
+            content: ''; position: absolute; top: 0; left: 20px; width: 100px; height: 2px; background: var(--c-accent2);
+        }
+        .hud-card::after {
+            content: 'SYS.LOG'; position: absolute; bottom: 5px; right: 25px;
+            font-family: var(--f-display); font-size: 0.6rem; color: var(--c-dim); letter-spacing: 2px;
+        }
+
+        .hud-header {
+            display: flex; align-items: baseline; justify-content: space-between;
+            margin-bottom: 2rem; border-bottom: 1px dashed var(--c-dim); padding-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-family: var(--f-display);
+            color: var(--c-text);
+            font-size: 1.8rem; margin: 0; text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        .sys-id { font-family: var(--f-mono); color: var(--c-accent); font-size: 0.9rem; }
+
+        p {
+            font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem; color: #ddd;
+            text-align: justify;
+        }
+
+        .highlight-code { color: var(--c-accent2); font-family: var(--f-mono); background: rgba(0,204,255,0.1); padding: 0 4px; }
+        .highlight-yarn { color: var(--c-gold); font-weight: bold; }
+
+        /* --- HERO SECTION --- */
+        #hero { min-height: 100vh; text-align: center; display: flex; flex-direction: column; }
+
+        .profile-container {
+            position: relative; width: 220px; height: 220px; margin: 0 auto 2rem;
+        }
+        .profile-img {
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+            border: 2px solid var(--c-text); filter: grayscale(20%) contrast(1.2);
+            z-index: 2; position: relative;
+        }
+        .profile-ring {
+            position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
+            border: 2px dashed var(--c-accent2); border-radius: 50%;
+            animation: spin 20s linear infinite; z-index: 1; opacity: 0.6;
+        }
+        .profile-ring:nth-child(2) {
+            width: 140%; height: 140%; top: -20%; left: -20%;
+            border-color: var(--c-accent); animation-direction: reverse; animation-duration: 30s;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .glitch-text {
+            font-family: var(--f-display); font-size: 4rem; font-weight: 900;
+            color: var(--c-text); position: relative; display: inline-block;
+        }
+        /* Simple CSS Glitch/Shake */
+        .glitch-text:hover { animation: shake 0.2s infinite; color: var(--c-accent); }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 100% { transform: translate(-1px, -1px); } }
+
+        .sub-glitch {
+            font-family: var(--f-mono); color: var(--c-gold); margin-top: 1rem; letter-spacing: 3px; font-size: 1.2rem;
+        }
+
+        /* --- STATS & GALLERY --- */
+        .stats-row { display: flex; gap: 1rem; margin-top: 2rem; justify-content: space-between; flex-wrap: wrap; }
+        .stat-box {
+            flex: 1; min-width: 100px; background: rgba(0,0,0,0.3); padding: 1rem; border-left: 2px solid var(--c-dim);
+            transition: 0.3s;
+        }
+        .stat-box:hover { border-left-color: var(--c-gold); background: rgba(255,170,0,0.1); }
+        .stat-num { font-family: var(--f-display); font-size: 1.5rem; color: var(--c-text); }
+        .stat-label { font-family: var(--f-mono); font-size: 0.8rem; color: var(--c-dim); margin-top: 0.2rem; }
+
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 2rem;
+        }
+        .gallery-item {
+            aspect-ratio: 1; overflow: hidden; position: relative; border: 1px solid #333;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .gallery-item:hover img { transform: scale(1.1); }
+
+        /* --- BOTTOM MANIFESTO --- */
+        #manifesto {
+            text-align: center;
+        }
+        .manifesto-box {
+            max-width: 800px; padding: 4rem 2rem;
+            border: 1px solid var(--c-text);
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.95) 100%);
+        }
+        .big-quote {
+            font-family: var(--f-hand); font-size: 2.5rem; line-height: 1.4; color: var(--c-gold); margin-bottom: 2rem;
+        }
+
+        .social-dock {
+            display: flex; gap: 2rem; justify-content: center; margin-top: 3rem;
+        }
+        .social-icon {
+            width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--c-text);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: var(--c-text); text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #000;
+        }
+        .social-icon:hover {
+            transform: translateY(-5px) scale(1.1);
+            background: var(--c-accent); border-color: var(--c-accent); color: #fff;
+            box-shadow: 0 10px 20px rgba(255, 0, 85, 0.4);
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            padding: 2rem; text-align: center; font-family: var(--f-mono); font-size: 0.8rem; color: #555;
+            position: relative; z-index: 10; background: #000;
+        }
+
+        /* Mobile */
         @media (max-width: 768px) {
-            .gallery-grid { grid-template-columns: 1fr; }
-            .glitch { font-size: 3rem; }
-            .glass-card { padding: 1.5rem; }
+            .glitch-text { font-size: 2.5rem; }
+            section.align-left, section.align-right { justify-content: center; padding: 2rem 1rem; }
+            .hud-card { padding: 2rem 1.5rem; clip-path: none; border-radius: 4px; border: 1px solid var(--c-hud-border); }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div style="font-family: 'Courier Prime'; color: var(--c-accent);">INITIALIZING YUFEL_OS...</div>
-        <div class="loader-bar"><div class="loader-progress"></div></div>
-    </div>
+    <!-- Back Button -->
+    <a href="/guild/" class="nav-back"><i class="fa-solid fa-chevron-left"></i> GUILD_NET</a>
 
-    <a href="/guild/" class="nav-back">&lt; EXIT_GUILD</a>
-
+    <!-- 3D Background -->
     <div id="canvas-container"></div>
 
     <div class="scrolly-container">
 
-        <!-- Section 1: Hero -->
+        <!-- 1. HERO -->
         <section id="hero">
-            <div style="text-align: center;">
-                <div class="profile-container">
-                    <img src="/assets/img/guild/yufel/avatar.webp" class="profile-img" alt="Yufel">
+            <div class="profile-container">
+                <div class="profile-ring"></div>
+                <div class="profile-ring"></div>
+                <img src="/assets/img/guild/yufel/avatar.webp" class="profile-img" alt="Yufel">
+            </div>
+
+            <h1 class="glitch-text">STRANGE_CRAZY</h1>
+            <div class="sub-glitch">// YUFEL v2.0 // WEAVER // CODER</div>
+
+            <p style="margin-top: 2rem; max-width: 600px; color: #aaa; font-family: var(--f-mono); font-size: 0.9rem;">
+                > INITIALIZING CHAOS PROTOCOLS...<br>
+                > LOADING SKILL_MATRIX... [COMPLETE]<br>
+                > WELCOME TO THE MIND OF A MAD LEARNER.
+            </p>
+        </section>
+
+        <!-- 2. THE LEARNER (Left) -->
+        <section id="learner" class="align-left">
+            <div class="hud-card">
+                <div class="hud-header">
+                    <h2>The Library</h2>
+                    <span class="sys-id">DATA_SOURCE: SELF_TAUGHT</span>
                 </div>
-                <div class="glitch-wrapper">
-                    <div class="glitch" data-text="STRANGE CRAZY">STRANGE CRAZY</div>
-                </div>
-                <div style="margin-top: 1rem; font-family: 'Courier Prime'; color: var(--c-accent2);">
-                    // YUFEL v1.0 // POET // WEAVER
+                <p>
+                    <span class="highlight-yarn">「我是一個奇怪的瘋子，喜歡四處學習。」</span>
+                </p>
+                <p>
+                    在這個資訊爆炸的時代，<b>圖書館</b>與 <b>YouTube</b> 是我最忠實的導師。
+                    過去七八年間，我像是一台貪婪的掃描機，不分晝夜地吸收知識。
+                    沒有傳統學位的框架束縛，我的學習路徑如同我編織的毛線一樣——
+                    錯綜複雜，卻在混亂中自成邏輯。
+                </p>
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="stat-num">8+</div>
+                        <div class="stat-label">YEARS_EXP</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-num">∞</div>
+                        <div class="stat-label">CURIOSITY</div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Section 2: The Learner (Library) -->
-        <section id="learner">
-            <div class="glass-card">
-                <h2>01_THE_LIBRARY.log</h2>
-                <p>
-                    <span class="highlight">"我是一個奇怪的瘋子，喜歡四處學習。"</span>
-                </p>
-                <p>
-                    過去七八年的時間裡，圖書館與 YouTube 是我的導師。沒有學位證書，只有無盡的好奇心。
-                    我在書本堆疊的迷宮中尋找知識的線頭，試圖編織出屬於自己的世界觀。
-                </p>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-val">8yr</div>
-                        <div class="stat-label">Self-Taught</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-val">Lv.∞</div>
-                        <div class="stat-label">Curiosity</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-val">100+</div>
-                        <div class="stat-label">Books Read</div>
-                    </div>
+        <!-- 3. THE MAKER (Right) -->
+        <section id="maker" class="align-right">
+            <div class="hud-card">
+                <div class="hud-header">
+                    <h2>The Fabricator</h2>
+                    <span class="sys-id">MODE: CREATIVE</span>
                 </div>
-            </div>
-        </section>
-
-        <!-- Section 3: The Weaver (Craft) -->
-        <section id="weaver">
-            <div class="glass-card">
-                <h2>02_THE_WORKSHOP.exe</h2>
                 <p>
-                    手作是將混亂的思緒實體化的過程。
+                    我的雙手是將代碼實體化的印表機。
+                    <span class="highlight-yarn">鉤織</span>教會我耐心的演算法，<span class="highlight-yarn">製包</span>則是我對空間幾何的實踐。
+                    雖然自謙「不怎麼厲害」，但每一個手作的背包、每一針毛線，都承載著我對生活細節的觀察。
                 </p>
                 <p>
-                    我<span class="highlight">鉤織</span>，雖然自嘲不怎麼厲害，但每一針都藏著耐心；
-                    我<span class="highlight">畫畫</span>，線條或許稚嫩，但那是靈魂的投影；
-                    我<span class="highlight">做包</span>，外出包、收納包，背著自己的作品探索世界。
+                    目前也有在背誦日文單字，試圖解鎖新的語言模組。
+                    雖然 <span class="highlight-code">Japanese.level < N1</span>，但持續迭代中。
                 </p>
                 <div class="gallery-grid">
-                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work1.webp" alt="Craft 1"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work2.webp" alt="Craft 2"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work3.webp" alt="Craft 3"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work4.webp" alt="Craft 4"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work1.webp" alt="Work"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work2.webp" alt="Work"></div>
                 </div>
             </div>
         </section>
 
-        <!-- Section 4: The Coder (Code) -->
-        <section id="coder">
-            <div class="glass-card">
-                <h2>03_SYNTAX_ERROR.cpp</h2>
+        <!-- 4. THE CODER (Left) -->
+        <section id="coder" class="align-left">
+            <div class="hud-card">
+                <div class="hud-header">
+                    <h2>The Architect</h2>
+                    <span class="sys-id">LANG: CPP / PYTHON</span>
+                </div>
                 <p>
-                    遊走在邏輯與感性之間。
+                    遊走在邏輯與感性之間，我是代碼的詩人。
                 </p>
                 <p>
-                    學校教過 <span style="color: #00ccff;">C++</span>，我又自學 <span style="color: #ffaa00;">Python</span>。
-                    雖然自認「不怎麼樣」，但在程式碼的海洋中，我依然是一個頑強的泳者。
-                    同時也在啃食<span class="highlight">日文</span>，雖然 N1 還很遙遠，但每多懂一個詞，世界就大了一點。
+                    學校賦予我 <span class="highlight-code">C++</span> 的基石，我則用 <span class="highlight-code">Python</span> 搭建起通往未來的橋樑。
+                    看得懂程式碼，不僅是一種技能，更是一種透視世界運作規律的方式。
+                    無論是編織毛線還是編寫迴圈，本質都是將微小的單元組合成宏大的結構。
                 </p>
-                <div style="background: #111; padding: 1rem; margin-top: 1rem; border-left: 3px solid var(--c-accent); font-family: 'Courier Prime'; font-size: 0.9rem;">
-                    > while(alive) {<br>
-                    > &nbsp;&nbsp;learn();<br>
-                    > &nbsp;&nbsp;create();<br>
-                    > &nbsp;&nbsp;if (tired) break; // just kidding, never break<br>
-                    > }
+                <div style="margin-top: 1.5rem; padding: 1rem; background: #000; border: 1px solid #333; font-family: var(--f-mono); font-size: 0.8rem; color: var(--c-accent2);">
+                    def create_future(skills, passion):<br>
+                    &nbsp;&nbsp;while True:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;try:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;learn(new_thing)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;build(something_cool)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;except Failure:<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;continue # Never stop<br>
                 </div>
             </div>
         </section>
 
-        <!-- Section 5: Status -->
-        <section id="status">
-            <div class="glass-card" style="text-align: center;">
-                <h2>04_SYSTEM_STATUS</h2>
-                <p style="font-size: 1.5rem;">
-                    [ STATUS: <span style="color: var(--c-accent);">OPEN FOR WORK</span> ]
-                </p>
-                <p>
-                    目前剛離職，正在尋找下一個冒險的起點。
-                    期待獨立，期待能用我的雙手和腦袋，在這個瘋狂的世界找到立足之地。
-                </p>
-
-                <div class="footer-social">
-                    <a href="https://www.threads.com/@tseng.yufel" target="_blank" class="social-btn" title="Threads"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://vocus.cc/user/@fel82" target="_blank" class="social-btn" title="Vocus"><i class="fa-solid fa-pen-nib"></i></a>
+        <!-- 5. MANIFESTO (Bottom) -->
+        <section id="manifesto">
+            <div class="manifesto-box hud-card" style="max-width: 800px; clip-path: none; border-color: var(--c-text);">
+                <div class="hud-header" style="justify-content: center;">
+                    <h2>System Status: Rebooting</h2>
                 </div>
 
-                <div style="margin-top: 3rem; opacity: 0.6; font-size: 0.9rem;">
-                    Made with <i class="fa-solid fa-bomb" style="color: var(--c-accent);"></i> by SuperGalen's Dungeon
+                <p class="big-quote">
+                    "期待獨立。<br>在這瘋狂的世界，<br>尋找屬於我的座標。"
+                </p>
+
+                <p>
+                    剛離職，目前處於<b>自由求職</b>狀態。
+                    我正在尋找一個能讓這個「奇怪的瘋子」發揮所長的地方。
+                    如果你需要一個懂程式、會手作、愛學習，且思維不受限的創造者，
+                    <span class="highlight-yarn">歡迎連線。</span>
+                </p>
+
+                <div class="social-dock">
+                    <a href="https://www.threads.net/@tseng.yufel" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://vocus.cc/user/@fel82" target="_blank" class="social-icon"><i class="fa-solid fa-pen-nib"></i></a>
+                    <a href="mailto:contact@example.com" class="social-icon"><i class="fa-solid fa-envelope"></i></a>
                 </div>
             </div>
         </section>
 
-        <!-- Spacer for footer reveal -->
-        <div style="height: 20vh;"></div>
-
+        <!-- Spacer -->
+        <div style="height: 10vh;"></div>
     </div>
+
+    <footer>
+        Made with <i class="fa-solid fa-heart" style="color: var(--c-accent);"></i> by SuperGalen's Dungeon
+    </footer>
 
     <script type="module">
         import * as THREE from 'three';
 
-        // --- SCENE SETUP ---
+        // --- 1. SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.02); // Dark fog
+        // Deep space fog
+        scene.fog = new THREE.FogExp2(0x050505, 0.015);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
+        // Start position: slightly high, ready to dive
+        camera.position.set(0, 0, 5);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- OBJECTS ---
-
-        // 1. Floating Books (InstancedMesh)
-        const bookCount = 200;
-        const bookGeo = new THREE.BoxGeometry(0.8, 1.0, 0.2); // Book shape
-        const bookMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-        const books = new THREE.InstancedMesh(bookGeo, bookMat, bookCount);
-
-        const dummy = new THREE.Object3D();
-        const colors = [];
-
-        for (let i = 0; i < bookCount; i++) {
-            dummy.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 40 - 10
-            );
-            dummy.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
-            );
-            dummy.scale.setScalar(Math.random() * 0.5 + 0.5);
-            dummy.updateMatrix();
-            books.setMatrixAt(i, dummy.matrix);
-
-            // Random colors: Cyber Blue, Red, Grey, White
-            const r = Math.random();
-            if (r > 0.8) colors.push(0.0, 0.8, 1.0); // Blue
-            else if (r > 0.6) colors.push(1.0, 0.0, 0.3); // Red
-            else if (r > 0.4) colors.push(0.2, 0.2, 0.2); // Grey
-            else colors.push(0.9, 0.9, 0.9); // White
-        }
-
-        books.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(colors), 3);
-        scene.add(books);
-
-        // 2. Procedural Yarn/Chaos Lines
-        const lineCount = 50;
+        // --- 2. TUNNEL OF CHAOS (LINES) ---
         const lineGroup = new THREE.Group();
+        scene.add(lineGroup);
 
-        for(let i=0; i<lineCount; i++) {
-            // Create random curve
-            const pts = [];
-            let current = new THREE.Vector3(
-                (Math.random()-0.5)*10,
-                (Math.random()-0.5)*10,
-                (Math.random()-0.5)*10
-            );
-            for(let j=0; j<20; j++) {
-                pts.push(current.clone());
-                current.add(new THREE.Vector3(
-                    (Math.random()-0.5)*5,
-                    (Math.random()-0.5)*5,
-                    (Math.random()-0.5)*5
+        const tunnelLength = 120; // How deep the tunnel goes
+        const lineCount = 80; // Number of "strands"
+
+        // Helper to create random curve along Z
+        function createChaosCurve(zStart, zEnd) {
+            const points = [];
+            const segments = 10;
+            const segmentLen = (zStart - zEnd) / segments;
+
+            for(let i=0; i<=segments; i++) {
+                // Spiral/Wiggle logic
+                const z = zStart - (i * segmentLen);
+                // Radius varies to create "chambers"
+                const radius = 5 + Math.random() * 15;
+                const angle = i * 0.5 + Math.random();
+
+                points.push(new THREE.Vector3(
+                    Math.cos(angle) * radius,
+                    Math.sin(angle) * radius,
+                    z
                 ));
             }
-            const curve = new THREE.CatmullRomCurve3(pts);
-            const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.02, 4, false);
+            return new THREE.CatmullRomCurve3(points);
+        }
+
+        for (let i = 0; i < lineCount; i++) {
+            const zStart = 10;
+            const zEnd = -tunnelLength - (Math.random() * 20); // Stagger ends
+
+            const curve = createChaosCurve(zStart, zEnd);
+            const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.05 + Math.random()*0.1, 3, false);
+
+            // Neon Colors: Cyber Blue, Glitch Red, Yarn Gold
+            const r = Math.random();
+            let color = 0x00ccff; // Blue
+            if(r > 0.7) color = 0xff0055; // Red
+            if(r > 0.9) color = 0xffaa00; // Gold
+
             const tubeMat = new THREE.MeshBasicMaterial({
-                color: Math.random() > 0.5 ? 0xffaa00 : 0xff0055,
-                transparent: true, opacity: 0.6
+                color: color,
+                transparent: true,
+                opacity: 0.4 + Math.random() * 0.4,
+                wireframe: Math.random() > 0.8 // Some wireframe for tech feel
             });
+
             const mesh = new THREE.Mesh(tubeGeo, tubeMat);
             lineGroup.add(mesh);
         }
-        scene.add(lineGroup);
 
-        // 3. Lighting
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-
-        const pointLight1 = new THREE.PointLight(0x00ccff, 2, 50);
-        pointLight1.position.set(5, 5, 5);
-        scene.add(pointLight1);
-
-        const pointLight2 = new THREE.PointLight(0xff0055, 2, 50);
-        pointLight2.position.set(-5, -5, 5);
-        scene.add(pointLight2);
-
-        // --- ANIMATION ---
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetZ = 5;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        // --- 3. FLOATING DATA BITS (PARTICLES) ---
+        // Instead of books, let's use geometric shapes to represent "Packets"
+        const particlesGeo = new THREE.BufferGeometry();
+        const pCount = 300;
+        const pPos = [];
+        for(let i=0; i<pCount; i++) {
+            pPos.push(
+                (Math.random()-0.5) * 40, // x
+                (Math.random()-0.5) * 40, // y
+                10 - Math.random() * tunnelLength // z (spread along tunnel)
+            );
+        }
+        particlesGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.15,
+            transparent: true,
+            opacity: 0.8
         });
+        const particleSystem = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particleSystem);
 
+        // --- 4. LIGHTING ---
+        // Just ambient, since we use BasicMaterial for neon lines
+        // But let's add point lights that move with camera for fog illumination if we used StandardMaterial
+        // For now, simple is efficient.
+
+        // --- 5. ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate books slowly
-            books.rotation.y += 0.001;
-            books.rotation.z += 0.0005;
-
-            // Rotate lines
-            lineGroup.rotation.x -= 0.001;
-            lineGroup.rotation.y -= 0.001;
-
-            // Camera follow mouse slightly
-            camera.rotation.x += (mouseY - camera.rotation.x) * 0.05;
-            camera.rotation.y += (mouseX - camera.rotation.y) * 0.05;
+            // Rotate tunnel slightly for dizziness/chaos
+            lineGroup.rotation.z += 0.0005;
+            particleSystem.rotation.z -= 0.0002;
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP INTEGRATION ---
+        // --- 6. SCROLL INTERACTION (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Camera flight
-        const tl = gsap.timeline({
+        // A. Camera Flight (The "Dive")
+        // We map scroll 0 -> 100% to Z position 5 -> -100
+        gsap.to(camera.position, {
+            z: -tunnelLength + 20, // Stop before the absolute end to avoid clipping
+            ease: "none",
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.5 // Smooth scrubbing
+            }
+        });
+
+        // B. Camera Rotation (Twist)
+        gsap.to(camera.rotation, {
+            z: Math.PI / 4, // Slight tilt
+            ease: "none",
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
@@ -543,37 +520,36 @@
             }
         });
 
-        tl.to(camera.position, { z: -20, ease: "none" });
-        tl.to(books.rotation, { x: Math.PI, ease: "none" }, "<");
-        tl.to(lineGroup.rotation, { z: Math.PI, ease: "none" }, "<");
-
-        // Section animations
-        gsap.utils.toArray(".glass-card").forEach(card => {
+        // C. HUD Reveals
+        gsap.utils.toArray(".hud-card").forEach(card => {
             gsap.from(card, {
                 scrollTrigger: {
                     trigger: card,
-                    start: "top 80%",
+                    start: "top 85%",
                     toggleActions: "play none none reverse"
                 },
-                y: 100,
+                scale: 0.9,
                 opacity: 0,
+                filter: "blur(10px)",
                 duration: 0.8,
                 ease: "power2.out"
             });
         });
 
-        // Loader
-        window.onload = () => {
-            gsap.to(".loader-progress", { width: "100%", duration: 1, ease: "power1.inOut" });
-            gsap.to("#loader", {
-                opacity: 0,
-                delay: 1.2,
-                duration: 0.5,
-                onComplete: () => document.getElementById("loader").style.display = "none"
-            });
-        };
+        // D. Mouse Parallax (Subtle)
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
+            const y = (e.clientY / window.innerHeight - 0.5) * 2;
 
-        // Resize
+            gsap.to(camera.position, {
+                x: x * 2,
+                y: -y * 2,
+                duration: 1,
+                overwrite: 'auto' // Don't conflict with scroll too much
+            });
+        });
+
+        // Resize Handler
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
