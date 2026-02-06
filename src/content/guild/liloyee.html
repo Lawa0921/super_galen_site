@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&family=Noto+Serif+TC:wght@400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Serif+TC:wght@400;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -19,7 +19,7 @@
             --c-accent: #00f3ff;
             --c-pink: #ff9aa2;
             --c-gold: #ffd700;
-            --f-title: 'Cinzel', serif;
+            --f-title: 'Zen Maru Gothic', sans-serif; /* Changed to Cute Font */
             --f-body: 'Zen Maru Gothic', sans-serif;
             --f-serif: 'Noto Serif TC', serif;
         }
@@ -30,6 +30,7 @@
             background-color: var(--c-deep);
             color: white;
             font-family: var(--f-body);
+            font-weight: 500; /* Bolder for cuteness */
             overflow-x: hidden;
             width: 100%;
         }
@@ -79,16 +80,19 @@
 
         h1 {
             font-family: var(--f-title);
+            font-weight: 900;
             font-size: 8vw;
             background: linear-gradient(to bottom, #fff, var(--c-accent));
             -webkit-background-clip: text;
             color: transparent;
             text-shadow: 0 0 30px var(--c-accent);
             margin-bottom: 1rem;
+            letter-spacing: 2px;
         }
 
         h2 {
-            font-family: var(--f-serif);
+            font-family: var(--f-title);
+            font-weight: 700;
             font-size: 2.5rem;
             color: var(--c-accent);
             margin-bottom: 1.5rem;
@@ -139,8 +143,8 @@
             transform: translateY(0) scale(1.05) !important; /* Override GSAP slightly on hover */
             box-shadow: inset 0 0 50px rgba(255,255,255,0.4), 0 0 40px rgba(0, 243, 255, 0.4);
         }
-        .story-card h3 { color: var(--c-accent); margin-bottom: 1rem; font-family: var(--f-title); }
-        .story-card p { color: #fff; font-size: 1.1rem; }
+        .story-card h3 { color: var(--c-accent); margin-bottom: 1rem; font-family: var(--f-title); font-weight: 900; }
+        .story-card p { color: #fff; font-size: 1.1rem; font-weight: 500; }
 
         /* --- BUBBLE GALLERY SECTION --- */
         #bubble-zone {
@@ -158,25 +162,36 @@
             display: flex; justify-content: center; align-items: center;
             background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 70%);
             box-shadow: inset 0 0 20px rgba(255,255,255,0.3), 0 0 10px rgba(255,255,255,0.1);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(15px); /* Strong blur initially */
             border: 1px solid rgba(255,255,255,0.3);
-            transition: transform 0.3s;
+            transition: transform 0.3s, backdrop-filter 0.5s, box-shadow 0.5s;
             will-change: transform;
             overflow: hidden;
             z-index: 15;
         }
 
-        .bubble-container:hover {
+        /* Bubbles with content get a golden glow cue */
+        .bubble-container.has-content {
+            box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.3), 0 0 10px rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .bubble-container:hover, .bubble-container.active {
             transform: scale(1.1);
+            backdrop-filter: blur(0px); /* Reveal on hover */
             box-shadow: inset 0 0 30px rgba(255,255,255,0.5), 0 0 20px rgba(0,243,255,0.4);
+        }
+
+        .bubble-container.has-content:hover {
+            box-shadow: inset 0 0 40px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.4);
         }
 
         .bubble-container img {
             width: 100%; height: 100%; object-fit: cover;
-            opacity: 0.6;
+            opacity: 0.4;
             transition: 0.5s;
             transform: scale(1.1);
-            filter: blur(2px);
+            filter: blur(5px); /* Image blurred too */
         }
 
         .bubble-container:hover img {
@@ -619,12 +634,49 @@
         // --- TREASURE CHEST (SPRITE) ---
         let chestSprite, chestGlowSprite;
         let isChestOpen = false;
-        let chestTexClosed, chestTexOpen;
+        let chestTexClosed, chestTexOpen, diamondTex;
+        let smokeParticles = [];
+
+        // Simple Smoke Particle System
+        function createSmoke(pos) {
+            const smokeCount = 10;
+            const smokeGeom = new THREE.BufferGeometry();
+            const smokePos = new Float32Array(smokeCount * 3);
+            for(let i=0; i<smokeCount; i++) {
+                smokePos[i*3] = pos.x + (Math.random()-0.5)*2;
+                smokePos[i*3+1] = pos.y + (Math.random()-0.5)*2;
+                smokePos[i*3+2] = pos.z + (Math.random()-0.5)*2;
+            }
+            smokeGeom.setAttribute('position', new THREE.BufferAttribute(smokePos, 3));
+
+            const smokeMat = new THREE.PointsMaterial({
+                color: 0xaaaaaa,
+                size: 2,
+                map: createCircleTexture(),
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false
+            });
+            const smoke = new THREE.Points(smokeGeom, smokeMat);
+            scene.add(smoke);
+
+            // Animation for smoke
+            const s = { mesh: smoke, age: 0 };
+            smokeParticles.push(s);
+
+            gsap.to(smoke.material, { opacity: 0, duration: 1, onComplete: () => {
+                scene.remove(smoke);
+                const idx = smokeParticles.indexOf(s);
+                if(idx > -1) smokeParticles.splice(idx, 1);
+            }});
+            gsap.to(smoke.scale, { x: 3, y: 3, duration: 1 });
+        }
 
         document.fonts.ready.then(() => {
-            // 1. Chest Textures
+            // 1. Chest & Diamond Textures
             chestTexClosed = createIconTexture('\uf49e', '#ffd700');
-            chestTexOpen = createIconTexture('\uf3a5', '#00f3ff');
+            // chestTexOpen = createIconTexture('\uf3a5', '#00f3ff'); // Old open
+            diamondTex = createIconTexture('\uf3a5', '#00f3ff'); // Big Diamond
 
             const chestMat = new THREE.SpriteMaterial({ map: chestTexClosed });
             chestSprite = new THREE.Sprite(chestMat);
@@ -903,13 +955,18 @@
             isChestOpen = !isChestOpen;
             const icons = document.getElementById('chest-socials');
 
+            // Smoke Effect
+            createSmoke(chestSprite.position);
+
             if(isChestOpen) {
-                // Open Animation
-                chestSprite.material.map = chestTexOpen;
-                gsap.to(chestSprite.scale, { x: 10, y: 10, duration: 0.2, yoyo: true, repeat: 1 });
+                // Transform to Big Diamond
+                chestSprite.material.map = diamondTex;
+
+                // Pop animation
+                gsap.fromTo(chestSprite.scale, { x: 0, y: 0 }, { x: 12, y: 12, duration: 0.5, ease: "back.out(1.7)" });
 
                 // Light Burst
-                const burstColor = new THREE.Color('#ffdd00');
+                const burstColor = new THREE.Color('#00f3ff'); // Diamond Blue
                 gsap.to(pileLight, { intensity: 3, duration: 0.5, yoyo: true, repeat: 1 });
                 gsap.to(pileLight.color, {
                     r: burstColor.r,
@@ -923,9 +980,9 @@
                 icons.classList.add('active');
 
             } else {
-                // Close
+                // Transform back to Chest
                 chestSprite.material.map = chestTexClosed;
-                gsap.to(chestSprite.scale, { x: 8, y: 8, duration: 0.3 });
+                gsap.fromTo(chestSprite.scale, { x: 0, y: 0 }, { x: 8, y: 8, duration: 0.5, ease: "back.out(1.7)" });
 
                 icons.classList.remove('active');
             }
@@ -941,6 +998,17 @@
 
             updateCamera();
             particleSystem.rotation.y = time * 0.02;
+
+            // Animate Smoke
+            smokeParticles.forEach(s => {
+                s.mesh.position.y += 0.05;
+                const positions = s.mesh.geometry.attributes.position.array;
+                for(let i=0; i<positions.length/3; i++){
+                    positions[i*3] += (Math.random()-0.5)*0.1;
+                    positions[i*3+2] += (Math.random()-0.5)*0.1;
+                }
+                s.mesh.geometry.attributes.position.needsUpdate = true;
+            });
 
             treasures.forEach(t => {
                 // Underwater physics
