@@ -634,7 +634,7 @@
         // --- TREASURE CHEST (SPRITE) ---
         let chestSprite, chestGlowSprite;
         let isChestOpen = false;
-        let chestTexClosed, chestTexOpen, diamondTex;
+        let chestTexClosed, diamondTex;
         let smokeParticles = [];
 
         // Simple Smoke Particle System
@@ -675,7 +675,6 @@
         document.fonts.ready.then(() => {
             // 1. Chest & Diamond Textures
             chestTexClosed = createIconTexture('\uf49e', '#ffd700');
-            // chestTexOpen = createIconTexture('\uf3a5', '#00f3ff'); // Old open
             diamondTex = createIconTexture('\uf3a5', '#00f3ff'); // Big Diamond
 
             const chestMat = new THREE.SpriteMaterial({ map: chestTexClosed });
@@ -735,56 +734,30 @@
             }
         }
 
-        function spawnTreasure(screenX, screenY) {
-            spawnTreasureInternal(screenX, screenY, false);
-        }
-
         function spawnBubbleTreasure(screenX, screenY) {
-            spawnTreasureInternal(screenX, screenY, true);
-        }
-
-        function spawnTreasureInternal(screenX, screenY, isBubble) {
+            // Drop wealth items from mouse click position
             if(treasures.length > 150) {
                 const old = treasures.shift();
                 scene.remove(old.mesh);
+                // Note: material is cached/shared, so no dispose needed here
             }
 
-            const count = isBubble ? 3 : (Math.floor(Math.random() * 5) + 1);
+            const count = 3;
+            const wealthItems = treasureTypes.filter(t => t.category === 'wealth');
 
             for(let k=0; k<count; k++) {
-                const vec = new THREE.Vector3();
-                let spawnPos;
+                // Calculate spawn position at mouse depth
+                const vec = new THREE.Vector3(
+                    (screenX / window.innerWidth) * 2 - 1,
+                    -(screenY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
+                const t = (-2 - camera.position.z) / vec.z; // Project to Z=-2 plane
+                const spawnPos = camera.position.clone().add(vec.multiplyScalar(t));
 
-                if (isBubble) {
-                    vec.set(
-                        (screenX / window.innerWidth) * 2 - 1,
-                        -(screenY / window.innerHeight) * 2 + 1,
-                        0.5
-                    );
-                    vec.unproject(camera);
-                    vec.sub(camera.position).normalize();
-                    const t = (-2 - camera.position.z) / vec.z;
-                    spawnPos = camera.position.clone().add(vec.multiplyScalar(t));
-                } else {
-                    vec.set(
-                        (screenX / window.innerWidth) * 2 - 1,
-                        -(screenY / window.innerHeight) * 2 + 1,
-                        0.5
-                    );
-                    vec.unproject(camera);
-                    vec.sub(camera.position).normalize();
-                    spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
-                }
-
-                let config;
-                if(isBubble) {
-                    // Only Wealth items for bubbles
-                    const wealthItems = treasureTypes.filter(t => t.category === 'wealth');
-                    config = wealthItems[Math.floor(Math.random() * wealthItems.length)];
-                } else {
-                    config = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
-                }
-
+                const config = wealthItems[Math.floor(Math.random() * wealthItems.length)];
                 const sprite = new THREE.Sprite(config.material);
 
                 sprite.position.copy(spawnPos);
@@ -794,6 +767,7 @@
 
                 scene.add(sprite);
 
+                // Aim towards bottom center roughly
                 const targetPos = new THREE.Vector3(
                     (Math.random() - 0.5) * 12,
                     sandY,
@@ -801,21 +775,13 @@
                 );
                 const direction = targetPos.clone().sub(spawnPos).normalize();
 
-                let speed;
-                let gravityScale = 1.0;
-
-                if (isBubble) {
-                    speed = 0.05 + Math.random() * 0.05;
-                    gravityScale = 0.1;
-                } else {
-                    speed = 0.4 + Math.random() * 0.3;
-                }
+                const speed = 0.05 + Math.random() * 0.05;
 
                 treasures.push({
                     mesh: sprite,
                     velocity: direction.multiplyScalar(speed),
-                    rotationSpeed: new THREE.Vector3(0,0,0), // Sprites don't rotate 3D
-                    gravity: 0.002 * gravityScale
+                    rotationSpeed: new THREE.Vector3(0,0,0),
+                    gravity: 0.002 * 0.1 // Low gravity for bubbles
                 });
             }
         }
@@ -903,19 +869,22 @@
 
         // --- SCROLL LOGIC ---
         let scrollY = 0;
+        let targetCameraY = 0;
         let maxScroll = document.body.scrollHeight - window.innerHeight;
         const mermaid = document.getElementById('mermaid');
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
             maxScroll = document.body.scrollHeight - window.innerHeight;
-
-            // Mermaid Guide follows scroll
-            // Moves from top: 20% to top: 80% based on scroll progress
             const progress = Math.min(scrollY / maxScroll, 1);
+
+            // 1. Mermaid Guide
             const targetTop = 20 + (progress * 60);
             mermaid.style.top = targetTop + '%';
-        });
+
+            // 2. Camera Target Calculation
+            targetCameraY = progress * (sandY + 10);
+        }, { passive: true });
 
         // Mermaid Swim Animation
         gsap.to(mermaid, {
@@ -925,12 +894,6 @@
             yoyo: true,
             ease: "sine.inOut"
         });
-
-        function updateCamera() {
-            const progress = Math.min(scrollY / maxScroll, 1);
-            const targetY = progress * (sandY + 10);
-            camera.position.y += (targetY - camera.position.y) * 0.05;
-        }
 
         // --- INTERACTION: CHEST CLICK ---
         const raycaster = new THREE.Raycaster();
@@ -996,7 +959,9 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            updateCamera();
+            // Camera Interpolation
+            camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+
             particleSystem.rotation.y = time * 0.02;
 
             // Animate Smoke
