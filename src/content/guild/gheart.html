@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-Heart | The Weaver</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Styles */
+        :root {
+            --c-bg: #eaddcf; /* Raw Linen Background */
+            --c-paper: #fffefb; /* Clean Paper */
+            --c-text: #46392c; /* Dark Wood */
+            --c-accent: #b06e4f; /* Rust/Terracotta */
+            --c-gold: #c8a165; /* Matte Gold */
+            --c-sage: #8fa082; /* Dried Sage */
+        }
+
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        /* Canvas Container (Background) */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+            /* Texture overlay handled by CSS or 3D? Let's use CSS for fine grain */
+        }
+
+        #canvas-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* The Content Wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            width: 90%;
+            margin: 100px auto 100px auto;
+        }
+
+        /* Individual Content Cards (Split Journal) */
+        .content-card {
+            background: var(--c-paper);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05), 0 20px 60px rgba(70, 57, 44, 0.15);
+            padding: 4rem 5rem;
+            border-radius: 4px;
+            margin-bottom: 4rem; /* Separation between cards */
+            position: relative;
+        }
+
+        /* Decorative "Stitch" border inside each card */
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 1.5rem; bottom: 1.5rem; left: 1.5rem; right: 1.5rem;
+            border: 2px dashed #eaddcf;
+            pointer-events: none;
+        }
+
+        /* Specific Card Styles */
+        #card-profile {
+            padding: 3rem 5rem;
+            text-align: center;
+        }
+        #card-profile .profile-header { margin-bottom: 0; }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--c-text);
+            margin-top: 0;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 6vw, 4.5rem);
+            text-align: center;
+            line-height: 1;
+            margin-bottom: 3rem;
+            color: var(--c-accent);
+            font-style: italic;
+        }
+
+        h2 {
+            font-size: 2rem;
+            border-bottom: 2px solid var(--c-gold);
+            padding-bottom: 0.5rem;
+            margin-top: 4rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            color: var(--c-accent);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.15rem;
+            line-height: 2.1; /* Relaxed reading */
+            margin-bottom: 1.5rem;
+            color: #5d4d3c;
+        }
+
+        .highlight {
+            color: var(--c-accent);
+            font-weight: 700;
+        }
+
+        /* Profile Section */
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .profile-img {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 6px solid var(--c-paper);
+            box-shadow: 0 0 0 2px var(--c-gold), 0 10px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        /* Images / Gallery */
+        .image-block {
+            margin: 3rem 0;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 2px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            position: relative;
+        }
+
+        .image-block img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 1s ease;
+        }
+
+        .image-block:hover img {
+            transform: scale(1.03);
+        }
+
+        .caption {
+            text-align: center;
+            font-family: 'Cormorant Garamond';
+            font-style: italic;
+            margin-top: 0.5rem;
+            color: var(--c-sage);
+            font-size: 0.95rem;
+        }
+
+        /* Grid for smaller works */
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .works-grid .image-block { margin: 0; height: 250px; }
+        .works-grid img { height: 100%; object-fit: cover; }
+
+        /* Socials */
+        .social-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .social-link {
+            text-decoration: none;
+            color: var(--c-text);
+            font-size: 1.5rem;
+            width: 50px; height: 50px;
+            display: flex; justify-content: center; align-items: center;
+            border: 1px solid var(--c-gold);
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        .social-link:hover {
+            background: var(--c-gold);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(200, 161, 101, 0.4);
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-paper);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .loader-text {
+            font-family: 'Cormorant Garamond';
+            font-size: 2rem;
+            color: var(--c-accent);
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* Nav Back */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100; font-size: 0.9rem;
+            color: var(--c-text); text-decoration: none; font-family: 'Cormorant Garamond';
+            transition: 0.3s; letter-spacing: 0.1em;
+            border: 1px solid var(--c-gold); padding: 0.5rem 1rem; background: rgba(255, 254, 251, 0.8);
+            border-radius: 4px;
+        }
+        .nav-back:hover { background: var(--c-gold); color: white; }
+
+        /* Footer - Enhanced Visibility & Contrast */
+        .site-footer {
+            text-align: center; padding: 3rem; margin-top: 6rem;
+            color: #f0f0f0; background: #2c241b; /* Solid Dark Brown for max contrast */
+            font-family: 'Cormorant Garamond'; font-size: 1.1rem;
+            position: relative; z-index: 100;
+            border-top: 4px solid var(--c-gold);
+        }
+        .site-footer a { color: var(--c-gold); text-decoration: none; border-bottom: 1px dotted var(--c-gold); transition: color 0.3s; font-weight: 600; }
+        .site-footer a:hover { color: #fff; border-bottom: 1px solid #fff; }
+        .site-footer .heart { color: #ff6b6b; font-size: 1.2em; vertical-align: middle; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .content-wrapper {
+                width: 95%;
+                margin: 50px auto;
+            }
+            .content-card {
+                padding: 2.5rem 1.5rem;
+                margin-bottom: 2rem;
+            }
+            .content-card::before {
+                top: 0.8rem; bottom: 0.8rem; left: 0.8rem; right: 0.8rem;
+            }
+            h1 { font-size: 3rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-text">Unraveling...</div>
+    </div>
+    <a href="/guild/" class="nav-back">GUILD</a>
+
+    <div id="canvas-container"></div>
+
+    <div class="content-wrapper">
+
+        <!-- Card 1: Profile -->
+        <div class="content-card" id="card-profile">
+            <div class="profile-header">
+                <img src="/assets/images/guild/gheart/profile.webp" alt="G-Heart" class="profile-img">
+                <h1>G-Heart</h1>
+                <p style="text-align:center; font-style:italic; color: var(--c-sage);">"Weaving warmth into the fabric of life."</p>
+            </div>
+        </div>
+
+        <!-- Card 2: Intro -->
+        <div class="content-card">
+            <section id="intro">
+                <h2>Artisan Soul</h2>
+                <p>
+                    我是 <span class="highlight">G-Heart</span>，一個餐飲系畢業的手作人。
+                    在木工的堅毅與美食的細膩之間尋找平衡，工作之餘，我努力編織屬於自己的溫暖世界。
+                </p>
+                <p>
+                    曾經的專長是家具木工，這段經歷讓我對「結構」與「材質」有了深刻的理解。後來轉職餐飲業，則讓我學會了如何調配「風味」與「溫度」。
+                    現在，我試圖將這兩者結合，創造出既有實用結構，又充滿生活溫度的手作藝品。
+                </p>
+
+                <div class="image-block">
+                    <img src="/assets/images/guild/gheart/work1.webp" alt="Handmade Texture">
+                    <div class="caption">Natural materials, woven with care.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Card 3: Philosophy -->
+        <div class="content-card">
+            <section id="philosophy">
+                <h2>My Philosophy</h2>
+                <p>
+                    <b>手作不只是藝術，更是一種生活態度。</b>
+                </p>
+                <p>
+                    我喜歡在日常生活中找靈感——森林裡的枯木、海洋的波浪、香草植物的香氣。
+                    比起完美的工業製品，我更迷戀手作留下的痕跡。那是時間的證明，也是作品與創作者之間最親密的對話。
+                </p>
+                <p>
+                    希望我的作品能與人產生更強烈的連結，讓每一個物件都不只是裝飾，而是能陪伴你生活的朋友。
+                    有趣又實用，是我的創作目標。
+                </p>
+            </section>
+        </div>
+
+        <!-- Card 4: Quiet -->
+        <div class="content-card">
+            <section id="quiet">
+                <h2>Inner Quiet</h2>
+                <p>
+                    我是個大 I 人 (Introvert)。我不喜歡與人面對面的喧囂交流，卻渴望心靈深處的深刻連結。
+                </p>
+                <p>
+                    這就是為什麼我選擇透過網路平台，讓大家看到我的作品。
+                    在這個安靜的角落，我用作品說話，也希望能聽到你的共鳴。
+                </p>
+
+                <div class="works-grid">
+                    <div class="image-block">
+                        <img src="/assets/images/guild/gheart/work2.webp" alt="Work Sample 2">
+                    </div>
+                    <div class="image-block">
+                        <img src="/assets/images/guild/gheart/work3.webp" alt="Work Sample 3">
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Card 5: Dream & Socials -->
+        <div class="content-card">
+            <section id="dream">
+                <h2>The Dream</h2>
+                <p>
+                    目前是兩個孩子的媽，生活或許忙碌，但我心中的火焰從未熄滅。
+                </p>
+                <p>
+                    期許自己未來能當個有自知之明的老人，能夠搬到有山有海的地方獨居。
+                    在那裡，我將擁有熱愛的大自然的一切，以及最嚮往的——<b>一個人的自由</b>。
+                </p>
+            </section>
+
+            <div class="social-container">
+                <a href="https://www.threads.net/@gheart1982" target="_blank" class="social-link" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-link" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="site-footer">
+        <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
+    </footer>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeaddcf); // Match body bg
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 100);
+        camera.position.set(0, 0, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffeacc, 0.8);
+        dirLight.position.set(10, 10, 10);
+        scene.add(dirLight);
+
+        // --- "Macro Weave" Background ---
+        // Huge cylinders criss-crossing to look like fabric under a microscope
+
+        const threadGroup = new THREE.Group();
+        scene.add(threadGroup);
+
+        const tRadius = 0.5;
+        const tLen = 60;
+        const tSpace = 1.2;
+        const count = 30; // Number of threads
+
+        const geo = new THREE.CylinderGeometry(tRadius, tRadius, tLen, 16);
+        const matV = new THREE.MeshStandardMaterial({ color: 0xd9cbb6, roughness: 0.8 }); // Light warp
+        const matH = new THREE.MeshStandardMaterial({ color: 0xcfbca0, roughness: 0.9 }); // Dark weft
+
+        // Vertical Threads (Warp)
+        for(let i=0; i<count; i++) {
+            const mesh = new THREE.Mesh(geo, matV);
+            mesh.position.x = (i - count/2) * tSpace;
+            // Wave them slightly in Z
+            mesh.position.z = Math.sin(i) * 0.2;
+            threadGroup.add(mesh);
+        }
+
+        // Horizontal Threads (Weft)
+        for(let i=0; i<count; i++) {
+            const mesh = new THREE.Mesh(geo, matH);
+            mesh.rotation.z = Math.PI / 2;
+            mesh.position.y = (i - count/2) * tSpace;
+            // Weave over/under
+            mesh.position.z = Math.cos(i) * 0.2 + 0.5; // Offset slightly front
+            threadGroup.add(mesh);
+        }
+
+        // Tilt the whole fabric
+        threadGroup.rotation.z = 0.2;
+        threadGroup.rotation.x = -0.1;
+
+        // --- "The Needle" & "The Thread" ---
+
+        // 1. Create the Path (The Thread's shape)
+        // A long, elegant curve that weaves down the page
+        const pathPoints = [];
+        const curveHeight = 40; // Vertical span
+        const turns = 4; // How many weaves
+
+        for (let i = 0; i <= 50; i++) {
+            const t = i / 50;
+            const x = Math.sin(t * Math.PI * turns) * 6 + 5; // Weave left/right, offset to right
+            const y = 15 - (t * curveHeight); // Start high, go low
+            const z = Math.cos(t * Math.PI * turns * 2) * 2; // Depth weave
+            pathPoints.push(new THREE.Vector3(x, y, z));
+        }
+
+        const threadCurve = new THREE.CatmullRomCurve3(pathPoints);
+
+        // 2. The Thread Mesh (Tube)
+        // We control `setDrawRange` to animate it being drawn.
+        const tubularSegments = 300;
+        const threadGeo = new THREE.TubeGeometry(threadCurve, tubularSegments, 0.1, 8, false);
+        const threadMat = new THREE.MeshStandardMaterial({
+            color: 0xc8a165,
+            metalness: 0.6,
+            roughness: 0.3,
+            emissive: 0x8a6e45,
+            emissiveIntensity: 0.2
+        });
+        const threadMesh = new THREE.Mesh(threadGeo, threadMat);
+
+        // Setup draw range for animation (start hidden)
+        threadGeo.setDrawRange(0, 0);
+        scene.add(threadMesh);
+
+        // 3. The Needle Mesh
+        const needleGeo = new THREE.ConeGeometry(0.15, 6, 16);
+        needleGeo.translate(0, -3, 0); // Offset so pivot is at the "eye" (top)
+        const needleMat = new THREE.MeshStandardMaterial({
+            color: 0xffd700, // Brighter gold
+            metalness: 0.9,
+            roughness: 0.1
+        });
+        const needle = new THREE.Mesh(needleGeo, needleMat);
+        scene.add(needle);
+
+        // Set initial position to start of curve
+        const startPoint = threadCurve.getPointAt(0);
+        needle.position.copy(startPoint);
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const time = clock.getElapsedTime();
+
+            // Subtle fabric breathing
+            threadGroup.position.z = -5 + Math.sin(time * 0.5) * 0.5;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- GSAP Scroll (Needle & Thread Animation) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Object to hold animation state
+        const animState = { progress: 0 };
+
+        gsap.to(animState, {
+            progress: 1,
+            ease: "none",
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: () => {
+                    const p = animState.progress;
+
+                    // 1. Reveal Thread
+                    // Calculate how many indices to show based on progress
+                    // TubeGeometry indices = segments * 6 (2 triangles per segment) * 3 vertices?
+                    // Actually setDrawRange uses counts of *vertices* in the BufferGeometry.
+                    // For TubeGeometry, it's roughly (tubularSegments + 1) * (radialSegments + 1).
+                    // Easier heuristic: just map progress to total index count.
+                    const count = threadGeo.index.count;
+                    threadGeo.setDrawRange(0, Math.floor(p * count));
+
+                    // 2. Move Needle
+                    // Get position on curve
+                    // We look slightly ahead to orient the needle correctly
+                    const point = threadCurve.getPointAt(p);
+                    const lookAtPoint = threadCurve.getPointAt(Math.min(p + 0.01, 1));
+
+                    if (point && lookAtPoint) {
+                        needle.position.copy(point);
+                        needle.lookAt(lookAtPoint);
+                        // Needle logic: The cone points UP by default (Y+).
+                        // lookAt aligns Z+. We need to rotate X by -PI/2 to align Y with Z path?
+                        // Or simpler: just rotate the needle mesh geometry or container.
+                        // Let's adjust rotation manually after lookAt.
+                        needle.rotateX(Math.PI / 2);
+                    }
+                }
+            }
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = () => {
+             // 1. Initial Load Sequence
+             const tl = gsap.timeline();
+
+             tl.to("#loader", { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('loader').style.display = 'none';
+             }});
+
+             // Animate the first card (Profile) on load
+             tl.from("#card-profile", { y: 50, opacity: 0, duration: 1 }, "-=0.5");
+             tl.from(".profile-img", { scale: 0.8, opacity: 0, duration: 0.8, ease: "back.out(1.7)" }, "-=0.5");
+             tl.from("h1", { y: 20, opacity: 0, duration: 0.8 }, "-=0.6");
+             tl.from(".profile-header p", { y: 20, opacity: 0, duration: 0.8 }, "-=0.6");
+
+             // 2. Card Reveals (Staggered Scroll)
+             // Skip the first card since it's already animated
+             const cards = gsap.utils.toArray(".content-card").slice(1);
+             cards.forEach(card => {
+                gsap.from(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 85%", // Trigger when top of card hits 85% of viewport
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 80,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+             });
+
+             // 3. Image Interactions
+             gsap.utils.toArray(".image-block").forEach(block => {
+                gsap.from(block, {
+                    scrollTrigger: {
+                        trigger: block,
+                        start: "top 85%"
+                    },
+                    scale: 0.95,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+             });
+        };
+
+    </script>
+</body>
+</html>

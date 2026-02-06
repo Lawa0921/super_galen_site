@@ -632,6 +632,30 @@ members:
       - id: "culture_promoter"
         label: "歌仔戲推廣"
 
+  - id: "xiaoshi"
+    name: "樂天a小獅"
+    avatar: "/assets/img/guild/xiaoshi/avatar.webp"
+    page: "/guild/xiaoshi.html"
+    tags:
+      - id: "manpower"
+        label: "人力調度"
+      - id: "butler"
+        label: "專業管家"
+      - id: "food_hunter"
+        label: "美食獵人"
+
+  - id: "yuzi"
+    name: "柚子 Yuzi"
+    avatar: "/assets/img/guild/yuzi/avatar.webp"
+    page: "/guild/yuzi.html"
+    tags:
+      - id: "landscape_design"
+        label: "景觀設計"
+      - id: "community_builder"
+        label: "社群連結"
+      - id: "explorer"
+        label: "身心探索"
+
   - id: "joying"
     name: "Joying"
     avatar: "/assets/img/guild/joying/avatar.webp"
@@ -643,3 +667,15 @@ members:
         label: "氛圍專家"
       - id: "crisis_control"
         label: "危機控管"
+
+  - id: "gheart"
+    name: "G-Heart"
+    avatar: "/assets/images/guild/gheart/profile.webp"
+    page: "/guild/gheart.html"
+    tags:
+      - id: "handmade_artisan"
+        label: "手作職人"
+      - id: "weaver"
+        label: "編織者"
+      - id: "wood_craft"
+        label: "木工魂"
