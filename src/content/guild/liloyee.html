@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liloyee | 深海的夢境人魚</title>
+    <meta name="description" content="Liloyee 的夢境檔案 - 數學、寫作與深海的幸運寶藏。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&family=Noto+Serif+TC:wght@400;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --c-deep: #001e36;
+            --c-water: #006994;
+            --c-accent: #00f3ff;
+            --c-pink: #ff9aa2;
+            --c-gold: #ffd700;
+            --f-title: 'Cinzel', serif;
+            --f-body: 'Zen Maru Gothic', sans-serif;
+            --f-serif: 'Noto Serif TC', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--c-deep);
+            color: white;
+            font-family: var(--f-body);
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        /* --- THREE.JS CANVAS --- */
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            transition: opacity 2s;
+            opacity: 0;
+        }
+
+        /* --- UI LAYOUT --- */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            position: relative;
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 2rem;
+            pointer-events: none; /* Pass through to canvas */
+        }
+
+        .content-box {
+            pointer-events: auto;
+            max-width: 800px;
+            width: 100%;
+            padding: 2rem;
+            background: rgba(0, 30, 54, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+            text-align: center;
+            transform: translateY(50px);
+            opacity: 0;
+            transition: transform 1s, opacity 1s;
+        }
+
+        .content-box.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        h1 {
+            font-family: var(--f-title);
+            font-size: 8vw;
+            background: linear-gradient(to bottom, #fff, var(--c-accent));
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 30px var(--c-accent);
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-family: var(--f-serif);
+            font-size: 2.5rem;
+            color: var(--c-accent);
+            margin-bottom: 1.5rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #e0f7fa;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 5px 15px;
+            border: 1px solid var(--c-accent);
+            color: var(--c-accent);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            margin: 0 5px;
+        }
+
+        /* --- STORY LOG SECTION --- */
+        #story-log {
+            padding: 4rem 2rem;
+            display: flex; flex-direction: column; gap: 4rem;
+            align-items: center;
+            pointer-events: none;
+        }
+        .story-card {
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(0, 30, 54, 0.8));
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--c-accent);
+            padding: 4rem;
+            border-radius: 50%;
+            aspect-ratio: 1;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.2), 0 0 20px rgba(0, 243, 255, 0.2);
+            opacity: 0;
+            transform: translateY(50px) scale(0.9);
+            transition: transform 0.3s;
+            pointer-events: auto;
+        }
+        .story-card:hover {
+            transform: translateY(0) scale(1.05) !important; /* Override GSAP slightly on hover */
+            box-shadow: inset 0 0 50px rgba(255,255,255,0.4), 0 0 40px rgba(0, 243, 255, 0.4);
+        }
+        .story-card h3 { color: var(--c-accent); margin-bottom: 1rem; font-family: var(--f-title); }
+        .story-card p { color: #fff; font-size: 1.1rem; }
+
+        /* --- BUBBLE GALLERY SECTION --- */
+        #bubble-zone {
+            height: 350vh; /* Extended for more content */
+            position: relative;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bubble-container {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex; justify-content: center; align-items: center;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 70%);
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.3), 0 0 10px rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s;
+            will-change: transform;
+            overflow: hidden;
+            z-index: 15;
+        }
+
+        .bubble-container:hover {
+            transform: scale(1.1);
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.5), 0 0 20px rgba(0,243,255,0.4);
+        }
+
+        .bubble-container img {
+            width: 100%; height: 100%; object-fit: cover;
+            opacity: 0.6;
+            transition: 0.5s;
+            transform: scale(1.1);
+            filter: blur(2px);
+        }
+
+        .bubble-container:hover img {
+            opacity: 1;
+            filter: blur(0);
+        }
+
+        .bubble-label {
+            position: absolute;
+            color: white;
+            font-family: var(--f-title);
+            text-shadow: 0 0 5px black;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0.8;
+            z-index: 2;
+        }
+
+        /* --- FLOATING SEA CREATURES --- */
+        .sea-creature {
+            position: absolute;
+            font-size: 2rem;
+            color: rgba(0, 243, 255, 0.3);
+            pointer-events: none;
+            z-index: 5;
+            filter: blur(1px);
+        }
+
+        /* SWIMMING MERMAID GUIDE (Side scrolling) */
+        .mermaid-guide {
+            position: fixed;
+            top: 20%; right: 5%;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: rgba(0, 30, 54, 0.8);
+            backdrop-filter: blur(5px);
+            border: 3px solid var(--c-accent);
+            box-shadow: 0 0 20px var(--c-accent);
+            z-index: 999; /* Increased z-index */
+            opacity: 1; /* Always visible */
+            pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--c-accent);
+            font-size: 3rem;
+        }
+        .mermaid-guide::after {
+            content: 'Follow Me!';
+            position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
+            white-space: nowrap;
+            font-family: var(--f-title);
+            color: var(--c-accent);
+            font-size: 0.8rem;
+            text-shadow: 0 0 5px black;
+        }
+
+        /* --- SAND & FOOTER --- */
+        #sand-section {
+            height: 50vh;
+            display: flex; justify-content: center; align-items: flex-end;
+            padding-bottom: 5rem;
+        }
+
+        #site-footer {
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); /* Gradient contrast */
+            color: #fff;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            z-index: 20;
+            text-shadow: 0 0 10px #000;
+        }
+
+        #site-footer h3 {
+            font-family: var(--f-serif);
+            color: #fff;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px black;
+            font-size: 1.5rem;
+        }
+
+        /* Social Icons hidden initially */
+        .chest-social-icons {
+            position: fixed; /* Fixed position for stability */
+            bottom: 15%; left: 50%; transform: translateX(-50%) scale(0);
+            display: flex; gap: 1rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999;
+        }
+        .chest-social-icons.active {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            pointer-events: auto;
+        }
+        .chest-btn {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: rgba(255,215,0,0.2);
+            border: 2px solid var(--c-gold);
+            color: var(--c-gold);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2rem; text-decoration: none;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .chest-btn:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 20px var(--c-gold); transform: scale(1.1); }
+
+
+        /* --- MODALS --- */
+        #text-modal, #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,30,54, 0.95);
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #text-modal.active, #lightbox.active { opacity: 1; pointer-events: auto; }
+
+        .modal-content {
+            background: transparent;
+            border: 2px solid var(--c-accent);
+            padding: 3rem;
+            max-width: 600px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px var(--c-accent);
+            text-align: center;
+            position: relative;
+            background: rgba(0,0,0,0.8);
+        }
+        .modal-content h3 { color: var(--c-accent); margin-bottom: 1rem; font-size: 2rem; }
+        .modal-content p { color: #fff; font-size: 1.2rem; }
+
+        #lightbox img {
+            max-width: 90vw; max-height: 80vh;
+            border: 4px solid var(--c-gold);
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+        }
+
+        #nav-back {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            color: white; text-decoration: none; font-weight: bold;
+            background: rgba(0,0,0,0.3); padding: 10px 20px; border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        #nav-back:hover { background: white; color: var(--c-deep); }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-20px);}
+            60% {transform: translateY(-10px);}
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            h1 { font-size: 15vw; }
+            .content-box { padding: 1.5rem; }
+            .bubble-container { transform: scale(0.9); }
+            .mermaid-guide { width: 60px; height: 60px; right: 10px; }
+            .chest-btn { width: 50px; height: 50px; font-size: 1.5rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <a href="/guild/" id="nav-back"><i class="fa-solid fa-arrow-left"></i> 回公會</a>
+    <div id="canvas-container"></div>
+
+    <!-- Modals -->
+    <div id="lightbox"><img src="" alt="Full Image"></div>
+    <div id="text-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Title</h3>
+            <p id="modal-text">Content goes here.</p>
+            <p style="margin-top:2rem; font-size:0.9rem; color:#aaa;">(點擊任意處關閉)</p>
+        </div>
+    </div>
+
+    <!-- Swimming Mermaid Guide -->
+    <div class="mermaid-guide" id="mermaid">
+        <i class="fa-solid fa-person-swimming" style="transform: rotate(-30deg);"></i>
+    </div>
+
+    <!-- Social Icons Container (Pop from Chest) -->
+    <div id="chest-socials" class="chest-social-icons">
+        <a href="https://www.threads.net/@liloyee_0224" target="_blank" class="chest-btn"><i class="fa-brands fa-threads"></i></a>
+        <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="chest-btn"><i class="fa-brands fa-instagram"></i></a>
+    </div>
+
+    <main>
+        <!-- HERO -->
+        <section id="hero">
+            <h1 data-text="LILOYEE">LILOYEE</h1>
+            <p style="letter-spacing: 5px; color: var(--c-accent); text-transform: uppercase;">Angel // Writer // Dreamer</p>
+            <i class="fa-solid fa-chevron-down" style="margin-top: 3rem; animation: bounce 2s infinite; color: var(--c-accent);"></i>
+        </section>
+
+        <!-- STORY LOG -->
+        <section id="story-log">
+            <div class="story-card">
+                <h3><i class="fa-solid fa-graduation-cap"></i> 社會心理系 x 奧數老師</h3>
+                <p>我是來自馬來西亞的社會心理系畢業生，目前擔任奧數數學老師。</p>
+                <p>雖然教的是理性邏輯，但內心深愛著心理學與社會學的感性知識。</p>
+            </div>
+            <div class="story-card">
+                <h3><i class="fa-solid fa-pen-nib"></i> 夢想成為作家</h3>
+                <p>這輩子最大的願望是用溫柔幽默的文字，寫下畢生的經歷。</p>
+                <p>我想把故事哼成曲子，讓聲音走進大家的心裡。</p>
+            </div>
+            <div class="story-card">
+                <h3><i class="fa-solid fa-cloud-moon"></i> 多夢症候群</h3>
+                <p>我的夢境世界有顏色、有觸覺、有痛覺，就像每天開盲盒一樣精彩！</p>
+                <p>歡迎來找我解夢，分析你的潛意識狀態。</p>
+            </div>
+        </section>
+
+        <!-- BUBBLE GALLERY -->
+        <div id="bubble-zone">
+            <!-- Bubbles injected by JS -->
+            <div style="position: absolute; width: 100%; top: 5%; text-align: center; pointer-events: none; z-index: 20;">
+                <h2 style="text-shadow: 0 0 20px black; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; display:inline-block;">戳破泡泡，閱讀我的故事 🫧</h2>
+            </div>
+            <!-- Sea Creatures Container -->
+            <div id="sea-creatures"></div>
+        </div>
+
+        <!-- SAND PILE -->
+        <section id="sand-section">
+            <div class="content-box" style="max-width: 500px; margin-bottom: 5rem; background: transparent; box-shadow: none; border: none;">
+                <!-- Replaced text with visual cue for chest -->
+                <p style="text-shadow: 0 0 10px black; opacity: 0.8; font-size: 1.2rem;">(點擊寶箱打開秘密)</p>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer id="site-footer">
+            <h3><a href="/guild/" style="color: inherit; text-decoration: none;">SuperGalen's Dungeon</a></h3>
+            <p style="font-size: 0.8rem;">&copy; 2024 Liloyee Guild Page</p>
+        </footer>
+
+    </main>
+
+    <!-- Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- CONTENT DATA ---
+        const contentMap = {
+            0: { title: "我是誰?", text: "喲呼 (｀・ω・´)ゞ<br>我是一名畢業於社會心理系的學生，是個馬來西亞人。<br>目前是一名奧數數學老師，也非常熱愛過去就讀的社會學和心理學相關的知識🤩" },
+            3: { title: "我的夢想", text: "這輩子最想要成為一名作家✏️<br>我想把畢生的經歷都用溫柔幽默的文字寫下，想把故事哼成一首一首的曲子，讓我的故事不止能被看見還能用聲音走進大家的心裡❤️" },
+            5: { title: "多夢症候群", text: "多夢症讓我經常在夢裡旅行。<br>夢裡的世界有顏色、有觸覺、有溫度、有痛覺。<br>每次睡覺會像抽盲盒一樣好玩喔！🤣" },
+            8: { title: "關於解夢", text: "我有自己研究解夢和人格分析，會從夢境情緒、場景、生活環境和近況分析個人狀態。<br>對我而言都是好玩有趣有意義的事🥰" },
+            12: { title: "幸運 S 級", text: "我運氣非常好🍀<br>這輩子抽過手機、耳機，也沒遇到過壞朋友。<br>可能日子偶爾有點挑戰，但總會有些幸運幸福的好事❣️" },
+            15: { title: "興趣愛好", text: "矮矮偏日系還有點動漫宅，也喜歡做手帳、寫日記、整理東西、裝扮、唱歌。<br>還有我最最最喜歡史迪奇了💙" }
+        };
+
+        const galleryImages = [];
+        for(let i=1; i<=18; i++) {
+            const num = i < 10 ? '0'+i : i;
+            galleryImages.push(`/assets/img/guild/liloyee/gallery_${num}.webp`);
+        }
+
+        // --- THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x001e36, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 20;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- LIGHTS ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(0, 50, 20);
+        scene.add(dirLight);
+
+        const pileLight = new THREE.PointLight(0xffaa00, 2, 60);
+        pileLight.position.set(0, -60, 20);
+        scene.add(pileLight);
+
+        // --- ROUND PARTICLES (CanvasTexture) ---
+        function createCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.5, 'rgba(0,243,255,0.5)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0,0,32,32);
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        const particlesGeom = new THREE.BufferGeometry();
+        const pCount = 1500;
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount; i++) {
+            pPos[i*3] = (Math.random()-0.5) * 100;
+            pPos[i*3+1] = (Math.random()-0.5) * 200;
+            pPos[i*3+2] = (Math.random()-0.5) * 100;
+        }
+        particlesGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.5,
+            map: createCircleTexture(),
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const particleSystem = new THREE.Points(particlesGeom, particlesMat);
+        scene.add(particleSystem);
+
+        // --- SAND DUNE ---
+        const sandY = -70;
+        const sandGeom = new THREE.PlaneGeometry(200, 100, 64, 64);
+        const pos = sandGeom.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const height = Math.sin(x * 0.1) * 2 + Math.cos(y * 0.1) * 2 + Math.sin(x*0.3 + y*0.2)*1;
+            pos.setZ(i, height);
+        }
+        sandGeom.computeVertexNormals();
+        const sandMat = new THREE.MeshStandardMaterial({
+            color: 0xedc9af,
+            roughness: 1,
+            metalness: 0,
+            flatShading: true
+        });
+        const sandMesh = new THREE.Mesh(sandGeom, sandMat);
+        sandMesh.rotation.x = -Math.PI / 2;
+        sandMesh.position.y = sandY;
+        scene.add(sandMesh);
+
+        // --- TREASURE CHEST ---
+        let chestGroup, chestLid;
+        let isChestOpen = false;
+
+        function createTreasureChest() {
+            chestGroup = new THREE.Group();
+
+            // Base
+            const baseGeom = new THREE.BoxGeometry(4, 3, 3);
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });
+
+            const base = new THREE.Mesh(baseGeom, woodMat);
+            base.position.y = 1.5;
+            base.name = "ChestBase";
+            chestGroup.add(base);
+
+            // Lid (Pivot Group)
+            chestLid = new THREE.Group();
+            chestLid.position.set(0, 3, -1.5); // Hinge at back
+
+            // Lid Geometry
+            const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, false, 0, Math.PI);
+            const lidMesh = new THREE.Mesh(lidGeom, woodMat);
+            lidMesh.rotation.z = Math.PI / 2;
+            lidMesh.position.set(0, 0, 1.5); // Offset to match hinge
+            lidMesh.name = "ChestLid";
+            chestLid.add(lidMesh);
+
+            chestGroup.add(chestLid);
+
+            // Lock
+            const lockGeom = new THREE.BoxGeometry(0.5, 0.8, 0.2);
+            const lock = new THREE.Mesh(lockGeom, goldMat);
+            lock.position.set(0, 0, 3); // Relative to lid pivot
+            chestLid.add(lock);
+
+            chestGroup.position.set(0, sandY + 2, -5);
+            scene.add(chestGroup);
+        }
+        createTreasureChest();
+
+        // --- TREASURES (Updated Geometry) ---
+        const treasures = [];
+
+        // Define varied treasure types
+        const treasureTypes = [
+            { // Coin
+                geom: new THREE.CylinderGeometry(0.5, 0.5, 0.1, 20),
+                mat: new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1, roughness: 0.2 })
+            },
+            { // Gem (Ruby)
+                geom: new THREE.OctahedronGeometry(0.6),
+                mat: new THREE.MeshStandardMaterial({ color: 0xff0055, metalness: 0.9, roughness: 0.1, transparent: true, opacity: 0.9 })
+            },
+            { // Pearl
+                geom: new THREE.SphereGeometry(0.5, 32, 32),
+                mat: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.1, emissive: 0x222222 })
+            },
+            { // Crystal (Sapphire)
+                geom: new THREE.ConeGeometry(0.3, 1, 6),
+                mat: new THREE.MeshStandardMaterial({ color: 0x00f3ff, metalness: 0.8, roughness: 0.1, transparent: true, opacity: 0.8 })
+            }
+        ];
+
+        function spawnTreasure(screenX, screenY) {
+            // Cap limit (Increased for abundance)
+            if(treasures.length > 150) {
+                const old = treasures.shift();
+                scene.remove(old.mesh);
+                // Do NOT dispose geometry/material here as they are shared references from treasureTypes
+            }
+
+            // Spawn random multiple items (1-10)
+            const count = Math.floor(Math.random() * 10) + 1;
+            for(let k=0; k<count; k++) {
+                const vec = new THREE.Vector3();
+                vec.set(
+                    (screenX / window.innerWidth) * 2 - 1,
+                    -(screenY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
+
+                const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
+
+                // Randomly select type
+                const type = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
+                const mesh = new THREE.Mesh(type.geom, type.mat);
+
+                mesh.position.copy(spawnPos);
+                mesh.position.x += (Math.random()-0.5)*2;
+                mesh.position.y += (Math.random()-0.5)*2;
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+
+                // Fix orientation for coins (Cylinders lie flat usually)
+                if (type.geom.type === 'CylinderGeometry') mesh.rotation.x = Math.PI/2;
+
+                scene.add(mesh);
+
+                const targetPos = new THREE.Vector3(
+                    (Math.random() - 0.5) * 12,
+                    sandY,
+                    -5 + (Math.random() - 0.5) * 8
+                );
+                const direction = targetPos.clone().sub(spawnPos).normalize();
+
+                treasures.push({
+                    mesh: mesh,
+                    velocity: direction.multiplyScalar(0.4 + Math.random()*0.3),
+                    rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0)
+                });
+            }
+        }
+
+
+        // --- BUBBLE GENERATION ---
+        const bubbleZone = document.getElementById('bubble-zone');
+        const creatureZone = document.getElementById('sea-creatures');
+        const creatureIcons = ['fa-fish', 'fa-shrimp', 'fa-dragon', 'fa-water'];
+
+        // Spawn Sea Creatures (Moving)
+        for(let i=0; i<10; i++) {
+            const c = document.createElement('i');
+            c.className = `fa-solid ${creatureIcons[Math.floor(Math.random() * creatureIcons.length)]} sea-creature`;
+            const startY = Math.random() * 90;
+            c.style.top = startY + '%';
+            c.style.left = -10 + '%'; // Start off screen
+            c.style.fontSize = (Math.random() * 2 + 1) + 'rem';
+            creatureZone.appendChild(c);
+
+            // Swim Across
+            gsap.to(c, {
+                x: '110vw', // Move across screen
+                y: (Math.random() - 0.5) * 200,
+                duration: 15 + Math.random() * 15,
+                repeat: -1,
+                ease: "linear",
+                delay: Math.random() * 10
+            });
+        }
+
+        galleryImages.forEach((src, i) => {
+            const b = document.createElement('div');
+            b.className = 'bubble-container';
+            const size = Math.random() * 80 + 100;
+            b.style.width = size + 'px';
+            b.style.height = size + 'px';
+
+            // Updated Distribution: Concentrate in middle (5% to 60% of container height)
+            const top = (i / galleryImages.length) * 55 + 5;
+            const left = Math.random() * 80 + 10;
+
+            b.style.top = top + '%';
+            b.style.left = left + '%';
+
+            const content = contentMap[i];
+
+            if (content) {
+                b.innerHTML = `<span class="bubble-label">${content.title}</span><img src="${src}" alt="Memory" style="opacity:0.4;">`;
+                b.style.borderColor = 'var(--c-accent)';
+                b.style.boxShadow = '0 0 20px var(--c-accent)';
+            } else {
+                b.innerHTML = `<img src="${src}" alt="Memory">`;
+            }
+
+            b.addEventListener('click', (e) => {
+                gsap.to(b, { scale: 1.5, opacity: 0, duration: 0.3, onComplete: () => {
+                    b.style.visibility = 'hidden';
+                }});
+
+                spawnTreasure(e.clientX, e.clientY);
+
+                if (content) {
+                    const modal = document.getElementById('text-modal');
+                    document.getElementById('modal-title').innerText = content.title;
+                    document.getElementById('modal-text').innerHTML = content.text;
+                    modal.classList.add('active');
+                } else {
+                    const lb = document.getElementById('lightbox');
+                    lb.querySelector('img').src = src;
+                    lb.classList.add('active');
+                }
+            });
+
+            bubbleZone.appendChild(b);
+
+            gsap.to(b, {
+                y: '-=50',
+                duration: 2 + Math.random()*2,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+        });
+
+        // --- SCROLL LOGIC ---
+        let scrollY = 0;
+        let maxScroll = document.body.scrollHeight - window.innerHeight;
+        const mermaid = document.getElementById('mermaid');
+
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+            maxScroll = document.body.scrollHeight - window.innerHeight;
+
+            // Mermaid Guide Animation: Always visible, no opacity logic
+        });
+
+        // Mermaid Swim Animation
+        gsap.to(mermaid, {
+            y: 20,
+            duration: 2,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+        });
+
+        function updateCamera() {
+            const progress = Math.min(scrollY / maxScroll, 1);
+            const targetY = progress * (sandY + 10);
+            camera.position.y += (targetY - camera.position.y) * 0.05;
+        }
+
+        // --- INTERACTION: CHEST CLICK ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            // Check interaction with chest
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(chestGroup.children, true);
+
+            if (intersects.length > 0) {
+                toggleChest();
+            }
+        });
+
+        function toggleChest() {
+            isChestOpen = !isChestOpen;
+            const icons = document.getElementById('chest-socials');
+
+            if(isChestOpen) {
+                // Open Lid
+                gsap.to(chestLid.rotation, { x: -Math.PI / 2, duration: 1, ease: "back.out(1.7)" });
+
+                // Light Burst (Clamped intensity to prevent washing out/darkening artifacts)
+                gsap.to(pileLight, { intensity: 3, color: '#ffdd00', duration: 0.5, yoyo: true, repeat: 1 });
+
+                // Show Icons
+                icons.classList.add('active');
+
+            } else {
+                // Close Lid
+                gsap.to(chestLid.rotation, { x: 0, duration: 0.5, ease: "power2.in" });
+
+                // Hide Icons
+                icons.classList.remove('active');
+            }
+        }
+
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            updateCamera();
+            particleSystem.rotation.y = time * 0.02;
+
+            treasures.forEach(t => {
+                // Underwater physics: Low gravity, high drag
+                t.velocity.y -= 0.002;
+                t.velocity.multiplyScalar(0.98); // Drag
+
+                t.mesh.position.add(t.velocity);
+                t.mesh.rotation.x += t.rotationSpeed.x;
+                t.mesh.rotation.y += t.rotationSpeed.y;
+
+                const floorY = sandY + 0.8;
+                if (t.mesh.position.y < floorY) {
+                    t.mesh.position.y = floorY;
+                    t.velocity.set(0, 0, 0);
+                    t.rotationSpeed.set(0, 0, 0);
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+
+        // --- STORY CARDS ANIMATION ---
+        gsap.utils.toArray('.story-card').forEach(card => {
+            gsap.to(card, {
+                opacity: 1, y: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // --- UI CLOSERS ---
+        document.getElementById('lightbox').addEventListener('click', () => {
+            document.getElementById('lightbox').classList.remove('active');
+        });
+        document.getElementById('text-modal').addEventListener('click', () => {
+            document.getElementById('text-modal').classList.remove('active');
+        });
+
+        gsap.to('#canvas-container', { opacity: 1, duration: 2 });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
