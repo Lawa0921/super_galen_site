@@ -518,6 +518,13 @@
 <body>
 
     <a href="/guild" class="back-btn">← Guild</a>
+
+    <!-- Intro Overlay -->
+    <div id="intro-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a1525; z-index: 9999; display: flex; justify-content: center; align-items: center; color: white; flex-direction: column; cursor: pointer;">
+        <h1 style="font-family: 'Cinzel', serif; font-size: 3rem; margin-bottom: 1rem; opacity: 0; transform: translateY(20px);" id="intro-title">Rational Intuition</h1>
+        <p style="opacity: 0; transform: translateY(20px);" id="intro-hint">Click to Connect</p>
+    </div>
+
     <div class="texture-overlay"></div>
     <div id="p5-container"></div>
 
@@ -827,11 +834,42 @@
             onLeaveBack: () => document.body.classList.remove('dark-mode')
         });
 
+        // --- Intro Logic ---
+        const introOverlay = document.getElementById('intro-overlay');
+        const introTitle = document.getElementById('intro-title');
+        const introHint = document.getElementById('intro-hint');
+        let isIntro = true;
+
+        // Intro Animation
+        gsap.to(introTitle, { opacity: 1, y: 0, duration: 1.5, ease: "power2.out", delay: 0.5 });
+        gsap.to(introHint, { opacity: 0.8, y: 0, duration: 1.5, ease: "power2.out", delay: 1, repeat: -1, yoyo: true });
+
+        // Enter Site
+        introOverlay.addEventListener('click', () => {
+            isIntro = false;
+            gsap.to(introOverlay, { opacity: 0, duration: 1, pointerEvents: 'none', onComplete: () => {
+                introOverlay.style.display = 'none';
+            }});
+
+            // Allow scroll
+            document.body.style.overflow = 'auto';
+
+            // Transition p5 background to Hero scene
+            fadeToScene('hero');
+
+            // Trigger Hero animations manually if needed, or let ScrollTrigger handle it
+            gsap.from(".hero-title", { opacity: 0, y: 50, duration: 1.5, ease: "power2.out" });
+        });
+
+        // Lock scroll initially
+        document.body.style.overflow = 'hidden';
+
         // --- p5.js Background Visuals (Smooth Transitions) ---
 
         // Scene Alpha States (0 to 1)
         const sceneWeights = {
-            hero: 1,
+            intro: 1,
+            hero: 0, // Start hidden, fade in after intro
             logic: 0,
             awakening: 0,
             bridge: 0,
@@ -848,14 +886,20 @@
                 trigger: `#${id}`,
                 start: "top 50%",
                 end: "bottom 50%",
-                onEnter: () => fadeToScene(id),
-                onEnterBack: () => fadeToScene(id)
+                onEnter: () => {
+                    if (!isIntro) fadeToScene(id);
+                },
+                onEnterBack: () => {
+                    if (!isIntro) fadeToScene(id);
+                }
             });
         });
 
         function fadeToScene(targetId) {
+            if (isIntro) return; // Block scene changes during intro
+
             // Tween all weights to 0 except target to 1
-            const targetValues = {};
+            const targetValues = { intro: 0 };
             sections.forEach(s => targetValues[s] = (s === targetId ? 1 : 0));
 
             gsap.to(sceneWeights, {
@@ -890,7 +934,21 @@
             p.draw = () => {
                 p.clear(); // Transparent background
 
-                // We draw ALL scenes if they have weight > 0
+                if (sceneWeights.intro > 0.01) {
+                    p.push();
+                    drawIntro(p, sceneWeights.intro);
+                    p.pop();
+                }
+
+                // Interaction: Transition from Intro to Hero on click (handled by DOM click, but p5 needs to react)
+                if (!isIntro && sceneWeights.intro > 0) {
+                    // Manual fade out of intro managed by GSAP above?
+                    // Actually we need to tween sceneWeights here if not scroll triggered yet
+                    // The click handler should ideally trigger this.
+                    // Let's add a watcher or just let the draw loop handle weights.
+                    // For now, we rely on `fadeToScene('hero')` being called on click?
+                    // Let's update the click handler to call fadeToScene.
+                }
 
                 if (sceneWeights.hero > 0.01) {
                     p.push();
@@ -940,6 +998,33 @@
             };
 
             // --- Scene Functions (accept alpha) ---
+
+            function drawIntro(p, alpha) {
+                p.translate(p.width/2, p.height/2);
+
+                // Soul Seed / Pulse
+                let t = p.frameCount * 0.05;
+                let size = 20 + p.sin(t) * 5;
+
+                p.noStroke();
+                // Glow
+                for(let i=0; i<5; i++) {
+                    p.fill(52, 152, 219, alpha * (50 - i*10));
+                    p.circle(0, 0, size + i*20);
+                }
+
+                // Core
+                p.fill(255, 255, 255, alpha * 255);
+                p.circle(0, 0, size);
+
+                // Mouse interaction trails
+                let mouseDist = p.dist(p.mouseX - p.width/2, p.mouseY - p.height/2, 0, 0);
+                if (mouseDist < 200) {
+                    p.stroke(241, 196, 15, alpha * 100);
+                    p.strokeWeight(1);
+                    p.line(0, 0, p.mouseX - p.width/2, p.mouseY - p.height/2);
+                }
+            }
 
             function drawHero(p, alpha) {
                 // Subtle flow
