@@ -13,15 +13,6 @@
     <!-- GSAP & Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-
     <style>
         :root {
             --c-yellow: #FFD700;
@@ -120,6 +111,11 @@
         .story-section.active {
             opacity: 1;
         }
+        /* Alternating Layout */
+        .story-section.right-aligned {
+            align-items: flex-end;
+            text-align: right;
+        }
 
         /* Data Card Style */
         .data-card {
@@ -134,6 +130,13 @@
             transform: perspective(1000px) rotateY(5deg);
             transform-origin: left center;
         }
+        .story-section.right-aligned .data-card {
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 4px solid var(--c-yellow);
+            transform: perspective(1000px) rotateY(-5deg);
+            transform-origin: right center;
+        }
+
         .data-card::before {
             content: '';
             position: absolute;
@@ -141,6 +144,9 @@
             background: linear-gradient(45deg, var(--c-yellow), transparent 40%);
             z-index: -1;
             opacity: 0.2;
+        }
+        .story-section.right-aligned .data-card::before {
+            background: linear-gradient(-45deg, var(--c-yellow), transparent 40%);
         }
 
         /* Typography */
@@ -207,14 +213,17 @@
                 z-index: 0;
             }
             #content-sidebar {
+                width: 100%; /* Full width on mobile */
+                left: 0;
                 margin-top: 45vh; /* Push content down */
                 padding: 1rem;
                 padding-bottom: 50vh;
                 background: linear-gradient(to bottom, transparent, var(--c-black) 20%);
             }
             #hud-header { width: 100%; }
-            .story-section { min-height: 80vh; justify-content: flex-start; padding-top: 2rem;}
-            .data-card { transform: none; border-left: 2px solid var(--c-yellow); }
+            .story-section { min-height: 80vh; justify-content: flex-start; padding-top: 2rem; }
+            .story-section.right-aligned { align-items: flex-start; text-align: left; } /* Reset for mobile */
+            .data-card { transform: none !important; border-left: 2px solid var(--c-yellow) !important; border-right: 1px solid rgba(255,255,255,0.1) !important; margin: 0 !important;}
             h1 { font-size: 2.5rem; }
         }
 
@@ -284,7 +293,7 @@
             </section>
 
             <!-- Section 2: Heavy Metal -->
-            <section class="story-section" data-index="1">
+            <section class="story-section right-aligned" data-index="1">
                 <div class="data-card">
                     <h2>Heavy Metal Arsenal</h2>
                     <p>Commanding the giants of the earth. Master of Excavators, Cranes, and Rollers.</p>
@@ -360,10 +369,10 @@
     </div>
 
     <script type="module">
-        import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+        import { EffectComposer } from 'https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://unpkg.com/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 
         gsap.registerPlugin(ScrollTrigger);
 
@@ -510,13 +519,13 @@
         // --- 2. Machines Objects (SCALED UP) ---
         // Excavator
         const machine1 = createHoloImage(ASSETS.excavator, 8, 5.6, 0xFFD700);
-        machine1.position.set(-3, 1, 0); // Raised slightly
+        machine1.position.set(-4, 1, 0); // Shifted Left to balance Right-aligned text
         machine1.rotation.y = 0.2;
         groupMachines.add(machine1);
 
         // Roller
         const machine2 = createHoloImage(ASSETS.roller, 6, 4.5, 0xCD853F);
-        machine2.position.set(4, -1, 3);
+        machine2.position.set(-6, -2, 2); // Shifted Left (was +4)
         machine2.rotation.y = -0.3;
         groupMachines.add(machine2);
 
