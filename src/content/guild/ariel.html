@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;500;700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- GSAP -->
@@ -70,7 +70,6 @@
             padding: 4rem;
         }
 
-        /* Layout Variations */
         .panel.center { justify-content: center; text-align: center; }
         .panel.left { justify-content: flex-start; }
         .panel.right { justify-content: flex-end; text-align: right; }
@@ -85,16 +84,12 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         h2 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-size: clamp(2rem, 4vw, 3.5rem);
             font-weight: 700;
             color: var(--gold);
             margin-bottom: 2rem;
             position: relative;
             display: inline-block;
-        }
-        h2::after {
-            content: ''; position: absolute; bottom: -10px; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
 
         .sub-en {
@@ -103,64 +98,64 @@
         }
 
         p {
-            font-size: 1.2rem; line-height: 2; max-width: 600px;
-            margin-bottom: 2rem; color: #ccc; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            font-size: 1.1rem; line-height: 1.8; max-width: 600px;
+            margin-bottom: 1.5rem; color: #ccc; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* Hero Specifics */
-        .hero-title-group {
-            position: relative; z-index: 10;
-        }
-        .hero-role {
-            font-size: 1.2rem; letter-spacing: 5px; color: var(--cyan); margin-top: 1rem; display: block;
-        }
+        /* Hero */
+        .hero-title-group { position: relative; z-index: 10; }
+        .hero-role { font-size: 1.2rem; letter-spacing: 5px; color: var(--cyan); margin-top: 1rem; display: block; }
 
-        /* Glass Content Box (Minimal) */
+        /* Content Box */
         .content-box {
-            background: rgba(0, 0, 0, 0.4); /* Darker for contrast */
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(8px);
             padding: 3rem;
-            border-left: 2px solid var(--gold);
-            max-width: 600px;
-            transform: translateY(20px); opacity: 0; /* GSAP init */
+            border-left: 3px solid var(--gold);
+            max-width: 650px;
+            transform: translateY(20px); opacity: 0; /* GSAP */
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
-        .panel.right .content-box { border-left: none; border-right: 2px solid var(--gold); }
+        .panel.right .content-box { border-left: none; border-right: 3px solid var(--gold); text-align: left; }
 
-        /* Stats / Lists */
-        .skill-tags { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
-        .skill-tag {
-            padding: 0.5rem 1.2rem; border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; font-size: 0.9rem; transition: 0.3s;
+        /* Service List */
+        .service-list {
+            list-style: none; padding: 0; margin: 2rem 0;
+            display: grid; gap: 1rem;
         }
-        .skill-tag:hover { border-color: var(--gold); color: var(--gold); }
+        .service-item {
+            display: flex; align-items: center; gap: 1rem;
+            background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 4px;
+            transition: 0.3s; border: 1px solid transparent;
+        }
+        .service-item:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.1); }
+        .service-icon { color: var(--cyan); font-size: 1.2rem; min-width: 30px; text-align: center; }
+        .service-text { font-size: 1rem; color: #eee; font-weight: 500; }
 
-        .stat-row {
-            display: flex; gap: 3rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        .stat-big { font-size: 3rem; font-weight: 700; color: var(--cyan); font-family: 'Cinzel'; }
-        .stat-desc { font-size: 0.9rem; color: #aaa; }
+        .panel.right .service-icon { color: #e67e22; }
+        .panel.center .service-icon { color: var(--purple); }
 
         /* Mystic Elements */
-        .mystic-circle {
-            width: 100px; height: 100px; border: 1px solid var(--purple); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--purple);
-            margin: 0 auto 2rem auto;
-            box-shadow: 0 0 20px rgba(142, 68, 173, 0.2);
+        .showcase-img {
+            width: 100%; border-radius: 4px; margin-top: 2rem;
+            border: 1px solid var(--purple);
+            box-shadow: 0 0 30px rgba(142, 68, 173, 0.2);
         }
 
         /* Footer */
         .footer-cinematic {
-            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
             background: #000; position: relative; z-index: 20;
         }
-        .footer-links a {
+        .social-btn {
             font-size: 2rem; color: var(--gold); margin: 0 1.5rem; transition: 0.3s;
+            display: inline-block;
         }
-        .footer-links a:hover { color: #fff; text-shadow: 0 0 20px var(--gold); }
+        .social-btn:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 20px var(--gold); }
 
         @media (max-width: 768px) {
-            .panel { padding: 4rem 1.5rem; justify-content: center !important; text-align: left !important; }
-            .content-box { border: none; border-top: 2px solid var(--gold); }
+            .panel { padding: 4rem 1.5rem; justify-content: center !important; }
+            .content-box { border: none; border-top: 3px solid var(--gold); width: 100%; padding: 2rem; }
             h1 { font-size: 3.5rem; }
         }
 
@@ -174,92 +169,120 @@
     <!-- HERO -->
     <section class="panel center">
         <div class="hero-title-group">
-            <div style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; margin: 0 auto 2rem auto; border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);">
+            <div style="width: 160px; height: 160px; border-radius: 50%; overflow: hidden; margin: 0 auto 2rem auto; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.4);">
                 <img src="/assets/img/guild/ariel/avatar_main.webp" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
             <h1>ARIEL</h1>
             <span class="hero-role">秩序與混沌的煉金術師</span>
-            <p style="margin: 2rem auto; font-size: 1rem; color: #888;">SCROLL TO BEGIN THE JOURNEY</p>
+            <p style="margin: 2rem auto; font-size: 1.1rem; color: #aaa; max-width: 600px;">
+                "My mission in life is not merely to survive, but to thrive; and to do so with some passion, some compassion, some humor, and some style."
+            </p>
+            <p style="margin: 1rem auto; font-size: 0.9rem; color: #666;">RA Manager | INFP | Weaver</p>
+            <div style="font-size: 1.5rem; color: var(--gold); animation: bounce 2s infinite;">
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
         </div>
     </section>
 
-    <!-- SCENE 1: ARCHITECT -->
+    <!-- SCENE 1: ARCHITECT (RA Services) -->
     <section class="panel left" id="sec-law">
         <div class="content-box">
             <span class="sub-en">The Regulatory Architect</span>
             <h2>秩序建築師</h2>
             <p>
-                在醫藥產業深耕 <b>15 年</b>，我將法規視為一種精密的建築藝術。
-                專精於 <b>API</b> (小分子原料藥)、<b>DMF</b> 與 <b>CMC</b> 實務。
+                在醫藥產業深耕 15 年，我不僅是法規的執行者，更是策略的規劃者。
+                我協助企業在複雜的法規迷宮中，建構出通往全球市場的安全路徑。
             </p>
-            <p>
-                我的工作不僅是審核文件，更是建構通往全球市場的安全橋樑。
-                在混亂的數據中建立秩序，是我的天職。
-            </p>
-            <div class="skill-tags">
-                <div class="skill-tag">Global Strategy</div>
-                <div class="skill-tag">Risk Assessment</div>
-                <div class="skill-tag">Compliance Audit</div>
+
+            <h4 style="color: var(--cyan); margin-top: 2rem; font-family: 'Cinzel';">Professional Services</h4>
+            <div class="service-list">
+                <div class="service-item">
+                    <div class="service-icon"><i class="fa-solid fa-earth-americas"></i></div>
+                    <div class="service-text">全球藥證註冊策略 (US/EU/TW)</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon"><i class="fa-solid fa-file-medical"></i></div>
+                    <div class="service-text">API/CMC 技術文件撰寫與審閱</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                    <div class="service-text">GMP/GDP 合規稽核與風險評估</div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- SCENE 2: ALCHEMIST -->
+    <!-- SCENE 2: ALCHEMIST (Automation) -->
     <section class="panel right" id="sec-alchemy">
         <div class="content-box" style="border-right-color: #e67e22;">
             <span class="sub-en">Digital Transmutation</span>
             <h2 style="color: #e67e22;">數位煉金術</h2>
             <p>
-                我不做重複勞動的機器。我是「非典型」的管理者，
-                熱衷於用科技將繁瑣的文書地獄，轉化為自動化的流水線。
+                我不做重複勞動的機器。作為「非典型」管理者，我熱衷於將文書地獄轉化為自動化流水線。
+                我能協助您的團隊從低價值的資料搬運中釋放，專注於高價值的決策。
             </p>
-            <p>
-                結合 <b>Gemini AI</b> 與 <b>VBA</b>，我為團隊釋放了創意與時間。
-                這就是我的「僕人式領導」——賦能夥伴，讓每個人都能從工作中獲得成就感。
-            </p>
-            <div class="stat-row">
-                <div>
-                    <div class="stat-big" style="color: #e67e22;">-40%</div>
-                    <div class="stat-desc">流程工時</div>
+
+            <h4 style="color: #e67e22; margin-top: 2rem; font-family: 'Cinzel';">Automation Solutions</h4>
+            <div class="service-list">
+                <div class="service-item">
+                    <div class="service-icon"><i class="fa-solid fa-robot"></i></div>
+                    <div class="service-text">客製化 VBA 自動化腳本開發</div>
                 </div>
-                <div>
-                    <div class="stat-big" style="color: #e67e22;">100%</div>
-                    <div class="stat-desc">準確率</div>
+                <div class="service-item">
+                    <div class="service-icon"><i class="fa-brands fa-microsoft"></i></div>
+                    <div class="service-text">SharePoint 工作流整合優化</div>
+                </div>
+                <div class="service-item">
+                    <div class="service-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div class="service-text">Gemini AI 輔助應用導入 (-40% 工時)</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- SCENE 3: WEAVER -->
+    <!-- SCENE 3: WEAVER (Mystic/Team) -->
     <section class="panel center" id="sec-weaver">
-        <div class="content-box" style="border: 1px solid var(--purple); background: rgba(20,10,30,0.6);">
-            <div class="mystic-circle"><i class="fa-solid fa-eye"></i></div>
+        <div class="content-box" style="border: 1px solid var(--purple); background: rgba(20,10,30,0.7);">
             <span class="sub-en">The Mystic Weaver</span>
             <h2 style="color: var(--purple);">直覺織命者</h2>
             <p>
-                當理性的結構被解構，剩下的是靈魂的直覺。
-                工作之外，我是 <b>INFP</b> 調停者，也是一位神秘學愛好者。
+                當理性的結構被解構，剩下的是對「人」的深刻洞察。
+                左手數據，右手塔羅。我用人類圖看見天賦，用僕人式領導凝聚團隊。
             </p>
-            <p>
-                左手拿法規數據，右手拿塔羅鉤針。
-                我用 <b>人類圖</b> 洞察天賦，用 <b>鉤針</b> 編織秩序。
-                在 Human 3.0 的時代，我願成為那個將冰冷邏輯與溫暖人性編織在一起的人。
-            </p>
-            <div style="margin-top: 2rem; color: #aaa;">
-                <i class="fa-solid fa-dog" style="color: var(--purple);"></i> 守護靈：<b>Astro-Logical Wolf</b>
+
+            <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;">
+                <div style="flex: 1; min-width: 250px;">
+                    <h4 style="color: var(--purple); font-family: 'Cinzel'; margin-bottom: 1rem;">Consulting & Workshops</h4>
+                    <div class="service-list">
+                        <div class="service-item">
+                            <div class="service-icon"><i class="fa-solid fa-users"></i></div>
+                            <div class="service-text">團隊天賦定錨 (人類圖/紫微)</div>
+                        </div>
+                        <div class="service-item">
+                            <div class="service-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                            <div class="service-text">僕人式領導工作坊</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; color: #aaa; font-size: 0.9rem;">
+                        <i class="fa-solid fa-dog"></i> Spirit Animal: <b>Astro-Logical Wolf</b>
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 250px;">
+                    <img src="/assets/img/guild/ariel/material_bg.webp" class="showcase-img" alt="Weaving Material">
+                </div>
             </div>
         </div>
     </section>
 
     <!-- FOOTER -->
     <footer class="footer-cinematic">
-        <h2 style="margin-bottom: 1rem;">連結未來</h2>
+        <h2 style="margin-bottom: 1rem; color: var(--gold);">連結未來</h2>
         <p>讓我們一起編織無限可能</p>
-        <div class="footer-links">
-            <a href="https://www.threads.net/@iabc5040"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.instagram.com/iabc5040/"><i class="fa-brands fa-instagram"></i></a>
+        <div style="margin-top: 2rem;">
+            <a href="https://www.threads.net/@iabc5040" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/iabc5040/" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
         </div>
-        <p style="margin-top: 3rem; opacity: 0.5; font-size: 0.8rem;">Made by SuperGalen's Dungeon</p>
+        <p style="margin-top: 4rem; opacity: 0.5; font-size: 0.8rem;">Made by SuperGalen's Dungeon</p>
     </footer>
 
     <script type="module">
@@ -290,30 +313,21 @@
 
         // --- OBJECTS ---
 
-        // 1. The Structure (Molecule Grid)
-        const boxGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const edges = new THREE.EdgesGeometry(boxGeo);
-        const lineMat = new THREE.LineBasicMaterial({ color: 0x3498db, transparent: true, opacity: 0.3 });
-        const boxes = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ visible: false }), 400); // Only lines visible? No, helper lines
-        // Actually let's use Points for "Atoms" and Lines for "Bonds"
-
-        // Let's use a Wireframe Grid that deforms
+        // 1. Molecule Grid (Order)
         const planeGeo = new THREE.PlaneGeometry(60, 60, 30, 30);
         const planeMat = new THREE.MeshBasicMaterial({
-            color: 0x3498db, wireframe: true, transparent: true, opacity: 0.2
+            color: 0x3498db, wireframe: true, transparent: true, opacity: 0.15
         });
         const gridPlane = new THREE.Mesh(planeGeo, planeMat);
-        gridPlane.rotation.x = -Math.PI / 2; // Floor
+        gridPlane.rotation.x = -Math.PI / 2;
         gridPlane.position.y = -10;
         scene.add(gridPlane);
 
-        // Floating Data Cubes
         const cubeCount = 200;
         const cubeGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const cubeMat = new THREE.MeshStandardMaterial({ color: 0x3498db, metalness: 0.8, roughness: 0.2 });
         const cubes = new THREE.InstancedMesh(cubeGeo, cubeMat, cubeCount);
         const dummy = new THREE.Object3D();
-        const initialPos = [];
 
         for(let i=0; i<cubeCount; i++) {
             const x = (Math.random()-0.5) * 40;
@@ -323,12 +337,10 @@
             dummy.rotation.set(Math.random(), Math.random(), Math.random());
             dummy.updateMatrix();
             cubes.setMatrixAt(i, dummy.matrix);
-            initialPos.push({x, y, z});
         }
         scene.add(cubes);
 
-        // 2. The Golden Thread (Weaver)
-        // Complex Knot
+        // 2. The Golden Thread (Chaos/Flow)
         const curvePoints = [];
         for(let i=0; i<100; i++) {
             const t = i * 0.2;
@@ -348,7 +360,7 @@
         thread.geometry.setDrawRange(0, 0);
         scene.add(thread);
 
-        // 3. Mystic Stars
+        // 3. Mystic Stars (Intuition)
         const starGeo = new THREE.BufferGeometry();
         const starPos = [];
         for(let i=0; i<1000; i++) {
@@ -360,13 +372,13 @@
         scene.add(stars);
 
 
-        // --- GSAP ANIMATION ---
+        // --- ANIMATION ---
 
-        // Box Entry
+        // Content Entry
         gsap.utils.toArray('.content-box').forEach(box => {
             gsap.to(box, {
                 opacity: 1, y: 0, duration: 1,
-                scrollTrigger: { trigger: box, start: "top 80%" }
+                scrollTrigger: { trigger: box, start: "top 85%" }
             });
         });
 
@@ -379,49 +391,40 @@
             }
         });
 
-        // Scene 1: Order (Cubes Grid)
-        // Cubes rotate slowly, Camera moves down
+        // Act 1: Order
         tl.to(cubes.rotation, { y: 1, duration: 2 });
         tl.to(camera.position, { y: -10, z: 25, duration: 2 }, "<");
 
-        // Scene 2: Transmutation (Cubes Explode -> Thread)
-        // Cubes fly outward
+        // Act 2: Alchemy (Explode & Thread)
         tl.to(cubes.position, { z: 20, duration: 3, ease: "power2.in" }, "phase2");
         tl.to(cubes.material, { opacity: 0, transparent: true, duration: 1 }, "phase2");
         tl.to(gridPlane.material, { opacity: 0, duration: 1 }, "phase2");
 
-        // Show Thread
         tl.to(thread, { visible: true, duration: 0 }, "phase2");
-        // Index count: 300 * 8 * 6 = 14400
+        // TubeGeo 300 segments * 8 radial * 6 indices = 14400
         tl.to(thread.geometry, {
             duration: 3,
             onUpdate: function() { this.targets()[0].setDrawRange(0, Math.floor(this.progress() * 15000)); }
         }, "phase2");
 
-        // Lights change
         tl.to(blueLight, { intensity: 0, duration: 1 }, "phase2");
         tl.to(goldLight, { intensity: 2, duration: 1 }, "phase2");
 
-        // Scene 3: Weaver (Thread -> Stars)
+        // Act 3: Weaver (Stars)
         tl.to(camera.position, { y: -30, z: 15, duration: 3 }, "phase3");
-
-        // Thread dissolves into Stars
         tl.to(thread.material, { opacity: 0, transparent: true, duration: 1 }, "phase3");
         tl.to(starMat, { opacity: 1, duration: 2 }, "phase3");
         tl.to(stars.rotation, { z: 1, duration: 4 }, "phase3");
 
 
-        // --- RENDER ---
+        // --- LOOP ---
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // Idle
             cubes.rotation.z = t * 0.05;
             gridPlane.position.z = -10 + Math.sin(t)*0.5;
-
-            // Thread wiggle
             thread.rotation.y = t * 0.1;
 
             renderer.render(scene, camera);
