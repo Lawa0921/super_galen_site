@@ -61,13 +61,13 @@
 
         /* --- SCROLL SECTIONS (Cinematic) --- */
         .panel {
-            min-height: 100vh;
+            min-height: 120vh; /* Increased for longer scroll */
             width: 100%;
             position: relative;
             display: flex;
             align-items: center;
             box-sizing: border-box;
-            padding: 4rem;
+            padding: 6rem 4rem; /* More padding */
         }
 
         .panel.center { justify-content: center; text-align: center; }
@@ -98,21 +98,21 @@
         }
 
         p {
-            font-size: 1.1rem; line-height: 1.8; max-width: 600px;
+            font-size: 1.15rem; line-height: 2; max-width: 650px;
             margin-bottom: 1.5rem; color: #ccc; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
         /* Hero */
-        .hero-title-group { position: relative; z-index: 10; }
+        .hero-title-group { position: relative; z-index: 10; max-width: 800px; }
         .hero-role { font-size: 1.2rem; letter-spacing: 5px; color: var(--cyan); margin-top: 1rem; display: block; }
 
         /* Content Box */
         .content-box {
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(8px);
-            padding: 3rem;
+            padding: 4rem;
             border-left: 3px solid var(--gold);
-            max-width: 650px;
+            max-width: 750px; /* Wider for more text */
             transform: translateY(20px); opacity: 0; /* GSAP */
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
@@ -120,17 +120,18 @@
 
         /* Service List */
         .service-list {
-            list-style: none; padding: 0; margin: 2rem 0;
-            display: grid; gap: 1rem;
+            list-style: none; padding: 0; margin: 3rem 0;
+            display: grid; gap: 1.5rem;
         }
         .service-item {
-            display: flex; align-items: center; gap: 1rem;
-            background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 4px;
+            display: flex; align-items: flex-start; gap: 1.5rem;
+            background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 4px;
             transition: 0.3s; border: 1px solid transparent;
         }
-        .service-item:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.1); }
-        .service-icon { color: var(--cyan); font-size: 1.2rem; min-width: 30px; text-align: center; }
-        .service-text { font-size: 1rem; color: #eee; font-weight: 500; }
+        .service-item:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .service-icon { color: var(--cyan); font-size: 1.5rem; min-width: 40px; text-align: center; margin-top: 2px; }
+        .service-text { font-size: 1.1rem; color: #eee; font-weight: 500; }
+        .service-desc { font-size: 0.95rem; color: #aaa; margin-top: 0.5rem; font-weight: 300; display: block; }
 
         .panel.right .service-icon { color: #e67e22; }
         .panel.center .service-icon { color: var(--purple); }
@@ -144,17 +145,23 @@
 
         /* Footer */
         .footer-cinematic {
-            height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
             background: #000; position: relative; z-index: 20;
         }
         .social-btn {
-            font-size: 2rem; color: var(--gold); margin: 0 1.5rem; transition: 0.3s;
+            font-size: 2.5rem; color: var(--gold); margin: 0 2rem; transition: 0.3s;
             display: inline-block;
         }
-        .social-btn:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 20px var(--gold); }
+        .social-btn:hover { color: #fff; transform: scale(1.1); text-shadow: 0 0 20px var(--gold); }
+
+        .footer-link-back {
+            margin-top: 3rem; font-family: 'Cinzel'; color: #666; text-decoration: none; border-bottom: 1px solid #666; transition: 0.3s;
+            padding-bottom: 5px; font-size: 0.9rem; letter-spacing: 2px;
+        }
+        .footer-link-back:hover { color: var(--gold); border-color: var(--gold); }
 
         @media (max-width: 768px) {
-            .panel { padding: 4rem 1.5rem; justify-content: center !important; }
+            .panel { padding: 6rem 1.5rem; justify-content: center !important; }
             .content-box { border: none; border-top: 3px solid var(--gold); width: 100%; padding: 2rem; }
             h1 { font-size: 3.5rem; }
         }
@@ -169,16 +176,24 @@
     <!-- HERO -->
     <section class="panel center">
         <div class="hero-title-group">
-            <div style="width: 160px; height: 160px; border-radius: 50%; overflow: hidden; margin: 0 auto 2rem auto; border: 3px solid var(--gold); box-shadow: 0 0 40px rgba(212, 175, 55, 0.4);">
+            <div style="width: 180px; height: 180px; border-radius: 50%; overflow: hidden; margin: 0 auto 3rem auto; border: 3px solid var(--gold); box-shadow: 0 0 50px rgba(212, 175, 55, 0.3);">
                 <img src="/assets/img/guild/ariel/avatar_main.webp" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
             <h1>ARIEL</h1>
             <span class="hero-role">秩序與混沌的煉金術師</span>
-            <p style="margin: 2rem auto; font-size: 1.1rem; color: #aaa; max-width: 600px;">
-                "My mission in life is not merely to survive, but to thrive; and to do so with some passion, some compassion, some humor, and some style."
-            </p>
-            <p style="margin: 1rem auto; font-size: 0.9rem; color: #666;">RA Manager | INFP | Weaver</p>
-            <div style="font-size: 1.5rem; color: var(--gold); animation: bounce 2s infinite;">
+
+            <div style="margin: 3rem auto; padding: 2rem; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <p style="font-style: italic; color: #fff; font-size: 1.2rem;">
+                    "My mission in life is not merely to survive, but to thrive; and to do so with some passion, some compassion, some humor, and some style."
+                </p>
+                <p style="font-size: 1rem; color: #888;">
+                    雖然「法規」兩個字聽起來很嚴肅，但我其實是一個標準的 <b>INFP (調停者)</b>。<br>
+                    內心柔軟、重視和諧，相信即使在充滿條條框框的法規世界裡，<br>
+                    也能找到充滿人情味的解決方案。
+                </p>
+            </div>
+
+            <div style="font-size: 1.5rem; color: var(--gold); animation: bounce 2s infinite; margin-top: 2rem;">
                 <i class="fa-solid fa-chevron-down"></i>
             </div>
         </div>
@@ -190,23 +205,36 @@
             <span class="sub-en">The Regulatory Architect</span>
             <h2>秩序建築師</h2>
             <p>
-                在醫藥產業深耕 15 年，我不僅是法規的執行者，更是策略的規劃者。
-                我協助企業在複雜的法規迷宮中，建構出通往全球市場的安全路徑。
+                深耕醫藥產業 <b>15 年</b>，專長於小分子原料藥 (API)、DMF 與 CMC 法規實務。
+                我的角色不僅是確保合規，更是在剛硬的法規架構中，為企業尋找最具彈性的策略支點。
+            </p>
+            <p>
+                我看見的不是冰冷的條文，而是保護公眾健康與促進產業發展的平衡點。
+                在數據的迷宮中建立秩序，是我身為建築師的使命。
             </p>
 
-            <h4 style="color: var(--cyan); margin-top: 2rem; font-family: 'Cinzel';">Professional Services</h4>
+            <h4 style="color: var(--cyan); margin-top: 3rem; font-family: 'Cinzel'; border-bottom: 1px solid rgba(52, 152, 219, 0.3); padding-bottom: 10px;">Professional Services</h4>
             <div class="service-list">
                 <div class="service-item">
                     <div class="service-icon"><i class="fa-solid fa-earth-americas"></i></div>
-                    <div class="service-text">全球藥證註冊策略 (US/EU/TW)</div>
+                    <div>
+                        <div class="service-text">全球藥證註冊策略</div>
+                        <span class="service-desc">針對 US/EU/TW 市場，制定最優化的申請路徑與時程規劃。</span>
+                    </div>
                 </div>
                 <div class="service-item">
                     <div class="service-icon"><i class="fa-solid fa-file-medical"></i></div>
-                    <div class="service-text">API/CMC 技術文件撰寫與審閱</div>
+                    <div>
+                        <div class="service-text">API/CMC 技術文件撰寫</div>
+                        <span class="service-desc">精準詮釋科學數據，轉化為符合 CTD 格式的標準法規文件。</span>
+                    </div>
                 </div>
                 <div class="service-item">
                     <div class="service-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-                    <div class="service-text">GMP/GDP 合規稽核與風險評估</div>
+                    <div>
+                        <div class="service-text">GMP/GDP 合規稽核</div>
+                        <span class="service-desc">預判潛在風險，提供具體的改善建議與模擬查廠輔導。</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -218,23 +246,37 @@
             <span class="sub-en">Digital Transmutation</span>
             <h2 style="color: #e67e22;">數位煉金術</h2>
             <p>
-                我不做重複勞動的機器。作為「非典型」管理者，我熱衷於將文書地獄轉化為自動化流水線。
-                我能協助您的團隊從低價值的資料搬運中釋放，專注於高價值的決策。
+                在職場上，我是一個「非典型」的管理者。我不喜歡墨守成規，反而熱衷於當那個「解決問題的人」。
+                為了讓團隊從繁瑣的文書地獄中解脫，我結合科技工具，開發自動化流程。
+            </p>
+            <p>
+                這呼應了我所信仰的<b>「僕人式領導」</b>：管理不是發號施令，而是賦能與服務。
+                我期待部屬的成長遠勝於「只要做好工作就好」，在最大的可能裡面讓他們試錯。
+                看到夥伴因為效率提升而準時下班，比任何 KPI 都來得有成就感。
             </p>
 
-            <h4 style="color: #e67e22; margin-top: 2rem; font-family: 'Cinzel';">Automation Solutions</h4>
+            <h4 style="color: #e67e22; margin-top: 3rem; font-family: 'Cinzel'; border-bottom: 1px solid rgba(230, 126, 34, 0.3); padding-bottom: 10px;">Automation Solutions</h4>
             <div class="service-list">
                 <div class="service-item">
                     <div class="service-icon"><i class="fa-solid fa-robot"></i></div>
-                    <div class="service-text">客製化 VBA 自動化腳本開發</div>
+                    <div>
+                        <div class="service-text">客製化 VBA 自動化腳本</div>
+                        <span class="service-desc">將重複性的 Excel 資料處理作業一鍵完成，準確率 100%。</span>
+                    </div>
                 </div>
                 <div class="service-item">
                     <div class="service-icon"><i class="fa-brands fa-microsoft"></i></div>
-                    <div class="service-text">SharePoint 工作流整合優化</div>
+                    <div>
+                        <div class="service-text">SharePoint 工作流整合</div>
+                        <span class="service-desc">打造無紙化簽核與協作平台，即時追蹤專案進度。</span>
+                    </div>
                 </div>
                 <div class="service-item">
                     <div class="service-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                    <div class="service-text">Gemini AI 輔助應用導入 (-40% 工時)</div>
+                    <div>
+                        <div class="service-text">Gemini AI 輔助應用</div>
+                        <span class="service-desc">導入 AI 協助資料摘要與初步分析，大幅縮減 40% 的作業工時。</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -242,33 +284,51 @@
 
     <!-- SCENE 3: WEAVER (Mystic/Team) -->
     <section class="panel center" id="sec-weaver">
-        <div class="content-box" style="border: 1px solid var(--purple); background: rgba(20,10,30,0.7);">
+        <div class="content-box" style="border: 1px solid var(--purple); background: rgba(20,10,30,0.8); max-width: 900px;">
             <span class="sub-en">The Mystic Weaver</span>
             <h2 style="color: var(--purple);">直覺織命者</h2>
-            <p>
-                當理性的結構被解構，剩下的是對「人」的深刻洞察。
-                左手數據，右手塔羅。我用人類圖看見天賦，用僕人式領導凝聚團隊。
-            </p>
+            <div style="display: flex; gap: 3rem; flex-wrap: wrap; text-align: left;">
+                <div style="flex: 1; min-width: 300px;">
+                    <p>
+                        工作之外的我是什麼樣子呢？我是一位有兩個可愛寶寶的媽媽，也是一個充滿好奇心的神秘學愛好者。
+                        我熱愛研究 <b>人類圖</b>、<b>紫微斗數</b> 與 <b>塔羅</b>。
+                    </p>
+                    <p>
+                        這些工具主要幫助我自我探索，也讓我在職場上更能同理他人、識人善任。
+                        我看見的不只是職稱，而是每個靈魂獨特的「原廠設定」。
+                    </p>
+                    <p>
+                        此外，我喜歡透過 <b>鉤針手作</b> 來沉澱心靈，在與絲線的糾纏中找到平靜的秩序。
+                        左手拿法規與數據，右手拿塔羅與鉤針——這就是我，一個期待在 Human 3.0 時代，
+                        運用專業經驗與直覺洞察，在未來的連結中創造更多價值的靈魂。
+                    </p>
+                </div>
 
-            <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;">
-                <div style="flex: 1; min-width: 250px;">
-                    <h4 style="color: var(--purple); font-family: 'Cinzel'; margin-bottom: 1rem;">Consulting & Workshops</h4>
-                    <div class="service-list">
+                <div style="flex: 1; min-width: 300px;">
+                    <h4 style="color: var(--purple); font-family: 'Cinzel'; margin-bottom: 1.5rem;">Holistic Services</h4>
+                    <div class="service-list" style="margin: 0; gap: 1rem;">
                         <div class="service-item">
                             <div class="service-icon"><i class="fa-solid fa-users"></i></div>
-                            <div class="service-text">團隊天賦定錨 (人類圖/紫微)</div>
+                            <div>
+                                <div class="service-text">團隊天賦定錨</div>
+                                <span class="service-desc">運用人類圖與紫微，解析團隊成員天賦，優化分工與溝通。</span>
+                            </div>
                         </div>
                         <div class="service-item">
                             <div class="service-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
-                            <div class="service-text">僕人式領導工作坊</div>
+                            <div>
+                                <div class="service-text">僕人式領導工作坊</div>
+                                <span class="service-desc">分享賦能與服務的領導哲學，建立心理安全的職場環境。</span>
+                            </div>
                         </div>
                     </div>
-                    <div style="margin-top: 1rem; color: #aaa; font-size: 0.9rem;">
-                        <i class="fa-solid fa-dog"></i> Spirit Animal: <b>Astro-Logical Wolf</b>
+
+                    <div style="margin-top: 2rem; position: relative;">
+                        <img src="/assets/img/guild/ariel/material_bg.webp" class="showcase-img" alt="Weaving Material">
+                        <div style="margin-top: 1rem; color: #aaa; font-size: 0.9rem; text-align: center;">
+                            <i class="fa-solid fa-dog" style="color: var(--purple);"></i> 守護靈：<b>Astro-Logical Wolf</b>
+                        </div>
                     </div>
-                </div>
-                <div style="flex: 1; min-width: 250px;">
-                    <img src="/assets/img/guild/ariel/material_bg.webp" class="showcase-img" alt="Weaving Material">
                 </div>
             </div>
         </div>
@@ -276,13 +336,17 @@
 
     <!-- FOOTER -->
     <footer class="footer-cinematic">
-        <h2 style="margin-bottom: 1rem; color: var(--gold);">連結未來</h2>
-        <p>讓我們一起編織無限可能</p>
-        <div style="margin-top: 2rem;">
-            <a href="https://www.threads.net/@iabc5040" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.instagram.com/iabc5040/" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+        <h2 style="margin-bottom: 2rem; color: var(--gold); letter-spacing: 5px;">共織願景</h2>
+        <p style="opacity: 0.8; margin-bottom: 3rem;">期待與您開啟對話，探索更多可能性</p>
+
+        <div style="margin-bottom: 4rem;">
+            <a href="https://www.threads.net/@iabc5040" class="social-btn" title="Threads"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/iabc5040/" class="social-btn" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
         </div>
-        <p style="margin-top: 4rem; opacity: 0.5; font-size: 0.8rem;">Made by SuperGalen's Dungeon</p>
+
+        <a href="/guild/" class="footer-link-back">返回公會大廳 Return to Guild</a>
+
+        <p style="margin-top: 5rem; opacity: 0.3; font-size: 0.8rem;">Made by SuperGalen's Dungeon</p>
     </footer>
 
     <script type="module">

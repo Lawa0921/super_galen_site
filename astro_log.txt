@@ -50,3 +50,6 @@ Are they installed?
 16:07:31 [watch] src/content/guild/ariel.html
 16:08:57 [200] /guild/ariel 83ms
 16:11:04 [watch] src/content/guild/ariel.html
+06:53:23 [watch] src/content/guild/ariel.html
+06:54:30 [200] /guild/ariel 106ms
+06:55:05 [200] /guild/ariel 38ms
