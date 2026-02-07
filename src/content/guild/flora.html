@@ -110,6 +110,12 @@
             letter-spacing: 0.1em;
         }
 
+        .oven-subtitle {
+            font-size: 0.5em;
+            color: white;
+            display: block;
+        }
+
         .oven-hint {
             color: rgba(255,255,255,0.6);
             margin-top: 1rem;
@@ -361,6 +367,16 @@
             z-index: -1;
         }
 
+        .tart-icons {
+            margin-top: 2rem;
+            font-size: 1.5rem;
+            color: var(--c-olive);
+        }
+
+        .tart-icons i {
+            margin: 0 10px;
+        }
+
         /* AVATAR STYLING */
         .chef-avatar-container {
             width: 250px; height: 250px;
@@ -385,7 +401,7 @@
             transform: rotate(15deg);
         }
 
-        /* TYPOGRAPHY OVERRIDES */
+        /* TYPOGRAPHY OVERRIDES & UTILITIES */
         h2 {
             font-family: var(--font-display);
             color: var(--c-text);
@@ -402,12 +418,30 @@
 
         p { line-height: 1.8; font-size: 1.1rem; margin-bottom: 1rem;}
 
+        .text-olive { color: var(--c-olive); }
+        .text-olive-light { color: var(--c-olive-light); }
+        .text-bold { font-weight: bold; }
+        .text-italic { font-style: italic; }
+        .text-brown { color: #8D6E63; }
+        .text-berry { color: #C2185B; }
+        .text-gold { color: #FFC107; }
+        .text-blue { color: #1E88E5; }
+
+        .tart-quote {
+            margin-top: 1rem;
+            font-style: italic;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
         /* STAT BARS (Flour Dust Style) */
+        .stat-wrapper { margin-bottom: 1.5rem; }
+        .stat-label { display: flex; justify-content: space-between; font-weight: bold; }
         .stat-bar-container {
             background: rgba(0,0,0,0.05);
             border-radius: 20px;
             height: 12px;
-            margin: 1rem 0 2rem;
+            margin: 0.5rem 0 0;
             overflow: hidden;
         }
         .stat-bar {
@@ -420,6 +454,11 @@
         }
 
         /* GALLERY GRID (Waffle) */
+        .waffle-container {
+            background: transparent;
+            box-shadow: none;
+            padding: 0;
+        }
         .waffle-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -457,6 +496,18 @@
         }
         .social-btn:hover { transform: scale(1.1) rotate(10deg); }
 
+        .footer-credit {
+            margin-top: 2rem;
+            opacity: 0.6;
+            font-size: 0.9rem;
+        }
+
+        .footer-credit a {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
         /* LOADER */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -490,7 +541,7 @@
         <div class="door-panel">
             <div class="door-glass"></div>
             <div class="door-handle"></div>
-            <h1 class="oven-title">FLORA<br><span style="font-size: 0.5em; color: white;">The Sweet Alchemy</span></h1>
+            <h1 class="oven-title">FLORA<br><span class="oven-subtitle">The Sweet Alchemy</span></h1>
             <div class="oven-hint"><i class="fa-solid fa-chevron-down"></i> SCROLL TO OPEN <i class="fa-solid fa-chevron-down"></i></div>
         </div>
     </div>
@@ -509,10 +560,10 @@
             </div>
             <h2>Master Chef Flora</h2>
             <p>
-                我是 <span style="color: var(--c-olive); font-weight: bold;">Flora 芙老師</span>，品牌是豐饒甜食店。<br>
+                我是 <span class="text-olive text-bold">Flora 芙老師</span>，品牌是豐饒甜食店。<br>
                 在甜點領域深耕 17 年，把甜點變成一種跨文化的共同語言。
             </p>
-            <p style="margin-top: 1rem; font-style: italic; color: #8D6E63;">
+            <p class="text-brown text-italic" style="margin-top: 1rem;">
                 "甜點是通往幸福的最短途徑，是連結人、土地與情感的最佳入口。"
             </p>
         </div>
@@ -522,18 +573,18 @@
             <div class="crust-line"></div>
             <h2>Ingredient Analysis</h2>
 
-            <div style="margin-bottom: 1.5rem;">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>SWEETNESS</span> <span>100%</span></div>
+            <div class="stat-wrapper">
+                <div class="stat-label"><span>SWEETNESS</span> <span>100%</span></div>
                 <div class="stat-bar-container"><div class="stat-bar" style="width: 100%;"></div></div>
             </div>
 
-            <div style="margin-bottom: 1.5rem;">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>R&D PRECISION</span> <span>98%</span></div>
+            <div class="stat-wrapper">
+                <div class="stat-label"><span>R&D PRECISION</span> <span>98%</span></div>
                 <div class="stat-bar-container"><div class="stat-bar" style="width: 98%;"></div></div>
             </div>
 
-            <div style="margin-bottom: 1.5rem;">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>TEACHING</span> <span>95%</span></div>
+            <div class="stat-wrapper">
+                <div class="stat-label"><span>TEACHING</span> <span>95%</span></div>
                 <div class="stat-bar-container"><div class="stat-bar" style="width: 95%;"></div></div>
             </div>
         </div>
@@ -547,17 +598,17 @@
             <div class="timeline-grid">
                 <div class="timeline-item">
                     <div class="timeline-dot"></div>
-                    <h3 style="color: var(--c-olive);">Origin: Taiwan</h3>
+                    <h3 class="text-olive">Origin: Taiwan</h3>
                     <p style="font-size: 0.9rem;">深耕 17 年<br>教學與研發的起點</p>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot"></div>
-                    <h3 style="color: #C2185B;">Expedition</h3>
+                    <h3 class="text-berry">Expedition</h3>
                     <p style="font-size: 0.9rem;">Malaysia & India<br>英文授課跨文化交流</p>
                 </div>
                 <div class="timeline-item">
                     <div class="timeline-dot"></div>
-                    <h3 style="color: #FFC107;">Scope</h3>
+                    <h3 class="text-gold">Scope</h3>
                     <p style="font-size: 0.9rem;">幼兒園 / 國高中<br>成人職訓 / 企業顧問</p>
                 </div>
             </div>
@@ -593,7 +644,7 @@
         <div class="pastry-card card-menu">
             <div class="menu-header">
                 <h2>Service Menu</h2>
-                <p style="font-style: italic; color: var(--c-olive-light);">La Carte de Services</p>
+                <p class="text-olive-light text-italic">La Carte de Services</p>
             </div>
 
             <div class="menu-items">
@@ -645,28 +696,28 @@
             <h2>Alchemy of The Land</h2>
             <p style="max-width: 500px;">
                 現在，我聚焦在用甜點說出台灣的故事。<br>
-                把 <span style="color: #1E88E5; font-weight: bold;">海洋</span>、
-                <span style="color: var(--c-olive); font-weight: bold;">土地</span>、
-                <span style="color: #C2185B; font-weight: bold;">文化</span>、
-                <span style="color: #FFC107; font-weight: bold;">教育</span> 放進產品裡。
+                把 <span class="text-blue text-bold">海洋</span>、
+                <span class="text-olive text-bold">土地</span>、
+                <span class="text-berry text-bold">文化</span>、
+                <span class="text-gold text-bold">教育</span> 放進產品裡。
             </p>
-            <div style="margin-top: 2rem; font-size: 1.5rem; color: var(--c-olive);">
-                <i class="fa-solid fa-water" style="margin: 0 10px;"></i>
-                <i class="fa-solid fa-seedling" style="margin: 0 10px;"></i>
-                <i class="fa-solid fa-book-open" style="margin: 0 10px;"></i>
+            <div class="tart-icons">
+                <i class="fa-solid fa-water"></i>
+                <i class="fa-solid fa-seedling"></i>
+                <i class="fa-solid fa-book-open"></i>
             </div>
-            <p style="margin-top: 1rem; font-style: italic; font-size: 0.9rem; opacity: 0.7;">
+            <p class="tart-quote">
                 "讓每一份甜點不只是商品，而是一個可以被理解、被記住、也被分享的價值載體。"
             </p>
         </div>
 
         <!-- SECTION 4: SHOWCASE WAFFLE -->
-        <div class="pastry-card" style="background: transparent; box-shadow: none; padding: 0;">
+        <div class="pastry-card waffle-container">
             <div class="waffle-grid">
-                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_tree.webp"></div>
-                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_slice.webp"></div>
-                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_floral.webp"></div>
-                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_cupcake.webp"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_tree.webp" alt="Showcase"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_slice.webp" alt="Showcase"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_floral.webp" alt="Showcase"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_cupcake.webp" alt="Showcase"></div>
             </div>
         </div>
 
@@ -677,7 +728,7 @@
                 <a href="https://www.threads.net/@flora_setsuna_tw" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.facebook.com/FlowGateau" target="_blank" class="social-btn"><i class="fa-brands fa-facebook-f"></i></a>
             </div>
-            <p style="margin-top: 2rem; opacity: 0.6; font-size: 0.9rem;">Made with love by SuperGalen's Dungeon</p>
+            <p class="footer-credit">Made with love by <a href="/guild/">SuperGalen's Dungeon</a></p>
         </div>
 
     </div>
@@ -725,7 +776,6 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // ADDED BOOK ICON
         const icons = [
             { char: '\uf1fd', color: '#556B2F' }, // Cake (Olive)
             { char: '\uf19d', color: '#FF7043' }, // Grad Cap (Education)
