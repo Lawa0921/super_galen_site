@@ -18,10 +18,13 @@
             --c-heat: #FF7043; /* Heat Glow */
             --c-gold: #FFC107; /* Burnished Gold */
 
-            --c-matcha: #A4C639; /* Fresh Matcha */
+            --c-olive: #556B2F; /* Brand Olive Green */
+            --c-olive-light: #8F9779;
+
             --c-cream: #FFF8E1; /* Butter Cream */
             --c-bread: #D7CCC8; /* Flour/Dough */
             --c-cookie: #EFEBE9; /* Biscuit */
+            --c-parchment: #FDF5E6; /* Old Paper */
 
             --c-text: #5D4037;
             --c-accent: #C2185B; /* Berry Jam */
@@ -56,8 +59,7 @@
             top: 0; left: 0; width: 100%; height: 100vh;
             z-index: 100;
             perspective: 1000px;
-            pointer-events: none; /* Allow scroll through initially? No, we need to block clicks on content but allow scroll */
-            /* We'll use pointer-events: none on the *door* itself once opened, but initially it covers */
+            pointer-events: none;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -85,7 +87,7 @@
             border-radius: 20px;
             border: 2px solid rgba(255,255,255,0.1);
             box-shadow: 0 0 50px rgba(255, 112, 67, 0.2);
-            pointer-events: auto; /* Catch clicks if needed */
+            pointer-events: auto;
         }
 
         .door-handle {
@@ -131,7 +133,7 @@
 
         .pastry-card {
             position: relative;
-            margin-bottom: 15vh;
+            margin-bottom: 10vh;
             padding: 4rem;
             color: var(--c-text);
             transition: transform 0.3s ease;
@@ -154,7 +156,6 @@
             border: 8px solid rgba(255,255,255,0.4);
         }
 
-        /* The "Chip" decorations */
         .card-cookie::before {
             content: ''; position: absolute; top: 15%; right: 20%;
             width: 40px; height: 30px; background: #5D4037; border-radius: 50%; opacity: 0.8;
@@ -179,7 +180,6 @@
             position: relative;
         }
 
-        /* Bread lines */
         .card-bread .crust-line {
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
             width: 80%; height: 100%; border-radius: inherit;
@@ -187,25 +187,178 @@
             pointer-events: none;
         }
 
-        /* 3. ALCHEMY CAKE (Layered) */
-        .card-cake {
-            background: linear-gradient(to bottom, #FFF9C4 0%, #FFF9C4 30%, #FFECB3 30%, #FFECB3 60%, #FFE082 60%, #FFE082 100%);
-            border-radius: 20px 100px 20px 20px; /* Wedge-ish */
-            padding: 0;
-            overflow: hidden;
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.1);
+        /* 3. SWISS ROLL (The Grand Tour) */
+        .card-swiss-roll {
+            background: linear-gradient(90deg, #FFF9C4 0%, #FFF59D 20%, #FFF9C4 40%, #FFF59D 60%, #FFF9C4 80%, #FFF59D 100%);
+            border-radius: 20px;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.15);
             max-width: 900px;
             margin-left: auto; margin-right: auto;
+            overflow: hidden;
+            position: relative;
+            padding: 3rem;
         }
 
-        .cake-frosting {
+        .roll-cream {
+            position: absolute; top: 0; left: 0; width: 100%; height: 20px;
+            background: var(--c-cream);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        /* Timeline line */
+        .timeline-grid::before {
+            content: ''; position: absolute; top: 40px; left: 0; right: 0; height: 4px;
+            background: var(--c-olive); z-index: 0; opacity: 0.3;
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            position: relative; z-index: 1; text-align: center;
+        }
+        .timeline-dot {
+            width: 20px; height: 20px; background: var(--c-olive);
+            border-radius: 50%; margin: 30px auto 10px;
+            border: 4px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 4. THE GRIMOIRE (Open Book Strategy) */
+        .card-grimoire {
+            background: var(--c-parchment);
+            border-radius: 5px 20px 20px 5px;
+            box-shadow:
+                inset 40px 0 60px -20px rgba(0,0,0,0.1), /* Spine shadow */
+                5px 5px 15px rgba(0,0,0,0.1);
+            max-width: 950px;
+            margin-left: auto; margin-right: auto;
+            padding: 4rem 5rem;
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .grimoire-spine {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+            background: rgba(93, 64, 55, 0.1);
+            transform: translateX(-50%);
+        }
+
+        .chapter-title {
+            font-family: var(--font-display);
+            color: var(--c-olive);
+            border-bottom: 2px solid var(--c-olive-light);
+            padding-bottom: 0.5rem; margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .spell-list li {
+            margin-bottom: 0.8rem;
+            list-style: none;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .spell-list li::before {
+            content: '✦'; position: absolute; left: 0; color: var(--c-accent);
+        }
+
+        /* 5. NEW SECTION: LA CARTE (Menu) */
+        .card-menu {
+            background: #FFF;
+            border: 8px double var(--c-olive);
+            border-radius: 10px;
+            max-width: 800px;
+            margin-left: auto; margin-right: auto;
+            padding: 4rem;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .menu-header {
+            text-align: center;
+            border-bottom: 2px solid var(--c-olive-light);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .menu-items {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+
+        .menu-icon {
+            font-size: 2rem;
+            color: var(--c-olive);
+            background: var(--c-bg);
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            flex-shrink: 0;
+            border: 2px solid var(--c-olive-light);
+        }
+
+        .menu-text h3 {
+            font-family: var(--font-display);
+            color: var(--c-text);
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .menu-text ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .menu-text li {
+            margin-bottom: 0.3rem;
+            position: relative;
+            padding-left: 1rem;
+            font-size: 0.95rem;
+            color: #6D4C41;
+        }
+
+        .menu-text li::before {
+            content: '•';
+            position: absolute; left: 0; color: var(--c-heat);
+        }
+
+
+        /* 6. TART (Taiwan Story) */
+        .card-tart {
             background: white;
-            padding: 3rem;
-            border-bottom: 8px solid var(--c-matcha); /* Filling layer */
+            border-radius: 50%;
+            width: 100%; aspect-ratio: 1/1;
+            max-width: 700px;
+            margin-left: auto; margin-right: auto;
+            border: 20px dashed #D7CCC8; /* Crust edge */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center;
+            padding: 4rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
         }
 
-        .cake-body {
-            padding: 3rem;
+        .tart-filling {
+            position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #FFF 40%, #E8F5E9 100%);
+            z-index: -1;
         }
 
         /* AVATAR STYLING */
@@ -241,11 +394,13 @@
             text-align: center;
         }
 
-        .card-cookie h2 { color: var(--c-matcha); }
+        .card-cookie h2 { color: var(--c-olive); }
         .card-bread h2 { color: #8D6E63; }
-        .card-cake h2 { color: #C2185B; }
+        .card-grimoire h2 { color: var(--c-olive); grid-column: span 2; }
+        .card-menu h2 { color: var(--c-olive); }
+        .card-tart h2 { color: #1E88E5; /* Ocean Blue */ }
 
-        p { line-height: 1.8; font-size: 1.1rem; }
+        p { line-height: 1.8; font-size: 1.1rem; margin-bottom: 1rem;}
 
         /* STAT BARS (Flour Dust Style) */
         .stat-bar-container {
@@ -257,7 +412,7 @@
         }
         .stat-bar {
             height: 100%;
-            background: var(--c-matcha);
+            background: var(--c-olive);
             border-radius: 20px;
             width: 0%;
             background-image: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%, transparent);
@@ -295,7 +450,7 @@
 
         .social-btn {
             display: inline-flex; width: 60px; height: 60px;
-            border-radius: 50%; background: var(--c-matcha); color: white;
+            border-radius: 50%; background: var(--c-olive); color: white;
             align-items: center; justify-content: center; font-size: 1.5rem;
             margin: 0 1rem; text-decoration: none;
             transition: transform 0.2s;
@@ -307,13 +462,21 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--c-bg); z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            font-family: var(--font-display); font-size: 2rem; color: var(--c-matcha);
+            font-family: var(--font-display); font-size: 2rem; color: var(--c-olive);
         }
 
         /* Responsive */
         @media(max-width: 768px) {
-            .pastry-card { padding: 2rem; border-radius: 20px !important; margin: 2rem 1rem; }
+            .pastry-card { padding: 2rem; border-radius: 20px !important; margin: 2rem 1rem; width: auto !important; aspect-ratio: auto !important; height: auto !important; }
+            .card-grimoire { grid-template-columns: 1fr; gap: 2rem; }
+            .grimoire-spine { display: none; }
             .waffle-grid { grid-template-columns: 1fr; }
+            .timeline-grid { grid-template-columns: 1fr; }
+            .timeline-grid::before { left: 50%; width: 4px; height: 100%; top: 0; }
+            .timeline-dot { margin: 10px auto; }
+            h2 { font-size: 1.8rem; }
+            .menu-item { flex-direction: column; align-items: center; text-align: center; }
+            .menu-text ul { text-align: left; display: inline-block; }
         }
 
     </style>
@@ -342,12 +505,12 @@
         <div class="pastry-card card-cookie">
             <div class="chef-avatar-container">
                 <img src="/assets/img/guild/flora/profile.webp" class="chef-avatar" alt="Flora">
-                <i class="fa-solid fa-hat-chef chef-hat"></i>
+                <i class="fa-solid fa-hat-wizard chef-hat"></i>
             </div>
             <h2>Master Chef Flora</h2>
             <p>
-                我是 <span style="color: var(--c-matcha); font-weight: bold;">Flora 芙老師</span>，品牌是豐饒甜食店。<br>
-                在甜點領域深耕 17 年，從台灣到海外，走過教學、研發、品牌經營三條戰線。
+                我是 <span style="color: var(--c-olive); font-weight: bold;">Flora 芙老師</span>，品牌是豐饒甜食店。<br>
+                在甜點領域深耕 17 年，把甜點變成一種跨文化的共同語言。
             </p>
             <p style="margin-top: 1rem; font-style: italic; color: #8D6E63;">
                 "甜點是通往幸福的最短途徑，是連結人、土地與情感的最佳入口。"
@@ -373,35 +536,128 @@
                 <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>TEACHING</span> <span>95%</span></div>
                 <div class="stat-bar-container"><div class="stat-bar" style="width: 95%;"></div></div>
             </div>
+        </div>
 
-            <div style="margin-bottom: 1.5rem;">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>CULTURE</span> <span>99%</span></div>
-                <div class="stat-bar-container"><div class="stat-bar" style="width: 99%;"></div></div>
+        <!-- NEW SECTION: THE GRAND TOUR (SWISS ROLL) -->
+        <div class="pastry-card card-swiss-roll">
+            <div class="roll-cream"></div>
+            <h2>The Grand Tour</h2>
+            <p style="text-align: center;">從台灣到海外，走過教學、研發、品牌經營三條戰線。</p>
+
+            <div class="timeline-grid">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <h3 style="color: var(--c-olive);">Origin: Taiwan</h3>
+                    <p style="font-size: 0.9rem;">深耕 17 年<br>教學與研發的起點</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <h3 style="color: #C2185B;">Expedition</h3>
+                    <p style="font-size: 0.9rem;">Malaysia & India<br>英文授課跨文化交流</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <h3 style="color: #FFC107;">Scope</h3>
+                    <p style="font-size: 0.9rem;">幼兒園 / 國高中<br>成人職訓 / 企業顧問</p>
+                </div>
             </div>
         </div>
 
-        <!-- SECTION 3: SERVICE CAKE -->
-        <div class="pastry-card card-cake">
-            <div class="cake-frosting">
-                <h2>The Sweet Menu</h2>
-                <p>把「產品、教育、文化」整合成一套有策略的內容系統。</p>
+        <!-- NEW SECTION: THE GRIMOIRE (STRATEGY BOOK) -->
+        <div class="pastry-card card-grimoire">
+            <div class="grimoire-spine"></div>
+            <h2>The Sweet Grimoire</h2>
+
+            <!-- Left Page -->
+            <div>
+                <div class="chapter-title">I. The Strategy</div>
+                <p>我的專長不只是做出好吃的甜點，而是把「產品、教育、文化」整合成一套有策略的內容系統。</p>
+                <ul class="spell-list">
+                    <li><strong>Product Architecture:</strong> 從菜單設計、成本結構到定價邏輯，用企業經營的角度操作甜點。</li>
+                    <li><strong>Brand Narrative:</strong> 品牌故事與市場定位的精準結合。</li>
+                </ul>
             </div>
-            <div class="cake-body">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-                    <div>
-                        <h3 style="color: var(--c-accent);"><i class="fa-solid fa-utensils"></i> Product</h3>
-                        <p>從菜單設計、成本結構到定價邏輯。</p>
+
+            <!-- Right Page -->
+            <div>
+                <div class="chapter-title">II. The Curriculum</div>
+                <p>將甜點轉化為可傳承的模組化知識。</p>
+                <ul class="spell-list">
+                    <li><strong>Module Design:</strong> 針對不同年齡層（幼兒至成人）的專業課程設計。</li>
+                    <li><strong>Cultural Bridge:</strong> 透過甜點探討永續與在地議題，讓每一份甜點成為價值載體。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- NEW SECTION: LA CARTE (Menu of Services) -->
+        <div class="pastry-card card-menu">
+            <div class="menu-header">
+                <h2>Service Menu</h2>
+                <p style="font-style: italic; color: var(--c-olive-light);">La Carte de Services</p>
+            </div>
+
+            <div class="menu-items">
+                <!-- Item 1 -->
+                <div class="menu-item">
+                    <div class="menu-icon"><i class="fa-solid fa-compass-drafting"></i></div>
+                    <div class="menu-text">
+                        <h3>Product & Menu Design</h3>
+                        <ul>
+                            <li>Menu Engineering & Pricing Strategy (菜單設計與定價)</li>
+                            <li>Cost Control & Structure Analysis (成本結構分析)</li>
+                            <li>Seasonal & Local Ingredient R&D (在地食材研發)</li>
+                        </ul>
                     </div>
-                    <div>
-                        <h3 style="color: var(--c-accent);"><i class="fa-solid fa-graduation-cap"></i> Education</h3>
-                        <p>跨越年齡與國界的專業教學模組。</p>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="menu-item">
+                    <div class="menu-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <div class="menu-text">
+                        <h3>Education & Training</h3>
+                        <ul>
+                            <li>Professional Baking Courses (專業甜點培訓)</li>
+                            <li>Cross-Cultural Workshops (跨文化甜點交流)</li>
+                            <li>K-12 Food Education Programs (食農教育)</li>
+                        </ul>
                     </div>
-                    <div style="grid-column: span 2;">
-                        <h3 style="color: var(--c-accent);"><i class="fa-solid fa-book-atlas"></i> Culture</h3>
-                        <p>用企業經營的角度操作甜點，連結土地情感。</p>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="menu-item">
+                    <div class="menu-icon"><i class="fa-solid fa-briefcase"></i></div>
+                    <div class="menu-text">
+                        <h3>Brand Consultancy</h3>
+                        <ul>
+                            <li>Brand Narrative & Storytelling (品牌故事行銷)</li>
+                            <li>Sustainability Strategy (永續經營策略)</li>
+                            <li>Market Positioning & Analysis (市場定位分析)</li>
+                        </ul>
                     </div>
                 </div>
             </div>
+        </div>
+
+
+        <!-- NEW SECTION: ALCHEMY OF LAND (TART) -->
+        <div class="pastry-card card-tart">
+            <div class="tart-filling"></div>
+            <h2>Alchemy of The Land</h2>
+            <p style="max-width: 500px;">
+                現在，我聚焦在用甜點說出台灣的故事。<br>
+                把 <span style="color: #1E88E5; font-weight: bold;">海洋</span>、
+                <span style="color: var(--c-olive); font-weight: bold;">土地</span>、
+                <span style="color: #C2185B; font-weight: bold;">文化</span>、
+                <span style="color: #FFC107; font-weight: bold;">教育</span> 放進產品裡。
+            </p>
+            <div style="margin-top: 2rem; font-size: 1.5rem; color: var(--c-olive);">
+                <i class="fa-solid fa-water" style="margin: 0 10px;"></i>
+                <i class="fa-solid fa-seedling" style="margin: 0 10px;"></i>
+                <i class="fa-solid fa-book-open" style="margin: 0 10px;"></i>
+            </div>
+            <p style="margin-top: 1rem; font-style: italic; font-size: 0.9rem; opacity: 0.7;">
+                "讓每一份甜點不只是商品，而是一個可以被理解、被記住、也被分享的價值載體。"
+            </p>
         </div>
 
         <!-- SECTION 4: SHOWCASE WAFFLE -->
@@ -469,11 +725,13 @@
             return new THREE.CanvasTexture(canvas);
         }
 
+        // ADDED BOOK ICON
         const icons = [
-            { char: '\uf1fd', color: '#A4C639' }, // Cake (Matcha)
-            { char: '\uf810', color: '#FF7043' }, // Cupcake (Orange)
+            { char: '\uf1fd', color: '#556B2F' }, // Cake (Olive)
+            { char: '\uf19d', color: '#FF7043' }, // Grad Cap (Education)
             { char: '\uf563', color: '#8D6E63' }, // Cookie (Choco)
             { char: '\uf094', color: '#FDD835' }, // Lemon (Yellow)
+            { char: '\uf02d', color: '#5D4037' }, // Book (Brown)
         ];
 
         const sprites = [];
