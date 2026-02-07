@@ -691,3 +691,15 @@ members:
         label: "神秘學"
       - id: "slashie"
         label: "斜槓中年"
+
+  - id: "yufel"
+    name: "怪奇瘋子 Yufel"
+    avatar: "/assets/img/guild/yufel/avatar.webp"
+    page: "/guild/yufel.html"
+    tags:
+      - id: "self_taught"
+        label: "自學狂魔"
+      - id: "weaver"
+        label: "鉤織/手作"
+      - id: "poet"
+        label: "詩意瘋子"
