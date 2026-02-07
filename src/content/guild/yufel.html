@@ -225,19 +225,32 @@
         .big-quote span { color: var(--c-gold); font-family: var(--f-hand); }
 
         .social-dock {
-            display: flex; gap: 2rem; justify-content: center; margin-top: 3rem;
+            display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;
+            position: relative;
         }
+        /* Signal pulse effect */
+        .social-dock::before {
+            content: 'SIGNAL_INPUT: ACTIVE';
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            font-family: var(--f-mono); font-size: 0.7rem; color: var(--c-accent2);
+            letter-spacing: 2px; opacity: 0.7;
+            animation: pulse-text 2s infinite;
+        }
+        @keyframes pulse-text { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
         .social-icon {
             width: 60px; height: 60px; border-radius: 50%;
             border: 2px dashed var(--c-text);
             display: flex; align-items: center; justify-content: center;
             font-size: 1.5rem; color: var(--c-text); text-decoration: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(0,0,0,0.3);
         }
         .social-icon:hover {
-            transform: translateY(-5px);
+            transform: scale(1.1);
             border-color: var(--c-gold); color: var(--c-gold);
             border-style: solid;
+            box-shadow: 0 0 15px rgba(255, 230, 109, 0.3);
         }
 
         /* --- FOOTER --- */
@@ -269,7 +282,7 @@
             <div class="profile-container">
                 <div class="thread-ring tr-1"></div>
                 <div class="thread-ring tr-2"></div>
-                <img src="/assets/img/guild/yufel/avatar.webp" class="profile-img" alt="Yufel">
+                <img src="/assets/img/guild/yufel/avatar.webp" class="profile-img" alt="Yufel" loading="eager">
             </div>
 
             <h1 class="hero-title">Strange & Crazy</h1>
@@ -326,8 +339,8 @@
                     <span class="highlight-code">Japanese.loading...</span>
                 </p>
                 <div class="gallery-grid">
-                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work1.webp" alt="Work"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work2.webp" alt="Work"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work1.webp" alt="Work" loading="lazy"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yufel/work2.webp" alt="Work" loading="lazy"></div>
                 </div>
             </div>
         </section>
@@ -389,7 +402,7 @@
                     剛離職，目前處於<b>自由求職</b>狀態。
                     我正在尋找一個能讓這個「奇怪的瘋子」發揮所長的地方。
                     如果你需要一個懂程式、會手作、愛學習，且思維不受限的創造者，
-                    <span class="highlight-yarn">歡迎連線。</span>
+                    <span class="highlight-yarn">頻率同步。</span>
                 </p>
 
                 <div class="social-dock">
@@ -507,7 +520,8 @@
             const curve = createConvergingCurve(zStart, coreZ);
 
             // Thinner tubes -> Threads
-            const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.03 + Math.random()*0.05, 4, false);
+            // Optimization: Reduced segments from 64 to 48 for performance
+            const tubeGeo = new THREE.TubeGeometry(curve, 48, 0.03 + Math.random()*0.05, 3, false);
 
             let mat = matWool;
             const r = Math.random();
