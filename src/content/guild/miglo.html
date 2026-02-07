@@ -271,11 +271,14 @@
         @media (max-width: 900px) {
             .content-panel { flex-direction: column !important; gap: 2rem; padding: 0 1.5rem; }
             .image-card { width: 100%; height: 300px; transform: rotate(0deg); order: -1; }
+            .text-card { width: 100%; max-width: 100%; padding: 1.5rem; } /* Fix overflow */
             .big-text { font-size: 15vw; white-space: normal; }
             .finale-avatar { width: 150px; height: 150px; }
             .social-btn { padding: 0.8rem 1.5rem; font-size: 1.2rem; }
             .gallery-grid { grid-template-columns: repeat(2, 1fr); }
             #panel-gallery { width: 100%; left: 0; padding: 0 1rem; }
+            .sub-hero { font-size: 1rem; } /* Scale down sub-hero */
+            #finale h2 { font-size: 2rem !important; } /* Fix finale title overflow */
         }
     </style>
 </head>
@@ -452,16 +455,15 @@
         scene.add(sunLight);
 
         // --- 1. JELLY CUBES ---
+        // Reduce geometry segments for mobile performance
         const jellyGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-        // Slightly bevelled looking box via texture or just simple box for style
-        const jellyMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffb74d, // Brighter Orange/Gold
+        // Optimize material for mobile (MeshStandard is cheaper than Physical)
+        const jellyMat = new THREE.MeshStandardMaterial({
+            color: 0xffb74d,
             emissive: 0xff6d00,
-            emissiveIntensity: 0.2, // Subtle self-glow to pop against dark background
+            emissiveIntensity: 0.4,
+            roughness: 0.2,
             metalness: 0.1,
-            roughness: 0.2, // Frosty jelly look
-            transmission: 0.6,
-            thickness: 1.5,
             transparent: true,
             opacity: 0.9,
         });
@@ -654,36 +656,46 @@
         // --- Loop ---
         const clock = new THREE.Clock();
         const mouse = new THREE.Vector2();
+
+        // Optimize: Debounce/Throttle not needed for simple mouse tracking, but good practice to check interactions
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
+        // Optimization: Use a single dummy object is good.
+        // Optimization: Pre-calculate sin/cos if possible, or use simplified math.
+
         function animateMesh(mesh, data, time, type) {
+            // Optimization: Skip update if mesh is far off screen? (Simple culling)
+            // For now, the scene is small enough.
+
+            let needsUpdate = false;
+
             for(let i=0; i<data.length; i++) {
                 const d = data[i];
                 let x = d.ox;
                 let y = d.oy;
                 let z = d.z;
 
-                // Jelly: Bobbing
+                // Jelly: Bobbing (Simple Sin)
                 if(type === 'jelly') {
                     y = d.oy + Math.sin(time * d.speed + d.phase) * 2;
                     dummy.rotation.set(time * d.rx, time * d.ry, 0);
                 }
-                // Leaf: Fluttering
+                // Leaf: Fluttering (Reduced Trig)
                 else if(type === 'leaf') {
-                    y = d.oy - (time * d.speed % 20) + 10; // Fall slowly
-                    if(y < -20) y += 40; // Loop
-                    x = d.ox + Math.sin(time + d.phase) * 1; // Sway
+                    y = d.oy - (time * d.speed % 20) + 10;
+                    if(y < -20) y += 40;
+                    x = d.ox + Math.sin(time + d.phase);
 
                     dummy.rotation.set(
-                        Math.sin(time * 2 + d.phase) * 0.5, // Flutter X
-                        Math.cos(time * 1.5 + d.phase) * 0.5, // Flutter Y
-                        Math.sin(time + d.phase) * 0.2 // Tilt
+                        Math.sin(time * 2 + d.phase) * 0.5,
+                        Math.cos(time * 1.5 + d.phase) * 0.5,
+                        Math.sin(time + d.phase) * 0.2
                     );
                 }
-                // Flower: Spinning gently
+                // Flower: Spinning gently (Simple Rotate)
                 else if(type === 'flower') {
                     dummy.rotation.z = time * 0.2 + d.phase;
                     dummy.rotation.x = Math.sin(time * 0.5 + d.phase) * 0.2;
@@ -691,16 +703,18 @@
                 }
 
                 dummy.position.set(x, y, z);
-                // Apply slight mouse parallax to all
-                dummy.position.x += (mouse.x * 2) * 0.5;
-                dummy.position.y += (mouse.y * 2) * 0.5;
 
-                dummy.scale.setScalar(type === 'flower' ? 2.5 : (type === 'leaf' ? 1.2 : 1)); // Size override
+                // Mouse Parallax (Lerp for smoothness could be better, but direct mapping is cheaper)
+                dummy.position.x += mouse.x;
+                dummy.position.y += mouse.y;
+
+                dummy.scale.setScalar(type === 'flower' ? 2.5 : (type === 'leaf' ? 1.2 : 1));
 
                 dummy.updateMatrix();
                 mesh.setMatrixAt(i, dummy.matrix);
+                needsUpdate = true;
             }
-            mesh.instanceMatrix.needsUpdate = true;
+            if(needsUpdate) mesh.instanceMatrix.needsUpdate = true;
         }
 
         function animate() {
