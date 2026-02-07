@@ -468,11 +468,12 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
         // --- Configuration ---
+        // Optimization: Reduce star count on mobile for better performance
+        const isMobile = window.innerWidth < 768;
         const CONFIG = {
-            starCount: 4000,
+            starCount: isMobile ? 1500 : 4000,
             zodiacRadius: 18,
-            cameraZ: 30,
-            scrollSpeed: 0.05
+            cameraZ: 30
         };
 
         // --- Scene Setup ---
