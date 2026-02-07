@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XmasFun689 - Construction Mage</title>
+    <title>XmasFun689 - Heavy Metal Summoner</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Orbitron:wght@400;700;900&family=Noto+Serif+TC:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Zen+Dots&family=Noto+Serif+TC:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- GSAP & Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
         :root {
-            --c-yellow: #FFD700;
-            --c-black: #050505;
-            --c-cyan: #00F3FF;
-            --c-danger: #FF2A2A;
+            --c-gold: #FFD700;
+            --c-void: #0a0a0f;
+            --c-neon-blue: #00F3FF;
+            --c-neon-purple: #BC13FE;
+            --c-alert: #FF2A2A;
 
-            --font-head: 'Black Ops One', cursive;
-            --font-ui: 'Orbitron', sans-serif;
+            --font-hero: 'Black Ops One', cursive;
+            --font-ui: 'Zen Dots', sans-serif;
             --font-body: 'Noto Serif TC', serif;
-            --font-tech: 'Rajdhani', sans-serif;
+            --font-data: 'Rajdhani', sans-serif;
         }
 
         * { box-sizing: border-box; }
@@ -31,9 +32,9 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: var(--c-black);
+            background-color: var(--c-void);
             color: white;
-            font-family: var(--font-ui);
+            font-family: var(--font-body);
             overflow-x: hidden;
         }
 
@@ -45,8 +46,39 @@
             width: 100vw;
             height: 100vh;
             z-index: 0;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 100%);
         }
+
+        /* UI Overlay (Fixed) */
+        #ui-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            background:
+                linear-gradient(rgba(0,243,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,243,255,0.03) 1px, transparent 1px);
+            background-size: 100px 100px;
+            mask-image: radial-gradient(circle at center, transparent 30%, black 100%);
+        }
+
+        .hud-border {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .hud-tl { top: 20px; left: 20px; width: 200px; height: 100px; border-right: none; border-bottom: none; }
+        .hud-br { bottom: 20px; right: 20px; width: 200px; height: 100px; border-left: none; border-top: none; }
+
+        .hud-text {
+            position: absolute;
+            font-family: var(--font-data);
+            font-size: 0.8rem;
+            color: var(--c-neon-blue);
+            opacity: 0.7;
+            letter-spacing: 2px;
+        }
+        .hud-tl .hud-text { top: -10px; left: 10px; background: var(--c-void); padding: 0 5px; }
+        .hud-br .hud-text { bottom: -10px; right: 10px; background: var(--c-void); padding: 0 5px; }
 
         /* Scroll Container */
         #scroll-container {
@@ -55,296 +87,296 @@
             width: 100%;
         }
 
-        /* HUD Header (Fixed) */
-        #hud-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 1.5rem 2rem;
+        /* Sections */
+        .section {
+            min-height: 120vh;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            z-index: 50;
+            justify-content: center;
+            padding: 5%;
+            position: relative;
             pointer-events: none;
         }
-        .hud-logo {
-            font-family: var(--font-head);
-            color: var(--c-yellow);
-            font-size: 1.5rem;
-            text-shadow: 0 0 10px var(--c-yellow);
+        .section.align-left { justify-content: flex-start; }
+        .section.align-right { justify-content: flex-end; }
+
+        /* Cards */
+        .holo-card {
             pointer-events: auto;
-            text-decoration: none;
-        }
-        .hud-status {
-            font-family: var(--font-tech);
-            color: var(--c-cyan);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-        }
-
-        /* Content Sections */
-        .story-section {
-            min-height: 120vh; /* Give space for scroll */
-            display: flex;
-            align-items: center;
-            justify-content: center; /* Default Center */
-            padding: 2rem;
-            position: relative;
-            pointer-events: none; /* Allow click-through to canvas */
-        }
-
-        .story-section.left-align { justify-content: flex-start; padding-left: 10%; }
-        .story-section.right-align { justify-content: flex-end; padding-right: 10%; }
-
-        /* Data Card Style */
-        .data-card {
-            pointer-events: auto;
-            background: rgba(10, 10, 10, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-top: 4px solid var(--c-yellow);
-            border-bottom: 4px solid var(--c-yellow);
-            padding: 2.5rem;
+            background: rgba(10, 15, 30, 0.8);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            backdrop-filter: blur(8px);
+            padding: 3rem;
+            max-width: 600px;
             width: 100%;
-            max-width: 500px;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            transform: perspective(1000px) rotateX(5deg);
-            opacity: 0; /* Hidden by default for GSAP */
-            transform-origin: center top;
-            clip-path: polygon(
-                0 0,
-                100% 0,
-                100% 85%,
-                90% 100%,
-                0 100%
-            ); /* Cyberpunk cut corner */
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            transform: perspective(1000px) rotateY(0deg);
+            opacity: 0;
         }
 
-        .data-card::before {
-            content: 'SYSTEM_ONLINE';
+        .holo-card::before {
+            content: '';
             position: absolute;
-            top: 5px; right: 10px;
-            font-family: var(--font-tech);
-            font-size: 0.7rem;
-            color: var(--c-yellow);
-            opacity: 0.5;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--c-neon-blue), transparent);
+            animation: scanline 3s infinite linear;
+        }
+        @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        .holo-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 20px; height: 20px;
+            background: linear-gradient(135deg, transparent 50%, var(--c-neon-blue) 50%);
         }
 
         /* Typography */
         h1 {
-            font-family: var(--font-head);
-            font-size: 3.5rem;
-            line-height: 0.9;
-            margin: 0 0 1.5rem 0;
+            font-family: var(--font-hero);
+            font-size: 4rem;
+            line-height: 1;
+            margin: 0 0 1rem 0;
+            background: linear-gradient(to right, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             text-transform: uppercase;
-            color: white;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
         h2 {
             font-family: var(--font-ui);
-            font-size: 1.8rem;
-            color: var(--c-cyan);
-            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            color: var(--c-gold);
+            margin-bottom: 1.5rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 0.5rem;
+            display: inline-block;
         }
         p {
-            font-family: var(--font-body);
             font-size: 1.1rem;
             line-height: 1.8;
-            color: #ddd;
+            color: #ccc;
             margin-bottom: 1.5rem;
+            text-align: justify;
         }
+        .highlight { color: var(--c-neon-blue); font-weight: bold; }
+        .danger { color: var(--c-alert); font-weight: bold; }
 
-        /* Stats Grid */
-        .stats-grid {
+        /* RPG Stats */
+        .rpg-stats {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            font-family: var(--font-tech);
+            gap: 1.5rem;
             margin-top: 2rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding-top: 1rem;
+            font-family: var(--font-data);
         }
-        .stat-item {
-            display: flex;
-            flex-direction: column;
+        .stat-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 5px; }
+        .stat-name { color: #888; font-size: 0.9rem; }
+        .stat-val { color: var(--c-neon-blue); font-weight: bold; font-size: 1.2rem; }
+
+        .skill-tag {
+            display: inline-block;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--c-neon-blue);
+            color: var(--c-neon-blue);
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-family: var(--font-data);
+            text-transform: uppercase;
         }
-        .stat-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 1.4rem; color: white; font-weight: 700; text-shadow: 0 0 5px currentColor; }
 
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .story-section { min-height: 100vh; padding: 1rem; }
-            .story-section.left-align, .story-section.right-align { justify-content: center; padding: 1rem; }
-            .data-card { padding: 1.5rem; width: 100%; transform: none !important; clip-path: none; border: 2px solid var(--c-yellow); }
-            h1 { font-size: 2.5rem; }
+        /* Finale Section */
+        .finale-card {
+            text-align: center;
+            border-color: var(--c-gold);
         }
-
-        /* Theme Colors */
-        .theme-water .data-card { border-color: var(--c-cyan); }
-        .theme-water h2 { color: var(--c-cyan); }
-        .theme-water .stat-value { color: var(--c-cyan); }
-
-        .theme-danger .data-card { border-color: var(--c-danger); }
-        .theme-danger h2 { color: var(--c-danger); }
-        .theme-danger .stat-value { color: var(--c-danger); }
-
-        /* Social Icons */
-        .social-bar {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .social-icon {
-            width: 48px; height: 48px;
-            border: 2px solid rgba(255,255,255,0.2);
+        .finale-card::before { background: linear-gradient(90deg, transparent, var(--c-gold), transparent); }
+        .avatar-frame {
+            width: 120px; height: 120px;
+            margin: 0 auto 2rem;
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; text-decoration: none;
-            transition: all 0.3s;
-            background: rgba(0,0,0,0.5);
+            padding: 5px;
+            border: 2px dashed var(--c-gold);
+            position: relative;
         }
-        .social-icon:hover { border-color: var(--c-yellow); color: var(--c-yellow); box-shadow: 0 0 15px var(--c-yellow); transform: scale(1.1); }
-        .social-icon svg { width: 24px; height: 24px; fill: currentColor; }
+        .avatar-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        .avatar-lvl {
+            position: absolute;
+            bottom: -10px; left: 50%;
+            transform: translateX(-50%);
+            background: var(--c-gold);
+            color: black;
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
 
-        #loader {
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .social-btn {
+            width: 60px; height: 60px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            text-decoration: none;
+        }
+        .social-btn:hover {
+            background: var(--c-gold);
+            color: black;
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px var(--c-gold);
+        }
+        .social-btn svg { width: 28px; height: 28px; fill: currentColor; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .holo-card { padding: 1.5rem; }
+            .section { padding: 1rem; justify-content: center !important; }
+        }
+
+        /* Loading Screen */
+        #loading {
             position: fixed; inset: 0; background: #000; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--c-yellow); font-family: var(--font-tech);
+            font-family: var(--font-ui); color: var(--c-neon-blue);
         }
-        .loader-text { font-size: 2rem; animation: pulse 1s infinite alternate; }
-        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
-
-        /* Scroll Prompt */
-        .scroll-prompt {
-            position: absolute;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,0.5);
-            font-family: var(--font-tech);
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
+        .bar-wrap { width: 200px; height: 4px; background: #333; margin-top: 10px; overflow: hidden; }
+        .bar-fill { width: 0%; height: 100%; background: var(--c-neon-blue); transition: width 0.5s; }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="loader-text">SYSTEM INITIALIZING...</div>
-        <div style="margin-top: 1rem; font-size: 0.8rem; color: #666;">LOADING ASSETS [||||||||||] 100%</div>
+    <div id="loading">
+        <div>SYSTEM SYNCING...</div>
+        <div class="bar-wrap"><div class="bar-fill" id="load-bar"></div></div>
     </div>
 
-    <!-- Fixed Background -->
+    <!-- Background -->
     <div id="canvas-wrapper"></div>
 
-    <!-- HUD Header -->
-    <div id="hud-header">
-        <a href="/guild/" class="hud-logo">GUILD // EXIT</a>
-        <div class="hud-status">OP: XMASFUN689 // LVL.8</div>
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div class="hud-border hud-tl"><span class="hud-text">SYS.OP: XMASFUN689</span></div>
+        <div class="hud-border hud-br"><span class="hud-text">STATUS: ONLINE</span></div>
     </div>
 
-    <!-- Main Scroll Container -->
+    <!-- Content -->
     <div id="scroll-container">
 
-        <!-- Section 1: Intro (Center) -->
-        <section class="story-section">
-            <div class="data-card">
-                <p class="hud-status">ID_CARD_VERIFIED</p>
-                <h1>Construction<br>Mage</h1>
-                <p>Tempered by Society. Fueled by Magic.<br>從業八年・工地主任</p>
-
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">CLASS</span>
-                        <span class="stat-value">Summoner</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">STYLE</span>
-                        <span class="stat-value">Solo Player</span>
-                    </div>
-                </div>
-            </div>
-            <div class="scroll-prompt">SCROLL TO INITIATE</div>
-        </section>
-
-        <!-- Section 2: Heavy Metal (Right Align) -->
-        <section class="story-section right-align">
-            <div class="data-card">
-                <h2>Heavy Metal Arsenal</h2>
-                <p>Commanding the giants of the earth. Master of Excavators, Cranes, and Rollers.</p>
-                <p style="color: #bbb; font-style: italic;">
-                    "喜歡實作跟重機械，會開怪手跟吊車還有自走車。<br>
-                    但很可惜差一點考到證照 🥺"
-                </p>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">STR</span>
-                        <span class="stat-value">A+</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">AFFINITY</span>
-                        <span class="stat-value">Earth / Metal</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 3: Elements (Left Align) -->
-        <section class="story-section left-align theme-water">
-            <div class="data-card">
-                <h2 style="color: var(--c-cyan)">Elemental Hybrid</h2>
-                <p>Dual-licensed Slashie. Channeling the flow of water and the spark of lightning.</p>
-                <p style="color: #bbb; font-style: italic;">
-                    "有水電證照斜槓水電工。<br>
-                    朋友都說我是水&電&土系混合法師。"
-                </p>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">LICENSES</span>
-                        <span class="stat-value">Water + Elec</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">INT</span>
-                        <span class="stat-value">High</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 4: Finale (Center) -->
-        <section class="story-section theme-danger" style="min-height: 100vh;">
-            <div class="data-card">
-                <h2 style="color: var(--c-danger)">Profile Data</h2>
-                <div style="display:flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
-                    <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--c-danger); box-shadow: 0 0 15px var(--c-danger);">
-                    <div>
-                        <div style="font-size: 1.5rem; font-weight: bold;">XmasFun689</div>
-                        <div style="font-size: 0.8rem; color: #888; font-family: var(--font-tech);">Warrior Physique // Summoner Soul</div>
-                    </div>
-                </div>
+        <!-- 1. Hero / Identity -->
+        <section class="section">
+            <div class="holo-card">
+                <h1>Heavy Metal<br><span style="color: var(--c-gold)">Summoner</span></h1>
                 <p>
-                    "從小胖到現在的戰士體質...<br>
-                    最愛猴子布偶跟 Kururu 曹長"
+                    <span class="highlight">Class:</span> Geo-Architect / Site Commander<br>
+                    <span class="highlight">Exp:</span> 8 Years (Veteran)<br>
+                    <span class="highlight">Affinity:</span> Earth & Metal
                 </p>
-                <div class="social-bar">
-                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-icon">
+                <p>
+                    A battle-hardened veteran of the construction fields. Commander of heavy mecha units.
+                    Merging the raw power of industrial machinery with the delicate art of plushie summoning.
+                </p>
+                <div class="rpg-stats">
+                    <div class="stat-row"><span class="stat-name">STR</span><span class="stat-val">S+</span></div>
+                    <div class="stat-row"><span class="stat-name">INT</span><span class="stat-val">A</span></div>
+                    <div class="stat-row"><span class="stat-name">AGI</span><span class="stat-val">C-</span></div>
+                    <div class="stat-row"><span class="stat-name">LUCK</span><span class="stat-val">B</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Machinery (Ground) -->
+        <section class="section align-right">
+            <div class="holo-card" style="border-color: var(--c-gold);">
+                <h2>Mecha Arsenal</h2>
+                <p>
+                    Proficient in synchronizing with heavy-duty constructs.
+                    <br>
+                    "I love hands-on work and heavy machinery. Operates Excavators, Cranes, and Rollers."
+                </p>
+                <div style="margin-top: 1rem;">
+                    <span class="skill-tag">Excavator Pilot</span>
+                    <span class="skill-tag">Crane Operator</span>
+                    <span class="skill-tag">Roller Driver</span>
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.9rem; font-style: italic; color: #888;">
+                    *Missed the certification by a hair's breadth 🥺
+                </p>
+            </div>
+        </section>
+
+        <!-- 3. Elemental (Air) -->
+        <section class="section align-left">
+            <div class="holo-card" style="border-color: var(--c-neon-blue);">
+                <h2>Hybrid Arts</h2>
+                <p>
+                    Wielding the dual currents of <span style="color: var(--c-neon-blue)">Hydro</span> and <span style="color: #FFD700">Electro</span> magic.
+                    <br>
+                    "Water & Electric License Holder. A true mixed-element mage slashie."
+                </p>
+                <div class="rpg-stats">
+                    <div class="stat-row"><span class="stat-name">HYDRO</span><span class="stat-val">LV.5</span></div>
+                    <div class="stat-row"><span class="stat-name">ELECTRO</span><span class="stat-val">LV.5</span></div>
+                </div>
+                <p style="margin-top: 1rem;">
+                    Friends call me a <b>Triple-Element Mage</b> (Water/Electric/Earth).
+                    But deep down... I am a Warrior.
+                </p>
+            </div>
+        </section>
+
+        <!-- 4. Personal / Finale (Sky) -->
+        <section class="section theme-final">
+            <div class="holo-card finale-card">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/xmasfun689/avatar.webp" class="avatar-img" alt="Avatar">
+                    <div class="avatar-lvl">LVL. 30+</div>
+                </div>
+                <h2>The Solitary Summoner</h2>
+                <p>
+                    "I've been on the heavy side since childhood... a true Tank build."<br>
+                    "In games, I always choose Summoner classes because I often play alone."
+                </p>
+                <p>
+                    <b>Summoned Familiars:</b><br>
+                    <span style="color: var(--c-gold)">Monkey Plushies</span> & <span style="color: var(--c-gold)">Kururu Cao Zhang</span>
+                </p>
+
+                <div class="social-links">
+                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-btn">
+                        <!-- Threads Icon -->
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5h2v2h-2zm4-3h2v2h-2zm-6-2h2v7h-2z"/></svg>
                     </a>
-                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-icon">
-                         <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
+                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-btn">
+                        <!-- Instagram Icon -->
+                        <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
                     </a>
+                </div>
+
+                <div style="margin-top: 2rem; font-size: 0.8rem; color: #666; font-family: var(--font-data);">
+                    MADE WITH LOVE BY SUPERGALEN'S DUNGEON
                 </div>
             </div>
         </section>
-
-        <!-- Footer Spacer -->
-        <div style="height: 20vh; display: flex; align-items: center; justify-content: center; color: #444; font-family: var(--font-tech);">
-            END OF TRANSMISSION
-        </div>
 
     </div>
 
@@ -356,301 +388,246 @@
 
         gsap.registerPlugin(ScrollTrigger);
 
+        // Assets
         const ASSETS = {
             excavator: '/assets/img/guild/xmasfun689/excavator.webp',
             roller: '/assets/img/guild/xmasfun689/roller.webp',
             plushies: '/assets/img/guild/xmasfun689/plushies.webp'
         };
 
-        // --- Init Scene ---
+        // --- Setup ---
         const container = document.getElementById('canvas-wrapper');
         const scene = new THREE.Scene();
-        // Cyber Fog
-        scene.fog = new THREE.FogExp2(0x000000, 0.03);
+        scene.fog = new THREE.FogExp2(0x0a0a0f, 0.02);
 
         const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
-        // Start Position (Looking at Origin)
-        camera.position.set(0, 2, 12);
+        camera.position.set(0, 0, 10);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false }); // Disable native AA for post-proc performance
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Bloom) ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2; // Strong Glow
-        bloomPass.radius = 0.8;
-
+        // --- Post Processing ---
         const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.0;
+        bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
         // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); // Very bright ambient
-        scene.add(ambientLight);
+        const ambient = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambient);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(5, 10, 5);
+        scene.add(dirLight);
 
-        const mainLight = new THREE.DirectionalLight(0xffffff, 3.0);
-        mainLight.position.set(5, 10, 5);
-        scene.add(mainLight);
-
-        const blueLight = new THREE.PointLight(0x00F3FF, 5, 20);
-        blueLight.position.set(0, 15, 0);
-        scene.add(blueLight);
-
-        // --- Environment: The Shaft ---
-        // A tall wireframe cylinder to give sense of verticality
-        const shaftGeo = new THREE.CylinderGeometry(15, 15, 60, 32, 20, true);
-        const shaftMat = new THREE.MeshBasicMaterial({ color: 0x222222, wireframe: true, transparent: true, opacity: 0.3 });
-        const shaft = new THREE.Mesh(shaftGeo, shaftMat);
-        shaft.position.y = 15;
-        scene.add(shaft);
-
-        // Helper: Create Bright Image Planes
-        const textureLoader = new THREE.TextureLoader();
-        function createHoloSprite(url, scale, color = 0xFFFFFF) {
-            const texture = textureLoader.load(url);
-            texture.colorSpace = THREE.SRGBColorSpace;
-
-            // Use BasicMaterial so it ignores lighting and stays fully bright
+        // --- Helper Functions ---
+        const texLoader = new THREE.TextureLoader();
+        function createHoloSprite(url, w, h) {
+            const map = texLoader.load(url);
+            map.colorSpace = THREE.SRGBColorSpace;
             const mat = new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                side: THREE.DoubleSide,
-                color: color
+                map: map, transparent: true, side: THREE.DoubleSide
             });
-            const geo = new THREE.PlaneGeometry(scale, scale); // Square for now, adjust aspect ratio later
+            return new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+        }
+
+        function createMagicCircle(radius, color) {
+            const geo = new THREE.RingGeometry(radius, radius + 0.1, 64);
+            const mat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
             const mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = -Math.PI / 2;
+
+            // Inner details
+            const innerGeo = new THREE.RingGeometry(radius * 0.8, radius * 0.82, 32);
+            const innerMesh = new THREE.Mesh(innerGeo, mat);
+            mesh.add(innerMesh);
+
             return mesh;
         }
 
-        // --- SCENE OBJECTS ---
+        // --- SCENE BUILDING ---
 
-        // LEVEL 1: GROUND (Heavy Machinery) - Y: 0 to 5
-        const groupGround = new THREE.Group();
-        scene.add(groupGround);
+        // GROUP 1: GROUND (Construction)
+        const groundGroup = new THREE.Group();
+        scene.add(groundGroup);
 
-        // Excavator (Left)
-        const excavator = createHoloSprite(ASSETS.excavator, 8);
-        excavator.position.set(-6, 0, -2);
-        excavator.rotation.y = 0.3;
-        groupGround.add(excavator);
+        // Floor Grid
+        const grid = new THREE.GridHelper(50, 50, 0x00F3FF, 0x111111);
+        grid.position.y = -2;
+        groundGroup.add(grid);
 
-        // Roller (Right)
-        const roller = createHoloSprite(ASSETS.roller, 7);
-        roller.position.set(6, -1, 1);
-        roller.rotation.y = -0.3;
-        groupGround.add(roller);
+        // Machines
+        const excavator = createHoloSprite(ASSETS.excavator, 8, 8);
+        excavator.position.set(-6, 2, -2);
+        groundGroup.add(excavator);
 
-        // Debris / Rocks
-        const rockGeo = new THREE.DodecahedronGeometry(0.5);
-        const rockMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8 });
-        for(let i=0; i<15; i++) {
-            const rock = new THREE.Mesh(rockGeo, rockMat);
-            rock.position.set((Math.random()-0.5)*10, (Math.random()-0.5)*3, (Math.random()-0.5)*5);
-            rock.rotation.set(Math.random(), Math.random(), Math.random());
-            rock.scale.setScalar(Math.random() + 0.5);
-            groupGround.add(rock);
+        const circle1 = createMagicCircle(4, 0xFFD700);
+        circle1.position.y = -1.9;
+        excavator.add(circle1); // Attach to machine parent so it moves with it? No, keep separate for animation
+        groundGroup.add(circle1);
+        circle1.position.set(-6, -1.9, -2);
+
+        const roller = createHoloSprite(ASSETS.roller, 6, 6);
+        roller.position.set(6, 1, 2);
+        groundGroup.add(roller);
+
+        const circle2 = createMagicCircle(3, 0xFFD700);
+        groundGroup.add(circle2);
+        circle2.position.set(6, -1.9, 2);
+
+        // GROUP 2: AIR (Elements)
+        const airGroup = new THREE.Group();
+        airGroup.position.y = 20;
+        scene.add(airGroup);
+
+        // Floating Pipes
+        const pipeGeo = new THREE.CylinderGeometry(0.5, 0.5, 20, 16);
+        const pipeMat = new THREE.MeshBasicMaterial({ color: 0x333333, wireframe: true });
+        const pipe1 = new THREE.Mesh(pipeGeo, pipeMat);
+        pipe1.rotation.z = Math.PI / 2;
+        pipe1.rotation.y = 0.5;
+        airGroup.add(pipe1);
+
+        // Lightning Generator
+        const bolts = [];
+        for(let i=0; i<4; i++) {
+            const pts = [];
+            let curr = new THREE.Vector3(0, 5, 0);
+            for(let j=0; j<10; j++) {
+                pts.push(curr.clone());
+                curr.y -= 1;
+                curr.x += (Math.random()-0.5)*2;
+                curr.z += (Math.random()-0.5)*2;
+            }
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
+            const bolt = new THREE.Line(lineGeo, lineMat);
+            bolt.position.x = (Math.random()-0.5)*15;
+            bolt.visible = false;
+            airGroup.add(bolt);
+            bolts.push(bolt);
         }
 
-        // LEVEL 2: MID-AIR (Elements) - Y: 10 to 20
-        const groupAir = new THREE.Group();
-        groupAir.position.y = 15;
-        scene.add(groupAir);
+        // GROUP 3: SKY (Sanctuary)
+        const skyGroup = new THREE.Group();
+        skyGroup.position.y = 45;
+        scene.add(skyGroup);
 
-        // Water Pipe (Curving)
-        const pipeCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-10, -5, 0),
-            new THREE.Vector3(-3, 0, 3),
-            new THREE.Vector3(3, 0, -3),
-            new THREE.Vector3(10, 5, 0)
-        ]);
-        const pipeGeo = new THREE.TubeGeometry(pipeCurve, 64, 0.6, 16, false);
-        const pipeMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF, wireframe: true, transparent: true, opacity: 0.5 });
-        const pipe = new THREE.Mesh(pipeGeo, pipeMat);
-        groupAir.add(pipe);
+        const plushies = createHoloSprite(ASSETS.plushies, 10, 10);
+        skyGroup.add(plushies);
+
+        // Halo
+        const haloGeo = new THREE.TorusGeometry(6, 0.05, 16, 100);
+        const haloMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+        const halo = new THREE.Mesh(haloGeo, haloMat);
+        skyGroup.add(halo);
 
         // Particles
         const pGeo = new THREE.BufferGeometry();
-        const pCount = 500;
-        const pPos = new Float32Array(pCount * 3);
-        for(let i=0; i<pCount*3; i++) pPos[i] = (Math.random()-0.5) * 12;
+        const pPos = new Float32Array(300 * 3);
+        for(let i=0; i<300*3; i++) pPos[i] = (Math.random()-0.5) * 20;
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({ color: 0x00F3FF, size: 0.1, transparent: true, blending: THREE.AdditiveBlending });
-        const particles = new THREE.Points(pGeo, pMat);
-        groupAir.add(particles);
-
-        // --- Lightning Effect (Thunder Mage) ---
-        const lightnings = [];
-        for(let i=0; i<3; i++) {
-            const lGeo = new THREE.BufferGeometry();
-            const segments = 15;
-            const positions = new Float32Array(segments * 3);
-            lGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            const lMat = new THREE.LineBasicMaterial({ color: 0xFFFF00, transparent: true, opacity: 0 });
-            const lMesh = new THREE.Line(lGeo, lMat);
-            groupAir.add(lMesh);
-            lightnings.push({ mesh: lMesh, segments: segments });
-        }
+        const pMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+        const stars = new THREE.Points(pGeo, pMat);
+        skyGroup.add(stars);
 
 
-        // LEVEL 3: SKY (Finale) - Y: 25 to 35
-        const groupSky = new THREE.Group();
-        groupSky.position.y = 30;
-        scene.add(groupSky);
-
-        // Plushies (Center)
-        const plushies = createHoloSprite(ASSETS.plushies, 9);
-        plushies.position.set(0, 0, 0);
-        groupSky.add(plushies);
-
-        // Halo
-        const haloGeo = new THREE.TorusGeometry(6, 0.1, 16, 100);
-        const haloMat = new THREE.MeshBasicMaterial({ color: 0xFF2A2A });
-        const halo = new THREE.Mesh(haloGeo, haloMat);
-        groupSky.add(halo);
-
-
-        // --- Animation Loop ---
+        // --- ANIMATION ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            const t = clock.getElapsedTime();
 
-            // Ground Animation
-            excavator.position.y = Math.sin(time) * 0.2;
-            roller.position.y = -1 + Math.cos(time) * 0.2;
+            // Ground
+            circle1.rotation.z = t * 0.5;
+            circle2.rotation.z = -t * 0.3;
+            excavator.position.y = 2 + Math.sin(t) * 0.2;
 
-            // Air Animation
-            pipe.rotation.y = Math.sin(time * 0.2) * 0.1;
-            particles.rotation.y = time * 0.1;
+            // Air
+            pipe1.rotation.x = t * 0.1;
 
-            // Lightning Animation
-            if (Math.random() > 0.9) { // Flicker trigger
-                const bolt = lightnings[Math.floor(Math.random() * lightnings.length)];
-                bolt.mesh.material.opacity = 1;
-
-                const positions = bolt.mesh.geometry.attributes.position.array;
-                let x = (Math.random()-0.5) * 8;
-                let y = -4;
-                let z = (Math.random()-0.5) * 8;
-
-                for(let i=0; i<bolt.segments; i++) {
-                    positions[i*3] = x;
-                    positions[i*3+1] = y;
-                    positions[i*3+2] = z;
-
-                    y += 10 / bolt.segments; // Height span ~10
-                    x += (Math.random()-0.5) * 2; // Jitter
-                    z += (Math.random()-0.5) * 2;
+            // Lightning Flicker
+            bolts.forEach(bolt => {
+                if(Math.random() > 0.95) {
+                    bolt.visible = true;
+                    bolt.scale.x = (Math.random() > 0.5 ? 1 : -1);
+                } else {
+                    bolt.visible = false;
                 }
-                bolt.mesh.geometry.attributes.position.needsUpdate = true;
-            }
-            // Fade out lightnings
-            lightnings.forEach(bolt => {
-                if(bolt.mesh.material.opacity > 0.01) bolt.mesh.material.opacity *= 0.8;
-                else bolt.mesh.material.opacity = 0;
             });
 
-            // Sky Animation
-            plushies.position.y = Math.sin(time * 1.5) * 0.3;
-            halo.rotation.z = time * 0.5;
-            halo.rotation.x = Math.sin(time * 0.5) * 0.2;
-
-            // Shaft rotation
-            shaft.rotation.y = time * 0.05;
+            // Sky
+            halo.rotation.x = Math.PI/2 + Math.sin(t)*0.2;
+            halo.rotation.y = t * 0.2;
+            plushies.position.y = Math.sin(t*2)*0.3;
+            stars.rotation.y = t * 0.05;
 
             composer.render();
         }
         animate();
 
-        // --- Loader ---
-        document.fonts.ready.then(() => {
-            const loader = document.getElementById('loader');
-            gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.style.display = 'none' });
-        });
 
-        // --- Scroll Logic (GSAP) ---
-        // Vertical Camera Movement
-        // 0% -> Y=0 (Ground)
-        // 50% -> Y=15 (Air)
-        // 100% -> Y=30 (Sky)
+        // --- GSAP SCROLL ---
+        // Setup initial camera
+        camera.position.set(0, 2, 15);
 
-        const totalScrollHeight = document.body.scrollHeight - window.innerHeight;
-
-        gsap.to(camera.position, {
-            y: 30, // Move up to sky level
-            ease: "none",
+        // Timeline
+        const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1
+                scrub: 1.5
             }
         });
 
-        // Intro Zoom Effect (Start zoomed out slightly?)
-        gsap.from(camera.position, {
-            z: 20,
-            duration: 2,
-            ease: "power2.out"
-        });
+        // 1. Zoom into Ground
+        tl.to(camera.position, { z: 12, y: 0, duration: 2 });
 
-        // Text Card Animations (Fade In/Up)
-        const cards = document.querySelectorAll('.data-card');
-        cards.forEach((card) => {
+        // 2. Move to Air
+        tl.to(camera.position, { y: 20, z: 10, duration: 4 });
+        tl.to(camera.rotation, { z: 0.1, duration: 2 }, "<");
+
+        // 3. Move to Sky
+        tl.to(camera.position, { y: 45, z: 15, duration: 4 });
+        tl.to(camera.rotation, { z: 0, duration: 2 }, "<");
+
+        // UI Cards Entrance
+        gsap.utils.toArray('.holo-card').forEach(card => {
             gsap.fromTo(card,
-                { opacity: 0, y: 50, rotateX: 10 },
+                { opacity: 0, y: 50, rotateX: 15 },
                 {
                     opacity: 1, y: 0, rotateX: 0,
-                    duration: 1,
-                    ease: "power3.out",
+                    duration: 0.8,
                     scrollTrigger: {
                         trigger: card,
-                        start: "top 80%",
-                        end: "top 30%",
-                        toggleActions: "play none none reverse"
+                        start: "top 85%",
+                        end: "top 60%",
+                        toggleActions: "play reverse play reverse"
                     }
                 }
             );
         });
 
-        // --- Mouse Parallax ---
-        window.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth) - 0.5;
-            const y = (e.clientY / window.innerHeight) - 0.5;
-
-            // Move camera slightly
-            gsap.to(camera.position, {
-                x: x * 2,
-                duration: 1,
-                ease: "power2.out"
-            });
-
-            // Tilt cards slightly
-            cards.forEach(card => {
-                gsap.to(card, {
-                    rotationY: x * 5,
-                    rotationX: -y * 5,
-                    duration: 0.5
-                });
-            });
+        // Preloader
+        window.addEventListener('load', () => {
+            document.getElementById('load-bar').style.width = '100%';
+            setTimeout(() => {
+                gsap.to('#loading', { opacity: 0, onComplete: () => document.getElementById('loading').remove() });
+            }, 500);
         });
 
-        // Resize
         window.addEventListener('resize', () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            camera.aspect = w / h;
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-            composer.setSize(w, h);
-            bloomPass.setSize(new THREE.Vector2(w, h));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
