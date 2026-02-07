@@ -487,7 +487,7 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Limit pixel ratio for performance with bloom
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.toneMapping = THREE.ReinhardToneMapping;
         container.appendChild(renderer.domElement);
 
@@ -496,11 +496,12 @@
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
 
+        // Adjusted Bloom Parameters to avoid "White Squares"
         const bloomPass = new UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            1.6, // strength
+            0.8, // Reduced strength (was 1.6)
             0.5, // radius
-            0.1  // threshold
+            0.2  // Increased threshold (was 0.1) to ignore faint glows and focus on core
         );
         composer.addPass(bloomPass);
 
@@ -509,8 +510,28 @@
             container.style.opacity = 1;
         });
 
+        // --- Texture Helper: Soft Circle for Stars ---
+        function createSoftCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+
+            const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.4)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 32, 32);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        const starTexture = createSoftCircleTexture();
+
         // --- Assets: Mystical Zodiac Runes ---
-        // Instead of just text, we draw a magic circle texture
         const zodiacSigns = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
 
         function createMagicRuneTexture(text, color = '#FFD700') {
@@ -521,36 +542,33 @@
             const ctx = canvas.getContext('2d');
             const center = size / 2;
 
-            // Glow settings
+            ctx.clearRect(0, 0, size, size); // Ensure transparency
+
+            // Glow settings - Reduced blur to prevent square blowout
             ctx.shadowColor = color;
-            ctx.shadowBlur = 40;
+            ctx.shadowBlur = 15; // Reduced from 40
 
             // 1. Outer Ring
             ctx.strokeStyle = color;
-            ctx.lineWidth = 10;
+            ctx.lineWidth = 8; // Slightly thinner
             ctx.beginPath();
-            ctx.arc(center, center, 200, 0, Math.PI * 2);
+            ctx.arc(center, center, 180, 0, Math.PI * 2); // Smaller radius to fit safely in 512
             ctx.stroke();
 
-            // 2. Inner Hexagon (Cosmetic)
-            ctx.lineWidth = 4;
-            ctx.globalAlpha = 0.5;
-            ctx.beginPath();
-            for(let i=0; i<6; i++) {
-                const angle = (i / 6) * Math.PI * 2;
-                const r = 180;
-                ctx.lineTo(center + Math.cos(angle)*r, center + Math.sin(angle)*r);
-            }
-            ctx.closePath();
-            ctx.stroke();
-
-            // 3. The Glyph
+            // 2. Inner Glyph
+            // Use unicode variant selector to force text presentation if needed, though standard font should work
             ctx.globalAlpha = 1.0;
-            ctx.font = 'bold 250px "Noto Sans TC"';
+            ctx.font = 'bold 200px "Noto Sans TC"'; // Smaller font to fit circle
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(text, center, center + 20); // Adjust vertical align
+
+            // Draw twice: Once for glow, Once for sharpness on top
+            ctx.fillText(text + '\uFE0E', center, center + 20);
+
+            ctx.shadowBlur = 0; // Turn off glow for top layer
+            ctx.fillStyle = '#FFFFFF'; // White core for legibility
+            ctx.fillText(text + '\uFE0E', center, center + 20);
 
             return new THREE.CanvasTexture(canvas);
         }
@@ -558,27 +576,30 @@
         const zodiacGroup = new THREE.Group();
         scene.add(zodiacGroup);
 
-        zodiacSigns.forEach((sign, i) => {
-            const angle = (i / 12) * Math.PI * 2;
-            // Alternate colors for "cool" factor
-            const color = i % 2 === 0 ? '#FFD700' : '#00FFFF';
+        // Wait for fonts to load before generating textures
+        document.fonts.ready.then(() => {
+            zodiacSigns.forEach((sign, i) => {
+                const angle = (i / 12) * Math.PI * 2;
+                const color = i % 2 === 0 ? '#FFD700' : '#00FFFF';
 
-            const texture = createMagicRuneTexture(sign, color);
-            const material = new THREE.SpriteMaterial({
-                map: texture,
-                transparent: true,
-                opacity: 0.9,
-                blending: THREE.AdditiveBlending
+                const texture = createMagicRuneTexture(sign, color);
+                const material = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.95,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false // Important for transparent sprites
+                });
+                const sprite = new THREE.Sprite(material);
+
+                // Position in a ring
+                sprite.position.x = Math.cos(angle) * CONFIG.zodiacRadius;
+                sprite.position.y = Math.sin(angle) * CONFIG.zodiacRadius;
+                sprite.position.z = 0;
+                sprite.scale.set(6, 6, 1);
+
+                zodiacGroup.add(sprite);
             });
-            const sprite = new THREE.Sprite(material);
-
-            // Position in a ring
-            sprite.position.x = Math.cos(angle) * CONFIG.zodiacRadius;
-            sprite.position.y = Math.sin(angle) * CONFIG.zodiacRadius;
-            sprite.position.z = 0;
-            sprite.scale.set(6, 6, 1);
-
-            zodiacGroup.add(sprite);
         });
 
         // --- Starfield (Warp Effect) ---
@@ -593,17 +614,15 @@
 
         for(let i=0; i<CONFIG.starCount; i++) {
             const i3 = i * 3;
-            // Cylinder distribution for warp tunnel feel
             const r = 10 + Math.random() * 100;
             const theta = Math.random() * Math.PI * 2;
 
             starPositions[i3] = Math.cos(theta) * r;
             starPositions[i3+1] = Math.sin(theta) * r;
-            starPositions[i3+2] = (Math.random() - 0.5) * 400; // Deep depth
+            starPositions[i3+2] = (Math.random() - 0.5) * 400;
 
-            starSizes[i] = Math.random() * 0.5;
+            starSizes[i] = Math.random() * 1.5; // Slightly larger for soft texture
 
-            // Random color mix
             tempColor.lerpColors(color1, color2, Math.random());
             starColors[i3] = tempColor.r;
             starColors[i3+1] = tempColor.g;
@@ -616,12 +635,14 @@
 
         const starMaterial = new THREE.PointsMaterial({
             vertexColors: true,
-            size: 0.2,
+            map: starTexture, // Use the soft circle texture
+            size: 0.5,
             transparent: true,
             opacity: 0.8,
             sizeAttenuation: true,
             blending: THREE.AdditiveBlending,
-            depthWrite: false
+            depthWrite: false,
+            alphaTest: 0.01 // Help with transparency sorting issues
         });
 
         const starField = new THREE.Points(starsGeo, starMaterial);
@@ -642,7 +663,7 @@
         coreGroup.add(mesh2);
 
         const sunGeo = new THREE.SphereGeometry(1, 32, 32);
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 }); // Solid core for bloom source
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
         const sun = new THREE.Mesh(sunGeo, sunMat);
         coreGroup.add(sun);
 
