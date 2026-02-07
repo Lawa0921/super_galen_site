@@ -203,16 +203,20 @@
         #manifesto {
             text-align: center;
         }
-        /* Destination Glow */
+        /* Destination Glow - Reduced intensity */
         #destination-glow {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center bottom, rgba(255, 230, 109, 0.15) 0%, transparent 70%);
+            background: radial-gradient(circle at center bottom, rgba(255, 230, 109, 0.05) 0%, transparent 70%);
             pointer-events: none; z-index: -1;
         }
 
         .manifesto-box {
             max-width: 800px; padding: 4rem 2rem;
-            border: none; background: transparent;
+            /* Added background for readability against core */
+            background: rgba(10, 10, 12, 0.9);
+            border: 1px dashed var(--c-dim);
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
         .big-quote {
             font-family: var(--f-serif); font-size: 2.2rem; line-height: 1.5; color: var(--c-text); margin-bottom: 2rem;
@@ -353,10 +357,29 @@
             </div>
         </section>
 
-        <!-- 5. MANIFESTO (Bottom) - The Destination -->
+        <!-- 5. THE POET (Right) - New Section -->
+        <section id="poet" class="align-right">
+            <div class="craft-card">
+                <div class="card-header">
+                    <h2>The Projector</h2>
+                    <span class="tag-line">Script: Mortal World</span>
+                </div>
+                <p style="font-family: var(--f-serif); font-style: italic; color: #e0e0e0; line-height: 2;">
+                    「在紅塵的劇本裡，捕捉那些不被察覺的鏡頭。<br>
+                    所有的創作皆源於一場關於視覺的遠行。<br>
+                    我習慣在動盪的浮世中，尋找那些被定格的靜止點；<br>
+                    在這裡，每篇文字都是一場放映。」
+                </p>
+                <div style="text-align: right; margin-top: 1rem;">
+                    <span class="highlight-yarn">—— 月菲 Yufel</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. MANIFESTO (Bottom) - The Destination -->
         <section id="manifesto">
             <div id="destination-glow"></div>
-            <div class="manifesto-box craft-card" style="border: none; background: transparent; box-shadow: none;">
+            <div class="manifesto-box craft-card">
 
                 <p class="big-quote">
                     "期待獨立。<br>在這瘋狂的世界，<br><span>尋找屬於我的座標。</span>"
@@ -380,8 +403,11 @@
         <div style="height: 15vh;"></div>
     </div>
 
-    <footer>
-        Made with <i class="fa-solid fa-heart" style="color: var(--c-accent);"></i> by SuperGalen's Dungeon
+    <footer style="display: flex; flex-direction: column; gap: 1rem;">
+        <a href="/guild/" class="nav-back" style="position: static; display: inline-block; margin: 0 auto; transform: none;">
+            <i class="fa-solid fa-arrow-up"></i> Return to Guild Hall
+        </a>
+        <span>Made with <i class="fa-solid fa-heart" style="color: var(--c-accent);"></i> by SuperGalen's Dungeon</span>
     </footer>
 
     <script type="module">
@@ -407,18 +433,18 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
         scene.add(ambientLight);
 
-        // Headlamp (attached to camera)
-        const pointLight = new THREE.PointLight(0xffaa00, 15, 30);
+        // Headlamp (attached to camera) - Drastically reduced intensity
+        const pointLight = new THREE.PointLight(0xffaa00, 2, 30);
         pointLight.position.set(0, 0, 0); // At camera
         camera.add(pointLight);
         scene.add(camera);
 
         // Deep tunnel lights (Teal/Pink)
-        const light1 = new THREE.PointLight(0x4ecdc4, 10, 50);
+        const light1 = new THREE.PointLight(0x4ecdc4, 5, 50);
         light1.position.set(10, 5, -50);
         scene.add(light1);
 
-        const light2 = new THREE.PointLight(0xff6b6b, 10, 50);
+        const light2 = new THREE.PointLight(0xff6b6b, 5, 50);
         light2.position.set(-10, -5, -80);
         scene.add(light2);
 
@@ -540,14 +566,14 @@
         // --- 5. THE DESTINATION (The Core) ---
         // A dense cluster of light/particles at the end
         const coreGeo = new THREE.SphereGeometry(1, 32, 32);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffe66d, wireframe: true, transparent: true, opacity: 0.2 });
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffe66d, wireframe: true, transparent: true, opacity: 0.3 });
         const core = new THREE.Mesh(coreGeo, coreMat);
         core.position.set(0, 0, coreZ);
         core.scale.set(0.1, 0.1, 0.1); // Start small
         scene.add(core);
 
-        // Core light
-        const coreLight = new THREE.PointLight(0xffaa00, 15, 60);
+        // Core light - Drastically reduced intensity
+        const coreLight = new THREE.PointLight(0xffaa00, 5, 60);
         coreLight.position.set(0, 0, coreZ);
         scene.add(coreLight);
 
