@@ -3,612 +3,489 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XmasFun689 - MECHA SUMMONER</title>
+    <title>XmasFun689 - 重機召喚師</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@300;500;700&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- GSAP & Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
         :root {
-            --c-void: #020205;
-            --c-primary: #FFCC00; /* Industrial Yellow */
-            --c-accent: #00F3FF; /* Cyber Cyan */
-            --c-alert: #FF2A2A; /* System Alert */
-            --c-grid: rgba(255, 255, 255, 0.05);
+            --c-void: #050505;
+            --c-earth: #8B4513;
+            --c-gold: #FFD700;
+            --c-magic: #00F3FF;
+            --c-danger: #FF4500;
 
-            --f-mono: 'Share Tech Mono', monospace;
-            --f-head: 'Teko', sans-serif;
-            --f-body: 'Noto Serif TC', serif;
+            --f-main: 'Noto Serif TC', serif;
+            --f-eng: 'Cinzel', serif;
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; background: var(--c-void); color: white; font-family: var(--f-mono); overflow-x: hidden; }
+        body { margin: 0; background: var(--c-void); color: white; font-family: var(--f-main); overflow-x: hidden; }
 
-        /* --- LAYOUT LAYERS --- */
+        /* Layers */
         #webgl-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
-        #hud-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; }
-        #content-layer { position: relative; z-index: 50; width: 100%; pointer-events: none; } /* Content overlay */
+        #content-layer { position: relative; z-index: 10; width: 100%; pointer-events: none; }
 
-        /* --- HUD ELEMENTS --- */
-        .hud-scanlines {
-            position: absolute; inset: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            opacity: 0.6;
-        }
-        .hud-vignette {
-            position: absolute; inset: 0;
-            background: radial-gradient(circle, transparent 60%, black 120%);
-            opacity: 0.8;
-        }
-
-        /* Corner Data Blocks */
-        .hud-block {
-            position: absolute;
-            padding: 10px;
-            border: 1px solid rgba(255, 204, 0, 0.3);
-            background: rgba(0, 0, 0, 0.5);
-            font-size: 0.7rem;
-            color: var(--c-primary);
-            text-transform: uppercase;
-        }
-        .hud-tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
-        .hud-tr { top: 20px; right: 20px; text-align: right; border-left: none; border-bottom: none; }
-        .hud-bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
-        .hud-br { bottom: 20px; right: 20px; text-align: right; border-left: none; border-top: none; }
-
-        .hud-status-bar {
-            width: 150px; height: 4px; background: #333; margin-top: 5px;
-            overflow: hidden;
-        }
-        .hud-status-fill { width: 100%; height: 100%; background: var(--c-primary); animation: pulse 2s infinite; }
-
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        /* --- CONTENT SECTIONS --- */
-        .cyber-section {
+        /* Magic UI Container */
+        .magic-container {
             min-height: 100vh;
             display: flex;
+            justify-content: center;
             align-items: center;
-            padding: 5%;
-            opacity: 0; /* Managed by GSAP */
+            padding: 2rem;
+            position: relative;
         }
 
-        /* Cyber Card */
-        .cyber-card {
+        /* Rune Card */
+        .rune-card {
             pointer-events: auto;
-            background: rgba(10, 10, 12, 0.85);
-            border: 1px solid var(--c-primary);
-            padding: 2rem;
+            background: rgba(20, 20, 25, 0.85);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
+            padding: 3rem;
             max-width: 600px;
+            width: 100%;
             position: relative;
             backdrop-filter: blur(10px);
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.2);
-            clip-path: polygon(
-                20px 0, 100% 0,
-                100% calc(100% - 20px), calc(100% - 20px) 100%,
-                0 100%, 0 20px
-            );
+            opacity: 0; /* GSAP Control */
+            transform: translateY(50px);
         }
 
-        .cyber-card::before {
-            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-            border: 1px solid var(--c-primary);
-            z-index: -1;
-            opacity: 0.5;
-            clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+        /* Decorative Corners */
+        .rune-card::before, .rune-card::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border: 2px solid var(--c-gold); transition: 0.3s;
         }
+        .rune-card::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .rune-card::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
+        .rune-card:hover::before, .rune-card:hover::after { width: 100%; height: 100%; opacity: 0.5; }
+
+        /* Typography */
         h1 {
-            font-family: var(--f-head);
-            font-size: 5rem;
-            line-height: 0.8;
-            margin: 0;
-            color: white;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px var(--c-primary);
+            font-family: var(--f-main);
+            font-size: 3.5rem;
+            margin: 0 0 1rem;
+            color: var(--c-gold);
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            padding-bottom: 1rem;
+            letter-spacing: 5px;
         }
+        .subtitle {
+            font-family: var(--f-eng);
+            color: #888;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            display: block;
+        }
+
         h2 {
-            font-family: var(--f-head);
-            font-size: 3rem;
-            margin: 0 0 1rem 0;
-            color: var(--c-accent);
-            text-transform: uppercase;
-            border-bottom: 2px solid var(--c-accent);
-            display: inline-block;
-        }
-        p {
-            font-size: 1rem;
-            line-height: 1.6;
-            color: #ccc;
+            font-size: 2rem;
+            color: var(--c-magic);
             margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        h2::before { content: '✦'; color: var(--c-gold); font-size: 1.5rem; }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 2;
+            color: #ccc;
+            margin-bottom: 1.5rem;
+            text-align: justify;
         }
 
-        .glitch-text {
-            position: relative;
-            display: inline-block;
-        }
-
-        /* Stats Table */
-        .cyber-stats {
+        /* Stats Grid */
+        .mana-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 1.5rem;
-            border-top: 1px dashed rgba(255,255,255,0.2);
-            padding-top: 1rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+            border-top: 1px dashed rgba(255,255,255,0.1);
+            padding-top: 1.5rem;
         }
-        .stat-box {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 0.5rem;
-            border-left: 2px solid var(--c-primary);
+        .mana-stat { text-align: center; }
+        .mana-label { font-family: var(--f-eng); color: var(--c-gold); font-size: 0.8rem; letter-spacing: 2px; }
+        .mana-val { font-size: 1.5rem; font-weight: bold; color: white; margin-top: 5px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        /* Social Ring */
+        .summon-ring {
+            display: flex; justify-content: center; gap: 2rem; margin-top: 3rem;
         }
-        .stat-label { font-size: 0.7rem; color: #888; display: block; }
-        .stat-value { font-size: 1.2rem; font-weight: bold; color: var(--c-primary); }
-
-        /* Section Alignments */
-        .align-center { justify-content: center; text-align: center; }
-        .align-left { justify-content: flex-start; }
-        .align-right { justify-content: flex-end; text-align: right; }
-
-        /* Specific Layouts */
-        .align-right .cyber-card { margin-left: auto; text-align: left; } /* Keep text left aligned inside card */
-
-        /* Social Icons */
-        .social-grid {
-            display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;
-        }
-        .social-btn {
-            width: 50px; height: 50px;
-            background: var(--c-void);
-            border: 1px solid var(--c-primary);
-            color: var(--c-primary);
+        .summon-btn {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: 1px solid var(--c-gold);
             display: flex; align-items: center; justify-content: center;
+            color: var(--c-gold);
+            transition: 0.3s;
+            position: relative;
+            background: rgba(0,0,0,0.5);
             text-decoration: none;
-            transition: 0.2s;
-            clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
         }
-        .social-btn:hover {
-            background: var(--c-primary);
-            color: black;
-            transform: scale(1.1);
+        .summon-btn::before {
+            content: ''; position: absolute; inset: -5px; border-radius: 50%;
+            border: 1px dashed var(--c-magic); opacity: 0; animation: spin 10s linear infinite;
         }
-        .social-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        .summon-btn:hover { background: var(--c-gold); color: black; box-shadow: 0 0 30px var(--c-gold); transform: scale(1.1); }
+        .summon-btn:hover::before { opacity: 1; }
+        .summon-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
-        /* Loader */
-        #boot-screen {
-            position: fixed; inset: 0; background: black; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--c-primary);
-        }
-        .boot-log {
-            font-family: monospace; font-size: 0.8rem; opacity: 0.7; margin-top: 10px;
-            height: 100px; overflow: hidden; text-align: center;
-        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         /* Responsive */
         @media (max-width: 768px) {
-            h1 { font-size: 3rem; }
-            h2 { font-size: 2rem; }
-            .cyber-card { padding: 1.5rem; width: 100%; clip-path: none; border: 1px solid var(--c-primary); }
-            .cyber-section { padding: 1rem; justify-content: center !important; }
+            h1 { font-size: 2.5rem; }
+            .rune-card { padding: 1.5rem; }
+        }
+
+        /* Scroll Progress Line */
+        .scroll-line {
+            position: fixed; top: 0; left: 20px; height: 0%; width: 2px;
+            background: linear-gradient(to bottom, var(--c-gold), var(--c-magic));
+            z-index: 20;
+            box-shadow: 0 0 10px var(--c-gold);
         }
     </style>
 </head>
 <body>
 
-    <!-- BOOT SCREEN -->
-    <div id="boot-screen">
-        <div style="font-size: 2rem; font-weight: bold;">SYSTEM BOOTING...</div>
-        <div class="boot-log" id="boot-log">
-            Loading Kernel...<br>Mounting VFS...<br>Initializing WebGL Context...<br>Summoning Construct...
-        </div>
-    </div>
-
-    <!-- WEBGL BACKGROUND -->
+    <div class="scroll-line" id="scroll-progress"></div>
     <div id="webgl-canvas"></div>
 
-    <!-- HUD OVERLAY -->
-    <div id="hud-layer">
-        <div class="hud-scanlines"></div>
-        <div class="hud-vignette"></div>
-
-        <div class="hud-block hud-tl">
-            PILOT: XMASFUN689<br>
-            CLASS: SUMMONER (TANK)<br>
-            STATUS: ACTIVE
-            <div class="hud-status-bar"><div class="hud-status-fill"></div></div>
-        </div>
-
-        <div class="hud-block hud-tr">
-            SYS.TIME: <span id="sys-time">00:00:00</span><br>
-            FPS: <span id="sys-fps">60</span><br>
-            NET: STABLE
-        </div>
-
-        <div class="hud-block hud-bl">
-            <div style="display:flex; gap:5px; align-items:flex-end;">
-                <div style="width:10px; height:20px; background:var(--c-accent);"></div>
-                <div style="width:10px; height:30px; background:var(--c-accent);"></div>
-                <div style="width:10px; height:15px; background:var(--c-accent);"></div>
-                <div style="font-size:2rem; line-height:1; color:var(--c-accent);">8</div>
-                <div style="margin-left:5px;">YEARS<br>SERVICE</div>
-            </div>
-        </div>
-
-        <div class="hud-block hud-br">
-             COORD: <span id="sys-coord">X:0 Y:0 Z:0</span>
-        </div>
-    </div>
-
-    <!-- SCROLL CONTENT -->
     <div id="content-layer">
 
-        <!-- 1. INTRO -->
-        <section class="cyber-section align-center" id="sect-1">
-            <div class="cyber-card">
-                <div style="color:var(--c-primary); font-size:0.8rem; letter-spacing:2px; margin-bottom:10px;">// ID_CARD_VERIFIED</div>
-                <h1>CONSTRUCTION<br>WARLORD</h1>
+        <!-- 1. INTRO: The Mage -->
+        <section class="magic-container" id="sect-1">
+            <div class="rune-card">
+                <span class="subtitle">Level 8 Veteran // Construction Mage</span>
+                <h1>重機召喚師</h1>
                 <p>
-                    <b>"Tempered by Society. Fueled by Magic."</b><br>
-                    Level 8 Site Commander // Heavy Metal Summoner
+                    在這個鋼鐵與泥土交織的世界，我是操控巨獸的法師。<br>
+                    社會的磨練是我的修行，工地是我的祭壇。<br>
+                    雖然外表是戰士的體格，但靈魂深處，我是一個孤獨的召喚師。
                 </p>
-                <div class="cyber-stats">
-                    <div class="stat-box">
-                        <span class="stat-label">STR</span>
-                        <span class="stat-value">S+ (Tank)</span>
+                <div class="mana-grid">
+                    <div class="mana-stat">
+                        <div class="mana-label">CLASS</div>
+                        <div class="mana-val">Summoner</div>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-label">STYLE</span>
-                        <span class="stat-value">Solo Player</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 2. HEAVY MACHINERY -->
-        <section class="cyber-section align-right" id="sect-2">
-            <div class="cyber-card" style="border-color: var(--c-primary);">
-                <h2>ARSENAL DEPLOYMENT</h2>
-                <p>
-                    <span style="color:var(--c-primary)">>> SYSTEM ALERT: HEAVY UNITS DETECTED</span>
-                </p>
-                <p>
-                    Master of the Great Metal Beasts. <br>
-                    Proficient in <b>Excavator</b>, <b>Mobile Crane</b>, and <b>Roller</b> operations.
-                </p>
-                <p style="font-size:0.8rem; opacity:0.7;">
-                    <i>"I love practical work and heavy machinery... missed the certification by a hair, but the skill is real."</i>
-                </p>
-                <div class="cyber-stats">
-                    <div class="stat-box">
-                        <span class="stat-label">UNIT 01</span>
-                        <span class="stat-value">Excavator</span>
-                    </div>
-                    <div class="stat-box">
-                        <span class="stat-label">UNIT 02</span>
-                        <span class="stat-value">Roller</span>
+                    <div class="mana-stat">
+                        <div class="mana-label">AFFINITY</div>
+                        <div class="mana-val">Earth / Metal</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3. ELEMENTAL MAGIC -->
-        <section class="cyber-section align-left" id="sect-3">
-            <div class="cyber-card" style="border-color: var(--c-accent);">
-                <h2 style="color: var(--c-accent); border-color: var(--c-accent);">ELEMENTAL CORE</h2>
+        <!-- 2. SKILL: Heavy Metal -->
+        <section class="magic-container" id="sect-2" style="justify-content: flex-end; padding-right: 10%;">
+            <div class="rune-card" style="border-color: var(--c-gold);">
+                <h2><span style="color:white">重金屬</span> 兵器庫</h2>
+                <span class="subtitle">Heavy Metal Arsenal</span>
                 <p>
-                    <span style="color:var(--c-accent)">>> ANALYZING AFFINITY...</span>
+                    我熱愛實作與重機械的轟鳴聲。<br>
+                    熟練操控 <b>怪手 (Excavator)</b>、<b>吊車 (Crane)</b> 與 <b>自走車 (Roller)</b>。<br>
+                    這些不僅是工具，更是我手臂的延伸，是我意志的具象化。
                 </p>
-                <p>
-                    Dual-Licensed Engineer.<br>
-                    Channeling <b>Hydro (Water)</b> and <b>Electro (Power)</b> currents.
+                <p style="font-size: 0.9rem; color: #888; font-style: italic;">
+                    * 雖然差一點點就考到證照了... (嘆息)
                 </p>
-                <div class="cyber-stats">
-                    <div class="stat-box" style="border-color: var(--c-accent);">
-                        <span class="stat-label" style="color: var(--c-accent);">LICENSES</span>
-                        <span class="stat-value" style="color: white;">Water + Elec</span>
+                <div class="mana-grid">
+                    <div class="mana-stat">
+                        <div class="mana-label">SKILL</div>
+                        <div class="mana-val">Pilot S+</div>
                     </div>
-                    <div class="stat-box" style="border-color: var(--c-accent);">
-                        <span class="stat-label" style="color: var(--c-accent);">CLASS</span>
-                        <span class="stat-value" style="color: white;">Hybrid Mage</span>
+                    <div class="mana-stat">
+                        <div class="mana-label">PASSION</div>
+                        <div class="mana-val">Max</div>
                     </div>
                 </div>
-                <p style="margin-top:1rem;">
-                    "Friends call me the Water-Electric-Earth Triple Mage.<br>
-                    But my soul is that of a Warrior."
-                </p>
             </div>
         </section>
 
-        <!-- 4. PERSONAL / FINALE -->
-        <section class="cyber-section align-center" id="sect-4">
-            <div class="cyber-card" style="text-align: center; border-color: var(--c-alert);">
-                <div style="width:100px; height:100px; margin:0 auto 1rem; position:relative;">
-                    <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:100%; height:100%; object-fit:cover; border-radius:50%; border:2px solid var(--c-alert);">
-                    <div style="position:absolute; bottom:0; right:0; width:20px; height:20px; background:#0f0; border-radius:50%; border:2px solid black;"></div>
-                </div>
-                <h2 style="color: var(--c-alert); border-color: var(--c-alert);">PILOT DATA</h2>
+        <!-- 3. SKILL: Magic -->
+        <section class="magic-container" id="sect-3" style="justify-content: flex-start; padding-left: 10%;">
+            <div class="rune-card" style="border-color: var(--c-magic);">
+                <h2><span style="color:white">元素</span> 雙修</h2>
+                <span class="subtitle">Water & Lightning Mastery</span>
                 <p>
-                    <b>"Since childhood, I've had the physique of a Warrior..."</b>
+                    持有 <b>水 (Water)</b> 與 <b>電 (Lightning)</b> 的雙重執照。<br>
+                    朋友戲稱我為「水電土三系混合大法師」。<br>
+                    在工程界的八年時光，早已讓我學會如何引導這些能量的流動。
                 </p>
+                <div class="mana-grid">
+                    <div class="mana-stat">
+                        <div class="mana-label">LICENSE</div>
+                        <div class="mana-val">Hydro / Electro</div>
+                    </div>
+                    <div class="mana-stat">
+                        <div class="mana-label">EXP</div>
+                        <div class="mana-val">8 Years</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. PERSONAL: Sanctuary -->
+        <section class="magic-container" id="sect-4">
+            <div class="rune-card" style="text-align: center; border-color: var(--c-danger);">
+                <div style="width: 120px; height: 120px; margin: 0 auto 1.5rem; position: relative;">
+                     <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:100%; height:100%; object-fit:cover; border-radius:50%; border:2px solid var(--c-gold); box-shadow: 0 0 20px var(--c-gold);">
+                </div>
+                <h2>孤獨的召喚</h2>
+                <span class="subtitle">The Solitary Summoner</span>
                 <p>
-                    <span style="color:var(--c-primary)">>> SUMMONING FAMILIARS...</span><br>
-                    Monkey Plushies & Kururu Cao Zhang loaded.
+                    「我從小胖到現在，應該是戰士體質吧...」<br>
+                    但我選擇了召喚之路，因為習慣了一個人的戰鬥。<br>
+                    陪伴我的使魔是 <b>猴子布偶</b> 與 <b>Kururu 曹長</b>。
                 </p>
 
-                <div class="social-grid">
-                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-btn">
+                <div class="summon-ring">
+                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="summon-btn" title="Threads">
                         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5h2v2h-2zm4-3h2v2h-2zm-6-2h2v7h-2z"/></svg>
                     </a>
-                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-btn">
+                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="summon-btn" title="Instagram">
                         <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
                     </a>
                 </div>
-                <div style="margin-top:2rem; font-size:0.7rem; color:#555;">MADE WITH LOVE BY SUPERGALEN'S DUNGEON</div>
+                <div style="margin-top:2rem; font-size: 0.7rem; color: #666; font-family: var(--f-eng);">
+                    MADE WITH LOVE BY SUPERGALEN'S DUNGEON
+                </div>
             </div>
         </section>
 
     </div>
 
-    <!-- MAIN SCRIPT -->
     <script type="module">
         import * as THREE from 'https://esm.sh/three@0.160.0';
         import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
         import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
-        import { GlitchPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/GlitchPass.js';
 
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- ASSETS ---
+        // Assets
         const ASSETS = {
             excavator: '/assets/img/guild/xmasfun689/excavator.webp',
             roller: '/assets/img/guild/xmasfun689/roller.webp',
             plushies: '/assets/img/guild/xmasfun689/plushies.webp'
         };
 
-        // --- SCENE SETUP ---
+        // --- 1. Scene Setup ---
         const container = document.getElementById('webgl-canvas');
         const scene = new THREE.Scene();
-        // Cyber Fog
-        scene.fog = new THREE.FogExp2(0x020205, 0.05);
+        scene.fog = new THREE.FogExp2(0x050505, 0.04); // Dark Fog
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 5;
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 5, 10);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- POST PROCESSING ---
+        // Post-Processing
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
-
-        // Bloom
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 1.2;
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.0;
         bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
-        // Glitch (Only triggered on scroll velocity?)
-        const glitchPass = new GlitchPass();
-        glitchPass.goWild = false;
-        glitchPass.enabled = false;
-        composer.addPass(glitchPass);
+        // Lights
+        const ambient = new THREE.AmbientLight(0x444444, 1.0);
+        scene.add(ambient);
 
-        // --- LIGHTS ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xFFCC00, 2, 50);
-        pointLight.position.set(0, 5, 5);
-        scene.add(pointLight);
+        // Dynamic "Forge" Lights
+        const orangeLight = new THREE.PointLight(0xFF4500, 5, 20);
+        orangeLight.position.set(5, 2, 5);
+        scene.add(orangeLight);
 
-        // --- OBJECTS ---
+        const cyanLight = new THREE.PointLight(0x00F3FF, 5, 20);
+        cyanLight.position.set(-5, 5, -5);
+        scene.add(cyanLight);
 
-        // 1. INFINITE TUNNEL (Wireframe)
-        const tunnelGeo = new THREE.CylinderGeometry(10, 10, 100, 32, 20, true);
-        const tunnelMat = new THREE.MeshBasicMaterial({
+        // --- 2. Objects ---
+
+        // A. The Ground (Wireframe Terrain)
+        const planeGeo = new THREE.PlaneGeometry(100, 100, 50, 50);
+
+        // Add noise to vertices
+        const pos = planeGeo.attributes.position;
+        for(let i=0; i<pos.count; i++){
+            const z = pos.getZ(i);
+            // Simple random noise for rugged terrain
+            pos.setZ(i, z + Math.random() * 1.5);
+        }
+        planeGeo.computeVertexNormals();
+
+        const planeMat = new THREE.MeshBasicMaterial({
             color: 0x333333,
             wireframe: true,
             transparent: true,
-            opacity: 0.3,
-            side: THREE.BackSide
+            opacity: 0.2
         });
-        const tunnel = new THREE.Mesh(tunnelGeo, tunnelMat);
-        tunnel.rotation.x = Math.PI / 2; // Horizontal tunnel
-        scene.add(tunnel);
+        const terrain = new THREE.Mesh(planeGeo, planeMat);
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.position.y = -2;
+        scene.add(terrain);
 
-        // 2. PARTICLE DEBRIS (InstancedMesh)
-        const debrisCount = 1000;
-        const debrisGeo = new THREE.DodecahedronGeometry(0.1);
-        const debrisMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF });
-        const debris = new THREE.InstancedMesh(debrisGeo, debrisMat, debrisCount);
-        const dummy = new THREE.Object3D();
+        // B. Magic Circles (Rune Textures)
+        function createRune(color, radius) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 10;
+            ctx.beginPath();
+            ctx.arc(256, 256, 200, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(256, 56); ctx.lineTo(456, 256); ctx.lineTo(256, 456); ctx.lineTo(56, 256); ctx.closePath();
+            ctx.stroke();
+            // Inner ring
+            ctx.beginPath(); ctx.arc(256, 256, 100, 0, Math.PI*2); ctx.stroke();
 
-        for(let i=0; i<debrisCount; i++) {
-            dummy.position.set(
-                (Math.random()-0.5) * 20,
-                (Math.random()-0.5) * 20,
-                (Math.random()-0.5) * 100 - 50 // Spread along Z
-            );
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            dummy.scale.setScalar(Math.random() + 0.5);
-            dummy.updateMatrix();
-            debris.setMatrixAt(i, dummy.matrix);
-        }
-        scene.add(debris);
-
-        // 3. ASSET MANAGERS (Sprites)
-        const texLoader = new THREE.TextureLoader();
-        function createHolo(url, scale) {
-            const map = texLoader.load(url);
-            map.colorSpace = THREE.SRGBColorSpace;
-            const mat = new THREE.MeshBasicMaterial({ map: map, transparent: true, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(scale, scale), mat);
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(radius, radius), mat);
+            mesh.rotation.x = -Math.PI/2;
             return mesh;
         }
 
-        // Group 1: Machinery
-        const groupMachines = new THREE.Group();
-        groupMachines.position.z = -20; // Start far away
-        scene.add(groupMachines);
+        const runeGround = createRune('#FFD700', 8); // Gold Rune
+        runeGround.position.set(-6, -1.8, -2);
+        scene.add(runeGround);
 
-        const excavator = createHolo(ASSETS.excavator, 8);
-        excavator.position.set(-5, 0, 0);
-        groupMachines.add(excavator);
+        const runeAir = createRune('#00F3FF', 6); // Cyan Rune
+        runeAir.position.set(6, -1.8, 2);
+        scene.add(runeAir);
 
-        const roller = createHolo(ASSETS.roller, 6);
-        roller.position.set(5, -1, 2);
-        groupMachines.add(roller);
+        // C. Assets (Floating above runes)
+        const texLoader = new THREE.TextureLoader();
+        function createSprite(url, w) {
+            const map = texLoader.load(url);
+            map.colorSpace = THREE.SRGBColorSpace;
+            const mat = new THREE.MeshBasicMaterial({ map: map, transparent: true, side: THREE.DoubleSide });
+            return new THREE.Mesh(new THREE.PlaneGeometry(w, w), mat);
+        }
 
-        // Rings around machines
-        const ringGeo = new THREE.TorusGeometry(5, 0.1, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0xFFCC00 });
-        const machineRing = new THREE.Mesh(ringGeo, ringMat);
-        machineRing.position.set(-5, 0, 0);
-        groupMachines.add(machineRing);
+        const excavator = createSprite(ASSETS.excavator, 8);
+        excavator.position.set(-6, 2, -2);
+        scene.add(excavator);
 
-        // Group 2: Elements (Lightning)
-        const groupElements = new THREE.Group();
-        groupElements.position.z = -50;
-        scene.add(groupElements);
+        const roller = createSprite(ASSETS.roller, 6);
+        roller.position.set(6, 1, 2);
+        scene.add(roller);
 
-        // Procedural Lightning (Line Loop)
-        const boltGeo = new THREE.BufferGeometry();
-        const boltMat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
-        const bolt = new THREE.Line(boltGeo, boltMat);
-        groupElements.add(bolt);
+        const plushies = createSprite(ASSETS.plushies, 10);
+        plushies.position.set(0, 30, -5); // Far up in the sky
+        scene.add(plushies);
 
-        // Group 3: Plushies
-        const groupFinal = new THREE.Group();
-        groupFinal.position.z = -80;
-        scene.add(groupFinal);
+        // D. Particles (Sparks/Dust)
+        const pGeo = new THREE.BufferGeometry();
+        const pCount = 200;
+        const pArr = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) pArr[i] = (Math.random()-0.5) * 30;
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
+        const pMat = new THREE.PointsMaterial({ color: 0xFFD700, size: 0.15, transparent: true, opacity: 0.8 });
+        const particles = new THREE.Points(pGeo, pMat);
+        scene.add(particles);
 
-        const plushies = createHolo(ASSETS.plushies, 10);
-        groupFinal.add(plushies);
-
-        const haloRing = new THREE.Mesh(new THREE.RingGeometry(6, 6.2, 64), new THREE.MeshBasicMaterial({ color: 0xFF2A2A, side: THREE.DoubleSide }));
-        groupFinal.add(haloRing);
-
-
-        // --- ANIMATION LOOP ---
+        // --- 3. Animation Loop ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-            const dt = clock.getDelta();
+            const t = clock.getElapsedTime();
 
-            // Tunnel movement effect (texture offset or rotation)
-            tunnel.rotation.z = time * 0.1;
+            // Runes Rotate
+            runeGround.rotation.z = t * 0.2;
+            runeAir.rotation.z = -t * 0.3;
 
-            // Debris drift
-            debris.rotation.z = time * 0.05;
+            // Machines Float
+            excavator.position.y = 2 + Math.sin(t)*0.2;
+            roller.position.y = 1 + Math.sin(t+1)*0.2;
 
-            // Machine Ring
-            machineRing.rotation.x = Math.PI/2;
-            machineRing.rotation.z = time;
+            // Lights Pulse
+            orangeLight.intensity = 5 + Math.sin(t*2)*2;
+            cyanLight.intensity = 5 + Math.cos(t*2)*2;
 
-            // Lightning Update
-            if(Math.random() > 0.8) {
-                const pts = [];
-                let curr = new THREE.Vector3(0, 5, 0);
-                for(let i=0; i<10; i++) {
-                    pts.push(curr.clone());
-                    curr.y -= 1;
-                    curr.x += (Math.random()-0.5)*3;
-                    curr.z += (Math.random()-0.5)*3;
-                }
-                bolt.geometry.setFromPoints(pts);
-                bolt.visible = true;
-            } else {
-                bolt.visible = false;
-            }
+            // Particles Drift
+            particles.rotation.y = t * 0.05;
 
-            // Halo
-            haloRing.lookAt(camera.position);
-
-            // Update HUD
-            document.getElementById('sys-time').innerText = new Date().toLocaleTimeString();
-            document.getElementById('sys-coord').innerText = `Z:${camera.position.z.toFixed(1)}`;
+            // Plushies Spin (Sky)
+            plushies.rotation.y = Math.sin(t)*0.1;
 
             composer.render();
         }
         animate();
 
 
-        // --- SCROLL LOGIC (GSAP) ---
+        // --- 4. Scroll Interactions (GSAP) ---
 
-        // We simulate travel by moving the camera deep into the tunnel (-Z)
-        // Section 1: Z=5 (Start)
-        // Section 2: Z=-20 (Machines)
-        // Section 3: Z=-50 (Elements)
-        // Section 4: Z=-80 (Finale)
+        // Scroll Progress Bar
+        gsap.to('#scroll-progress', {
+            height: '100%',
+            ease: 'none',
+            scrollTrigger: {
+                trigger: 'body',
+                start: 'top top',
+                end: 'bottom bottom',
+                scrub: 0
+            }
+        });
 
+        // Camera Timeline
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1
+                scrub: 1.5
             }
         });
 
-        // Camera Travel
-        tl.to(camera.position, { z: -80, ease: "none" });
+        // Initial Look
+        camera.position.set(0, 5, 12);
+        camera.lookAt(0, 0, 0);
 
-        // HUD Glitch on fast scroll?
-        let scrollTimeout;
-        ScrollTrigger.addEventListener("scrollStart", () => {
-            glitchPass.enabled = true;
-        });
-        ScrollTrigger.addEventListener("scrollEnd", () => {
-            glitchPass.enabled = false;
-        });
+        // 1. Zoom to Excavator (Ground)
+        tl.to(camera.position, { x: -3, y: 1, z: 8, duration: 2 });
+        tl.to(camera.rotation, { y: -0.2, duration: 2 }, "<");
 
-        // Content Fade In/Out
-        const sections = document.querySelectorAll('.cyber-section');
-        sections.forEach((sect, i) => {
-            // Distinct timeline for each section's visibility based on scroll progress
-            // Simple approach: Fade in when card is roughly in view
-            gsap.fromTo(sect,
-                { opacity: 0, scale: 0.8 },
-                {
-                    opacity: 1, scale: 1,
-                    duration: 1,
-                    scrollTrigger: {
-                        trigger: sect,
-                        start: "top 70%",
-                        end: "top 30%",
-                        toggleActions: "play reverse play reverse",
-                        scrub: 0.5
-                    }
+        // 2. Pan to Roller/Elements (Right)
+        tl.to(camera.position, { x: 3, y: 2, z: 8, duration: 2 });
+        tl.to(camera.rotation, { y: 0.2, duration: 2 }, "<");
+
+        // 3. Ascend to Sky (Plushies)
+        tl.to(camera.position, { x: 0, y: 30, z: 10, duration: 3 });
+        tl.to(camera.rotation, { x: 0, y: 0, z: 0, duration: 3 }, "<");
+
+        // Content Fade In
+        gsap.utils.toArray('.rune-card').forEach(card => {
+            gsap.to(card, {
+                opacity: 1, y: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    end: "top 40%",
+                    toggleActions: "play reverse play reverse"
                 }
-            );
+            });
         });
-
-        // Boot Screen
-        window.onload = () => {
-            const boot = document.getElementById('boot-screen');
-            const log = document.getElementById('boot-log');
-
-            // Fake log sequence
-            setTimeout(() => log.innerHTML += "<br>Access Granted.", 500);
-            setTimeout(() => log.innerHTML += "<br>Engaging Thrusters...", 1000);
-
-            setTimeout(() => {
-                gsap.to(boot, { opacity: 0, duration: 0.5, onComplete: () => boot.remove() });
-            }, 1500);
-        };
 
         // Resize
         window.addEventListener('resize', () => {
