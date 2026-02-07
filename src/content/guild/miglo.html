@@ -27,15 +27,16 @@
     <style>
         :root {
             --c-tea: #FFC107;
+            --c-tea-dark: #D4A017;
             --c-rose: #FF4081;
             --c-jelly: rgba(255, 255, 255, 0.9);
-            --c-dark: #1a0f0f;
+            --c-bg-dark: #1a0f05; /* Warm Tea Dark */
             --c-glass: rgba(255, 255, 255, 0.1);
         }
 
         body {
             margin: 0; padding: 0; box-sizing: border-box;
-            background-color: var(--c-dark);
+            background-color: var(--c-bg-dark);
             color: #fff;
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
@@ -48,12 +49,13 @@
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0; pointer-events: none;
-            background: radial-gradient(circle at center, #2e1a1a 0%, #000 100%);
+            /* Warm Amber Gradient for Tea Atmosphere */
+            background: radial-gradient(circle at center, #3e2710 0%, #0d0602 100%);
         }
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 1500vh; /* Significantly expanded for better pacing */
+            height: 1500vh;
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -79,23 +81,26 @@
         .hero-container {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center; width: 100%;
-            pointer-events: none; /* Prevent blocking */
+            pointer-events: none;
         }
 
         .big-text {
             font-family: 'Dela Gothic One', cursive;
             font-size: clamp(3rem, 12vw, 10rem);
             line-height: 1;
-            color: var(--c-tea);
-            text-shadow: 4px 4px 0px var(--c-rose);
+            background: linear-gradient(to bottom, #fff, var(--c-tea));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 0px 10px rgba(255, 193, 7, 0.5));
             white-space: nowrap;
-            opacity: 0; /* JS handles reveal */
+            opacity: 0;
         }
         .sub-hero {
             font-family: 'Zen Maru Gothic';
             margin-top: 1rem; font-size: 1.5rem;
             color: #fff; font-weight: 700;
             letter-spacing: 0.2em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* --- Content Panels --- */
@@ -110,7 +115,7 @@
         }
 
         .text-card {
-            background: rgba(20, 10, 10, 0.6);
+            background: rgba(20, 10, 5, 0.7); /* Warmer backing */
             border: 1px solid rgba(255, 193, 7, 0.3);
             border-radius: 20px;
             padding: 2.5rem;
@@ -131,6 +136,7 @@
             border: 4px solid #fff;
             transform: rotate(-3deg);
             opacity: 0;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         }
         .image-card img {
             width: 100%; height: 100%; object-fit: cover;
@@ -169,7 +175,7 @@
             flex-direction: column;
             gap: 2rem;
             width: 90%; max-width: 1200px; left: 5%;
-            padding-bottom: 10vh; /* Extra breathing room at bottom */
+            padding-bottom: 10vh;
         }
         .gallery-title {
             font-family: 'Dela Gothic One'; font-size: 3rem; color: #fff;
@@ -231,7 +237,7 @@
         /* --- Entrance --- */
         #entrance-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--c-dark); z-index: 10001;
+            background-color: var(--c-bg-dark); z-index: 10001;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: var(--c-tea);
         }
@@ -255,7 +261,7 @@
 <body>
 
     <div id="entrance-screen">
-        <div style="font-size: 4rem;">🍮</div>
+        <div style="font-size: 4rem;">🍵🌸</div>
         <div class="loader-text">BREWING...</div>
     </div>
 
@@ -271,83 +277,79 @@
     <div class="overlay">
         <!-- Hero -->
         <div id="hero-text" class="hero-container">
-            <div class="big-text">MIGLO JELLY</div>
-            <div class="sub-hero">堅持真花 • 拒絕糖漿 • 療癒日常</div>
+            <div class="big-text">FLOWER TEA</div>
+            <div class="sub-hero">堅持真花 • 拒絕糖漿 • 蜜光Q凍</div>
         </div>
 
-        <!-- 1. Origin -->
+        <!-- 1. Origin (Focus: Tea) -->
         <div id="panel-1" class="content-panel panel-left">
             <div class="text-card">
-                <h3>// 起源 STORY</h3>
-                <p>我是蜜光Q凍的闆闆！本來是冷飲業十幾年的資深員工，每天煮茶、煮茶還是煮茶。</p>
-                <p>直到某天腦袋突然<span class="highlight">被驢踢了</span>（笑），心想：「為什麼沒人想煮花？花跟茶不是很搭嗎？」</p>
-                <p>於是，蜜光Q凍誕生了。一個以「有機真花」為核心的花果飲品牌。</p>
+                <h3>// 茶韻 ORIGIN</h3>
+                <p>我是蜜光Q凍的闆闆！在冷飲業打滾十幾年，每天都在<span class="highlight">煮茶、煮茶、煮茶</span>。</p>
+                <p>直到某天靈光一閃：「為什麼沒人想煮花？花跟茶不是很搭嗎？」這杯茶，不應該只是解渴，更是一種生活的香氣。</p>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/miglo/gallery_1.webp" alt="Jelly Cups">
+                <img src="/assets/img/guild/miglo/gallery_1.webp" alt="Tea Brewing">
             </div>
         </div>
 
-        <!-- 2. Philosophy -->
+        <!-- 2. Philosophy (Focus: Flowers) -->
         <div id="panel-2" class="content-panel panel-right">
             <div class="text-card">
-                <h3>// 堅持 PHILOSOPHY</h3>
-                <p>老闆曾說：「真花很貴。」<br>但我心想：「可是糖漿的花沒有真花的香，也不健康！」</p>
-                <p>我的嗅覺<span class="highlight">超級靈敏</span>，糖漿的香精味會讓我不舒服，無法放鬆。所以我篤定要創業，煮出真正有花香的茶。</p>
-                <p>我們相信養生不該有距離，堅持原料單純、製程透明。</p>
+                <h3>// 花魂 PHILOSOPHY</h3>
+                <p>「真花很貴耶！」老闆這麼說。<br>但我心裡知道，糖漿永遠無法取代真花的天然幽香。</p>
+                <p>因為嗅覺敏銳，我對那種化學的香精味無法妥協。我決心要煮出看得到花瓣、聞得到花魂的<span class="highlight">真花茶</span>。</p>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/miglo/gallery_4.webp" alt="Rose Tea">
+                <img src="/assets/img/guild/miglo/gallery_4.webp" alt="Rose Petals">
             </div>
         </div>
 
-        <!-- 3. Services (New) -->
+        <!-- 3. Services (Focus: Jelly) -->
         <div id="panel-3" class="content-panel panel-left">
             <div class="text-card">
-                <h3>// 服務 SERVICES</h3>
-                <p>我們提供的不只是一杯飲料，而是一份對生活質感的承諾。</p>
+                <h3>// 凍感 SERVICES</h3>
+                <p>將茶香與花香凝結成凍，我們創造了獨特的口感體驗。</p>
                 <ul>
-                    <li><i class="fa-solid fa-seedling"></i> <strong>有機真花選材</strong>：嚴選可食用花卉，絕不使用人工糖漿。</li>
-                    <li><i class="fa-solid fa-flask"></i> <strong>花香果凍工藝</strong>：獨家研發花香系列果凍，口感Q彈，香氣天然。</li>
-                    <li><i class="fa-solid fa-heart-pulse"></i> <strong>健康把關</strong>：為每一位客人的健康著想，堅持製程透明。</li>
+                    <li><i class="fa-solid fa-leaf"></i> <strong>有機真花選材</strong>：嚴選可食用花卉，每一口都是自然。</li>
+                    <li><i class="fa-solid fa-cube"></i> <strong>花香Q凍</strong>：獨家研發，口感Q彈，晶瑩剔透。</li>
+                    <li><i class="fa-solid fa-heart"></i> <strong>安心承諾</strong>：製程透明，無添加人工糖漿。</li>
                 </ul>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/miglo/gallery_6.webp" alt="Healthy Ingredients">
+                <img src="/assets/img/guild/miglo/gallery_6.webp" alt="Jelly Ingredients">
             </div>
         </div>
 
-        <!-- 4. Values (Shifted) -->
+        <!-- 4. Values -->
         <div id="panel-4" class="content-panel panel-right">
             <div class="text-card">
                 <h3>// 連結 CONNECTION</h3>
                 <p>對我來說，<span class="highlight">客人就像朋友一樣</span>。</p>
-                <p>我會很努力記住每個客人的口味跟喜好，甚至幫忙把關健康！</p>
-                <p>這些年從家人的反對到支持，全靠我屹立不搖的信念。我是個想做什麼就會很執著，一直堅持做下去的人！</p>
+                <p>我會努力記住大家的喜好，甚至幫忙把關健康！這份堅持，讓我從家人的反對中走出一條花路，屹立不搖。</p>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/miglo/gallery_2.webp" alt="Tea Flowers">
+                <img src="/assets/img/guild/miglo/gallery_2.webp" alt="Tea Connection">
             </div>
         </div>
 
-        <!-- 5. Personality (Shifted) -->
+        <!-- 5. Personality -->
         <div id="panel-5" class="content-panel panel-left">
             <div class="text-card">
                 <h3>// 特質 TRAITS</h3>
                 <p><strong>ENFP 競選者</strong></p>
-                <p>我是個情緒比較敏感的 E 人，有些情緒無法察覺的地方，還請大家多多包涵！</p>
-                <p>歡迎大家來認識我，認識蜜光Q凍！陪你慢慢喝，慢慢變好。😗</p>
+                <p>我是個感性的 E 人，對於情緒比較敏感。希望透過這一杯杯用心煮出的花茶凍，傳遞溫暖給每一個你。</p>
+                <p>陪你慢慢喝，慢慢變好。😗</p>
             </div>
             <div class="image-card">
-                <img src="/assets/img/guild/miglo/gallery_5.webp" alt="Miglo Product">
+                <img src="/assets/img/guild/miglo/gallery_5.webp" alt="Miglo Portrait">
             </div>
         </div>
 
-        <!-- 6. Gallery (New) -->
+        <!-- 6. Gallery -->
         <div id="panel-gallery" class="content-panel">
-            <div class="gallery-title">FLORAL GALLERY</div>
+            <div class="gallery-title">FLORAL & TEA GALLERY</div>
             <div class="gallery-grid">
-                <!-- Using all gallery images -->
                 <div class="g-item"><img src="/assets/img/guild/miglo/gallery_1.webp"></div>
                 <div class="g-item"><img src="/assets/img/guild/miglo/gallery_2.webp"></div>
                 <div class="g-item"><img src="/assets/img/guild/miglo/gallery_3.webp"></div>
@@ -369,7 +371,7 @@
             <a href="https://www.instagram.com/miglo_jelly25/" target="_blank" class="social-btn">
                 <i class="fa-brands fa-instagram"></i> Instagram
             </a>
-            <a href="https://www.threads.com/@miglo_jelly25" target="_blank" class="social-btn">
+            <a href="https://www.threads.net/@miglo_jelly25" target="_blank" class="social-btn">
                 <i class="fa-brands fa-threads"></i> Threads
             </a>
         </div>
@@ -385,8 +387,8 @@
         // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Fog for depth
-        scene.fog = new THREE.FogExp2(0x1a0f0f, 0.02);
+        // Warm Amber Fog for Tea Infusion atmosphere
+        scene.fog = new THREE.FogExp2(0x2e1a05, 0.02);
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
@@ -396,106 +398,123 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
+        // --- Helpers ---
+        function createEmojiTexture(emoji, size=128) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.font = `${size * 0.75}px serif`; // Standard serif for emoji
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(emoji + '\uFE0F', size/2, size/2); // Force emoji variant
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+
         // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xff4081, 2, 50);
+        const pointLight = new THREE.PointLight(0xFF4081, 2, 50); // Pink light
         pointLight.position.set(2, 5, 5);
         scene.add(pointLight);
 
-        const sunLight = new THREE.DirectionalLight(0xffc107, 1);
+        const sunLight = new THREE.DirectionalLight(0xFFC107, 1); // Gold light
         sunLight.position.set(-5, 10, 5);
         scene.add(sunLight);
 
-        // --- Objects: Jelly Cubes (InstancedMesh) ---
-        // Using Rounded Box logic via simple Box geometry for now, but smooth shaded
-        const jellyGeo = new THREE.BoxGeometry(1, 1, 1);
+        // --- 1. JELLY CUBES ---
+        const jellyGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        // Slightly bevelled looking box via texture or just simple box for style
         const jellyMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0,
-            roughness: 0,
-            transmission: 0.9, // Glass/Jelly like
-            thickness: 1,
+            color: 0xffb74d, // Brighter Orange/Gold
+            emissive: 0xff6d00,
+            emissiveIntensity: 0.2, // Subtle self-glow to pop against dark background
+            metalness: 0.1,
+            roughness: 0.2, // Frosty jelly look
+            transmission: 0.6,
+            thickness: 1.5,
             transparent: true,
-            opacity: 0.8,
-            ior: 1.5,
+            opacity: 0.9,
         });
+        const jellyCount = 60;
+        const jellyMesh = new THREE.InstancedMesh(jellyGeo, jellyMat, jellyCount);
+        scene.add(jellyMesh);
 
-        const count = 100;
-        const mesh = new THREE.InstancedMesh(jellyGeo, jellyMat, count);
-        scene.add(mesh);
+        // --- 2. TEA LEAVES ---
+        const leafGeo = new THREE.PlaneGeometry(1.5, 1.5); // Increased size
+        const leafTex = createEmojiTexture('🍃');
+        const leafMat = new THREE.MeshBasicMaterial({
+            map: leafTex, transparent: true, opacity: 0.9, side: THREE.DoubleSide, alphaTest: 0.5
+        });
+        const leafCount = 40;
+        const leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, leafCount);
+        scene.add(leafMesh);
 
+        // --- 3. FLOWERS ---
+        const flowerGeo = new THREE.PlaneGeometry(1.5, 1.5);
+        const flowerTex1 = createEmojiTexture('🌸');
+        const flowerTex2 = createEmojiTexture('🌺');
+        const flowerTex3 = createEmojiTexture('🌼');
+
+        // We'll use 3 InstancedMeshes for simplicity of material assignment
+        const fCount = 20;
+        function createFlowerMesh(tex, count) {
+            const mat = new THREE.MeshBasicMaterial({
+                map: tex, transparent: true, opacity: 0.95, side: THREE.DoubleSide, alphaTest: 0.5
+            });
+            const mesh = new THREE.InstancedMesh(flowerGeo, mat, count);
+            scene.add(mesh);
+            return mesh;
+        }
+        const flowerMesh1 = createFlowerMesh(flowerTex1, fCount);
+        const flowerMesh2 = createFlowerMesh(flowerTex2, fCount);
+        const flowerMesh3 = createFlowerMesh(flowerTex3, fCount);
+
+        // --- Position Logic ---
         const dummy = new THREE.Object3D();
-        const positions = [];
-        const rotations = [];
-        const speeds = [];
 
-        for(let i=0; i<count; i++) {
-            const x = (Math.random() - 0.5) * 40;
-            const y = (Math.random() - 0.5) * 40;
-            const z = (Math.random() - 0.5) * 100 - 20; // Spread deep into Z
+        // Data arrays to store properties
+        const jellyData = [];
+        const leafData = [];
+        const flowerData = [];
 
-            dummy.position.set(x, y, z);
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-            const scale = 0.5 + Math.random();
-            dummy.scale.set(scale, scale, scale);
-            dummy.updateMatrix();
-            mesh.setMatrixAt(i, dummy.matrix);
+        function initData(mesh, dataArr, count, zRange) {
+            for(let i=0; i<count; i++) {
+                const x = (Math.random() - 0.5) * 35;
+                const y = (Math.random() - 0.5) * 35;
+                const z = (Math.random() - 0.5) * zRange - 20;
 
-            positions.push({x, y, z, ox: x, oy: y, oz: z}); // Store original pos
-            rotations.push({x: Math.random()*0.01, y: Math.random()*0.01});
-            speeds.push(0.01 + Math.random() * 0.02);
+                dummy.position.set(x, y, z);
+                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                const s = 0.5 + Math.random() * 0.8;
+                dummy.scale.set(s, s, s);
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
+
+                dataArr.push({
+                    x, y, z, ox: x, oy: y, oz: z,
+                    rx: Math.random()*0.02, ry: Math.random()*0.02,
+                    phase: Math.random() * Math.PI * 2,
+                    speed: 0.5 + Math.random()
+                });
+            }
         }
 
-        // --- Objects: Flower Petals (Particles) ---
-        const pGeo = new THREE.BufferGeometry();
-        const pCount = 300;
-        const pPos = new Float32Array(pCount * 3);
-        const pCol = new Float32Array(pCount * 3);
+        initData(jellyMesh, jellyData, jellyCount, 100);
+        initData(leafMesh, leafData, leafCount, 120);
 
-        const color1 = new THREE.Color(0xFFC107); // Gold
-        const color2 = new THREE.Color(0xFF4081); // Pink
-
-        for(let i=0; i<pCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 50;
-            pPos[i*3+1] = (Math.random() - 0.5) * 50;
-            pPos[i*3+2] = (Math.random() - 0.5) * 100;
-
-            const c = Math.random() > 0.5 ? color1 : color2;
-            pCol[i*3] = c.r;
-            pCol[i*3+1] = c.g;
-            pCol[i*3+2] = c.b;
-        }
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
-
-        const pMat = new THREE.PointsMaterial({
-            size: 0.3, vertexColors: true, transparent: true, opacity: 0.8,
-            map: createCircleTexture(),
-            alphaTest: 0.5
-        });
-
-        function createCircleTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 32; canvas.height = 32;
-            const context = canvas.getContext('2d');
-            context.beginPath();
-            context.arc(16, 16, 16, 0, 2 * Math.PI);
-            context.fillStyle = '#ffffff';
-            context.fill();
-            const texture = new THREE.CanvasTexture(canvas);
-            return texture;
-        }
-
-        const particles = new THREE.Points(pGeo, pMat);
-        scene.add(particles);
+        // Combine flower data
+        const fData1 = []; initData(flowerMesh1, fData1, fCount, 120);
+        const fData2 = []; initData(flowerMesh2, fData2, fCount, 120);
+        const fData3 = []; initData(flowerMesh3, fData3, fCount, 120);
 
 
         // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Entrance
         window.addEventListener('load', () => {
             const loader = document.getElementById('entrance-screen');
             gsap.to(loader, {
@@ -510,24 +529,17 @@
         function startAnimations() {
             // Hero Entrance
             gsap.fromTo(".big-text",
-                { opacity: 0, scale: 0.5, rotation: -10 },
+                { opacity: 0, scale: 0.5, rotation: -5 },
                 { opacity: 1, scale: 1, rotation: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" }
             );
 
-            // Hero Exit (New - fixes title overlap)
+            // Hero Exit
             gsap.to(".hero-container", {
-                opacity: 0,
-                y: -100,
-                scale: 1.5,
-                scrollTrigger: {
-                    trigger: "#scroll-spacer",
-                    start: "top top",
-                    end: "5% top",
-                    scrub: true
-                }
+                opacity: 0, y: -100, scale: 1.5,
+                scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "5% top", scrub: true }
             });
 
-            // Camera Flight
+            // Camera Flight - Move deep into the "Tea"
             gsap.to(camera.position, {
                 z: -80,
                 ease: "none",
@@ -539,46 +551,33 @@
                 }
             });
 
-            // Panels - Shifted earlier to give Gallery more space (1500vh total)
+            // Panels
             const panels = [
                 { id: "#panel-1", start: 5, end: 15 },
                 { id: "#panel-2", start: 20, end: 30 },
-                { id: "#panel-3", start: 35, end: 45 }, // Services
-                { id: "#panel-4", start: 50, end: 60 }, // Connection
-                { id: "#panel-5", start: 65, end: 75 }  // Traits
+                { id: "#panel-3", start: 35, end: 45 },
+                { id: "#panel-4", start: 50, end: 60 },
+                { id: "#panel-5", start: 65, end: 75 }
             ];
 
             panels.forEach(p => {
                 const tl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: "#scroll-spacer",
-                        start: p.start + "% top",
-                        end: p.end + "% top",
-                        scrub: 1
-                    }
+                    scrollTrigger: { trigger: "#scroll-spacer", start: p.start + "% top", end: p.end + "% top", scrub: 1 }
                 });
-
-                // Entrance
                 tl.to(`${p.id} .text-card`, { opacity: 1, x: 0, rotation: 0, duration: 1 }, 0);
                 tl.to(`${p.id} .image-card`, { opacity: 1, x: 0, rotation: -3, duration: 1 }, 0);
-
-                // Exit
                 tl.to([`${p.id} .text-card`, `${p.id} .image-card`], { opacity: 0, y: -50, duration: 1 }, 2);
             });
 
-            // Set initial state for panels
             panels.forEach(p => {
                 gsap.set(`${p.id} .text-card`, { opacity: 0, x: -50, rotation: -5 });
                 gsap.set(`${p.id} .image-card`, { opacity: 0, x: 50, rotation: 5 });
             });
 
-            // Gallery Animation (Starts earlier at 80%, fully visible by 90%)
-            // This leaves 90% -> 99.5% (~140vh) of pure scrolling time to view the gallery
+            // Gallery
             gsap.fromTo("#panel-gallery .gallery-title",
                 { opacity: 0, y: 50 },
-                { opacity: 1, y: 0,
-                  scrollTrigger: { trigger: "#scroll-spacer", start: "78% top", end: "82% top", scrub: 1 }
-                }
+                { opacity: 1, y: 0, scrollTrigger: { trigger: "#scroll-spacer", start: "78% top", end: "82% top", scrub: 1 }}
             );
 
             const galleryItems = gsap.utils.toArray(".g-item");
@@ -586,60 +585,79 @@
                 { opacity: 0, scale: 0.5 },
                 {
                     opacity: 1, scale: 1, stagger: 0.1,
-                    scrollTrigger: {
-                        trigger: "#scroll-spacer",
-                        start: "80% top",
-                        end: "90% top",
-                        scrub: 1
-                    }
+                    scrollTrigger: { trigger: "#scroll-spacer", start: "80% top", end: "90% top", scrub: 1 }
                 }
             );
 
-
             // Finale
             ScrollTrigger.create({
-                trigger: "#scroll-spacer",
-                start: "99.5% bottom", // Stricter trigger as per design pattern
+                trigger: "#scroll-spacer", start: "99.5% bottom",
                 onEnter: () => document.getElementById('finale').classList.add('active'),
                 onLeaveBack: () => document.getElementById('finale').classList.remove('active')
             });
         }
 
-        // --- Mouse Interaction ---
+        // --- Loop ---
+        const clock = new THREE.Clock();
         const mouse = new THREE.Vector2();
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // --- Loop ---
-        const clock = new THREE.Clock();
+        function animateMesh(mesh, data, time, type) {
+            for(let i=0; i<data.length; i++) {
+                const d = data[i];
+                let x = d.ox;
+                let y = d.oy;
+                let z = d.z;
 
-        function animate() {
-            const time = clock.getElapsedTime();
+                // Jelly: Bobbing
+                if(type === 'jelly') {
+                    y = d.oy + Math.sin(time * d.speed + d.phase) * 2;
+                    dummy.rotation.set(time * d.rx, time * d.ry, 0);
+                }
+                // Leaf: Fluttering
+                else if(type === 'leaf') {
+                    y = d.oy - (time * d.speed % 20) + 10; // Fall slowly
+                    if(y < -20) y += 40; // Loop
+                    x = d.ox + Math.sin(time + d.phase) * 1; // Sway
 
-            // Animate Jelly Instances
-            for(let i=0; i<count; i++) {
-                const {x, y, z, ox, oy, oz} = positions[i];
+                    dummy.rotation.set(
+                        Math.sin(time * 2 + d.phase) * 0.5, // Flutter X
+                        Math.cos(time * 1.5 + d.phase) * 0.5, // Flutter Y
+                        Math.sin(time + d.phase) * 0.2 // Tilt
+                    );
+                }
+                // Flower: Spinning gently
+                else if(type === 'flower') {
+                    dummy.rotation.z = time * 0.2 + d.phase;
+                    dummy.rotation.x = Math.sin(time * 0.5 + d.phase) * 0.2;
+                    y = d.oy + Math.sin(time * 0.5 + d.phase);
+                }
 
-                // Float
-                const newY = oy + Math.sin(time + x) * 2;
+                dummy.position.set(x, y, z);
+                // Apply slight mouse parallax to all
+                dummy.position.x += (mouse.x * 2) * 0.5;
+                dummy.position.y += (mouse.y * 2) * 0.5;
 
-                // Rotate
-                dummy.rotation.set(time * rotations[i].x, time * rotations[i].y, 0);
+                dummy.scale.setScalar(type === 'flower' ? 2.5 : (type === 'leaf' ? 1.2 : 1)); // Size override
 
-                dummy.position.set(ox, newY, z);
                 dummy.updateMatrix();
                 mesh.setMatrixAt(i, dummy.matrix);
             }
             mesh.instanceMatrix.needsUpdate = true;
+        }
 
-            // Rotate Particles
-            particles.rotation.y = time * 0.05;
+        function animate() {
+            const time = clock.getElapsedTime();
 
-            // Camera slight shake/float independent of scroll
-            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.02;
-            camera.position.y += (mouse.y * 2 - camera.position.y) * 0.02;
+            animateMesh(jellyMesh, jellyData, time, 'jelly');
+            animateMesh(leafMesh, leafData, time, 'leaf');
+
+            animateMesh(flowerMesh1, fData1, time, 'flower');
+            animateMesh(flowerMesh2, fData2, time, 'flower');
+            animateMesh(flowerMesh3, fData3, time, 'flower');
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
