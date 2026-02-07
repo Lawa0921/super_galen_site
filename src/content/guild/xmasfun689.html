@@ -14,16 +14,18 @@
     <!-- GSAP & p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
     <style>
         :root {
-            --c-bg: #0a0a0f;
-            --c-card: rgba(20, 20, 30, 0.7);
+            --c-bg: #050508;
+            --c-card: rgba(15, 15, 20, 0.6);
             --c-border: rgba(255, 255, 255, 0.1);
-            --c-accent: #00F3FF; /* Electric Blue */
-            --c-earth: #D4AF37; /* Metallic Gold */
-            --c-water: #0077BE; /* Deep Water */
+            --c-elec: #00F3FF; /* Cyber Cyan */
+            --c-earth: #C6A664; /* Muted Gold */
+            --c-water: #4CAFE9; /* Water Blue */
+            --c-void: #000000;
 
             --f-main: 'Noto Serif TC', serif;
             --f-tech: 'Rajdhani', sans-serif;
@@ -35,397 +37,458 @@
         /* Canvas Background */
         #p5-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
-            pointer-events: none; /* Let clicks pass through */
+            pointer-events: auto; /* Allow interaction with ripples */
         }
 
-        /* Scroll Progress */
-        #progress-bar {
-            position: fixed; top: 0; left: 0; height: 3px; width: 0%;
-            background: linear-gradient(90deg, var(--c-earth), var(--c-accent));
-            z-index: 100;
+        /* HUD Lines */
+        .hud-line {
+            position: fixed; background: rgba(255,255,255,0.05); z-index: 1; pointer-events: none;
         }
+        .hud-v { width: 1px; height: 100vh; top: 0; left: 50px; }
+        .hud-h { height: 1px; width: 100vw; top: 50px; left: 0; }
 
         /* Layout */
         .page-wrapper {
             position: relative; z-index: 10;
             max-width: 1200px; margin: 0 auto;
-            padding: 2rem;
+            padding: 0 2rem;
         }
 
-        /* Hero Section */
+        /* --- Hero --- */
         .hero-section {
-            min-height: 100vh;
+            height: 100vh;
             display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
             padding-left: 5%;
+            position: relative;
         }
+        .hero-status {
+            font-family: var(--f-tech); color: var(--c-elec); font-size: 1rem; letter-spacing: 4px;
+            margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;
+        }
+        .hero-status::before { content: ''; width: 10px; height: 10px; background: var(--c-elec); border-radius: 50%; box-shadow: 0 0 10px var(--c-elec); }
 
         h1 {
-            font-size: 4rem; margin: 0; line-height: 1.1;
-            background: linear-gradient(45deg, #fff, #ccc);
+            font-size: 4.5rem; margin: 0; line-height: 1.1;
+            background: linear-gradient(to right, #fff, #aaa);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(255,255,255,0.2);
-        }
-        .hero-subtitle {
-            font-family: var(--f-tech); color: var(--c-accent); font-size: 1.2rem; letter-spacing: 4px;
-            margin-bottom: 1rem; text-transform: uppercase;
-        }
-        .hero-tag {
-            display: inline-block; padding: 5px 15px; border: 1px solid var(--c-earth);
-            color: var(--c-earth); font-size: 0.9rem; margin-top: 2rem; border-radius: 20px;
+            opacity: 0; /* GSAP reveal */
         }
 
-        /* Content Grid */
-        .grid-section {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 2rem; margin: 4rem 0;
-            opacity: 0; transform: translateY(50px); /* GSAP Init */
+        .hero-desc {
+            font-size: 1.2rem; color: #ccc; margin-top: 1.5rem; max-width: 600px; line-height: 1.8;
+            border-left: 2px solid var(--c-earth); padding-left: 1.5rem;
+            opacity: 0; transform: translateX(-20px);
         }
 
-        /* Magic Card UI */
-        .magic-card {
+        /* --- Content Cards --- */
+        .section-title {
+            font-size: 2rem; color: var(--c-elec); margin: 6rem 0 2rem;
+            font-family: var(--f-tech); text-transform: uppercase; letter-spacing: 3px;
+            display: flex; align-items: center; gap: 1rem;
+        }
+        .section-title::after { content: ''; flex-grow: 1; height: 1px; background: rgba(255,255,255,0.1); }
+
+        .card-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 2rem;
+        }
+
+        .info-card {
             background: var(--c-card);
             border: 1px solid var(--c-border);
-            border-radius: 12px;
-            padding: 2rem;
-            backdrop-filter: blur(12px);
-            transition: 0.3s;
+            padding: 2.5rem;
+            backdrop-filter: blur(10px);
             position: relative; overflow: hidden;
-            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            transition: 0.3s;
         }
-        .magic-card:hover {
+        .info-card:hover {
+            border-color: var(--c-elec);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
             transform: translateY(-5px);
-            border-color: var(--c-accent);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
         }
-        .magic-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-            background: var(--c-accent); opacity: 0.5;
-        }
+
+        /* Elemental Accents */
+        .card-earth { border-top: 4px solid var(--c-earth); }
+        .card-water { border-top: 4px solid var(--c-water); }
+        .card-elec { border-top: 4px solid var(--c-elec); }
 
         .card-icon {
-            font-size: 2.5rem; color: var(--c-earth); margin-bottom: 1rem;
-            display: flex; align-items: center; justify-content: center;
-            width: 60px; height: 60px; border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
+            font-size: 2rem; margin-bottom: 1.5rem;
+            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
+        }
+        .card-earth .card-icon { color: var(--c-earth); border-color: var(--c-earth); }
+        .card-water .card-icon { color: var(--c-water); border-color: var(--c-water); }
+        .card-elec .card-icon { color: var(--c-elec); border-color: var(--c-elec); }
+
+        h3 { font-size: 1.5rem; margin: 0 0 1rem; color: white; }
+        p { color: #aaa; line-height: 1.8; font-size: 1rem; margin-bottom: 1.5rem; text-align: justify; }
+
+        /* Skill Matrix (Tags) */
+        .tags { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+        .tag {
+            font-family: var(--f-tech); font-size: 0.85rem; padding: 5px 12px;
+            border: 1px solid rgba(255,255,255,0.1); color: #ccc;
+            background: rgba(0,0,0,0.3);
         }
 
-        h2 { font-size: 1.5rem; margin: 0 0 1rem; color: white; display: flex; align-items: center; gap: 10px; }
-        p { color: #bbb; line-height: 1.8; font-size: 1rem; margin-bottom: 1.5rem; text-align: justify; }
-
-        /* Skill Badges */
-        .skill-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .skill-badge {
-            font-family: var(--f-tech); font-size: 0.8rem;
-            padding: 4px 10px; border-radius: 4px;
-            background: rgba(255,255,255,0.1); color: #fff;
-            border: 1px solid transparent;
+        /* --- Personal Section --- */
+        .personal-grid {
+            display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; align-items: center; margin-bottom: 6rem;
         }
-        .skill-badge.earth { border-color: var(--c-earth); color: var(--c-earth); }
-        .skill-badge.water { border-color: var(--c-water); color: var(--c-water); }
-        .skill-badge.elec { border-color: var(--c-accent); color: var(--c-accent); }
-
-        /* Personal Section (Avatar) */
-        .personal-card {
-            text-align: center;
-            border-top: 4px solid var(--c-earth); /* Highlight */
-        }
-        .avatar-wrap {
-            width: 120px; height: 120px; margin: 0 auto 1.5rem;
-            border-radius: 50%; padding: 5px;
-            border: 2px dashed var(--c-earth);
-            position: relative;
+        .avatar-container {
+            position: relative; width: 100%; aspect-ratio: 1; max-width: 300px; margin: 0 auto;
         }
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            border: 2px solid var(--c-earth); padding: 5px;
+            box-shadow: 0 0 30px rgba(198, 166, 100, 0.2);
+        }
+        .quote-box {
+            font-size: 1.2rem; font-style: italic; color: #fff;
+            padding: 2rem; border-left: 4px solid var(--c-elec);
+            background: linear-gradient(90deg, rgba(0,243,255,0.05), transparent);
         }
 
-        /* Socials */
-        .social-bar { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2rem; }
-        .social-link {
-            font-size: 1.5rem; color: #888; transition: 0.3s;
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
-            text-decoration: none;
+        /* Social Icons (SVG) */
+        .social-row { display: flex; gap: 1.5rem; margin-top: 2rem; }
+        .social-btn {
+            width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #444; border-radius: 50%; color: #fff; transition: 0.3s;
+            background: rgba(0,0,0,0.5);
         }
-        .social-link:hover { color: var(--c-accent); border-color: var(--c-accent); transform: scale(1.1); }
+        .social-btn:hover { border-color: var(--c-elec); color: var(--c-elec); transform: scale(1.1); }
+        .social-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
-        /* Footer */
-        .footer {
-            text-align: center; padding: 4rem 0; color: #555; font-family: var(--f-tech); letter-spacing: 2px;
-        }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            h1 { font-size: 2.8rem; }
-            .grid-section { grid-template-columns: 1fr; }
-            .magic-card { padding: 1.5rem; }
+            h1 { font-size: 3rem; }
+            .personal-grid { grid-template-columns: 1fr; text-align: center; }
+            .quote-box { text-align: left; }
+            .hero-section { padding-left: 0; align-items: center; text-align: center; }
+            .hero-desc { border-left: none; padding-left: 0; padding-top: 1rem; border-top: 2px solid var(--c-earth); }
         }
     </style>
 </head>
 <body>
 
-    <div id="progress-bar"></div>
+    <!-- P5 Canvas -->
     <div id="p5-container"></div>
+
+    <!-- HUD Decoration -->
+    <div class="hud-line hud-v"></div>
+    <div class="hud-line hud-h"></div>
 
     <div class="page-wrapper">
 
         <!-- Hero -->
         <section class="hero-section">
-            <div class="hero-subtitle">Site Commander // Level 8</div>
-            <h1>重金屬<br><span style="color: var(--c-earth)">魔導士</span></h1>
-            <p style="font-size: 1.2rem; max-width: 600px; margin-top: 1.5rem; color: #ddd;">
-                在這個鋼筋與泥土構築的迷宮中，我是操控巨獸的指揮官。<br>
-                八年的工地煉金術，將汗水轉化為堅固的基石。
-            </p>
-            <div class="hero-tag">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Warrior Body // Summoner Soul
+            <div class="hero-status">SYSTEM ONLINE // LEVEL 8</div>
+            <h1 id="hero-title"></h1> <!-- Typed by GSAP -->
+            <div class="hero-desc">
+                在這個鋼鐵與泥土交織的世界，我是操控巨獸的指揮官。<br>
+                八年從業，將汗水煉成基石，以雷電與流水編織城市的脈絡。
             </div>
         </section>
 
-        <!-- Section 1: Heavy Metal (Earth) -->
-        <section class="grid-section">
-            <div class="magic-card">
-                <div class="card-icon"><i class="fa-solid fa-trowel-bricks"></i></div>
-                <h2>工地煉金術</h2>
+        <!-- 1. Earth (Structure) -->
+        <div class="section-title">01 // EARTH_CONSTRUCT</div>
+        <div class="card-grid">
+            <div class="info-card card-earth">
+                <div class="card-icon"><i class="fa-solid fa-layer-group"></i></div>
+                <h3>大地構築</h3>
                 <p>
-                    從業八年，見證了無數高樓平地起。作為工地主任，我不僅是管理者，更是實踐者。<br>
-                    每一鏟土、每一根鋼筋，都是我施展魔法的觸媒。
+                    作為工地主任，我見證了無數高樓從無到有。
+                    這是一場將混亂轉化為秩序的儀式，每一根鋼樑、每一方混凝土，都是我施法的媒介。
                 </p>
-                <div class="skill-list">
-                    <span class="skill-badge earth">Site Management</span>
-                    <span class="skill-badge earth">Heavy Machinery</span>
-                    <span class="skill-badge earth">Civil Engineering</span>
+                <div class="tags">
+                    <span class="tag">Site Management</span>
+                    <span class="tag">Civil Eng</span>
+                    <span class="tag">Structure</span>
                 </div>
             </div>
-
-            <div class="magic-card">
-                <div class="card-icon"><i class="fa-solid fa-truck-monster"></i></div>
-                <h2>鋼鐵巨獸召喚</h2>
+            <div class="info-card card-earth">
+                <div class="card-icon"><i class="fa-solid fa-truck-front"></i></div>
+                <h3>鋼鐵巨獸</h3>
                 <p>
-                    雖然差一點點就拿到了召喚師執照（證照），但我依然能與這些鋼鐵巨獸共鳴。<br>
-                    熟練操作 <b>怪手 (Excavator)</b>、<b>吊車 (Crane)</b> 與 <b>自走車 (Roller)</b>，讓它們如手臂般靈活。
+                    我熱愛這些重型機械的轟鳴。
+                    雖然差一點就考到證照，但我熟練操控 <b>怪手 (Excavator)</b>、<b>吊車 (Crane)</b> 與 <b>自走車 (Roller)</b>，如同指揮手下的召喚獸。
                 </p>
-                <div class="skill-list">
-                    <span class="skill-badge earth">Excavator</span>
-                    <span class="skill-badge earth">Crane</span>
-                    <span class="skill-badge earth">Roller</span>
+                <div class="tags">
+                    <span class="tag">Excavator Pilot</span>
+                    <span class="tag">Crane Operator</span>
+                    <span class="tag">Heavy Metal</span>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Section 2: Flow (Water/Electric) -->
-        <section class="grid-section">
-            <div class="magic-card" style="border-left: 4px solid var(--c-water);">
-                <div class="card-icon" style="color: var(--c-water);"><i class="fa-solid fa-faucet-drip"></i></div>
-                <h2>水之流動</h2>
+        <!-- 2. Elements (Water/Elec) -->
+        <div class="section-title">02 // ELEMENTAL_FLOW</div>
+        <div class="card-grid">
+            <div class="info-card card-water">
+                <div class="card-icon"><i class="fa-solid fa-water"></i></div>
+                <h3>流體力學</h3>
                 <p>
-                    持有相關水電證照，通曉流體力學的奧義。<br>
-                    在管線錯綜複雜的結構中，引導水流至其應去之處。
+                    持有水電證照，通曉水流的奧義。
+                    在看不見的管道中，引導生命之源流向它應去的地方，維持建築的血液循環。
                 </p>
-                <div class="skill-list">
-                    <span class="skill-badge water">Plumbing License</span>
-                    <span class="skill-badge water">Fluid Dynamics</span>
+                <div class="tags">
+                    <span class="tag">Plumbing</span>
+                    <span class="tag">Fluid Dynamics</span>
+                    <span class="tag">Flow Control</span>
                 </div>
             </div>
-
-            <div class="magic-card" style="border-left: 4px solid var(--c-accent);">
-                <div class="card-icon" style="color: var(--c-accent);"><i class="fa-solid fa-bolt"></i></div>
-                <h2>雷之脈衝</h2>
+            <div class="info-card card-elec">
+                <div class="card-icon"><i class="fa-solid fa-bolt"></i></div>
+                <h3>雷鳴脈衝</h3>
                 <p>
-                    斜槓水電工的另一面，掌控電力的流動。<br>
-                    朋友戲稱我為「水電土三系混合大法師」，在現代建築中編織能量的網絡。
+                    斜槓水電工的另一面，掌控電力的流動。
+                    在現代建築的神經網絡中，確保每一個節點都充滿能量。朋友戲稱我為「水電土三系混合大法師」。
                 </p>
-                <div class="skill-list">
-                    <span class="skill-badge elec">Electrician License</span>
-                    <span class="skill-badge elec">Circuit Magic</span>
+                <div class="tags">
+                    <span class="tag">Electrician</span>
+                    <span class="tag">High Voltage</span>
+                    <span class="tag">Circuitry</span>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Section 3: Personal (Soul) -->
-        <section class="grid-section" style="justify-content: center;">
-            <div class="magic-card personal-card" style="max-width: 500px;">
-                <div class="avatar-wrap">
-                    <img src="/assets/img/guild/xmasfun689/avatar.webp" class="avatar-img" alt="Avatar">
-                    <div style="position:absolute; bottom:0; right:0; background:var(--c-bg); border-radius:50%; padding:5px; border:1px solid #555;">
-                        <i class="fa-solid fa-gamepad" style="color: var(--c-accent);"></i>
-                    </div>
+        <!-- 3. Personal (Soul) -->
+        <div class="section-title">03 // SOUL_SYNC</div>
+        <div class="personal-grid">
+            <div class="avatar-container">
+                <img src="/assets/img/guild/xmasfun689/avatar.webp" class="avatar-img">
+            </div>
+            <div>
+                <div class="quote-box">
+                    "從小胖到現在，擁有戰士的體格，卻有一顆召喚師的心...<br>
+                    在遊戲中，我總是選擇召喚師，因為習慣了一個人的戰鬥。"
                 </div>
-                <h2>鋼鐵溫柔</h2>
-                <p>
-                    「從小胖到現在，擁有戰士的體格，卻有一顆召喚師的心。」<br>
-                    在遊戲世界中，我總是選擇召喚師，習慣了一個人的戰鬥與冒險。<br>
-                    現實中，我的使魔是 <b>猴子布偶</b> 與 <b>Kururu 曹長</b>。
+                <p style="margin-top: 2rem; color: #ddd;">
+                    現實中，我的使魔是 <b>猴子布偶</b> 與 <b>Kururu 曹長</b>。<br>
+                    這份鋼鐵之下的溫柔，是我作為「重金屬魔導士」的另一面。
                 </p>
-
-                <div class="social-bar">
-                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-link" title="Threads">
-                        <i class="fa-brands fa-threads"></i>
+                <div class="social-row">
+                    <!-- Threads (SVG) -->
+                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-btn" title="Threads">
+                        <svg viewBox="0 0 192 192"><path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.3586 44.7443 69.0639 51.1409 58.7414 61.5332C48.0296 72.3168 41.5234 87.1649 41.5234 103.565C41.5234 117.588 46.545 130.499 54.835 140.579C65.7337 153.834 81.3327 163.504 99.4102 166.703C102.508 167.251 105.702 167.533 108.995 167.533C116.791 167.533 124.28 165.719 131.026 162.434C132.887 161.528 133.659 159.288 132.753 157.427L129.569 150.891C128.81 149.333 127.185 148.431 125.532 148.651C120.306 149.348 114.789 149.713 108.995 149.713C86.3262 149.713 67.2458 137.067 59.2132 118.665C58.0583 116.02 57.2435 113.256 56.8154 110.383C67.6256 122.791 82.5273 130.829 99.2801 130.829C117.389 130.829 131.812 119.863 135.003 103.623C138.256 104.922 141.282 106.467 144.032 108.232C147.218 110.276 149.435 112.551 150.812 115.014C152.022 117.178 152.275 119.294 151.722 121.285C150.551 125.498 144.27 129.809 132.172 129.809C120.395 129.809 113.06 120.211 113.06 109.283V104.225C113.06 87.0544 108.57 73.0805 99.2798 64.9388C94.2798 60.5566 88.0808 58.129 80.9922 58.129C69.349 58.129 59.4586 66.8643 57.1793 79.5248C56.6366 82.5393 56.3503 85.6728 56.3503 88.8927C56.3503 112.016 70.8038 131.992 91.1396 139.754C92.4276 140.245 93.1818 141.748 92.7766 143.068L90.7397 149.72C90.2526 151.31 88.4655 152.179 86.9174 151.58C60.1065 141.205 41.5234 114.976 41.5234 88.8927C41.5234 84.1481 42.062 79.5393 43.0833 75.109C47.2343 56.9802 62.7725 43.3333 80.9922 43.3333C91.1294 43.3333 100.323 46.8049 107.458 52.6074C120.61 63.3039 127.887 81.3768 127.887 104.225V109.283C127.887 114.397 129.742 115.014 132.172 115.014C137.962 115.014 139.799 111.411 140.222 109.89C141.751 104.387 137.818 99.5544 132.766 96.6496C127.382 93.5539 121.293 91.3149 114.887 90.0243C114.004 77.0864 107.561 65.6542 97.4334 58.1566C97.3629 58.1044 97.2923 58.0524 97.2216 58.0006C117.817 58.1189 129.405 70.8129 130.569 93.1251C133.626 94.2473 136.562 95.597 139.356 97.1429C147.168 101.464 154.686 109.043 154.686 122.997C154.686 123.649 154.653 124.288 154.589 124.914C156.974 122.381 158.825 119.349 160.038 116.033C161.948 110.812 161.764 105.776 159.493 101.72C155.632 94.8213 149.098 90.7516 141.537 88.9883ZM80.9922 72.9238C85.5065 72.9238 89.6083 74.4561 92.8348 77.0163C96.345 79.8009 98.2329 83.8742 98.2329 88.8927C98.2329 93.9112 96.345 97.9845 92.8348 100.769C89.6083 103.329 85.5065 104.862 80.9922 104.862C76.4779 104.862 72.3761 103.329 69.1496 100.769C65.6394 97.9845 63.7515 93.9112 63.7515 88.8927C63.7515 83.8742 65.6394 79.8009 69.1496 77.0163C72.3761 74.4561 76.4779 72.9238 80.9922 72.9238Z"/></svg>
                     </a>
-                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-link" title="Instagram">
-                        <i class="fa-brands fa-instagram"></i>
+                    <!-- Instagram (SVG) -->
+                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-btn" title="Instagram">
+                        <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
                     </a>
                 </div>
             </div>
-        </section>
-
-        <footer class="footer">
-            MADE WITH <i class="fa-solid fa-heart" style="color: var(--c-alert);"></i> BY SUPERGALEN'S DUNGEON
-        </footer>
+        </div>
 
     </div>
 
-    <!-- p5.js Sketch -->
+    <!-- P5.js Circuit & Elements Sketch -->
     <script>
-        const sketch = (p) => {
-            let particles = [];
-            let flowField = [];
-            let cols, rows;
-            let scl = 40; // Scale of grid
-            let zOff = 0; // Perlin noise Z-offset
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-            p.setup = () => {
-                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-container');
-                cols = p.floor(p.width / scl);
-                rows = p.floor(p.height / scl);
-
-                // Init Particles
-                for (let i = 0; i < 150; i++) {
-                    particles.push(new Particle(p));
-                }
-
-                p.background(10, 10, 15);
-            };
-
-            p.draw = () => {
-                // Fade effect for trails
-                p.noStroke();
-                p.fill(10, 10, 15, 20); // Low opacity rect to create trails
-                p.rect(0, 0, p.width, p.height);
-
-                // Calculate Flow Field
-                let yOff = 0;
-                for (let y = 0; y < rows; y++) {
-                    let xOff = 0;
-                    for (let x = 0; x < cols; x++) {
-                        let index = x + y * cols;
-                        let angle = p.noise(xOff, yOff, zOff) * p.TWO_PI * 4;
-                        let v = p5.Vector.fromAngle(angle);
-                        v.setMag(0.5); // Force magnitude
-                        flowField[index] = v;
-                        xOff += 0.1;
-                    }
-                    yOff += 0.1;
-                }
-                zOff += 0.002; // Time evolution
-
-                // Update Particles
-                for (let part of particles) {
-                    part.follow(flowField);
-                    part.update();
-                    part.edges();
-                    part.show();
-                }
-
-                // Draw "Blueprint" Lines occasionally
-                if (p.frameCount % 60 === 0) {
-                    drawBlueprintLine();
-                }
-            };
-
-            function drawBlueprintLine() {
-                p.stroke(255, 255, 255, 30);
-                p.strokeWeight(1);
-                let x = p.random(p.width);
-                let y = p.random(p.height);
-                if (p.random() > 0.5) {
-                    p.line(x, 0, x, p.height); // Vertical
-                } else {
-                    p.line(0, y, p.width, y); // Horizontal
-                }
-            }
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-                cols = p.floor(p.width / scl);
-                rows = p.floor(p.height / scl);
-            };
-
-            class Particle {
-                constructor(p) {
-                    this.p = p;
-                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
-                    this.vel = p.createVector(0, 0);
-                    this.acc = p.createVector(0, 0);
-                    this.maxSpeed = 2;
-                    // Colors: Gold or Cyan
-                    this.color = p.random() > 0.5 ? p.color(212, 175, 55, 150) : p.color(0, 243, 255, 150);
-                }
-
-                follow(vectors) {
-                    let x = this.p.floor(this.pos.x / scl);
-                    let y = this.p.floor(this.pos.y / scl);
-                    let index = x + y * cols;
-                    let force = vectors[index];
-                    if (force) this.applyForce(force);
-                }
-
-                applyForce(force) {
-                    this.acc.add(force);
-                }
-
-                update() {
-                    this.vel.add(this.acc);
-                    this.vel.limit(this.maxSpeed);
-                    this.pos.add(this.vel);
-                    this.acc.mult(0);
-                }
-
-                edges() {
-                    if (this.pos.x > this.p.width) this.pos.x = 0;
-                    if (this.pos.x < 0) this.pos.x = this.p.width;
-                    if (this.pos.y > this.p.height) this.pos.y = 0;
-                    if (this.pos.y < 0) this.pos.y = this.p.height;
-                }
-
-                show() {
-                    this.p.stroke(this.color);
-                    this.p.strokeWeight(2);
-                    this.p.point(this.pos.x, this.pos.y);
-                }
-            }
-        };
-
-        new p5(sketch); // Start Instance Mode
-
-        // GSAP Animations
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Progress Bar
-        gsap.to('#progress-bar', {
-            width: '100%',
-            scrollTrigger: {
-                trigger: 'body',
-                start: 'top top',
-                end: 'bottom bottom',
-                scrub: 0
+        // --- GSAP Animations ---
+        // Typing Effect
+        gsap.to("#hero-title", {
+            duration: 2,
+            text: {
+                value: "重金屬 魔導士<br>HEAVY METAL MAGUS",
+                delimiter: ""
+            },
+            ease: "none",
+            delay: 0.5,
+            onStart: () => {
+                document.getElementById('hero-title').style.opacity = 1;
             }
         });
 
-        // Content Reveal
-        gsap.utils.toArray('.grid-section').forEach(section => {
-            gsap.to(section, {
-                opacity: 1, y: 0,
-                duration: 1,
+        // Hero Desc Fade
+        gsap.to(".hero-desc", {
+            opacity: 1, x: 0, duration: 1, delay: 2.5, ease: "power2.out"
+        });
+
+        // Card Reveals
+        gsap.utils.toArray('.info-card').forEach(card => {
+            gsap.from(card, {
+                y: 50, opacity: 0, duration: 0.8,
                 scrollTrigger: {
-                    trigger: section,
-                    start: "top 80%",
+                    trigger: card,
+                    start: "top 85%",
                     toggleActions: "play none none reverse"
                 }
             });
         });
+
+        // --- P5.js Sketch (Circuit + Elements) ---
+        const sketch = (p) => {
+            let grid = 40;
+            let cols, rows;
+            let particles = [];
+            let rocks = [];
+            let waterRipples = [];
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                cols = p.ceil(p.width / grid);
+                rows = p.ceil(p.height / grid);
+
+                // Init Circuit Particles
+                for (let i = 0; i < 50; i++) particles.push(new Electron(p));
+                // Init Floating Rocks
+                for (let i = 0; i < 8; i++) rocks.push(new Rock(p));
+            };
+
+            p.draw = () => {
+                p.background(5, 5, 8); // Dark Void
+
+                // Draw Grid (Faint)
+                p.stroke(255, 255, 255, 5);
+                p.strokeWeight(1);
+                for (let x = 0; x <= p.width; x += grid) p.line(x, 0, x, p.height);
+                for (let y = 0; y <= p.height; y += grid) p.line(0, y, p.width, y);
+
+                // Update & Draw Rocks (Earth)
+                for (let r of rocks) r.update().display();
+
+                // Update & Draw Electrons (Circuit)
+                for (let e of particles) e.update().display();
+
+                // Update & Draw Water Ripples (Water)
+                // Randomly spawn ripple
+                if(p.random() < 0.02) {
+                    waterRipples.push(new Ripple(p, p.random(p.width), p.random(p.height)));
+                }
+                for (let i = waterRipples.length - 1; i >= 0; i--) {
+                    waterRipples[i].update();
+                    waterRipples[i].display();
+                    if (waterRipples[i].finished()) waterRipples.splice(i, 1);
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                cols = p.ceil(p.width / grid);
+                rows = p.ceil(p.height / grid);
+            };
+
+            // --- CLASSES ---
+
+            class Electron {
+                constructor(p) {
+                    this.p = p;
+                    this.reset();
+                }
+                reset() {
+                    // Snap to grid
+                    this.pos = this.p.createVector(
+                        this.p.floor(this.p.random(cols)) * grid,
+                        this.p.floor(this.p.random(rows)) * grid
+                    );
+                    this.prev = this.pos.copy();
+                    this.dir = this.pickDir();
+                    this.speed = grid / 10; // Move 1 grid unit every 10 frames approx
+                    this.color = this.p.color(0, 243, 255); // Cyan
+                    this.timer = 0;
+                }
+                pickDir() {
+                    let r = this.p.floor(this.p.random(4));
+                    if (r === 0) return this.p.createVector(1, 0);
+                    if (r === 1) return this.p.createVector(-1, 0);
+                    if (r === 2) return this.p.createVector(0, 1);
+                    return this.p.createVector(0, -1);
+                }
+                update() {
+                    // Manhattan Movement
+                    this.timer++;
+                    if (this.timer > 20) { // Change direction
+                        this.pos.add(p5.Vector.mult(this.dir, grid));
+                        this.prev = this.pos.copy();
+                        this.dir = this.pickDir();
+                        this.timer = 0;
+
+                        // Wrap
+                        if (this.pos.x < 0 || this.pos.x > this.p.width || this.pos.y < 0 || this.pos.y > this.p.height) {
+                            this.reset();
+                        }
+                    }
+                    return this;
+                }
+                display() {
+                    // Draw trail
+                    this.p.stroke(this.color);
+                    this.p.strokeWeight(2);
+                    // Interpolate visual position
+                    let currX = this.prev.x + (this.dir.x * grid * (this.timer/20));
+                    let currY = this.prev.y + (this.dir.y * grid * (this.timer/20));
+                    this.p.point(currX, currY);
+
+                    // Draw faint head
+                    this.p.noStroke();
+                    this.p.fill(this.color);
+                    this.p.circle(currX, currY, 4);
+                }
+            }
+
+            class Rock {
+                constructor(p) {
+                    this.p = p;
+                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
+                    this.size = p.random(30, 80);
+                    this.vel = p5.Vector.random2D().mult(0.2);
+                    this.verts = [];
+                    // Generate polygon
+                    let sides = p.floor(p.random(5, 9));
+                    for(let i=0; i<sides; i++){
+                        let angle = p.map(i, 0, sides, 0, p.TWO_PI);
+                        let r = this.size + p.random(-10, 10);
+                        this.verts.push(p.createVector(r * p.cos(angle), r * p.sin(angle)));
+                    }
+                }
+                update() {
+                    this.pos.add(this.vel);
+                    if(this.pos.x < -100) this.pos.x = this.p.width + 100;
+                    if(this.pos.x > this.p.width + 100) this.pos.x = -100;
+                    if(this.pos.y < -100) this.pos.y = this.p.height + 100;
+                    if(this.pos.y > this.p.height + 100) this.pos.y = -100;
+                    return this;
+                }
+                display() {
+                    this.p.push();
+                    this.p.translate(this.pos.x, this.pos.y);
+                    this.p.noFill();
+                    this.p.stroke(198, 166, 100, 50); // Gold, transparent
+                    this.p.strokeWeight(2);
+                    this.p.beginShape();
+                    for(let v of this.verts) this.p.vertex(v.x, v.y);
+                    this.p.endShape(this.p.CLOSE);
+                    this.p.pop();
+                }
+            }
+
+            class Ripple {
+                constructor(p, x, y) {
+                    this.p = p;
+                    this.x = x;
+                    this.y = y;
+                    this.r = 0;
+                    this.alpha = 200;
+                }
+                update() {
+                    this.r += 1.5;
+                    this.alpha -= 2;
+                }
+                finished() { return this.alpha < 0; }
+                display() {
+                    this.p.noFill();
+                    this.p.stroke(76, 175, 233, this.alpha); // Water Blue
+                    this.p.strokeWeight(2);
+                    this.p.circle(this.x, this.y, this.r);
+                }
+            }
+        };
+
+        new p5(sketch);
     </script>
 </body>
 </html>
