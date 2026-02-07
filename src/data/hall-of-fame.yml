@@ -680,6 +680,18 @@ members:
       - id: "wood_craft"
         label: "木工魂"
 
+  - id: "sean"
+    name: "湘 Sean"
+    avatar: "/assets/img/guild/sean/avatar.webp"
+    page: "/guild/sean.html"
+    tags:
+      - id: "astrologer"
+        label: "占星師"
+      - id: "occultist"
+        label: "神秘學"
+      - id: "slashie"
+        label: "斜槓中年"
+
   - id: "yufel"
     name: "怪奇瘋子 Yufel"
     avatar: "/assets/img/guild/yufel/avatar.webp"
