@@ -7,21 +7,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
-    <!-- Updated to 6.5.1 for Threads Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            /* Palette Refresh: Cream & Matcha (Light Theme) */
-            --c-bg: #F9F7F2; /* Warm Vanilla Paper */
-            --c-bg-transparent: rgba(255, 255, 255, 0.65); /* Frosted Glass */
-            --c-text: #5D4037; /* Dark Roast Coffee */
-            --c-text-light: #8D6E63; /* Milk Coffee */
+            /* Warm Oven Palette */
+            --c-bg: #F9F7F2;
+            --c-oven-dark: #3E2723; /* Dark Chocolate */
+            --c-oven-glass: rgba(20, 10, 5, 0.85);
+            --c-heat: #FF7043; /* Heat Glow */
+            --c-gold: #FFC107; /* Burnished Gold */
 
-            --c-brand: #78866B; /* Sage Green (Muted Olive) */
-            --c-accent: #A4C639; /* Fresh Matcha (Highlights) */
-            --c-warm: #D4A373; /* Caramel / Gold */
-            --c-berry: #C27867; /* Dried Berry (Pop color) */
+            --c-matcha: #A4C639; /* Fresh Matcha */
+            --c-cream: #FFF8E1; /* Butter Cream */
+            --c-bread: #D7CCC8; /* Flour/Dough */
+            --c-cookie: #EFEBE9; /* Biscuit */
+
+            --c-text: #5D4037;
+            --c-accent: #C2185B; /* Berry Jam */
 
             --font-display: 'Cinzel', serif;
             --font-body: 'Noto Serif TC', serif;
@@ -40,513 +43,390 @@
             overflow-x: hidden;
             opacity: 0;
             transition: opacity 1s ease;
-            cursor: crosshair;
-        }
-
-        /* Selection Color */
-        ::selection {
-            background: var(--c-brand);
-            color: white;
-        }
-
-        /* Custom "Whisk" Cursor Effect */
-        #custom-cursor-follower {
-            position: fixed;
-            top: 0; left: 0;
-            pointer-events: none;
-            font-size: 24px;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 0.2s;
-            mix-blend-mode: multiply; /* Better for light bg */
-            color: var(--c-brand);
-        }
-
-        body:hover #custom-cursor-follower {
-            opacity: 1;
+            cursor: default;
         }
 
         body.loaded {
             opacity: 1;
         }
 
-        /* Scroll Progress Bar (Piping Bag) */
-        #piping-progress {
+        /* --- OVEN DOOR (HERO) --- */
+        #oven-door {
             position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: 100;
+            perspective: 1000px;
+            pointer-events: none; /* Allow scroll through initially? No, we need to block clicks on content but allow scroll */
+            /* We'll use pointer-events: none on the *door* itself once opened, but initially it covers */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .door-panel {
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(62, 39, 35, 0.9), var(--c-oven-dark));
+            border: 20px solid #281815;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+            position: absolute;
             top: 0; left: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--c-brand), var(--c-warm));
-            width: 0%;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(120, 134, 107, 0.3);
-            border-radius: 0 4px 4px 0;
-        }
-
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-        }
-
-        main {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        section {
-            min-height: 100vh;
+            transform-origin: top center;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 6rem 0;
-            position: relative;
-        }
-
-        /* Typography */
-        h1, h2, h3, h4 {
-            font-family: var(--font-display);
-            font-weight: 700;
-            line-height: 1.1;
-        }
-
-        h1 {
-            font-size: clamp(3.5rem, 10vw, 7rem);
-            color: var(--c-brand);
-            text-align: center;
-            margin-bottom: 0.5rem;
-            /* Softer shadow for light theme */
-            text-shadow: 2px 2px 0px rgba(164, 198, 57, 0.2);
-            position: relative;
-            display: inline-block;
-        }
-
-        h2 {
-            font-size: clamp(2rem, 5vw, 4rem);
-            margin-bottom: 3rem;
-            color: var(--c-brand);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            text-align: center;
-            position: relative;
-        }
-
-        h2::after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 3px;
-            background: var(--c-warm);
-            margin: 1rem auto 0;
-        }
-
-        h3 {
-            font-size: 1.5rem;
-            color: var(--c-text);
-            margin-bottom: 1rem;
-            display: flex;
             align-items: center;
-            gap: 0.5rem;
+            overflow: hidden;
         }
 
-        p {
-            font-size: 1.15rem;
-            line-height: 2;
-            margin-bottom: 1.5rem;
-            color: var(--c-text-light);
-            font-weight: 400;
-        }
-
-        .highlight {
-            color: var(--c-berry);
-            font-weight: 700;
-            background: linear-gradient(120deg, rgba(194, 120, 103, 0.1) 0%, rgba(194, 120, 103, 0) 100%);
-            padding: 0 4px;
-        }
-
-        /* Layout Utilities */
-        .glass-panel {
-            background: var(--c-bg-transparent);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            padding: 3rem;
+        .door-glass {
+            position: absolute;
+            top: 50px; bottom: 50px; left: 50px; right: 50px;
+            background: rgba(255, 160, 122, 0.05);
             border-radius: 20px;
-            /* Soft, paper-like shadow */
-            box-shadow: 0 20px 60px rgba(93, 64, 55, 0.08), inset 0 0 0 1px rgba(255,255,255,0.5);
-            margin-bottom: 4rem;
-            transform: translateY(50px);
-            opacity: 0;
-            position: relative;
-            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 50px rgba(255, 112, 67, 0.2);
+            pointer-events: auto; /* Catch clicks if needed */
         }
 
-        .glass-panel::before {
-            content: '';
+        .door-handle {
+            width: 60%;
+            height: 40px;
+            background: linear-gradient(90deg, #5D4037, #8D6E63, #5D4037);
+            border-radius: 20px;
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 6px;
-            background: repeating-linear-gradient(
-                45deg,
-                var(--c-brand),
-                var(--c-brand) 10px,
-                var(--c-bg) 10px,
-                var(--c-bg) 20px
-            );
-            opacity: 0.5;
+            bottom: 15%;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        @media (max-width: 900px) {
-            .grid-2 { grid-template-columns: 1fr; gap: 2rem; }
-        }
-
-        /* Hero Specifics */
-        .avatar-frame {
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            margin: 0 auto 2rem;
-            padding: 8px;
-            border: 2px dashed var(--c-brand);
-            position: relative;
-            background: white;
-        }
-
-        .avatar-frame img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid var(--c-bg);
-            box-shadow: 0 10px 30px rgba(93, 64, 55, 0.15);
-        }
-
-        .hero-tagline {
-            font-size: 1.2rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: var(--c-text-light);
-            margin-bottom: 2rem;
-            text-align: center;
-            font-weight: 700;
-        }
-
-        /* Stats Section */
-        .stat-row {
-            margin-bottom: 1.5rem;
-        }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
+        .oven-title {
             font-family: var(--font-display);
-            color: var(--c-brand);
-            font-weight: 700;
-        }
-
-        .stat-bar-bg {
-            width: 100%;
-            height: 8px;
-            background: rgba(93, 64, 55, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .stat-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--c-brand), var(--c-warm));
-            width: 0%;
-        }
-
-        /* Services / Alchemy */
-        .alchemy-card {
-            background: rgba(255,255,255,0.6);
-            padding: 2rem;
-            border-radius: 12px;
-            border: 1px solid rgba(120, 134, 107, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .alchemy-card:hover {
-            transform: translateY(-8px);
-            background: white;
-            box-shadow: 0 15px 30px rgba(93, 64, 55, 0.08);
-            border-color: var(--c-warm);
-        }
-
-        .alchemy-icon {
-            font-size: 2.5rem;
-            color: var(--c-brand);
-            margin-bottom: 1rem;
-        }
-
-        /* Gallery */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            grid-auto-rows: 250px;
-            gap: 1.5rem;
-        }
-
-        .g-item {
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            cursor: pointer;
-            background: white;
-            padding: 10px; /* Polaroid style frame */
-        }
-
-        .g-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 4px;
-            transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1);
-        }
-
-        .g-item:hover img {
-            transform: scale(1.05);
-        }
-
-        .g-1 { grid-column: span 6; }
-        .g-2 { grid-column: span 6; }
-        .g-3 { grid-column: span 4; }
-        .g-4 { grid-column: span 8; }
-
-        @media (max-width: 768px) {
-            .g-1, .g-2, .g-3, .g-4 { grid-column: span 12; }
-        }
-
-        /* Footer */
-        .social-circle {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: white;
-            border: 2px solid var(--c-brand);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: var(--c-brand);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-
-        .social-circle::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-brand);
-            transform: scale(0);
-            transition: transform 0.3s ease;
-            z-index: 1; /* Under icon but above bg */
-            border-radius: 50%;
-        }
-
-        .social-circle i {
-            position: relative;
+            color: var(--c-gold);
+            font-size: clamp(2rem, 5vw, 4rem);
+            text-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
             z-index: 2;
-            transition: color 0.3s;
+            text-align: center;
+            letter-spacing: 0.1em;
         }
 
-        .social-circle:hover {
-            border-color: var(--c-brand);
+        .oven-hint {
+            color: rgba(255,255,255,0.6);
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+            z-index: 2;
         }
 
-        .social-circle:hover i {
-            color: white;
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* --- CONTENT WRAPPERS (PASTRIES) --- */
+        #content-layer {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding-top: 100vh; /* Spacer for the "Opening" scroll */
+            padding-bottom: 20vh;
         }
 
-        .social-circle:hover::before {
-            transform: scale(1);
+        .pastry-card {
+            position: relative;
+            margin-bottom: 15vh;
+            padding: 4rem;
+            color: var(--c-text);
+            transition: transform 0.3s ease;
         }
 
-        /* Loader */
-        #loader {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-bg);
-            z-index: 9999;
+        /* 1. CHEF COOKIE (Avatar + Intro) */
+        .card-cookie {
+            background: var(--c-cookie);
+            border-radius: 50% 50% 45% 55% / 55% 45% 60% 40%; /* Organic Cookie Shape */
+            box-shadow:
+                inset 10px 10px 30px rgba(255,255,255,0.8),
+                inset -10px -10px 30px rgba(93, 64, 55, 0.1),
+                15px 15px 40px rgba(0,0,0,0.1);
             display: flex;
-            justify-content: center;
-            align-items: center;
             flex-direction: column;
-            transition: opacity 0.8s ease;
+            align-items: center;
+            text-align: center;
+            max-width: 800px;
+            margin-left: auto; margin-right: auto;
+            border: 8px solid rgba(255,255,255,0.4);
         }
 
-        .spinner {
-            font-size: 3rem;
-            color: var(--c-brand);
-            animation: spin 2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite; /* Jelly Spin */
+        /* The "Chip" decorations */
+        .card-cookie::before {
+            content: ''; position: absolute; top: 15%; right: 20%;
+            width: 40px; height: 30px; background: #5D4037; border-radius: 50%; opacity: 0.8;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        .card-cookie::after {
+            content: ''; position: absolute; bottom: 20%; left: 15%;
+            width: 35px; height: 35px; background: #5D4037; border-radius: 50%; opacity: 0.8;
+             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        /* 2. STATS BREAD (Loaf) */
+        .card-bread {
+            background: #EFEBE9;
+            border-radius: 40px 40px 100px 100px / 120px 120px 30px 30px; /* Loaf Top */
+            box-shadow:
+                0 20px 0 #D7CCC8, /* Crust Thickness */
+                0 30px 40px rgba(0,0,0,0.15);
+            padding: 5rem 3rem 3rem;
+            max-width: 700px;
+            margin-left: auto; margin-right: auto;
+            position: relative;
+        }
+
+        /* Bread lines */
+        .card-bread .crust-line {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 80%; height: 100%; border-radius: inherit;
+            border-top: 4px solid rgba(93, 64, 55, 0.1);
+            pointer-events: none;
+        }
+
+        /* 3. ALCHEMY CAKE (Layered) */
+        .card-cake {
+            background: linear-gradient(to bottom, #FFF9C4 0%, #FFF9C4 30%, #FFECB3 30%, #FFECB3 60%, #FFE082 60%, #FFE082 100%);
+            border-radius: 20px 100px 20px 20px; /* Wedge-ish */
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin-left: auto; margin-right: auto;
+        }
+
+        .cake-frosting {
+            background: white;
+            padding: 3rem;
+            border-bottom: 8px solid var(--c-matcha); /* Filling layer */
+        }
+
+        .cake-body {
+            padding: 3rem;
+        }
+
+        /* AVATAR STYLING */
+        .chef-avatar-container {
+            width: 250px; height: 250px;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .chef-avatar {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 6px solid white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        .chef-hat {
+            position: absolute;
+            top: -40px; right: -20px;
+            font-size: 4rem;
+            color: white;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
+            transform: rotate(15deg);
+        }
+
+        /* TYPOGRAPHY OVERRIDES */
+        h2 {
+            font-family: var(--font-display);
+            color: var(--c-text);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .card-cookie h2 { color: var(--c-matcha); }
+        .card-bread h2 { color: #8D6E63; }
+        .card-cake h2 { color: #C2185B; }
+
+        p { line-height: 1.8; font-size: 1.1rem; }
+
+        /* STAT BARS (Flour Dust Style) */
+        .stat-bar-container {
+            background: rgba(0,0,0,0.05);
+            border-radius: 20px;
+            height: 12px;
+            margin: 1rem 0 2rem;
+            overflow: hidden;
+        }
+        .stat-bar {
+            height: 100%;
+            background: var(--c-matcha);
+            border-radius: 20px;
+            width: 0%;
+            background-image: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+        }
+
+        /* GALLERY GRID (Waffle) */
+        .waffle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            background: #D7CCC8;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: inset 2px 2px 10px rgba(0,0,0,0.1);
+        }
+        .waffle-item img {
+            width: 100%; height: 250px; object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.3s;
+        }
+        .waffle-item:hover img { transform: scale(1.02); }
+
+        /* THREE.JS CANVAS */
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+        }
+
+        /* FOOTER */
+        .footer-card {
+            text-align: center;
+            padding: 4rem;
+            margin-top: 10vh;
+        }
+
+        .social-btn {
+            display: inline-flex; width: 60px; height: 60px;
+            border-radius: 50%; background: var(--c-matcha); color: white;
+            align-items: center; justify-content: center; font-size: 1.5rem;
+            margin: 0 1rem; text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .social-btn:hover { transform: scale(1.1) rotate(10deg); }
+
+        /* LOADER */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            font-family: var(--font-display); font-size: 2rem; color: var(--c-matcha);
+        }
+
+        /* Responsive */
+        @media(max-width: 768px) {
+            .pastry-card { padding: 2rem; border-radius: 20px !important; margin: 2rem 1rem; }
+            .waffle-grid { grid-template-columns: 1fr; }
+        }
 
     </style>
 </head>
 <body>
 
-    <div id="piping-progress"></div>
-    <div id="custom-cursor-follower"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+    <div id="loader">FLORA'S PATISSERIE</div>
 
-    <div id="loader">
-        <i class="fa-solid fa-cookie-bite spinner"></i>
-        <div style="margin-top: 1rem; font-family: var(--font-display); color: var(--c-text-light); letter-spacing: 2px;">FLORA'S PATISSERIE</div>
+    <!-- OVEN DOOR -->
+    <div id="oven-door">
+        <div class="door-panel">
+            <div class="door-glass"></div>
+            <div class="door-handle"></div>
+            <h1 class="oven-title">FLORA<br><span style="font-size: 0.5em; color: white;">The Sweet Alchemy</span></h1>
+            <div class="oven-hint"><i class="fa-solid fa-chevron-down"></i> SCROLL TO OPEN <i class="fa-solid fa-chevron-down"></i></div>
+        </div>
     </div>
 
+    <!-- 3D BACKGROUND -->
     <div id="canvas-container"></div>
 
-    <main>
-        <!-- HERO -->
-        <section id="hero">
-            <div style="text-align: center;">
-                <div class="avatar-frame">
-                    <img src="/assets/img/guild/flora/profile.webp" alt="Flora">
-                </div>
-                <div class="hero-tagline">丰饶甜食店 | Est. 17 Years</div>
-                <h1>Flora 芙老師</h1>
-                <p style="max-width: 600px; margin: 2rem auto; font-style: italic; border-left: 3px solid var(--c-brand); padding-left: 1rem; text-align: left; background: rgba(255,255,255,0.4); padding: 1.5rem; border-radius: 0 10px 10px 0;">
-                    "甜點是通往幸福的最短途徑，是連結人、土地與情感的最佳入口。"
-                </p>
-                <div style="margin-top: 2rem;">
-                     <i class="fa-solid fa-angles-down" style="font-size: 2rem; color: var(--c-text-light); animation: bounce 2s infinite;"></i>
-                </div>
-            </div>
-        </section>
+    <!-- SCROLL CONTENT -->
+    <div id="content-layer">
 
-        <!-- INTRO & STATS -->
-        <section id="intro">
-            <div class="glass-panel">
-                <div class="grid-2">
+        <!-- SECTION 1: CHEF COOKIE -->
+        <div class="pastry-card card-cookie">
+            <div class="chef-avatar-container">
+                <img src="/assets/img/guild/flora/profile.webp" class="chef-avatar" alt="Flora">
+                <i class="fa-solid fa-hat-chef chef-hat"></i>
+            </div>
+            <h2>Master Chef Flora</h2>
+            <p>
+                我是 <span style="color: var(--c-matcha); font-weight: bold;">Flora 芙老師</span>，品牌是豐饒甜食店。<br>
+                在甜點領域深耕 17 年，從台灣到海外，走過教學、研發、品牌經營三條戰線。
+            </p>
+            <p style="margin-top: 1rem; font-style: italic; color: #8D6E63;">
+                "甜點是通往幸福的最短途徑，是連結人、土地與情感的最佳入口。"
+            </p>
+        </div>
+
+        <!-- SECTION 2: STATS BREAD -->
+        <div class="pastry-card card-bread">
+            <div class="crust-line"></div>
+            <h2>Ingredient Analysis</h2>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>SWEETNESS</span> <span>100%</span></div>
+                <div class="stat-bar-container"><div class="stat-bar" style="width: 100%;"></div></div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>R&D PRECISION</span> <span>98%</span></div>
+                <div class="stat-bar-container"><div class="stat-bar" style="width: 98%;"></div></div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>TEACHING</span> <span>95%</span></div>
+                <div class="stat-bar-container"><div class="stat-bar" style="width: 95%;"></div></div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>CULTURE</span> <span>99%</span></div>
+                <div class="stat-bar-container"><div class="stat-bar" style="width: 99%;"></div></div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: SERVICE CAKE -->
+        <div class="pastry-card card-cake">
+            <div class="cake-frosting">
+                <h2>The Sweet Menu</h2>
+                <p>把「產品、教育、文化」整合成一套有策略的內容系統。</p>
+            </div>
+            <div class="cake-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                     <div>
-                        <h2><i class="fa-solid fa-seedling" style="font-size: 0.8em; margin-right: 10px; color: var(--c-brand);"></i> Master Chef</h2>
-                        <p>
-                            我是 <span class="highlight">Flora 芙老師</span>，品牌是豐饒甜食店。
-                            在甜點領域深耕 17 年，從台灣到海外，走過教學、研發、品牌經營三條戰線。
-                        </p>
-                        <p>
-                            教學對象橫跨幼兒園、國高中到成人職訓，也曾在馬來西亞與印度用英文授課，把甜點變成一種跨文化的共同語言。
-                        </p>
+                        <h3 style="color: var(--c-accent);"><i class="fa-solid fa-utensils"></i> Product</h3>
+                        <p>從菜單設計、成本結構到定價邏輯。</p>
                     </div>
                     <div>
-                        <!-- RPG STATS -->
-                        <div class="stat-row">
-                            <div class="stat-header"><span>SWEETNESS</span> <span>100%</span></div>
-                            <div class="stat-bar-bg"><div class="stat-bar-fill" data-width="100%"></div></div>
-                        </div>
-                        <div class="stat-row">
-                            <div class="stat-header"><span>PRECISION (R&D)</span> <span>98%</span></div>
-                            <div class="stat-bar-bg"><div class="stat-bar-fill" data-width="98%"></div></div>
-                        </div>
-                        <div class="stat-row">
-                            <div class="stat-header"><span>TEACHING</span> <span>95%</span></div>
-                            <div class="stat-bar-bg"><div class="stat-bar-fill" data-width="95%"></div></div>
-                        </div>
-                        <div class="stat-row">
-                            <div class="stat-header"><span>CULTURE LINK</span> <span>99%</span></div>
-                            <div class="stat-bar-bg"><div class="stat-bar-fill" data-width="99%"></div></div>
-                        </div>
+                        <h3 style="color: var(--c-accent);"><i class="fa-solid fa-graduation-cap"></i> Education</h3>
+                        <p>跨越年齡與國界的專業教學模組。</p>
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <h3 style="color: var(--c-accent);"><i class="fa-solid fa-book-atlas"></i> Culture</h3>
+                        <p>用企業經營的角度操作甜點，連結土地情感。</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- ALCHEMY / SERVICES -->
-        <section id="alchemy">
-            <h2><i class="fa-solid fa-mortar-pestle" style="font-size: 0.8em; margin-right: 15px;"></i> The Sweet Alchemy</h2>
-            <div class="grid-3">
-                <div class="alchemy-card">
-                    <div class="alchemy-icon"><i class="fa-solid fa-utensils"></i></div>
-                    <h3>Product 產品</h3>
-                    <p>從菜單設計、成本結構到定價邏輯。打造不僅美味，更具備商業生存能力的甜點產品線。</p>
-                </div>
-                <div class="alchemy-card">
-                    <div class="alchemy-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
-                    <h3>Education 教育</h3>
-                    <p>課程模組化設計。將複雜的甜點工藝拆解為系統化知識，跨越年齡與國界的專業教學。</p>
-                </div>
-                <div class="alchemy-card">
-                    <div class="alchemy-icon"><i class="fa-solid fa-book-open-reader"></i></div>
-                    <h3>Culture 文化</h3>
-                    <p>融入永續與在地議題。用企業經營的角度操作甜點，讓產品成為連結土地情感的載體。</p>
-                </div>
+        <!-- SECTION 4: SHOWCASE WAFFLE -->
+        <div class="pastry-card" style="background: transparent; box-shadow: none; padding: 0;">
+            <div class="waffle-grid">
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_tree.webp"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_slice.webp"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_floral.webp"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_cupcake.webp"></div>
             </div>
-        </section>
-
-        <!-- STORY -->
-        <section id="story">
-            <div class="glass-panel" style="text-align: center; border-color: var(--c-warm);">
-                <i class="fa-solid fa-earth-asia" style="font-size: 3rem; color: var(--c-brand); margin-bottom: 2rem;"></i>
-                <h2>台灣的故事</h2>
-                <p style="max-width: 800px; margin: 0 auto; font-size: 1.3rem; color: var(--c-text);">
-                    現在，我聚焦在用甜點說出台灣的故事。<br>
-                    把<span class="highlight">海洋、土地、文化、教育</span>放進產品裡。
-                </p>
-                <div style="margin: 3rem auto; height: 1px; background: rgba(93, 64, 55, 0.1); width: 100px;"></div>
-                <p>
-                    讓每一份甜點不只是商品，而是一個可以被理解、被記住、也被分享的價值載體。
-                </p>
-            </div>
-        </section>
-
-        <!-- GALLERY -->
-        <section id="gallery">
-            <h2 style="margin-bottom: 4rem;">Showcase</h2>
-            <div class="gallery-grid">
-                <div class="g-item g-1"><img src="/assets/img/guild/flora/showcase_tree.webp" alt="Tree"></div>
-                <div class="g-item g-2"><img src="/assets/img/guild/flora/showcase_slice.webp" alt="Slice"></div>
-                <div class="g-item g-4"><img src="/assets/img/guild/flora/showcase_floral.webp" alt="Floral"></div>
-                <div class="g-item g-3"><img src="/assets/img/guild/flora/showcase_cupcake.webp" alt="Cupcake"></div>
-            </div>
-        </section>
+        </div>
 
         <!-- FOOTER -->
-        <section id="footer" style="min-height: 50vh; justify-content: flex-end; padding-bottom: 4rem;">
-            <div style="text-align: center;">
-                <h2 style="font-size: 2rem; color: var(--c-text);">Connect with Flora</h2>
-                <div class="social-links" style="display: flex; justify-content: center; gap: 2rem; margin: 3rem 0;">
-                    <a href="https://www.threads.com/@flora_setsuna_tw" target="_blank" class="social-circle" aria-label="Threads">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                    <a href="https://www.facebook.com/FlowGateau" target="_blank" class="social-circle" aria-label="Facebook">
-                        <i class="fa-brands fa-facebook-f"></i>
-                    </a>
-                </div>
-                <p style="opacity: 0.5; font-size: 0.9rem;">
-                    Made with love by SuperGalen's Dungeon
-                </p>
+        <div class="footer-card">
+            <h2>Connect with Flora</h2>
+            <div style="margin-top: 2rem;">
+                <a href="https://www.threads.net/@flora_setsuna_tw" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.facebook.com/FlowGateau" target="_blank" class="social-btn"><i class="fa-brands fa-facebook-f"></i></a>
             </div>
-        </section>
+            <p style="margin-top: 2rem; opacity: 0.6; font-size: 0.9rem;">Made with love by SuperGalen's Dungeon</p>
+        </div>
 
-    </main>
+    </div>
 
-    <!-- IMPORT MAP -->
+    <!-- SCRIPTS -->
     <script type="importmap">
         {
             "imports": {
@@ -555,93 +435,72 @@
             }
         }
     </script>
-
-    <!-- LIBRARIES -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js"></script>
 
-    <style>
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
-    </style>
-
-    <!-- SCRIPT INJECTION POINT -->
     <script type="module">
         import * as THREE from 'three';
 
-        // --- GSAP INIT ---
+        // --- GSAP SETUP ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- THREE.JS SCENE SETUP ---
+        // --- THREE.JS SCENE ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Light Cream Fog for Paper aesthetic
-        scene.fog = new THREE.FogExp2(0xF9F7F2, 0.02);
-        //scene.background = new THREE.Color(0xF9F7F2); // Let CSS handle BG, use alpha for renderer
+        scene.fog = new THREE.FogExp2(0xF9F7F2, 0.02); // Cream fog
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 10;
+        camera.position.set(0, 0, 10);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- HELPER: TEXT TO TEXTURE ---
+        // --- INGREDIENTS (SPRITES) ---
         function createIconTexture(iconChar, color) {
             const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
+            canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-
             ctx.font = '900 80px "Font Awesome 6 Free"';
             ctx.fillStyle = color;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(iconChar, 64, 64);
-
-            const tex = new THREE.CanvasTexture(canvas);
-            return tex;
+            return new THREE.CanvasTexture(canvas);
         }
 
-        // --- CREATE ICONS (Pastry Palette) ---
         const icons = [
-            { char: '\uf1fd', color: '#78866B' }, // Cake (Sage)
-            { char: '\uf810', color: '#D4A373' }, // Cupcake (Caramel)
-            { char: '\uf563', color: '#8D6E63' }, // Cookie (Cocoa)
-            { char: '\uf094', color: '#A4C639' }, // Lemon (Matcha)
-            { char: '\uf179', color: '#C27867' }, // Apple (Berry)
-            { char: '\uf02d', color: '#78866B' }, // Book (Sage)
+            { char: '\uf1fd', color: '#A4C639' }, // Cake (Matcha)
+            { char: '\uf810', color: '#FF7043' }, // Cupcake (Orange)
+            { char: '\uf563', color: '#8D6E63' }, // Cookie (Choco)
+            { char: '\uf094', color: '#FDD835' }, // Lemon (Yellow)
         ];
 
         const sprites = [];
         const group = new THREE.Group();
         scene.add(group);
 
+        // Wait for fonts
         document.fonts.ready.then(() => {
-            const materials = icons.map(icon => {
-                const map = createIconTexture(icon.char, icon.color);
-                return new THREE.SpriteMaterial({ map: map, transparent: true, opacity: 0.9 });
-            });
+            const materials = icons.map(i => new THREE.SpriteMaterial({
+                map: createIconTexture(i.char, i.color),
+                transparent: true, opacity: 0.8
+            }));
 
-            for (let i = 0; i < 70; i++) { // Slightly more density for pop
-                const matIndex = Math.floor(Math.random() * materials.length);
-                const sprite = new THREE.Sprite(materials[matIndex]);
-
+            for(let i=0; i<60; i++) {
+                const sprite = new THREE.Sprite(materials[Math.floor(Math.random()*materials.length)]);
+                // Spread wide and tall
                 sprite.position.set(
-                    (Math.random() - 0.5) * 25,
-                    (Math.random() - 0.5) * 35,
-                    (Math.random() - 0.5) * 15
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 50 - 10, // Start lower
+                    (Math.random() - 0.5) * 20
                 );
-
-                const scale = Math.random() * 0.7 + 0.4;
+                const scale = Math.random() * 0.8 + 0.5;
                 sprite.scale.set(scale, scale, 1);
 
                 sprite.userData = {
-                    floatSpeed: (Math.random() * 0.01) + 0.005,
-                    floatOffset: Math.random() * Math.PI * 2,
-                    initialY: sprite.position.y,
-                    initialX: sprite.position.x
+                    speedY: Math.random() * 0.02 + 0.01,
+                    wobble: Math.random() * Math.PI * 2
                 };
 
                 group.add(sprite);
@@ -649,216 +508,70 @@
             }
         });
 
-        // --- PARTICLE SYSTEM (CONFETTI BURST) ---
-        const particleCount = 150;
-        const particleGeo = new THREE.BufferGeometry();
-        const particlePositions = new Float32Array(particleCount * 3);
-        const particleColors = new Float32Array(particleCount * 3);
-        const particleVelocities = [];
-        const particleLife = new Float32Array(particleCount);
-
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-        particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-
-        const particleMat = new THREE.PointsMaterial({
-            size: 0.15,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0
-        });
-
-        const particleSystem = new THREE.Points(particleGeo, particleMat);
-        scene.add(particleSystem);
-
-        const paletteColors = [
-            new THREE.Color('#78866B'),
-            new THREE.Color('#D4A373'),
-            new THREE.Color('#C27867'),
-            new THREE.Color('#A4C639')
-        ];
-
-        for(let i=0; i<particleCount; i++) {
-            particleLife[i] = 0;
-            particleVelocities.push(new THREE.Vector3());
-        }
-
-        function triggerBurst(x, y, z) {
-            let activeCount = 0;
-            for(let i=0; i<particleCount; i++) {
-                if(particleLife[i] <= 0 && activeCount < 25) {
-                    particleLife[i] = 1.0;
-
-                    particlePositions[i*3] = x;
-                    particlePositions[i*3+1] = y;
-                    particlePositions[i*3+2] = z;
-
-                    // Random color from palette
-                    const col = paletteColors[Math.floor(Math.random() * paletteColors.length)];
-                    particleColors[i*3] = col.r;
-                    particleColors[i*3+1] = col.g;
-                    particleColors[i*3+2] = col.b;
-
-                    const theta = Math.random() * Math.PI * 2;
-                    const phi = Math.random() * Math.PI;
-                    const speed = Math.random() * 0.2 + 0.1;
-
-                    particleVelocities[i].set(
-                        Math.sin(phi) * Math.cos(theta) * speed,
-                        Math.sin(phi) * Math.sin(theta) * speed,
-                        Math.cos(phi) * speed
-                    );
-
-                    activeCount++;
-                }
-            }
-            particleSystem.geometry.attributes.position.needsUpdate = true;
-            particleSystem.geometry.attributes.color.needsUpdate = true;
-        }
-
         // --- ANIMATION LOOP ---
-        const mouse = new THREE.Vector2();
-        const clock = new THREE.Clock();
-
         function animate() {
-            const time = clock.getElapsedTime();
+            sprites.forEach(s => {
+                s.position.y += s.userData.speedY; // Float up like heat/bubbles
+                s.position.x += Math.sin(Date.now() * 0.001 + s.userData.wobble) * 0.01;
 
-            // 1. Sprite Physics
-            const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-            vector.unproject(camera);
-            const dir = vector.sub(camera.position).normalize();
-            const distance = -camera.position.z / dir.z;
-            const worldMouse = camera.position.clone().add(dir.multiplyScalar(distance));
-
-            sprites.forEach(sprite => {
-                const baseY = sprite.userData.initialY + Math.sin(time + sprite.userData.floatOffset) * 0.5;
-
-                // Gentle sway
-                sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, sprite.userData.initialX + Math.cos(time * 0.5 + sprite.userData.floatOffset) * 0.5, 0.05);
-
-                // Mouse interaction
-                const dx = sprite.position.x - worldMouse.x * 10;
-                const dy = sprite.position.y - worldMouse.y * 10;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-
-                if(dist < 4) {
-                    const force = (4 - dist) * 0.8;
-                    sprite.position.x += dx * force * 0.05;
-                    sprite.position.y += dy * force * 0.05;
-                    sprite.scale.x = THREE.MathUtils.lerp(sprite.scale.x, 1.2, 0.1);
-                    sprite.scale.y = THREE.MathUtils.lerp(sprite.scale.y, 1.2, 0.1);
-                } else {
-                    // Normalize scale
-                    sprite.scale.x = THREE.MathUtils.lerp(sprite.scale.x, sprite.scale.x > 0.8 ? 0.6 : sprite.scale.x, 0.1);
-                    sprite.scale.y = THREE.MathUtils.lerp(sprite.scale.y, sprite.scale.y > 0.8 ? 0.6 : sprite.scale.y, 0.1);
-                }
-
-                sprite.position.y = THREE.MathUtils.lerp(sprite.position.y, baseY, 0.1);
+                // Reset if too high
+                if(s.position.y > 20) s.position.y = -30;
             });
 
-            // 2. Particles
-            const positions = particleSystem.geometry.attributes.position.array;
-            let activeParticles = false;
-
-            for(let i=0; i<particleCount; i++) {
-                if(particleLife[i] > 0) {
-                    activeParticles = true;
-                    particleLife[i] -= 0.015;
-
-                    positions[i*3] += particleVelocities[i].x;
-                    positions[i*3+1] += particleVelocities[i].y;
-                    positions[i*3+2] += particleVelocities[i].z;
-
-                    particleVelocities[i].y -= 0.003; // Light gravity
-                    particleVelocities[i].x *= 0.98; // Drag
-                    particleVelocities[i].z *= 0.98;
-                } else {
-                    positions[i*3] = 9999;
-                }
-            }
-            if(activeParticles) {
-                particleSystem.geometry.attributes.position.needsUpdate = true;
-                particleMat.opacity = 1;
-            } else {
-                particleMat.opacity = 0;
-            }
-
-            // 3. Camera/Group Parallax
-            group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, mouse.x * 0.1, 0.05);
-            group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, mouse.y * 0.05, 0.05);
+            group.rotation.y = window.scrollY * 0.0005; // Rotate scene on scroll
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
         animate();
 
-        // --- EVENTS ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // --- SCROLL INTERACTION (OVEN & CARDS) ---
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            const cursor = document.getElementById('custom-cursor-follower');
-            if(cursor) {
-                gsap.to(cursor, {x: e.clientX, y: e.clientY, duration: 0.1});
+        // 1. OVEN DOOR OPENING
+        const doorTimeline = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "500px top", // Short distance to open
+                scrub: 1,
+                pin: false
             }
         });
 
-        window.addEventListener('click', (e) => {
-            const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-            vec.unproject(camera);
-            const dir = vec.sub(camera.position).normalize();
-            const pos = camera.position.clone().add(dir.multiplyScalar(8));
+        doorTimeline
+            .to(".door-panel", {
+                rotationX: -90, // Rotate down like oven door
+                y: 100,
+                opacity: 0,
+                ease: "power2.in"
+            })
+            .to("#oven-door", { pointerEvents: "none" }, "<"); // Allow clicks through
 
-            triggerBurst(pos.x, pos.y, pos.z);
+        // 2. PASTRY CARDS ENTRANCE
+        gsap.utils.toArray('.pastry-card').forEach((card, i) => {
+            // Parallax entrance
+            const dir = i % 2 === 0 ? -100 : 100; // Alternating sides
+            const rot = i % 2 === 0 ? -5 : 5;
 
-            // Pop nearby sprites
-            sprites.forEach(sprite => {
-                if(sprite.position.distanceTo(pos) < 6) {
-                    gsap.to(sprite.scale, { x: 1.0, y: 1.0, duration: 0.15, yoyo: true, repeat: 1 });
-                    sprite.userData.floatOffset += Math.PI / 2;
+            gsap.from(card, {
+                x: dir,
+                rotation: rot,
+                opacity: 0,
+                duration: 1.5,
+                ease: "elastic.out(1, 0.7)",
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
                 }
             });
         });
 
-        // --- SCROLL ANIMATIONS ---
-
-        gsap.to("#piping-progress", {
-            width: "100%",
-            ease: "none",
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 0.3
-            }
-        });
-
-        gsap.utils.toArray('.glass-panel').forEach(panel => {
-            gsap.fromTo(panel,
-                { opacity: 0, y: 60 },
-                {
-                    opacity: 1,
-                    y: 0,
-                    duration: 1.2,
-                    ease: "power3.out",
-                    scrollTrigger: {
-                        trigger: panel,
-                        start: "top 85%"
-                    }
-                }
-            );
-        });
-
-        gsap.utils.toArray('.stat-bar-fill').forEach(bar => {
-            gsap.to(bar, {
-                width: bar.getAttribute('data-width'),
+        // 3. STAT BARS FILL
+        gsap.utils.toArray('.stat-bar').forEach(bar => {
+            gsap.from(bar, {
+                scaleX: 0,
+                transformOrigin: "left center",
                 duration: 1.5,
-                ease: "power2.out",
                 scrollTrigger: {
                     trigger: bar,
                     start: "top 90%"
@@ -866,49 +579,17 @@
             });
         });
 
-        gsap.from('.alchemy-card', {
-            y: 50,
-            opacity: 0,
-            stagger: 0.1,
-            duration: 0.8,
-            ease: "back.out(1.7)",
-            scrollTrigger: {
-                trigger: '.grid-3',
-                start: "top 80%"
-            }
-        });
-
-        gsap.from('.g-item', {
-            scale: 0.9,
-            opacity: 0,
-            rotation: 5,
-            stagger: 0.1,
-            duration: 0.8,
-            scrollTrigger: {
-                trigger: '.gallery-grid',
-                start: "top 80%"
-            }
-        });
-
-        // Deep Dive Camera
-        gsap.to(camera.position, {
-            z: 4,
-            y: -15,
-            scrollTrigger: {
-                trigger: 'body',
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // --- PAGE LOAD ---
+        // LOADER
         window.addEventListener('load', () => {
             document.body.classList.add('loaded');
-            const loader = document.getElementById('loader');
-            if(loader) {
-                gsap.to(loader, { opacity: 0, duration: 0.8, onComplete: () => loader.remove() });
-            }
+            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
+        });
+
+        // RESIZE
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
