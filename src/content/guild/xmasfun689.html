@@ -3,442 +3,409 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XmasFun689 - 重機召喚師</title>
+    <title>XmasFun689 - 重金屬魔導士</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- GSAP & Three.js -->
+    <!-- GSAP & p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
     <style>
         :root {
-            --c-void: #050505;
-            --c-earth: #8B4513;
-            --c-gold: #FFD700;
-            --c-magic: #00F3FF;
-            --c-danger: #FF4500;
+            --c-bg: #0a0a0f;
+            --c-card: rgba(20, 20, 30, 0.7);
+            --c-border: rgba(255, 255, 255, 0.1);
+            --c-accent: #00F3FF; /* Electric Blue */
+            --c-earth: #D4AF37; /* Metallic Gold */
+            --c-water: #0077BE; /* Deep Water */
 
             --f-main: 'Noto Serif TC', serif;
-            --f-eng: 'Cinzel', serif;
+            --f-tech: 'Rajdhani', sans-serif;
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; background: var(--c-void); color: white; font-family: var(--f-main); overflow-x: hidden; }
+        body { margin: 0; background: var(--c-bg); color: white; font-family: var(--f-main); overflow-x: hidden; }
 
-        /* Layers */
-        #webgl-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
-        #content-layer { position: relative; z-index: 10; width: 100%; pointer-events: none; }
+        /* Canvas Background */
+        #p5-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
+            pointer-events: none; /* Let clicks pass through */
+        }
 
-        /* Magic UI Container */
-        .magic-container {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Scroll Progress */
+        #progress-bar {
+            position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+            background: linear-gradient(90deg, var(--c-earth), var(--c-accent));
+            z-index: 100;
+        }
+
+        /* Layout */
+        .page-wrapper {
+            position: relative; z-index: 10;
+            max-width: 1200px; margin: 0 auto;
             padding: 2rem;
-            position: relative;
         }
 
-        /* Rune Card */
-        .rune-card {
-            pointer-events: auto;
-            background: rgba(20, 20, 25, 0.85);
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
-            padding: 3rem;
-            max-width: 600px;
-            width: 100%;
-            position: relative;
-            backdrop-filter: blur(10px);
-            opacity: 0; /* GSAP Control */
-            transform: translateY(50px);
+        /* Hero Section */
+        .hero-section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+            padding-left: 5%;
         }
 
-        /* Decorative Corners */
-        .rune-card::before, .rune-card::after {
-            content: ''; position: absolute; width: 20px; height: 20px;
-            border: 2px solid var(--c-gold); transition: 0.3s;
-        }
-        .rune-card::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-        .rune-card::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
-
-        .rune-card:hover::before, .rune-card:hover::after { width: 100%; height: 100%; opacity: 0.5; }
-
-        /* Typography */
         h1 {
-            font-family: var(--f-main);
-            font-size: 3.5rem;
-            margin: 0 0 1rem;
-            color: var(--c-gold);
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-            padding-bottom: 1rem;
-            letter-spacing: 5px;
+            font-size: 4rem; margin: 0; line-height: 1.1;
+            background: linear-gradient(45deg, #fff, #ccc);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255,255,255,0.2);
         }
-        .subtitle {
-            font-family: var(--f-eng);
-            color: #888;
-            font-size: 0.9rem;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            margin-bottom: 2rem;
-            display: block;
+        .hero-subtitle {
+            font-family: var(--f-tech); color: var(--c-accent); font-size: 1.2rem; letter-spacing: 4px;
+            margin-bottom: 1rem; text-transform: uppercase;
+        }
+        .hero-tag {
+            display: inline-block; padding: 5px 15px; border: 1px solid var(--c-earth);
+            color: var(--c-earth); font-size: 0.9rem; margin-top: 2rem; border-radius: 20px;
         }
 
-        h2 {
-            font-size: 2rem;
-            color: var(--c-magic);
-            margin-bottom: 1rem;
-            display: flex; align-items: center; gap: 10px;
-        }
-        h2::before { content: '✦'; color: var(--c-gold); font-size: 1.5rem; }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 2;
-            color: #ccc;
-            margin-bottom: 1.5rem;
-            text-align: justify;
+        /* Content Grid */
+        .grid-section {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem; margin: 4rem 0;
+            opacity: 0; transform: translateY(50px); /* GSAP Init */
         }
 
-        /* Stats Grid */
-        .mana-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            margin-top: 2rem;
-            border-top: 1px dashed rgba(255,255,255,0.1);
-            padding-top: 1.5rem;
-        }
-        .mana-stat { text-align: center; }
-        .mana-label { font-family: var(--f-eng); color: var(--c-gold); font-size: 0.8rem; letter-spacing: 2px; }
-        .mana-val { font-size: 1.5rem; font-weight: bold; color: white; margin-top: 5px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
-
-        /* Social Ring */
-        .summon-ring {
-            display: flex; justify-content: center; gap: 2rem; margin-top: 3rem;
-        }
-        .summon-btn {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            border: 1px solid var(--c-gold);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--c-gold);
+        /* Magic Card UI */
+        .magic-card {
+            background: var(--c-card);
+            border: 1px solid var(--c-border);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
             transition: 0.3s;
+            position: relative; overflow: hidden;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+        }
+        .magic-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--c-accent);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+        .magic-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--c-accent); opacity: 0.5;
+        }
+
+        .card-icon {
+            font-size: 2.5rem; color: var(--c-earth); margin-bottom: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        h2 { font-size: 1.5rem; margin: 0 0 1rem; color: white; display: flex; align-items: center; gap: 10px; }
+        p { color: #bbb; line-height: 1.8; font-size: 1rem; margin-bottom: 1.5rem; text-align: justify; }
+
+        /* Skill Badges */
+        .skill-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .skill-badge {
+            font-family: var(--f-tech); font-size: 0.8rem;
+            padding: 4px 10px; border-radius: 4px;
+            background: rgba(255,255,255,0.1); color: #fff;
+            border: 1px solid transparent;
+        }
+        .skill-badge.earth { border-color: var(--c-earth); color: var(--c-earth); }
+        .skill-badge.water { border-color: var(--c-water); color: var(--c-water); }
+        .skill-badge.elec { border-color: var(--c-accent); color: var(--c-accent); }
+
+        /* Personal Section (Avatar) */
+        .personal-card {
+            text-align: center;
+            border-top: 4px solid var(--c-earth); /* Highlight */
+        }
+        .avatar-wrap {
+            width: 120px; height: 120px; margin: 0 auto 1.5rem;
+            border-radius: 50%; padding: 5px;
+            border: 2px dashed var(--c-earth);
             position: relative;
-            background: rgba(0,0,0,0.5);
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        /* Socials */
+        .social-bar { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2rem; }
+        .social-link {
+            font-size: 1.5rem; color: #888; transition: 0.3s;
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
             text-decoration: none;
         }
-        .summon-btn::before {
-            content: ''; position: absolute; inset: -5px; border-radius: 50%;
-            border: 1px dashed var(--c-magic); opacity: 0; animation: spin 10s linear infinite;
-        }
-        .summon-btn:hover { background: var(--c-gold); color: black; box-shadow: 0 0 30px var(--c-gold); transform: scale(1.1); }
-        .summon-btn:hover::before { opacity: 1; }
-        .summon-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        .social-link:hover { color: var(--c-accent); border-color: var(--c-accent); transform: scale(1.1); }
 
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* Footer */
+        .footer {
+            text-align: center; padding: 4rem 0; color: #555; font-family: var(--f-tech); letter-spacing: 2px;
+        }
 
         /* Responsive */
         @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            .rune-card { padding: 1.5rem; }
-        }
-
-        /* Scroll Progress Line */
-        .scroll-line {
-            position: fixed; top: 0; left: 20px; height: 0%; width: 2px;
-            background: linear-gradient(to bottom, var(--c-gold), var(--c-magic));
-            z-index: 20;
-            box-shadow: 0 0 10px var(--c-gold);
+            h1 { font-size: 2.8rem; }
+            .grid-section { grid-template-columns: 1fr; }
+            .magic-card { padding: 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-    <div class="scroll-line" id="scroll-progress"></div>
-    <div id="webgl-canvas"></div>
+    <div id="progress-bar"></div>
+    <div id="p5-container"></div>
 
-    <div id="content-layer">
+    <div class="page-wrapper">
 
-        <!-- 1. INTRO: The Mage -->
-        <section class="magic-container" id="sect-1">
-            <div class="rune-card">
-                <span class="subtitle">Level 8 Veteran // Construction Mage</span>
-                <h1>重機召喚師</h1>
+        <!-- Hero -->
+        <section class="hero-section">
+            <div class="hero-subtitle">Site Commander // Level 8</div>
+            <h1>重金屬<br><span style="color: var(--c-earth)">魔導士</span></h1>
+            <p style="font-size: 1.2rem; max-width: 600px; margin-top: 1.5rem; color: #ddd;">
+                在這個鋼筋與泥土構築的迷宮中，我是操控巨獸的指揮官。<br>
+                八年的工地煉金術，將汗水轉化為堅固的基石。
+            </p>
+            <div class="hero-tag">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Warrior Body // Summoner Soul
+            </div>
+        </section>
+
+        <!-- Section 1: Heavy Metal (Earth) -->
+        <section class="grid-section">
+            <div class="magic-card">
+                <div class="card-icon"><i class="fa-solid fa-trowel-bricks"></i></div>
+                <h2>工地煉金術</h2>
                 <p>
-                    在這個鋼鐵與泥土交織的世界，我是操控巨獸的法師。<br>
-                    社會的磨練是我的修行，工地是我的祭壇。<br>
-                    雖然外表是戰士的體格，但靈魂深處，我是一個孤獨的召喚師。
+                    從業八年，見證了無數高樓平地起。作為工地主任，我不僅是管理者，更是實踐者。<br>
+                    每一鏟土、每一根鋼筋，都是我施展魔法的觸媒。
                 </p>
-                <div class="mana-grid">
-                    <div class="mana-stat">
-                        <div class="mana-label">CLASS</div>
-                        <div class="mana-val">Summoner</div>
-                    </div>
-                    <div class="mana-stat">
-                        <div class="mana-label">AFFINITY</div>
-                        <div class="mana-val">Earth / Metal</div>
-                    </div>
+                <div class="skill-list">
+                    <span class="skill-badge earth">Site Management</span>
+                    <span class="skill-badge earth">Heavy Machinery</span>
+                    <span class="skill-badge earth">Civil Engineering</span>
+                </div>
+            </div>
+
+            <div class="magic-card">
+                <div class="card-icon"><i class="fa-solid fa-truck-monster"></i></div>
+                <h2>鋼鐵巨獸召喚</h2>
+                <p>
+                    雖然差一點點就拿到了召喚師執照（證照），但我依然能與這些鋼鐵巨獸共鳴。<br>
+                    熟練操作 <b>怪手 (Excavator)</b>、<b>吊車 (Crane)</b> 與 <b>自走車 (Roller)</b>，讓它們如手臂般靈活。
+                </p>
+                <div class="skill-list">
+                    <span class="skill-badge earth">Excavator</span>
+                    <span class="skill-badge earth">Crane</span>
+                    <span class="skill-badge earth">Roller</span>
                 </div>
             </div>
         </section>
 
-        <!-- 2. SKILL: Heavy Metal -->
-        <section class="magic-container" id="sect-2" style="justify-content: flex-end; padding-right: 10%;">
-            <div class="rune-card" style="border-color: var(--c-gold);">
-                <h2><span style="color:white">重金屬</span> 兵器庫</h2>
-                <span class="subtitle">Heavy Metal Arsenal</span>
+        <!-- Section 2: Flow (Water/Electric) -->
+        <section class="grid-section">
+            <div class="magic-card" style="border-left: 4px solid var(--c-water);">
+                <div class="card-icon" style="color: var(--c-water);"><i class="fa-solid fa-faucet-drip"></i></div>
+                <h2>水之流動</h2>
                 <p>
-                    我熱愛實作與重機械的轟鳴聲。<br>
-                    熟練操控 <b>怪手 (Excavator)</b>、<b>吊車 (Crane)</b> 與 <b>自走車 (Roller)</b>。<br>
-                    這些不僅是工具，更是我手臂的延伸，是我意志的具象化。
+                    持有相關水電證照，通曉流體力學的奧義。<br>
+                    在管線錯綜複雜的結構中，引導水流至其應去之處。
                 </p>
-                <p style="font-size: 0.9rem; color: #888; font-style: italic;">
-                    * 雖然差一點點就考到證照了... (嘆息)
+                <div class="skill-list">
+                    <span class="skill-badge water">Plumbing License</span>
+                    <span class="skill-badge water">Fluid Dynamics</span>
+                </div>
+            </div>
+
+            <div class="magic-card" style="border-left: 4px solid var(--c-accent);">
+                <div class="card-icon" style="color: var(--c-accent);"><i class="fa-solid fa-bolt"></i></div>
+                <h2>雷之脈衝</h2>
+                <p>
+                    斜槓水電工的另一面，掌控電力的流動。<br>
+                    朋友戲稱我為「水電土三系混合大法師」，在現代建築中編織能量的網絡。
                 </p>
-                <div class="mana-grid">
-                    <div class="mana-stat">
-                        <div class="mana-label">SKILL</div>
-                        <div class="mana-val">Pilot S+</div>
-                    </div>
-                    <div class="mana-stat">
-                        <div class="mana-label">PASSION</div>
-                        <div class="mana-val">Max</div>
-                    </div>
+                <div class="skill-list">
+                    <span class="skill-badge elec">Electrician License</span>
+                    <span class="skill-badge elec">Circuit Magic</span>
                 </div>
             </div>
         </section>
 
-        <!-- 3. SKILL: Magic -->
-        <section class="magic-container" id="sect-3" style="justify-content: flex-start; padding-left: 10%;">
-            <div class="rune-card" style="border-color: var(--c-magic);">
-                <h2><span style="color:white">元素</span> 雙修</h2>
-                <span class="subtitle">Water & Lightning Mastery</span>
-                <p>
-                    持有 <b>水 (Water)</b> 與 <b>電 (Lightning)</b> 的雙重執照。<br>
-                    朋友戲稱我為「水電土三系混合大法師」。<br>
-                    在工程界的八年時光，早已讓我學會如何引導這些能量的流動。
-                </p>
-                <div class="mana-grid">
-                    <div class="mana-stat">
-                        <div class="mana-label">LICENSE</div>
-                        <div class="mana-val">Hydro / Electro</div>
-                    </div>
-                    <div class="mana-stat">
-                        <div class="mana-label">EXP</div>
-                        <div class="mana-val">8 Years</div>
+        <!-- Section 3: Personal (Soul) -->
+        <section class="grid-section" style="justify-content: center;">
+            <div class="magic-card personal-card" style="max-width: 500px;">
+                <div class="avatar-wrap">
+                    <img src="/assets/img/guild/xmasfun689/avatar.webp" class="avatar-img" alt="Avatar">
+                    <div style="position:absolute; bottom:0; right:0; background:var(--c-bg); border-radius:50%; padding:5px; border:1px solid #555;">
+                        <i class="fa-solid fa-gamepad" style="color: var(--c-accent);"></i>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- 4. PERSONAL: Sanctuary -->
-        <section class="magic-container" id="sect-4">
-            <div class="rune-card" style="text-align: center; border-color: var(--c-danger);">
-                <div style="width: 120px; height: 120px; margin: 0 auto 1.5rem; position: relative;">
-                     <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:100%; height:100%; object-fit:cover; border-radius:50%; border:2px solid var(--c-gold); box-shadow: 0 0 20px var(--c-gold);">
-                </div>
-                <h2>孤獨的召喚</h2>
-                <span class="subtitle">The Solitary Summoner</span>
+                <h2>鋼鐵溫柔</h2>
                 <p>
-                    「我從小胖到現在，應該是戰士體質吧...」<br>
-                    但我選擇了召喚之路，因為習慣了一個人的戰鬥。<br>
-                    陪伴我的使魔是 <b>猴子布偶</b> 與 <b>Kururu 曹長</b>。
+                    「從小胖到現在，擁有戰士的體格，卻有一顆召喚師的心。」<br>
+                    在遊戲世界中，我總是選擇召喚師，習慣了一個人的戰鬥與冒險。<br>
+                    現實中，我的使魔是 <b>猴子布偶</b> 與 <b>Kururu 曹長</b>。
                 </p>
 
-                <div class="summon-ring">
-                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="summon-btn" title="Threads">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5h2v2h-2zm4-3h2v2h-2zm-6-2h2v7h-2z"/></svg>
+                <div class="social-bar">
+                    <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-link" title="Threads">
+                        <i class="fa-brands fa-threads"></i>
                     </a>
-                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="summon-btn" title="Instagram">
-                        <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
+                    <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-link" title="Instagram">
+                        <i class="fa-brands fa-instagram"></i>
                     </a>
-                </div>
-                <div style="margin-top:2rem; font-size: 0.7rem; color: #666; font-family: var(--f-eng);">
-                    MADE WITH LOVE BY SUPERGALEN'S DUNGEON
                 </div>
             </div>
         </section>
+
+        <footer class="footer">
+            MADE WITH <i class="fa-solid fa-heart" style="color: var(--c-alert);"></i> BY SUPERGALEN'S DUNGEON
+        </footer>
 
     </div>
 
-    <script type="module">
-        import * as THREE from 'https://esm.sh/three@0.160.0';
-        import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+    <!-- p5.js Sketch -->
+    <script>
+        const sketch = (p) => {
+            let particles = [];
+            let flowField = [];
+            let cols, rows;
+            let scl = 40; // Scale of grid
+            let zOff = 0; // Perlin noise Z-offset
 
-        gsap.registerPlugin(ScrollTrigger);
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                cols = p.floor(p.width / scl);
+                rows = p.floor(p.height / scl);
 
-        // Assets
-        const ASSETS = {
-            excavator: '/assets/img/guild/xmasfun689/excavator.webp',
-            roller: '/assets/img/guild/xmasfun689/roller.webp',
-            plushies: '/assets/img/guild/xmasfun689/plushies.webp'
+                // Init Particles
+                for (let i = 0; i < 150; i++) {
+                    particles.push(new Particle(p));
+                }
+
+                p.background(10, 10, 15);
+            };
+
+            p.draw = () => {
+                // Fade effect for trails
+                p.noStroke();
+                p.fill(10, 10, 15, 20); // Low opacity rect to create trails
+                p.rect(0, 0, p.width, p.height);
+
+                // Calculate Flow Field
+                let yOff = 0;
+                for (let y = 0; y < rows; y++) {
+                    let xOff = 0;
+                    for (let x = 0; x < cols; x++) {
+                        let index = x + y * cols;
+                        let angle = p.noise(xOff, yOff, zOff) * p.TWO_PI * 4;
+                        let v = p5.Vector.fromAngle(angle);
+                        v.setMag(0.5); // Force magnitude
+                        flowField[index] = v;
+                        xOff += 0.1;
+                    }
+                    yOff += 0.1;
+                }
+                zOff += 0.002; // Time evolution
+
+                // Update Particles
+                for (let part of particles) {
+                    part.follow(flowField);
+                    part.update();
+                    part.edges();
+                    part.show();
+                }
+
+                // Draw "Blueprint" Lines occasionally
+                if (p.frameCount % 60 === 0) {
+                    drawBlueprintLine();
+                }
+            };
+
+            function drawBlueprintLine() {
+                p.stroke(255, 255, 255, 30);
+                p.strokeWeight(1);
+                let x = p.random(p.width);
+                let y = p.random(p.height);
+                if (p.random() > 0.5) {
+                    p.line(x, 0, x, p.height); // Vertical
+                } else {
+                    p.line(0, y, p.width, y); // Horizontal
+                }
+            }
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                cols = p.floor(p.width / scl);
+                rows = p.floor(p.height / scl);
+            };
+
+            class Particle {
+                constructor(p) {
+                    this.p = p;
+                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
+                    this.vel = p.createVector(0, 0);
+                    this.acc = p.createVector(0, 0);
+                    this.maxSpeed = 2;
+                    // Colors: Gold or Cyan
+                    this.color = p.random() > 0.5 ? p.color(212, 175, 55, 150) : p.color(0, 243, 255, 150);
+                }
+
+                follow(vectors) {
+                    let x = this.p.floor(this.pos.x / scl);
+                    let y = this.p.floor(this.pos.y / scl);
+                    let index = x + y * cols;
+                    let force = vectors[index];
+                    if (force) this.applyForce(force);
+                }
+
+                applyForce(force) {
+                    this.acc.add(force);
+                }
+
+                update() {
+                    this.vel.add(this.acc);
+                    this.vel.limit(this.maxSpeed);
+                    this.pos.add(this.vel);
+                    this.acc.mult(0);
+                }
+
+                edges() {
+                    if (this.pos.x > this.p.width) this.pos.x = 0;
+                    if (this.pos.x < 0) this.pos.x = this.p.width;
+                    if (this.pos.y > this.p.height) this.pos.y = 0;
+                    if (this.pos.y < 0) this.pos.y = this.p.height;
+                }
+
+                show() {
+                    this.p.stroke(this.color);
+                    this.p.strokeWeight(2);
+                    this.p.point(this.pos.x, this.pos.y);
+                }
+            }
         };
 
-        // --- 1. Scene Setup ---
-        const container = document.getElementById('webgl-canvas');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.04); // Dark Fog
+        new p5(sketch); // Start Instance Mode
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 5, 10);
+        // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        container.appendChild(renderer.domElement);
-
-        // Post-Processing
-        const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.1;
-        bloomPass.strength = 1.0;
-        bloomPass.radius = 0.5;
-        composer.addPass(bloomPass);
-
-        // Lights
-        const ambient = new THREE.AmbientLight(0x444444, 1.0);
-        scene.add(ambient);
-
-        // Dynamic "Forge" Lights
-        const orangeLight = new THREE.PointLight(0xFF4500, 5, 20);
-        orangeLight.position.set(5, 2, 5);
-        scene.add(orangeLight);
-
-        const cyanLight = new THREE.PointLight(0x00F3FF, 5, 20);
-        cyanLight.position.set(-5, 5, -5);
-        scene.add(cyanLight);
-
-        // --- 2. Objects ---
-
-        // A. The Ground (Wireframe Terrain)
-        const planeGeo = new THREE.PlaneGeometry(100, 100, 50, 50);
-
-        // Add noise to vertices
-        const pos = planeGeo.attributes.position;
-        for(let i=0; i<pos.count; i++){
-            const z = pos.getZ(i);
-            // Simple random noise for rugged terrain
-            pos.setZ(i, z + Math.random() * 1.5);
-        }
-        planeGeo.computeVertexNormals();
-
-        const planeMat = new THREE.MeshBasicMaterial({
-            color: 0x333333,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.2
-        });
-        const terrain = new THREE.Mesh(planeGeo, planeMat);
-        terrain.rotation.x = -Math.PI / 2;
-        terrain.position.y = -2;
-        scene.add(terrain);
-
-        // B. Magic Circles (Rune Textures)
-        function createRune(color, radius) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 10;
-            ctx.beginPath();
-            ctx.arc(256, 256, 200, 0, Math.PI*2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(256, 56); ctx.lineTo(456, 256); ctx.lineTo(256, 456); ctx.lineTo(56, 256); ctx.closePath();
-            ctx.stroke();
-            // Inner ring
-            ctx.beginPath(); ctx.arc(256, 256, 100, 0, Math.PI*2); ctx.stroke();
-
-            const tex = new THREE.CanvasTexture(canvas);
-            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(radius, radius), mat);
-            mesh.rotation.x = -Math.PI/2;
-            return mesh;
-        }
-
-        const runeGround = createRune('#FFD700', 8); // Gold Rune
-        runeGround.position.set(-6, -1.8, -2);
-        scene.add(runeGround);
-
-        const runeAir = createRune('#00F3FF', 6); // Cyan Rune
-        runeAir.position.set(6, -1.8, 2);
-        scene.add(runeAir);
-
-        // C. Assets (Floating above runes)
-        const texLoader = new THREE.TextureLoader();
-        function createSprite(url, w) {
-            const map = texLoader.load(url);
-            map.colorSpace = THREE.SRGBColorSpace;
-            const mat = new THREE.MeshBasicMaterial({ map: map, transparent: true, side: THREE.DoubleSide });
-            return new THREE.Mesh(new THREE.PlaneGeometry(w, w), mat);
-        }
-
-        const excavator = createSprite(ASSETS.excavator, 8);
-        excavator.position.set(-6, 2, -2);
-        scene.add(excavator);
-
-        const roller = createSprite(ASSETS.roller, 6);
-        roller.position.set(6, 1, 2);
-        scene.add(roller);
-
-        const plushies = createSprite(ASSETS.plushies, 10);
-        plushies.position.set(0, 30, -5); // Far up in the sky
-        scene.add(plushies);
-
-        // D. Particles (Sparks/Dust)
-        const pGeo = new THREE.BufferGeometry();
-        const pCount = 200;
-        const pArr = new Float32Array(pCount * 3);
-        for(let i=0; i<pCount*3; i++) pArr[i] = (Math.random()-0.5) * 30;
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
-        const pMat = new THREE.PointsMaterial({ color: 0xFFD700, size: 0.15, transparent: true, opacity: 0.8 });
-        const particles = new THREE.Points(pGeo, pMat);
-        scene.add(particles);
-
-        // --- 3. Animation Loop ---
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const t = clock.getElapsedTime();
-
-            // Runes Rotate
-            runeGround.rotation.z = t * 0.2;
-            runeAir.rotation.z = -t * 0.3;
-
-            // Machines Float
-            excavator.position.y = 2 + Math.sin(t)*0.2;
-            roller.position.y = 1 + Math.sin(t+1)*0.2;
-
-            // Lights Pulse
-            orangeLight.intensity = 5 + Math.sin(t*2)*2;
-            cyanLight.intensity = 5 + Math.cos(t*2)*2;
-
-            // Particles Drift
-            particles.rotation.y = t * 0.05;
-
-            // Plushies Spin (Sky)
-            plushies.rotation.y = Math.sin(t)*0.1;
-
-            composer.render();
-        }
-        animate();
-
-
-        // --- 4. Scroll Interactions (GSAP) ---
-
-        // Scroll Progress Bar
-        gsap.to('#scroll-progress', {
-            height: '100%',
-            ease: 'none',
+        // Progress Bar
+        gsap.to('#progress-bar', {
+            width: '100%',
             scrollTrigger: {
                 trigger: 'body',
                 start: 'top top',
@@ -447,54 +414,18 @@
             }
         });
 
-        // Camera Timeline
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1.5
-            }
-        });
-
-        // Initial Look
-        camera.position.set(0, 5, 12);
-        camera.lookAt(0, 0, 0);
-
-        // 1. Zoom to Excavator (Ground)
-        tl.to(camera.position, { x: -3, y: 1, z: 8, duration: 2 });
-        tl.to(camera.rotation, { y: -0.2, duration: 2 }, "<");
-
-        // 2. Pan to Roller/Elements (Right)
-        tl.to(camera.position, { x: 3, y: 2, z: 8, duration: 2 });
-        tl.to(camera.rotation, { y: 0.2, duration: 2 }, "<");
-
-        // 3. Ascend to Sky (Plushies)
-        tl.to(camera.position, { x: 0, y: 30, z: 10, duration: 3 });
-        tl.to(camera.rotation, { x: 0, y: 0, z: 0, duration: 3 }, "<");
-
-        // Content Fade In
-        gsap.utils.toArray('.rune-card').forEach(card => {
-            gsap.to(card, {
+        // Content Reveal
+        gsap.utils.toArray('.grid-section').forEach(section => {
+            gsap.to(section, {
                 opacity: 1, y: 0,
                 duration: 1,
                 scrollTrigger: {
-                    trigger: card,
+                    trigger: section,
                     start: "top 80%",
-                    end: "top 40%",
-                    toggleActions: "play reverse play reverse"
+                    toggleActions: "play none none reverse"
                 }
             });
         });
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
-
     </script>
 </body>
 </html>
