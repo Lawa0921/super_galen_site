@@ -65,7 +65,16 @@
         #content-sidebar {
             position: relative;
             z-index: 10;
-            padding-bottom: 70vh; /* Increased spacer for centering final content */
+            padding-bottom: 10vh;
+        }
+
+        /* Sticky Wrapper for Content */
+        .sticky-wrapper {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         /* HUD Header (Fixed) */
@@ -99,12 +108,12 @@
 
         /* Content Sections */
         .story-section {
-            min-height: 100vh;
+            min-height: 150vh; /* Increased height for longer scroll duration */
             padding: 2rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            opacity: 0.3; /* Default dim */
+            opacity: 0.3;
             transition: opacity 0.5s ease;
             position: relative;
         }
@@ -336,31 +345,34 @@
                 </div>
             </section>
 
-            <!-- Section 4: Finale -->
-            <section class="story-section theme-danger" data-index="3">
-                <div class="data-card">
-                    <h2 style="color: var(--c-danger)">Profile Data</h2>
-                    <div style="display:flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
-                        <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--c-danger);">
-                        <div>
-                            <div style="font-size: 1.5rem; font-weight: bold;">XmasFun689</div>
-                            <div style="font-size: 0.9rem; color: #888;">Warrior Physique // Summoner Soul</div>
+            <!-- Section 4: Finale (Pinned) -->
+            <div class="sticky-wrapper">
+                <section class="story-section theme-danger" data-index="3" style="min-height: auto; flex: 1;">
+                    <div class="data-card">
+                        <h2 style="color: var(--c-danger)">Profile Data</h2>
+                        <div style="display:flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                            <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--c-danger);">
+                            <div>
+                                <div style="font-size: 1.5rem; font-weight: bold;">XmasFun689</div>
+                                <div style="font-size: 0.9rem; color: #888;">Warrior Physique // Summoner Soul</div>
+                            </div>
+                        </div>
+                        <p>
+                            "從小胖到現在的戰士體質...<br>
+                            最愛猴子布偶跟 Kururu 曹長"
+                        </p>
+                        <div class="social-bar">
+                            <a href="https://www.threads.com/@xmasfun689" target="_blank" class="social-icon">
+                                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5h2v2h-2zm4-3h2v2h-2zm-6-2h2v7h-2z"/></svg>
+                            </a>
+                            <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-icon">
+                                 <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
+                            </a>
                         </div>
                     </div>
-                    <p>
-                        "從小胖到現在的戰士體質...<br>
-                        最愛猴子布偶跟 Kururu 曹長"
-                    </p>
-                    <div class="social-bar">
-                        <a href="https://www.threads.com/@xmasfun689" target="_blank" class="social-icon">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5h2v2h-2zm4-3h2v2h-2zm-6-2h2v7h-2z"/></svg>
-                        </a>
-                        <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-icon">
-                             <svg viewBox="0 0 24 24"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"/></svg>
-                        </a>
-                    </div>
-                </div>
-            </section>
+                </section>
+                <div style="height: 5vh;"></div> <!-- Small spacer -->
+            </div>
 
         </div>
 
@@ -385,7 +397,8 @@
         // --- Init Scene ---
         const container = document.getElementById('canvas-wrapper');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.02); // Reduced fog for better visibility
+        // REMOVED FOG - It was hiding objects too much
+        // scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
         const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
         camera.position.set(0, 5, 10);
@@ -393,30 +406,40 @@
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Tone Mapping to prevent blowout but allow brightness
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
 
         // --- Post Processing (Bloom) ---
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 1.8; // Increased Glow
-        bloomPass.radius = 0.6;
+        bloomPass.threshold = 0; // Trigger bloom on everything slightly bright
+        bloomPass.strength = 1.5;
+        bloomPass.radius = 0.5;
 
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
         composer.addPass(bloomPass);
 
         // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        // Much brighter ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
         scene.add(ambientLight);
 
-        const blueLight = new THREE.PointLight(0x00F3FF, 3, 30);
+        // Brighter point lights
+        const blueLight = new THREE.PointLight(0x00F3FF, 10, 50);
         blueLight.position.set(-5, 5, -5);
         scene.add(blueLight);
 
-        const yellowLight = new THREE.PointLight(0xFFD700, 3, 30);
+        const yellowLight = new THREE.PointLight(0xFFD700, 10, 50);
         yellowLight.position.set(5, 2, 5);
         scene.add(yellowLight);
+
+        // Add a directional light for general illumination
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(0, 10, 10);
+        scene.add(dirLight);
 
         // --- Environment: The Grid Pit & Terrain ---
         const gridHelper = new THREE.GridHelper(200, 100, 0x444444, 0x111111);
@@ -471,12 +494,25 @@
 
             // Frame
             const frameGeo = new THREE.PlaneGeometry(width + 0.3, height + 0.3);
-            const frameMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
+            // Use Standard Material for reacting to light, but keep high emissive for visibility
+            const frameMat = new THREE.MeshStandardMaterial({
+                color: color,
+                side: THREE.DoubleSide,
+                emissive: color,
+                emissiveIntensity: 0.5
+            });
             const frame = new THREE.Mesh(frameGeo, frameMat);
 
-            // Image
+            // Image - Use BasicMaterial to stay bright regardless of lights, or Standard with high emissive
+            // Since images are dark, let's use BasicMaterial but keep opacity high
+            const imgMat = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide,
+                opacity: 0.9, // Higher opacity
+                depthWrite: false // Fix sorting issues
+            });
             const imgGeo = new THREE.PlaneGeometry(width, height);
-            const imgMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
             const img = new THREE.Mesh(imgGeo, imgMat);
             img.position.z = 0.05;
 
@@ -585,17 +621,11 @@
         groupFinale.add(plushieHolo);
 
 
-        // --- Positioning Groups ---
-        // Strategy: "Construction Site Tour".
-        // Intro: Center (0,0,0)
-        // Machines: Offset (-15, 0, 5)
-        // Elements: Offset (15, 5, -5)
-        // Finale: Offset (0, 15, 0)
-
+        // --- Positioning Groups (Tighter) ---
         groupIntro.position.set(0, 0, 0);
-        groupMachines.position.set(-15, 0, 5);
-        groupElements.position.set(15, 5, -5);
-        groupFinale.position.set(0, 15, 0);
+        groupMachines.position.set(-8, 0, 5);  // Brought closer (was -15)
+        groupElements.position.set(8, 5, -5);   // Brought closer (was 15)
+        groupFinale.position.set(0, 12, 0);
 
 
         // --- Animation Loop ---
@@ -647,30 +677,32 @@
         document.getElementById('loader').style.display = 'none';
 
         // --- Scroll Logic (GSAP) ---
-        // Camera Path - UPDATED FOR CLOSER ZOOM
+        // We bind the timeline to the *entire content* but align keyframes to section percentages.
+        // Since we have 4 sections of roughly equal height (150vh), the breakpoints are 0%, 33%, 66%, 100%.
+
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1
+                scrub: 0.5 // Add some smoothing
             }
         });
 
-        // 0 -> 1 (Intro -> Machines)
-        // Move camera closer to Machines (z: 12 -> 8)
-        tl.to(camera.position, { x: -15, y: 2, z: 8, duration: 1 });
-        tl.to(camera.rotation, { y: 0.2, duration: 1 }, "<");
+        // Keyframe 1: Intro (Start) -> Machines (33%)
+        // Camera moves to view Machines at x=-8
+        tl.to(camera.position, { x: -8, y: 2, z: 14, duration: 1, ease: "power1.inOut" }); // Pulled back z:14
+        tl.to(camera.rotation, { y: 0, duration: 1, ease: "power1.inOut" }, "<"); // Look straight (since cam x = machine x)
 
-        // 1 -> 2 (Machines -> Elements)
-        // Move camera closer to Elements (z: 5 -> 4)
-        tl.to(camera.position, { x: 15, y: 7, z: 4, duration: 1 });
-        tl.to(camera.rotation, { y: -0.5, duration: 1 }, "<");
+        // Keyframe 2: Machines (33%) -> Elements (66%)
+        // Camera moves to view Elements at x=8
+        tl.to(camera.position, { x: 8, y: 7, z: 12, duration: 1, ease: "power1.inOut" });
+        tl.to(camera.rotation, { y: 0, duration: 1, ease: "power1.inOut" }, "<"); // Look straight
 
-        // 2 -> 3 (Elements -> Finale)
-        // Finale Zoom (z: 8 -> 6)
-        tl.to(camera.position, { x: 0, y: 15, z: 6, duration: 1 });
-        tl.to(camera.rotation, { y: 0, x: 0.0, duration: 1 }, "<");
+        // Keyframe 3: Elements (66%) -> Finale (100%)
+        // Camera moves to Finale at x=0, y=12
+        tl.to(camera.position, { x: 0, y: 12, z: 10, duration: 1, ease: "power1.inOut" });
+        tl.to(camera.rotation, { y: 0, x: 0, duration: 1, ease: "power1.inOut" }, "<");
 
 
         // Content Section Highlighting
