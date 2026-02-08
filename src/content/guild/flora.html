@@ -518,16 +518,50 @@
 
         /* Responsive */
         @media(max-width: 768px) {
-            .pastry-card { padding: 2rem; border-radius: 20px !important; margin: 2rem 1rem; width: auto !important; aspect-ratio: auto !important; height: auto !important; }
-            .card-grimoire { grid-template-columns: 1fr; gap: 2rem; }
+            .pastry-card {
+                padding: 2rem;
+                border-radius: 20px !important;
+                margin: 2rem 1rem;
+                width: auto !important;
+                max-width: 100% !important;
+                aspect-ratio: unset !important;
+                height: auto !important;
+            }
+            .card-cookie {
+                border-radius: 20px !important; /* Override complex shape */
+            }
+            .card-bread {
+                border-radius: 20px !important;
+            }
+            .card-tart {
+                border-radius: 20px !important;
+                aspect-ratio: unset !important;
+                border-style: solid; /* Dashed looks bad when stretched */
+                border-width: 10px;
+            }
+            .tart-filling {
+                border-radius: 10px;
+            }
+
+            .card-grimoire { grid-template-columns: 1fr; gap: 2rem; padding: 2rem; }
             .grimoire-spine { display: none; }
-            .waffle-grid { grid-template-columns: 1fr; }
-            .timeline-grid { grid-template-columns: 1fr; }
-            .timeline-grid::before { left: 50%; width: 4px; height: 100%; top: 0; }
-            .timeline-dot { margin: 10px auto; }
+
+            .waffle-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .waffle-item img { height: auto; aspect-ratio: 16/9; }
+
+            .timeline-grid { grid-template-columns: 1fr; margin-top: 1rem;}
+            .timeline-grid::before { left: 20px; width: 4px; height: 100%; top: 0; transform: none; }
+            .timeline-item { text-align: left; padding-left: 60px; margin-bottom: 2rem; }
+            .timeline-dot { margin: 0; position: absolute; left: 12px; top: 0; }
+
             h2 { font-size: 1.8rem; }
             .menu-item { flex-direction: column; align-items: center; text-align: center; }
             .menu-text ul { text-align: left; display: inline-block; }
+
+            .chef-avatar-container { width: 180px; height: 180px; }
+            .chef-hat { font-size: 3rem; top: -30px; right: -10px; }
+
+            .oven-title { font-size: 2.5rem; }
         }
 
     </style>
