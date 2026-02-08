@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miglo Jelly | 蜜光Q凍</title>
+    <meta name="description" content="蜜光Q凍 - 堅持真花，拒絕糖漿。讓喝茶成為一種放鬆而安心的日常選擇。">
+    <meta property="og:image" content="/assets/img/guild/miglo/avatar.webp">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-tea: #FFC107;
+            --c-tea-dark: #D4A017;
+            --c-rose: #FF4081;
+            --c-jelly: rgba(255, 255, 255, 0.9);
+            --c-bg-dark: #1a0f05; /* Warm Tea Dark */
+            --c-glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0; padding: 0; box-sizing: border-box;
+            background-color: var(--c-bg-dark);
+            color: #fff;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        * { box-sizing: border-box; }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+            /* Warm Amber Gradient for Tea Atmosphere */
+            background: radial-gradient(circle at center, #3e2710 0%, #0d0602 100%);
+        }
+
+        /* --- Scroll Spacer --- */
+        #scroll-spacer {
+            height: 1500vh;
+            width: 100%; position: relative;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* --- UI Overlay --- */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        /* Brand Mark */
+        .brand-mark {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            display: flex; align-items: center; gap: 10px;
+            pointer-events: auto; text-decoration: none;
+        }
+        .mark-img {
+            width: 50px; height: 50px; border-radius: 50%;
+            border: 2px solid var(--c-tea);
+        }
+
+        /* Typography */
+        .hero-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; width: 100%;
+            pointer-events: none;
+        }
+
+        .big-text {
+            font-family: 'Dela Gothic One', cursive;
+            font-size: clamp(3rem, 12vw, 10rem);
+            line-height: 1;
+            background: linear-gradient(to bottom, #fff, var(--c-tea));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 0px 10px rgba(255, 193, 7, 0.5));
+            white-space: nowrap;
+            opacity: 0;
+        }
+        .sub-hero {
+            font-family: 'Zen Maru Gothic';
+            margin-top: 1rem; font-size: 1.5rem;
+            color: #fff; font-weight: 700;
+            letter-spacing: 0.2em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* --- Content Panels --- */
+        .content-panel {
+            position: absolute;
+            top: 50%; left: 0; width: 100%;
+            transform: translateY(-50%);
+            display: flex; justify-content: center; align-items: center;
+            gap: 4rem;
+            pointer-events: none;
+            padding: 0 5%;
+        }
+
+        .text-card {
+            background: rgba(20, 10, 5, 0.7); /* Warmer backing */
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%; max-width: 500px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            position: relative; z-index: 2;
+            pointer-events: auto;
+            opacity: 0;
+        }
+
+        .image-card {
+            width: 100%; max-width: 400px; height: 500px;
+            position: relative; z-index: 1;
+            pointer-events: auto;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid #fff;
+            transform: rotate(-3deg);
+            opacity: 0;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+        .image-card img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.5s;
+        }
+        .image-card:hover img { transform: scale(1.1); }
+
+        .panel-left { flex-direction: row; }
+        .panel-right { flex-direction: row-reverse; }
+
+        .text-card h3 {
+            font-family: 'Dela Gothic One', cursive;
+            font-size: 2rem; color: var(--c-tea); margin-bottom: 1rem;
+            border-bottom: 2px dashed var(--c-rose);
+            padding-bottom: 0.5rem;
+        }
+        .text-card p {
+            font-size: 1.1rem; line-height: 1.8; color: #eee; margin-bottom: 1rem;
+        }
+        .text-card ul {
+            list-style: none; padding: 0; margin: 0;
+        }
+        .text-card li {
+            font-size: 1.1rem; line-height: 1.8; color: #eee;
+            margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px;
+        }
+        .text-card li i { color: var(--c-rose); }
+
+        .highlight {
+            color: var(--c-rose); font-weight: 900;
+            background: rgba(255, 64, 129, 0.1); padding: 0 5px; border-radius: 4px;
+        }
+
+        /* --- Gallery Panel --- */
+        #panel-gallery {
+            flex-direction: column;
+            gap: 2rem;
+            width: 90%; max-width: 1200px; left: 5%;
+            padding-bottom: 10vh;
+        }
+        .gallery-title {
+            font-family: 'Dela Gothic One'; font-size: 3rem; color: #fff;
+            text-shadow: 2px 2px 0 var(--c-tea); text-align: center;
+            opacity: 0; transform: translateY(20px);
+            margin-bottom: 2rem;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            pointer-events: auto;
+        }
+        .g-item {
+            border-radius: 15px; overflow: hidden;
+            height: 250px; border: 2px solid rgba(255,255,255,0.2);
+            position: relative; opacity: 0; transform: scale(0.8);
+            transition: transform 0.3s;
+            background: rgba(0,0,0,0.3);
+        }
+        .g-item:hover { transform: scale(1.05) !important; z-index: 10; border-color: var(--c-tea); cursor: pointer; }
+        .g-item img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* --- Lightbox --- */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 5, 0, 0.95); z-index: 10002;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #lightbox.active { opacity: 1; pointer-events: auto; }
+        #lightbox img {
+            max-width: 90vw; max-height: 85vh;
+            border: 4px solid var(--c-tea);
+            box-shadow: 0 0 50px rgba(255, 193, 7, 0.3);
+            border-radius: 10px;
+        }
+        .lightbox-close {
+            position: absolute; top: 2rem; right: 2rem;
+            font-size: 3rem; color: #fff; cursor: pointer;
+            transition: color 0.2s;
+        }
+        .lightbox-close:hover { color: var(--c-tea); }
+
+        /* --- Finale --- */
+        #finale {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #FFC107, #FF4081);
+            z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            clip-path: circle(0% at 50% 50%);
+            transition: clip-path 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+            pointer-events: auto; text-align: center;
+            color: #fff;
+        }
+        #finale.active { clip-path: circle(150% at 50% 50%); }
+
+        .finale-avatar {
+            width: 200px; height: 200px; border-radius: 50%;
+            border: 8px solid #fff; margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: bounce 2s infinite ease-in-out;
+        }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        .social-btn {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: #fff; color: var(--c-rose);
+            padding: 1rem 2rem; border-radius: 50px;
+            font-family: 'Dela Gothic One'; font-size: 1.5rem;
+            text-decoration: none; margin: 1rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .social-btn:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.3); }
+
+        /* --- Entrance --- */
+        #entrance-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--c-bg-dark); z-index: 10001;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--c-tea);
+        }
+        .loader-text {
+            font-family: 'Dela Gothic One'; font-size: 2rem; margin-top: 1rem;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        @media (max-width: 900px) {
+            .content-panel { flex-direction: column !important; gap: 2rem; padding: 0 1.5rem; }
+            .image-card { width: 100%; height: 300px; transform: rotate(0deg); order: -1; }
+            .text-card { width: 100%; max-width: 100%; padding: 1.5rem; } /* Fix overflow */
+            .big-text { font-size: 15vw; white-space: normal; }
+            .finale-avatar { width: 150px; height: 150px; }
+            .social-btn { padding: 0.8rem 1.5rem; font-size: 1.2rem; }
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+            #panel-gallery { width: 100%; left: 0; padding: 0 1rem; }
+            .sub-hero { font-size: 1rem; } /* Scale down sub-hero */
+            #finale h2 { font-size: 2rem !important; } /* Fix finale title overflow */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="entrance-screen">
+        <div style="font-size: 4rem;">🍵🌸</div>
+        <div class="loader-text">BREWING...</div>
+    </div>
+
+    <div id="webgl-container"></div>
+    <div id="scroll-spacer"></div>
+
+    <a href="/guild/" class="brand-mark">
+        <img src="/assets/img/guild/miglo/avatar.webp" class="mark-img">
+        <div style="font-family:'Dela Gothic One'; color:#fff; font-size: 1.2rem;">MIGLO</div>
+    </a>
+
+    <!-- Overlays -->
+    <div class="overlay">
+        <!-- Hero -->
+        <div id="hero-text" class="hero-container">
+            <div class="big-text">FLOWER TEA</div>
+            <div class="sub-hero">堅持真花 • 拒絕糖漿 • 蜜光Q凍</div>
+        </div>
+
+        <!-- 1. Origin (Focus: Tea) -->
+        <div id="panel-1" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 茶韻 ORIGIN</h3>
+                <p>我是蜜光Q凍的闆闆！在冷飲業打滾十幾年，每天都在<span class="highlight">煮茶、煮茶、煮茶</span>。</p>
+                <p>直到某天靈光一閃：「為什麼沒人想煮花？花跟茶不是很搭嗎？」這杯茶，不應該只是解渴，更是一種生活的香氣。</p>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/miglo/gallery_1.webp" alt="Tea Brewing">
+            </div>
+        </div>
+
+        <!-- 2. Philosophy (Focus: Flowers) -->
+        <div id="panel-2" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 花魂 PHILOSOPHY</h3>
+                <p>「真花很貴耶！」老闆這麼說。<br>但我心裡知道，糖漿永遠無法取代真花的天然幽香。</p>
+                <p>因為嗅覺敏銳，我對那種化學的香精味無法妥協。我決心要煮出看得到花瓣、聞得到花魂的<span class="highlight">真花茶</span>。</p>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/miglo/gallery_4.webp" alt="Rose Petals" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 3. Services (Focus: Jelly) -->
+        <div id="panel-3" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 凍感 SERVICES</h3>
+                <p>將茶香與花香凝結成凍，我們創造了獨特的口感體驗。</p>
+                <ul>
+                    <li><i class="fa-solid fa-leaf"></i> <strong>有機真花選材</strong>：嚴選可食用花卉，每一口都是自然。</li>
+                    <li><i class="fa-solid fa-cube"></i> <strong>花香Q凍</strong>：獨家研發，口感Q彈，晶瑩剔透。</li>
+                    <li><i class="fa-solid fa-heart"></i> <strong>安心承諾</strong>：製程透明，無添加人工糖漿。</li>
+                </ul>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/miglo/gallery_6.webp" alt="Jelly Ingredients" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 4. Values -->
+        <div id="panel-4" class="content-panel panel-right">
+            <div class="text-card">
+                <h3>// 連結 CONNECTION</h3>
+                <p>對我來說，<span class="highlight">客人就像朋友一樣</span>。</p>
+                <p>我會努力記住大家的喜好，甚至幫忙把關健康！這份堅持，讓我從家人的反對中走出一條花路，屹立不搖。</p>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/miglo/gallery_2.webp" alt="Tea Connection" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 5. Personality -->
+        <div id="panel-5" class="content-panel panel-left">
+            <div class="text-card">
+                <h3>// 特質 TRAITS</h3>
+                <p><strong>ENFP 競選者</strong></p>
+                <p>我是個感性的 E 人，對於情緒比較敏感。希望透過這一杯杯用心煮出的花茶凍，傳遞溫暖給每一個你。</p>
+                <p>陪你慢慢喝，慢慢變好。😗</p>
+            </div>
+            <div class="image-card">
+                <img src="/assets/img/guild/miglo/gallery_5.webp" alt="Miglo Portrait" loading="lazy">
+            </div>
+        </div>
+
+        <!-- 6. Gallery -->
+        <div id="panel-gallery" class="content-panel">
+            <div class="gallery-title">FLORAL & TEA GALLERY</div>
+            <div class="gallery-grid">
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_1.webp" loading="lazy"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_2.webp" loading="lazy"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_3.webp" loading="lazy"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_4.webp" loading="lazy"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_5.webp" loading="lazy"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_6.webp" loading="lazy"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/gallery_7.webp" loading="lazy"></div>
+                <div class="g-item"><img src="/assets/img/guild/miglo/avatar.webp" loading="lazy"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finale -->
+    <!-- Lightbox -->
+    <div id="lightbox">
+        <div class="lightbox-close">&times;</div>
+        <img src="" alt="Zoomed Image">
+    </div>
+
+    <div id="finale">
+        <div style="font-size: 1.5rem; margin-bottom: 1rem; opacity: 0.9;">準備好品嚐自然的香氣了嗎？</div>
+        <h2 style="font-family: 'Dela Gothic One'; font-size: 3rem; margin-bottom: 2rem;">LET'S CONNECT!</h2>
+
+        <div>
+            <a href="https://www.instagram.com/miglo_jelly25/" target="_blank" class="social-btn">
+                <i class="fa-brands fa-instagram"></i> Instagram
+            </a>
+            <a href="https://www.threads.net/@miglo_jelly25" target="_blank" class="social-btn">
+                <i class="fa-brands fa-threads"></i> Threads
+            </a>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        // Warm Amber Fog for Tea Infusion atmosphere
+        scene.fog = new THREE.FogExp2(0x2e1a05, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        // Optimization: Disable antialias on high DPR screens to save GPU
+        const isHighDPR = window.devicePixelRatio > 1;
+        const renderer = new THREE.WebGLRenderer({ antialias: !isHighDPR, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Helpers ---
+        function createEmojiTexture(emoji, size=128) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.font = `${size * 0.75}px serif`; // Standard serif for emoji
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(emoji + '\uFE0F', size/2, size/2); // Force emoji variant
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xFF4081, 2, 50); // Pink light
+        pointLight.position.set(2, 5, 5);
+        scene.add(pointLight);
+
+        const sunLight = new THREE.DirectionalLight(0xFFC107, 1); // Gold light
+        sunLight.position.set(-5, 10, 5);
+        scene.add(sunLight);
+
+        // --- 1. JELLY CUBES ---
+        // Reduce geometry segments for mobile performance
+        const jellyGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        // Optimize material for mobile (MeshStandard is cheaper than Physical)
+        const jellyMat = new THREE.MeshStandardMaterial({
+            color: 0xffb74d,
+            emissive: 0xff6d00,
+            emissiveIntensity: 0.4,
+            roughness: 0.2,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.9,
+        });
+        const jellyCount = 60;
+        const jellyMesh = new THREE.InstancedMesh(jellyGeo, jellyMat, jellyCount);
+        scene.add(jellyMesh);
+
+        // --- 2. TEA LEAVES ---
+        const leafGeo = new THREE.PlaneGeometry(1.5, 1.5); // Increased size
+        const leafTex = createEmojiTexture('🍃');
+        const leafMat = new THREE.MeshBasicMaterial({
+            map: leafTex, transparent: true, opacity: 0.9, side: THREE.DoubleSide, alphaTest: 0.5
+        });
+        const leafCount = 40;
+        const leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, leafCount);
+        scene.add(leafMesh);
+
+        // --- 3. FLOWERS ---
+        const flowerGeo = new THREE.PlaneGeometry(1.5, 1.5);
+        const flowerTex1 = createEmojiTexture('🌸');
+        const flowerTex2 = createEmojiTexture('🌺');
+        const flowerTex3 = createEmojiTexture('🌼');
+
+        // We'll use 3 InstancedMeshes for simplicity of material assignment
+        const fCount = 20;
+        function createFlowerMesh(tex, count) {
+            const mat = new THREE.MeshBasicMaterial({
+                map: tex, transparent: true, opacity: 0.95, side: THREE.DoubleSide, alphaTest: 0.5
+            });
+            const mesh = new THREE.InstancedMesh(flowerGeo, mat, count);
+            scene.add(mesh);
+            return mesh;
+        }
+        const flowerMesh1 = createFlowerMesh(flowerTex1, fCount);
+        const flowerMesh2 = createFlowerMesh(flowerTex2, fCount);
+        const flowerMesh3 = createFlowerMesh(flowerTex3, fCount);
+
+        // --- Position Logic ---
+        const dummy = new THREE.Object3D();
+
+        // Data arrays to store properties
+        const jellyData = [];
+        const leafData = [];
+        const flowerData = [];
+
+        function initData(mesh, dataArr, count, zRange) {
+            for(let i=0; i<count; i++) {
+                const x = (Math.random() - 0.5) * 35;
+                const y = (Math.random() - 0.5) * 35;
+                const z = (Math.random() - 0.5) * zRange - 20;
+
+                dummy.position.set(x, y, z);
+                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                const s = 0.5 + Math.random() * 0.8;
+                dummy.scale.set(s, s, s);
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
+
+                dataArr.push({
+                    x, y, z, ox: x, oy: y, oz: z,
+                    rx: Math.random()*0.02, ry: Math.random()*0.02,
+                    phase: Math.random() * Math.PI * 2,
+                    speed: 0.5 + Math.random()
+                });
+            }
+        }
+
+        initData(jellyMesh, jellyData, jellyCount, 100);
+        initData(leafMesh, leafData, leafCount, 120);
+
+        // Combine flower data
+        const fData1 = []; initData(flowerMesh1, fData1, fCount, 120);
+        const fData2 = []; initData(flowerMesh2, fData2, fCount, 120);
+        const fData3 = []; initData(flowerMesh3, fData3, fCount, 120);
+
+
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('entrance-screen');
+            gsap.to(loader, {
+                opacity: 0, duration: 1, delay: 0.5,
+                onComplete: () => {
+                    loader.remove();
+                    startAnimations();
+                }
+            });
+        });
+
+        function startAnimations() {
+            // Hero Entrance
+            gsap.fromTo(".big-text",
+                { opacity: 0, scale: 0.5, rotation: -5 },
+                { opacity: 1, scale: 1, rotation: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" }
+            );
+
+            // Hero Exit
+            gsap.to(".hero-container", {
+                opacity: 0, y: -100, scale: 1.5,
+                scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "5% top", scrub: true }
+            });
+
+            // Camera Flight - Move deep into the "Tea"
+            gsap.to(camera.position, {
+                z: -80,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#scroll-spacer",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.5
+                }
+            });
+
+            // Panels
+            const panels = [
+                { id: "#panel-1", start: 5, end: 15 },
+                { id: "#panel-2", start: 20, end: 30 },
+                { id: "#panel-3", start: 35, end: 45 },
+                { id: "#panel-4", start: 50, end: 60 },
+                { id: "#panel-5", start: 65, end: 75 }
+            ];
+
+            panels.forEach(p => {
+                const tl = gsap.timeline({
+                    scrollTrigger: { trigger: "#scroll-spacer", start: p.start + "% top", end: p.end + "% top", scrub: 1 }
+                });
+                tl.to(`${p.id} .text-card`, { opacity: 1, x: 0, rotation: 0, duration: 1 }, 0);
+                tl.to(`${p.id} .image-card`, { opacity: 1, x: 0, rotation: -3, duration: 1 }, 0);
+                tl.to([`${p.id} .text-card`, `${p.id} .image-card`], { opacity: 0, y: -50, duration: 1 }, 2);
+            });
+
+            panels.forEach(p => {
+                gsap.set(`${p.id} .text-card`, { opacity: 0, x: -50, rotation: -5 });
+                gsap.set(`${p.id} .image-card`, { opacity: 0, x: 50, rotation: 5 });
+            });
+
+            // Gallery
+            gsap.fromTo("#panel-gallery .gallery-title",
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, scrollTrigger: { trigger: "#scroll-spacer", start: "78% top", end: "82% top", scrub: 1 }}
+            );
+
+            const galleryItems = gsap.utils.toArray(".g-item");
+            gsap.fromTo(galleryItems,
+                { opacity: 0, scale: 0.5 },
+                {
+                    opacity: 1, scale: 1, stagger: 0.1,
+                    scrollTrigger: { trigger: "#scroll-spacer", start: "80% top", end: "90% top", scrub: 1 }
+                }
+            );
+
+            // Finale
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer", start: "99.5% bottom",
+                onEnter: () => document.getElementById('finale').classList.add('active'),
+                onLeaveBack: () => document.getElementById('finale').classList.remove('active')
+            });
+        }
+
+        // --- Lightbox Logic ---
+        const lightbox = document.getElementById('lightbox');
+        const lbImg = lightbox.querySelector('img');
+        const lbClose = lightbox.querySelector('.lightbox-close');
+
+        // Attach to both gallery items and content panel images
+        document.querySelectorAll('.g-item img, .image-card img').forEach(img => {
+            img.style.cursor = 'pointer';
+            img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                lbImg.src = e.target.src;
+                lightbox.classList.add('active');
+            });
+        });
+
+        function closeLightbox() { lightbox.classList.remove('active'); }
+
+        lbClose.addEventListener('click', closeLightbox);
+
+        lightbox.addEventListener('click', (e) => {
+            // Close if clicking outside the image
+            if(e.target === lightbox) closeLightbox();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'Escape') closeLightbox();
+        });
+
+        // --- Loop ---
+        const clock = new THREE.Clock();
+        const mouse = new THREE.Vector2();
+
+        // Optimize: Debounce/Throttle not needed for simple mouse tracking, but good practice to check interactions
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // Optimization: Use a single dummy object is good.
+        // Optimization: Pre-calculate sin/cos if possible, or use simplified math.
+
+        function animateMesh(mesh, data, time, type) {
+            // Optimization: Skip update if mesh is far off screen? (Simple culling)
+            // For now, the scene is small enough.
+
+            let needsUpdate = false;
+
+            for(let i=0; i<data.length; i++) {
+                const d = data[i];
+                let x = d.ox;
+                let y = d.oy;
+                let z = d.z;
+
+                // Jelly: Bobbing (Simple Sin)
+                if(type === 'jelly') {
+                    y = d.oy + Math.sin(time * d.speed + d.phase) * 2;
+                    dummy.rotation.set(time * d.rx, time * d.ry, 0);
+                }
+                // Leaf: Fluttering (Reduced Trig)
+                else if(type === 'leaf') {
+                    y = d.oy - (time * d.speed % 20) + 10;
+                    if(y < -20) y += 40;
+                    x = d.ox + Math.sin(time + d.phase);
+
+                    dummy.rotation.set(
+                        Math.sin(time * 2 + d.phase) * 0.5,
+                        Math.cos(time * 1.5 + d.phase) * 0.5,
+                        Math.sin(time + d.phase) * 0.2
+                    );
+                }
+                // Flower: Spinning gently (Simple Rotate)
+                else if(type === 'flower') {
+                    dummy.rotation.z = time * 0.2 + d.phase;
+                    dummy.rotation.x = Math.sin(time * 0.5 + d.phase) * 0.2;
+                    dummy.rotation.y = 0; // Reset Y rotation from reused dummy
+                    y = d.oy + Math.sin(time * 0.5 + d.phase);
+                }
+
+                dummy.position.set(x, y, z);
+
+                // Mouse Parallax (Lerp for smoothness could be better, but direct mapping is cheaper)
+                dummy.position.x += mouse.x;
+                dummy.position.y += mouse.y;
+
+                dummy.scale.setScalar(type === 'flower' ? 2.5 : (type === 'leaf' ? 1.2 : 1));
+
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
+                needsUpdate = true;
+            }
+            if(needsUpdate) mesh.instanceMatrix.needsUpdate = true;
+        }
+
+        function animate() {
+            const time = clock.getElapsedTime();
+
+            animateMesh(jellyMesh, jellyData, time, 'jelly');
+            animateMesh(leafMesh, leafData, time, 'leaf');
+
+            animateMesh(flowerMesh1, fData1, time, 'flower');
+            animateMesh(flowerMesh2, fData2, time, 'flower');
+            animateMesh(flowerMesh3, fData3, time, 'flower');
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
