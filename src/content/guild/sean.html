@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sean | The Astrologer</title>
+    <meta name="description" content="Sean - A pragmatic astrologer guiding you through life's chaos with celestial wisdom.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #020205;
+            --text-primary: #e0e0e0;
+            --accent-gold: #FFD700;
+            --accent-purple: #9D00FF;
+            --accent-cyan: #00FFFF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Noto Sans TC', serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; }
+        .orbitron-font { font-family: 'Orbitron', sans-serif; }
+
+        /* --- Canvas Wrapper --- */
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0; /* Fade in on load */
+            transition: opacity 2s ease;
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            font-size: 1rem; color: var(--accent-gold);
+            text-decoration: none; font-family: 'Cinzel';
+            border: 1px solid var(--accent-gold);
+            padding: 0.5rem 1rem;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .nav-back:hover {
+            background: var(--accent-gold);
+            color: #000;
+            box-shadow: 0 0 20px var(--accent-gold);
+        }
+
+        /* --- Layout --- */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        /* --- Components --- */
+        .card-glass {
+            background: linear-gradient(135deg, rgba(20,20,30,0.8), rgba(5,5,10,0.9));
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            backdrop-filter: blur(12px);
+            padding: 4rem;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9), inset 0 0 20px rgba(255, 215, 0, 0.05);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .card-glass::before {
+            content: '';
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+        }
+        .card-glass::after {
+            content: '';
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            width: 220px; height: 220px;
+            margin-bottom: 2rem;
+        }
+
+        .avatar-ring {
+            position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border: 2px dashed var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 20s linear infinite;
+        }
+
+        .avatar-container {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--accent-cyan);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        .avatar-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            filter: contrast(1.1) saturate(0.8);
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 7rem);
+            background: linear-gradient(to bottom, #fff, var(--accent-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        }
+
+        .hero-subtitle {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            color: var(--accent-cyan);
+            letter-spacing: 0.5em;
+            text-align: center;
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+        }
+
+        .text-highlight {
+            color: var(--accent-gold);
+            font-weight: 500;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .text-cyan {
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        p {
+            line-height: 2;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            text-align: justify;
+            color: #ccc;
+        }
+
+        .rpg-stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .rpg-stat {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--accent-gold);
+            padding: 1rem;
+            min-width: 150px;
+            text-align: center;
+        }
+        .rpg-label { color: var(--accent-gold); font-size: 0.8rem; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+        .rpg-value { font-family: 'Orbitron'; font-size: 1.2rem; color: #fff; }
+        .rpg-bar { height: 4px; background: #333; margin-top: 0.5rem; position: relative; }
+        .rpg-fill { height: 100%; background: var(--accent-cyan); width: 0%; transition: width 1s ease; }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+            width: 100%;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 2.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: left;
+            transition: 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+        .service-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-gold);
+            transform: scaleY(0);
+            transition: transform 0.4s;
+            transform-origin: bottom;
+        }
+        .service-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .service-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .service-icon {
+            font-size: 2.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 15px var(--accent-cyan);
+        }
+        .service-title {
+            font-family: 'Cinzel';
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        /* --- Footer --- */
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            margin-top: 3rem;
+            justify-content: center;
+        }
+        .social-btn {
+            color: #fff;
+            font-size: 1.8rem;
+            border: 1px solid var(--accent-gold);
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            text-decoration: none;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .social-btn::after {
+            content: '';
+            position: absolute; top:0; left:0; width: 100%; height: 100%;
+            background: var(--accent-gold);
+            opacity: 0;
+            transition: 0.3s;
+            z-index: -1;
+        }
+        .social-btn:hover {
+            color: #000;
+            box-shadow: 0 0 30px var(--accent-gold);
+            transform: scale(1.1);
+        }
+        .social-btn:hover::after { opacity: 1; }
+
+        .site-footer {
+            padding: 2rem;
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 5rem;
+        }
+        .site-footer a { color: #777; text-decoration: none; }
+        .site-footer .heart { color: var(--accent-gold); }
+
+        @keyframes spin { 0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);} }
+
+        @media(max-width: 768px) {
+            .card-glass { padding: 2rem 1.5rem; }
+            .hero-title { font-size: 3.5rem; }
+            .service-grid { grid-template-columns: 1fr; }
+            .rpg-stats-container { gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/guild/" class="nav-back">GUILD</a>
+    <div id="webgl-container"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="sec-hero">
+            <div class="avatar-wrapper gs-reveal">
+                <div class="avatar-ring"></div>
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/sean/avatar.webp" alt="Sean" class="avatar-img">
+                </div>
+            </div>
+
+            <h1 class="hero-title gs-reveal">SEAN</h1>
+            <div class="hero-subtitle gs-reveal">The Pragmatic Astrologer</div>
+
+            <div class="rpg-stats-container gs-reveal">
+                <div class="rpg-stat">
+                    <div class="rpg-label">CLASS</div>
+                    <div class="rpg-value">ASTROLOGER</div>
+                </div>
+                <div class="rpg-stat">
+                    <div class="rpg-label">WISDOM</div>
+                    <div class="rpg-value">LV. 99</div>
+                    <div class="rpg-bar"><div class="rpg-fill" style="width: 95%"></div></div>
+                </div>
+                <div class="rpg-stat">
+                    <div class="rpg-label">INSIGHT</div>
+                    <div class="rpg-value">LV. 85</div>
+                    <div class="rpg-bar"><div class="rpg-fill" style="width: 85%"></div></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 4rem; opacity: 0;" class="gs-reveal">
+                <i class="fa-solid fa-angles-down" style="color: var(--accent-cyan); font-size: 2rem; animation: bounce 2s infinite;"></i>
+            </div>
+        </section>
+
+        <!-- Bio / Origin -->
+        <section id="sec-bio">
+            <div class="card-glass gs-card">
+                <h2 style="color: var(--accent-gold); margin-bottom: 2rem;">Origin Story</h2>
+                <p>
+                    嗨！我是<span class="text-highlight">湘 (Sean)</span>，是不惑之年才決定出來斜槓的占星師。
+                </p>
+                <p>
+                    在少年時期，我就對占星術、塔羅、人類圖這類神秘學充滿好奇。漫長的自學旅程中，我曾涉獵各種系統，但唯獨對<span class="text-highlight">占星</span>情有獨鍾。
+                </p>
+                <p>
+                    直到近幾年，原本穩定的職場生涯開始讓我感到困惑與窒息。當人生走過三分之一，站在「砍掉重練」的十字路口時，我決定聽從內心的召喚，重新擁抱占星術。這次，我不只是自學，更尋求執業導師的指引，將零散的知識拼湊成完整的智慧體系。
+                </p>
+                <p>
+                    星盤不再只是符號，它成為我看透自己生命軌跡的透鏡。我看見了自己的選擇、看見了未來的方向。這份清晰感，讓我決定以此為業，協助更多人看清腳下的路。
+                </p>
+            </div>
+        </section>
+
+        <!-- Methodology -->
+        <section id="sec-methodology">
+            <div class="card-glass gs-card">
+                <h2 style="color: var(--accent-cyan); margin-bottom: 2rem;">Philosophy</h2>
+                <div style="border-left: 4px solid var(--accent-cyan); padding-left: 2rem; margin: 2rem 0;">
+                    <p style="font-size: 1.3rem; font-style: italic; color: #fff;">
+                        "I won't just tell you 'Don't go out during Mercury Retrograde'. I will tell you <span class="text-cyan">what to watch out for</span>."
+                    </p>
+                </div>
+                <p>
+                    過去五六年，我常幫身邊的朋友與孩子看盤。但我總覺得缺少了什麼——如果占星只是流於八卦、或比拚誰算得準，那它就太可惜了。
+                </p>
+                <p>
+                    到了不惑之年，我深刻領悟到：<span class="text-highlight">務實 (Pragmatism)</span> 才是占星的核心價值。
+                </p>
+                <p>
+                    我的解盤風格不講宿命論，不販賣焦慮。我專注於給予<span class="text-highlight">「實質上的建議」</span>與<span class="text-highlight">「可行的方案」</span>。占星術不是迷信，而是一份讓你「更理解自己」的戰略指南。
+                </p>
+            </div>
+        </section>
+
+        <!-- Services -->
+        <section id="sec-services">
+            <div class="card-glass gs-card" style="max-width: 1100px;">
+                <h2 style="color: var(--accent-gold); margin-bottom: 1rem; text-align: center;">Mastery & Services</h2>
+                <p style="text-align: center; margin-bottom: 4rem; color: #aaa;">
+                    以本命盤為核心，聚焦於感情、人際、職涯與生活方向。<br>陪你把焦慮變清晰，把選擇變務實。
+                </p>
+
+                <div class="service-grid">
+                    <div class="service-card">
+                        <i class="fa-solid fa-scroll service-icon"></i>
+                        <h3 class="service-title">Natal Chart<br><span style="font-size: 0.8em; color: #888; font-family: 'Noto Sans TC'">本命盤解析</span></h3>
+                        <p>
+                            深入解析靈魂藍圖。從上升星座的面具到月亮的內在需求，全面剖析你的性格盲點與潛在天賦。了解「我是誰」，是改變命運的第一步。
+                        </p>
+                    </div>
+
+                    <div class="service-card">
+                        <i class="fa-solid fa-hourglass-half service-icon"></i>
+                        <h3 class="service-title">Transit Forecast<br><span style="font-size: 0.8em; color: #888; font-family: 'Noto Sans TC'">流年運勢推演</span></h3>
+                        <p>
+                            掌握宇宙天氣預報。針對未來一年的關鍵時間點提供策略建議。何時該衝刺？何時該蟄伏？讓你在對的時間做對的事。
+                        </p>
+                    </div>
+
+                    <div class="service-card">
+                        <i class="fa-solid fa-hand-holding-heart service-icon"></i>
+                        <h3 class="service-title">Synastry<br><span style="font-size: 0.8em; color: #888; font-family: 'Noto Sans TC'">雙人合盤解碼</span></h3>
+                        <p>
+                            透視關係中的化學反應。無論是伴侶、合夥人還是親子，解析雙方的能量互動模式，找出共鳴點與地雷區，讓關係經營更有智慧。
+                        </p>
+                    </div>
+
+                    <div class="service-card">
+                        <i class="fa-solid fa-compass-drafting service-icon"></i>
+                        <h3 class="service-title">Career Path<br><span style="font-size: 0.8em; color: #888; font-family: 'Noto Sans TC'">職涯天賦定位</span></h3>
+                        <p>
+                            結合 MC (天頂) 與職業宮位，分析你的社會形象與事業格局。協助你擺脫迷惘，找到能發揮最大價值的職涯賽道。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Finale Section -->
+        <section id="sec-finale">
+            <div class="card-glass gs-card" style="text-align: center; background: rgba(0,0,0,0.85); box-shadow: 0 0 50px rgba(0,0,0,0.8);">
+                <h2 class="hero-title" style="font-size: 3rem;">Connect</h2>
+                <p style="text-align: center; font-size: 1.2rem; color: var(--accent-cyan);">
+                    準備好重新認識自己了嗎？
+                </p>
+
+                <div class="social-links">
+                    <a href="https://www.threads.net/@sean.astrology" target="_blank" class="social-btn" title="Threads">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                    <a href="https://www.instagram.com/sean.astrology/" target="_blank" class="social-btn" title="Instagram">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+
+            <footer class="site-footer">
+                <p>Made with <span class="heart">♥</span> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+            </footer>
+        </section>
+
+    </main>
+
+    <style>
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+    </style>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // --- Configuration ---
+        // Optimization: Reduce star count on mobile for better performance
+        const isMobile = window.innerWidth < 768;
+        const CONFIG = {
+            starCount: isMobile ? 1500 : 4000,
+            zodiacRadius: 18,
+            cameraZ: 30
+        };
+
+        // --- Scene Setup ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = CONFIG.cameraZ;
+
+        // Optimization: Use default high-performance power preference but keep pixel ratio sane
+        const renderer = new THREE.WebGLRenderer({
+            antialias: false,
+            alpha: true,
+            powerPreference: "high-performance",
+            stencil: false,
+            depth: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // --- Post Processing (Bloom) ---
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            0.8, // Strength
+            0.5, // Radius
+            0.2  // Threshold
+        );
+        composer.addPass(bloomPass);
+
+        // Fade in container
+        window.addEventListener('load', () => {
+            container.style.opacity = 1;
+        });
+
+        // --- Texture Helper: Soft Circle for Stars ---
+        function createSoftCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+
+            const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.4)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 32, 32);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const starTexture = createSoftCircleTexture();
+
+        // --- Assets: Mystical Zodiac Runes ---
+        const zodiacSigns = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
+
+        function createMagicRuneTexture(text, color = '#FFD700') {
+            const canvas = document.createElement('canvas');
+            const size = 512;
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const center = size / 2;
+
+            ctx.clearRect(0, 0, size, size);
+
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15;
+
+            // 1. Outer Ring
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.arc(center, center, 180, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 2. Inner Glyph
+            ctx.globalAlpha = 1.0;
+            ctx.font = 'bold 200px "Noto Sans TC"';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillText(text + '\uFE0E', center, center + 20);
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(text + '\uFE0E', center, center + 20);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const zodiacGroup = new THREE.Group();
+        scene.add(zodiacGroup);
+
+        // Optimization: Use a shared geometry for sprites if possible, but sprites handle their own geometry internally in Three.js usually.
+        // Material caching is tricky here because each texture is unique.
+
+        document.fonts.ready.then(() => {
+            zodiacSigns.forEach((sign, i) => {
+                const angle = (i / 12) * Math.PI * 2;
+                const color = i % 2 === 0 ? '#FFD700' : '#00FFFF';
+
+                const texture = createMagicRuneTexture(sign, color);
+                const material = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.95,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                const sprite = new THREE.Sprite(material);
+
+                sprite.position.set(
+                    Math.cos(angle) * CONFIG.zodiacRadius,
+                    Math.sin(angle) * CONFIG.zodiacRadius,
+                    0
+                );
+                sprite.scale.set(6, 6, 1);
+
+                zodiacGroup.add(sprite);
+            });
+        });
+
+        // --- Starfield (Warp Effect) ---
+        // Optimization: Pre-calculate positions to avoid garbage collection
+        const starsGeo = new THREE.BufferGeometry();
+        const starPositions = new Float32Array(CONFIG.starCount * 3);
+        const starSizes = new Float32Array(CONFIG.starCount);
+        const starColors = new Float32Array(CONFIG.starCount * 3);
+
+        const color1 = new THREE.Color('#FFD700');
+        const color2 = new THREE.Color('#00FFFF');
+        const tempColor = new THREE.Color();
+
+        for(let i=0; i<CONFIG.starCount; i++) {
+            const i3 = i * 3;
+            const r = 10 + Math.random() * 100;
+            const theta = Math.random() * Math.PI * 2;
+
+            starPositions[i3] = Math.cos(theta) * r;
+            starPositions[i3+1] = Math.sin(theta) * r;
+            starPositions[i3+2] = (Math.random() - 0.5) * 400;
+
+            starSizes[i] = Math.random() * 1.5;
+
+            tempColor.lerpColors(color1, color2, Math.random());
+            starColors[i3] = tempColor.r;
+            starColors[i3+1] = tempColor.g;
+            starColors[i3+2] = tempColor.b;
+        }
+
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        starsGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        starsGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+        const starMaterial = new THREE.PointsMaterial({
+            vertexColors: true,
+            map: starTexture,
+            size: 0.5,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            alphaTest: 0.01
+        });
+
+        const starField = new THREE.Points(starsGeo, starMaterial);
+        scene.add(starField);
+
+        // --- Central Core ---
+        const coreGroup = new THREE.Group();
+        scene.add(coreGroup);
+
+        const geom1 = new THREE.IcosahedronGeometry(3, 1);
+        const mat1 = new THREE.MeshBasicMaterial({ color: 0x9D00FF, wireframe: true, transparent: true, opacity: 0.15 });
+        const mesh1 = new THREE.Mesh(geom1, mat1);
+        coreGroup.add(mesh1);
+
+        const geom2 = new THREE.IcosahedronGeometry(2, 0);
+        const mat2 = new THREE.MeshBasicMaterial({ color: 0x00FFFF, wireframe: true, transparent: true, opacity: 0.3 });
+        const mesh2 = new THREE.Mesh(geom2, mat2);
+        coreGroup.add(mesh2);
+
+        const sunGeo = new THREE.SphereGeometry(1, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        coreGroup.add(sun);
+
+
+        // --- Interaction & Loop ---
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetRotationX = 0;
+        let targetRotationY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+        });
+
+        // Use GSAP Ticker for centralized RAF loop (Optimization)
+        // This ensures GSAP and Three.js are perfectly synced
+        gsap.ticker.add((time, deltaTime, frame) => {
+            // Mouse Parallax (Damping)
+            targetRotationX += (mouseY - targetRotationX) * 0.05;
+            targetRotationY += (mouseX - targetRotationY) * 0.05;
+
+            scene.rotation.x = targetRotationX;
+            scene.rotation.y = targetRotationY;
+
+            // Idle Animations
+            zodiacGroup.rotation.z += 0.001;
+
+            mesh1.rotation.y -= 0.005;
+            mesh2.rotation.x += 0.005;
+
+            // Pulse Sun (using GSAP time)
+            const pulse = 1 + Math.sin(time * 3) * 0.1;
+            sun.scale.setScalar(pulse);
+
+            composer.render();
+        });
+
+        // --- Resize ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- ScrollTrigger Setup ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
+            gsap.fromTo(elem,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1, y: 0, duration: 1.2, ease: "power3.out",
+                    delay: i * 0.15,
+                    scrollTrigger: { trigger: '#sec-hero', start: "top 60%" }
+                }
+            );
+        });
+
+        gsap.utils.toArray('.gs-card').forEach(card => {
+            gsap.fromTo(card,
+                { opacity: 0, scale: 0.95, y: 50 },
+                {
+                    opacity: 1, scale: 1, y: 0, duration: 1, ease: "back.out(1.2)",
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        ScrollTrigger.create({
+            trigger: document.body,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.5,
+            onUpdate: (self) => {
+                const p = self.progress;
+
+                // Move camera deeply
+                camera.position.z = CONFIG.cameraZ - (p * 25);
+
+                // Rotate Zodiac Ring aggressively
+                zodiacGroup.rotation.z = p * Math.PI * 2;
+                zodiacGroup.scale.setScalar(1 + p * 0.5);
+
+                // Core Complexity
+                coreGroup.rotation.y = p * Math.PI * 4;
+                coreGroup.rotation.x = p * Math.PI;
+
+                // Warp Stars
+                starField.position.z = p * 100;
+                starField.rotation.z = p * 0.5;
+            }
+        });
+    </script>
+</body>
+</html>
