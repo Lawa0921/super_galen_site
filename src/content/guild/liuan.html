@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liuan | 健身自由教練</title>
+    <meta name="description" content="健身自由教練 Liuan - 從公職到自由，帶你找回對身體的掌控權。運動生理學背景，結合謎因與科學的健身指導。">
+    <meta property="og:image" content="/assets/img/guild/liuan/avatar.webp">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-neon-green: #39FF14;
+            --c-neon-cyan: #00FFFF;
+            --c-neon-pink: #FF00FF;
+            --c-bg: #050505;
+            --c-card-bg: rgba(10, 20, 10, 0.85);
+            --font-display: 'Black Ops One', cursive;
+            --font-tech: 'Orbitron', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            margin: 0; padding: 0; box-sizing: border-box;
+            background-color: var(--c-bg);
+            color: #fff;
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        * { box-sizing: border-box; }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+            background: radial-gradient(circle at center, #1a2a1a 0%, #000000 100%);
+        }
+
+        /* --- Scroll Spacer --- */
+        #scroll-spacer {
+            height: 1200vh; /* Long scroll for story */
+            width: 100%; position: relative;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* --- UI Overlay --- */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        /* Brand Mark */
+        .brand-mark {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            display: flex; align-items: center; gap: 10px;
+            pointer-events: auto; text-decoration: none;
+            mix-blend-mode: exclusion;
+        }
+        .mark-text {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--c-neon-green);
+            text-shadow: 0 0 10px var(--c-neon-green);
+        }
+
+        /* --- Glitch Effect --- */
+        .glitch {
+            position: relative;
+            color: white;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch::before {
+            left: 2px; text-shadow: -1px 0 var(--c-neon-pink);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px; text-shadow: -1px 0 var(--c-neon-cyan);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim {
+            0% { clip: rect(13px, 9999px, 81px, 0); }
+            20% { clip: rect(88px, 9999px, 16px, 0); }
+            40% { clip: rect(24px, 9999px, 126px, 0); }
+            60% { clip: rect(102px, 9999px, 34px, 0); }
+            80% { clip: rect(56px, 9999px, 78px, 0); }
+            100% { clip: rect(12px, 9999px, 49px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            20% { clip: rect(2px, 9999px, 45px, 0); }
+            40% { clip: rect(15px, 9999px, 33px, 0); }
+            60% { clip: rect(80px, 9999px, 15px, 0); }
+            80% { clip: rect(33px, 9999px, 98px, 0); }
+            100% { clip: rect(110px, 9999px, 2px, 0); }
+        }
+
+        /* --- Typography & Layout --- */
+        .center-stage {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; width: 100%; max-width: 1200px;
+            pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .meme-text {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 6vw, 5rem);
+            line-height: 1.1;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(57, 255, 20, 0.5);
+            margin-bottom: 2rem;
+            width: 100%;
+        }
+
+        .avatar-frame {
+            width: 300px; height: 300px;
+            border: 4px solid var(--c-neon-green);
+            box-shadow: 0 0 30px var(--c-neon-green), inset 0 0 30px var(--c-neon-green);
+            border-radius: 50%; overflow: hidden;
+            position: relative;
+            background: #000;
+        }
+        .avatar-frame img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* Content Sections */
+        .section-content {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 100%; padding: 0 10%;
+            display: flex; gap: 4rem; align-items: center;
+            opacity: 0; pointer-events: none;
+        }
+        .section-left { justify-content: flex-start; }
+        .section-right { justify-content: flex-end; }
+        .section-center { justify-content: center; text-align: center; flex-direction: column; }
+
+        .info-card {
+            background: var(--c-card-bg);
+            border: 1px solid var(--c-neon-green);
+            padding: 2.5rem; border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            box-shadow: 10px 10px 0px rgba(57, 255, 20, 0.2);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .info-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%;
+            background: var(--c-neon-green);
+        }
+
+        .info-card h2 {
+            font-family: var(--font-tech);
+            color: var(--c-neon-green);
+            font-size: 2rem; margin-top: 0; margin-bottom: 1rem;
+            text-transform: uppercase; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 10px;
+        }
+        .info-card p {
+            font-size: 1.1rem; line-height: 1.8; color: #ddd; margin-bottom: 1rem;
+        }
+        .info-card ul {
+            list-style: none; padding: 0;
+        }
+        .info-card li {
+            margin-bottom: 0.8rem; display: flex; align-items: center; gap: 10px;
+            font-size: 1.1rem;
+        }
+        .info-card li i { color: var(--c-neon-cyan); }
+
+        .highlight {
+            color: var(--c-neon-cyan); font-weight: 700;
+        }
+
+        /* --- Footer / Finale --- */
+        #finale {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        #finale.active { opacity: 1; pointer-events: auto; }
+
+        .social-links {
+            display: flex; gap: 2rem; margin-top: 2rem;
+        }
+        .social-btn {
+            color: var(--c-bg); background: var(--c-neon-green);
+            padding: 1rem 2rem; font-family: var(--font-tech); font-weight: 700;
+            text-decoration: none; border-radius: 5px; font-size: 1.2rem;
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%);
+        }
+        .social-btn:hover {
+            background: var(--c-neon-cyan); transform: scale(1.1);
+            box-shadow: 0 0 20px var(--c-neon-cyan);
+        }
+
+        .footer-credit {
+            position: absolute; bottom: 1rem; width: 100%; text-align: center;
+            font-size: 0.8rem; color: #666; font-family: var(--font-tech);
+        }
+        .footer-credit a { color: #888; text-decoration: none; }
+        .footer-credit a:hover { color: var(--c-neon-green); }
+
+        /* --- Entrance --- */
+        #entrance-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; z-index: 10001;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .loader-bar {
+            width: 300px; height: 4px; background: #333; margin-top: 20px;
+            position: relative; overflow: hidden;
+        }
+        .loader-fill {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--c-neon-green);
+            animation: load 2s ease-in-out forwards;
+        }
+        @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
+
+        @media (max-width: 768px) {
+            .meme-text { font-size: 1.8rem; }
+            .avatar-frame { width: 200px; height: 200px; }
+            .section-content { flex-direction: column; padding: 0 1rem; justify-content: center; }
+            .info-card { width: 100%; padding: 1.5rem; }
+            .social-links { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="entrance-screen">
+        <div class="glitch" data-text="SYSTEM INITIALIZING..." style="font-family: var(--font-tech); font-size: 1.5rem;">SYSTEM INITIALIZING...</div>
+        <div class="loader-bar"><div class="loader-fill"></div></div>
+    </div>
+
+    <div id="webgl-container"></div>
+    <div id="scroll-spacer"></div>
+
+    <a href="/guild/" class="brand-mark">
+        <i class="fa-solid fa-dumbbell" style="font-size: 2rem; color: var(--c-neon-green);"></i>
+        <div class="mark-text">LIUAN</div>
+    </a>
+
+    <div class="overlay">
+        <!-- Hero Section -->
+        <div id="hero" class="center-stage">
+            <div class="meme-text glitch" data-text="WHEN YOU FINALLY GET THAT GAINS">WHEN YOU FINALLY GET THAT GAINS</div>
+            <div class="avatar-frame">
+                <img src="/assets/img/guild/liuan/avatar.webp" alt="Liuan Gains">
+            </div>
+            <div style="margin-top: 1rem; font-family: var(--font-tech); color: var(--c-neon-cyan); letter-spacing: 5px;">
+                FITNESS COACH | MEME LORD
+            </div>
+        </div>
+
+        <!-- 1. Origin -->
+        <div id="section-1" class="section-content section-left">
+            <div class="info-card">
+                <h2>// ORIGIN STORY</h2>
+                <p>我是一個<span class="highlight">健身自由教練</span>！</p>
+                <p>之前在公職上班，但發現健身這件事對我來說才是最重要的。於是毅然決然離開舒適圈，投入運動領域。</p>
+                <p>研究所主修<span class="highlight">運動生理學</span>，大學是社會學系。喜歡觀察社會，也喜歡觀察肌肉 (?</p>
+            </div>
+        </div>
+
+        <!-- 2. Philosophy -->
+        <div id="section-2" class="section-content section-right">
+            <div class="info-card">
+                <h2>// PHILOSOPHY</h2>
+                <p>「健身運動除了自己練，帶身邊的人或是爺爺奶奶運動，給我的感覺更踏實！」</p>
+                <p>玩過健美、健力。我的目標是把運動跟家人、工作結合，讓運動成為生活的一種<span class="highlight">日常風格</span>，而不只是痛苦的訓練。</p>
+            </div>
+        </div>
+
+        <!-- 3. Services -->
+        <div id="section-3" class="section-content section-left">
+            <div class="info-card">
+                <h2>// SERVICES</h2>
+                <ul>
+                    <li><i class="fa-solid fa-language"></i> <strong>健身影片翻譯</strong>：分享國外優質資訊。</li>
+                    <li><i class="fa-solid fa-person-running"></i> <strong>個人教練</strong>：科學化訓練安排。</li>
+                    <li><i class="fa-solid fa-question-circle"></i> <strong>疑難雜症解答</strong>：有問題隨時幫忙！</li>
+                </ul>
+                <p>目前正積極拍攝更多好玩的影片，推廣運動生活化！</p>
+            </div>
+        </div>
+
+        <!-- 4. Future -->
+        <div id="section-4" class="section-content section-center">
+            <div class="info-card" style="text-align: center;">
+                <h2>// NEXT LEVEL</h2>
+                <p>接下來會有更多好玩的計劃！😎</p>
+                <p>比如：<span class="highlight">找退休的家人來個挑戰</span>！</p>
+                <p>讓大家更了解運動健身的好，一起把日常運動呈現給大家。</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Finale -->
+    <div id="finale">
+        <h1 class="meme-text glitch" data-text="JOIN THE REVOLUTION" style="font-size: 3rem; margin-bottom: 2rem;">JOIN THE REVOLUTION</h1>
+        <div class="avatar-frame" style="width: 150px; height: 150px; margin-bottom: 2rem;">
+            <img src="/assets/img/guild/liuan/avatar.webp" alt="Liuan">
+        </div>
+
+        <div class="social-links">
+            <a href="https://www.instagram.com/liuan_onesmallstep/" target="_blank" class="social-btn">
+                <i class="fa-brands fa-instagram"></i> INSTAGRAM
+            </a>
+            <a href="https://www.threads.net/@liuan_onesmallstep" target="_blank" class="social-btn">
+                <i class="fa-brands fa-threads"></i> THREADS
+            </a>
+        </div>
+
+        <div class="footer-credit">
+            Made with <i class="fa-solid fa-heart" style="color: var(--c-neon-pink);"></i> by <a href="/guild/">SuperGalen's Dungeon</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        // Dark fog for depth
+        scene.fog = new THREE.FogExp2(0x050505, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0x39FF14, 2, 50); // Neon Green
+        pointLight.position.set(0, 0, 10);
+        scene.add(pointLight);
+
+        // Headlamp attached to camera
+        const headLamp = new THREE.PointLight(0x00FFFF, 1, 30);
+        camera.add(headLamp);
+        scene.add(camera);
+
+        // --- Objects: "Tunnel of Gains" ---
+        // Instead of TubeGeometry (expensive), we use many small objects arranged in a tunnel
+        const tunnelGroup = new THREE.Group();
+        scene.add(tunnelGroup);
+
+        const geometryBox = new THREE.BoxGeometry(1, 1, 2); // Dumbbell weights lookalike?
+        const geometryBar = new THREE.CylinderGeometry(0.1, 0.1, 4, 8); // Bars
+
+        const materialGreen = new THREE.MeshStandardMaterial({
+            color: 0x39FF14, wireframe: true, emissive: 0x004400
+        });
+        const materialCyan = new THREE.MeshStandardMaterial({
+            color: 0x00FFFF, wireframe: true, emissive: 0x004444
+        });
+
+        const count = 200;
+        for(let i=0; i<count; i++) {
+            const mesh = new THREE.Mesh(
+                Math.random() > 0.5 ? geometryBox : geometryBar,
+                Math.random() > 0.5 ? materialGreen : materialCyan
+            );
+
+            // Random position in a cylinder around Z axis
+            const theta = Math.random() * Math.PI * 2;
+            const radius = 10 + Math.random() * 20;
+            const z = i * -1 - Math.random() * 10; // Spread along Z
+
+            mesh.position.set(
+                Math.cos(theta) * radius,
+                Math.sin(theta) * radius,
+                z
+            );
+
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            tunnelGroup.add(mesh);
+        }
+
+        // Floating Text Sprites
+        function createTextSprite(text, color) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 512; canvas.height = 256;
+            ctx.font = 'Bold 100px "Black Ops One", sans-serif';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.fillText(text, 256, 128);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: tex });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(10, 5, 1);
+            return sprite;
+        }
+
+        const words = ["GAINS", "POWER", "MUSCLE", "MEME", "PUSH", "PULL"];
+        for(let i=0; i<30; i++) {
+            const word = words[Math.floor(Math.random() * words.length)];
+            const color = Math.random() > 0.5 ? '#39FF14' : '#00FFFF';
+            const sprite = createTextSprite(word, color);
+
+            const theta = Math.random() * Math.PI * 2;
+            const radius = 5 + Math.random() * 10;
+            const z = -20 - Math.random() * 180;
+
+            sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, z);
+            tunnelGroup.add(sprite);
+        }
+
+
+        // --- GSAP Animation ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        window.addEventListener('load', () => {
+            gsap.to('#entrance-screen', {
+                opacity: 0, duration: 1, delay: 1.5,
+                onComplete: () => {
+                    document.getElementById('entrance-screen').remove();
+                    initScroll();
+                }
+            });
+        });
+
+        function initScroll() {
+            // Hero Exit
+            gsap.to('#hero', {
+                opacity: 0, scale: 2, filter: 'blur(10px)',
+                scrollTrigger: { trigger: '#scroll-spacer', start: 'top top', end: '10% top', scrub: true }
+            });
+
+            // Camera Flight
+            // We move camera from Z=5 to Z=-200
+            gsap.to(camera.position, {
+                z: -200,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '#scroll-spacer',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                }
+            });
+
+            // Camera Rotation (Barrel Roll)
+            gsap.to(camera.rotation, {
+                z: Math.PI * 2,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '#scroll-spacer',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                }
+            });
+
+            // Sections
+            const sections = [
+                { id: '#section-1', start: 10, end: 25 },
+                { id: '#section-2', start: 30, end: 45 },
+                { id: '#section-3', start: 50, end: 65 },
+                { id: '#section-4', start: 70, end: 85 }
+            ];
+
+            sections.forEach(s => {
+                const tl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: '#scroll-spacer',
+                        start: s.start + '% top',
+                        end: s.end + '% top',
+                        scrub: 1
+                    }
+                });
+
+                // Entrance
+                tl.fromTo(s.id,
+                    { opacity: 0, scale: 0.8, x: s.id.includes('left') ? -100 : 100 },
+                    { opacity: 1, scale: 1, x: 0, duration: 1 }
+                );
+
+                // Exit
+                tl.to(s.id, { opacity: 0, scale: 1.2, filter: 'blur(5px)', duration: 1 }, 3);
+            });
+
+            // Finale
+            ScrollTrigger.create({
+                trigger: '#scroll-spacer',
+                start: '99% bottom',
+                onEnter: () => document.getElementById('finale').classList.add('active'),
+                onLeaveBack: () => document.getElementById('finale').classList.remove('active')
+            });
+        }
+
+        // --- Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime();
+
+            // Rotate objects in tunnel slightly
+            tunnelGroup.children.forEach((mesh, i) => {
+                mesh.rotation.x += 0.01;
+                mesh.rotation.y += 0.01;
+
+                // Pulse effect
+                if (mesh.type === 'Mesh') {
+                     const s = 1 + Math.sin(time * 2 + i) * 0.2;
+                     mesh.scale.set(s, s, s);
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

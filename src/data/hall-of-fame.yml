@@ -729,3 +729,15 @@ members:
         label: "鉤織/手作"
       - id: "poet"
         label: "詩意瘋子"
+
+  - id: "liuan"
+    name: "健身自由教練 Liuan"
+    avatar: "/assets/img/guild/liuan/avatar.webp"
+    page: "/guild/liuan.html"
+    tags:
+      - id: "fitness_coach"
+        label: "健身教練"
+      - id: "meme_master"
+        label: "謎因大師"
+      - id: "exercise_physiology"
+        label: "運動生理學"
