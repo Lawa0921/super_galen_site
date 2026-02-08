@@ -729,3 +729,15 @@ members:
         label: "鉤織/手作"
       - id: "poet"
         label: "詩意瘋子"
+
+  - id: "bro_mao"
+    name: "毛哥 Bro Mao"
+    avatar: "/assets/img/guild/bro_mao/avatar.webp"
+    page: "/guild/bro_mao.html"
+    tags:
+      - id: "community_ops"
+        label: "社群經營"
+      - id: "shopee_affiliate"
+        label: "蝦皮分潤"
+      - id: "student"
+        label: "高中生"
