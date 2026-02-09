@@ -544,13 +544,28 @@
             }
 
             .card-grimoire {
-                grid-template-columns: 1fr;
+                display: flex !important; /* Force flex instead of grid for safety */
+                flex-direction: column !important;
                 gap: 2rem;
-                padding: 2rem 1.5rem !important; /* Reduce horizontal padding */
-                width: 100% !important; /* Ensure full width but contained */
+                padding: 2rem 1rem !important; /* Further reduce padding */
+                width: 100% !important;
                 max-width: 100% !important;
-                border-radius: 10px !important; /* Simplify border radius */
-                box-shadow: 5px 5px 15px rgba(0,0,0,0.1) !important; /* Remove inset shadow */
+                border-radius: 10px !important;
+                box-shadow: 5px 5px 15px rgba(0,0,0,0.1) !important;
+                overflow: hidden !important; /* Prevent internal content from expanding container */
+            }
+            .card-grimoire > div {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .spell-list {
+                width: 100% !important;
+                padding-left: 1rem !important; /* Reduce list indentation */
+            }
+            .spell-list li {
+                width: 100% !important;
+                word-wrap: break-word !important; /* Force wrapping */
+                overflow-wrap: break-word !important;
             }
             .grimoire-spine { display: none; }
 
