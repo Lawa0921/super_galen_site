@@ -3,607 +3,711 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yumebi Emu | LUCID DREAM STAGE</title>
+    <title>Yumebi Emu | Lucid Dream</title>
+    <meta name="description" content="Yumebi Emu - ASMR Creator & Eternal 20-year-old Idol. Dream Magic, Tarot, and soothing whispers.">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Noto+Serif+TC:wght@900&family=Orbitron:wght@500;900&family=Rubik+Glitch&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;500;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
-    <!-- Three.js Import Map -->
+    <!-- Libraries -->
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
-            --c-bg: #05000a;
-            --c-neon-pink: #ff00ff;
-            --c-neon-cyan: #00ffff;
-            --c-neon-purple: #bd00ff;
-            --c-white: #ffffff;
-
-            --f-round: 'Zen Maru Gothic', sans-serif;
-            --f-serif: 'Noto Serif TC', serif;
-            --f-tech: 'Orbitron', sans-serif;
-            --f-glitch: 'Rubik Glitch', system-ui;
+            --bg-deep: #05000a;
+            --text-primary: #fff0f5;
+            --accent-pink: #FF69B4;
+            --accent-purple: #9D00FF;
+            --accent-cyan: #00FFFF;
+            --glass-bg: rgba(255, 105, 180, 0.05);
+            --glass-border: rgba(255, 105, 180, 0.2);
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            margin: 0;
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
-            background-color: var(--c-bg);
-            color: var(--c-white);
-            font-family: var(--f-round);
-            cursor: none; /* Custom cursor */
+            width: 100vw;
         }
 
-        /* --- CUSTOM CURSOR --- */
-        #cursor {
-            position: fixed; top: 0; left: 0; width: 40px; height: 40px;
-            background: url('/assets/img/guild/yumebi_emu/wand_rainbow.webp') no-repeat center/contain;
-            pointer-events: none; z-index: 9999;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: screen;
-            filter: drop-shadow(0 0 10px var(--c-neon-pink));
-        }
+        h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; }
 
-        /* --- 3D CANVAS --- */
-        #canvas-container {
+        /* --- WebGL Containers --- */
+        #three-container {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100vh;
-            z-index: 0;
-            pointer-events: none;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0; /* Fade in via JS */
+            transition: opacity 2s ease;
         }
 
-        /* --- NAVIGATION --- */
+        #p5-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -2; /* Behind Three.js */
+            pointer-events: none;
+            opacity: 0.3;
+            mix-blend-mode: screen;
+        }
+
+        /* --- Navigation --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-family: var(--f-tech);
-            font-weight: 900;
-            font-size: 1.2rem; letter-spacing: 2px;
-            color: var(--c-neon-cyan); text-decoration: none;
-            padding: 0.8rem 2rem;
-            background: rgba(0,0,0,0.8);
-            border: 2px solid var(--c-neon-cyan);
-            box-shadow: 0 0 10px var(--c-neon-cyan), inset 0 0 20px rgba(0,255,255,0.2);
-            transform: skewX(-20deg);
+            font-size: 1rem; color: var(--accent-pink);
+            text-decoration: none; font-family: 'Cinzel';
+            border: 1px solid var(--accent-pink);
+            padding: 0.5rem 1rem;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
             transition: 0.3s;
-            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%);
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
         }
-        .nav-back span { display: block; transform: skewX(20deg); }
         .nav-back:hover {
-            background: var(--c-neon-cyan); color: #000;
-            box-shadow: 0 0 30px var(--c-neon-cyan);
-            text-shadow: none;
+            background: var(--accent-pink);
+            color: #fff;
+            box-shadow: 0 0 20px var(--accent-pink);
         }
 
-        /* --- LAYOUT --- */
-        .scrolly-container {
-            position: relative;
-            z-index: 10;
-        }
-
+        /* --- Layout --- */
         section {
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            box-sizing: border-box;
-            position: relative;
-            perspective: 1000px;
-        }
-
-        /* --- GLITCH TEXT --- */
-        .glitch-wrapper { position: relative; display: inline-block; }
-        .glitch-text {
-            font-family: var(--f-glitch);
-            font-size: 5rem;
-            color: var(--c-white);
-            text-transform: uppercase;
-            position: relative;
-            z-index: 1;
-            text-shadow: 2px 2px var(--c-neon-pink), -2px -2px var(--c-neon-cyan);
-        }
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-bg);
-        }
-        .glitch-text::before {
-            left: 2px; text-shadow: -2px 0 var(--c-neon-pink);
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-        }
-        .glitch-text::after {
-            left: -2px; text-shadow: -2px 0 var(--c-neon-cyan);
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim 2.5s infinite linear alternate-reverse;
-        }
-        @keyframes glitch-anim {
-            0% { clip: rect(14px, 9999px, 129px, 0); }
-            20% { clip: rect(98px, 9999px, 4px, 0); }
-            40% { clip: rect(44px, 9999px, 86px, 0); }
-            60% { clip: rect(83px, 9999px, 11px, 0); }
-            80% { clip: rect(2px, 9999px, 126px, 0); }
-            100% { clip: rect(104px, 9999px, 73px, 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(102px, 9999px, 91px, 0); }
-            20% { clip: rect(5px, 9999px, 6px, 0); }
-            40% { clip: rect(117px, 9999px, 142px, 0); }
-            60% { clip: rect(38px, 9999px, 20px, 0); }
-            80% { clip: rect(86px, 9999px, 148px, 0); }
-            100% { clip: rect(29px, 9999px, 89px, 0); }
-        }
-
-        /* --- HERO --- */
-        #hero {
             flex-direction: column;
-            text-align: center;
-            overflow: hidden;
-        }
-
-        .avatar-frame {
-            position: relative; width: 300px; height: 300px; margin-bottom: 2rem;
-            border: 4px solid var(--c-neon-pink);
-            transform: rotate(45deg); /* Diamond shape */
-            overflow: hidden;
-            box-shadow: 0 0 50px var(--c-neon-pink), inset 0 0 50px var(--c-neon-purple);
-            background: #000;
-        }
-        .avatar-img {
-            width: 140%; height: 140%;
-            object-fit: cover;
-            transform: rotate(-45deg) translate(-15%, -15%); /* Counter rotate */
-            filter: contrast(1.2) brightness(1.1);
-        }
-
-        /* Floating Wands */
-        .wand-float {
-            position: absolute;
-            width: 150px;
-            pointer-events: none;
-            filter: drop-shadow(0 0 20px var(--c-neon-cyan));
-            z-index: 5;
-        }
-        .w1 { top: 20%; left: 10%; animation: float 4s ease-in-out infinite; }
-        .w2 { bottom: 20%; right: 10%; animation: float 5s ease-in-out infinite reverse; filter: drop-shadow(0 0 20px var(--c-neon-pink)); }
-
-        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(5deg); } }
-
-        /* --- HOLOGRAPHIC PANELS --- */
-        .holo-panel {
-            background: rgba(10, 0, 20, 0.7);
-            border: 2px solid var(--c-neon-purple);
-            padding: 3rem;
-            max-width: 800px; width: 100%;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
             position: relative;
-            transform: skewX(-10deg);
-            backdrop-filter: blur(10px);
-            box-shadow: 10px 10px 0 var(--c-neon-pink);
-        }
-        .holo-panel::before {
-            content: ''; position: absolute; top: -10px; left: -10px;
-            width: 40px; height: 40px; border-top: 4px solid var(--c-neon-cyan); border-left: 4px solid var(--c-neon-cyan);
-        }
-        .holo-panel::after {
-            content: ''; position: absolute; bottom: -10px; right: -10px;
-            width: 40px; height: 40px; border-bottom: 4px solid var(--c-neon-cyan); border-right: 4px solid var(--c-neon-cyan);
         }
 
-        .holo-content { transform: skewX(10deg); } /* Correct text skew */
-
-        h2 {
-            font-family: var(--f-serif); font-size: 3rem; margin: 0 0 2rem;
-            color: var(--c-neon-cyan); text-transform: uppercase;
-            text-shadow: 0 0 20px var(--c-neon-cyan);
-            border-bottom: 2px solid var(--c-neon-pink); display: inline-block; padding-bottom: 0.5rem;
-        }
-
-        p { font-size: 1.2rem; line-height: 1.8; color: #eee; margin-bottom: 1.5rem; }
-        b { color: var(--c-neon-pink); }
-
-        /* --- SKILLS HEX GRID --- */
-        .hex-grid {
-            display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem;
-        }
-        .hex-item {
-            width: 150px; height: 170px;
-            background: rgba(255, 0, 255, 0.1);
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border: 2px solid var(--c-neon-purple); /* Note: clip-path hides border, needs pseudo-element trick or SVG, simplified for CSS */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
             position: relative;
-            transition: 0.3s;
-        }
-        .hex-item::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(45deg, var(--c-neon-pink), transparent); opacity: 0; transition: 0.3s;
-            z-index: -1;
-        }
-        .hex-item:hover { transform: scale(1.1) rotate(5deg); }
-        .hex-item:hover::before { opacity: 0.5; }
-
-        .hex-icon { font-size: 3rem; color: var(--c-neon-cyan); margin-bottom: 0.5rem; }
-        .hex-label { font-family: var(--f-tech); font-weight: 900; color: #fff; text-transform: uppercase; }
-
-        /* --- 3D GALLERY --- */
-        /* Using a pure CSS 3D Carousel approach or simply styled grid with chaos */
-        .chaos-gallery {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
-            perspective: 1000px;
-        }
-        .chaos-img {
-            width: 100%; aspect-ratio: 1; object-fit: cover;
-            border: 2px solid var(--c-white);
-            transition: 0.5s;
-            filter: grayscale(1);
-        }
-        .chaos-img:hover {
-            filter: grayscale(0) contrast(1.2);
-            transform: translateZ(50px) rotateY(10deg);
-            box-shadow: 0 0 50px var(--c-neon-pink);
             z-index: 10;
         }
-        /* Randomized initial rotations */
-        .chaos-img:nth-child(1) { transform: rotate(-5deg); }
-        .chaos-img:nth-child(2) { transform: translateY(-20px) rotate(3deg); }
-        .chaos-img:nth-child(3) { transform: rotate(5deg); }
-        .chaos-img:nth-child(4) { transform: translateY(20px) rotate(-3deg); }
-        .chaos-img:nth-child(5) { transform: rotate(2deg); }
 
-        /* --- FOOTER --- */
-        .social-bar {
-            display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem;
+        /* --- Typography --- */
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, var(--accent-pink), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            line-height: 1.1;
+            filter: drop-shadow(0 0 20px rgba(255, 105, 180, 0.5));
+            margin-bottom: 1rem;
         }
-        .social-link {
-            font-family: var(--f-tech); font-size: 1.2rem; color: var(--c-white);
-            text-decoration: none; padding: 0.5rem 1rem;
-            border: 1px solid var(--c-neon-purple);
-            background: rgba(0,0,0,0.5);
-            transition: 0.2s;
-            text-transform: uppercase; letter-spacing: 2px;
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            letter-spacing: 0.2em;
+            text-align: center;
+            text-shadow: 0 0 10px var(--accent-cyan);
         }
-        .social-link:hover {
-            background: var(--c-neon-pink); color: #000;
-            box-shadow: 0 0 20px var(--c-neon-pink);
+
+        /* --- Components --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(157, 0, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: '';
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-pink), transparent);
+        }
+
+        /* --- Sensory Focus (Close-ups) --- */
+        .sensory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .sense-card {
+            position: relative;
+            height: 300px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            transition: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+        }
+
+        .sense-card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: 0.5s;
+            filter: grayscale(0.2) contrast(1.1);
+        }
+
+        .sense-overlay {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            padding: 1.5rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            transform: translateY(100%);
+            transition: 0.3s;
+        }
+
+        .sense-overlay h3 { color: var(--accent-cyan); margin-bottom: 0.5rem; }
+
+        .sense-card:hover {
+            transform: scale(1.05) translateY(-10px);
+            box-shadow: 0 10px 40px rgba(255, 105, 180, 0.3);
+            z-index: 20;
+        }
+        .sense-card:hover img {
+            filter: grayscale(0) contrast(1.2);
             transform: scale(1.1);
         }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .glitch-text { font-size: 3rem; }
-            .chaos-gallery { grid-template-columns: 1fr; }
-            .holo-panel { transform: none; box-shadow: 0 0 20px var(--c-neon-purple); }
-            .holo-content { transform: none; }
-            .wand-float { width: 100px; }
-            .nav-back { padding: 0.5rem 1rem; }
+        .sense-card:hover .sense-overlay {
+            transform: translateY(0);
         }
+
+        /* --- Profile Avatar --- */
+        .profile-wrapper {
+            position: relative;
+            width: 250px; height: 250px;
+            margin: 0 auto 2rem;
+        }
+        .profile-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent-pink);
+            box-shadow: 0 0 30px var(--accent-pink);
+            position: relative;
+            z-index: 2;
+        }
+        .demon-wing {
+            position: absolute;
+            top: 20%;
+            width: 120px;
+            height: 120px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23FF69B4' d='M486.6 22.2c-5.2-3.8-12.4-3.5-17.3 0.8C421.9 66.8 322.6 153 256 153c-1.1 0-2.2 0-3.3-0.1c-1.3 22.4-5.3 43.6-11.4 63.3c35.6-7.3 75.2-12.7 116.5-14.8c4.6-0.2 8.7 2.4 10.6 6.6s1.1 9.2-2.1 12.3c-23.8 23.3-64.8 54.8-111.4 69.9c-23.7 34.6-59.3 64-106.9 83.1c11.9 14.7 22.9 31.6 32.3 50.8c2.9 6 0.8 13.2-4.9 16.5s-13.4 1.4-16.7-4.2c-15-25.5-35-46.7-58.8-61.6c-21.7 8.3-43.8 12.6-65.4 12.6C15.6 388 0.7 374.3 0.1 356.6c-0.6-16.1 11.2-29.8 26.9-31.8c30.4-3.8 58.7-14.2 83.5-29.8c24.6-15.5 45.4-36 61.2-60.5C215.8 213 241.6 189.9 256 166.4V153c0-63.5-62.7-124-118.8-158.3c-5.4-3.3-6.9-10.4-3.4-15.5s10.8-6.5 16.1-3.2C208.3 12.7 288 84.1 288 153c66.6 0 165.9-86.2 211.5-127.6c4.9-4.3 12.2-4.7 17.4-0.8s6.3 10.9 2.6 16.4c-19.1 28.6-43.2 53.6-68.8 74.8c30.8 11.8 58.1 28.5 79.7 50.1c4.6 4.6 4.6 12 0 16.6s-12 4.6-16.6 0c-19-19-42.9-33.6-69.6-43.7c47.9 39.7 85.9 91 106 149.7c2.3 6.7-1.3 14-8 16.3s-14-1.3-16.3-8c-18.7-54.7-54.2-102.5-98.8-139.5c-44-36.4-97.8-62.9-155.6-76.4c5.9-19.3 9.6-40.1 10.9-61.9z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.6;
+            animation: wing-beat 4s ease-in-out infinite;
+            z-index: 1;
+        }
+        .wing-left { left: -60px; transform: scaleX(-1); }
+        .wing-right { right: -60px; }
+
+        @keyframes wing-beat {
+            0%, 100% { transform: scaleX(var(--s, 1)) rotate(0deg); }
+            50% { transform: scaleX(var(--s, 1)) rotate(10deg); }
+        }
+
+        /* --- Social Links --- */
+        .social-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--accent-pink);
+            display: flex; justify-content: center; align-items: center;
+            color: #fff;
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .social-link:hover {
+            background: var(--accent-pink);
+            transform: translateY(-5px) rotate(10deg);
+            box-shadow: 0 0 20px var(--accent-pink);
+        }
+
+        /* --- Gallery --- */
+        .gallery-scroller {
+            display: flex;
+            gap: 2rem;
+            overflow-x: auto;
+            padding: 2rem;
+            scrollbar-width: none;
+        }
+        .gallery-item {
+            min-width: 300px;
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--glass-border);
+            transition: 0.3s;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .gallery-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(157, 0, 255, 0.4);
+        }
+
+        /* --- Animations --- */
+        .float-anim { animation: float 6s ease-in-out infinite; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px var(--accent-pink), 0 0 20px var(--accent-purple);
+            font-weight: bold;
+        }
+
+        .typewriter-text {
+            display: inline-block;
+            overflow: hidden;
+            border-right: .15em solid var(--accent-pink);
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .15em;
+            animation:
+                typing 3.5s steps(40, end),
+                blink-caret .75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--accent-pink); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+
+        /* Mobile Adjustments */
+        @media(max-width: 768px) {
+            .hero-title { font-size: 3.5rem; }
+            .sensory-grid { grid-template-columns: 1fr; }
+            .wing-left { left: -30px; }
+            .wing-right { right: -30px; }
+        }
+
     </style>
 </head>
 <body>
+    <a href="/guild/" class="nav-back">GUILD</a>
+    <div id="three-container"></div>
+    <div id="p5-container"></div>
 
-    <div id="cursor"></div>
-
-    <a href="/guild/" class="nav-back"><span><i class="fa-solid fa-backward"></i> GUILD BASE</span></a>
-
-    <div id="canvas-container"></div>
-
-    <div class="scrolly-container">
-
-        <!-- HERO -->
+    <main>
+        <!-- Hero -->
         <section id="hero">
-            <img src="/assets/img/guild/yumebi_emu/wand_rainbow.webp" class="wand-float w1" alt="Wand">
-            <img src="/assets/img/guild/yumebi_emu/wand_purple.webp" class="wand-float w2" alt="Wand">
-
-            <div class="avatar-frame">
-                <img src="/assets/img/guild/yumebi_emu/avatar.webp" class="avatar-img" alt="Yumebi Emu">
+            <div class="container" style="text-align: center;">
+                <h2 class="hero-subtitle gs-reveal">ASMR CREATOR</h2>
+                <h1 class="hero-title gs-reveal">LUCID DREAM</h1>
+                <div style="font-size: 1.2rem; margin-top: 1rem; color: #ddd; min-height: 2em;">
+                    <span class="typewriter-text">Welcome to the realm of Yumebi Emu</span>
+                </div>
             </div>
 
-            <div class="glitch-wrapper">
-                <h1 class="glitch-text" data-text="YUMEBI EMU">YUMEBI EMU</h1>
+            <div style="position: absolute; bottom: 50px; animation: bounce 2s infinite;">
+                <i class="fa-solid fa-chevron-down" style="color: var(--accent-pink); font-size: 2rem;"></i>
             </div>
-
-            <p style="font-family: var(--f-tech); color: var(--c-neon-cyan); letter-spacing: 5px; margin-top: 1rem; font-weight: 900;">
-                // SYSTEM: LUCID_DREAM_MODE //
-            </p>
-
-            <p style="color: #aaa; margin-top: 0.5rem;">SCROLL TO SYNC <i class="fa-solid fa-arrow-down"></i></p>
         </section>
 
-        <!-- INTRO -->
-        <section id="intro">
-            <div class="holo-panel">
-                <div class="holo-content">
-                    <h2>Target: Emu</h2>
-                    <p>
-                        <b>ID:</b> 永遠 20 歲的偶像 (Forever 20 Idol)<br>
-                        <b>Class:</b> ASMR Dream Witch (夢境魔女)<br>
-                        <b>Mission:</b> 把失眠的人通通哄睡 (Sleep Inducement)
-                    </p>
-                    <p>
-                        "很謝謝你注意到我，可以叫我愛姆！<br>
-                        透過我擅長的夢境魔法，陪伴所有孤獨的人度過漫漫長夜。"
-                    </p>
-                    <p style="border-left: 4px solid var(--c-neon-pink); padding-left: 1rem; font-style: italic; color: #ccc;">
-                        Warning: 觀眾都認為我有點天然呆... <b>但我覺得我很聰明！</b>
-                    </p>
+        <!-- Identity -->
+        <section id="identity">
+            <div class="glass-panel container gs-reveal" style="max-width: 900px; text-align: center;">
+                <div class="profile-wrapper">
+                    <div class="demon-wing wing-left" style="--s: -1"></div>
+                    <div class="demon-wing wing-right" style="--s: 1"></div>
+                    <img src="/assets/img/guild/yumebi_emu/work1.webp" alt="Yumebi Emu" class="profile-img">
+                </div>
+
+                <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--accent-pink);">Yumebi Emu</h2>
+                <h3 style="font-size: 1.2rem; margin-bottom: 2rem; color: var(--accent-purple);">夢寐愛姆</h3>
+
+                <p style="font-size: 1.1rem; line-height: 2; margin-bottom: 2rem;">
+                    永遠 20 歲的偶像，透過 <span class="glow-text">夢境魔法 (ASMR)</span> 把失眠的人通通哄睡。<br>
+                    陪伴所有孤獨的人度過漫漫長夜。
+                </p>
+
+                <div class="social-container">
+                     <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank" title="YouTube Main"><i class="fa-brands fa-youtube"></i></a>
+                     <a href="https://www.youtube.com/@eemumu0621" class="social-link" target="_blank" title="ASMR Channel"><i class="fa-solid fa-microphone-lines"></i></a>
+                     <a href="https://www.twitch.tv/yumebiemu" class="social-link" target="_blank" title="Twitch"><i class="fa-brands fa-twitch"></i></a>
+                     <a href="https://www.threads.net/@yumebi_emu" class="social-link" target="_blank" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                     <a href="https://www.instagram.com/yumebi_emu/" class="social-link" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                     <a href="https://discord.com/invite/twEj2UkKWj" class="social-link" target="_blank" title="Discord"><i class="fa-brands fa-discord"></i></a>
+                     <a href="https://www.hivebee.com.tw/user1d611745829147/Subscribe" class="social-link" target="_blank" title="Hivebee"><i class="fa-solid fa-star"></i></a>
+                     <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/?ref=pages_you_manage" class="social-link" target="_blank" title="Facebook"><i class="fa-brands fa-facebook"></i></a>
                 </div>
             </div>
         </section>
 
-        <!-- SKILLS -->
-        <section id="skills">
-            <div style="text-align: center;">
-                <h2 class="glitch-text" data-text="SKILLS" style="font-size: 4rem; text-shadow: none;">SKILLS</h2>
-                <div class="hex-grid">
-                    <div class="hex-item">
-                        <i class="fa-solid fa-wand-magic-sparkles hex-icon"></i>
-                        <span class="hex-label">ASMR</span>
+        <!-- Sensory Focus -->
+        <section id="sensory">
+            <div class="container">
+                <h2 style="text-align: center; font-size: 3rem; margin-bottom: 3rem; color: var(--text-primary);">
+                    Sensory <span style="color: var(--accent-cyan);">Focus</span>
+                </h2>
+
+                <div class="sensory-grid">
+                    <div class="sense-card gs-card">
+                        <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes">
+                        <div class="sense-overlay">
+                            <h3>Gaze</h3>
+                            <p>Watch deeply into the dream...</p>
+                        </div>
                     </div>
-                    <div class="hex-item">
-                        <i class="fa-solid fa-eye hex-icon"></i>
-                        <span class="hex-label">Tarot</span>
+                    <div class="sense-card gs-card" style="margin-top: 3rem;">
+                        <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Nose">
+                        <div class="sense-overlay">
+                            <h3>Breath</h3>
+                            <p>Soft whispers in your ear...</p>
+                        </div>
                     </div>
-                    <div class="hex-item">
-                        <i class="fa-solid fa-utensils hex-icon"></i>
-                        <span class="hex-label">Cook</span>
-                    </div>
-                    <div class="hex-item">
-                        <i class="fa-solid fa-heart hex-icon"></i>
-                        <span class="hex-label">Idol</span>
+                    <div class="sense-card gs-card">
+                        <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips">
+                        <div class="sense-overlay">
+                            <h3>Voice</h3>
+                            <p>The spell of sleep...</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- GALLERY -->
+        <!-- Traits / Skills -->
+        <section id="traits">
+            <div class="container" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem;">
+                <!-- Card 1 -->
+                <div class="glass-panel gs-card" style="flex: 1; min-width: 300px; text-align: center;">
+                    <i class="fa-solid fa-wand-sparkles" style="font-size: 3rem; color: var(--accent-purple); margin-bottom: 1.5rem;"></i>
+                    <h3>Natural Airhead?</h3>
+                    <p style="margin-top: 1rem; line-height: 1.8;">
+                        觀眾都認為我有點天然呆...<br>
+                        <span style="font-size: 1.2rem; color: var(--accent-pink);">但我覺得我很聰明！</span><br>
+                        (只要不算錯數學的話...)
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-panel gs-card" style="flex: 1; min-width: 300px; text-align: center;">
+                    <i class="fa-solid fa-cloud-moon" style="font-size: 3rem; color: var(--accent-cyan); margin-bottom: 1.5rem;"></i>
+                    <h3>Special Skills</h3>
+                    <ul style="list-style: none; margin-top: 1rem; line-height: 2;">
+                        <li>🔮 塔羅占卜 (Tarot)</li>
+                        <li>🍳 烹飪料理 (Cooking)</li>
+                        <li>💤 哄睡魔法 (Sleep Magic)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery -->
         <section id="gallery">
-            <div style="width: 100%; max-width: 1000px;">
-                <h2 style="text-align: center; display: block; border: none;">MEMORY FRAGMENTS</h2>
-                <div class="chaos-gallery">
-                    <img src="/assets/img/guild/yumebi_emu/work1.webp" class="chaos-img" loading="lazy">
-                    <img src="/assets/img/guild/yumebi_emu/work2.webp" class="chaos-img" loading="lazy">
-                    <img src="/assets/img/guild/yumebi_emu/work3.webp" class="chaos-img" loading="lazy">
-                    <img src="/assets/img/guild/yumebi_emu/work4.webp" class="chaos-img" loading="lazy">
-                    <img src="/assets/img/guild/yumebi_emu/work5.webp" class="chaos-img" loading="lazy">
+            <div class="container">
+                <h2 style="text-align: center; margin-bottom: 2rem;">Dream Fragments</h2>
+                <div class="gallery-scroller">
+                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work1.webp" loading="lazy"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work2.webp" loading="lazy"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work3.webp" loading="lazy"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work4.webp" loading="lazy"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work5.webp" loading="lazy"></div>
                 </div>
             </div>
         </section>
 
-        <!-- FOOTER -->
-        <section id="connect" style="min-height: 50vh; flex-direction: column;">
-            <h2 class="glitch-text" data-text="LINK START" style="font-size: 3rem;">LINK START</h2>
-
-            <div class="social-bar">
-                <a href="https://www.threads.net/@yumebi_emu" target="_blank" class="social-link">Threads</a>
-                <a href="https://www.instagram.com/yumebi_emu/" target="_blank" class="social-link">Instagram</a>
-                <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/" target="_blank" class="social-link">Facebook</a>
-                <a href="https://www.youtube.com/@Yumebi_Emu" target="_blank" class="social-link">YouTube</a>
-                <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" class="social-link">Lit.Link</a>
-                <a href="https://www.twitch.tv/yumebiemu" target="_blank" class="social-link">Twitch</a>
-                <a href="https://discord.com/invite/twEj2UkKWj" target="_blank" class="social-link">Discord</a>
+        <!-- Footer -->
+        <section style="height: 50vh;">
+            <div class="glass-panel" style="text-align: center;">
+                <p>想成為像照亮冬天的太陽般溫暖親切的人</p>
+                <div style="margin-top: 2rem;">
+                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan);">電子名片</a>
+                </div>
+                <footer style="margin-top: 3rem; font-size: 0.8rem; color: #888;">
+                    Made with <span style="color: var(--accent-pink);">♥</span> by <a href="/guild/" style="color: #aaa;">SuperGalen's Dungeon</a>
+                </footer>
             </div>
-
-            <p style="margin-top: 3rem; color: var(--c-neon-purple); font-family: var(--f-tech);">
-                // 想成為像照亮冬天的太陽般溫暖親切的人 //
-            </p>
         </section>
+    </main>
 
-        <footer style="padding: 2rem; text-align: center; background: #000; font-family: var(--f-tech); font-size: 0.8rem; color: #555;">
-             Made with <i class="fa-solid fa-bolt" style="color: var(--c-neon-pink);"></i> by SuperGalen's Dungeon
-        </footer>
-    </div>
+    <!-- P5.js Background Script -->
+    <script>
+        // Use P5 in Instance Mode to avoid global namespace pollution
+        const p5Sketch = (p) => {
+            let particles = [];
 
+            p.setup = () => {
+                // Ensure canvas covers viewport
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noStroke();
+            };
+
+            p.draw = () => {
+                p.clear(); // Transparent background
+
+                // Add new particle occasionally
+                if (p.frameCount % 10 === 0) {
+                    particles.push(new Particle(p));
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].display();
+                    if (particles[i].isDead()) {
+                        particles.splice(i, 1);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class Particle {
+                constructor(p) {
+                    this.p = p;
+                    this.x = p.random(p.width);
+                    this.y = p.height + 10;
+                    this.vx = p.random(-0.5, 0.5);
+                    this.vy = p.random(-1, -2);
+                    this.alpha = 200;
+                    this.color = p.random([p.color(255, 105, 180), p.color(0, 255, 255), p.color(157, 0, 255)]);
+                    this.size = p.random(1, 4);
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.alpha -= 1.5;
+                    // Wavy motion
+                    this.x += Math.sin(this.p.frameCount * 0.05) * 0.5;
+                }
+
+                display() {
+                    this.p.fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], this.alpha);
+                    this.p.ellipse(this.x, this.y, this.size, this.size);
+                }
+
+                isDead() {
+                    return this.alpha < 0;
+                }
+            }
+        };
+
+        new p5(p5Sketch);
+    </script>
+
+    <!-- Three.js Background Script -->
     <script type="module">
         import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
-        // --- 1. SETUP ---
-        const container = document.getElementById('canvas-container');
+        // --- Scene Setup ---
+        const container = document.getElementById('three-container');
         const scene = new THREE.Scene();
-        // Fog for depth
-        scene.fog = new THREE.FogExp2(0x05000a, 0.05);
+        // Deep purple fog
+        scene.fog = new THREE.FogExp2(0x05000a, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
+        camera.position.z = 20;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- 2. PARTICLES EXPLOSION (VORTEX) ---
-        const geometry = new THREE.BufferGeometry();
-        const count = 2000;
-        const positions = new Float32Array(count * 3);
-        const colors = new Float32Array(count * 3);
-        const sizes = new Float32Array(count);
+        // Fade in
+        setTimeout(() => { container.style.opacity = 1; }, 500);
 
-        const color1 = new THREE.Color(0xff00ff); // Neon Pink
-        const color2 = new THREE.Color(0x00ffff); // Neon Cyan
+        // --- Post Processing ---
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
 
-        for(let i=0; i<count; i++) {
-            // Tunnel shape
-            const r = (Math.random() * 5) + 2; // Radius
-            const theta = Math.random() * Math.PI * 2;
-            const z = (Math.random() - 0.5) * 50; // Long tunnel
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2; // High bloom for dreamy effect
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
 
-            positions[i*3] = Math.cos(theta) * r;
-            positions[i*3+1] = Math.sin(theta) * r;
-            positions[i*3+2] = z;
+        // --- Objects ---
 
-            // Mix colors
-            const mixedColor = Math.random() > 0.5 ? color1 : color2;
-            colors[i*3] = mixedColor.r;
-            colors[i*3+1] = mixedColor.g;
-            colors[i*3+2] = mixedColor.b;
+        // 1. Floating Clouds (Sprites)
+        const cloudGroup = new THREE.Group();
+        scene.add(cloudGroup);
 
-            sizes[i] = Math.random() * 0.1;
+        // Function to create a simple cloud texture using Canvas
+        function createCloudTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(255, 105, 180, 0.2)'); // Pinkish
+            grad.addColorStop(0.5, 'rgba(157, 0, 255, 0.1)'); // Purpleish
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,128,128);
+            return new THREE.CanvasTexture(canvas);
         }
 
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        const cloudTex = createCloudTexture();
+        const cloudMat = new THREE.SpriteMaterial({
+            map: cloudTex,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
 
-        // Shader Material for "Explosive" look
-        const material = new THREE.PointsMaterial({
-            size: 0.05,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
+        // Optimization: Use InstancedMesh instead of Sprites if too many, but for <100 sprites is fine
+        for(let i=0; i<40; i++) {
+            const cloud = new THREE.Sprite(cloudMat);
+            cloud.position.set(
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 50 - 20
+            );
+            cloud.scale.setScalar(Math.random() * 20 + 10);
+            cloudGroup.add(cloud);
+        }
+
+        // 2. Stars
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 2000;
+        const starPos = new Float32Array(starCount * 3);
+        for(let i=0; i<starCount*3; i++) {
+            starPos[i] = (Math.random() - 0.5) * 200;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.2,
             transparent: true,
             opacity: 0.8
         });
+        const starField = new THREE.Points(starGeo, starMat);
+        scene.add(starField);
 
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
+        // 3. Central Magic Circle / Portal (Torus Knot)
+        const torusGeo = new THREE.TorusKnotGeometry(4, 1.2, 128, 16);
+        const torusMat = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+        const torus = new THREE.Mesh(torusGeo, torusMat);
+        scene.add(torus);
 
-        // --- 3. FLOATING CRYSTALS (Foreground) ---
-        const crystalGeo = new THREE.OctahedronGeometry(0.2, 0);
-        const crystalMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
-        const crystals = [];
+        // --- Animation Loop ---
+        let time = 0;
 
-        for(let i=0; i<20; i++) {
-            const mesh = new THREE.Mesh(crystalGeo, crystalMat);
-            mesh.position.set(
-                (Math.random() - 0.5) * 10,
-                (Math.random() - 0.5) * 10,
-                (Math.random() - 0.5) * 5 + 2
-            );
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            scene.add(mesh);
-            crystals.push({
-                mesh: mesh,
-                speed: Math.random() * 0.02,
-                axis: new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize()
-            });
-        }
+        // Use GSAP Ticker for centralized loop
+        gsap.ticker.add(() => {
+            time += 0.005;
 
+            // Rotate Clouds
+            cloudGroup.rotation.y = time * 0.1;
 
-        // --- 4. ANIMATION LOOP ---
-        let mouseX = 0;
-        let mouseY = 0;
+            // Rotate Torus
+            torus.rotation.x = time * 0.5;
+            torus.rotation.y = time * 0.2;
 
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+            // Pulse Torus
+            const s = 1 + Math.sin(time * 2) * 0.1;
+            torus.scale.set(s,s,s);
 
-            // Custom Cursor Logic
-            const cursor = document.getElementById('cursor');
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
+            // Move Stars
+            starField.rotation.z = time * 0.05;
+
+            composer.render();
         });
 
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-
-            // Rotate Tunnel
-            particles.rotation.z += 0.002;
-            particles.rotation.y = mouseX * 0.5;
-            particles.rotation.x = mouseY * 0.5;
-
-            // Pulse Particles
-            // (Simple pulse via scale not possible on BufferGeometry points easily without shader, using camera z move)
-            camera.position.z = 5 + Math.sin(time) * 0.2;
-
-            // Animate Crystals
-            crystals.forEach(c => {
-                c.mesh.rotateOnAxis(c.axis, c.speed);
-                c.mesh.position.y += Math.sin(time + c.mesh.position.x) * 0.01;
-            });
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // --- 5. GSAP ANIMATIONS ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Hero Explosion
-        gsap.from("#hero .glitch-text", {
-            scale: 0,
-            opacity: 0,
-            duration: 1.5,
-            ease: "elastic.out(1, 0.3)",
-            delay: 0.2
-        });
-
-        gsap.from(".avatar-frame", {
-            rotation: -180,
-            scale: 0,
-            opacity: 0,
-            duration: 1.5,
-            ease: "back.out(1.7)"
-        });
-
-        // Wands Floating In
-        gsap.from(".wand-float", {
-            y: 500,
-            opacity: 0,
-            duration: 2,
-            stagger: 0.5,
-            ease: "power4.out"
-        });
-
-        // Panel Slide
-        gsap.from(".holo-panel", {
-            scrollTrigger: {
-                trigger: "#intro",
-                start: "top 75%",
-                toggleActions: "play none none reverse"
-            },
-            x: -200,
-            opacity: 0,
-            duration: 1,
-            ease: "power2.out"
-        });
-
-        // Hex Grid Explosion
-        gsap.from(".hex-item", {
-            scrollTrigger: {
-                trigger: "#skills",
-                start: "top 70%"
-            },
-            scale: 0,
-            rotation: 360,
-            opacity: 0,
-            stagger: 0.1,
-            duration: 0.8,
-            ease: "back.out(1.5)"
-        });
-
-        // Gallery Chaos Align
-        gsap.from(".chaos-img", {
-            scrollTrigger: {
-                trigger: "#gallery",
-                start: "top 60%"
-            },
-            y: 100,
-            rotation: 0, // Animate TO the chaotic rotation
-            opacity: 0,
-            stagger: 0.1,
-            duration: 1,
-            ease: "power2.out"
-        });
-
-        // Resize
+        // --- Resize ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- GSAP Integration ---
+        // Sync scroll to 3D movement
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Reveal Animations
+        gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
+            gsap.fromTo(elem,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1, y: 0, duration: 1, delay: i * 0.1,
+                    scrollTrigger: { trigger: elem, start: "top 85%" }
+                }
+            );
+        });
+
+        gsap.utils.toArray('.gs-card').forEach((elem, i) => {
+             gsap.fromTo(elem,
+                { opacity: 0, scale: 0.8 },
+                {
+                    opacity: 1, scale: 1, duration: 0.8, delay: i * 0.05,
+                    scrollTrigger: { trigger: elem, start: "top 90%" }
+                }
+            );
+        });
+
+        // Scroll Parallax
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                const p = self.progress;
+                camera.position.z = 20 - (p * 15); // Fly through
+                camera.rotation.z = p * 0.5; // Tilt
+                torus.material.opacity = 0.1 + (p * 0.5);
+                torus.rotation.z = p * Math.PI;
+            }
         });
     </script>
 </body>
