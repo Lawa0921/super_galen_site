@@ -543,7 +543,15 @@
                 border-radius: 10px;
             }
 
-            .card-grimoire { grid-template-columns: 1fr; gap: 2rem; padding: 2rem; }
+            .card-grimoire {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                padding: 2rem 1.5rem !important; /* Reduce horizontal padding */
+                width: 100% !important; /* Ensure full width but contained */
+                max-width: 100% !important;
+                border-radius: 10px !important; /* Simplify border radius */
+                box-shadow: 5px 5px 15px rgba(0,0,0,0.1) !important; /* Remove inset shadow */
+            }
             .grimoire-spine { display: none; }
 
             .waffle-grid { grid-template-columns: 1fr; gap: 1rem; }
