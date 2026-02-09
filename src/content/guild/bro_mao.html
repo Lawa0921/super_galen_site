@@ -16,7 +16,7 @@
             --color-bg: #050505;
             --color-primary: #00FF00; /* Neon Green */
             --color-secondary: #FFD700; /* Gold */
-            --color-accent: #FF00FF; /* Magenta for contrast */
+            --color-accent: #FF00FF; /* Magenta */
             --font-main: 'Noto Sans TC', sans-serif;
             --font-display: 'Orbitron', sans-serif;
         }
@@ -35,7 +35,7 @@
             overscroll-behavior: none;
         }
 
-        /* --- Layout --- */
+        /* --- Canvas Background --- */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -43,10 +43,11 @@
             width: 100%;
             height: 100vh;
             z-index: -1;
-            opacity: 0; /* Fade in */
+            opacity: 0;
             transition: opacity 1.5s ease-out;
         }
 
+        /* --- Layout --- */
         .section {
             position: relative;
             width: 100%;
@@ -55,19 +56,18 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
-            pointer-events: none; /* Let clicks pass through to canvas if needed */
+            padding: 4rem 2rem;
+            pointer-events: none; /* Pass through to canvas */
         }
 
         .content-wrapper {
             pointer-events: auto;
-            max-width: 1200px;
+            max-width: 1000px;
             width: 100%;
             z-index: 10;
-            text-align: center;
         }
 
-        /* --- Typography & Elements --- */
+        /* --- Typography --- */
         h1, h2, h3 {
             font-family: var(--font-display);
             text-transform: uppercase;
@@ -80,56 +80,38 @@
             font-weight: 900;
         }
 
-        .glitch-text::before, .glitch-text::after {
+        /* Simplified Glitch Effect */
+        .glitch-text::before {
             content: attr(data-text);
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--color-bg);
-        }
-
-        .glitch-text::before {
             left: 2px;
             text-shadow: -1px 0 var(--color-secondary);
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+            top: 0;
+            color: var(--color-bg);
+            background: var(--color-bg);
+            overflow: hidden;
+            clip: rect(0, 900px, 0, 0);
+            animation: noise-anim-2 3s infinite linear alternate-reverse;
         }
 
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -1px 0 var(--color-accent);
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        @keyframes noise-anim-2 {
+            0% { clip: rect(12px, 9999px, 5px, 0); }
+            5% { clip: rect(34px, 9999px, 15px, 0); }
+            10% { clip: rect(5px, 9999px, 86px, 0); }
+            15% { clip: rect(67px, 9999px, 2px, 0); }
+            20% { clip: rect(2px, 9999px, 10px, 0); }
+            100% { clip: rect(0, 0, 0, 0); }
         }
 
-        @keyframes glitch-anim {
-            0% { clip: rect(11px, 9999px, 89px, 0); }
-            20% { clip: rect(66px, 9999px, 11px, 0); }
-            40% { clip: rect(2px, 9999px, 83px, 0); }
-            60% { clip: rect(98px, 9999px, 14px, 0); }
-            80% { clip: rect(35px, 9999px, 55px, 0); }
-            100% { clip: rect(74px, 9999px, 6px, 0); }
-        }
-
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(65px, 9999px, 99px, 0); }
-            20% { clip: rect(6px, 9999px, 17px, 0); }
-            40% { clip: rect(62px, 9999px, 4px, 0); }
-            60% { clip: rect(16px, 9999px, 56px, 0); }
-            80% { clip: rect(89px, 9999px, 78px, 0); }
-            100% { clip: rect(31px, 9999px, 14px, 0); }
-        }
-
-        /* --- Hero Section --- */
+        /* --- Hero --- */
         #sec-hero {
             height: 100vh;
+            text-align: center;
         }
 
         .avatar-container {
-            width: 250px;
-            height: 250px;
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
             overflow: hidden;
             border: 4px solid var(--color-primary);
@@ -152,7 +134,7 @@
         }
 
         .hero-subtitle {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             color: var(--color-secondary);
             font-weight: 500;
             background: rgba(0,0,0,0.6);
@@ -162,61 +144,57 @@
             display: inline-block;
         }
 
-        /* --- Content Cards --- */
-        /* Pinned Layout Styles */
-        #story-pin-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100vh; /* Full viewport height for pinning */
+        /* --- The Narrative Stream (Consolidated) --- */
+        /* A single continuous container for the story */
+        .narrative-stream {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden; /* Hide overflow during pin */
+            flex-direction: column;
+            gap: 8rem; /* Large gaps for pacing */
+            padding: 4rem 0;
         }
 
-        .card {
-            background: rgba(10, 10, 10, 0.85);
-            border: 1px solid var(--color-primary);
-            border-radius: 12px;
+        .narrative-block {
+            background: rgba(10, 10, 10, 0.8);
+            border-left: 4px solid var(--color-primary);
             padding: 2.5rem;
+            border-radius: 0 12px 12px 0; /* Open left side */
+            backdrop-filter: blur(8px);
             max-width: 800px;
-            width: 90%;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
-            position: absolute; /* Stacked for pinning */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            visibility: hidden; /* Prevent interaction when hidden */
+            margin: 0 auto;
+            opacity: 0; /* Prepare for scroll reveal */
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--color-primary);
-            box-shadow: 0 0 10px var(--color-primary);
+        .narrative-block.in-view {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        .card-title {
-            font-size: 2rem;
-            color: var(--color-primary);
-            margin-bottom: 1.5rem;
+        .block-header {
             display: flex;
             align-items: center;
             gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+            padding-bottom: 0.5rem;
         }
 
-        .card-text {
+        .block-icon {
+            font-size: 1.8rem;
+            color: var(--color-primary);
+        }
+
+        .block-title {
+            font-size: 1.8rem;
+            color: #fff;
+            margin: 0;
+        }
+
+        .block-content {
             font-size: 1.1rem;
             line-height: 1.8;
             color: #ddd;
-            margin-bottom: 1rem;
-            text-align: left;
         }
 
         .highlight {
@@ -224,117 +202,102 @@
             font-weight: bold;
         }
 
-        /* --- Skill Grid --- */
-        .skill-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
+        /* Grid for Skills inside a block */
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
             margin-top: 1.5rem;
         }
 
-        .skill-item {
+        .skill-tag {
             background: rgba(0, 255, 0, 0.1);
             border: 1px solid var(--color-primary);
-            padding: 1rem;
-            text-align: center;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: var(--color-primary);
             font-family: var(--font-display);
         }
 
-        .skill-item:hover {
-            background: var(--color-primary);
-            color: #000;
-            transform: scale(1.05);
-            box-shadow: 0 0 20px var(--color-primary);
-        }
-
-        /* New Section Styles */
-        .lab-data {
+        /* Data Box Style */
+        .data-box {
+            background: #000;
+            border: 1px dashed var(--color-accent);
+            padding: 1rem;
             font-family: monospace;
             color: var(--color-accent);
-            background: rgba(0,0,0,0.8);
-            padding: 1rem;
-            border-radius: 4px;
             margin-top: 1rem;
-            text-align: left;
-        }
-
-        .manifesto-quote {
-            font-size: 1.5rem;
-            font-style: italic;
-            border-left: 4px solid var(--color-secondary);
-            padding-left: 1rem;
-            color: #fff;
-            margin-top: 1rem;
+            font-size: 0.9rem;
         }
 
         /* --- Footer --- */
         .footer {
-            /* Ensure footer stacks correctly after pin */
-            background: linear-gradient(to top, #000 80%, rgba(0,0,0,0));
-            z-index: 20; /* Higher than canvas */
-            pointer-events: auto; /* Enable interaction */
-            position: relative; /* Ensure it flows naturally */
+            min-height: 50vh; /* Shorter than full section */
+            background: linear-gradient(to top, #000 90%, rgba(0,0,0,0));
+            padding-top: 6rem;
         }
 
-        .social-links {
-            display: flex;
-            justify-content: center;
+        .social-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 2rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 4rem;
         }
 
-        .social-btn {
-            font-size: 2rem;
-            color: var(--color-primary);
-            transition: all 0.3s;
-            width: 60px;
-            height: 60px;
-            border: 2px solid var(--color-primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .social-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
             text-decoration: none;
-            background: rgba(0,0,0,0.5);
+            color: #fff;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .social-btn:hover {
-            background: var(--color-primary);
-            color: #000;
-            box-shadow: 0 0 30px var(--color-primary);
+        .social-card:hover {
+            background: rgba(0, 255, 0, 0.1);
+            border-color: var(--color-primary);
             transform: translateY(-5px);
+        }
+
+        .social-card i {
+            font-size: 2.5rem;
+            color: var(--color-primary);
+        }
+
+        .social-card span {
+            font-family: var(--font-display);
+            letter-spacing: 1px;
         }
 
         .copyright {
             color: #666;
             font-size: 0.9rem;
+            margin-top: 2rem;
         }
 
         .copyright a {
             color: var(--color-secondary);
             text-decoration: none;
-            position: relative;
-        }
-
-        .copyright a:hover {
-            text-shadow: 0 0 10px var(--color-secondary);
         }
 
         /* --- Responsive --- */
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.5rem; }
-            .hero-subtitle { font-size: 1rem; }
-            .card { padding: 1.5rem; width: 95%; }
-            .section { padding: 1rem; }
-            .skill-grid { grid-template-columns: repeat(2, 1fr); }
-
-            /* Ensure pinned wrapper height is sufficient on mobile */
-            #story-pin-wrapper { height: 100vh; }
+            .hero-title { font-size: 2.8rem; }
+            .section { padding: 4rem 1.5rem; }
+            .narrative-stream { gap: 4rem; }
+            .narrative-block { padding: 1.5rem; border-left-width: 3px; }
+            .block-title { font-size: 1.5rem; }
+            .social-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+            .social-card { padding: 1.5rem; }
         }
     </style>
 
@@ -352,135 +315,128 @@
 
     <div id="canvas-container"></div>
 
-    <!-- Hero Section -->
+    <!-- Hero -->
     <section id="sec-hero" class="section">
         <div class="content-wrapper">
-            <div class="avatar-container gs-reveal">
+            <div class="avatar-container gs-hero">
                 <img src="/assets/img/guild/bro_mao/avatar.webp" alt="Bro Mao Avatar">
             </div>
-            <h1 class="hero-title glitch-text gs-reveal" data-text="BRO MAO">BRO MAO</h1>
-            <div class="hero-subtitle gs-reveal">
+            <h1 class="hero-title glitch-text gs-hero" data-text="BRO MAO">BRO MAO</h1>
+            <div class="hero-subtitle gs-hero">
                 社群經營 x 蝦皮分潤 x 高中生實戰
             </div>
         </div>
     </section>
 
-    <!-- Pinned Story Section (Replacement Effect) -->
-    <div id="story-pin-wrapper">
-        <!-- Card 1: Intro -->
-        <div class="card pinned-card">
-            <h2 class="card-title">
-                <i class="fa-solid fa-user-ninja"></i>
-                半路出家
-            </h2>
-            <div class="card-text">
-                我是一個<span class="highlight">半路出家</span>社群經營與蝦皮分潤實戰的高中生。<br>
-                沒有行銷背景，也不是什麼商學院出身。<br>
-                而是一般高中生一路亂撞進內容圈的那種人。
-            </div>
-        </div>
+    <!-- The Narrative (Continuous Scroll) -->
+    <section id="sec-narrative" class="section">
+        <div class="content-wrapper narrative-stream">
 
-        <!-- Card 2: Grind -->
-        <div class="card pinned-card">
-            <h2 class="card-title">
-                <i class="fa-solid fa-fire-flame-curved"></i>
-                實戰紀錄
-            </h2>
-            <div class="card-text">
-                文案不是天生會寫，是寫到被忽略、被滑過、被冷處理後才慢慢學會。<br>
-                流量也不是一開始就有，是一篇一篇發、一天一天熬出來的。
+            <!-- Block 1: Origin -->
+            <div class="narrative-block gs-block">
+                <div class="block-header">
+                    <i class="fa-solid fa-user-ninja block-icon"></i>
+                    <h2 class="block-title">半路出家</h2>
+                </div>
+                <div class="block-content">
+                    我是一個<span class="highlight">半路出家</span>社群經營與蝦皮分潤實戰的高中生。<br>
+                    沒有行銷背景，也不是什麼商學院出身。<br>
+                    而是一般高中生一路亂撞進內容圈的那種人。
+                </div>
             </div>
-            <div class="card-text">
-                現在主要靠社群吃飯。<br>
-                <span class="highlight">不拍短影音、不開直播。</span><br>
-                靠文字、邏輯、實戰紀錄養活自己。
-            </div>
-        </div>
 
-        <!-- Card 3: The Lab (New) -->
-        <div class="card pinned-card">
-            <h2 class="card-title">
-                <i class="fa-solid fa-flask"></i>
-                實驗室法則
-            </h2>
-            <div class="card-text">
-                我不迷信大神，只相信<span class="highlight">數據</span>。<br>
-                每一個流量波動背後，都是一次實驗。<br>
-                失敗了就修正，成功了就複製。
+            <!-- Block 2: Grind & Philosophy -->
+            <div class="narrative-block gs-block">
+                <div class="block-header">
+                    <i class="fa-solid fa-fire-flame-curved block-icon"></i>
+                    <h2 class="block-title">實戰紀錄</h2>
+                </div>
+                <div class="block-content">
+                    文案不是天生會寫，是寫到被忽略、被滑過、被冷處理後才慢慢學會。<br>
+                    流量也不是一開始就有，是一篇一篇發、一天一天熬出來的。<br><br>
+                    現在主要靠社群吃飯。<br>
+                    <span class="highlight">不拍短影音、不開直播。</span><br>
+                    靠文字、邏輯、實戰紀錄養活自己。
+                </div>
             </div>
-            <div class="lab-data">
-                > INPUT: Content Strategy<br>
-                > PROCESS: Test -> Record -> Correct<br>
-                > OUTPUT: Sustainable Growth
-            </div>
-        </div>
 
-        <!-- Card 4: The Arsenal (New) -->
-        <div class="card pinned-card">
-            <h2 class="card-title">
-                <i class="fa-solid fa-toolbox"></i>
-                實戰軍火庫
-            </h2>
-            <div class="card-text">
-                不需要最強的裝備，只需要最順手的工具。<br>
-                把複雜的東西，拆解成一般人也能做的版本。
+            <!-- Block 3: The Lab -->
+            <div class="narrative-block gs-block">
+                <div class="block-header">
+                    <i class="fa-solid fa-flask block-icon"></i>
+                    <h2 class="block-title">實驗室法則</h2>
+                </div>
+                <div class="block-content">
+                    我不迷信大神，只相信<span class="highlight">數據</span>。<br>
+                    每一個流量波動背後，都是一次實驗。<br>
+                    失敗了就修正，成功了就複製。
+                    <div class="data-box">
+                        > INPUT: Content Strategy<br>
+                        > PROCESS: Test -> Record -> Correct<br>
+                        > OUTPUT: Sustainable Growth
+                    </div>
+                </div>
             </div>
-            <div class="skill-grid">
-                <div class="skill-item"><i class="fa-brands fa-shopify"></i> 蝦皮分潤</div>
-                <div class="skill-item"><i class="fa-brands fa-instagram"></i> Instagram</div>
-                <div class="skill-item"><i class="fa-brands fa-threads"></i> Threads</div>
-                <div class="skill-item"><i class="fa-solid fa-chart-line"></i> 數據分析</div>
-                <div class="skill-item"><i class="fa-solid fa-robot"></i> ChatGPT</div>
-                <div class="skill-item"><i class="fa-solid fa-file-excel"></i> Excel</div>
-            </div>
-        </div>
 
-        <!-- Card 5: Philosophy (Manifesto) -->
-        <div class="card pinned-card">
-            <h2 class="card-title">
-                <i class="fa-solid fa-microchip"></i>
-                生存哲學
-            </h2>
-            <div class="card-text">
-                在這個圈子，跑得快不一定贏，活得久才是本事。<br>
-                分潤被調整過、帳號沒流量過，但到現在還沒被市場淘汰。
+            <!-- Block 4: Arsenal & Skills -->
+            <div class="narrative-block gs-block">
+                <div class="block-header">
+                    <i class="fa-solid fa-toolbox block-icon"></i>
+                    <h2 class="block-title">實戰軍火庫</h2>
+                </div>
+                <div class="block-content">
+                    不需要最強的裝備，只需要最順手的工具。<br>
+                    把複雜的東西，拆解成一般人也能做的版本。
+                    <div class="skill-tags">
+                        <div class="skill-tag">蝦皮分潤</div>
+                        <div class="skill-tag">Instagram</div>
+                        <div class="skill-tag">Threads</div>
+                        <div class="skill-tag">數據分析</div>
+                        <div class="skill-tag">ChatGPT</div>
+                        <div class="skill-tag">Excel</div>
+                    </div>
+                </div>
             </div>
-            <div class="manifesto-quote">
-                "不是最聰明的那個，但是是撐夠久的毛哥。"
-            </div>
-        </div>
 
-        <!-- Card 6: Skill Tree (Final Summary) -->
-        <div class="card pinned-card">
-            <h2 class="card-title">
-                <i class="fa-solid fa-network-wired"></i>
-                技能樹亂點型
-            </h2>
-            <div class="card-text">
-                文案、社群、分潤、數據、流程、話術。<br>
-                哪個卡關就往哪補。<br>
-                只給不想被話術割、只想穩穩把副業做起來的人。
+            <!-- Block 5: Manifesto -->
+            <div class="narrative-block gs-block" style="border-color: var(--color-secondary);">
+                <div class="block-header">
+                    <i class="fa-solid fa-microchip block-icon" style="color: var(--color-secondary);"></i>
+                    <h2 class="block-title" style="color: var(--color-secondary);">生存哲學</h2>
+                </div>
+                <div class="block-content">
+                    在這個圈子，跑得快不一定贏，活得久才是本事。<br>
+                    分潤被調整過、帳號沒流量過，但到現在還沒被市場淘汰。<br><br>
+                    <span class="highlight" style="font-size: 1.2rem; display: block; margin-top: 1rem; border-left: 2px solid var(--color-secondary); padding-left: 1rem;">
+                        "不是最聰明的那個，但是是撐夠久的毛哥。"
+                    </span>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Footer / CTA -->
+        </div>
+    </section>
+
+    <!-- Footer -->
     <section id="sec-footer" class="section footer">
         <div class="content-wrapper">
-            <h2 class="hero-title glitch-text" data-text="JOIN THE LAB" style="font-size: 3rem; margin-bottom: 2rem;">毛哥實戰筆記</h2>
+            <h2 class="hero-title glitch-text" data-text="CONNECT" style="font-size: 3rem; margin-bottom: 3rem;">毛哥實戰筆記</h2>
 
-            <div class="social-links">
-                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-btn" title="Instagram">
+            <div class="social-grid">
+                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-card">
                     <i class="fa-brands fa-instagram"></i>
+                    <span>Instagram</span>
                 </a>
-                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-btn" title="Portaly">
-                    <i class="fa-solid fa-link"></i>
-                </a>
-                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-btn" title="Line OpenChat">
-                    <i class="fa-brands fa-line"></i>
-                </a>
-                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-btn" title="Threads">
+                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-card">
                     <i class="fa-brands fa-threads"></i>
+                    <span>Threads</span>
+                </a>
+                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-card">
+                    <i class="fa-solid fa-link"></i>
+                    <span>Portaly</span>
+                </a>
+                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-card">
+                    <i class="fa-brands fa-line"></i>
+                    <span>OpenChat</span>
                 </a>
             </div>
 
@@ -499,9 +455,9 @@
 
         // Config
         const CONFIG = {
-            particleCount: 2500,
-            particleRange: 150,
-            cameraZ: 60,
+            particleCount: 3000,
+            particleRange: 200,
+            cameraZ: 80,
             color1: 0x00FF00, // Neon Green
             color2: 0xFFD700, // Gold
         };
@@ -509,8 +465,7 @@
         // Setup
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Darker fog for depth
-        scene.fog = new THREE.FogExp2(0x050505, 0.015);
+        scene.fog = new THREE.FogExp2(0x050505, 0.012); // Softer fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = CONFIG.cameraZ;
@@ -527,9 +482,9 @@
 
         const bloomPass = new UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            1.5, // Strength (Higher)
-            0.6, // Radius
-            0.2  // Threshold
+            1.2, // Strength
+            0.5, // Radius
+            0.1  // Threshold
         );
         composer.addPass(bloomPass);
 
@@ -550,22 +505,19 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.shadowColor = color;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 15;
             ctx.fillText(text, 64, 64);
 
             return new THREE.CanvasTexture(canvas);
         }
 
         const textureDollar = createTextTexture('$', '#00FF00');
-        const textureBit = createTextTexture('1', '#00FF00');
-        const textureCoin = createTextTexture('$', '#FFD700');
 
-        // --- Objects: Data Stream Particles ---
+        // --- Objects: Particles ---
         const particlesGeo = new THREE.BufferGeometry();
         const posArray = new Float32Array(CONFIG.particleCount * 3);
         const colorsArray = new Float32Array(CONFIG.particleCount * 3);
         const sizesArray = new Float32Array(CONFIG.particleCount);
-        const velocityArray = new Float32Array(CONFIG.particleCount); // For "raining" effect
 
         const color1 = new THREE.Color(CONFIG.color1);
         const color2 = new THREE.Color(CONFIG.color2);
@@ -573,10 +525,10 @@
 
         for(let i=0; i<CONFIG.particleCount; i++) {
             const i3 = i * 3;
-            // Spread particles in a tunnel shape
-            const radius = 10 + Math.random() * 50;
+            // Spread particles
+            const radius = 10 + Math.random() * 80;
             const angle = Math.random() * Math.PI * 2;
-            const depth = (Math.random() - 0.5) * CONFIG.particleRange * 5;
+            const depth = (Math.random() - 0.5) * CONFIG.particleRange * 4;
 
             posArray[i3] = Math.cos(angle) * radius; // X
             posArray[i3+1] = Math.sin(angle) * radius; // Y
@@ -589,7 +541,6 @@
             colorsArray[i3+2] = tempColor.b;
 
             sizesArray[i] = Math.random() * 2;
-            velocityArray[i] = 0.05 + Math.random() * 0.1; // Falling speed
         }
 
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
@@ -599,9 +550,9 @@
         const particlesMat = new THREE.PointsMaterial({
             size: 1,
             vertexColors: true,
-            map: textureDollar, // Default texture
+            map: textureDollar,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.6,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
@@ -609,21 +560,23 @@
         const particles = new THREE.Points(particlesGeo, particlesMat);
         scene.add(particles);
 
-        // --- Central Core (The "Skill Tree" / Processor) ---
+        // --- Core Object (Right Side Anchor) ---
         const coreGroup = new THREE.Group();
+        // Shift core to the right to balance text on left (on desktop)
+        coreGroup.position.x = 20;
         scene.add(coreGroup);
 
-        const coreGeo = new THREE.IcosahedronGeometry(4, 1);
+        const coreGeo = new THREE.IcosahedronGeometry(8, 1);
         const coreMat = new THREE.MeshBasicMaterial({
             color: CONFIG.color1,
             wireframe: true,
             transparent: true,
-            opacity: 0.3
+            opacity: 0.15
         });
         const core = new THREE.Mesh(coreGeo, coreMat);
         coreGroup.add(core);
 
-        const innerCoreGeo = new THREE.IcosahedronGeometry(2, 0);
+        const innerCoreGeo = new THREE.IcosahedronGeometry(4, 0);
         const innerCoreMat = new THREE.MeshBasicMaterial({
             color: CONFIG.color2,
             wireframe: true
@@ -631,40 +584,38 @@
         const innerCore = new THREE.Mesh(innerCoreGeo, innerCoreMat);
         coreGroup.add(innerCore);
 
-        // Rings
-        const ringGeo = new THREE.TorusGeometry(8, 0.1, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({ color: CONFIG.color1, transparent: true, opacity: 0.5 });
+        // Rings around Core
+        const ringGeo = new THREE.TorusGeometry(15, 0.2, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: CONFIG.color1, transparent: true, opacity: 0.3 });
         const ring1 = new THREE.Mesh(ringGeo, ringMat);
         const ring2 = new THREE.Mesh(ringGeo, ringMat);
-        const ring3 = new THREE.Mesh(ringGeo, ringMat);
 
         ring1.rotation.x = Math.PI / 2;
-        ring2.rotation.y = Math.PI / 2;
+        ring2.rotation.y = Math.PI / 4;
 
         coreGroup.add(ring1);
         coreGroup.add(ring2);
-        coreGroup.add(ring3);
+
 
         // --- Animation Loop ---
         let mouseX = 0;
         let mouseY = 0;
 
         window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
         });
 
         gsap.ticker.add((time) => {
             // Idle rotation
-            coreGroup.rotation.y += 0.01;
-            coreGroup.rotation.x += 0.005;
+            coreGroup.rotation.y += 0.005;
+            coreGroup.rotation.x += 0.002;
 
-            ring1.rotation.z += 0.01;
-            ring2.rotation.z -= 0.01;
-            ring3.rotation.x += 0.01;
+            ring1.rotation.z += 0.005;
+            ring2.rotation.x -= 0.005;
 
-            // Particle flow (Tunnel effect + "Rain")
-            particles.rotation.z -= 0.002;
+            // Particles flow slowly
+            particles.rotation.z -= 0.001;
 
             // Mouse parallax
             scene.rotation.x += (mouseY - scene.rotation.x) * 0.05;
@@ -673,75 +624,41 @@
             composer.render();
         });
 
-        // --- Scroll Trigger ---
+        // --- Scroll Interactions ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Intro Animations (Hero)
-        gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
-            gsap.fromTo(elem,
-                { opacity: 0, y: 50 },
-                {
-                    opacity: 1, y: 0, duration: 1, ease: "power3.out",
-                    delay: i * 0.2,
-                    scrollTrigger: { trigger: '#sec-hero', start: "top 60%" }
-                }
-            );
+        // Hero Reveal
+        gsap.from('.gs-hero', {
+            y: 50, opacity: 0, duration: 1.5, stagger: 0.2, ease: "power3.out"
         });
 
-        // Pinned Story Animation (Replacement Effect)
-        const pinnedCards = gsap.utils.toArray('.pinned-card');
-        const pinDuration = pinnedCards.length * 1000; // Dynamic duration
-
-        const pinTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "#story-pin-wrapper",
-                start: "top top",
-                end: `+=${pinDuration}`,
-                pin: true,
-                scrub: 1,
-                anticipatePin: 1
-            }
+        // Narrative Blocks Reveal
+        gsap.utils.toArray('.gs-block').forEach((block) => {
+            ScrollTrigger.create({
+                trigger: block,
+                start: "top 80%", // Trigger when block enters bottom 20% of viewport
+                onEnter: () => block.classList.add('in-view'),
+                // markers: true
+            });
         });
 
-        // Sequence:
-        // 1. Initial State: Card 0 Visible.
-        // 2. Loop through cards to create transition pairs.
-
-        gsap.set(pinnedCards, { autoAlpha: 0, y: 50, scale: 0.9 });
-        gsap.set(pinnedCards[0], { autoAlpha: 1, y: 0, scale: 1 });
-
-        pinnedCards.forEach((card, i) => {
-            if (i === pinnedCards.length - 1) return; // Skip last card logic in loop
-
-            const nextCard = pinnedCards[i + 1];
-
-            // Current card out, Next card in
-            pinTl.to(card, { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
-                 .to(nextCard, { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5"); // Overlap
-        });
-
-        // Scene Scroll Interaction (Global 3D)
+        // Scene Scroll Interaction
         ScrollTrigger.create({
             trigger: document.body,
             start: "top top",
             end: "bottom bottom",
-            scrub: 0.5,
+            scrub: 1, // Smooth scrub
             onUpdate: (self) => {
                 const p = self.progress;
 
-                // Move camera through tunnel deeper
-                camera.position.z = CONFIG.cameraZ - (p * 200);
+                // Move camera slightly
+                camera.position.z = CONFIG.cameraZ - (p * 40);
 
-                // Explode core
-                coreGroup.scale.setScalar(1 + p * 4);
-                coreGroup.rotation.z = p * Math.PI * 10;
+                // Rotate core faster on scroll
+                coreGroup.rotation.z = p * Math.PI * 2;
 
-                // Particles warp
-                particles.material.size = 1 + p * 3;
-
-                // Bloom intensifies
-                const mix = Math.min(1, p * 2);
-                bloomPass.strength = 1.5 + mix * 1.0;
+                // Bloom pulse
+                bloomPass.strength = 1.2 + Math.sin(p * Math.PI) * 0.5;
             }
         });
 
@@ -751,7 +668,20 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
+
+            // Adjust core position for mobile
+            if(window.innerWidth < 768) {
+                coreGroup.position.x = 0; // Center on mobile
+            } else {
+                coreGroup.position.x = 20; // Right on desktop
+            }
         });
+
+        // Initial check for mobile
+        if(window.innerWidth < 768) {
+            coreGroup.position.x = 0;
+        }
+
     </script>
 </body>
 </html>
