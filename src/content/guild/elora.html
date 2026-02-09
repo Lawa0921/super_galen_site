@@ -22,12 +22,15 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <style>
         :root {
             --c-bg: #050505;
             --c-text: #e0e0e0;
             --c-accent: #ff4d4d; /* Glowing Coal Red */
+            --c-cool: #4d79ff; /* Cool Blue (Design) */
+            --c-magic: #bd4dff; /* Magic Purple (Code) */
             --c-smoke: rgba(255, 255, 255, 0.1);
             --f-serif: 'Noto Serif TC', serif;
             --f-mono: 'Courier Prime', monospace;
@@ -66,7 +69,7 @@
             pointer-events: none; z-index: 10000;
             transform: translate(-50%, -50%);
             mix-blend-mode: screen;
-            transition: width 0.2s, height 0.2s;
+            transition: width 0.2s, height 0.2s, border-color 0.5s;
         }
         #cursor.hovered {
             width: 50px; height: 50px;
@@ -79,6 +82,19 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             z-index: -1;
             pointer-events: none;
+        }
+
+        /* --- Heat Gauge (Scroll Progress) --- */
+        #heat-gauge {
+            position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+            width: 4px; height: 200px; background: rgba(255,255,255,0.1);
+            z-index: 100; border-radius: 2px;
+        }
+        #heat-level {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: linear-gradient(to top, var(--c-cool), var(--c-accent), var(--c-magic));
+            box-shadow: 0 0 10px var(--c-accent);
+            transition: height 0.1s;
         }
 
         /* --- Navigation --- */
@@ -101,24 +117,25 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            padding: 2rem;
+            padding: 4rem 2rem;
             box-sizing: border-box;
         }
 
         .container {
             max-width: 1000px; width: 100%;
             position: relative; z-index: 10;
+            margin: 0 auto;
         }
 
         /* --- Typography --- */
         h1, h2 { font-weight: 900; margin: 0; line-height: 1.1; }
         h1 { font-size: clamp(3rem, 10vw, 6rem); letter-spacing: -2px; font-family: var(--f-jp); }
         h2 { font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem; font-family: var(--f-jp); }
-        h3 { font-family: var(--f-mono); color: var(--c-accent); margin-bottom: 1rem; }
+        h3 { font-family: var(--f-mono); color: var(--c-accent); margin-bottom: 1rem; font-size: 1.2rem; }
 
         p {
             font-size: 1.1rem; line-height: 1.8; color: #aaa;
-            max-width: 600px; margin-bottom: 1.5rem;
+            max-width: 700px; margin-bottom: 1.5rem;
         }
 
         .mono-tag {
@@ -154,7 +171,7 @@
         .text-block {
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(8px);
-            padding: 2rem;
+            padding: 2.5rem;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -164,34 +181,37 @@
             display: flex; justify-content: space-between; gap: 2rem;
             margin-top: 3rem; flex-wrap: wrap;
         }
-        .skill-col { flex: 1; min-width: 200px; }
+        .skill-col { flex: 1; min-width: 250px; }
         .skill-item {
             display: flex; justify-content: space-between;
             padding: 1rem; border-bottom: 1px solid #333;
             font-family: var(--f-mono); font-size: 0.9rem;
+            transition: 0.3s;
         }
+        .skill-item:hover { background: rgba(255,255,255,0.05); padding-left: 1.5rem; }
         .skill-item span:first-child { color: #888; }
         .skill-item span:last-child { color: #fff; font-weight: bold; }
 
         /* Philosophy Grid */
         .philo-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem; margin-top: 2rem;
         }
         .philo-card {
-            border: 1px solid #333; padding: 1.5rem;
+            border: 1px solid #333; padding: 2rem;
             transition: 0.3s; background: rgba(0,0,0,0.5);
+            position: relative; overflow: hidden;
         }
         .philo-card:hover {
             border-color: var(--c-accent);
             transform: translateY(-5px);
             box-shadow: 0 5px 20px rgba(255, 77, 77, 0.1);
         }
-        .philo-icon { font-size: 1.5rem; color: var(--c-accent); margin-bottom: 1rem; }
+        .philo-icon { font-size: 2rem; color: var(--c-accent); margin-bottom: 1rem; }
 
         /* Life Menu */
         .menu-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem; margin-top: 3rem;
         }
         .menu-item {
@@ -226,6 +246,18 @@
         }
         .menu-item:hover .menu-hidden { transform: translateY(0); }
 
+        /* Code Kitchen */
+        .code-kitchen {
+            display: flex; flex-direction: column; gap: 1rem;
+            margin-top: 2rem; font-family: var(--f-mono);
+            background: #111; padding: 2rem; border-left: 3px solid var(--c-magic);
+        }
+        .code-line { display: flex; gap: 1rem; }
+        .code-num { color: #444; user-select: none; }
+        .code-content { color: #aaa; }
+        .code-kw { color: var(--c-magic); }
+        .code-str { color: #98c379; }
+
         .neon-sign {
             text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3);
         }
@@ -239,12 +271,16 @@
             padding: 4rem 2rem; text-align: center;
             border-top: 1px solid #222;
             background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         footer .container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            width: 100%;
         }
         .social-link {
             font-size: 2rem; color: #fff; text-decoration: none;
@@ -270,6 +306,7 @@
             .skill-bridge { flex-direction: column; gap: 1rem; }
             #cursor { display: none; } /* Disable custom cursor on touch */
             body { cursor: auto; }
+            #heat-gauge { display: none; }
         }
     </style>
 </head>
@@ -283,6 +320,9 @@
 
     <!-- CUSTOM CURSOR -->
     <div id="cursor"></div>
+
+    <!-- HEAT GAUGE -->
+    <div id="heat-gauge"><div id="heat-level"></div></div>
 
     <a href="/guild/" class="nav-back">GUILD_HALL</a>
     <div id="webgl-container"></div>
@@ -298,14 +338,17 @@
                 <div>
                     <span class="mono-tag">Character Profile</span>
                     <h1 class="neon-sign">ELORA</h1>
-                    <p style="font-family: var(--f-mono); color: var(--c-accent); font-weight: bold;">
+                    <p style="font-family: var(--f-mono); color: var(--c-accent); font-weight: bold; font-size: 1.2rem;">
                         <span id="typewriter"></span><span style="animation: blink 1s infinite">_</span>
+                    </p>
+                    <p style="margin-top: 1rem; font-size: 1rem; max-width: 400px; color: #888;">
+                        "From Pixels to Charcoal, and now to Code."
                     </p>
                 </div>
             </div>
 
             <div style="position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); opacity: 0.5; font-family: var(--f-mono); font-size: 0.8rem;">
-                SCROLL TO ENTER
+                SCROLL TO IGNITE
             </div>
         </div>
     </section>
@@ -313,29 +356,26 @@
     <!-- 2. ORIGIN (Design) -->
     <section id="origin">
         <div class="container">
-            <span class="mono-tag">Class: Designer</span>
-            <h2 class="gs-reveal">Visual Alchemist</h2>
+            <span class="mono-tag" style="color: var(--c-cool);">Class: Visual Alchemist</span>
+            <h2 class="gs-reveal">The Designer Era</h2>
             <div class="gs-reveal text-block">
                 <p>
-                    曾經，我的世界是由像素與向量組成的。
-                    做了 <span class="highlight">2 年平面設計師</span>，又在廣州做了 <span class="highlight">2 年 UI 設計師</span>。
+                    曾經，我的世界是由 <span class="highlight" style="border-color: var(--c-cool)">0 與 1 的像素</span> 構成的。
+                    2 年的平面設計磨練了我的審美直覺，接著在廣州的 2 年 UI 設計生涯，讓我學會了如何建構使用者體驗。
                 </p>
 
                 <div class="skill-bridge">
                     <div class="skill-col">
-                        <h3><i class="fa-solid fa-pen-nib"></i> Design Mode</h3>
-                        <div class="skill-item"><span>Tool</span><span>Figma / AI</span></div>
-                        <div class="skill-item"><span>Focus</span><span>Pixel Perfect</span></div>
-                        <div class="skill-item"><span>Output</span><span>Visuals</span></div>
-                    </div>
-                    <div style="display: flex; align-items: center; justify-content: center; color: var(--c-accent); font-size: 1.5rem;">
-                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                        <h3 style="color: var(--c-cool);"><i class="fa-solid fa-layer-group"></i> Graphic Soul</h3>
+                        <div class="skill-item"><span>Core</span><span>Composition</span></div>
+                        <div class="skill-item"><span>Tool</span><span>Adobe Suite</span></div>
+                        <div class="skill-item"><span>Philosophy</span><span>Pixel Perfect</span></div>
                     </div>
                     <div class="skill-col">
-                        <h3><i class="fa-solid fa-fire-burner"></i> Izakaya Mode</h3>
-                        <div class="skill-item"><span>Tool</span><span>Charcoal / Knife</span></div>
-                        <div class="skill-item"><span>Focus</span><span>Flavor Balance</span></div>
-                        <div class="skill-item"><span>Output</span><span>Experience</span></div>
+                        <h3 style="color: var(--c-cool);"><i class="fa-solid fa-mobile-screen"></i> UI Architect</h3>
+                        <div class="skill-item"><span>Core</span><span>Interaction</span></div>
+                        <div class="skill-item"><span>Tool</span><span>Figma / Sketch</span></div>
+                        <div class="skill-item"><span>Philosophy</span><span>User First</span></div>
                     </div>
                 </div>
             </div>
@@ -346,32 +386,38 @@
     <section id="shift">
         <div class="container">
             <span class="mono-tag">Event: The Shift</span>
-            <h2 class="gs-reveal neon-red">The Fire & Smoke</h2>
+            <h2 class="gs-reveal neon-red">The Way of Fire</h2>
             <div class="gs-reveal text-block">
                 <p>
                     疫情是一場全球性的重構。我回到了台灣，脫下設計師的外衣，換上了居酒屋的圍裙。
-                    <span class="highlight">創業五年</span>，我的畫布變成了烤爐。
+                    <span class="highlight">創業五年</span>，我的畫布變成了烤爐，我的像素變成了炭火。
                 </p>
                 <p style="font-style: italic; color: #888; margin-bottom: 2rem;">
-                    *其實本科系是企業管理，技能樹完全是亂點的。*
+                    *其實本科系是企業管理，技能樹完全是亂點的。但這也意味著我不受框架限制。*
                 </p>
 
-                <h3>The UX of Taste</h3>
+                <h3>Izakaya UX Design</h3>
                 <div class="philo-grid">
                     <div class="philo-card">
-                        <div class="philo-icon"><i class="fa-solid fa-temperature-three-quarters"></i></div>
-                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Heat Control</div>
-                        <div style="font-size: 0.9rem; color: #aaa;">Just like color theory, balance is everything. Too much is chaos.</div>
+                        <div class="philo-icon"><i class="fa-solid fa-fire-burner"></i></div>
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Temperature Control</div>
+                        <div style="font-size: 0.9rem; color: #aaa;">
+                            Just like color theory, heat requires balance. Too much is chaos; too little is stagnation.
+                        </div>
                     </div>
                     <div class="philo-card">
                         <div class="philo-icon"><i class="fa-solid fa-utensils"></i></div>
-                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Presentation</div>
-                        <div style="font-size: 0.9rem; color: #aaa;">Plating is simply UI design for the appetite.</div>
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Plating as UI</div>
+                        <div style="font-size: 0.9rem; color: #aaa;">
+                            The plate is the interface. The texture is the interaction. The taste is the conversion.
+                        </div>
                     </div>
                     <div class="philo-card">
-                        <div class="philo-icon"><i class="fa-solid fa-users"></i></div>
-                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Service</div>
-                        <div style="font-size: 0.9rem; color: #aaa;">The ultimate User Journey Map happens at the table.</div>
+                        <div class="philo-icon"><i class="fa-solid fa-heart"></i></div>
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Omotenashi</div>
+                        <div style="font-size: 0.9rem; color: #aaa;">
+                            Anticipating needs before they are spoken. The ultimate User Journey Map.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -383,7 +429,7 @@
         <div class="container">
             <span class="mono-tag">Status: Chaotic Good</span>
             <h2 class="gs-reveal">Life Menu</h2>
-            <p class="gs-reveal">Hover to inspect ingredients.</p>
+            <p class="gs-reveal">A curated selection of daily chaos and joy. Hover to inspect ingredients.</p>
 
             <div class="menu-grid gs-reveal">
                 <div class="menu-item hover-trigger">
@@ -412,9 +458,9 @@
                     <div class="menu-hidden">BUFF: +50 FOCUS</div>
                 </div>
                 <div class="menu-item hover-trigger">
-                    <div class="menu-title">Vibe Coding <span style="color:var(--c-accent)">Loading...</span></div>
-                    <p class="menu-desc">New skill unlocked.</p>
-                    <div class="menu-hidden">SYSTEM UPDATE IN PROGRESS</div>
+                    <div class="menu-title">Self-Learning <span style="color:var(--c-accent)">MAX</span></div>
+                    <p class="menu-desc">Skill tree allocated randomly.</p>
+                    <div class="menu-hidden">TRAIT: ADAPTABILITY</div>
                 </div>
             </div>
         </div>
@@ -422,18 +468,31 @@
 
     <!-- 5. GOAL (Vibe Coding) -->
     <section id="goal">
-        <div class="container" style="text-align: center;">
-            <span class="mono-tag">Current Mission</span>
+        <div class="container">
+            <span class="mono-tag" style="color: var(--c-magic);">Current Mission</span>
             <h2 class="gs-reveal">Vibe Coding</h2>
-            <div class="gs-reveal text-block" style="display: inline-block; text-align: left;">
-                <p style="margin: 0 auto; font-size: 1.3rem; text-align: center;">
-                    自認學習能力很強，不管設計還是餐飲都是出社會後才學的。<br>
-                    最近正在探索 <span class="highlight">Vibe Coding</span> 的領域。
+            <div class="gs-reveal text-block">
+                <p>
+                    自認學習能力很強，技能樹到處亂點。最近正在探索 <span class="highlight" style="border-color: var(--c-magic)">Vibe Coding</span> 的領域。
+                    我想幫助更多像我這樣的小型餐飲老闆們解決問題。
                 </p>
-                <div style="margin: 2rem auto 0; font-family: var(--f-mono); text-align: center; background: #111; padding: 1rem; border: 1px dashed var(--c-accent);">
-                    <div style="color: #444; margin-bottom: 0.5rem;">// TODO LIST</div>
-                    <div style="color: var(--c-accent);">> GOAL: Help small F&B owners solve problems.</div>
-                    <div style="color: #fff; animation: blink 1s infinite;">_</div>
+
+                <div class="code-kitchen">
+                    <div class="code-line"><span class="code-num">01</span><span class="code-content"><span class="code-kw">class</span> RestaurantOwner <span class="code-kw">extends</span> Human {</span></div>
+                    <div class="code-line"><span class="code-num">02</span><span class="code-content">&nbsp;&nbsp;<span class="code-kw">constructor</span>() {</span></div>
+                    <div class="code-line"><span class="code-num">03</span><span class="code-content">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-kw">this</span>.passion = <span class="code-str">"High"</span>;</span></div>
+                    <div class="code-line"><span class="code-num">04</span><span class="code-content">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-kw">this</span>.tools = [<span class="code-str">"Design"</span>, <span class="code-str">"Cooking"</span>, <span class="code-str">"AI"</span>];</span></div>
+                    <div class="code-line"><span class="code-num">05</span><span class="code-content">&nbsp;&nbsp;}</span></div>
+                    <div class="code-line"><span class="code-num">06</span><span class="code-content">&nbsp;&nbsp;<span class="code-kw">solveProblem</span>(issue) {</span></div>
+                    <div class="code-line"><span class="code-num">07</span><span class="code-content">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-kw">return</span> vibeCode(issue);</span></div>
+                    <div class="code-line"><span class="code-num">08</span><span class="code-content">&nbsp;&nbsp;}</span></div>
+                    <div class="code-line"><span class="code-num">09</span><span class="code-content">}</span></div>
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center;">
+                    <p style="font-family: var(--f-mono); font-size: 0.9rem; color: #666;">
+                        > SYSTEM: Ready to Deploy Solutions.
+                    </p>
                 </div>
             </div>
         </div>
@@ -444,7 +503,7 @@
             <a href="https://www.threads.net/@eloradiary.dev" target="_blank" class="social-link">
                 <i class="fa-brands fa-threads"></i>
             </a>
-            <p style="margin-top: 2rem; font-family: var(--f-mono); font-size: 0.8rem; color: #444;">
+            <p style="margin-top: 2rem; font-family: var(--f-mono); font-size: 0.8rem; color: #666;">
                 Made with <i class="fa-solid fa-fire" style="color: var(--c-accent)"></i> by SuperGalen's Dungeon
             </p>
         </div>
@@ -550,7 +609,6 @@
         container.appendChild(renderer.domElement);
 
         // --- SMOKE PARTICLES ---
-        // Create soft smoke texture programmatically
         const canvas = document.createElement('canvas');
         canvas.width = 32; canvas.height = 32;
         const ctx = canvas.getContext('2d');
@@ -565,7 +623,7 @@
         const smokeMat = new THREE.MeshBasicMaterial({
             map: smokeTexture,
             transparent: true,
-            opacity: 0.1, // Very subtle
+            opacity: 0.1,
             depthWrite: false,
             blending: THREE.AdditiveBlending,
             color: 0xaaaaaa
@@ -604,7 +662,7 @@
 
         const emberMat = new THREE.PointsMaterial({
             size: 0.05,
-            color: 0xff4d4d,
+            color: 0xff4d4d, // Initial: Red
             transparent: true,
             opacity: 0.8,
             blending: THREE.AdditiveBlending
@@ -613,25 +671,23 @@
         const embers = new THREE.Points(emberGeo, emberMat);
         scene.add(embers);
 
-
         // --- ALIEN EYES (Easter Egg) ---
         const alienGroup = new THREE.Group();
         const eyeGeo = new THREE.SphereGeometry(0.1, 16, 16);
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Green eyes
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
         const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
         leftEye.position.set(-0.2, 0, 0);
-        leftEye.scale.y = 1.5; // Alien shape
+        leftEye.scale.y = 1.5;
 
         const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
         rightEye.position.set(0.2, 0, 0);
         rightEye.scale.y = 1.5;
 
         alienGroup.add(leftEye, rightEye);
-        alienGroup.position.set(3, 2, -2); // Hidden in corner
-        alienGroup.visible = false; // Initially hidden
+        alienGroup.position.set(3, 2, -2);
+        alienGroup.visible = false;
         scene.add(alienGroup);
-
 
         // --- ANIMATION LOOP ---
         function animate() {
@@ -669,10 +725,20 @@
         animate();
 
 
-        // --- SCROLL ANIMATIONS (GSAP) ---
+        // --- SCROLL INTERACTIONS (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Sections Reveal
+        // Heat Gauge Logic
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                document.getElementById('heat-level').style.height = (self.progress * 100) + '%';
+            }
+        });
+
+        // 1. Reveal Animations
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.from(elem, {
                 y: 50,
@@ -686,15 +752,42 @@
             });
         });
 
-        // Smoke intensifies as we go deeper (down)
-        ScrollTrigger.create({
-            trigger: 'body',
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                const p = self.progress;
-                smokeMat.opacity = 0.1 + (p * 0.2); // More smoke at bottom
-                camera.position.z = 5 - (p * 2); // Move closer
+        // 2. Color Shift & Atmosphere
+        const sections = [
+            { id: '#origin', color: new THREE.Color(0x4d79ff) }, // Blue
+            { id: '#shift', color: new THREE.Color(0xff4d4d) },  // Red
+            { id: '#chaos', color: new THREE.Color(0xbd4dff) },  // Purple
+            { id: '#goal', color: new THREE.Color(0x00ff00) }    // Matrix Green
+        ];
+
+        sections.forEach(sec => {
+            ScrollTrigger.create({
+                trigger: sec.id,
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => gsap.to(emberMat.color, { r: sec.color.r, g: sec.color.g, b: sec.color.b, duration: 1 }),
+                onEnterBack: () => gsap.to(emberMat.color, { r: sec.color.r, g: sec.color.g, b: sec.color.b, duration: 1 })
+            });
+        });
+
+        // 3. Parallax
+        gsap.to(".skill-bridge", {
+            y: -50,
+            scrollTrigger: {
+                trigger: "#origin",
+                start: "top bottom",
+                end: "bottom top",
+                scrub: 1
+            }
+        });
+
+        gsap.to(".philo-grid", {
+            y: -30,
+            scrollTrigger: {
+                trigger: "#shift",
+                start: "top bottom",
+                end: "bottom top",
+                scrub: 1
             }
         });
 
