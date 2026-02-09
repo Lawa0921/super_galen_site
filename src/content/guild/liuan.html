@@ -459,7 +459,20 @@
             'harold.webp',
             'disaster.webp',
             'success.webp',
-            'fine.webp'
+            'fine.webp',
+            'batman_slap.webp',
+            'change_mind.webp',
+            'distracted.webp',
+            'drake.webp',
+            'evil_kermit.webp',
+            'expanding_brain.webp',
+            'facepalm.webp',
+            'grumpy_cat.webp',
+            'one_does_not.webp',
+            'roll_safe.webp',
+            'spongebob.webp',
+            'success_kid.webp',
+            'two_buttons.webp'
         ];
 
         memeFiles.forEach(file => {
@@ -568,29 +581,42 @@
 
             sprite.userData = {
                 rotateSpeed: (Math.random() - 0.5) * 0.1,
-                floatSpeed: (Math.random() - 0.5) * 0.05
+                floatSpeed: (Math.random() - 0.5) * 0.05,
+                initialY: sprite.position.y
             };
             tunnelGroup.add(sprite);
         }
 
         // Add Image Memes (Wait a bit for textures or check in animate loop)
         // Since we can't wait synchronously, we'll set an interval to add them once loaded
+        let checkCount = 0;
         const addMemeInterval = setInterval(() => {
-            if (memeTextures.length === memeFiles.length) {
-                // Add some meme planes
-                for(let i=0; i<20; i++) {
+            checkCount++;
+            // Wait for most textures to load, or timeout after ~3 seconds (6 checks)
+            if (memeTextures.length >= memeFiles.length - 2 || (checkCount > 6 && memeTextures.length > 0)) {
+                // Add meme planes
+                for(let i=0; i<45; i++) {
                     const texture = memeTextures[Math.floor(Math.random() * memeTextures.length)];
                     const mat = new THREE.SpriteMaterial({ map: texture });
                     const sprite = new THREE.Sprite(mat);
 
-                    // Maintain aspect ratio somewhat (assume square or landscape)
-                    sprite.scale.set(8, 8, 1);
+                    // Randomize aspect ratio slightly
+                    const scale = 6 + Math.random() * 4;
+                    sprite.scale.set(scale, scale, 1);
 
                     const theta = Math.random() * Math.PI * 2;
                     const radius = 8 + Math.random() * 15;
                     const z = -10 - Math.random() * 190;
 
                     sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, z);
+
+                    // Add slight rotation/wobble metadata
+                    sprite.userData = {
+                        rotateSpeed: (Math.random() - 0.5) * 0.05,
+                        floatSpeed: (Math.random() - 0.5) * 0.02,
+                        initialY: sprite.position.y
+                    };
+
                     tunnelGroup.add(sprite);
                 }
                 clearInterval(addMemeInterval);
@@ -688,9 +714,14 @@
             // Rotate objects in tunnel slightly
             tunnelGroup.children.forEach((mesh, i) => {
                 if (mesh.type === 'Sprite') {
-                    // Wiggle sprites
-                    mesh.position.x += Math.sin(time * 3 + i) * 0.01;
-                    mesh.position.y += Math.cos(time * 2 + i) * 0.01;
+                    // Wiggle sprites using userData if available, otherwise fallback
+                    if (mesh.userData && mesh.userData.initialY) {
+                         mesh.position.y = mesh.userData.initialY + Math.sin(time * 2 + i) * 0.5;
+                         mesh.material.rotation = Math.sin(time * 0.5 + i) * 0.1; // Gentle sway
+                    } else {
+                        mesh.position.x += Math.sin(time * 3 + i) * 0.01;
+                        mesh.position.y += Math.cos(time * 2 + i) * 0.01;
+                    }
                 } else {
                     mesh.rotation.x += 0.02;
                     mesh.rotation.y += 0.02;
