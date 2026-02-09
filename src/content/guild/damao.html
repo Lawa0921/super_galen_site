@@ -390,6 +390,13 @@
             display: block;
         }
 
+        .process-title {
+            font-family: var(--font-title);
+            font-size: 3rem;
+            margin-bottom: 4rem;
+            text-align: center;
+        }
+
         /* GALLERY - Floating Scrolls (River of Time) */
         .gallery-section {
             height: 100vh;
@@ -525,6 +532,7 @@
             margin-bottom: 2rem;
             position: relative;
             z-index: 21;
+            flex-wrap: wrap;
         }
 
         .social-btn {
@@ -569,7 +577,13 @@
 
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 5rem;
+                font-size: 3rem;
+            }
+
+            .bio-content h2,
+            .novel-header h2,
+            .process-title {
+                font-size: 2rem;
             }
 
             .bio {
@@ -665,11 +679,10 @@
                 <div class="novel-label">子 恒</div>
             </div>
             <!-- Cover Card -->
-            <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank"
-                class="novel-card">
+            <div class="novel-card">
                 <img src="../assets/img/guild/damao/novel_1.webp" class="novel-img" alt="Cover">
                 <div class="novel-label">趙 脩</div>
-            </a>
+            </div>
         </div>
         <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank"
             class="btn-gold">立即閱讀</a>
@@ -677,7 +690,7 @@
 
     <!-- PROCESS VIDEOS -->
     <section class="process-section">
-        <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 4rem; text-align: center;">創作剪影</h2>
+        <h2 class="process-title">創作剪影</h2>
         <div class="video-carousel-wrapper">
             <div class="video-track" id="video-track">
                 <!-- Videos populated by JS -->
