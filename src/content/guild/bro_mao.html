@@ -165,18 +165,32 @@
         }
 
         /* --- Content Cards --- */
+        /* Pinned Layout Styles */
+        #story-pin-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
         .card {
             background: rgba(10, 10, 10, 0.85);
             border: 1px solid var(--color-primary);
             border-radius: 12px;
             padding: 2.5rem;
-            margin: 2rem 0;
+            max-width: 800px;
+            width: 90%;
             backdrop-filter: blur(10px);
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
-            position: relative;
-            overflow: hidden;
-            transform: translateY(50px);
+            position: absolute; /* Stacked for pinning */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             opacity: 0;
+            visibility: hidden; /* Prevent interaction when hidden */
         }
 
         .card::before {
@@ -322,85 +336,72 @@
         </div>
     </section>
 
-    <!-- Intro Section -->
-    <section id="sec-intro" class="section">
-        <div class="content-wrapper">
-            <div class="card gs-card">
-                <h2 class="card-title">
-                    <i class="fa-solid fa-user-ninja"></i>
-                    半路出家
-                </h2>
-                <div class="card-text">
-                    我是一個<span class="highlight">半路出家</span>社群經營與蝦皮分潤實戰的高中生。<br>
-                    沒有行銷背景，也不是什麼商學院出身。<br>
-                    而是一般高中生一路亂撞進內容圈的那種人。
-                </div>
+    <!-- Pinned Story Section (Replacement Effect) -->
+    <div id="story-pin-wrapper">
+        <!-- Card 1: Intro -->
+        <div class="card pinned-card" id="card-1">
+            <h2 class="card-title">
+                <i class="fa-solid fa-user-ninja"></i>
+                半路出家
+            </h2>
+            <div class="card-text">
+                我是一個<span class="highlight">半路出家</span>社群經營與蝦皮分潤實戰的高中生。<br>
+                沒有行銷背景，也不是什麼商學院出身。<br>
+                而是一般高中生一路亂撞進內容圈的那種人。
             </div>
         </div>
-    </section>
 
-    <!-- The Struggle (Grind) -->
-    <section id="sec-grind" class="section">
-        <div class="content-wrapper" style="margin-left: auto;">
-            <div class="card gs-card">
-                <h2 class="card-title">
-                    <i class="fa-solid fa-fire-flame-curved"></i>
-                    實戰紀錄
-                </h2>
-                <div class="card-text">
-                    文案不是天生會寫，是寫到被忽略、被滑過、被冷處理後才慢慢學會。<br>
-                    流量也不是一開始就有，是一篇一篇發、一天一天熬出來的。
-                </div>
-                <div class="card-text">
-                    現在主要靠社群吃飯。<br>
-                    <span class="highlight">不拍短影音、不開直播。</span><br>
-                    靠文字、邏輯、實戰紀錄養活自己。
-                </div>
+        <!-- Card 2: Grind -->
+        <div class="card pinned-card" id="card-2">
+            <h2 class="card-title">
+                <i class="fa-solid fa-fire-flame-curved"></i>
+                實戰紀錄
+            </h2>
+            <div class="card-text">
+                文案不是天生會寫，是寫到被忽略、被滑過、被冷處理後才慢慢學會。<br>
+                流量也不是一開始就有，是一篇一篇發、一天一天熬出來的。
+            </div>
+            <div class="card-text">
+                現在主要靠社群吃飯。<br>
+                <span class="highlight">不拍短影音、不開直播。</span><br>
+                靠文字、邏輯、實戰紀錄養活自己。
             </div>
         </div>
-    </section>
 
-    <!-- Philosophy -->
-    <section id="sec-philosophy" class="section">
-        <div class="content-wrapper">
-            <div class="card gs-card">
-                <h2 class="card-title">
-                    <i class="fa-solid fa-microchip"></i>
-                    生存哲學
-                </h2>
-                <div class="card-text">
-                    分潤被調整過、帳號沒流量過，但到現在還沒被市場淘汰。<br>
-                    比起教人『 快速成功 』，我比較擅長把複雜的東西，<br>
-                    拆解成<span class="highlight">一般人也能做、也撐得久</span>的版本。
-                </div>
+        <!-- Card 3: Philosophy -->
+        <div class="card pinned-card" id="card-3">
+            <h2 class="card-title">
+                <i class="fa-solid fa-microchip"></i>
+                生存哲學
+            </h2>
+            <div class="card-text">
+                分潤被調整過、帳號沒流量過，但到現在還沒被市場淘汰。<br>
+                比起教人『 快速成功 』，我比較擅長把複雜的東西，<br>
+                拆解成<span class="highlight">一般人也能做、也撐得久</span>的版本。
             </div>
         </div>
-    </section>
 
-    <!-- Skill Tree -->
-    <section id="sec-skills" class="section">
-        <div class="content-wrapper">
-            <div class="card gs-card">
-                <h2 class="card-title">
-                    <i class="fa-solid fa-network-wired"></i>
-                    技能樹亂點型玩家
-                </h2>
-                <div class="card-text">
-                    文案、社群、分潤、數據、流程、話術。<br>
-                    哪個卡關就往哪補。<br>
-                    <span class="highlight">不迷信大神，只相信測試、紀錄、修正。</span>
-                </div>
-                <div class="skill-grid">
-                    <div class="skill-item">文案 Copywriting</div>
-                    <div class="skill-item">社群 Community</div>
-                    <div class="skill-item">分潤 Affiliate</div>
-                    <div class="skill-item">數據 Data</div>
-                    <div class="skill-item">流程 Process</div>
-                    <div class="skill-item">話術 Scripts</div>
-                </div>
+        <!-- Card 4: Skills -->
+        <div class="card pinned-card" id="card-4">
+            <h2 class="card-title">
+                <i class="fa-solid fa-network-wired"></i>
+                技能樹亂點型玩家
+            </h2>
+            <div class="card-text">
+                文案、社群、分潤、數據、流程、話術。<br>
+                哪個卡關就往哪補。<br>
+                <span class="highlight">不迷信大神，只相信測試、紀錄、修正。</span>
+            </div>
+            <div class="skill-grid">
+                <div class="skill-item">文案 Copywriting</div>
+                <div class="skill-item">社群 Community</div>
+                <div class="skill-item">分潤 Affiliate</div>
+                <div class="skill-item">數據 Data</div>
+                <div class="skill-item">流程 Process</div>
+                <div class="skill-item">話術 Scripts</div>
             </div>
         </div>
-    </section>
+    </div>
 
     <!-- Footer / CTA -->
     <section id="sec-footer" class="section footer">
@@ -414,10 +415,16 @@
             </div>
 
             <div class="social-links">
-                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-btn">
+                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-btn" title="Instagram">
                     <i class="fa-brands fa-instagram"></i>
                 </a>
-                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-btn">
+                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-btn" title="Portaly">
+                    <i class="fa-solid fa-link"></i>
+                </a>
+                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-btn" title="Line OpenChat">
+                    <i class="fa-brands fa-line"></i>
+                </a>
+                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-btn" title="Threads">
                     <i class="fa-brands fa-threads"></i>
                 </a>
             </div>
@@ -613,7 +620,7 @@
         // --- Scroll Trigger ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Intro Animations
+        // Intro Animations (Hero)
         gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
             gsap.fromTo(elem,
                 { opacity: 0, y: 50 },
@@ -625,39 +632,69 @@
             );
         });
 
-        gsap.utils.toArray('.gs-card').forEach(card => {
-            gsap.fromTo(card,
-                { opacity: 0, scale: 0.9, y: 100 },
-                {
-                    opacity: 1, scale: 1, y: 0, duration: 1, ease: "back.out(1.2)",
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    }
-                }
-            );
+        // Pinned Story Animation (Replacement Effect)
+        const pinnedCards = gsap.utils.toArray('.pinned-card');
+        const pinTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "#story-pin-wrapper",
+                start: "top top",
+                end: "+=4000", // Long scroll distance for reading
+                pin: true,
+                scrub: 1,
+                anticipatePin: 1
+            }
         });
 
-        // Scene Scroll Interaction
+        // Sequence: Card 1 In -> Out, Card 2 In -> Out, etc.
+        // We want Card 1 to be visible first, then fade out as Card 2 fades in.
+
+        // Initial state: Card 1 is visible, others hidden
+        gsap.set(pinnedCards, { autoAlpha: 0, y: 50, scale: 0.95 });
+        gsap.set(pinnedCards[0], { autoAlpha: 1, y: 0, scale: 1 });
+
+        // Animation Timeline
+        // Step 1: Card 1 fades out, Card 2 fades in
+        pinTl.to(pinnedCards[0], { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
+             .to(pinnedCards[1], { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5"); // Overlap slightly
+
+        // Step 2: Card 2 fades out, Card 3 fades in
+        pinTl.to(pinnedCards[1], { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
+             .to(pinnedCards[2], { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5");
+
+        // Step 3: Card 3 fades out, Card 4 fades in
+        pinTl.to(pinnedCards[2], { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
+             .to(pinnedCards[3], { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5");
+
+        // Step 4: Hold Card 4 for a bit, then let it fade out as we unpin
+        pinTl.to({}, { duration: 1 }); // Pause
+        // pinTl.to(pinnedCards[3], { autoAlpha: 0, y: -50, duration: 1 }); // Optional: fade out last card
+
+        // Scene Scroll Interaction (Global 3D)
+        // Note: When pinning is involved, the total scroll height increases.
+        // We use document.body scrubbing which handles the total scrollable height naturally.
         ScrollTrigger.create({
             trigger: document.body,
             start: "top top",
             end: "bottom bottom",
-            scrub: 1,
+            scrub: 0.5, // Smooth scrubbing
             onUpdate: (self) => {
                 const p = self.progress;
 
-                // Move camera through tunnel
-                camera.position.z = CONFIG.cameraZ - (p * 80);
+                // Move camera through tunnel deeper (increased range)
+                camera.position.z = CONFIG.cameraZ - (p * 120);
 
                 // Explode core
-                coreGroup.scale.setScalar(1 + p * 2);
-                coreGroup.rotation.z = p * Math.PI * 4;
+                coreGroup.scale.setScalar(1 + p * 3);
+                coreGroup.rotation.z = p * Math.PI * 8;
+                coreGroup.rotation.y = p * Math.PI * 4;
 
                 // Particles warp
-                particles.material.size = 1 + p * 3;
-                particles.rotation.z = -p * Math.PI;
+                particles.material.size = 1 + p * 4;
+                particles.rotation.z = -p * Math.PI * 2;
+
+                // Color shift based on progress
+                const mix = Math.min(1, p * 1.5);
+                bloomPass.strength = 1.2 + mix * 0.8; // Increase bloom
             }
         });
 
