@@ -680,6 +680,18 @@ members:
       - id: "wood_craft"
         label: "木工魂"
 
+  - id: "flora"
+    name: "Flora 芙老師"
+    avatar: "/assets/img/guild/flora/profile.webp"
+    page: "/guild/flora.html"
+    tags:
+      - id: "dessert_architect"
+        label: "甜點架構師"
+      - id: "culture_bridge"
+        label: "文化橋樑"
+      - id: "sweet_strategist"
+        label: "甜蜜策略"
+
   - id: "miglo"
     name: "蜜光Q凍的闆闆"
     avatar: "/assets/img/guild/miglo/avatar.webp"
