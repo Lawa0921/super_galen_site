@@ -390,6 +390,13 @@
             display: block;
         }
 
+        .process-title {
+            font-family: var(--font-title);
+            font-size: 3rem;
+            margin-bottom: 4rem;
+            text-align: center;
+        }
+
         /* GALLERY - Floating Scrolls (River of Time) */
         .gallery-section {
             height: 100vh;
@@ -569,7 +576,13 @@
 
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 5rem;
+                font-size: 3rem;
+            }
+
+            .bio-content h2,
+            .novel-header h2,
+            .process-title {
+                font-size: 2rem;
             }
 
             .bio {
@@ -677,7 +690,7 @@
 
     <!-- PROCESS VIDEOS -->
     <section class="process-section">
-        <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 4rem; text-align: center;">創作剪影</h2>
+        <h2 class="process-title">創作剪影</h2>
         <div class="video-carousel-wrapper">
             <div class="video-track" id="video-track">
                 <!-- Videos populated by JS -->
