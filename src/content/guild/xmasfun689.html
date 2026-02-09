@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XmasFun689 - Heavy Metal Battlemage</title>
+    <title>XmasFun689 - Elemental Gear Tower</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,459 +14,423 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
     <style>
         :root {
-            --c-void: #020202;
-            --c-armor: #1a1a1f;
-            --c-gold: #FFD700;    /* Earth/Warrior */
-            --c-cyan: #00F3FF;    /* Magic/Tech */
-            --c-mana: #bc13fe;    /* Summoner */
-            --c-danger: #ff0033;
+            --c-void: #050505;
+            --c-earth: #FFD700;
+            --c-water: #0077BE;
+            --c-elec: #00F3FF;
 
-            --f-header: 'Cinzel', serif;
-            --f-ui: 'Orbitron', sans-serif;
+            --f-magic: 'Cinzel', serif;
+            --f-tech: 'Orbitron', sans-serif;
             --f-body: 'Noto Serif TC', serif;
         }
 
         * { box-sizing: border-box; }
         body { margin: 0; background: var(--c-void); color: white; font-family: var(--f-body); overflow-x: hidden; }
 
-        /* P5 Canvas (Background) */
-        #p5-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        /* WebGL Canvas */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
 
-        /* Layout */
-        .battle-container {
-            position: relative; z-index: 10;
-            max-width: 1400px; margin: 0 auto; padding: 0 2rem;
+        /* Loading Overlay */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 1s;
         }
+        .loader-text {
+            font-family: var(--f-tech); color: var(--c-elec); font-size: 1.5rem; letter-spacing: 5px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* --- HERO: Battle Profile --- */
-        .hero {
-            min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center; position: relative;
-        }
+        /* Scroll Content (Invisible Triggers + Floating UI) */
+        .scroll-space { height: 400vh; } /* 4 Sections */
 
-        .avatar-container {
-            position: relative; width: 200px; height: 200px; margin-bottom: 2rem;
-        }
-        .avatar-img {
-            width: 100%; height: 100%; object-fit: cover;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); /* Hexagon */
-            border: 4px solid var(--c-gold); /* Fallback */
-            position: relative; z-index: 2;
-        }
-        .avatar-glow {
-            position: absolute; inset: -20px; border-radius: 50%;
-            background: radial-gradient(circle, var(--c-gold) 0%, transparent 70%);
-            opacity: 0.3; animation: pulse 2s infinite; z-index: 1;
+        .content-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
         }
 
-        h1 {
-            font-family: var(--f-header); font-size: 4rem; margin: 0;
-            background: linear-gradient(to bottom, #fff, #888);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-transform: uppercase; letter-spacing: 2px;
-            filter: drop-shadow(0 0 10px var(--c-gold));
+        /* Holographic Panels */
+        .holo-panel {
+            position: absolute; pointer-events: auto;
+            background: rgba(10, 15, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem; border-radius: 8px;
+            backdrop-filter: blur(8px);
+            opacity: 0; transform: translateY(30px);
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
-        .hero-title {
-            font-family: var(--f-ui); color: var(--c-cyan); font-size: 1.2rem; letter-spacing: 5px;
-            margin-top: 0.5rem; text-transform: uppercase;
+        .holo-panel::before {
+            content: ''; position: absolute; top: -1px; left: -1px; width: 20px; height: 20px;
+            border-top: 2px solid var(--c-elec); border-left: 2px solid var(--c-elec);
         }
-
-        /* Stats Bars */
-        .stats-hud {
-            display: flex; gap: 2rem; margin-top: 3rem; width: 100%; max-width: 600px;
-        }
-        .stat-bar-group { flex: 1; }
-        .stat-label {
-            font-family: var(--f-ui); font-size: 0.8rem; color: #888; display: flex; justify-content: space-between; margin-bottom: 5px;
-        }
-        .bar-track { height: 8px; background: #333; transform: skewX(-20deg); overflow: hidden; border: 1px solid #555; }
-        .bar-fill { height: 100%; width: 0%; transform: skewX(20deg); transform-origin: left; } /* GSAP Animate width */
-
-        .fill-hp { background: var(--c-danger); box-shadow: 0 0 10px var(--c-danger); }
-        .fill-mp { background: var(--c-cyan); box-shadow: 0 0 10px var(--c-cyan); }
-        .fill-stm { background: var(--c-gold); box-shadow: 0 0 10px var(--c-gold); }
-
-        /* --- CONTENT: Armor Cards --- */
-        .section-header {
-            margin: 8rem 0 4rem; text-align: center;
-        }
-        .section-title {
-            font-family: var(--f-header); font-size: 3rem; color: white;
-            text-transform: uppercase; text-shadow: 0 0 20px var(--c-gold);
-        }
-        .section-sub { font-family: var(--f-ui); color: var(--c-cyan); letter-spacing: 3px; }
-
-        .armor-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 3rem;
+        .holo-panel::after {
+            content: ''; position: absolute; bottom: -1px; right: -1px; width: 20px; height: 20px;
+            border-bottom: 2px solid var(--c-elec); border-right: 2px solid var(--c-elec);
         }
 
-        .armor-card {
-            background: var(--c-armor);
-            border: 1px solid rgba(255,255,255,0.1);
-            position: relative; overflow: hidden;
-            clip-path: polygon(
-                20px 0, 100% 0,
-                100% calc(100% - 20px), calc(100% - 20px) 100%,
-                0 100%, 0 20px
-            );
-            transition: 0.3s;
-        }
-        .armor-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--c-gold);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.1);
-        }
-        /* Top Glow Bar */
-        .armor-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: var(--c-gold);
-        }
+        .panel-earth { border-color: var(--c-earth); }
+        .panel-earth::before, .panel-earth::after { border-color: var(--c-earth); }
 
-        .card-visual { height: 300px; overflow: hidden; position: relative; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .card-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
-        .armor-card:hover .card-img { transform: scale(1.1); }
+        .panel-water { border-color: var(--c-water); }
+        .panel-water::before, .panel-water::after { border-color: var(--c-water); }
 
-        .card-content { padding: 2rem; }
-        .card-title { font-family: var(--f-ui); font-size: 1.5rem; color: var(--c-gold); margin-bottom: 0.5rem; }
-        .card-type { font-family: var(--f-ui); font-size: 0.8rem; color: #666; display: block; margin-bottom: 1rem; }
-        p { color: #ccc; line-height: 1.6; font-size: 1rem; margin-bottom: 1rem; text-align: justify; }
+        .panel-elec { border-color: var(--c-elec); }
+        .panel-elec::before, .panel-elec::after { border-color: var(--c-elec); }
 
-        /* Elemental Skill Matrix */
-        .skill-hex-grid {
-            display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
-        }
-        .skill-hex {
-            width: 150px; text-align: center;
-            background: rgba(0,0,0,0.5); padding: 1.5rem;
-            border: 1px solid var(--c-cyan);
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            transition: 0.3s;
-        }
-        .skill-hex:hover { background: rgba(0, 243, 255, 0.1); transform: scale(1.1); box-shadow: 0 0 20px var(--c-cyan); }
-        .hex-icon { font-size: 2.5rem; color: var(--c-cyan); margin-bottom: 1rem; }
-        .hex-title { font-family: var(--f-ui); color: white; font-size: 1rem; }
+        h2 { font-family: var(--f-magic); font-size: 2rem; margin: 0 0 1rem; text-transform: uppercase; }
+        h3 { font-family: var(--f-tech); font-size: 1rem; color: #888; margin: 0 0 1rem; letter-spacing: 2px; }
+        p { line-height: 1.8; color: #ccc; font-size: 1.1rem; text-align: justify; margin-bottom: 1rem; }
 
-        /* Sanctuary Parallax */
-        .sanctuary-wrap {
-            margin: 8rem 0; padding: 6rem 2rem; text-align: center;
-            background: radial-gradient(circle, rgba(0,0,0,0.8), #000);
-            border: 1px solid var(--c-mana);
-            position: relative;
-        }
-        .plushie-img {
-            max-width: 600px; width: 100%; border-radius: 12px;
-            box-shadow: 0 0 50px rgba(188, 19, 254, 0.2);
-            border: 2px solid var(--c-mana);
-        }
+        /* Image Showcase */
+        .holo-img { width: 100%; border-radius: 4px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.2); }
 
-        /* Footer */
-        .footer {
-            margin-top: 6rem; padding: 4rem 0; border-top: 1px solid #333;
-            text-align: center; font-family: var(--f-ui); color: #666;
+        /* HUD Overlay */
+        .hud-overlay {
+            position: fixed; bottom: 2rem; left: 2rem; z-index: 20;
+            font-family: var(--f-tech); color: rgba(255,255,255,0.5); font-size: 0.8rem;
         }
-        .social-row { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .hud-bar { width: 200px; height: 2px; background: rgba(255,255,255,0.2); margin-top: 5px; }
+        .hud-progress { width: 0%; height: 100%; background: var(--c-elec); }
+
+        /* Footer (Fixed at end of scroll) */
+        .end-credit {
+            position: absolute; bottom: 2rem; width: 100%; text-align: center;
+            opacity: 0; transition: opacity 0.5s; pointer-events: none;
+        }
+        .social-row { display: flex; justify-content: center; gap: 1rem; pointer-events: auto; }
         .social-btn {
-            width: 50px; height: 50px; border: 1px solid #555; border-radius: 50%;
+            width: 40px; height: 40px; border: 1px solid #666; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; color: white;
-            transition: 0.3s; background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.8); transition: 0.3s;
         }
-        .social-btn:hover { border-color: var(--c-gold); color: var(--c-gold); box-shadow: 0 0 20px var(--c-gold); transform: scale(1.1); }
-        .social-btn svg { width: 22px; height: 22px; fill: currentColor; }
-
+        .social-btn:hover { border-color: var(--c-earth); color: var(--c-earth); transform: scale(1.1); }
+        .social-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
         @media (max-width: 768px) {
-            h1 { font-size: 2.5rem; }
-            .stats-hud { flex-direction: column; gap: 1rem; }
-            .armor-grid { grid-template-columns: 1fr; }
+            .holo-panel { width: 90%; left: 5% !important; right: auto !important; top: 50% !important; transform: translateY(-50%) !important; }
         }
     </style>
 </head>
 <body>
 
-    <!-- P5 Canvas -->
-    <div id="p5-bg"></div>
+    <div id="loader"><div class="loader-text">INITIALIZING CORE...</div></div>
+    <div id="webgl-container"></div>
 
-    <div class="battle-container">
+    <div class="hud-overlay">
+        <div>SYS.DEPTH: <span id="depth-val">0000</span>m</div>
+        <div class="hud-bar"><div class="hud-progress" id="progress-bar"></div></div>
+    </div>
 
-        <!-- Hero -->
-        <section class="hero">
-            <div class="avatar-container">
-                <div class="avatar-glow"></div>
-                <img src="/assets/img/guild/xmasfun689/avatar.webp" class="avatar-img">
+    <!-- Scroll Content -->
+    <div class="scroll-space"></div>
+
+    <!-- Floating Panels -->
+    <div class="content-layer">
+
+        <!-- 1. Hero (Center) -->
+        <div class="holo-panel panel-earth" id="panel-1" style="top: 20%; left: 10%;">
+            <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+                <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:80px; height:80px; border-radius:50%; border:2px solid var(--c-earth);">
+                <div>
+                    <h2 style="margin:0; font-size:1.5rem; color:var(--c-earth);">Heavy Metal Magus</h2>
+                    <div style="font-family:var(--f-tech); font-size:0.8rem; color:#888;">LVL.8 SITE COMMANDER</div>
+                </div>
             </div>
-            <h1>Battlemage</h1>
-            <div class="hero-title">HEAVY METAL WARLORD // XMASFUN689</div>
+            <p>
+                「戰士的體格，召喚師的靈魂。」<br>
+                在鋼鐵與齒輪的轟鳴中，我是操控巨獸的指揮官。<br>
+                八年工地煉金術，以汗水鑄造基石。
+            </p>
+        </div>
 
-            <p style="max-width: 600px; margin-top: 2rem; color: #ccc; line-height: 1.8;">
-                「從小胖到現在，擁有<b>戰士的體格</b>，卻守護著一顆<b>召喚師的靈魂</b>。」<br>
-                八年工地煉金術，將汗水鑄成鋼鐵。以雷電與流水為魔法，駕馭著大地的巨獸。
+        <!-- 2. Earth (Right) -->
+        <div class="holo-panel panel-earth" id="panel-2" style="top: 40%; right: 10%;">
+            <h2 style="color:var(--c-earth)">Earth Core</h2>
+            <h3>HEAVY CONSTRUCTS</h3>
+            <img src="/assets/img/guild/xmasfun689/excavator.webp" class="holo-img">
+            <p>
+                <b>大地魔像 (Excavator)</b><br>
+                開疆闢土的鋼鐵手臂。雖然差一點考到證照，但操作早已與意志同步。<br>
+                <i class="fa-solid fa-triangle-exclamation" style="color:var(--c-earth)"></i> Skill: Terrain Modification
+            </p>
+        </div>
+
+        <!-- 3. Water (Left) -->
+        <div class="holo-panel panel-water" id="panel-3" style="top: 60%; left: 10%;">
+            <h2 style="color:var(--c-water)">Hydro Flow</h2>
+            <h3>FLUID DYNAMICS</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+                <div style="background:rgba(0,119,190,0.2); padding:5px 10px; border:1px solid var(--c-water); font-size:0.8rem;">PLUMBING</div>
+                <div style="background:rgba(0,119,190,0.2); padding:5px 10px; border:1px solid var(--c-water); font-size:0.8rem;">LICENSE HOLDER</div>
+            </div>
+            <p>
+                通曉流體力學的奧義。<br>
+                在看不見的管道中，引導生命之源流向它應去的地方。
+            </p>
+        </div>
+
+        <!-- 4. Lightning/Final (Center) -->
+        <div class="holo-panel panel-elec" id="panel-4" style="top: 80%; left: 50%; transform: translateX(-50%);">
+            <h2 style="color:var(--c-elec)">Overcharge</h2>
+            <h3>ENERGY & SOUL</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+                <img src="/assets/img/guild/xmasfun689/roller.webp" class="holo-img" style="margin:0;">
+                <img src="/assets/img/guild/xmasfun689/plushies.webp" class="holo-img" style="margin:0;">
+            </div>
+            <p>
+                <b>雷鳴脈衝 & 召喚師之心</b><br>
+                掌控電力的流動，點亮城市的黑夜。<br>
+                在單人副本的盡頭，唯有 <b>猴子布偶</b> 與 <b>Kururu 曹長</b> 是這身重甲下最柔軟的秘密。
             </p>
 
-            <!-- Stats -->
-            <div class="stats-hud">
-                <div class="stat-bar-group">
-                    <div class="stat-label"><span>STR (Construction)</span><span>S+</span></div>
-                    <div class="bar-track"><div class="bar-fill fill-hp" style="width: 95%"></div></div>
-                </div>
-                <div class="stat-bar-group">
-                    <div class="stat-label"><span>INT (Water/Elec)</span><span>A</span></div>
-                    <div class="bar-track"><div class="bar-fill fill-mp" style="width: 80%"></div></div>
-                </div>
-                <div class="stat-bar-group">
-                    <div class="stat-label"><span>VIT (Physique)</span><span>S</span></div>
-                    <div class="bar-track"><div class="bar-fill fill-stm" style="width: 90%"></div></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Equipment (Machinery) -->
-        <div class="section-header">
-            <h2 class="section-title">Titan Gear</h2>
-            <span class="section-sub">EQUIPPED ARSENAL</span>
-        </div>
-
-        <div class="armor-grid">
-            <!-- Excavator -->
-            <div class="armor-card">
-                <div class="card-visual">
-                    <img src="/assets/img/guild/xmasfun689/excavator.webp" class="card-img">
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Titan Gauntlets (怪手)</h3>
-                    <span class="card-type">CLASS: HEAVY CONSTRUCT</span>
-                    <p>
-                        <b>大地塑形者。</b><br>
-                        工地現場的主力武裝。雖然差一點考到證照，但這雙「鋼鐵手臂」早已如自己的雙手般靈活。開疆闢土，無堅不摧。
-                    </p>
-                    <div style="margin-top:1rem; color:var(--c-gold); font-family:var(--f-ui);">
-                        <i class="fa-solid fa-star"></i> MASTERY: MAX
-                    </div>
-                </div>
-            </div>
-
-            <!-- Roller -->
-            <div class="armor-card">
-                <div class="card-visual">
-                    <img src="/assets/img/guild/xmasfun689/roller.webp" class="card-img">
-                </div>
-                <div class="card-content">
-                    <h3 class="card-title">Iron Greaves (自走車)</h3>
-                    <span class="card-type">CLASS: ROAD ROLLER</span>
-                    <p>
-                        <b>秩序踐踏者。</b><br>
-                        以絕對的重量壓平一切崎嶇。這是構築文明基石的必要裝備，確保每一步都走得穩健踏實。
-                    </p>
-                    <div style="margin-top:1rem; color:var(--c-gold); font-family:var(--f-ui);">
-                        <i class="fa-solid fa-star"></i> MASTERY: HIGH
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Magic Skills -->
-        <div class="section-header">
-            <h2 class="section-title">Elemental Arts</h2>
-            <span class="section-sub">DUAL CULTIVATION</span>
-        </div>
-
-        <div class="skill-hex-grid">
-            <div class="skill-hex">
-                <div class="hex-icon"><i class="fa-solid fa-water"></i></div>
-                <div class="hex-title">HYDRO<br>流體力學</div>
-            </div>
-            <div class="skill-hex">
-                <div class="hex-icon"><i class="fa-solid fa-bolt"></i></div>
-                <div class="hex-title">ELECTRO<br>雷鳴脈衝</div>
-            </div>
-            <div class="skill-hex">
-                <div class="hex-icon"><i class="fa-solid fa-mountain"></i></div>
-                <div class="hex-title">GEO<br>工地煉金</div>
-            </div>
-        </div>
-
-        <!-- Sanctuary -->
-        <div class="sanctuary-wrap">
-            <div style="font-size: 3rem; color: var(--c-mana); margin-bottom: 1rem;"><i class="fa-solid fa-heart"></i></div>
-            <h2 style="font-family: var(--f-header); color: white; margin-bottom: 1rem;">Summoner's Soul</h2>
-            <p style="max-width: 600px; margin: 0 auto 2rem;">
-                在孤獨的單人副本中，唯有使魔相伴。<br>
-                <b>猴子布偶</b> 與 <b>Kururu 曹長</b> 是這身重甲之下，最柔軟的秘密。
-            </p>
-            <img src="/assets/img/guild/xmasfun689/plushies.webp" class="plushie-img">
-        </div>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="social-row">
+            <div class="social-row" style="margin-top:2rem;">
                 <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-btn">
                      <svg viewBox="0 0 192 192"><path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.3586 44.7443 69.0639 51.1409 58.7414 61.5332C48.0296 72.3168 41.5234 87.1649 41.5234 103.565C41.5234 117.588 46.545 130.499 54.835 140.579C65.7337 153.834 81.3327 163.504 99.4102 166.703C102.508 167.251 105.702 167.533 108.995 167.533C116.791 167.533 124.28 165.719 131.026 162.434C132.887 161.528 133.659 159.288 132.753 157.427L129.569 150.891C128.81 149.333 127.185 148.431 125.532 148.651C120.306 149.348 114.789 149.713 108.995 149.713C86.3262 149.713 67.2458 137.067 59.2132 118.665C58.0583 116.02 57.2435 113.256 56.8154 110.383C67.6256 122.791 82.5273 130.829 99.2801 130.829C117.389 130.829 131.812 119.863 135.003 103.623C138.256 104.922 141.282 106.467 144.032 108.232C147.218 110.276 149.435 112.551 150.812 115.014C152.022 117.178 152.275 119.294 151.722 121.285C150.551 125.498 144.27 129.809 132.172 129.809C120.395 129.809 113.06 120.211 113.06 109.283V104.225C113.06 87.0544 108.57 73.0805 99.2798 64.9388C94.2798 60.5566 88.0808 58.129 80.9922 58.129C69.349 58.129 59.4586 66.8643 57.1793 79.5248C56.6366 82.5393 56.3503 85.6728 56.3503 88.8927C56.3503 112.016 70.8038 131.992 91.1396 139.754C92.4276 140.245 93.1818 141.748 92.7766 143.068L90.7397 149.72C90.2526 151.31 88.4655 152.179 86.9174 151.58C60.1065 141.205 41.5234 114.976 41.5234 88.8927C41.5234 84.1481 42.062 79.5393 43.0833 75.109C47.2343 56.9802 62.7725 43.3333 80.9922 43.3333C91.1294 43.3333 100.323 46.8049 107.458 52.6074C120.61 63.3039 127.887 81.3768 127.887 104.225V109.283C127.887 114.397 129.742 115.014 132.172 115.014C137.962 115.014 139.799 111.411 140.222 109.89C141.751 104.387 137.818 99.5544 132.766 96.6496C127.382 93.5539 121.293 91.3149 114.887 90.0243C114.004 77.0864 107.561 65.6542 97.4334 58.1566C97.3629 58.1044 97.2923 58.0524 97.2216 58.0006C117.817 58.1189 129.405 70.8129 130.569 93.1251C133.626 94.2473 136.562 95.597 139.356 97.1429C147.168 101.464 154.686 109.043 154.686 122.997C154.686 123.649 154.653 124.288 154.589 124.914C156.974 122.381 158.825 119.349 160.038 116.033C161.948 110.812 161.764 105.776 159.493 101.72C155.632 94.8213 149.098 90.7516 141.537 88.9883ZM80.9922 72.9238C85.5065 72.9238 89.6083 74.4561 92.8348 77.0163C96.345 79.8009 98.2329 83.8742 98.2329 88.8927C98.2329 93.9112 96.345 97.9845 92.8348 100.769C89.6083 103.329 85.5065 104.862 80.9922 104.862C76.4779 104.862 72.3761 103.329 69.1496 100.769C65.6394 97.9845 63.7515 93.9112 63.7515 88.8927C63.7515 83.8742 65.6394 79.8009 69.1496 77.0163C72.3761 74.4561 76.4779 72.9238 80.9922 72.9238Z"/></svg>
                 </a>
                 <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <div>MADE WITH LOVE BY SUPERGALEN'S DUNGEON</div>
-        </footer>
+            <div style="margin-top:1rem; font-size:0.8rem; color:#666;">MADE WITH LOVE BY SUPERGALEN'S DUNGEON</div>
+        </div>
+
     </div>
 
-    <!-- P5.js & GSAP -->
-    <script>
+    <!-- MAIN SCRIPT (Three.js) -->
+    <script type="module">
+        import * as THREE from 'https://esm.sh/three@0.160.0';
+        import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- GSAP Animations ---
-        // 1. Stats Bar Fill
-        gsap.utils.toArray('.bar-fill').forEach(bar => {
-            gsap.to(bar, {
-                width: bar.style.width, duration: 1.5, ease: "power2.out", delay: 0.5
+        // --- Init Scene ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // --- Post Processing (Bloom) ---
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        // --- Lighting ---
+        const ambient = new THREE.AmbientLight(0x222222);
+        scene.add(ambient);
+
+        // Zone Lights (will animate)
+        const lightEarth = new THREE.PointLight(0xFFD700, 3, 20);
+        lightEarth.position.set(5, -10, 5);
+        scene.add(lightEarth);
+
+        const lightWater = new THREE.PointLight(0x0077BE, 3, 20);
+        lightWater.position.set(-5, 0, 5);
+        scene.add(lightWater);
+
+        const lightElec = new THREE.PointLight(0x00F3FF, 3, 20);
+        lightElec.position.set(0, 10, 5);
+        scene.add(lightElec);
+
+        // --- GEOMETRY: GEAR TOWER ---
+
+        // Function to create a simple gear
+        function createGear(radius, teeth, color) {
+            const group = new THREE.Group();
+
+            // Core
+            const coreGeo = new THREE.CylinderGeometry(radius, radius, 1, 32);
+            const mat = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: color,
+                emissiveIntensity: 0.1
+            });
+            const core = new THREE.Mesh(coreGeo, mat);
+            group.add(core);
+
+            // Teeth
+            const toothGeo = new THREE.BoxGeometry(1.5, 1, 1.5);
+            for(let i=0; i<360; i+=360/teeth) {
+                const rad = (i * Math.PI) / 180;
+                const tooth = new THREE.Mesh(toothGeo, mat);
+                tooth.position.set(Math.cos(rad) * radius, 0, Math.sin(rad) * radius);
+                tooth.rotation.y = -rad;
+                group.add(tooth);
+            }
+
+            // Inner Ring (Glowing)
+            const ringGeo = new THREE.TorusGeometry(radius * 0.6, 0.2, 16, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI/2;
+            group.add(ring);
+
+            return group;
+        }
+
+        const gearGroup = new THREE.Group();
+        scene.add(gearGroup);
+
+        // Gear 1: Earth (Bottom)
+        const gear1 = createGear(6, 12, 0xFFD700);
+        gear1.position.y = -10;
+        gearGroup.add(gear1);
+
+        // Gear 2: Water (Middle)
+        const gear2 = createGear(5, 10, 0x0077BE);
+        gear2.position.y = 0;
+        gearGroup.add(gear2);
+
+        // Gear 3: Elec (Top)
+        const gear3 = createGear(4, 8, 0x00F3FF);
+        gear3.position.y = 10;
+        gearGroup.add(gear3);
+
+        // --- PARTICLES ---
+
+        // Earth Debris
+        const debrisGeo = new THREE.DodecahedronGeometry(0.2);
+        const debrisMat = new THREE.MeshBasicMaterial({ color: 0x8B4513, wireframe: true });
+        const debrisGroup = new THREE.Group();
+        for(let i=0; i<20; i++) {
+            const m = new THREE.Mesh(debrisGeo, debrisMat);
+            m.position.set((Math.random()-0.5)*15, -10 + (Math.random()-0.5)*5, (Math.random()-0.5)*15);
+            debrisGroup.add(m);
+        }
+        scene.add(debrisGroup);
+
+        // Water Bubbles
+        const bubbleGeo = new THREE.SphereGeometry(0.1, 8, 8);
+        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x0077BE, transparent: true, opacity: 0.6 });
+        const bubbles = new THREE.InstancedMesh(bubbleGeo, bubbleMat, 50);
+        const dummy = new THREE.Object3D();
+        scene.add(bubbles);
+
+        // Lightning (Procedural)
+        const boltGeo = new THREE.BufferGeometry();
+        const boltMat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
+        const bolt = new THREE.Line(boltGeo, boltMat);
+        scene.add(bolt);
+
+
+        // --- ANIMATION ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // Rotate Gears
+            gear1.rotation.y = t * 0.2;
+            gear2.rotation.y = -t * 0.3;
+            gear3.rotation.y = t * 0.5;
+
+            // Animate Debris
+            debrisGroup.rotation.y = t * 0.1;
+
+            // Animate Bubbles (Floating Up)
+            for(let i=0; i<50; i++) {
+                dummy.position.set(
+                    Math.sin(i + t)*6,
+                    (i % 10) - 5 + Math.sin(t + i)*2, // Range -5 to 5
+                    Math.cos(i + t)*6
+                );
+                dummy.scale.setScalar(0.5 + Math.sin(t*3 + i)*0.2);
+                dummy.updateMatrix();
+                bubbles.setMatrixAt(i, dummy.matrix);
+            }
+            bubbles.instanceMatrix.needsUpdate = true;
+
+            // Animate Lightning
+            if(Math.random() > 0.8) {
+                const pts = [];
+                let curr = new THREE.Vector3(0, 10, 0);
+                for(let k=0; k<8; k++) {
+                    pts.push(curr.clone());
+                    curr.x += (Math.random()-0.5)*4;
+                    curr.y += (Math.random()-0.5)*4;
+                    curr.z += (Math.random()-0.5)*4;
+                }
+                bolt.geometry.setFromPoints(pts);
+                bolt.visible = true;
+            } else {
+                bolt.visible = false;
+            }
+
+            composer.render();
+        }
+        animate();
+
+        // --- SCROLL LOGIC ---
+        // Camera spirals up
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: (self) => {
+                    document.getElementById('progress-bar').style.width = (self.progress * 100) + '%';
+                    document.getElementById('depth-val').innerText = Math.floor(self.progress * 1000);
+                }
+            }
+        });
+
+        // 1. Start at Earth (-10) -> Move to Water (0)
+        tl.to(camera.position, { y: 0, x: 10, z: 10, duration: 2 });
+        tl.to(camera.rotation, { y: 0.5, duration: 2 }, "<");
+
+        // 2. Move to Elec (10)
+        tl.to(camera.position, { y: 10, x: 0, z: 15, duration: 2 });
+        tl.to(camera.rotation, { y: 0, duration: 2 }, "<");
+
+        // 3. Finale (Look down)
+        tl.to(camera.position, { y: 20, z: 5, duration: 2 });
+        tl.to(camera.rotation, { x: -Math.PI/4, duration: 2 }, "<");
+
+        // UI Reveals
+        const panels = document.querySelectorAll('.holo-panel');
+        panels.forEach((p, i) => {
+            gsap.to(p, {
+                opacity: 1, y: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: "body",
+                    start: `${10 + i * 25}%`, // 10%, 35%, 60%, 85%
+                    end: `${10 + i * 25 + 20}%`,
+                    toggleActions: "play reverse play reverse"
+                }
             });
         });
 
-        // 2. Armor Cards Reveal
-        gsap.utils.toArray('.armor-card').forEach((card, i) => {
-            gsap.from(card, {
-                y: 100, opacity: 0, duration: 1, delay: i * 0.2,
-                scrollTrigger: { trigger: card, start: "top 85%" }
-            });
+        // Loader
+        window.addEventListener('load', () => {
+            gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => document.getElementById('loader').remove() });
         });
 
-        // 3. Skill Hex Pop
-        gsap.utils.toArray('.skill-hex').forEach((hex, i) => {
-            gsap.from(hex, {
-                scale: 0, rotation: 180, duration: 0.8, delay: i * 0.1,
-                scrollTrigger: { trigger: ".skill-hex-grid", start: "top 80%" }
-            });
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-
-        // --- P5.js Background (Gears + Mana Storm) ---
-        const sketch = (p) => {
-            let bigGear1, bigGear2;
-            let particles = [];
-            let magicSparks = [];
-
-            p.setup = () => {
-                let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
-                cnv.parent('p5-bg');
-
-                // Giant Background Gears
-                bigGear1 = new Gear(p, 0, 0, p.width * 0.6, 12, 0.001);
-                bigGear2 = new Gear(p, p.width, p.height, p.width * 0.8, 16, -0.001);
-
-                // Mana Particles
-                for(let i=0; i<50; i++) particles.push(new ManaParticle(p));
-            };
-
-            p.draw = () => {
-                p.clear();
-
-                // 1. Draw Gears (Low opacity background)
-                bigGear1.update().display();
-                bigGear2.update().display();
-
-                // 2. Draw Mana Storm
-                for(let pt of particles) pt.update().display();
-
-                // 3. Mouse Interaction (Magic Trail)
-                if (p.frameCount % 2 === 0) {
-                   magicSparks.push(new Spark(p, p.mouseX, p.mouseY));
-                }
-                for (let i = magicSparks.length - 1; i >= 0; i--) {
-                    magicSparks[i].update().display();
-                    if (magicSparks[i].finished()) magicSparks.splice(i, 1);
-                }
-            };
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-                bigGear1 = new Gear(p, 0, 0, p.width * 0.6, 12, 0.001);
-                bigGear2 = new Gear(p, p.width, p.height, p.width * 0.8, 16, -0.001);
-            };
-
-            // CLASSES
-            class Gear {
-                constructor(p, x, y, r, teeth, speed) {
-                    this.p = p; this.x = x; this.y = y; this.r = r; this.teeth = teeth; this.speed = speed;
-                    this.angle = 0;
-                }
-                update() { this.angle += this.speed; return this; }
-                display() {
-                    this.p.push();
-                    this.p.translate(this.x, this.y);
-                    this.p.rotate(this.angle);
-                    this.p.noFill();
-                    this.p.stroke(255, 215, 0, 20); // Gold, very faint
-                    this.p.strokeWeight(2);
-
-                    // Gear Shape
-                    let angleStep = 360 / this.teeth;
-                    this.p.beginShape();
-                    for(let a=0; a<360; a+=angleStep) {
-                        let rad = this.p.radians(a);
-                        let rad2 = this.p.radians(a + angleStep/2);
-                        // Outer Teeth
-                        this.p.vertex(this.p.cos(rad)*(this.r-20), this.p.sin(rad)*(this.r-20));
-                        this.p.vertex(this.p.cos(rad)*this.r, this.p.sin(rad)*this.r);
-                        this.p.vertex(this.p.cos(rad2)*this.r, this.p.sin(rad2)*this.r);
-                        this.p.vertex(this.p.cos(rad2)*(this.r-20), this.p.sin(rad2)*(this.r-20));
-                    }
-                    this.p.endShape(this.p.CLOSE);
-
-                    // Inner Circles
-                    this.p.stroke(0, 243, 255, 10); // Cyan
-                    this.p.circle(0, 0, this.r * 1.5);
-                    this.p.circle(0, 0, this.r * 1.8);
-
-                    this.p.pop();
-                }
-            }
-
-            class ManaParticle {
-                constructor(p) {
-                    this.p = p;
-                    this.reset();
-                }
-                reset() {
-                    this.pos = this.p.createVector(this.p.random(this.p.width), this.p.random(this.p.height));
-                    this.vel = p5.Vector.random2D().mult(0.2);
-                    this.size = this.p.random(2, 5);
-                    this.alpha = this.p.random(50, 150);
-                }
-                update() {
-                    this.pos.add(this.vel);
-                    if(this.pos.x < 0 || this.pos.x > this.p.width || this.pos.y < 0 || this.pos.y > this.p.height) this.reset();
-                    return this;
-                }
-                display() {
-                    this.p.noStroke();
-                    this.p.fill(0, 243, 255, this.alpha);
-                    this.p.circle(this.pos.x, this.pos.y, this.size);
-                }
-            }
-
-            class Spark {
-                constructor(p, x, y) {
-                    this.p = p; this.pos = p.createVector(x, y);
-                    this.vel = p5.Vector.random2D().mult(p.random(1, 3));
-                    this.life = 255;
-                    this.color = p.random() > 0.5 ? p.color(255, 215, 0) : p.color(0, 243, 255);
-                }
-                update() {
-                    this.pos.add(this.vel);
-                    this.life -= 10;
-                    return this;
-                }
-                finished() { return this.life < 0; }
-                display() {
-                    this.p.noStroke();
-                    this.p.fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], this.life);
-                    this.p.circle(this.pos.x, this.pos.y, 3);
-                }
-            }
-        };
-        new p5(sketch);
     </script>
 </body>
 </html>
