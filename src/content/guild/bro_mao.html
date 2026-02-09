@@ -52,10 +52,11 @@
             width: 100%;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 2rem;
-            pointer-events: none; /* Let clicks pass through to canvas if needed, but usually we want text interaction */
+            pointer-events: none; /* Let clicks pass through to canvas if needed */
         }
 
         .content-wrapper {
@@ -63,6 +64,7 @@
             max-width: 1200px;
             width: 100%;
             z-index: 10;
+            text-align: center;
         }
 
         /* --- Typography & Elements --- */
@@ -123,11 +125,6 @@
         /* --- Hero Section --- */
         #sec-hero {
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
         }
 
         .avatar-container {
@@ -137,7 +134,7 @@
             overflow: hidden;
             border: 4px solid var(--color-primary);
             box-shadow: 0 0 30px var(--color-primary);
-            margin-bottom: 2rem;
+            margin: 0 auto 2rem auto;
             position: relative;
         }
 
@@ -162,6 +159,7 @@
             padding: 0.5rem 1rem;
             border-radius: 4px;
             border: 1px solid var(--color-secondary);
+            display: inline-block;
         }
 
         /* --- Content Cards --- */
@@ -169,11 +167,11 @@
         #story-pin-wrapper {
             position: relative;
             width: 100%;
-            height: 100vh;
+            height: 100vh; /* Full viewport height for pinning */
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow: hidden; /* Hide overflow during pin */
         }
 
         .card {
@@ -218,6 +216,7 @@
             line-height: 1.8;
             color: #ddd;
             margin-bottom: 1rem;
+            text-align: left;
         }
 
         .highlight {
@@ -241,6 +240,8 @@
             border-radius: 8px;
             transition: all 0.3s ease;
             cursor: pointer;
+            color: #fff;
+            font-family: var(--font-display);
         }
 
         .skill-item:hover {
@@ -250,11 +251,33 @@
             box-shadow: 0 0 20px var(--color-primary);
         }
 
+        /* New Section Styles */
+        .lab-data {
+            font-family: monospace;
+            color: var(--color-accent);
+            background: rgba(0,0,0,0.8);
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .manifesto-quote {
+            font-size: 1.5rem;
+            font-style: italic;
+            border-left: 4px solid var(--color-secondary);
+            padding-left: 1rem;
+            color: #fff;
+            margin-top: 1rem;
+        }
+
         /* --- Footer --- */
         .footer {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: linear-gradient(to top, #000, transparent);
+            /* Ensure footer stacks correctly after pin */
+            background: linear-gradient(to top, #000 80%, rgba(0,0,0,0));
+            z-index: 20; /* Higher than canvas */
+            pointer-events: auto; /* Enable interaction */
+            position: relative; /* Ensure it flows naturally */
         }
 
         .social-links {
@@ -262,6 +285,7 @@
             justify-content: center;
             gap: 2rem;
             margin-bottom: 2rem;
+            flex-wrap: wrap;
         }
 
         .social-btn {
@@ -276,6 +300,7 @@
             align-items: center;
             justify-content: center;
             text-decoration: none;
+            background: rgba(0,0,0,0.5);
         }
 
         .social-btn:hover {
@@ -304,8 +329,12 @@
         @media (max-width: 768px) {
             .hero-title { font-size: 2.5rem; }
             .hero-subtitle { font-size: 1rem; }
-            .card { padding: 1.5rem; }
+            .card { padding: 1.5rem; width: 95%; }
             .section { padding: 1rem; }
+            .skill-grid { grid-template-columns: repeat(2, 1fr); }
+
+            /* Ensure pinned wrapper height is sufficient on mobile */
+            #story-pin-wrapper { height: 100vh; }
         }
     </style>
 
@@ -325,7 +354,7 @@
 
     <!-- Hero Section -->
     <section id="sec-hero" class="section">
-        <div class="content-wrapper" style="text-align: center;">
+        <div class="content-wrapper">
             <div class="avatar-container gs-reveal">
                 <img src="/assets/img/guild/bro_mao/avatar.webp" alt="Bro Mao Avatar">
             </div>
@@ -339,7 +368,7 @@
     <!-- Pinned Story Section (Replacement Effect) -->
     <div id="story-pin-wrapper">
         <!-- Card 1: Intro -->
-        <div class="card pinned-card" id="card-1">
+        <div class="card pinned-card">
             <h2 class="card-title">
                 <i class="fa-solid fa-user-ninja"></i>
                 半路出家
@@ -352,7 +381,7 @@
         </div>
 
         <!-- Card 2: Grind -->
-        <div class="card pinned-card" id="card-2">
+        <div class="card pinned-card">
             <h2 class="card-title">
                 <i class="fa-solid fa-fire-flame-curved"></i>
                 實戰紀錄
@@ -368,37 +397,69 @@
             </div>
         </div>
 
-        <!-- Card 3: Philosophy -->
-        <div class="card pinned-card" id="card-3">
+        <!-- Card 3: The Lab (New) -->
+        <div class="card pinned-card">
+            <h2 class="card-title">
+                <i class="fa-solid fa-flask"></i>
+                實驗室法則
+            </h2>
+            <div class="card-text">
+                我不迷信大神，只相信<span class="highlight">數據</span>。<br>
+                每一個流量波動背後，都是一次實驗。<br>
+                失敗了就修正，成功了就複製。
+            </div>
+            <div class="lab-data">
+                > INPUT: Content Strategy<br>
+                > PROCESS: Test -> Record -> Correct<br>
+                > OUTPUT: Sustainable Growth
+            </div>
+        </div>
+
+        <!-- Card 4: The Arsenal (New) -->
+        <div class="card pinned-card">
+            <h2 class="card-title">
+                <i class="fa-solid fa-toolbox"></i>
+                實戰軍火庫
+            </h2>
+            <div class="card-text">
+                不需要最強的裝備，只需要最順手的工具。<br>
+                把複雜的東西，拆解成一般人也能做的版本。
+            </div>
+            <div class="skill-grid">
+                <div class="skill-item"><i class="fa-brands fa-shopify"></i> 蝦皮分潤</div>
+                <div class="skill-item"><i class="fa-brands fa-instagram"></i> Instagram</div>
+                <div class="skill-item"><i class="fa-brands fa-threads"></i> Threads</div>
+                <div class="skill-item"><i class="fa-solid fa-chart-line"></i> 數據分析</div>
+                <div class="skill-item"><i class="fa-solid fa-robot"></i> ChatGPT</div>
+                <div class="skill-item"><i class="fa-solid fa-file-excel"></i> Excel</div>
+            </div>
+        </div>
+
+        <!-- Card 5: Philosophy (Manifesto) -->
+        <div class="card pinned-card">
             <h2 class="card-title">
                 <i class="fa-solid fa-microchip"></i>
                 生存哲學
             </h2>
             <div class="card-text">
-                分潤被調整過、帳號沒流量過，但到現在還沒被市場淘汰。<br>
-                比起教人『 快速成功 』，我比較擅長把複雜的東西，<br>
-                拆解成<span class="highlight">一般人也能做、也撐得久</span>的版本。
+                在這個圈子，跑得快不一定贏，活得久才是本事。<br>
+                分潤被調整過、帳號沒流量過，但到現在還沒被市場淘汰。
+            </div>
+            <div class="manifesto-quote">
+                "不是最聰明的那個，但是是撐夠久的毛哥。"
             </div>
         </div>
 
-        <!-- Card 4: Skills -->
-        <div class="card pinned-card" id="card-4">
+        <!-- Card 6: Skill Tree (Final Summary) -->
+        <div class="card pinned-card">
             <h2 class="card-title">
                 <i class="fa-solid fa-network-wired"></i>
-                技能樹亂點型玩家
+                技能樹亂點型
             </h2>
             <div class="card-text">
                 文案、社群、分潤、數據、流程、話術。<br>
                 哪個卡關就往哪補。<br>
-                <span class="highlight">不迷信大神，只相信測試、紀錄、修正。</span>
-            </div>
-            <div class="skill-grid">
-                <div class="skill-item">文案 Copywriting</div>
-                <div class="skill-item">社群 Community</div>
-                <div class="skill-item">分潤 Affiliate</div>
-                <div class="skill-item">數據 Data</div>
-                <div class="skill-item">流程 Process</div>
-                <div class="skill-item">話術 Scripts</div>
+                只給不想被話術割、只想穩穩把副業做起來的人。
             </div>
         </div>
     </div>
@@ -406,13 +467,7 @@
     <!-- Footer / CTA -->
     <section id="sec-footer" class="section footer">
         <div class="content-wrapper">
-            <h2 class="hero-title" style="font-size: 2.5rem; margin-bottom: 2rem;">毛哥實戰筆記</h2>
-            <div class="card-text" style="max-width: 600px; margin: 0 auto 3rem auto;">
-                把我實際走過、踩過、活下來的方法留下來。<br>
-                給不想被話術割、只想穩穩把副業做起來的人。<br>
-                <br>
-                <span class="highlight">不是最聰明的那個，但是是撐夠久的毛哥。</span>
-            </div>
+            <h2 class="hero-title glitch-text" data-text="JOIN THE LAB" style="font-size: 3rem; margin-bottom: 2rem;">毛哥實戰筆記</h2>
 
             <div class="social-links">
                 <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-btn" title="Instagram">
@@ -435,8 +490,6 @@
         </div>
     </section>
 
-    <div style="height: 50vh;"></div> <!-- Extra space for scroll -->
-
     <!-- Three.js Scene -->
     <script type="module">
         import * as THREE from 'three';
@@ -446,9 +499,9 @@
 
         // Config
         const CONFIG = {
-            particleCount: 2000,
-            particleRange: 100,
-            cameraZ: 50,
+            particleCount: 2500,
+            particleRange: 150,
+            cameraZ: 60,
             color1: 0x00FF00, // Neon Green
             color2: 0xFFD700, // Gold
         };
@@ -456,7 +509,8 @@
         // Setup
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.02); // Fog for depth
+        // Darker fog for depth
+        scene.fog = new THREE.FogExp2(0x050505, 0.015);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = CONFIG.cameraZ;
@@ -473,9 +527,9 @@
 
         const bloomPass = new UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            1.2, // Strength
-            0.5, // Radius
-            0.1  // Threshold
+            1.5, // Strength (Higher)
+            0.6, // Radius
+            0.2  // Threshold
         );
         composer.addPass(bloomPass);
 
@@ -511,6 +565,7 @@
         const posArray = new Float32Array(CONFIG.particleCount * 3);
         const colorsArray = new Float32Array(CONFIG.particleCount * 3);
         const sizesArray = new Float32Array(CONFIG.particleCount);
+        const velocityArray = new Float32Array(CONFIG.particleCount); // For "raining" effect
 
         const color1 = new THREE.Color(CONFIG.color1);
         const color2 = new THREE.Color(CONFIG.color2);
@@ -519,13 +574,13 @@
         for(let i=0; i<CONFIG.particleCount; i++) {
             const i3 = i * 3;
             // Spread particles in a tunnel shape
-            const radius = 20 + Math.random() * 30;
+            const radius = 10 + Math.random() * 50;
             const angle = Math.random() * Math.PI * 2;
-            const depth = (Math.random() - 0.5) * CONFIG.particleRange * 4;
+            const depth = (Math.random() - 0.5) * CONFIG.particleRange * 5;
 
-            posArray[i3] = Math.cos(angle) * radius;
-            posArray[i3+1] = Math.sin(angle) * radius;
-            posArray[i3+2] = depth;
+            posArray[i3] = Math.cos(angle) * radius; // X
+            posArray[i3+1] = Math.sin(angle) * radius; // Y
+            posArray[i3+2] = depth; // Z
 
             // Mix Green and Gold
             tempColor.lerpColors(color1, color2, Math.random());
@@ -534,6 +589,7 @@
             colorsArray[i3+2] = tempColor.b;
 
             sizesArray[i] = Math.random() * 2;
+            velocityArray[i] = 0.05 + Math.random() * 0.1; // Falling speed
         }
 
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
@@ -607,7 +663,7 @@
             ring2.rotation.z -= 0.01;
             ring3.rotation.x += 0.01;
 
-            // Particle flow
+            // Particle flow (Tunnel effect + "Rain")
             particles.rotation.z -= 0.002;
 
             // Mouse parallax
@@ -634,67 +690,58 @@
 
         // Pinned Story Animation (Replacement Effect)
         const pinnedCards = gsap.utils.toArray('.pinned-card');
+        const pinDuration = pinnedCards.length * 1000; // Dynamic duration
+
         const pinTl = gsap.timeline({
             scrollTrigger: {
                 trigger: "#story-pin-wrapper",
                 start: "top top",
-                end: "+=4000", // Long scroll distance for reading
+                end: `+=${pinDuration}`,
                 pin: true,
                 scrub: 1,
                 anticipatePin: 1
             }
         });
 
-        // Sequence: Card 1 In -> Out, Card 2 In -> Out, etc.
-        // We want Card 1 to be visible first, then fade out as Card 2 fades in.
+        // Sequence:
+        // 1. Initial State: Card 0 Visible.
+        // 2. Loop through cards to create transition pairs.
 
-        // Initial state: Card 1 is visible, others hidden
-        gsap.set(pinnedCards, { autoAlpha: 0, y: 50, scale: 0.95 });
+        gsap.set(pinnedCards, { autoAlpha: 0, y: 50, scale: 0.9 });
         gsap.set(pinnedCards[0], { autoAlpha: 1, y: 0, scale: 1 });
 
-        // Animation Timeline
-        // Step 1: Card 1 fades out, Card 2 fades in
-        pinTl.to(pinnedCards[0], { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
-             .to(pinnedCards[1], { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5"); // Overlap slightly
+        pinnedCards.forEach((card, i) => {
+            if (i === pinnedCards.length - 1) return; // Skip last card logic in loop
 
-        // Step 2: Card 2 fades out, Card 3 fades in
-        pinTl.to(pinnedCards[1], { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
-             .to(pinnedCards[2], { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5");
+            const nextCard = pinnedCards[i + 1];
 
-        // Step 3: Card 3 fades out, Card 4 fades in
-        pinTl.to(pinnedCards[2], { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
-             .to(pinnedCards[3], { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5");
-
-        // Step 4: Hold Card 4 for a bit, then let it fade out as we unpin
-        pinTl.to({}, { duration: 1 }); // Pause
-        // pinTl.to(pinnedCards[3], { autoAlpha: 0, y: -50, duration: 1 }); // Optional: fade out last card
+            // Current card out, Next card in
+            pinTl.to(card, { autoAlpha: 0, y: -50, scale: 1.1, duration: 1 })
+                 .to(nextCard, { autoAlpha: 1, y: 0, scale: 1, duration: 1 }, "<0.5"); // Overlap
+        });
 
         // Scene Scroll Interaction (Global 3D)
-        // Note: When pinning is involved, the total scroll height increases.
-        // We use document.body scrubbing which handles the total scrollable height naturally.
         ScrollTrigger.create({
             trigger: document.body,
             start: "top top",
             end: "bottom bottom",
-            scrub: 0.5, // Smooth scrubbing
+            scrub: 0.5,
             onUpdate: (self) => {
                 const p = self.progress;
 
-                // Move camera through tunnel deeper (increased range)
-                camera.position.z = CONFIG.cameraZ - (p * 120);
+                // Move camera through tunnel deeper
+                camera.position.z = CONFIG.cameraZ - (p * 200);
 
                 // Explode core
-                coreGroup.scale.setScalar(1 + p * 3);
-                coreGroup.rotation.z = p * Math.PI * 8;
-                coreGroup.rotation.y = p * Math.PI * 4;
+                coreGroup.scale.setScalar(1 + p * 4);
+                coreGroup.rotation.z = p * Math.PI * 10;
 
                 // Particles warp
-                particles.material.size = 1 + p * 4;
-                particles.rotation.z = -p * Math.PI * 2;
+                particles.material.size = 1 + p * 3;
 
-                // Color shift based on progress
-                const mix = Math.min(1, p * 1.5);
-                bloomPass.strength = 1.2 + mix * 0.8; // Increase bloom
+                // Bloom intensifies
+                const mix = Math.min(1, p * 2);
+                bloomPass.strength = 1.5 + mix * 1.0;
             }
         });
 
