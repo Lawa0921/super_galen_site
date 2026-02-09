@@ -66,7 +66,7 @@
             width: 100%; height: 100%;
             z-index: -2;
             pointer-events: none;
-            opacity: 0.6; /* Increased opacity for kaleidoscope visibility */
+            opacity: 0.4;
             mix-blend-mode: screen;
         }
 
@@ -651,7 +651,7 @@
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0;
-        bloomPass.strength = 2.0; // Increased bloom
+        bloomPass.strength = 1.5; // Slightly reduced bloom to not hide mirrors
         bloomPass.radius = 0.8;
         composer.addPass(bloomPass);
 
@@ -668,22 +668,98 @@
         const tunnel = new THREE.Mesh(torusGeo, torusMat);
         scene.add(tunnel);
 
-        // 2. Stars/Particles
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 3000;
-        const starPos = new Float32Array(starCount * 3);
-        for(let i=0; i<starCount*3; i++) {
-            starPos[i] = (Math.random() - 0.5) * 200;
-        }
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({
-            color: 0xff1493, // Pink stars
-            size: 0.3,
-            transparent: true,
-            opacity: 0.8
+        // 2. Shattered Mirrors (Floating Shards)
+        const shardGroup = new THREE.Group();
+        scene.add(shardGroup);
+
+        const loader = new THREE.TextureLoader();
+        // Load textures for the mirror shards
+        const texPaths = [
+            '/assets/img/guild/yumebi_emu/work1.webp',
+            '/assets/img/guild/yumebi_emu/work2.webp',
+            '/assets/img/guild/yumebi_emu/work3.webp',
+            '/assets/img/guild/yumebi_emu/work4.webp',
+            '/assets/img/guild/yumebi_emu/focus_eyes.webp',
+            '/assets/img/guild/yumebi_emu/focus_lips.webp'
+        ];
+
+        const textures = texPaths.map(path => {
+            const t = loader.load(path);
+            t.colorSpace = THREE.SRGBColorSpace;
+            return t;
         });
-        const starField = new THREE.Points(starGeo, starMat);
-        scene.add(starField);
+
+        const shardCount = 80;
+        for(let i=0; i<shardCount; i++) {
+            // Random triangle shape
+            const shape = new THREE.Shape();
+            const x1 = Math.random() - 0.5;
+            const y1 = Math.random() - 0.5;
+            const x2 = Math.random() - 0.5;
+            const y2 = Math.random() - 0.5;
+            const x3 = Math.random() - 0.5;
+            const y3 = Math.random() - 0.5;
+
+            shape.moveTo(x1, y1);
+            shape.lineTo(x2, y2);
+            shape.lineTo(x3, y3);
+            shape.lineTo(x1, y1);
+
+            const geometry = new THREE.ShapeGeometry(shape);
+
+            // Randomly assign a texture
+            const tex = textures[Math.floor(Math.random() * textures.length)];
+
+            // Map the texture to the shard coordinates (UV mapping)
+            const uvs = geometry.attributes.uv;
+            for (let j = 0; j < uvs.count; j++) {
+                // Simple planar mapping based on vertex position
+                const pos = geometry.attributes.position;
+                const x = pos.getX(j);
+                const y = pos.getY(j);
+                // Map -0.5..0.5 to 0..1, plus some random offset to show different parts
+                const u = (x + 0.5) + (Math.random() * 0.5);
+                const v = (y + 0.5) + (Math.random() * 0.5);
+                uvs.setXY(j, u, v);
+            }
+
+            const material = new THREE.MeshBasicMaterial({
+                map: tex,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.6 + Math.random() * 0.4
+            });
+
+            const shard = new THREE.Mesh(geometry, material);
+
+            // Random Position
+            shard.position.set(
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 30 - 10
+            );
+
+            // Random Rotation
+            shard.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+
+            // Random Scale
+            const s = Math.random() * 3 + 1;
+            shard.scale.set(s,s,s);
+
+            // Store animation data
+            shard.userData = {
+                rotSpeedX: (Math.random() - 0.5) * 0.02,
+                rotSpeedY: (Math.random() - 0.5) * 0.02,
+                floatSpeed: (Math.random() - 0.5) * 0.05,
+                initialY: shard.position.y
+            };
+
+            shardGroup.add(shard);
+        }
 
         // --- Animation Loop ---
         let time = 0;
@@ -695,9 +771,17 @@
             tunnel.rotation.z = time * 0.2;
             tunnel.rotation.x = Math.sin(time) * 0.2;
 
-            // Move Stars
-            starField.rotation.y = time * 0.05;
-            starField.rotation.z = -time * 0.02;
+            // Animate Shards
+            shardGroup.children.forEach(shard => {
+                shard.rotation.x += shard.userData.rotSpeedX;
+                shard.rotation.y += shard.userData.rotSpeedY;
+                shard.position.y = shard.userData.initialY + Math.sin(time + shard.position.x) * 2;
+
+                // Keep texture upright relative to view slightly? No, let them spin wildly for chaos.
+            });
+
+            // Slowly rotate entire shard group
+            shardGroup.rotation.y = time * 0.05;
 
             composer.render();
         });
@@ -744,6 +828,9 @@
                 camera.position.z = 20 - (p * 30); // Fly deeper
                 camera.rotation.z = p * Math.PI; // Spin camera
                 tunnel.material.opacity = 0.1 + (p * 0.2);
+
+                // Explode shards outward as we scroll?
+                shardGroup.scale.setScalar(1 + p * 0.5);
             }
         });
     </script>
