@@ -334,7 +334,7 @@
         <div class="mark-text">LIUAN</div>
     </a>
 
-    <div class="click-hint">[CLICK ANYWHERE FOR CHAOS]</div>
+    <div class="click-hint">[CLICK FOR CHAOS]</div>
 
     <div class="overlay">
         <!-- Hero Section -->
@@ -453,7 +453,14 @@
         // --- Load Meme Textures ---
         const textureLoader = new THREE.TextureLoader();
         const memeTextures = [];
-        const memeFiles = ['meme1.webp', 'meme2.webp', 'meme3.webp', 'meme4.webp', 'meme5.webp'];
+        const memeFiles = [
+            'doge.webp',
+            'woman_cat.webp',
+            'harold.webp',
+            'disaster.webp',
+            'success.webp',
+            'fine.webp'
+        ];
 
         memeFiles.forEach(file => {
             textureLoader.load(
@@ -702,30 +709,46 @@
         });
 
         // --- Global Chaos Interaction ---
+        let isChaotic = false;
+
         document.addEventListener('click', (e) => {
-            // Ignore if clicking a link or button
-            if (e.target.closest('a') || e.target.closest('button')) return;
+            // Ignore if clicking a link or button or if already running
+            if (e.target.closest('a') || e.target.closest('button') || isChaotic) return;
 
-            // Visual Chaos
-            const tl = gsap.timeline();
-            tl.to('body', { x: -5, duration: 0.05, yoyo: true, repeat: 3 })
-              .to('body', { x: 5, duration: 0.05, yoyo: true, repeat: 3 })
-              .to('body', { x: 0, duration: 0.05 });
+            isChaotic = true;
+            setTimeout(() => { isChaotic = false; }, 500); // Debounce
 
-            // Spawn Emojis at click position
-            for(let i=0; i<5; i++) {
+            // Camera Shake (3D) - Much cheaper than DOM shake
+            if (camera) {
+                const originalX = camera.position.x;
+                const originalY = camera.position.y;
+                gsap.to(camera.position, {
+                    x: originalX + (Math.random() - 0.5) * 1,
+                    y: originalY + (Math.random() - 0.5) * 1,
+                    duration: 0.05,
+                    yoyo: true,
+                    repeat: 5,
+                    onComplete: () => {
+                        camera.position.x = originalX;
+                        camera.position.y = originalY;
+                    }
+                });
+            }
+
+            // Spawn Emojis at click position (Reduced count slightly for safety)
+            for(let i=0; i<3; i++) {
                 const el = document.createElement('div');
                 el.className = 'muscle-emoji';
-                el.textContent = ['💪', '🔥', '🦍', '🏋️', '🧱', '💊'][Math.floor(Math.random()*6)];
-                el.style.left = (e.clientX + (Math.random()-0.5)*100) + 'px';
-                el.style.top = (e.clientY + (Math.random()-0.5)*100) + 'px';
+                el.textContent = ['💪', '🔥', '🦍', '🏋️', '🧱', '💊', '🚀', '💎', '🙌'][Math.floor(Math.random()*9)];
+                el.style.left = (e.clientX + (Math.random()-0.5)*50) + 'px';
+                el.style.top = (e.clientY + (Math.random()-0.5)*50) + 'px';
                 el.style.fontSize = (2 + Math.random()*2) + 'rem';
                 document.body.appendChild(el);
 
                 // Animate out
                 gsap.to(el, {
-                    y: -200 - Math.random()*300,
-                    x: (Math.random()-0.5)*200,
+                    y: -150 - Math.random()*150,
+                    x: (Math.random()-0.5)*100,
                     rotation: Math.random()*360,
                     opacity: 0,
                     duration: 1 + Math.random(),
@@ -733,8 +756,23 @@
                 });
             }
 
-            // Flash background
-            gsap.fromTo('#webgl-container', { filter: 'hue-rotate(0deg)' }, { filter: 'hue-rotate(90deg)', duration: 0.2, yoyo: true, repeat: 1 });
+            // Flash color overlay via a temporary DOM element instead of expensive canvas filter
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.backgroundColor = 'rgba(57, 255, 20, 0.2)'; // Neon Green tint
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '9998';
+            document.body.appendChild(flash);
+
+            gsap.to(flash, {
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => flash.remove()
+            });
         });
 
     </script>
