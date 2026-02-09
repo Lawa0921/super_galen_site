@@ -252,25 +252,6 @@
         .footer-credit a { color: #888; text-decoration: none; }
         .footer-credit a:hover { color: var(--c-neon-green); }
 
-        /* --- Instant Gains Interaction --- */
-        #gains-btn {
-            position: fixed; bottom: 2rem; right: 2rem; z-index: 99;
-            background: linear-gradient(45deg, #ff0000, #ff8800);
-            color: white; font-family: var(--font-meme); font-size: 1.5rem;
-            padding: 1rem 2rem; border: 4px solid white;
-            box-shadow: 5px 5px 0 #000;
-            cursor: pointer; pointer-events: auto;
-            transform: rotate(-5deg); transition: 0.2s;
-            text-transform: uppercase;
-        }
-        #gains-btn:hover {
-            transform: rotate(5deg) scale(1.1);
-            background: linear-gradient(45deg, #ff8800, #ff0000);
-        }
-        #gains-btn:active {
-            transform: scale(0.9);
-        }
-
         .muscle-emoji {
             position: fixed; font-size: 3rem; pointer-events: none; z-index: 9999;
             animation: fly-up 2s ease-out forwards;
@@ -298,13 +279,36 @@
         }
         @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
 
+        /* --- Marquee --- */
+        .marquee {
+            position: fixed; top: 0; width: 100%; background: var(--c-neon-green); color: #000;
+            overflow: hidden; z-index: 200; height: 30px; line-height: 30px;
+            font-family: var(--font-meme); font-size: 1.2rem;
+            white-space: nowrap;
+        }
+        .marquee-content {
+            display: inline-block;
+            animation: scroll-left 10s linear infinite;
+        }
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .click-hint {
+            position: fixed; bottom: 2rem; right: 2rem;
+            color: rgba(255,255,255,0.5); font-family: var(--font-tech);
+            font-size: 0.8rem; pointer-events: none;
+            animation: blink 2s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
         @media (max-width: 768px) {
             .meme-macro-text { font-size: 2.5rem; }
             .avatar-frame { width: 200px; height: 200px; }
             .section-content { flex-direction: column; padding: 0 1rem; justify-content: center; }
             .info-card { width: 100%; padding: 1.5rem; }
             .social-links { flex-direction: column; gap: 1rem; }
-            #gains-btn { bottom: 1rem; right: 1rem; font-size: 1rem; padding: 0.5rem 1rem; }
         }
     </style>
 </head>
@@ -315,6 +319,13 @@
         <div class="loader-bar"><div class="loader-fill"></div></div>
     </div>
 
+    <!-- Marquee -->
+    <div class="marquee">
+        <div class="marquee-content">
+            MUCH POWER /// SUCH MUSCLE /// DO YOU EVEN LIFT? /// LIGHT WEIGHT BABY! /// GET TO THE CHOPPA! /// GAINS LOADING... /// NEVER SKIP LEG DAY /// YES BUDDY!
+        </div>
+    </div>
+
     <div id="webgl-container"></div>
     <div id="scroll-spacer"></div>
 
@@ -323,7 +334,7 @@
         <div class="mark-text">LIUAN</div>
     </a>
 
-    <button id="gains-btn">🚨 PRESS FOR GAINS 🚨</button>
+    <div class="click-hint">[CLICK ANYWHERE FOR CHAOS]</div>
 
     <div class="overlay">
         <!-- Hero Section -->
@@ -439,6 +450,23 @@
         camera.add(headLamp);
         scene.add(camera);
 
+        // --- Load Meme Textures ---
+        const textureLoader = new THREE.TextureLoader();
+        const memeTextures = [];
+        const memeFiles = ['meme1.webp', 'meme2.webp', 'meme3.webp', 'meme4.webp', 'meme5.webp'];
+
+        memeFiles.forEach(file => {
+            textureLoader.load(
+                `/assets/img/guild/liuan/${file}`,
+                (texture) => {
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    memeTextures.push(texture);
+                },
+                undefined,
+                (err) => console.warn('Failed to load texture:', file)
+            );
+        });
+
         // --- Objects: "Tunnel of Gains" ---
         const tunnelGroup = new THREE.Group();
         scene.add(tunnelGroup);
@@ -452,28 +480,6 @@
         const materialCyan = new THREE.MeshStandardMaterial({
             color: 0x00FFFF, wireframe: true, emissive: 0x004444
         });
-
-        const count = 200;
-        for(let i=0; i<count; i++) {
-            const mesh = new THREE.Mesh(
-                Math.random() > 0.5 ? geometryBox : geometryBar,
-                Math.random() > 0.5 ? materialGreen : materialCyan
-            );
-
-            // Random position in a cylinder around Z axis
-            const theta = Math.random() * Math.PI * 2;
-            const radius = 10 + Math.random() * 20;
-            const z = i * -1 - Math.random() * 10; // Spread along Z
-
-            mesh.position.set(
-                Math.cos(theta) * radius,
-                Math.sin(theta) * radius,
-                z
-            );
-
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            tunnelGroup.add(mesh);
-        }
 
         // Floating Text Sprites (Now with Emojis and Memes)
         function createTextSprite(text, color, isEmoji = false) {
@@ -508,6 +514,9 @@
             return sprite;
         }
 
+        // Wait for textures to load slightly or just add them dynamically
+        // We will add placeholders first or add them in the loop
+
         const memePhrases = [
             { text: "GAINS", isEmoji: false },
             { text: "MUCH POWER", isEmoji: false },
@@ -522,6 +531,24 @@
             { text: "💀", isEmoji: true }
         ];
 
+        // Create initial objects
+        const count = 200;
+        for(let i=0; i<count; i++) {
+            const mesh = new THREE.Mesh(
+                Math.random() > 0.5 ? geometryBox : geometryBar,
+                Math.random() > 0.5 ? materialGreen : materialCyan
+            );
+
+            const theta = Math.random() * Math.PI * 2;
+            const radius = 10 + Math.random() * 20;
+            const z = i * -1 - Math.random() * 10;
+
+            mesh.position.set(Math.cos(theta) * radius, Math.sin(theta) * radius, z);
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            tunnelGroup.add(mesh);
+        }
+
+        // Add Text Sprites
         for(let i=0; i<40; i++) {
             const item = memePhrases[Math.floor(Math.random() * memePhrases.length)];
             const sprite = createTextSprite(item.text, '#fff', item.isEmoji);
@@ -532,14 +559,36 @@
 
             sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, z);
 
-            // Random slight rotation for chaos
             sprite.userData = {
                 rotateSpeed: (Math.random() - 0.5) * 0.1,
                 floatSpeed: (Math.random() - 0.5) * 0.05
             };
-
             tunnelGroup.add(sprite);
         }
+
+        // Add Image Memes (Wait a bit for textures or check in animate loop)
+        // Since we can't wait synchronously, we'll set an interval to add them once loaded
+        const addMemeInterval = setInterval(() => {
+            if (memeTextures.length === memeFiles.length) {
+                // Add some meme planes
+                for(let i=0; i<20; i++) {
+                    const texture = memeTextures[Math.floor(Math.random() * memeTextures.length)];
+                    const mat = new THREE.SpriteMaterial({ map: texture });
+                    const sprite = new THREE.Sprite(mat);
+
+                    // Maintain aspect ratio somewhat (assume square or landscape)
+                    sprite.scale.set(8, 8, 1);
+
+                    const theta = Math.random() * Math.PI * 2;
+                    const radius = 8 + Math.random() * 15;
+                    const z = -10 - Math.random() * 190;
+
+                    sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, z);
+                    tunnelGroup.add(sprite);
+                }
+                clearInterval(addMemeInterval);
+            }
+        }, 500);
 
 
         // --- GSAP Animation ---
@@ -652,28 +701,40 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- Interaction: Press for Gains ---
-        document.getElementById('gains-btn').addEventListener('click', () => {
+        // --- Global Chaos Interaction ---
+        document.addEventListener('click', (e) => {
+            // Ignore if clicking a link or button
+            if (e.target.closest('a') || e.target.closest('button')) return;
+
             // Visual Chaos
             const tl = gsap.timeline();
-            tl.to('body', { x: -10, duration: 0.05, yoyo: true, repeat: 5 })
-              .to('body', { x: 10, duration: 0.05, yoyo: true, repeat: 5 })
+            tl.to('body', { x: -5, duration: 0.05, yoyo: true, repeat: 3 })
+              .to('body', { x: 5, duration: 0.05, yoyo: true, repeat: 3 })
               .to('body', { x: 0, duration: 0.05 });
 
-            // Spawn Emojis
-            for(let i=0; i<20; i++) {
+            // Spawn Emojis at click position
+            for(let i=0; i<5; i++) {
                 const el = document.createElement('div');
                 el.className = 'muscle-emoji';
-                el.textContent = ['💪', '🔥', '🦍', '🏋️'][Math.floor(Math.random()*4)];
-                el.style.left = Math.random() * 100 + 'vw';
-                el.style.top = '100vh';
+                el.textContent = ['💪', '🔥', '🦍', '🏋️', '🧱', '💊'][Math.floor(Math.random()*6)];
+                el.style.left = (e.clientX + (Math.random()-0.5)*100) + 'px';
+                el.style.top = (e.clientY + (Math.random()-0.5)*100) + 'px';
+                el.style.fontSize = (2 + Math.random()*2) + 'rem';
                 document.body.appendChild(el);
 
-                setTimeout(() => el.remove(), 2000);
+                // Animate out
+                gsap.to(el, {
+                    y: -200 - Math.random()*300,
+                    x: (Math.random()-0.5)*200,
+                    rotation: Math.random()*360,
+                    opacity: 0,
+                    duration: 1 + Math.random(),
+                    onComplete: () => el.remove()
+                });
             }
 
             // Flash background
-            gsap.fromTo('#webgl-container', { filter: 'hue-rotate(0deg)' }, { filter: 'hue-rotate(360deg)', duration: 0.5 });
+            gsap.fromTo('#webgl-container', { filter: 'hue-rotate(0deg)' }, { filter: 'hue-rotate(90deg)', duration: 0.2, yoyo: true, repeat: 1 });
         });
 
     </script>
