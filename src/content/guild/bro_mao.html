@@ -6,10 +6,11 @@
     <title>毛哥 Bro Mao | 社群經營 x 蝦皮分潤</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <style>
         :root {
@@ -17,7 +18,9 @@
             --color-primary: #00FF00; /* Neon Green */
             --color-secondary: #FFD700; /* Gold */
             --color-accent: #FF00FF; /* Magenta */
+            --color-dark-glass: rgba(10, 10, 10, 0.85);
             --font-main: 'Noto Sans TC', sans-serif;
+            --font-code: 'Source Code Pro', monospace;
             --font-display: 'Orbitron', sans-serif;
         }
 
@@ -47,7 +50,7 @@
             transition: opacity 1.5s ease-out;
         }
 
-        /* --- Layout --- */
+        /* --- Global Utility --- */
         .section {
             position: relative;
             width: 100%;
@@ -57,247 +60,339 @@
             justify-content: center;
             align-items: center;
             padding: 4rem 2rem;
-            pointer-events: none; /* Pass through to canvas */
+            pointer-events: none;
         }
 
         .content-wrapper {
             pointer-events: auto;
-            max-width: 1000px;
+            max-width: 1100px;
             width: 100%;
             z-index: 10;
         }
 
-        /* --- Typography --- */
         h1, h2, h3 {
             font-family: var(--font-display);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        .glitch-text {
-            position: relative;
-            color: var(--color-primary);
-            font-weight: 900;
-        }
-
-        /* Simplified Glitch Effect */
-        .glitch-text::before {
-            content: attr(data-text);
-            position: absolute;
-            left: 2px;
-            text-shadow: -1px 0 var(--color-secondary);
-            top: 0;
-            color: var(--color-bg);
-            background: var(--color-bg);
-            overflow: hidden;
-            clip: rect(0, 900px, 0, 0);
-            animation: noise-anim-2 3s infinite linear alternate-reverse;
-        }
-
-        @keyframes noise-anim-2 {
-            0% { clip: rect(12px, 9999px, 5px, 0); }
-            5% { clip: rect(34px, 9999px, 15px, 0); }
-            10% { clip: rect(5px, 9999px, 86px, 0); }
-            15% { clip: rect(67px, 9999px, 2px, 0); }
-            20% { clip: rect(2px, 9999px, 10px, 0); }
-            100% { clip: rect(0, 0, 0, 0); }
-        }
-
         /* --- Hero --- */
-        #sec-hero {
-            height: 100vh;
-            text-align: center;
-        }
+        #sec-hero { height: 100vh; text-align: center; }
 
         .avatar-container {
-            width: 200px;
-            height: 200px;
+            width: 220px;
+            height: 220px;
             border-radius: 50%;
             overflow: hidden;
             border: 4px solid var(--color-primary);
-            box-shadow: 0 0 30px var(--color-primary);
+            box-shadow: 0 0 40px var(--color-primary);
             margin: 0 auto 2rem auto;
             position: relative;
         }
 
-        .avatar-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
 
         .hero-title {
-            font-size: 4rem;
+            font-size: 5rem;
             margin-bottom: 1rem;
             color: #fff;
             text-shadow: 0 0 20px rgba(0,255,0,0.5);
-        }
-
-        .hero-subtitle {
-            font-size: 1.2rem;
-            color: var(--color-secondary);
-            font-weight: 500;
-            background: rgba(0,0,0,0.6);
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            border: 1px solid var(--color-secondary);
+            position: relative;
             display: inline-block;
         }
 
-        /* --- The Narrative Stream (Consolidated) --- */
-        /* A single continuous container for the story */
-        .narrative-stream {
-            display: flex;
-            flex-direction: column;
-            gap: 8rem; /* Large gaps for pacing */
-            padding: 4rem 0;
+        /* Glitch Effect on Title */
+        .hero-title::before, .hero-title::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color-bg);
+        }
+        .hero-title::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--color-secondary);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 3s infinite linear alternate-reverse;
+        }
+        .hero-title::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--color-accent);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-2 2.5s infinite linear alternate-reverse;
         }
 
-        .narrative-block {
-            background: rgba(10, 10, 10, 0.8);
-            border-left: 4px solid var(--color-primary);
-            padding: 2.5rem;
-            border-radius: 0 12px 12px 0; /* Open left side */
-            backdrop-filter: blur(8px);
+        @keyframes glitch-anim {
+            0% { clip: rect(61px, 9999px, 52px, 0); }
+            20% { clip: rect(33px, 9999px, 11px, 0); }
+            40% { clip: rect(98px, 9999px, 98px, 0); }
+            60% { clip: rect(12px, 9999px, 34px, 0); }
+            100% { clip: rect(72px, 9999px, 86px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(35px, 9999px, 5px, 0); }
+            20% { clip: rect(6px, 9999px, 69px, 0); }
+            40% { clip: rect(51px, 9999px, 12px, 0); }
+            60% { clip: rect(3px, 9999px, 92px, 0); }
+            100% { clip: rect(82px, 9999px, 21px, 0); }
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-code);
+            font-size: 1.2rem;
+            color: var(--color-secondary);
+            background: rgba(0,0,0,0.7);
+            padding: 0.5rem 1.5rem;
+            border: 1px solid var(--color-secondary);
+            border-left: 5px solid var(--color-secondary);
+            display: inline-block;
+        }
+
+        /* --- UI Modules --- */
+
+        /* 1. Terminal (Origin) */
+        .ui-terminal {
+            background: rgba(10, 20, 10, 0.95);
+            border: 1px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 2rem;
+            font-family: var(--font-code);
+            color: var(--color-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 8rem;
             max-width: 800px;
-            margin: 0 auto;
-            opacity: 0; /* Prepare for scroll reveal */
-            transform: translateY(30px);
-            transition: all 0.6s ease-out;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .narrative-block.in-view {
-            opacity: 1;
-            transform: translateY(0);
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--color-primary);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            opacity: 0.7;
         }
 
-        .block-header {
+        .terminal-content p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background: var(--color-primary);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 2. Market Graph (Grind) */
+        .ui-market {
+            background: var(--color-dark-glass);
+            border-left: 4px solid var(--color-accent); /* Red/Magenta for volatility */
+            padding: 3rem;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 8rem;
+            position: relative;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .market-visual {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+            /* Simple CSS pattern for graph lines */
+            background-image: linear-gradient(0deg, transparent 24%, rgba(255, 0, 255, .3) 25%, rgba(255, 0, 255, .3) 26%, transparent 27%, transparent 74%, rgba(255, 0, 255, .3) 75%, rgba(255, 0, 255, .3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 0, 255, .3) 25%, rgba(255, 0, 255, .3) 26%, transparent 27%, transparent 74%, rgba(255, 0, 255, .3) 75%, rgba(255, 0, 255, .3) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+        }
+
+        .market-title {
+            color: var(--color-accent);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.3);
-            padding-bottom: 0.5rem;
         }
 
-        .block-icon {
-            font-size: 1.8rem;
-            color: var(--color-primary);
-        }
-
-        .block-title {
-            font-size: 1.8rem;
-            color: #fff;
-            margin: 0;
-        }
-
-        .block-content {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #ddd;
-        }
-
-        .highlight {
-            color: var(--color-secondary);
-            font-weight: bold;
-        }
-
-        /* Grid for Skills inside a block */
-        .skill-tags {
+        /* 3. Flowchart (Lab) */
+        .ui-lab {
             display: flex;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-            margin-top: 1.5rem;
+            flex-direction: column;
+            gap: 2rem;
+            margin-bottom: 8rem;
+            align-items: center;
         }
 
-        .skill-tag {
-            background: rgba(0, 255, 0, 0.1);
+        .lab-step {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--color-secondary);
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .lab-step:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+
+        .lab-arrow {
+            font-size: 2rem;
+            color: var(--color-secondary);
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+
+        /* 4. Arsenal Grid */
+        .ui-arsenal {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 8rem;
+            width: 100%;
+        }
+
+        .arsenal-card {
+            background: rgba(0, 20, 0, 0.6);
             border: 1px solid var(--color-primary);
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            color: var(--color-primary);
-            font-family: var(--font-display);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
         }
 
-        /* Data Box Style */
-        .data-box {
-            background: #000;
-            border: 1px dashed var(--color-accent);
-            padding: 1rem;
-            font-family: monospace;
-            color: var(--color-accent);
+        .arsenal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--color-primary);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s;
+        }
+
+        .arsenal-card:hover::before { transform: scaleX(1); }
+        .arsenal-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0, 255, 0, 0.1); }
+
+        .arsenal-icon { font-size: 3rem; color: var(--color-primary); margin-bottom: 1rem; }
+        .arsenal-name { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .arsenal-stat { font-family: var(--font-code); color: #888; font-size: 0.9rem; }
+
+        .stat-bar {
+            width: 100%;
+            height: 6px;
+            background: #222;
             margin-top: 1rem;
-            font-size: 0.9rem;
+            position: relative;
+        }
+        .stat-fill {
+            height: 100%;
+            background: var(--color-primary);
+            width: 0%; /* Animate via GSAP */
+        }
+
+        /* 5. Manifesto (Typography) */
+        .ui-manifesto {
+            height: 80vh; /* Full screen impact */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .manifesto-line {
+            font-size: 3rem;
+            font-weight: 900;
+            line-height: 1.2;
+            text-transform: uppercase;
+            color: transparent;
+            -webkit-text-stroke: 2px #fff;
+            opacity: 0.3;
+            transition: all 0.5s;
+        }
+
+        .manifesto-line.active {
+            color: #fff;
+            opacity: 1;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        }
+
+        .manifesto-signature {
+            margin-top: 3rem;
+            font-size: 1.5rem;
+            color: var(--color-secondary);
+            font-family: var(--font-code);
         }
 
         /* --- Footer --- */
         .footer {
-            min-height: 50vh; /* Shorter than full section */
+            min-height: 50vh;
             background: linear-gradient(to top, #000 90%, rgba(0,0,0,0));
             padding-top: 6rem;
         }
 
-        .social-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 2rem;
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 4rem;
-        }
-
-        .social-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            text-decoration: none;
-            color: #fff;
-            transition: all 0.3s;
+        .social-links {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
         }
 
-        .social-card:hover {
-            background: rgba(0, 255, 0, 0.1);
-            border-color: var(--color-primary);
-            transform: translateY(-5px);
-        }
-
-        .social-card i {
-            font-size: 2.5rem;
+        .social-btn {
+            font-size: 2rem;
             color: var(--color-primary);
-        }
-
-        .social-card span {
-            font-family: var(--font-display);
-            letter-spacing: 1px;
-        }
-
-        .copyright {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 2rem;
-        }
-
-        .copyright a {
-            color: var(--color-secondary);
+            border: 2px solid var(--color-primary);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-decoration: none;
+            transition: all 0.3s;
         }
+
+        .social-btn:hover {
+            background: var(--color-primary);
+            color: #000;
+            box-shadow: 0 0 20px var(--color-primary);
+        }
+
+        .copyright { color: #666; font-size: 0.9rem; }
+        .copyright a { color: var(--color-secondary); text-decoration: none; }
 
         /* --- Responsive --- */
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.8rem; }
-            .section { padding: 4rem 1.5rem; }
-            .narrative-stream { gap: 4rem; }
-            .narrative-block { padding: 1.5rem; border-left-width: 3px; }
-            .block-title { font-size: 1.5rem; }
-            .social-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-            .social-card { padding: 1.5rem; }
+            .hero-title { font-size: 3rem; }
+            .section { padding: 4rem 1rem; }
+            .ui-terminal, .ui-market, .ui-lab, .ui-arsenal { width: 100%; padding: 1.5rem; margin-bottom: 4rem; }
+            .arsenal-card { padding: 1.5rem; }
+            .manifesto-line { font-size: 2rem; }
         }
     </style>
 
@@ -321,95 +416,115 @@
             <div class="avatar-container gs-hero">
                 <img src="/assets/img/guild/bro_mao/avatar.webp" alt="Bro Mao Avatar">
             </div>
-            <h1 class="hero-title glitch-text gs-hero" data-text="BRO MAO">BRO MAO</h1>
+            <h1 class="hero-title gs-hero" data-text="BRO MAO">BRO MAO</h1>
+            <br>
             <div class="hero-subtitle gs-hero">
-                社群經營 x 蝦皮分潤 x 高中生實戰
+                > SYSTEM.INIT(Community_Ops, Shopee_Affiliate, Student_Life);
             </div>
         </div>
     </section>
 
-    <!-- The Narrative (Continuous Scroll) -->
-    <section id="sec-narrative" class="section">
-        <div class="content-wrapper narrative-stream">
+    <!-- Content Modules -->
+    <section id="sec-content" class="section">
+        <div class="content-wrapper">
 
-            <!-- Block 1: Origin -->
-            <div class="narrative-block gs-block">
-                <div class="block-header">
-                    <i class="fa-solid fa-user-ninja block-icon"></i>
-                    <h2 class="block-title">半路出家</h2>
+            <!-- Module 1: Terminal (Origin) -->
+            <div class="ui-terminal gs-reveal" data-color="#00FF00">
+                <div class="terminal-header">
+                    <span>user@bro_mao:~/origin</span>
+                    <span>BASH v4.2</span>
                 </div>
-                <div class="block-content">
-                    我是一個<span class="highlight">半路出家</span>社群經營與蝦皮分潤實戰的高中生。<br>
-                    沒有行銷背景，也不是什麼商學院出身。<br>
-                    而是一般高中生一路亂撞進內容圈的那種人。
+                <div class="terminal-content">
+                    <p>> whoami</p>
+                    <p id="typewriter-text" style="color: #ddd;"></p>
+                    <span class="terminal-cursor"></span>
                 </div>
             </div>
 
-            <!-- Block 2: Grind & Philosophy -->
-            <div class="narrative-block gs-block">
-                <div class="block-header">
-                    <i class="fa-solid fa-fire-flame-curved block-icon"></i>
-                    <h2 class="block-title">實戰紀錄</h2>
-                </div>
-                <div class="block-content">
-                    文案不是天生會寫，是寫到被忽略、被滑過、被冷處理後才慢慢學會。<br>
-                    流量也不是一開始就有，是一篇一篇發、一天一天熬出來的。<br><br>
-                    現在主要靠社群吃飯。<br>
-                    <span class="highlight">不拍短影音、不開直播。</span><br>
-                    靠文字、邏輯、實戰紀錄養活自己。
-                </div>
-            </div>
-
-            <!-- Block 3: The Lab -->
-            <div class="narrative-block gs-block">
-                <div class="block-header">
-                    <i class="fa-solid fa-flask block-icon"></i>
-                    <h2 class="block-title">實驗室法則</h2>
-                </div>
-                <div class="block-content">
-                    我不迷信大神，只相信<span class="highlight">數據</span>。<br>
-                    每一個流量波動背後，都是一次實驗。<br>
-                    失敗了就修正，成功了就複製。
-                    <div class="data-box">
-                        > INPUT: Content Strategy<br>
-                        > PROCESS: Test -> Record -> Correct<br>
-                        > OUTPUT: Sustainable Growth
-                    </div>
+            <!-- Module 2: Market Volatility (Grind) -->
+            <div class="ui-market gs-reveal" data-color="#FF00FF">
+                <div class="market-visual"></div>
+                <h2 class="market-title">
+                    <i class="fa-solid fa-chart-line"></i>
+                    實戰紀錄 // GRIND
+                </h2>
+                <div style="font-size: 1.2rem; line-height: 1.8; color: #ddd;">
+                    流量不是一開始就有。<br>
+                    是一篇一篇發、一天一天熬出來的。<br>
+                    <strong style="color: var(--color-accent);">分潤被調整過、帳號沒流量過。</strong><br>
+                    但我還在這裡。
                 </div>
             </div>
 
-            <!-- Block 4: Arsenal & Skills -->
-            <div class="narrative-block gs-block">
-                <div class="block-header">
-                    <i class="fa-solid fa-toolbox block-icon"></i>
-                    <h2 class="block-title">實戰軍火庫</h2>
+            <!-- Module 3: Lab Process (Flowchart) -->
+            <div class="ui-lab gs-reveal" data-color="#FFD700">
+                <h2 style="color: var(--color-secondary); margin-bottom: 2rem;">THE LAB // 實驗室法則</h2>
+
+                <div class="lab-step">
+                    <h3 style="color: var(--color-secondary);">INPUT</h3>
+                    <div style="font-family: var(--font-code); margin-top: 0.5rem;">Content Strategy + Trends</div>
                 </div>
-                <div class="block-content">
-                    不需要最強的裝備，只需要最順手的工具。<br>
-                    把複雜的東西，拆解成一般人也能做的版本。
-                    <div class="skill-tags">
-                        <div class="skill-tag">蝦皮分潤</div>
-                        <div class="skill-tag">Instagram</div>
-                        <div class="skill-tag">Threads</div>
-                        <div class="skill-tag">數據分析</div>
-                        <div class="skill-tag">ChatGPT</div>
-                        <div class="skill-tag">Excel</div>
-                    </div>
+
+                <i class="fa-solid fa-arrow-down lab-arrow"></i>
+
+                <div class="lab-step">
+                    <h3 style="color: #fff;">PROCESS</h3>
+                    <div style="font-family: var(--font-code); margin-top: 0.5rem;">Test -> Record -> Correct -> Repeat</div>
+                </div>
+
+                <i class="fa-solid fa-arrow-down lab-arrow"></i>
+
+                <div class="lab-step">
+                    <h3 style="color: var(--color-primary);">OUTPUT</h3>
+                    <div style="font-family: var(--font-code); margin-top: 0.5rem;">Sustainable Growth + Profit</div>
                 </div>
             </div>
 
-            <!-- Block 5: Manifesto -->
-            <div class="narrative-block gs-block" style="border-color: var(--color-secondary);">
-                <div class="block-header">
-                    <i class="fa-solid fa-microchip block-icon" style="color: var(--color-secondary);"></i>
-                    <h2 class="block-title" style="color: var(--color-secondary);">生存哲學</h2>
+            <!-- Module 4: Arsenal (Grid) -->
+            <div class="ui-arsenal gs-reveal" data-color="#00FF00">
+
+                <!-- Card 1 -->
+                <div class="arsenal-card">
+                    <i class="fa-brands fa-shopify arsenal-icon"></i>
+                    <div class="arsenal-name">Shopee Affiliate</div>
+                    <div class="arsenal-stat">Level 99 // Passive Income</div>
+                    <div class="stat-bar"><div class="stat-fill" data-width="95%"></div></div>
                 </div>
-                <div class="block-content">
-                    在這個圈子，跑得快不一定贏，活得久才是本事。<br>
-                    分潤被調整過、帳號沒流量過，但到現在還沒被市場淘汰。<br><br>
-                    <span class="highlight" style="font-size: 1.2rem; display: block; margin-top: 1rem; border-left: 2px solid var(--color-secondary); padding-left: 1rem;">
-                        "不是最聰明的那個，但是是撐夠久的毛哥。"
-                    </span>
+
+                <!-- Card 2 -->
+                <div class="arsenal-card">
+                    <i class="fa-brands fa-instagram arsenal-icon"></i>
+                    <div class="arsenal-name">Instagram</div>
+                    <div class="arsenal-stat">Level 85 // Community Ops</div>
+                    <div class="stat-bar"><div class="stat-fill" data-width="85%"></div></div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="arsenal-card">
+                    <i class="fa-solid fa-database arsenal-icon"></i>
+                    <div class="arsenal-name">Data Analysis</div>
+                    <div class="arsenal-stat">Level 70 // Optimization</div>
+                    <div class="stat-bar"><div class="stat-fill" data-width="70%"></div></div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="arsenal-card">
+                    <i class="fa-brands fa-threads arsenal-icon"></i>
+                    <div class="arsenal-name">Threads</div>
+                    <div class="arsenal-stat">Level 60 // Viral Growth</div>
+                    <div class="stat-bar"><div class="stat-fill" data-width="60%"></div></div>
+                </div>
+
+            </div>
+
+            <!-- Module 5: Manifesto (Typography) -->
+            <div class="ui-manifesto gs-reveal" data-color="#FFFFFF">
+                <div class="manifesto-line gs-text">不是最聰明</div>
+                <div class="manifesto-line gs-text">但是是</div>
+                <div class="manifesto-line gs-text" style="color: var(--color-primary); opacity: 1; -webkit-text-stroke: 0;">撐夠久的人</div>
+
+                <div class="manifesto-signature">
+                    // BRO MAO
                 </div>
             </div>
 
@@ -419,25 +534,13 @@
     <!-- Footer -->
     <section id="sec-footer" class="section footer">
         <div class="content-wrapper">
-            <h2 class="hero-title glitch-text" data-text="CONNECT" style="font-size: 3rem; margin-bottom: 3rem;">毛哥實戰筆記</h2>
+            <h2 class="hero-title" style="font-size: 3rem; margin-bottom: 2rem;">CONNECT</h2>
 
-            <div class="social-grid">
-                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-card">
-                    <i class="fa-brands fa-instagram"></i>
-                    <span>Instagram</span>
-                </a>
-                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-card">
-                    <i class="fa-brands fa-threads"></i>
-                    <span>Threads</span>
-                </a>
-                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-card">
-                    <i class="fa-solid fa-link"></i>
-                    <span>Portaly</span>
-                </a>
-                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-card">
-                    <i class="fa-brands fa-line"></i>
-                    <span>OpenChat</span>
-                </a>
+            <div class="social-links">
+                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-btn"><i class="fa-solid fa-link"></i></a>
+                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-btn"><i class="fa-brands fa-line"></i></a>
             </div>
 
             <div class="copyright">
@@ -455,9 +558,9 @@
 
         // Config
         const CONFIG = {
-            particleCount: 3000,
-            particleRange: 200,
-            cameraZ: 80,
+            particleCount: 2000,
+            particleRange: 150,
+            cameraZ: 60,
             color1: 0x00FF00, // Neon Green
             color2: 0xFFD700, // Gold
         };
@@ -465,7 +568,7 @@
         // Setup
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.012); // Softer fog
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = CONFIG.cameraZ;
@@ -482,185 +585,165 @@
 
         const bloomPass = new UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            1.2, // Strength
-            0.5, // Radius
+            1.5, // Strength
+            0.4, // Radius
             0.1  // Threshold
         );
         composer.addPass(bloomPass);
 
-        // Fade in
-        window.addEventListener('load', () => {
-            container.style.opacity = 1;
-        });
+        // Load event
+        window.addEventListener('load', () => { container.style.opacity = 1; });
 
-        // --- Assets: Textures ---
-        function createTextTexture(text, color) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
+        // --- Objects: Cyber Grid / Particles ---
+        // Instead of random particles, let's make a "Grid Floor" + "Floating Data"
 
-            ctx.fillStyle = color;
-            ctx.font = 'bold 80px "Orbitron"';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 15;
-            ctx.fillText(text, 64, 64);
+        // 1. Grid Floor
+        const gridHelper = new THREE.GridHelper(200, 50, CONFIG.color1, 0x111111);
+        gridHelper.position.y = -20;
+        scene.add(gridHelper);
 
-            return new THREE.CanvasTexture(canvas);
-        }
+        const gridHelperTop = new THREE.GridHelper(200, 50, CONFIG.color1, 0x111111);
+        gridHelperTop.position.y = 20;
+        scene.add(gridHelperTop);
 
-        const textureDollar = createTextTexture('$', '#00FF00');
-
-        // --- Objects: Particles ---
+        // 2. Floating Data (Particles)
         const particlesGeo = new THREE.BufferGeometry();
-        const posArray = new Float32Array(CONFIG.particleCount * 3);
-        const colorsArray = new Float32Array(CONFIG.particleCount * 3);
-        const sizesArray = new Float32Array(CONFIG.particleCount);
+        const count = 1500;
+        const posArray = new Float32Array(count * 3);
+        const colorArray = new Float32Array(count * 3);
 
-        const color1 = new THREE.Color(CONFIG.color1);
-        const color2 = new THREE.Color(CONFIG.color2);
-        const tempColor = new THREE.Color();
+        for(let i=0; i<count; i++) {
+            posArray[i*3] = (Math.random() - 0.5) * 200; // x
+            posArray[i*3+1] = (Math.random() - 0.5) * 40; // y
+            posArray[i*3+2] = (Math.random() - 0.5) * 200; // z
 
-        for(let i=0; i<CONFIG.particleCount; i++) {
-            const i3 = i * 3;
-            // Spread particles
-            const radius = 10 + Math.random() * 80;
-            const angle = Math.random() * Math.PI * 2;
-            const depth = (Math.random() - 0.5) * CONFIG.particleRange * 4;
-
-            posArray[i3] = Math.cos(angle) * radius; // X
-            posArray[i3+1] = Math.sin(angle) * radius; // Y
-            posArray[i3+2] = depth; // Z
-
-            // Mix Green and Gold
-            tempColor.lerpColors(color1, color2, Math.random());
-            colorsArray[i3] = tempColor.r;
-            colorsArray[i3+1] = tempColor.g;
-            colorsArray[i3+2] = tempColor.b;
-
-            sizesArray[i] = Math.random() * 2;
+            // Random Green/Gold/Magenta
+            const r = Math.random();
+            if(r < 0.6) { // Green
+                colorArray[i*3] = 0; colorArray[i*3+1] = 1; colorArray[i*3+2] = 0;
+            } else if (r < 0.8) { // Gold
+                colorArray[i*3] = 1; colorArray[i*3+1] = 0.8; colorArray[i*3+2] = 0;
+            } else { // Magenta
+                colorArray[i*3] = 1; colorArray[i*3+1] = 0; colorArray[i*3+2] = 1;
+            }
         }
 
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeo.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
-        particlesGeo.setAttribute('size', new THREE.BufferAttribute(sizesArray, 1));
+        particlesGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
         const particlesMat = new THREE.PointsMaterial({
-            size: 1,
+            size: 0.5,
             vertexColors: true,
-            map: textureDollar,
             transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
         });
 
         const particles = new THREE.Points(particlesGeo, particlesMat);
         scene.add(particles);
 
-        // --- Core Object (Right Side Anchor) ---
-        const coreGroup = new THREE.Group();
-        // Shift core to the right to balance text on left (on desktop)
-        coreGroup.position.x = 20;
-        scene.add(coreGroup);
-
-        const coreGeo = new THREE.IcosahedronGeometry(8, 1);
-        const coreMat = new THREE.MeshBasicMaterial({
-            color: CONFIG.color1,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.15
-        });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        coreGroup.add(core);
-
-        const innerCoreGeo = new THREE.IcosahedronGeometry(4, 0);
-        const innerCoreMat = new THREE.MeshBasicMaterial({
-            color: CONFIG.color2,
-            wireframe: true
-        });
-        const innerCore = new THREE.Mesh(innerCoreGeo, innerCoreMat);
-        coreGroup.add(innerCore);
-
-        // Rings around Core
-        const ringGeo = new THREE.TorusGeometry(15, 0.2, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({ color: CONFIG.color1, transparent: true, opacity: 0.3 });
-        const ring1 = new THREE.Mesh(ringGeo, ringMat);
-        const ring2 = new THREE.Mesh(ringGeo, ringMat);
-
-        ring1.rotation.x = Math.PI / 2;
-        ring2.rotation.y = Math.PI / 4;
-
-        coreGroup.add(ring1);
-        coreGroup.add(ring2);
-
-
         // --- Animation Loop ---
         let mouseX = 0;
         let mouseY = 0;
+        let targetSpeed = 0.05;
 
         window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
         });
 
-        gsap.ticker.add((time) => {
-            // Idle rotation
-            coreGroup.rotation.y += 0.005;
-            coreGroup.rotation.x += 0.002;
+        gsap.ticker.add(() => {
+            // Forward movement illusion
+            gridHelper.position.z = (gridHelper.position.z + targetSpeed) % 4;
+            gridHelperTop.position.z = (gridHelperTop.position.z + targetSpeed) % 4;
 
-            ring1.rotation.z += 0.005;
-            ring2.rotation.x -= 0.005;
+            particles.position.z += targetSpeed * 2;
+            if(particles.position.z > 50) particles.position.z = -50; // Loop
 
-            // Particles flow slowly
-            particles.rotation.z -= 0.001;
-
-            // Mouse parallax
-            scene.rotation.x += (mouseY - scene.rotation.x) * 0.05;
+            // Mouse interaction
             scene.rotation.y += (mouseX - scene.rotation.y) * 0.05;
+            scene.rotation.x += (mouseY - scene.rotation.x) * 0.05;
 
             composer.render();
         });
 
-        // --- Scroll Interactions ---
-        gsap.registerPlugin(ScrollTrigger);
+
+        // --- GSAP Interactions ---
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
         // Hero Reveal
         gsap.from('.gs-hero', {
             y: 50, opacity: 0, duration: 1.5, stagger: 0.2, ease: "power3.out"
         });
 
-        // Narrative Blocks Reveal
-        gsap.utils.toArray('.gs-block').forEach((block) => {
+        // 1. Terminal Typing Effect
+        ScrollTrigger.create({
+            trigger: '.ui-terminal',
+            start: "top 70%",
+            onEnter: () => {
+                gsap.to('#typewriter-text', {
+                    text: {
+                        value: "High School Student<br>Community Ops Leader<br>Shopee Affiliate Expert<br>Status: ONLINE",
+                        delimiter: ""
+                    },
+                    duration: 4,
+                    ease: "none"
+                });
+            }
+        });
+
+        // 2. Arsenal Bars Filling
+        ScrollTrigger.create({
+            trigger: '.ui-arsenal',
+            start: "top 70%",
+            onEnter: () => {
+                gsap.utils.toArray('.stat-fill').forEach(bar => {
+                    gsap.to(bar, {
+                        width: bar.dataset.width,
+                        duration: 1.5,
+                        ease: "power2.out"
+                    });
+                });
+            }
+        });
+
+        // 3. Manifesto Text Lighting Up
+        const manifestoLines = gsap.utils.toArray('.manifesto-line');
+        manifestoLines.forEach((line, i) => {
             ScrollTrigger.create({
-                trigger: block,
-                start: "top 80%", // Trigger when block enters bottom 20% of viewport
-                onEnter: () => block.classList.add('in-view'),
-                // markers: true
+                trigger: line,
+                start: "top 80%",
+                onEnter: () => line.classList.add('active'),
+                onLeaveBack: () => line.classList.remove('active')
             });
         });
 
-        // Scene Scroll Interaction
-        ScrollTrigger.create({
-            trigger: document.body,
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1, // Smooth scrub
-            onUpdate: (self) => {
-                const p = self.progress;
-
-                // Move camera slightly
-                camera.position.z = CONFIG.cameraZ - (p * 40);
-
-                // Rotate core faster on scroll
-                coreGroup.rotation.z = p * Math.PI * 2;
-
-                // Bloom pulse
-                bloomPass.strength = 1.2 + Math.sin(p * Math.PI) * 0.5;
-            }
+        // 4. Global Color Sync (Three.js Bloom Color)
+        // Change bloom color based on section
+        const sections = gsap.utils.toArray('[data-color]');
+        sections.forEach(section => {
+            ScrollTrigger.create({
+                trigger: section,
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => updateSceneColor(section.dataset.color),
+                onEnterBack: () => updateSceneColor(section.dataset.color)
+            });
         });
+
+        function updateSceneColor(hex) {
+            // Smoothly transition bloom threshold/color if possible
+            // For now, let's just shift the grid color slightly
+            const color = new THREE.Color(hex);
+            gsap.to(gridHelper.material.color, {
+                r: color.r, g: color.g, b: color.b,
+                duration: 1
+            });
+             gsap.to(gridHelperTop.material.color, {
+                r: color.r, g: color.g, b: color.b,
+                duration: 1
+            });
+        }
 
         // Resize
         window.addEventListener('resize', () => {
@@ -668,19 +751,7 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
-
-            // Adjust core position for mobile
-            if(window.innerWidth < 768) {
-                coreGroup.position.x = 0; // Center on mobile
-            } else {
-                coreGroup.position.x = 20; // Right on desktop
-            }
         });
-
-        // Initial check for mobile
-        if(window.innerWidth < 768) {
-            coreGroup.position.x = 0;
-        }
 
     </script>
 </body>
