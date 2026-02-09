@@ -122,9 +122,17 @@
             display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 2rem; margin-top: 3rem;
         }
+        .text-block {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .menu-item {
-            border: 1px solid #222; padding: 2rem;
-            background: rgba(10,10,10,0.8);
+            border: 1px solid #333; padding: 2rem;
+            background: rgba(5, 5, 5, 0.9);
             backdrop-filter: blur(5px);
             transition: 0.3s;
         }
@@ -152,10 +160,21 @@
             border-top: 1px solid #222;
             background: #000;
         }
+        footer .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
         .social-link {
             font-size: 2rem; color: #fff; text-decoration: none;
             transition: 0.3s;
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
         }
         .social-link:hover {
             color: var(--c-accent); transform: scale(1.1);
@@ -204,7 +223,7 @@
         <div class="container">
             <span class="mono-tag">Class: Designer</span>
             <h2 class="gs-reveal">Visual Alchemist</h2>
-            <div class="gs-reveal">
+            <div class="gs-reveal text-block">
                 <p>
                     曾經，我的世界是由像素與向量組成的。
                     <br>做了 <span class="highlight">2 年平面設計師</span>，又在廣州做了 <span class="highlight">2 年 UI 設計師</span>。
@@ -222,7 +241,7 @@
         <div class="container">
             <span class="mono-tag">Event: The Shift</span>
             <h2 class="gs-reveal neon-red">The Fire & Smoke</h2>
-            <div class="gs-reveal">
+            <div class="gs-reveal text-block">
                 <p>
                     疫情是一場全球性的重構。我回到了台灣，脫下設計師的外衣，換上了居酒屋的圍裙。
                 </p>
@@ -231,7 +250,7 @@
                     我的畫布變成了烤爐，我的設計工具變成了炭火。
                     從 UI 到 F&B，跨度看似巨大，但本質都是在創造讓人愉悅的體驗。
                 </p>
-                <p style="font-style: italic; color: #666;">
+                <p style="font-style: italic; color: #888;">
                     *其實本科系是企業管理，技能樹完全是亂點的。*
                 </p>
             </div>
@@ -278,13 +297,15 @@
         <div class="container" style="text-align: center;">
             <span class="mono-tag">Current Mission</span>
             <h2 class="gs-reveal">Vibe Coding</h2>
-            <p class="gs-reveal" style="margin: 0 auto; font-size: 1.3rem;">
-                自認學習能力很強，不管設計還是餐飲都是出社會後才學的。<br>
-                最近正在探索 <span class="highlight">Vibe Coding</span> 的領域。
-            </p>
-            <p class="gs-reveal" style="margin: 2rem auto 0; font-family: var(--f-mono);">
-                > GOAL: Help small F&B owners solve problems.
-            </p>
+            <div class="gs-reveal text-block" style="display: inline-block; text-align: left;">
+                <p style="margin: 0 auto; font-size: 1.3rem; text-align: center;">
+                    自認學習能力很強，不管設計還是餐飲都是出社會後才學的。<br>
+                    最近正在探索 <span class="highlight">Vibe Coding</span> 的領域。
+                </p>
+                <p style="margin: 2rem auto 0; font-family: var(--f-mono); text-align: center;">
+                    > GOAL: Help small F&B owners solve problems.
+                </p>
+            </div>
         </div>
     </section>
 
