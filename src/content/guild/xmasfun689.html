@@ -3,27 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XmasFun689 - Industrial Forge</title>
+    <title>XmasFun689 - Arcane Industrial Complex</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@500;700&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Share+Tech+Mono&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <style>
         :root {
             --c-void: #050508;
             --c-gold: #FFD700;
             --c-plasma: #00F3FF;
-            --c-water: #0077BE;
+            --c-water: #0088ff;
+            --c-alert: #ff3333;
 
             --f-magic: 'Cinzel', serif;
-            --f-tech: 'Rajdhani', sans-serif;
+            --f-tech: 'Share Tech Mono', monospace;
             --f-body: 'Noto Serif TC', serif;
         }
 
@@ -33,156 +35,200 @@
         /* WebGL */
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
 
-        /* Loading */
+        /* Loader */
         #loader {
             position: fixed; inset: 0; background: #000; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .loader-text {
-            font-family: var(--f-tech); color: var(--c-plasma); letter-spacing: 5px; animation: blink 1s infinite;
-        }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        .loader-text { font-family: var(--f-tech); color: var(--c-gold); font-size: 1.2rem; letter-spacing: 3px; }
+        .loader-bar { width: 150px; height: 2px; background: #333; margin-top: 10px; position: relative; overflow: hidden; }
+        .loader-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--c-gold); }
 
         /* Layout */
-        .main-scroller { position: relative; z-index: 10; }
+        .scroller { position: relative; z-index: 10; padding-bottom: 20vh; }
 
         .section {
             min-height: 100vh;
             display: flex; align-items: center;
-            padding: 2rem 5%;
-            pointer-events: none; /* Let click pass to 3D if needed */
+            padding: 4rem 5%;
+            pointer-events: none;
         }
 
-        .content-box {
+        /* Magic Data Slate */
+        .data-slate {
             pointer-events: auto;
-            width: 100%; max-width: 500px;
-            background: rgba(8, 8, 12, 0.85);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(12px);
-            padding: 2.5rem;
+            width: 100%; max-width: 550px;
+            background: rgba(10, 12, 16, 0.9);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            backdrop-filter: blur(15px);
+            padding: 3rem;
             position: relative;
-            transform: translateY(50px); opacity: 0; /* GSAP Init */
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transform: perspective(1000px) rotateY(5deg);
+            opacity: 0; /* GSAP */
+            box-shadow: -20px 20px 60px rgba(0,0,0,0.5);
         }
 
-        /* Tech Corners */
-        .content-box::before {
-            content: ''; position: absolute; top: -1px; left: -1px; width: 30px; height: 30px;
-            border-top: 3px solid var(--c-plasma); border-left: 3px solid var(--c-plasma);
+        .data-slate::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--c-gold), transparent);
         }
-        .content-box::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px; width: 30px; height: 30px;
-            border-bottom: 3px solid var(--c-plasma); border-right: 3px solid var(--c-plasma);
-        }
+
+        /* Elemental Accents */
+        .slate-earth { border-color: var(--c-gold); }
+        .slate-earth::before { background: var(--c-gold); }
+
+        .slate-water { border-color: var(--c-water); }
+        .slate-water::before { background: var(--c-water); }
+
+        .slate-plasma { border-color: var(--c-plasma); }
+        .slate-plasma::before { background: var(--c-plasma); }
 
         /* Typography */
-        h1 { font-family: var(--f-magic); font-size: 3rem; margin: 0; line-height: 1; text-transform: uppercase; color: white; }
-        h2 { font-family: var(--f-magic); font-size: 2rem; margin: 0 0 1rem; color: white; }
-        .sub-head { font-family: var(--f-tech); color: var(--c-gold); letter-spacing: 2px; font-size: 0.9rem; display: block; margin-bottom: 1rem; }
+        h1 { font-family: var(--f-magic); font-size: 3.5rem; margin: 0; line-height: 1; text-transform: uppercase; color: white; text-shadow: 0 0 20px rgba(255,215,0,0.3); }
+        h2 { font-family: var(--f-magic); font-size: 2.2rem; margin: 0 0 1rem; color: white; display: flex; align-items: center; gap: 1rem; }
+        .sub-code { font-family: var(--f-tech); color: #888; font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 1.5rem; display: block; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
 
-        p { color: #ccc; line-height: 1.8; font-size: 1.05rem; margin-bottom: 1.5rem; text-align: justify; }
+        p { color: #ccc; line-height: 1.8; font-size: 1.1rem; margin-bottom: 1.5rem; text-align: justify; }
 
-        .tech-img {
-            width: 100%; border-radius: 2px; border: 1px solid rgba(255,255,255,0.2);
-            margin-bottom: 1.5rem; display: block;
+        .highlight { color: white; font-weight: bold; }
+        .gold { color: var(--c-gold); }
+        .cyan { color: var(--c-plasma); }
+        .blue { color: var(--c-water); }
+
+        /* Images */
+        .holo-frame {
+            padding: 5px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.02); margin-bottom: 1.5rem;
         }
+        .holo-img { width: 100%; display: block; filter: contrast(1.1); }
 
-        /* Left/Right Logic */
-        .align-left { justify-content: flex-start; }
-        .align-right { justify-content: flex-end; } /* Optional if we want zigzag */
+        /* Skill Grid */
+        .skill-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+        .skill-item {
+            display: flex; align-items: center; gap: 10px;
+            font-family: var(--f-tech); font-size: 0.9rem; color: #aaa;
+            border: 1px solid rgba(255,255,255,0.1); padding: 10px;
+        }
+        .skill-item i { font-size: 1.2rem; }
 
         /* Footer */
         .footer {
-            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 40vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
             background: linear-gradient(to top, #000, transparent); pointer-events: auto;
         }
-        .social-bar { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+        .social-bar { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; }
         .social-btn {
-            width: 50px; height: 50px; border: 1px solid #555; border-radius: 50%;
+            width: 60px; height: 60px; border: 1px solid #444; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; color: white;
             transition: 0.3s; background: rgba(0,0,0,0.8);
         }
-        .social-btn:hover { border-color: var(--c-plasma); color: var(--c-plasma); transform: scale(1.1); box-shadow: 0 0 20px var(--c-plasma); }
-        .social-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        .social-btn:hover { border-color: var(--c-gold); color: var(--c-gold); transform: scale(1.1); box-shadow: 0 0 20px var(--c-gold); }
+        .social-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
         @media (max-width: 768px) {
-            .align-left, .align-right { justify-content: center; }
-            .content-box { width: 100%; padding: 1.5rem; }
+            .section { padding: 4rem 1.5rem; justify-content: center; }
+            .data-slate { padding: 2rem; transform: none !important; }
             h1 { font-size: 2.5rem; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="loader-text">SYSTEM BOOT...</div></div>
+    <div id="loader">
+        <div class="loader-text">ARCANE FORGE ONLINE</div>
+        <div class="loader-bar"><div class="loader-fill" id="load-bar"></div></div>
+    </div>
+
     <div id="webgl-container"></div>
 
-    <div class="main-scroller">
+    <div class="scroller">
 
         <!-- 1. Hero -->
-        <section class="section align-left">
-            <div class="content-box">
-                <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:1.5rem;">
-                    <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:100px; height:100px; border-radius:50%; border:2px solid var(--c-gold); object-fit:cover;">
+        <section class="section">
+            <div class="data-slate slate-earth">
+                <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem;">
+                    <div style="position:relative;">
+                        <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:2px solid var(--c-gold);">
+                        <div style="position:absolute; bottom:-5px; right:-5px; background:var(--c-void); border:1px solid var(--c-gold); padding:2px 8px; font-size:0.7rem; font-family:var(--f-tech); color:var(--c-gold);">LV.8</div>
+                    </div>
                     <div>
-                        <span class="sub-head" style="margin:0; color:var(--c-plasma)">LVL.8 BATTLEMAGE</span>
-                        <h1>Plasma<br>Warlord</h1>
+                        <span class="sub-code" style="margin:0; border:none; color:var(--c-plasma);">// SITE COMMANDER</span>
+                        <h1>Magitek<br>Warlord</h1>
                     </div>
                 </div>
                 <p>
-                    「戰士的體格，召喚師的靈魂。」<br>
-                    在轟鳴的機械工廠中，我是引導能量的魔導士。<br>
-                    以汗水為觸媒，將鋼鐵與魔法結合。
+                    「擁有<b>戰士的體格</b>，卻守護著<b>召喚師的靈魂</b>。」
                 </p>
-                <div style="font-family:var(--f-tech); color:var(--c-gold); font-size:0.8rem;">
-                    <i class="fa-solid fa-signal"></i> SIGNAL STRENGTH: 100%
+                <p>
+                    在這個鋼鐵與粉塵交織的迷宮中，我是引導秩序的魔導士。
+                    八年的工地煉金術，將汗水與意志熔鑄成城市的基石。
+                    我手握雷電與流水，駕馭著大地的鋼鐵巨獸。
+                </p>
+                <div class="skill-grid">
+                    <div class="skill-item"><i class="fa-solid fa-hammer gold"></i> STR: S+</div>
+                    <div class="skill-item"><i class="fa-solid fa-brain cyan"></i> INT: A</div>
+                    <div class="skill-item"><i class="fa-solid fa-shield-halved gold"></i> DEF: S</div>
+                    <div class="skill-item"><i class="fa-solid fa-wand-magic-sparkles cyan"></i> MANA: High</div>
                 </div>
             </div>
         </section>
 
-        <!-- 2. Earth Gear -->
-        <section class="section align-left">
-            <div class="content-box" style="border-left: 4px solid var(--c-gold);">
-                <span class="sub-head">SECTOR 01: HEAVY METAL</span>
-                <h2>Earth Constructs</h2>
-                <img src="/assets/img/guild/xmasfun689/excavator.webp" class="tech-img">
+        <!-- 2. Earth (Heavy Machinery) -->
+        <section class="section">
+            <div class="data-slate slate-earth">
+                <span class="sub-code">SECTOR 01: EARTH & STEEL</span>
+                <h2><i class="fa-solid fa-layer-group gold"></i> Terraforming</h2>
+                <div class="holo-frame">
+                    <img src="/assets/img/guild/xmasfun689/excavator.webp" class="holo-img">
+                </div>
                 <p>
                     <b>大地魔像 (Excavator)</b><br>
-                    工地的先鋒。雖然差一點考到證照，但這台鋼鐵巨獸已是我的延伸。
-                    負責開疆闢土，將混亂的地形重塑為秩序的基座。
+                    我的首席召喚獸。這隻鋼鐵手臂能輕易撕裂大地，重塑地形。
+                    雖然與執照擦肩而過（嘆），但這份操作手感早已刻入靈魂。在轟鳴聲中，我與它合而為一。
+                </p>
+                <p>
+                    <b>鎮壓巨獸 (Roller)</b><br>
+                    秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
+                </p>
+                <div class="skill-grid">
+                    <div class="skill-item" style="border-color:var(--c-gold); color:var(--c-gold);">SKILL: EXCAVATION</div>
+                    <div class="skill-item" style="border-color:var(--c-gold); color:var(--c-gold);">SKILL: PAVING</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Water & Lightning (Utility) -->
+        <section class="section">
+            <div class="data-slate slate-plasma">
+                <span class="sub-code">SECTOR 02: FLUID & ENERGY</span>
+                <h2><i class="fa-solid fa-bolt cyan"></i> Dual Arts</h2>
+                <p>
+                    <b>水之脈絡 (Hydro)</b><br>
+                    持證水電工的奧義。建築物如同巨大的生物，而管道是它的血管。
+                    我通曉流體力學，確保生命之源在其中順暢流動，冷卻這座鋼鐵森林的躁動。
+                </p>
+                <div style="width:100%; height:1px; background:linear-gradient(90deg, transparent, var(--c-plasma), transparent); margin:1.5rem 0;"></div>
+                <p>
+                    <b>雷之神經 (Electro)</b><br>
+                    編織能量的網。在看不見的牆壁中，佈設著傳遞意志的神經網路。
+                    朋友稱我為「水電土三系混合大法師」，因為我掌控著這座迷宮的生命律動。
                 </p>
             </div>
         </section>
 
-        <!-- 3. Water Gear -->
-        <section class="section align-left">
-            <div class="content-box" style="border-left: 4px solid var(--c-water);">
-                <span class="sub-head" style="color:var(--c-water)">SECTOR 02: HYDRO</span>
-                <h2 style="color:var(--c-water)">Fluid Dynamics</h2>
-                <div style="display:flex; gap:10px; margin-bottom:1rem;">
-                    <div style="background:rgba(0,119,190,0.2); padding:5px 10px; font-family:var(--f-tech); font-size:0.8rem;">PLUMBING</div>
-                    <div style="background:rgba(0,119,190,0.2); padding:5px 10px; font-family:var(--f-tech); font-size:0.8rem;">LICENSE</div>
+        <!-- 4. Soul (Sanctuary) -->
+        <section class="section">
+            <div class="data-slate slate-water" style="border-color: #bc13fe;">
+                <span class="sub-code" style="color: #bc13fe;">SECTOR 03: INNER SANCTUARY</span>
+                <h2 style="color: #bc13fe;"><i class="fa-solid fa-heart"></i> Soft Core</h2>
+                <div class="holo-frame">
+                    <img src="/assets/img/guild/xmasfun689/plushies.webp" class="holo-img">
                 </div>
                 <p>
-                    通曉流體的奧義。
-                    在看不見的管道中，引導生命之源。這座巨大機械塔的冷卻與循環，皆由我掌控。
-                </p>
-            </div>
-        </section>
-
-        <!-- 4. Plasma/Soul -->
-        <section class="section align-left">
-            <div class="content-box" style="border-left: 4px solid var(--c-plasma);">
-                <span class="sub-head">SECTOR 03: SOUL ANCHOR</span>
-                <h2 style="color:var(--c-plasma)">Core Resonance</h2>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
-                    <img src="/assets/img/guild/xmasfun689/roller.webp" class="tech-img" style="margin:0; height:120px; object-fit:cover;">
-                    <img src="/assets/img/guild/xmasfun689/plushies.webp" class="tech-img" style="margin:0; height:120px; object-fit:cover;">
-                </div>
-                <p>
-                    <b>雷鳴脈衝 & 柔軟之心</b><br>
-                    掌控電力網絡，點亮城市神經。<br>
-                    在單人副本的盡頭，<b>猴子布偶</b> 與 <b>Kururu 曹長</b> 是這身重甲下最柔軟的秘密。
+                    <b>召喚師的秘密花園</b><br>
+                    卸下重甲，戰士亦有溫柔的一面。
+                    習慣了單人副本的孤獨，<b>猴子布偶</b> 與 <b>Kururu 曹長</b> 是我最忠實的使魔。
+                    在這冷硬的工業世界裡，它們守護著我未曾磨滅的初心。
                 </p>
             </div>
         </section>
@@ -198,23 +244,23 @@
         </footer>
     </div>
 
+    <!-- MAIN SCRIPT (Three.js) -->
     <script type="module">
         import * as THREE from 'https://esm.sh/three@0.160.0';
         import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
         import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-        gsap.registerPlugin(ScrollTrigger);
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
         // --- Init Scene ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050508, 0.03); // Void Fog
+        scene.fog = new THREE.FogExp2(0x050508, 0.03);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        // Position Camera to the LEFT so lookAt(0,0,0) puts the object on the RIGHT
         camera.position.set(-5, 0, 15);
-        camera.lookAt(2, 0, 0); // Focus slightly right
+        camera.lookAt(2, 0, 0);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -238,15 +284,23 @@
         mainLight.position.set(-10, 10, 10);
         scene.add(mainLight);
 
-        // --- Geometry Factory ---
-        function createGear(r, teeth, color) {
+        // --- GEAR & FACTORY GENERATION ---
+
+        // Material Library
+        const matGold = new THREE.MeshStandardMaterial({
+            color: 0xFFD700, metalness: 0.8, roughness: 0.2, emissive: 0xFFD700, emissiveIntensity: 0.1
+        });
+        const matBlue = new THREE.MeshStandardMaterial({
+            color: 0x0077BE, metalness: 0.9, roughness: 0.1, emissive: 0x0077BE, emissiveIntensity: 0.2
+        });
+        const matCyan = new THREE.MeshStandardMaterial({
+            color: 0x00F3FF, metalness: 0.9, roughness: 0.1, emissive: 0x00F3FF, emissiveIntensity: 0.3
+        });
+
+        function createGear(radius, teeth, mat) {
             const group = new THREE.Group();
-            const mat = new THREE.MeshStandardMaterial({
-                color: color, metalness: 0.8, roughness: 0.3,
-                emissive: color, emissiveIntensity: 0.2
-            });
-            // Ring
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.5, 16, 50), mat);
+            // Core Ring
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.6, 16, 50), mat);
             ring.rotation.x = Math.PI/2;
             group.add(ring);
             // Teeth
@@ -254,12 +308,12 @@
             for(let i=0; i<360; i+=360/teeth) {
                 const rad = i * Math.PI / 180;
                 const tooth = new THREE.Mesh(toothGeo, mat);
-                tooth.position.set(Math.cos(rad)*r, 0, Math.sin(rad)*r);
+                tooth.position.set(Math.cos(rad)*radius, 0, Math.sin(rad)*radius);
                 tooth.rotation.y = -rad;
                 group.add(tooth);
             }
             // Spokes
-            const spoke = new THREE.Mesh(new THREE.BoxGeometry(r*2, 0.5, 0.5), mat);
+            const spoke = new THREE.Mesh(new THREE.BoxGeometry(radius*2, 0.5, 0.5), mat);
             group.add(spoke);
             const spoke2 = spoke.clone();
             spoke2.rotation.y = Math.PI/2;
@@ -267,109 +321,124 @@
             return group;
         }
 
-        const gearCore = new THREE.Group();
-        gearCore.position.x = 4; // Shift core to the RIGHT side of the world
-        scene.add(gearCore);
+        const gearGroup = new THREE.Group();
+        gearGroup.position.x = 4;
+        scene.add(gearGroup);
 
-        // Gear Stack
-        const gear1 = createGear(5, 12, 0xFFD700);
+        const gear1 = createGear(5, 12, matGold);
         gear1.position.y = -6;
-        gearCore.add(gear1);
+        gearGroup.add(gear1);
 
-        const gear2 = createGear(4, 10, 0x0077BE);
+        const gear2 = createGear(4, 10, matBlue);
         gear2.position.y = 2;
-        gearCore.add(gear2);
+        gearGroup.add(gear2);
 
-        const gear3 = createGear(3, 8, 0x00F3FF);
+        const gear3 = createGear(3, 8, matCyan);
         gear3.position.y = 9;
-        gearCore.add(gear3);
+        gearGroup.add(gear3);
 
-        // Plasma Links
+        // --- ELEMENTAL PARTICLES ---
+
+        // 1. Earth Crystals (Floating Ores)
+        const oreGeo = new THREE.OctahedronGeometry(0.3);
+        const oreGroup = new THREE.Group();
+        for(let i=0; i<30; i++) {
+            const m = new THREE.Mesh(oreGeo, matGold);
+            m.position.set((Math.random()-0.5)*12, (Math.random()-0.5)*5 - 6, (Math.random()-0.5)*12);
+            m.rotation.set(Math.random(), Math.random(), Math.random());
+            oreGroup.add(m);
+        }
+        gearGroup.add(oreGroup);
+
+        // 2. Water Steam (Particles)
+        const steamGeo = new THREE.BufferGeometry();
+        const steamPos = new Float32Array(150 * 3);
+        steamGeo.setAttribute('position', new THREE.BufferAttribute(steamPos, 3));
+        const steamMat = new THREE.PointsMaterial({ color: 0x0077BE, size: 0.15, transparent: true, opacity: 0.6 });
+        const steam = new THREE.Points(steamGeo, steamMat);
+        steam.position.y = 2; // Near water gear
+        gearGroup.add(steam);
+
+        // 3. Lightning Arcs
         const plasmaMat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
-        function createLink(y1, y2) {
+        function createArc(y1, y2) {
             const geo = new THREE.BufferGeometry();
-            const pos = new Float32Array(30 * 3);
+            const pos = new Float32Array(20 * 3); // 20 segments
             geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
             const line = new THREE.Line(geo, plasmaMat);
-            gearCore.add(line);
+            gearGroup.add(line);
             return { mesh: line, y1: y1, y2: y2 };
         }
-        const links = [createLink(-6, 2), createLink(2, 9)];
+        const arcs = [createArc(-6, 2), createArc(2, 9)];
 
-        // --- Background Density ---
-        // 1. Factory Wall Grid (Moving)
-        const wallGeo = new THREE.PlaneGeometry(100, 100, 20, 20);
-        const wallMat = new THREE.MeshBasicMaterial({ color: 0x222222, wireframe: true, transparent: true, opacity: 0.1 });
-        const wall = new THREE.Mesh(wallGeo, wallMat);
-        wall.position.z = -10;
-        scene.add(wall);
-
-        // 2. Distant Gears
-        const distGearGeo = new THREE.CylinderGeometry(2, 2, 0.5, 8);
-        const distGearMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-        const bgGears = new THREE.InstancedMesh(distGearGeo, distGearMat, 20);
-        const dummy = new THREE.Object3D();
-        for(let i=0; i<20; i++) {
-            dummy.position.set(
-                (Math.random()-0.5)*40 + 10,
-                (Math.random()-0.5)*40,
-                -15 - Math.random()*10
-            );
-            dummy.rotation.x = Math.PI/2;
-            dummy.updateMatrix();
-            bgGears.setMatrixAt(i, dummy.matrix);
-        }
-        scene.add(bgGears);
-
-        // --- Animation ---
+        // --- ANIMATION ---
         const clock = new THREE.Clock();
+
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // Rotate Main Gears
-            gear1.rotation.y = t * 0.5;
-            gear2.rotation.y = -t * 0.6;
-            gear3.rotation.y = t * 0.8;
+            // Gears
+            gear1.rotation.y = t * 0.3;
+            gear2.rotation.y = -t * 0.4;
+            gear3.rotation.y = t * 0.5;
 
-            // Plasma Jitter
-            links.forEach(l => {
-                const arr = l.mesh.geometry.attributes.position.array;
-                for(let i=0; i<30; i++) {
-                    const alpha = i/29;
-                    const y = THREE.MathUtils.lerp(l.y1, l.y2, alpha);
-                    const ang = t * 5 + alpha * Math.PI * 4;
-                    const r = 0.5;
-                    arr[i*3] = Math.cos(ang)*r + (Math.random()-0.5);
-                    arr[i*3+1] = y;
-                    arr[i*3+2] = Math.sin(ang)*r + (Math.random()-0.5);
+            // Earth Ores
+            oreGroup.rotation.y = t * 0.1;
+            oreGroup.children.forEach(ore => ore.rotation.x += 0.01);
+
+            // Water Steam (Rise)
+            const sPos = steam.geometry.attributes.position.array;
+            for(let i=0; i<150; i++) {
+                // Initial init
+                if(sPos[i*3+1] === 0) {
+                    sPos[i*3] = (Math.random()-0.5)*8;
+                    sPos[i*3+1] = (Math.random()-0.5)*4;
+                    sPos[i*3+2] = (Math.random()-0.5)*8;
                 }
-                l.mesh.geometry.attributes.position.needsUpdate = true;
-            });
 
-            // BG Animation
-            wall.position.y = (t * 2) % 5; // Scrolling wall
-            bgGears.rotation.z = t * 0.05; // Slow rotate whole BG cluster? No, individual rotation needs logic, lets rotate mesh group
-            bgGears.rotation.x += 0.001;
+                sPos[i*3+1] += 0.02; // Rise
+                sPos[i*3] += Math.sin(t + i)*0.01; // Drift
+
+                if(sPos[i*3+1] > 3) sPos[i*3+1] = -3; // Reset
+            }
+            steam.geometry.attributes.position.needsUpdate = true;
+
+            // Lightning Jitter
+            arcs.forEach(arc => {
+                const arr = arc.mesh.geometry.attributes.position.array;
+                for(let i=0; i<20; i++) {
+                    const alpha = i/19;
+                    const y = THREE.MathUtils.lerp(arc.y1, arc.y2, alpha);
+                    // Spiral path
+                    const angle = t * 4 + alpha * Math.PI * 2;
+                    const r = 0.5; // core radius
+                    const jitter = (Math.random()-0.5) * 0.8;
+
+                    arr[i*3] = Math.cos(angle)*r + jitter;
+                    arr[i*3+1] = y;
+                    arr[i*3+2] = Math.sin(angle)*r + jitter;
+                }
+                arc.mesh.geometry.attributes.position.needsUpdate = true;
+            });
 
             composer.render();
         }
         animate();
 
-        // --- Scroll Interaction ---
-        // Content Reveal
-        gsap.utils.toArray('.content-box').forEach(box => {
-            gsap.to(box, {
-                opacity: 1, y: 0, duration: 1,
-                scrollTrigger: {
-                    trigger: box,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
-                }
-            });
+        // --- SCROLL INTERACTION ---
+
+        // 1. Loader & Init
+        window.addEventListener('load', () => {
+            document.getElementById('load-bar').style.width = '100%';
+            setTimeout(() => {
+                gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
+                // Reveal Hero
+                gsap.to('.slate-earth', { opacity: 1, y: 0, duration: 1, delay: 0.5, ease: "power2.out" });
+            }, 500);
         });
 
-        // Spiral Camera
+        // 2. Scroll Camera
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
@@ -379,17 +448,26 @@
             }
         });
 
-        // Move Up + Slight Rotate around core
-        // Core is at x=4. Camera starts at -5.
-        // We want to pan up and maybe orbit slightly.
-        tl.to(camera.position, { y: 15, z: 12, x: -2, duration: 1 });
+        // Spiral Up
+        tl.to(camera.position, { y: 12, z: 12, x: -3, duration: 1 });
         tl.to(camera.rotation, { z: -0.1, duration: 1 }, "<");
 
-        // Loader
-        window.addEventListener('load', () => {
-            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
+        // 3. Content Reveal
+        const panels = document.querySelectorAll('.data-slate');
+        panels.forEach((p, i) => {
+            if(i === 0) return; // Skip hero
+            gsap.to(p, {
+                opacity: 1, rotationY: 0, x: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: p,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                }
+            });
         });
 
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
