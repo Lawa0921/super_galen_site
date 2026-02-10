@@ -401,18 +401,20 @@
 
     <!-- Finale -->
     <div id="finale">
-        <h1 class="meme-macro-text glitch" data-text="JOIN THE REVOLUTION" style="font-size: 3rem; margin-bottom: 2rem;">JOIN THE REVOLUTION</h1>
-        <div class="avatar-frame" style="width: 150px; height: 150px; margin-bottom: 2rem;">
-            <img src="/assets/img/guild/liuan/avatar.webp" alt="Liuan">
-        </div>
+        <div class="finale-content" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+            <h1 class="meme-macro-text glitch" data-text="JOIN THE REVOLUTION" style="font-size: 3rem; margin-bottom: 2rem;">JOIN THE REVOLUTION</h1>
+            <div class="avatar-frame" style="width: 150px; height: 150px; margin-bottom: 2rem;">
+                <img src="/assets/img/guild/liuan/avatar.webp" alt="Liuan">
+            </div>
 
-        <div class="social-links">
-            <a href="https://www.instagram.com/liuan_onesmallstep/" target="_blank" class="social-btn">
-                <i class="fa-brands fa-instagram"></i> INSTAGRAM
-            </a>
-            <a href="https://www.threads.net/@liuan_onesmallstep" target="_blank" class="social-btn">
-                <i class="fa-brands fa-threads"></i> THREADS
-            </a>
+            <div class="social-links">
+                <a href="https://www.instagram.com/liuan_onesmallstep/" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-instagram"></i> INSTAGRAM
+                </a>
+                <a href="https://www.threads.net/@liuan_onesmallstep" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-threads"></i> THREADS
+                </a>
+            </div>
         </div>
 
         <div class="footer-credit">
@@ -450,42 +452,15 @@
         camera.add(headLamp);
         scene.add(camera);
 
-        // --- Load Meme Textures ---
+        // --- Load Meme Textures (Async) ---
         const textureLoader = new THREE.TextureLoader();
-        const memeTextures = [];
         const memeFiles = [
-            'doge.webp',
-            'woman_cat.webp',
-            'harold.webp',
-            'disaster.webp',
-            'success.webp',
-            'fine.webp',
-            'batman_slap.webp',
-            'change_mind.webp',
-            'distracted.webp',
-            'drake.webp',
-            'evil_kermit.webp',
-            'expanding_brain.webp',
-            'facepalm.webp',
-            'grumpy_cat.webp',
-            'one_does_not.webp',
-            'roll_safe.webp',
-            'spongebob.webp',
-            'success_kid.webp',
-            'two_buttons.webp'
+            'doge.webp', 'woman_cat.webp', 'harold.webp', 'disaster.webp',
+            'success.webp', 'fine.webp', 'batman_slap.webp', 'change_mind.webp',
+            'distracted.webp', 'drake.webp', 'evil_kermit.webp', 'expanding_brain.webp',
+            'facepalm.webp', 'grumpy_cat.webp', 'one_does_not.webp', 'roll_safe.webp',
+            'spongebob.webp', 'success_kid.webp', 'two_buttons.webp'
         ];
-
-        memeFiles.forEach(file => {
-            textureLoader.load(
-                `/assets/img/guild/liuan/${file}`,
-                (texture) => {
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                    memeTextures.push(texture);
-                },
-                undefined,
-                (err) => console.warn('Failed to load texture:', file)
-            );
-        });
 
         // --- Objects: "Tunnel of Gains" ---
         const tunnelGroup = new THREE.Group();
@@ -510,14 +485,13 @@
             if (isEmoji) {
                 ctx.font = '150px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"';
             } else {
-                ctx.font = 'Bold 80px Impact, sans-serif'; // Meme font
+                ctx.font = 'Bold 80px Impact, sans-serif';
             }
 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
             if (!isEmoji) {
-                // Meme text style: White with black stroke
                 ctx.lineWidth = 4;
                 ctx.strokeStyle = '#000000';
                 ctx.strokeText(text, 256, 128);
@@ -528,101 +502,163 @@
             }
 
             const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
             const mat = new THREE.SpriteMaterial({ map: tex });
             const sprite = new THREE.Sprite(mat);
             sprite.scale.set(10, 5, 1);
             return sprite;
         }
 
-        // Wait for textures to load slightly or just add them dynamically
-        // We will add placeholders first or add them in the loop
-
         const memePhrases = [
-            { text: "GAINS", isEmoji: false },
-            { text: "MUCH POWER", isEmoji: false },
-            { text: "WOW", isEmoji: false },
-            { text: "💪", isEmoji: true },
-            { text: "🔥", isEmoji: true },
-            { text: "🦍", isEmoji: true },
-            { text: "🗿", isEmoji: true },
-            { text: "SUCH MUSCLE", isEmoji: false },
-            { text: "NEVER SKIP LEG DAY", isEmoji: false },
-            { text: "🤡", isEmoji: true },
+            { text: "GAINS", isEmoji: false }, { text: "MUCH POWER", isEmoji: false },
+            { text: "WOW", isEmoji: false }, { text: "💪", isEmoji: true },
+            { text: "🔥", isEmoji: true }, { text: "🦍", isEmoji: true },
+            { text: "🗿", isEmoji: true }, { text: "SUCH MUSCLE", isEmoji: false },
+            { text: "NEVER SKIP LEG DAY", isEmoji: false }, { text: "🤡", isEmoji: true },
             { text: "💀", isEmoji: true }
         ];
 
-        // Create initial objects
-        const count = 200;
-        for(let i=0; i<count; i++) {
-            const mesh = new THREE.Mesh(
-                Math.random() > 0.5 ? geometryBox : geometryBar,
-                Math.random() > 0.5 ? materialGreen : materialCyan
-            );
+        // --- Initialize Scene Content ---
+        let tunnelLength = 200; // Default fallback
 
-            const theta = Math.random() * Math.PI * 2;
-            const radius = 10 + Math.random() * 20;
-            const z = i * -1 - Math.random() * 10;
+        // Wrap initialization in an async function to wait for textures
+        async function initScene() {
+            // Load all textures first
+            const loadPromises = memeFiles.map(file => {
+                return new Promise((resolve) => {
+                    textureLoader.load(
+                        `/assets/img/guild/liuan/${file}`,
+                        (tex) => {
+                            tex.colorSpace = THREE.SRGBColorSpace;
+                            resolve(tex);
+                        },
+                        undefined,
+                        () => resolve(null) // Resolve null on error to not block
+                    );
+                });
+            });
 
-            mesh.position.set(Math.cos(theta) * radius, Math.sin(theta) * radius, z);
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            tunnelGroup.add(mesh);
-        }
+            const textures = (await Promise.all(loadPromises)).filter(t => t !== null);
 
-        // Add Text Sprites
-        for(let i=0; i<40; i++) {
-            const item = memePhrases[Math.floor(Math.random() * memePhrases.length)];
-            const sprite = createTextSprite(item.text, '#fff', item.isEmoji);
+            // Calculate Tunnel Layout
+            const spacing = 15;
+            const totalItems = textures.length + memePhrases.length;
+            tunnelLength = totalItems * spacing;
+            const startZ = -10;
 
-            const theta = Math.random() * Math.PI * 2;
-            const radius = 5 + Math.random() * 12;
-            const z = -20 - Math.random() * 180;
+            // 1. Background Debris (Wireframes)
+            const debrisCount = Math.floor(tunnelLength / 2); // Density based on length
+            for(let i=0; i<debrisCount; i++) {
+                const mesh = new THREE.Mesh(
+                    Math.random() > 0.5 ? geometryBox : geometryBar,
+                    Math.random() > 0.5 ? materialGreen : materialCyan
+                );
 
-            sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, z);
+                const theta = Math.random() * Math.PI * 2;
+                const radius = 10 + Math.random() * 20;
+                const z = (Math.random() * -tunnelLength) + 5; // Spread throughout
 
-            sprite.userData = {
-                rotateSpeed: (Math.random() - 0.5) * 0.1,
-                floatSpeed: (Math.random() - 0.5) * 0.05,
-                initialY: sprite.position.y
-            };
-            tunnelGroup.add(sprite);
-        }
-
-        // Add Image Memes (Wait a bit for textures or check in animate loop)
-        // Since we can't wait synchronously, we'll set an interval to add them once loaded
-        let checkCount = 0;
-        const addMemeInterval = setInterval(() => {
-            checkCount++;
-            // Wait for most textures to load, or timeout after ~3 seconds (6 checks)
-            if (memeTextures.length >= memeFiles.length - 2 || (checkCount > 6 && memeTextures.length > 0)) {
-                // Add meme planes
-                for(let i=0; i<45; i++) {
-                    const texture = memeTextures[Math.floor(Math.random() * memeTextures.length)];
-                    const mat = new THREE.SpriteMaterial({ map: texture });
-                    const sprite = new THREE.Sprite(mat);
-
-                    // Randomize aspect ratio slightly
-                    const scale = 6 + Math.random() * 4;
-                    sprite.scale.set(scale, scale, 1);
-
-                    const theta = Math.random() * Math.PI * 2;
-                    const radius = 8 + Math.random() * 15;
-                    const z = -10 - Math.random() * 190;
-
-                    sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, z);
-
-                    // Add slight rotation/wobble metadata
-                    sprite.userData = {
-                        rotateSpeed: (Math.random() - 0.5) * 0.05,
-                        floatSpeed: (Math.random() - 0.5) * 0.02,
-                        initialY: sprite.position.y
-                    };
-
-                    tunnelGroup.add(sprite);
-                }
-                clearInterval(addMemeInterval);
+                mesh.position.set(Math.cos(theta) * radius, Math.sin(theta) * radius, z);
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                tunnelGroup.add(mesh);
             }
-        }, 500);
 
+            // 2. Place Unique Memes & Phrases sequentially
+            // Interleave them: 2 images, 1 text, etc. or just mix arrays
+            let currentZ = startZ;
+            let phraseIndex = 0;
+
+            textures.forEach((texture, index) => {
+                // Place Image Meme
+                const mat = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(mat);
+                const scale = 6 + Math.random() * 4;
+                sprite.scale.set(scale, scale, 1);
+
+                const theta = (index * 0.5) + (Math.random() * 2); // Spiral placement
+                const radius = 8 + Math.random() * 10;
+
+                sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, currentZ);
+
+                sprite.userData = {
+                    rotateSpeed: (Math.random() - 0.5) * 0.05,
+                    floatSpeed: (Math.random() - 0.5) * 0.02,
+                    initialY: sprite.position.y
+                };
+                tunnelGroup.add(sprite);
+                currentZ -= spacing;
+
+                // Occasionally place text
+                if (index % 2 === 0) {
+                    const item = memePhrases[phraseIndex % memePhrases.length];
+                    const textSprite = createTextSprite(item.text, '#fff', item.isEmoji);
+
+                    const tTheta = theta + Math.PI; // Opposite side
+                    const tRadius = 6 + Math.random() * 8;
+
+                    textSprite.position.set(Math.cos(tTheta)*tRadius, Math.sin(tTheta)*tRadius, currentZ + (spacing/2));
+
+                    textSprite.userData = {
+                        rotateSpeed: (Math.random() - 0.5) * 0.1,
+                        floatSpeed: (Math.random() - 0.5) * 0.05,
+                        initialY: textSprite.position.y
+                    };
+                    tunnelGroup.add(textSprite);
+                    phraseIndex++;
+                }
+            });
+
+            // 3. The CORE Finale
+            const coreGeo = new THREE.IcosahedronGeometry(6, 1);
+            const coreMat = new THREE.MeshBasicMaterial({
+                color: 0x39FF14, wireframe: true
+            });
+            const coreGlowMat = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(generateGlowTexture()),
+                color: 0x39FF14,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            coreMesh.position.set(0, 0, currentZ - 40); // End of tunnel
+            tunnelGroup.add(coreMesh);
+
+            const coreGlow = new THREE.Sprite(coreGlowMat);
+            coreGlow.scale.set(40, 40, 1);
+            coreGlow.position.copy(coreMesh.position);
+            tunnelGroup.add(coreGlow);
+
+            // Animate Core
+            gsap.to(coreMesh.rotation, {
+                x: Math.PI * 8, y: Math.PI * 4,
+                repeat: -1, duration: 20, ease: "none"
+            });
+            gsap.to(coreGlow.scale, {
+                x: 50, y: 50, duration: 2, yoyo: true, repeat: -1, ease: "sine.inOut"
+            });
+
+            // Re-init Scroll with correct length
+            initScroll(currentZ - 35); // Stop just before hitting the core
+        }
+
+        function generateGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(57, 255, 20, 0.5)');
+            gradient.addColorStop(0.5, 'rgba(57, 255, 20, 0.1)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+            return canvas;
+        }
+
+        // Initialize Everything
+        initScene();
 
         // --- GSAP Animation ---
         gsap.registerPlugin(ScrollTrigger);
@@ -631,22 +667,22 @@
             gsap.to('#entrance-screen', {
                 opacity: 0, duration: 1, delay: 1.5,
                 onComplete: () => {
-                    document.getElementById('entrance-screen').remove();
-                    initScroll();
+                    if(document.getElementById('entrance-screen'))
+                        document.getElementById('entrance-screen').remove();
                 }
             });
         });
 
-        function initScroll() {
+        function initScroll(targetZ) {
             // Hero Exit
             gsap.to('#hero', {
                 opacity: 0, scale: 2, filter: 'blur(10px)',
                 scrollTrigger: { trigger: '#scroll-spacer', start: 'top top', end: '10% top', scrub: true }
             });
 
-            // Camera Flight
+            // Camera Flight to Core
             gsap.to(camera.position, {
-                z: -200,
+                z: targetZ,
                 ease: 'none',
                 scrollTrigger: {
                     trigger: '#scroll-spacer',
