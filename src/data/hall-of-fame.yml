@@ -741,3 +741,15 @@ members:
         label: "鉤織/手作"
       - id: "poet"
         label: "詩意瘋子"
+
+  - id: "elora"
+    name: "Elora"
+    avatar: "/assets/img/guild/elora/avatar.webp"
+    page: "/guild/elora.html"
+    tags:
+      - id: "graphic_designer"
+        label: "Graphic Designer"
+      - id: "izakaya_owner"
+        label: "Izakaya Owner"
+      - id: "vibe_coder"
+        label: "Vibe Coder"
