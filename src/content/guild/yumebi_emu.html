@@ -66,7 +66,7 @@
             width: 100%; height: 100%;
             z-index: -2;
             pointer-events: none;
-            opacity: 0.4;
+            opacity: 0.3;
             mix-blend-mode: screen;
         }
 
@@ -174,7 +174,7 @@
             100% { background-position: -100% 0; }
         }
 
-        /* --- Sensory Focus (Close-ups) --- */
+        /* --- Sensory Focus (Updated: Darker & Spotlight) --- */
         .sensory-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -187,17 +187,23 @@
             height: 400px;
             border-radius: 20px;
             overflow: hidden;
-            border: 2px solid var(--accent-pink);
+            border: 1px solid rgba(255, 20, 147, 0.3);
             transition: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 20, 147, 0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            background: #000; /* Deep Black Background */
         }
 
         .sense-card img {
             width: 100%; height: 100%;
             object-fit: cover;
-            transition: 0.8s;
-            filter: grayscale(0.5) contrast(1.2) brightness(0.8);
+            /* Default: Very dark, barely visible */
+            filter: grayscale(0.8) brightness(0.4) contrast(1.5);
+            opacity: 0.6;
+            transition: all 0.8s ease;
+            /* Spotlight Mask: Only show center circle clearly */
+            mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0.2) 60%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0.2) 60%, transparent 100%);
         }
 
         .sense-overlay {
@@ -207,10 +213,12 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
+            align-items: center;
             padding: 2rem;
-            background: linear-gradient(to top, rgba(0,0,0,1), transparent);
+            background: transparent;
             opacity: 0.8;
             transition: 0.5s;
+            pointer-events: none;
         }
 
         .sense-overlay h3 {
@@ -219,6 +227,7 @@
             text-shadow: 0 0 10px var(--accent-cyan);
             transform: translateY(20px);
             transition: 0.5s;
+            opacity: 0.5;
         }
 
         .sense-overlay p {
@@ -226,18 +235,26 @@
             opacity: 0;
             transform: translateY(20px);
             transition: 0.5s 0.1s;
+            color: #fff;
         }
 
         .sense-card:hover {
-            transform: scale(1.05) rotate(1deg);
-            box-shadow: 0 0 50px var(--accent-pink);
-            z-index: 20;
+            transform: scale(1.02);
+            box-shadow: 0 0 30px var(--accent-pink);
             border-color: var(--accent-cyan);
+            z-index: 20;
         }
+
+        /* Hover: Light up the "Spotlight" */
         .sense-card:hover img {
-            filter: grayscale(0) contrast(1.2) brightness(1.1);
-            transform: scale(1.2);
+            filter: grayscale(0) brightness(1.2) contrast(1.1);
+            opacity: 1;
+            transform: scale(1.1);
+            /* Expand mask */
+            mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.5) 80%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.5) 80%, transparent 100%);
         }
+
         .sense-card:hover .sense-overlay h3,
         .sense-card:hover .sense-overlay p {
             opacity: 1;
@@ -305,30 +322,33 @@
             border-color: #fff;
         }
 
-        /* --- Gallery --- */
-        .gallery-scroller {
-            display: flex;
-            gap: 2rem;
-            overflow-x: auto;
-            padding: 2rem;
-            scrollbar-width: none;
+        /* --- Gallery (Updated: 3D Placeholder) --- */
+        #gallery {
+            min-height: 120vh; /* Extra scroll space */
         }
-        .gallery-item {
-            min-width: 350px;
-            height: 500px;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid var(--glass-border);
-            transition: 0.3s;
+        .gallery-hint {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 20;
         }
-        .gallery-item img {
-            width: 100%; height: 100%; object-fit: cover;
+        .gallery-hint h3 {
+            font-size: 2rem;
+            color: var(--accent-pink);
+            text-shadow: 0 0 20px var(--accent-pink);
+            animation: pulse 2s infinite;
         }
-        .gallery-item:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 40px rgba(157, 0, 255, 0.5);
-            z-index: 10;
+        .gallery-hint p {
+            font-size: 1rem;
+            color: var(--accent-cyan);
+            letter-spacing: 0.2em;
+            margin-top: 1rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
         }
 
         /* --- Floating Hearts --- */
@@ -518,16 +538,13 @@
             </div>
         </section>
 
-        <!-- Gallery -->
+        <!-- Gallery (3D Scene) -->
         <section id="gallery">
             <div class="container">
                 <h2 style="text-align: center; margin-bottom: 2rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan);">DREAM FRAGMENTS</h2>
-                <div class="gallery-scroller">
-                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work1.webp" loading="lazy"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work2.webp" loading="lazy"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work3.webp" loading="lazy"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work4.webp" loading="lazy"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/yumebi_emu/work5.webp" loading="lazy"></div>
+                <div class="gallery-hint">
+                    <h3>CLICK TO COLLECT</h3>
+                    <p>SHARDS OF MEMORY</p>
                 </div>
             </div>
         </section>
@@ -704,7 +721,6 @@
         const height = 20;
         const segments = 8;
 
-        // Use PlaneGeometry to get UVs easily
         const baseGeo = new THREE.PlaneGeometry(width, height, segments, segments);
         const posAttribute = baseGeo.attributes.position;
         const uvAttribute = baseGeo.attributes.uv;
@@ -754,9 +770,8 @@
 
             // Initial State: Exploded
             mesh.userData = {
-                originPos: new THREE.Vector3(0,0,0), // The geometry is already positioned at the right place relative to origin
+                originPos: new THREE.Vector3(0,0,0),
                 originRot: new THREE.Euler(0,0,0),
-                // Exploded State
                 targetPos: new THREE.Vector3(
                     center.x + (Math.random()-0.5) * 50,
                     center.y + (Math.random()-0.5) * 50,
@@ -770,12 +785,65 @@
                 phase: 'exploded'
             };
 
-            // Set initial transform to exploded
             mesh.position.copy(mesh.userData.targetPos);
             mesh.rotation.copy(mesh.userData.targetRot);
 
             shardGroup.add(mesh);
         }
+
+        // 3. Gallery Shards
+        const galleryGroup = new THREE.Group();
+        galleryGroup.visible = false; // Initially hidden
+        scene.add(galleryGroup);
+
+        const galleryImages = [
+            '/assets/img/guild/yumebi_emu/work1.webp',
+            '/assets/img/guild/yumebi_emu/work2.webp',
+            '/assets/img/guild/yumebi_emu/work3.webp',
+            '/assets/img/guild/yumebi_emu/work4.webp',
+            '/assets/img/guild/yumebi_emu/work5.webp'
+        ];
+
+        // Create scattered gallery shards
+        galleryImages.forEach((src, idx) => {
+            const tex = loader.load(src);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            const geo = new THREE.PlaneGeometry(12, 16); // Portrait size
+            const mat = new THREE.MeshBasicMaterial({
+                map: tex,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.9
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+
+            // Calculate final grid position
+            const col = idx % 3;
+            const row = Math.floor(idx / 3);
+            const finalX = (col - 1) * 14;
+            const finalY = (row === 0) ? 6 : -8; // Simple 3 top, 2 bottom arrangement
+
+            mesh.userData = {
+                finalPos: new THREE.Vector3(finalX, finalY, 0),
+                finalRot: new THREE.Euler(0, 0, 0),
+                scatterPos: new THREE.Vector3(
+                    (Math.random() - 0.5) * 80,
+                    (Math.random() - 0.5) * 80,
+                    (Math.random() - 0.5) * 50 - 20 // Behind or way forward
+                ),
+                scatterRot: new THREE.Euler(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                )
+            };
+
+            // Start scattered
+            mesh.position.copy(mesh.userData.scatterPos);
+            mesh.rotation.copy(mesh.userData.scatterRot);
+
+            galleryGroup.add(mesh);
+        });
 
         // Mouse Interaction
         const raycaster = new THREE.Raycaster();
@@ -785,54 +853,60 @@
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-            // Parallax effect on shardGroup
-            gsap.to(shardGroup.rotation, {
-                x: mouse.y * 0.1,
-                y: mouse.x * 0.1,
-                duration: 1
-            });
+            // Parallax
+            gsap.to(shardGroup.rotation, { x: mouse.y * 0.1, y: mouse.x * 0.1, duration: 1 });
+            gsap.to(galleryGroup.rotation, { x: mouse.y * 0.05, y: mouse.x * 0.05, duration: 1 });
         });
 
         // Click to Assemble/Explode
-        let assembled = false;
-        window.addEventListener('click', () => {
-            assembled = !assembled;
+        let avatarAssembled = false;
+        let galleryAssembled = false;
 
-            shardGroup.children.forEach(mesh => {
-                if(assembled) {
-                    // Assemble
+        window.addEventListener('click', () => {
+            // Determine context based on scroll or visibility
+            // If galleryGroup is visible (controlled by ScrollTrigger logic below), toggle gallery
+            // Otherwise, toggle avatar
+
+            if (galleryGroup.visible && galleryGroup.position.z > -50) {
+                // In Gallery Mode
+                galleryAssembled = !galleryAssembled;
+
+                galleryGroup.children.forEach(mesh => {
+                    const targetP = galleryAssembled ? mesh.userData.finalPos : mesh.userData.scatterPos;
+                    const targetR = galleryAssembled ? mesh.userData.finalRot : mesh.userData.scatterRot;
+
                     gsap.to(mesh.position, {
-                        x: 0, y: 0, z: 0,
-                        duration: 1.5,
-                        ease: "power2.inOut",
-                        delay: Math.random() * 0.5
+                        x: targetP.x, y: targetP.y, z: targetP.z,
+                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.2
                     });
                     gsap.to(mesh.rotation, {
-                        x: 0, y: 0, z: 0,
-                        duration: 1.5,
-                        ease: "power2.inOut",
-                        delay: Math.random() * 0.5
+                        x: targetR.x, y: targetR.y, z: targetR.z,
+                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.2
                     });
-                } else {
-                    // Explode
+                });
+
+                // Hide hint
+                const hint = document.querySelector('.gallery-hint');
+                if(hint && galleryAssembled) hint.style.opacity = 0;
+
+            } else {
+                // In Avatar Mode
+                avatarAssembled = !avatarAssembled;
+
+                shardGroup.children.forEach(mesh => {
+                    const targetP = avatarAssembled ? new THREE.Vector3(0,0,0) : mesh.userData.targetPos;
+                    const targetR = avatarAssembled ? new THREE.Vector3(0,0,0) : mesh.userData.targetRot;
+
                     gsap.to(mesh.position, {
-                        x: mesh.userData.targetPos.x,
-                        y: mesh.userData.targetPos.y,
-                        z: mesh.userData.targetPos.z,
-                        duration: 1.5,
-                        ease: "power2.inOut",
-                        delay: Math.random() * 0.5
+                        x: targetP.x, y: targetP.y, z: targetP.z,
+                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.5
                     });
                     gsap.to(mesh.rotation, {
-                        x: mesh.userData.targetRot.x,
-                        y: mesh.userData.targetRot.y,
-                        z: mesh.userData.targetRot.z,
-                        duration: 1.5,
-                        ease: "power2.inOut",
-                        delay: Math.random() * 0.5
+                        x: targetR.x, y: targetR.y, z: targetR.z,
+                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.5
                     });
-                }
-            });
+                });
+            }
         });
 
         // --- Animation Loop ---
@@ -845,10 +919,15 @@
             tunnel.rotation.z = time * 0.2;
             tunnel.rotation.x = Math.sin(time) * 0.2;
 
-            // Float Shards slightly if exploded
-            if (!assembled) {
+            // Float Shards
+            if (!avatarAssembled) {
                 shardGroup.children.forEach((mesh, i) => {
                      mesh.position.y += Math.sin(time * 2 + i) * 0.02;
+                });
+            }
+            if (!galleryAssembled) {
+                galleryGroup.children.forEach((mesh, i) => {
+                    mesh.rotation.z += 0.002 * (i%2==0 ? 1 : -1);
                 });
             }
 
@@ -886,7 +965,7 @@
             );
         });
 
-        // Camera Scroll
+        // Camera Scroll & Scene Switching
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
@@ -894,9 +973,34 @@
             scrub: 1,
             onUpdate: (self) => {
                 const p = self.progress;
-                camera.position.z = 20 - (p * 15); // Move closer
-                camera.rotation.z = p * Math.PI * 0.2; // Slight spin
+
+                // General Camera Movement
+                camera.position.z = 20 - (p * 5);
+                camera.rotation.z = p * Math.PI * 0.2;
                 tunnel.material.opacity = 0.1 + (p * 0.2);
+
+                // Scene Switching Logic
+                // 0.0 - 0.4: Avatar Shards Visible
+                // 0.4 - 0.6: Transition
+                // 0.6 - 1.0: Gallery Shards Visible
+
+                if (p < 0.5) {
+                    shardGroup.visible = true;
+                    // Fade out as we go down
+                    shardGroup.position.z = p * 50;
+                    shardGroup.scale.setScalar(1 - p);
+
+                    galleryGroup.visible = false;
+                } else {
+                    shardGroup.visible = false;
+
+                    galleryGroup.visible = true;
+                    // Fly in from distance
+                    // p goes 0.5 -> 1.0
+                    // z goes -50 -> 0
+                    const galleryProgress = (p - 0.5) * 2; // 0 to 1
+                    galleryGroup.position.z = -50 + (galleryProgress * 50);
+                }
             }
         });
     </script>
