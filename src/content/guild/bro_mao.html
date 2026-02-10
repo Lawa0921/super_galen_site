@@ -18,16 +18,18 @@
             --color-primary: #00FF00; /* Neon Green */
             --color-secondary: #FFD700; /* Gold */
             --color-accent: #FF00FF; /* Magenta */
-            --color-dark-glass: rgba(10, 10, 10, 0.85);
+            --color-dark-glass: rgba(10, 10, 10, 0.9);
             --font-main: 'Noto Sans TC', sans-serif;
             --font-code: 'Source Code Pro', monospace;
             --font-display: 'Orbitron', sans-serif;
+            --cursor-size: 20px;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Custom cursor */
         }
 
         body {
@@ -36,6 +38,41 @@
             font-family: var(--font-main);
             overflow-x: hidden;
             overscroll-behavior: none;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--cursor-size);
+            height: var(--cursor-size);
+            border: 2px solid var(--color-primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        #cursor.hovered {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0, 255, 0, 0.2);
+            border-color: var(--color-secondary);
+        }
+
+        /* --- Scroll Progress Bar --- */
+        #scroll-progress {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 0%;
+            background: var(--color-primary);
+            z-index: 9998;
+            box-shadow: 0 0 10px var(--color-primary);
         }
 
         /* --- Canvas Background --- */
@@ -48,6 +85,7 @@
             z-index: -1;
             opacity: 0;
             transition: opacity 1.5s ease-out;
+            will-change: opacity;
         }
 
         /* --- Global Utility --- */
@@ -88,6 +126,7 @@
             box-shadow: 0 0 40px var(--color-primary);
             margin: 0 auto 2rem auto;
             position: relative;
+            transform: translateZ(0); /* Hardware accel */
         }
 
         .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
@@ -167,6 +206,8 @@
             max-width: 800px;
             margin-left: auto;
             margin-right: auto;
+            transform: translateZ(0);
+            will-change: transform, opacity;
         }
 
         .terminal-header {
@@ -206,6 +247,8 @@
             max-width: 900px;
             margin-left: auto;
             margin-right: auto;
+            transform: translateZ(0);
+            will-change: transform, opacity;
         }
 
         .market-visual {
@@ -248,6 +291,7 @@
             text-align: center;
             position: relative;
             transition: all 0.3s;
+            cursor: none; /* Let custom cursor shine */
         }
 
         .lab-step:hover {
@@ -278,7 +322,8 @@
             padding: 2rem;
             position: relative;
             overflow: hidden;
-            transition: all 0.3s;
+            transition: transform 0.3s, box-shadow 0.3s;
+            will-change: transform;
         }
 
         .arsenal-card::before {
@@ -312,6 +357,7 @@
             height: 100%;
             background: var(--color-primary);
             width: 0%; /* Animate via GSAP */
+            will-change: width;
         }
 
         /* 5. Manifesto (Typography) */
@@ -333,7 +379,8 @@
             color: transparent;
             -webkit-text-stroke: 2px #fff;
             opacity: 0.3;
-            transition: all 0.5s;
+            transition: opacity 0.5s, color 0.5s, text-shadow 0.5s;
+            will-change: opacity, color;
         }
 
         .manifesto-line.active {
@@ -375,19 +422,25 @@
             justify-content: center;
             text-decoration: none;
             transition: all 0.3s;
+            cursor: none; /* Let custom cursor shine */
         }
 
         .social-btn:hover {
             background: var(--color-primary);
             color: #000;
             box-shadow: 0 0 20px var(--color-primary);
+            transform: scale(1.1);
         }
 
         .copyright { color: #666; font-size: 0.9rem; }
-        .copyright a { color: var(--color-secondary); text-decoration: none; }
+        .copyright a { color: var(--color-secondary); text-decoration: none; cursor: none; }
 
         /* --- Responsive --- */
         @media (max-width: 768px) {
+            /* Disable custom cursor on touch devices */
+            * { cursor: auto; }
+            #cursor { display: none; }
+
             .hero-title { font-size: 3rem; }
             .section { padding: 4rem 1rem; }
             .ui-terminal, .ui-market, .ui-lab, .ui-arsenal { width: 100%; padding: 1.5rem; margin-bottom: 4rem; }
@@ -408,6 +461,8 @@
 </head>
 <body>
 
+    <div id="cursor"></div>
+    <div id="scroll-progress"></div>
     <div id="canvas-container"></div>
 
     <!-- Hero -->
@@ -460,21 +515,21 @@
             <div class="ui-lab gs-reveal" data-color="#FFD700">
                 <h2 style="color: var(--color-secondary); margin-bottom: 2rem;">THE LAB // 實驗室法則</h2>
 
-                <div class="lab-step">
+                <div class="lab-step interactive-el">
                     <h3 style="color: var(--color-secondary);">INPUT</h3>
                     <div style="font-family: var(--font-code); margin-top: 0.5rem;">Content Strategy + Trends</div>
                 </div>
 
                 <i class="fa-solid fa-arrow-down lab-arrow"></i>
 
-                <div class="lab-step">
+                <div class="lab-step interactive-el">
                     <h3 style="color: #fff;">PROCESS</h3>
                     <div style="font-family: var(--font-code); margin-top: 0.5rem;">Test -> Record -> Correct -> Repeat</div>
                 </div>
 
                 <i class="fa-solid fa-arrow-down lab-arrow"></i>
 
-                <div class="lab-step">
+                <div class="lab-step interactive-el">
                     <h3 style="color: var(--color-primary);">OUTPUT</h3>
                     <div style="font-family: var(--font-code); margin-top: 0.5rem;">Sustainable Growth + Profit</div>
                 </div>
@@ -484,7 +539,7 @@
             <div class="ui-arsenal gs-reveal" data-color="#00FF00">
 
                 <!-- Card 1 -->
-                <div class="arsenal-card">
+                <div class="arsenal-card interactive-el">
                     <i class="fa-brands fa-shopify arsenal-icon"></i>
                     <div class="arsenal-name">Shopee Affiliate</div>
                     <div class="arsenal-stat">Level 99 // Passive Income</div>
@@ -492,7 +547,7 @@
                 </div>
 
                 <!-- Card 2 -->
-                <div class="arsenal-card">
+                <div class="arsenal-card interactive-el">
                     <i class="fa-brands fa-instagram arsenal-icon"></i>
                     <div class="arsenal-name">Instagram</div>
                     <div class="arsenal-stat">Level 85 // Community Ops</div>
@@ -500,7 +555,7 @@
                 </div>
 
                 <!-- Card 3 -->
-                <div class="arsenal-card">
+                <div class="arsenal-card interactive-el">
                     <i class="fa-solid fa-database arsenal-icon"></i>
                     <div class="arsenal-name">Data Analysis</div>
                     <div class="arsenal-stat">Level 70 // Optimization</div>
@@ -508,7 +563,7 @@
                 </div>
 
                 <!-- Card 4 -->
-                <div class="arsenal-card">
+                <div class="arsenal-card interactive-el">
                     <i class="fa-brands fa-threads arsenal-icon"></i>
                     <div class="arsenal-name">Threads</div>
                     <div class="arsenal-stat">Level 60 // Viral Growth</div>
@@ -519,9 +574,9 @@
 
             <!-- Module 5: Manifesto (Typography) -->
             <div class="ui-manifesto gs-reveal" data-color="#FFFFFF">
-                <div class="manifesto-line gs-text">不是最聰明</div>
-                <div class="manifesto-line gs-text">但是是</div>
-                <div class="manifesto-line gs-text" style="color: var(--color-primary); opacity: 1; -webkit-text-stroke: 0;">撐夠久的人</div>
+                <div class="manifesto-line gs-text interactive-el">不是最聰明</div>
+                <div class="manifesto-line gs-text interactive-el">但是是</div>
+                <div class="manifesto-line gs-text interactive-el" style="color: var(--color-primary); opacity: 1; -webkit-text-stroke: 0;">撐夠久的人</div>
 
                 <div class="manifesto-signature">
                     // BRO MAO
@@ -537,14 +592,14 @@
             <h2 class="hero-title" style="font-size: 3rem; margin-bottom: 2rem;">CONNECT</h2>
 
             <div class="social-links">
-                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-btn"><i class="fa-solid fa-link"></i></a>
-                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-btn"><i class="fa-brands fa-line"></i></a>
+                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-btn interactive-el"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-btn interactive-el"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-btn interactive-el"><i class="fa-solid fa-link"></i></a>
+                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-btn interactive-el"><i class="fa-brands fa-line"></i></a>
             </div>
 
             <div class="copyright">
-                Made with love by <a href="/guild/">SuperGalen's Dungeon</a>
+                Made with love by <a href="/guild/" class="interactive-el">SuperGalen's Dungeon</a>
             </div>
         </div>
     </section>
@@ -555,6 +610,20 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // Custom Cursor Logic
+        const cursor = document.getElementById('cursor');
+        const interactiveEls = document.querySelectorAll('.interactive-el, a, button');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        interactiveEls.forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+        });
 
         // Config
         const CONFIG = {
@@ -595,8 +664,6 @@
         window.addEventListener('load', () => { container.style.opacity = 1; });
 
         // --- Objects: Cyber Grid / Particles ---
-        // Instead of random particles, let's make a "Grid Floor" + "Floating Data"
-
         // 1. Grid Floor
         const gridHelper = new THREE.GridHelper(200, 50, CONFIG.color1, 0x111111);
         gridHelper.position.y = -20;
@@ -671,6 +738,19 @@
         // --- GSAP Interactions ---
         gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
+        // Scroll Progress Bar
+        ScrollTrigger.create({
+            trigger: document.body,
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                gsap.to('#scroll-progress', { height: (self.progress * 100) + '%', duration: 0.1 });
+                // Velocity based speed
+                targetSpeed = 0.05 + Math.abs(self.getVelocity() / 5000);
+                if(targetSpeed > 0.5) targetSpeed = 0.5; // Cap speed
+            }
+        });
+
         // Hero Reveal
         gsap.from('.gs-hero', {
             y: 50, opacity: 0, duration: 1.5, stagger: 0.2, ease: "power3.out"
@@ -719,7 +799,6 @@
         });
 
         // 4. Global Color Sync (Three.js Bloom Color)
-        // Change bloom color based on section
         const sections = gsap.utils.toArray('[data-color]');
         sections.forEach(section => {
             ScrollTrigger.create({
@@ -732,8 +811,6 @@
         });
 
         function updateSceneColor(hex) {
-            // Smoothly transition bloom threshold/color if possible
-            // For now, let's just shift the grid color slightly
             const color = new THREE.Color(hex);
             gsap.to(gridHelper.material.color, {
                 r: color.r, g: color.g, b: color.b,
@@ -745,7 +822,7 @@
             });
         }
 
-        // Resize
+        // Optimized Resize (Debounce could be added, but simple update is usually fine for desktops)
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
