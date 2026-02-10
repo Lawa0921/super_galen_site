@@ -37,7 +37,7 @@
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
 
         /* P5 Canvas */
-        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; background: var(--c-void); }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: auto; background: var(--c-void); }
 
         /* Loader */
         #loader {
@@ -56,6 +56,26 @@
             display: flex; align-items: center;
             padding: 4rem 5%;
             pointer-events: none;
+        }
+
+        /* Top Node Element */
+        .node-marker {
+            position: absolute; top: 5vh; left: 50%; transform: translateX(-50%);
+            text-align: center; pointer-events: auto; z-index: 20;
+        }
+        .node-icon {
+            font-size: 2.5rem; color: var(--c-plasma);
+            animation: pulse-glow 2s infinite;
+            text-shadow: 0 0 20px var(--c-plasma);
+        }
+        .node-label {
+            font-family: var(--f-tech); font-size: 1rem; color: var(--c-plasma);
+            letter-spacing: 2px; margin-top: 0.5rem; opacity: 0.8; font-weight: bold;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); text-shadow: 0 0 30px var(--c-plasma); }
         }
 
         /* Magic Data Slate */
@@ -134,6 +154,7 @@
             .section { padding: 4rem 1.5rem; justify-content: center; }
             .data-slate { padding: 2rem; transform: none !important; }
             h1 { font-size: 2.5rem; }
+            .node-marker { top: 3vh; }
         }
     </style>
 </head>
@@ -150,8 +171,14 @@
 
     <div class="scroller">
 
+        <!-- Top Node / Endpoint -->
+        <div class="node-marker">
+            <div class="node-icon"><i class="fa-solid fa-atom"></i></div>
+            <div class="node-label">MAGITEK CORE</div>
+        </div>
+
         <!-- 1. Hero -->
-        <section class="section">
+        <section class="section" style="margin-top: 10vh;">
             <div class="data-slate slate-earth">
                 <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem;">
                     <div style="position:relative;">
@@ -256,8 +283,7 @@
         const sketch = (p) => {
             let gears = [];
             let circuits = [];
-            let plasmaHeight = 0;
-            let plasmaActive = false;
+            let floaters = [];
             let mainNode;
 
             p.setup = () => {
@@ -265,32 +291,39 @@
                 canvas.parent('p5-container');
                 p.angleMode(p.DEGREES);
                 p.rectMode(p.CENTER);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textFont('monospace');
 
-                // Init Gears
+                // Init Gears - Thicker and more opaque
                 for(let i=0; i<8; i++) {
                     gears.push(new Gear(
                         p.random(p.width),
                         p.random(p.height),
-                        p.random(30, 80),
-                        Math.floor(p.random(8, 16))
+                        p.random(60, 150),
+                        Math.floor(p.random(8, 20))
                     ));
                 }
 
                 // Init Circuits
-                for(let i=0; i<5; i++) {
+                for(let i=0; i<10; i++) {
                     circuits.push(new Circuit());
                 }
 
-                // Main Node (Destination) - Near top
-                mainNode = { x: p.width/2, y: p.height * 0.15, size: 20, active: false };
+                // Init Floating Data Bits
+                for(let i=0; i<20; i++) {
+                    floaters.push(new Floater());
+                }
+
+                // Main Node position (matches CSS .node-marker)
+                mainNode = { x: p.width/2, y: p.height * 0.08, size: 20, active: false };
             };
 
             p.draw = () => {
                 p.clear();
 
                 // 1. Gears (Background)
-                p.stroke(255, 215, 0, 50); // Gold-ish transparent
-                p.strokeWeight(1);
+                p.stroke(255, 215, 0, 150);
+                p.strokeWeight(2);
                 p.noFill();
                 gears.forEach(g => {
                     g.update();
@@ -303,56 +336,102 @@
                     c.display();
                 });
 
-                // 3. Plasma Beam (Foreground)
-                // Map scroll progress to beam height
+                // 3. Floating Data (Atmosphere) - Responsive to mouse
+                floaters.forEach(f => {
+                    f.update();
+                    f.display();
+                });
+
+                // 4. Plasma Beam (Foreground) - Reactive to scroll & mouse
                 let scrollY = window.scrollY;
                 let maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                let progress = p.constrain(scrollY / maxScroll, 0, 1);
+                if(maxScroll <= 0) maxScroll = 1;
 
-                // Beam grows from bottom (p.height) to top (mainNode.y)
-                let targetY = p.map(progress, 0, 1, p.height, mainNode.y);
+                let scrollRatio = p.constrain(scrollY / maxScroll, 0, 1);
+                let energy = 1 - scrollRatio; // 1 at Top, 0 at Bottom
+
+                let currentTipY = p.map(energy, 0, 1, p.height + 200, mainNode.y);
 
                 // Draw Beam
-                p.stroke(0, 243, 255, 150); // Cyan
-                p.strokeWeight(4 + p.random(-1, 1));
-                p.line(p.width/2, p.height, p.width/2, targetY);
+                p.stroke(0, 243, 255, 150 + energy * 105);
+                p.strokeWeight(3 + energy * 5);
 
-                // Beam Glow
-                p.stroke(0, 243, 255, 50);
-                p.strokeWeight(15);
-                p.line(p.width/2, p.height, p.width/2, targetY);
+                let segments = 30;
+                let lastX = p.width/2;
+                let lastY = p.height;
 
-                // Node Activation
-                if(targetY <= mainNode.y + 10) {
-                    mainNode.active = true;
-                } else {
-                    mainNode.active = false;
+                // Start from bottom
+                for(let i=1; i<=segments; i++) {
+                    let t = i / segments;
+                    let thisY = p.lerp(p.height, currentTipY, t);
+
+                    // Jitter
+                    let jitter = p.random(-5, 5) + p.random(-20, 20) * energy;
+
+                    // Mouse Interaction: Displace if mouse is close
+                    let d = p.dist(p.mouseX, p.mouseY, p.width/2, thisY);
+                    if(d < 150) {
+                        let force = p.map(d, 0, 150, 50, 0);
+                        let dir = (p.mouseX < p.width/2) ? 1 : -1;
+                        jitter += force * dir;
+                    }
+
+                    let thisX = p.width/2 + jitter;
+
+                    if(i === segments) {
+                        thisX = p.width/2;
+                        thisY = currentTipY;
+                    }
+
+                    // Only draw if within screen
+                    if(lastY < p.height + 10 && thisY > -10) {
+                        p.line(lastX, lastY, thisX, thisY);
+                    }
+                    lastX = thisX;
+                    lastY = thisY;
                 }
 
-                // Draw Node
+                // 5. Node Visuals
                 p.noFill();
-                if(mainNode.active) {
-                    p.stroke(0, 243, 255);
-                    p.strokeWeight(2);
-                    let pulse = p.sin(p.frameCount * 5) * 10;
-                    p.ellipse(mainNode.x, mainNode.y, 40 + pulse);
-                    p.ellipse(mainNode.x, mainNode.y, 60 - pulse);
+                p.stroke(0, 243, 255, 50);
+                p.strokeWeight(1);
+                p.ellipse(mainNode.x, mainNode.y, 80);
 
-                    // Core
-                    p.fill(0, 243, 255);
-                    p.noStroke();
-                    p.ellipse(mainNode.x, mainNode.y, 10);
+                // Rotate a scanner
+                p.push();
+                p.translate(mainNode.x, mainNode.y);
+                p.rotate(p.frameCount * 1.5);
+                p.stroke(0, 243, 255, 100);
+                p.line(0, 0, 40, 0);
+                p.pop();
+
+                // Activation Visuals
+                if(energy > 0.9) {
+                    mainNode.active = true;
+                    // Pulse
+                    p.stroke(0, 243, 255);
+                    p.strokeWeight(3);
+                    let pulse = p.sin(p.frameCount * 10) * 20;
+                    p.ellipse(mainNode.x, mainNode.y, 60 + pulse);
+
+                    // Rays
+                    p.push();
+                    p.translate(mainNode.x, mainNode.y);
+                    p.rotate(p.frameCount * 2);
+                    for(let i=0; i<8; i++) {
+                        p.rotate(45);
+                        p.line(30, 0, 50 + pulse/2, 0);
+                    }
+                    p.pop();
                 } else {
-                    p.stroke(100);
-                    p.strokeWeight(1);
-                    p.ellipse(mainNode.x, mainNode.y, 40);
+                    mainNode.active = false;
                 }
             };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
                 mainNode.x = p.width/2;
-                mainNode.y = p.height * 0.15;
+                mainNode.y = p.height * 0.08;
             };
 
             class Gear {
@@ -371,16 +450,13 @@
                     p.push();
                     p.translate(this.x, this.y);
                     p.rotate(this.angle);
-                    // Core
                     p.ellipse(0, 0, this.r * 1.6);
-                    // Teeth
                     for(let i=0; i<360; i+=360/this.teeth) {
                         p.push();
                         p.rotate(i);
-                        p.rect(0, -this.r, 10, 10);
+                        p.rect(0, -this.r, 12, 12);
                         p.pop();
                     }
-                    // Spokes
                     p.line(-this.r, 0, this.r, 0);
                     p.line(0, -this.r, 0, this.r);
                     p.pop();
@@ -396,9 +472,9 @@
                     this.y = p.random(p.height);
                     this.prevX = this.x;
                     this.prevY = this.y;
-                    this.color = p.color(0, 119, 190, 100); // Blue
+                    this.color = p.color(0, 243, 255, 150);
                     this.timer = 0;
-                    this.dir = Math.floor(p.random(4)); // 0:U, 1:R, 2:D, 3:L
+                    this.dir = Math.floor(p.random(4));
                 }
                 update() {
                     this.timer++;
@@ -409,7 +485,7 @@
                     this.prevX = this.x;
                     this.prevY = this.y;
 
-                    let speed = 2;
+                    let speed = 4;
                     if(this.dir === 0) this.y -= speed;
                     if(this.dir === 1) this.x += speed;
                     if(this.dir === 2) this.y += speed;
@@ -421,14 +497,49 @@
                 }
                 display() {
                     p.stroke(this.color);
-                    p.strokeWeight(1);
+                    p.strokeWeight(2);
                     p.line(this.prevX, this.prevY, this.x, this.y);
-                    // Draw node occasionally
                     if(this.timer === 0) {
                         p.fill(this.color);
                         p.noStroke();
-                        p.rect(this.x, this.y, 4, 4);
+                        p.rect(this.x, this.y, 6, 6);
                     }
+                }
+            }
+
+            class Floater {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = p.random(p.width);
+                    this.y = p.random(p.height, p.height + 200);
+                    this.speed = p.random(0.5, 2);
+                    this.char = String.fromCharCode(0x30A0 + Math.random() * 96);
+                    this.alpha = p.random(50, 150);
+                    this.baseX = this.x; // Remember original X
+                }
+                update() {
+                    this.y -= this.speed;
+
+                    // Mouse repulsion
+                    let d = p.dist(p.mouseX, p.mouseY, this.x, this.y);
+                    if(d < 100) {
+                        let angle = p.atan2(this.y - p.mouseY, this.x - p.mouseX);
+                        this.x += p.cos(angle) * 2;
+                        this.y += p.sin(angle) * 2;
+                    } else {
+                        // Drift back to base X slowly
+                        this.x = p.lerp(this.x, this.baseX, 0.02);
+                    }
+
+                    if(this.y < -50) this.reset();
+                }
+                display() {
+                    p.fill(255, 255, 255, this.alpha);
+                    p.noStroke();
+                    p.textSize(14); // Slightly larger
+                    p.text(this.char, this.x, this.y);
                 }
             }
         };
@@ -447,9 +558,8 @@
         // --- Init Scene ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Remove dense fog to see p5 background better, or make fog very subtle
-        // scene.fog = new THREE.FogExp2(0x050508, 0.03);
-        scene.fog = new THREE.FogExp2(0x050508, 0.01); // Lighter fog
+        // Light fog to blend but not obscure p5
+        scene.fog = new THREE.FogExp2(0x050508, 0.02);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(-5, 0, 15);
@@ -458,7 +568,6 @@
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        // Important: Set background to transparent
         renderer.setClearColor(0x000000, 0);
         container.appendChild(renderer.domElement);
 
@@ -494,11 +603,9 @@
 
         function createGear(radius, teeth, mat) {
             const group = new THREE.Group();
-            // Core Ring
             const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.6, 16, 50), mat);
             ring.rotation.x = Math.PI/2;
             group.add(ring);
-            // Teeth
             const toothGeo = new THREE.BoxGeometry(1.5, 1, 2);
             for(let i=0; i<360; i+=360/teeth) {
                 const rad = i * Math.PI / 180;
@@ -507,7 +614,6 @@
                 tooth.rotation.y = -rad;
                 group.add(tooth);
             }
-            // Spokes
             const spoke = new THREE.Mesh(new THREE.BoxGeometry(radius*2, 0.5, 0.5), mat);
             group.add(spoke);
             const spoke2 = spoke.clone();
@@ -534,7 +640,7 @@
 
         // --- ELEMENTAL PARTICLES ---
 
-        // 1. Earth Crystals (Floating Ores)
+        // 1. Earth Crystals
         const oreGeo = new THREE.OctahedronGeometry(0.3);
         const oreGroup = new THREE.Group();
         for(let i=0; i<30; i++) {
@@ -545,22 +651,22 @@
         }
         gearGroup.add(oreGroup);
 
-        // 2. Water Steam (Particles)
+        // 2. Water Steam
         const steamGeo = new THREE.BufferGeometry();
         const steamPos = new Float32Array(150 * 3);
         steamGeo.setAttribute('position', new THREE.BufferAttribute(steamPos, 3));
         const steamMat = new THREE.PointsMaterial({ color: 0x0077BE, size: 0.15, transparent: true, opacity: 0.6 });
         const steam = new THREE.Points(steamGeo, steamMat);
-        steam.position.y = 2; // Near water gear
+        steam.position.y = 2;
         gearGroup.add(steam);
 
         // 3. Lightning Arcs
-        const plasmaMat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
+        const plasmaMatLine = new THREE.LineBasicMaterial({ color: 0x00F3FF });
         function createArc(y1, y2) {
             const geo = new THREE.BufferGeometry();
-            const pos = new Float32Array(20 * 3); // 20 segments
+            const pos = new Float32Array(20 * 3);
             geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-            const line = new THREE.Line(geo, plasmaMat);
+            const line = new THREE.Line(geo, plasmaMatLine);
             gearGroup.add(line);
             return { mesh: line, y1: y1, y2: y2 };
         }
@@ -573,43 +679,34 @@
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // Gears
             gear1.rotation.y = t * 0.3;
             gear2.rotation.y = -t * 0.4;
             gear3.rotation.y = t * 0.5;
 
-            // Earth Ores
             oreGroup.rotation.y = t * 0.1;
             oreGroup.children.forEach(ore => ore.rotation.x += 0.01);
 
-            // Water Steam (Rise)
             const sPos = steam.geometry.attributes.position.array;
             for(let i=0; i<150; i++) {
-                // Initial init
                 if(sPos[i*3+1] === 0) {
                     sPos[i*3] = (Math.random()-0.5)*8;
                     sPos[i*3+1] = (Math.random()-0.5)*4;
                     sPos[i*3+2] = (Math.random()-0.5)*8;
                 }
-
-                sPos[i*3+1] += 0.02; // Rise
-                sPos[i*3] += Math.sin(t + i)*0.01; // Drift
-
-                if(sPos[i*3+1] > 3) sPos[i*3+1] = -3; // Reset
+                sPos[i*3+1] += 0.02;
+                sPos[i*3] += Math.sin(t + i)*0.01;
+                if(sPos[i*3+1] > 3) sPos[i*3+1] = -3;
             }
             steam.geometry.attributes.position.needsUpdate = true;
 
-            // Lightning Jitter
             arcs.forEach(arc => {
                 const arr = arc.mesh.geometry.attributes.position.array;
                 for(let i=0; i<20; i++) {
                     const alpha = i/19;
                     const y = THREE.MathUtils.lerp(arc.y1, arc.y2, alpha);
-                    // Spiral path
                     const angle = t * 4 + alpha * Math.PI * 2;
-                    const r = 0.5; // core radius
+                    const r = 0.5;
                     const jitter = (Math.random()-0.5) * 0.8;
-
                     arr[i*3] = Math.cos(angle)*r + jitter;
                     arr[i*3+1] = y;
                     arr[i*3+2] = Math.sin(angle)*r + jitter;
@@ -623,17 +720,14 @@
 
         // --- SCROLL INTERACTION ---
 
-        // 1. Loader & Init
         window.addEventListener('load', () => {
             document.getElementById('load-bar').style.width = '100%';
             setTimeout(() => {
                 gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
-                // Reveal Hero
                 gsap.to('.slate-earth', { opacity: 1, y: 0, duration: 1, delay: 0.5, ease: "power2.out" });
             }, 500);
         });
 
-        // 2. Scroll Camera
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
@@ -647,10 +741,9 @@
         tl.to(camera.position, { y: 12, z: 12, x: -3, duration: 1 });
         tl.to(camera.rotation, { z: -0.1, duration: 1 }, "<");
 
-        // 3. Content Reveal
         const panels = document.querySelectorAll('.data-slate');
         panels.forEach((p, i) => {
-            if(i === 0) return; // Skip hero
+            if(i === 0) return;
             gsap.to(p, {
                 opacity: 1, rotationY: 0, x: 0,
                 duration: 1,
@@ -662,7 +755,6 @@
             });
         });
 
-        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
