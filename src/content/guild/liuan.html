@@ -57,7 +57,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 1200vh; /* Long scroll for story */
+            height: 1800vh; /* Extended scroll for more content */
             width: 100%; position: relative;
             z-index: -1; pointer-events: none;
         }
@@ -360,8 +360,25 @@
             </div>
         </div>
 
-        <!-- 1. Origin -->
-        <div id="section-1" class="section-content section-left">
+        <!-- 1. Stats -->
+        <div id="section-stats" class="section-content section-left">
+            <div class="info-card">
+                <h2>// PLAYER STATS 📊</h2>
+                <ul style="font-family: var(--font-tech);">
+                    <li><strong>CLASS:</strong> FREELANCE COACH (LV. 99)</li>
+                    <li><strong>STR (Strength):</strong> ██████████ 100</li>
+                    <li><strong>INT (Physiology):</strong> ████████░░ 85</li>
+                    <li><strong>CHA (Meme Lord):</strong> ██████████ 100</li>
+                    <li><strong>LUCK (Gains):</strong> ███████░░░ 70</li>
+                </ul>
+                <p style="margin-top: 1rem; color: var(--c-neon-green); text-align: center; border: 1px solid var(--c-neon-green); padding: 5px;">
+                    PASSIVE SKILL: +50% GAINS TO ALLIES
+                </p>
+            </div>
+        </div>
+
+        <!-- 2. Origin -->
+        <div id="section-origin" class="section-content section-right">
             <div class="info-card">
                 <h2>// ORIGIN STORY 🦍</h2>
                 <p>我是一個<span class="highlight">健身自由教練</span>！</p>
@@ -371,8 +388,8 @@
             </div>
         </div>
 
-        <!-- 2. Philosophy -->
-        <div id="section-2" class="section-content section-right">
+        <!-- 3. Philosophy -->
+        <div id="section-philosophy" class="section-content section-left">
             <div class="info-card">
                 <h2>// PHILOSOPHY 🗿</h2>
                 <p>「健身運動除了自己練，帶身邊的人或是爺爺奶奶運動，給我的感覺更踏實！」</p>
@@ -381,8 +398,22 @@
             </div>
         </div>
 
-        <!-- 3. Services -->
-        <div id="section-3" class="section-content section-left">
+        <!-- 4. Gym Ecology -->
+        <div id="section-ecology" class="section-content section-center">
+             <div class="info-card">
+                <h2>// GYM ECOLOGY 🌍</h2>
+                <p>健身房就像一個微型社會。觀察不同的人類行為也是我的興趣之一。</p>
+                <ul>
+                    <li>🔊 <strong>The Screamer:</strong> 喊得比舉的重。 (Volume: 110%)</li>
+                    <li>📸 <strong>The Tripod Master:</strong> 為了拍限動佔據深蹲架一小時。</li>
+                    <li>👵 <strong>The Wise Elder:</strong> 隱藏在角落舉起不可思議重量的阿嬤。</li>
+                </ul>
+                <p class="highlight" style="text-align: center;">"We are all just monkeys lifting heavy rocks."</p>
+            </div>
+        </div>
+
+        <!-- 5. Services -->
+        <div id="section-services" class="section-content section-right">
             <div class="info-card">
                 <h2>// SERVICES 🔥</h2>
                 <ul>
@@ -394,8 +425,25 @@
             </div>
         </div>
 
-        <!-- 4. Future -->
-        <div id="section-4" class="section-content section-center">
+        <!-- 6. Myth Busters -->
+        <div id="section-myths" class="section-content section-left">
+             <div class="info-card">
+                <h2>// MYTH BUSTERS ❌</h2>
+                <p>讓我們來打破一些常見的健身迷思：</p>
+                <div style="background: rgba(255,0,0,0.2); padding: 10px; border-left: 3px solid red; margin-bottom: 10px;">
+                    <strong>MYTH:</strong> 重訓會讓我變成金剛芭比？<br>
+                    <span style="color: #aaa;">(Lifting makes you bulky)</span>
+                </div>
+                <div style="background: rgba(57, 255, 20, 0.2); padding: 10px; border-left: 3px solid var(--c-neon-green);">
+                    <strong>FACT:</strong> 它會讓你變得閃閃發光。✨<br>
+                    <span style="color: var(--c-neon-green);">(It makes you FABULOUS)</span>
+                </div>
+                <p style="margin-top: 1rem;">還有更多問題？儘管來問！</p>
+            </div>
+        </div>
+
+        <!-- 7. Future -->
+        <div id="section-future" class="section-content section-center">
             <div class="info-card" style="text-align: center;">
                 <h2>// NEXT LEVEL 🚀</h2>
                 <p>接下來會有更多好玩的計劃！😎</p>
@@ -713,12 +761,17 @@
                 }
             });
 
-            // Sections
+            // Sections (Recalculated for longer scroll)
+            // 7 sections total across 1800vh
+            // Approximate spacing: 100 / 8 = ~12.5% per slot
             const sections = [
-                { id: '#section-1', start: 10, end: 25 },
-                { id: '#section-2', start: 30, end: 45 },
-                { id: '#section-3', start: 50, end: 65 },
-                { id: '#section-4', start: 70, end: 85 }
+                { id: '#section-stats', start: 5, end: 15 },      // 1
+                { id: '#section-origin', start: 20, end: 30 },    // 2
+                { id: '#section-philosophy', start: 35, end: 45 },// 3
+                { id: '#section-ecology', start: 50, end: 60 },   // 4
+                { id: '#section-services', start: 65, end: 75 },  // 5
+                { id: '#section-myths', start: 80, end: 88 },     // 6
+                { id: '#section-future', start: 90, end: 95 }     // 7
             ];
 
             sections.forEach(s => {
