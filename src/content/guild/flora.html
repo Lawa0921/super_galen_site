@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flora 芙老師 | 豐饒甜食店</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            /* Warm Oven Palette */
+            --c-bg: #F9F7F2;
+            --c-oven-dark: #3E2723; /* Dark Chocolate */
+            --c-oven-glass: rgba(20, 10, 5, 0.85);
+            --c-heat: #FF7043; /* Heat Glow */
+            --c-gold: #FFC107; /* Burnished Gold */
+
+            --c-olive: #556B2F; /* Brand Olive Green */
+            --c-olive-light: #8F9779;
+
+            --c-cream: #FFF8E1; /* Butter Cream */
+            --c-bread: #D7CCC8; /* Flour/Dough */
+            --c-cookie: #EFEBE9; /* Biscuit */
+            --c-parchment: #FDF5E6; /* Old Paper */
+
+            --c-text: #5D4037;
+            --c-accent: #C2185B; /* Berry Jam */
+
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Noto Serif TC', serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            opacity: 0;
+            transition: opacity 1s ease;
+            cursor: default;
+        }
+
+        body.loaded {
+            opacity: 1;
+        }
+
+        /* --- OVEN DOOR (HERO) --- */
+        #oven-door {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: 100;
+            perspective: 1000px;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .door-panel {
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(62, 39, 35, 0.9), var(--c-oven-dark));
+            border: 20px solid #281815;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+            position: absolute;
+            top: 0; left: 0;
+            transform-origin: top center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .door-glass {
+            position: absolute;
+            top: 50px; bottom: 50px; left: 50px; right: 50px;
+            background: rgba(255, 160, 122, 0.05);
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 50px rgba(255, 112, 67, 0.2);
+            pointer-events: auto;
+        }
+
+        .door-handle {
+            width: 60%;
+            height: 40px;
+            background: linear-gradient(90deg, #5D4037, #8D6E63, #5D4037);
+            border-radius: 20px;
+            position: absolute;
+            bottom: 15%;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .oven-title {
+            font-family: var(--font-display);
+            color: var(--c-gold);
+            font-size: clamp(2rem, 5vw, 4rem);
+            text-shadow: 0 0 20px rgba(255, 193, 7, 0.4);
+            z-index: 2;
+            text-align: center;
+            letter-spacing: 0.1em;
+        }
+
+        .oven-subtitle {
+            font-size: 0.5em;
+            color: white;
+            display: block;
+        }
+
+        .oven-hint {
+            color: rgba(255,255,255,0.6);
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            animation: pulse 2s infinite;
+            z-index: 2;
+        }
+
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* --- CONTENT WRAPPERS (PASTRIES) --- */
+        #content-layer {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding-top: 100vh; /* Spacer for the "Opening" scroll */
+            padding-bottom: 20vh;
+        }
+
+        .pastry-card {
+            position: relative;
+            margin-bottom: 10vh;
+            padding: 4rem;
+            color: var(--c-text);
+            transition: transform 0.3s ease;
+        }
+
+        /* 1. CHEF COOKIE (Avatar + Intro) */
+        .card-cookie {
+            background: var(--c-cookie);
+            border-radius: 50% 50% 45% 55% / 55% 45% 60% 40%; /* Organic Cookie Shape */
+            box-shadow:
+                inset 10px 10px 30px rgba(255,255,255,0.8),
+                inset -10px -10px 30px rgba(93, 64, 55, 0.1),
+                15px 15px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 800px;
+            margin-left: auto; margin-right: auto;
+            border: 8px solid rgba(255,255,255,0.4);
+        }
+
+        .card-cookie::before {
+            content: ''; position: absolute; top: 15%; right: 20%;
+            width: 40px; height: 30px; background: #5D4037; border-radius: 50%; opacity: 0.8;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        .card-cookie::after {
+            content: ''; position: absolute; bottom: 20%; left: 15%;
+            width: 35px; height: 35px; background: #5D4037; border-radius: 50%; opacity: 0.8;
+             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 2. STATS BREAD (Loaf) */
+        .card-bread {
+            background: #EFEBE9;
+            border-radius: 40px 40px 100px 100px / 120px 120px 30px 30px; /* Loaf Top */
+            box-shadow:
+                0 20px 0 #D7CCC8, /* Crust Thickness */
+                0 30px 40px rgba(0,0,0,0.15);
+            padding: 5rem 3rem 3rem;
+            max-width: 700px;
+            margin-left: auto; margin-right: auto;
+            position: relative;
+        }
+
+        .card-bread .crust-line {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 80%; height: 100%; border-radius: inherit;
+            border-top: 4px solid rgba(93, 64, 55, 0.1);
+            pointer-events: none;
+        }
+
+        /* 3. SWISS ROLL (The Grand Tour) */
+        .card-swiss-roll {
+            background: linear-gradient(90deg, #FFF9C4 0%, #FFF59D 20%, #FFF9C4 40%, #FFF59D 60%, #FFF9C4 80%, #FFF59D 100%);
+            border-radius: 20px;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.15);
+            max-width: 900px;
+            margin-left: auto; margin-right: auto;
+            overflow: hidden;
+            position: relative;
+            padding: 3rem;
+        }
+
+        .roll-cream {
+            position: absolute; top: 0; left: 0; width: 100%; height: 20px;
+            background: var(--c-cream);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        /* Timeline line */
+        .timeline-grid::before {
+            content: ''; position: absolute; top: 40px; left: 0; right: 0; height: 4px;
+            background: var(--c-olive); z-index: 0; opacity: 0.3;
+            border-radius: 2px;
+        }
+
+        .timeline-item {
+            position: relative; z-index: 1; text-align: center;
+        }
+        .timeline-dot {
+            width: 20px; height: 20px; background: var(--c-olive);
+            border-radius: 50%; margin: 30px auto 10px;
+            border: 4px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 4. THE GRIMOIRE (Open Book Strategy) */
+        .card-grimoire {
+            background: var(--c-parchment);
+            border-radius: 5px 20px 20px 5px;
+            box-shadow:
+                inset 40px 0 60px -20px rgba(0,0,0,0.1), /* Spine shadow */
+                5px 5px 15px rgba(0,0,0,0.1);
+            max-width: 950px;
+            margin-left: auto; margin-right: auto;
+            padding: 4rem 5rem;
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .grimoire-spine {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+            background: rgba(93, 64, 55, 0.1);
+            transform: translateX(-50%);
+        }
+
+        .chapter-title {
+            font-family: var(--font-display);
+            color: var(--c-olive);
+            border-bottom: 2px solid var(--c-olive-light);
+            padding-bottom: 0.5rem; margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .spell-list li {
+            margin-bottom: 0.8rem;
+            list-style: none;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .spell-list li::before {
+            content: '✦'; position: absolute; left: 0; color: var(--c-accent);
+        }
+
+        /* 5. NEW SECTION: LA CARTE (Menu) */
+        .card-menu {
+            background: #FFF;
+            border: 8px double var(--c-olive);
+            border-radius: 10px;
+            max-width: 800px;
+            margin-left: auto; margin-right: auto;
+            padding: 4rem;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .menu-header {
+            text-align: center;
+            border-bottom: 2px solid var(--c-olive-light);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .menu-items {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+
+        .menu-icon {
+            font-size: 2rem;
+            color: var(--c-olive);
+            background: var(--c-bg);
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            flex-shrink: 0;
+            border: 2px solid var(--c-olive-light);
+        }
+
+        .menu-text h3 {
+            font-family: var(--font-display);
+            color: var(--c-text);
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .menu-text ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .menu-text li {
+            margin-bottom: 0.3rem;
+            position: relative;
+            padding-left: 1rem;
+            font-size: 0.95rem;
+            color: #6D4C41;
+        }
+
+        .menu-text li::before {
+            content: '•';
+            position: absolute; left: 0; color: var(--c-heat);
+        }
+
+
+        /* 6. TART (Taiwan Story) */
+        .card-tart {
+            background: white;
+            border-radius: 50%;
+            width: 100%; aspect-ratio: 1/1;
+            max-width: 700px;
+            margin-left: auto; margin-right: auto;
+            border: 20px dashed #D7CCC8; /* Crust edge */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center;
+            padding: 4rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tart-filling {
+            position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #FFF 40%, #E8F5E9 100%);
+            z-index: -1;
+        }
+
+        .tart-icons {
+            margin-top: 2rem;
+            font-size: 1.5rem;
+            color: var(--c-olive);
+        }
+
+        .tart-icons i {
+            margin: 0 10px;
+        }
+
+        /* AVATAR STYLING */
+        .chef-avatar-container {
+            width: 250px; height: 250px;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .chef-avatar {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 6px solid white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
+        .chef-hat {
+            position: absolute;
+            top: -40px; right: -20px;
+            font-size: 4rem;
+            color: white;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.2));
+            transform: rotate(15deg);
+        }
+
+        /* TYPOGRAPHY OVERRIDES & UTILITIES */
+        h2 {
+            font-family: var(--font-display);
+            color: var(--c-text);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .card-cookie h2 { color: var(--c-olive); }
+        .card-bread h2 { color: #8D6E63; }
+        .card-grimoire h2 { color: var(--c-olive); grid-column: span 2; }
+        .card-menu h2 { color: var(--c-olive); }
+        .card-tart h2 { color: #1E88E5; /* Ocean Blue */ }
+
+        p { line-height: 1.8; font-size: 1.1rem; margin-bottom: 1rem;}
+
+        .text-olive { color: var(--c-olive); }
+        .text-olive-light { color: var(--c-olive-light); }
+        .text-bold { font-weight: bold; }
+        .text-italic { font-style: italic; }
+        .text-brown { color: #8D6E63; }
+        .text-berry { color: #C2185B; }
+        .text-gold { color: #FFC107; }
+        .text-blue { color: #1E88E5; }
+
+        .tart-quote {
+            margin-top: 1rem;
+            font-style: italic;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* STAT BARS (Flour Dust Style) */
+        .stat-wrapper { margin-bottom: 1.5rem; }
+        .stat-label { display: flex; justify-content: space-between; font-weight: bold; }
+        .stat-bar-container {
+            background: rgba(0,0,0,0.05);
+            border-radius: 20px;
+            height: 12px;
+            margin: 0.5rem 0 0;
+            overflow: hidden;
+        }
+        .stat-bar {
+            height: 100%;
+            background: var(--c-olive);
+            border-radius: 20px;
+            width: 0%;
+            background-image: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+        }
+
+        /* GALLERY GRID (Waffle) */
+        .waffle-container {
+            background: transparent;
+            box-shadow: none;
+            padding: 0;
+        }
+        .waffle-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            background: #D7CCC8;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: inset 2px 2px 10px rgba(0,0,0,0.1);
+        }
+        .waffle-item img {
+            width: 100%; height: 250px; object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.3s;
+        }
+        .waffle-item:hover img { transform: scale(1.02); }
+
+        /* THREE.JS CANVAS */
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+        }
+
+        /* FOOTER */
+        .footer-card {
+            text-align: center;
+            padding: 4rem;
+            margin-top: 10vh;
+        }
+
+        .social-btn {
+            display: inline-flex; width: 60px; height: 60px;
+            border-radius: 50%; background: var(--c-olive); color: white;
+            align-items: center; justify-content: center; font-size: 1.5rem;
+            margin: 0 1rem; text-decoration: none;
+            transition: transform 0.2s;
+        }
+        .social-btn:hover { transform: scale(1.1) rotate(10deg); }
+
+        .footer-credit {
+            margin-top: 2rem;
+            opacity: 0.6;
+            font-size: 0.9rem;
+        }
+
+        .footer-credit a {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+        }
+
+        /* LOADER */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            font-family: var(--font-display); font-size: 2rem; color: var(--c-olive);
+        }
+
+        /* Responsive */
+        @media(max-width: 768px) {
+            .pastry-card {
+                padding: 2rem;
+                border-radius: 20px !important;
+                margin: 2rem 1rem;
+                width: auto !important;
+                max-width: 100% !important;
+                aspect-ratio: unset !important;
+                height: auto !important;
+            }
+            .card-cookie {
+                border-radius: 20px !important; /* Override complex shape */
+            }
+            .card-bread {
+                border-radius: 20px !important;
+            }
+            .card-tart {
+                border-radius: 20px !important;
+                aspect-ratio: unset !important;
+                border-style: solid; /* Dashed looks bad when stretched */
+                border-width: 10px;
+            }
+            .tart-filling {
+                border-radius: 10px;
+            }
+
+            .card-grimoire {
+                display: flex !important; /* Force flex instead of grid for safety */
+                flex-direction: column !important;
+                gap: 2rem;
+                padding: 2rem 1rem !important; /* Further reduce padding */
+                width: 100% !important;
+                max-width: 100% !important;
+                border-radius: 10px !important;
+                box-shadow: 5px 5px 15px rgba(0,0,0,0.1) !important;
+                overflow: hidden !important; /* Prevent internal content from expanding container */
+            }
+            .card-grimoire > div {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .spell-list {
+                width: 100% !important;
+                padding-left: 1rem !important; /* Reduce list indentation */
+            }
+            .spell-list li {
+                width: 100% !important;
+                word-wrap: break-word !important; /* Force wrapping */
+                overflow-wrap: break-word !important;
+            }
+            .grimoire-spine { display: none; }
+
+            .waffle-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .waffle-item img { height: auto; aspect-ratio: 16/9; }
+
+            .timeline-grid { grid-template-columns: 1fr; margin-top: 1rem;}
+            .timeline-grid::before { left: 20px; width: 4px; height: 100%; top: 0; transform: none; }
+            .timeline-item { text-align: left; padding-left: 60px; margin-bottom: 2rem; }
+            .timeline-dot { margin: 0; position: absolute; left: 12px; top: 0; }
+
+            h2 { font-size: 1.8rem; }
+            .menu-item { flex-direction: column; align-items: center; text-align: center; }
+            .menu-text ul { text-align: left; display: inline-block; }
+
+            .chef-avatar-container { width: 180px; height: 180px; }
+            .chef-hat { font-size: 3rem; top: -30px; right: -10px; }
+
+            .oven-title { font-size: 2.5rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">FLORA'S PATISSERIE</div>
+
+    <!-- OVEN DOOR -->
+    <div id="oven-door">
+        <div class="door-panel">
+            <div class="door-glass"></div>
+            <div class="door-handle"></div>
+            <h1 class="oven-title">FLORA<br><span class="oven-subtitle">The Sweet Alchemy</span></h1>
+            <div class="oven-hint"><i class="fa-solid fa-chevron-down"></i> SCROLL TO OPEN <i class="fa-solid fa-chevron-down"></i></div>
+        </div>
+    </div>
+
+    <!-- 3D BACKGROUND -->
+    <div id="canvas-container"></div>
+
+    <!-- SCROLL CONTENT -->
+    <div id="content-layer">
+
+        <!-- SECTION 1: CHEF COOKIE -->
+        <div class="pastry-card card-cookie">
+            <div class="chef-avatar-container">
+                <img src="/assets/img/guild/flora/profile.webp" class="chef-avatar" alt="Flora">
+                <i class="fa-solid fa-hat-wizard chef-hat"></i>
+            </div>
+            <h2>Master Chef Flora</h2>
+            <p>
+                我是 <span class="text-olive text-bold">Flora 芙老師</span>，品牌是豐饒甜食店。<br>
+                在甜點領域深耕 17 年，把甜點變成一種跨文化的共同語言。
+            </p>
+            <p class="text-brown text-italic" style="margin-top: 1rem;">
+                "甜點是通往幸福的最短途徑，是連結人、土地與情感的最佳入口。"
+            </p>
+        </div>
+
+        <!-- SECTION 2: STATS BREAD -->
+        <div class="pastry-card card-bread">
+            <div class="crust-line"></div>
+            <h2>Ingredient Analysis</h2>
+
+            <div class="stat-wrapper">
+                <div class="stat-label"><span>SWEETNESS</span> <span>100%</span></div>
+                <div class="stat-bar-container"><div class="stat-bar" style="width: 100%;"></div></div>
+            </div>
+
+            <div class="stat-wrapper">
+                <div class="stat-label"><span>R&D PRECISION</span> <span>98%</span></div>
+                <div class="stat-bar-container"><div class="stat-bar" style="width: 98%;"></div></div>
+            </div>
+
+            <div class="stat-wrapper">
+                <div class="stat-label"><span>TEACHING</span> <span>95%</span></div>
+                <div class="stat-bar-container"><div class="stat-bar" style="width: 95%;"></div></div>
+            </div>
+        </div>
+
+        <!-- NEW SECTION: THE GRAND TOUR (SWISS ROLL) -->
+        <div class="pastry-card card-swiss-roll">
+            <div class="roll-cream"></div>
+            <h2>The Grand Tour</h2>
+            <p style="text-align: center;">從台灣到海外，走過教學、研發、品牌經營三條戰線。</p>
+
+            <div class="timeline-grid">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <h3 class="text-olive">Origin: Taiwan</h3>
+                    <p style="font-size: 0.9rem;">深耕 17 年<br>教學與研發的起點</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <h3 class="text-berry">Expedition</h3>
+                    <p style="font-size: 0.9rem;">Malaysia & India<br>英文授課跨文化交流</p>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <h3 class="text-gold">Scope</h3>
+                    <p style="font-size: 0.9rem;">幼兒園 / 國高中<br>成人職訓 / 企業顧問</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW SECTION: THE GRIMOIRE (STRATEGY BOOK) -->
+        <div class="pastry-card card-grimoire">
+            <div class="grimoire-spine"></div>
+            <h2>The Sweet Grimoire</h2>
+
+            <!-- Left Page -->
+            <div>
+                <div class="chapter-title">I. The Strategy</div>
+                <p>我的專長不只是做出好吃的甜點，而是把「產品、教育、文化」整合成一套有策略的內容系統。</p>
+                <ul class="spell-list">
+                    <li><strong>Product Architecture:</strong> 從菜單設計、成本結構到定價邏輯，用企業經營的角度操作甜點。</li>
+                    <li><strong>Brand Narrative:</strong> 品牌故事與市場定位的精準結合。</li>
+                </ul>
+            </div>
+
+            <!-- Right Page -->
+            <div>
+                <div class="chapter-title">II. The Curriculum</div>
+                <p>將甜點轉化為可傳承的模組化知識。</p>
+                <ul class="spell-list">
+                    <li><strong>Module Design:</strong> 針對不同年齡層（幼兒至成人）的專業課程設計。</li>
+                    <li><strong>Cultural Bridge:</strong> 透過甜點探討永續與在地議題，讓每一份甜點成為價值載體。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- NEW SECTION: LA CARTE (Menu of Services) -->
+        <div class="pastry-card card-menu">
+            <div class="menu-header">
+                <h2>Service Menu</h2>
+                <p class="text-olive-light text-italic">La Carte de Services</p>
+            </div>
+
+            <div class="menu-items">
+                <!-- Item 1 -->
+                <div class="menu-item">
+                    <div class="menu-icon"><i class="fa-solid fa-compass-drafting"></i></div>
+                    <div class="menu-text">
+                        <h3>Product & Menu Design</h3>
+                        <ul>
+                            <li>Menu Engineering & Pricing Strategy (菜單設計與定價)</li>
+                            <li>Cost Control & Structure Analysis (成本結構分析)</li>
+                            <li>Seasonal & Local Ingredient R&D (在地食材研發)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="menu-item">
+                    <div class="menu-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+                    <div class="menu-text">
+                        <h3>Education & Training</h3>
+                        <ul>
+                            <li>Professional Baking Courses (專業甜點培訓)</li>
+                            <li>Cross-Cultural Workshops (跨文化甜點交流)</li>
+                            <li>K-12 Food Education Programs (食農教育)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="menu-item">
+                    <div class="menu-icon"><i class="fa-solid fa-briefcase"></i></div>
+                    <div class="menu-text">
+                        <h3>Brand Consultancy</h3>
+                        <ul>
+                            <li>Brand Narrative & Storytelling (品牌故事行銷)</li>
+                            <li>Sustainability Strategy (永續經營策略)</li>
+                            <li>Market Positioning & Analysis (市場定位分析)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- NEW SECTION: ALCHEMY OF LAND (TART) -->
+        <div class="pastry-card card-tart">
+            <div class="tart-filling"></div>
+            <h2>Alchemy of The Land</h2>
+            <p style="max-width: 500px;">
+                現在，我聚焦在用甜點說出台灣的故事。<br>
+                把 <span class="text-blue text-bold">海洋</span>、
+                <span class="text-olive text-bold">土地</span>、
+                <span class="text-berry text-bold">文化</span>、
+                <span class="text-gold text-bold">教育</span> 放進產品裡。
+            </p>
+            <div class="tart-icons">
+                <i class="fa-solid fa-water"></i>
+                <i class="fa-solid fa-seedling"></i>
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <p class="tart-quote">
+                "讓每一份甜點不只是商品，而是一個可以被理解、被記住、也被分享的價值載體。"
+            </p>
+        </div>
+
+        <!-- SECTION 4: SHOWCASE WAFFLE -->
+        <div class="pastry-card waffle-container">
+            <div class="waffle-grid">
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_tree.webp" alt="Showcase" loading="lazy"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_slice.webp" alt="Showcase" loading="lazy"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_floral.webp" alt="Showcase" loading="lazy"></div>
+                <div class="waffle-item"><img src="/assets/img/guild/flora/showcase_cupcake.webp" alt="Showcase" loading="lazy"></div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer-card">
+            <h2>Connect with Flora</h2>
+            <div style="margin-top: 2rem;">
+                <a href="https://www.threads.net/@flora_setsuna_tw" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.facebook.com/FlowGateau" target="_blank" class="social-btn"><i class="fa-brands fa-facebook-f"></i></a>
+            </div>
+            <p class="footer-credit">Made with love by <a href="/guild/">SuperGalen's Dungeon</a></p>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js" defer></script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- GSAP SETUP ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- THREE.JS SCENE ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xF9F7F2, 0.02); // Cream fog
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 10);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- INGREDIENTS (SPRITES) ---
+        function createIconTexture(iconChar, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '900 80px "Font Awesome 6 Free"';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(iconChar, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const icons = [
+            { char: '\uf1fd', color: '#556B2F' }, // Cake (Olive)
+            { char: '\uf19d', color: '#FF7043' }, // Grad Cap (Education)
+            { char: '\uf563', color: '#8D6E63' }, // Cookie (Choco)
+            { char: '\uf094', color: '#FDD835' }, // Lemon (Yellow)
+            { char: '\uf02d', color: '#5D4037' }, // Book (Brown)
+        ];
+
+        const sprites = [];
+        const group = new THREE.Group();
+        scene.add(group);
+
+        // Wait for fonts
+        document.fonts.ready.then(() => {
+            const materials = icons.map(i => new THREE.SpriteMaterial({
+                map: createIconTexture(i.char, i.color),
+                transparent: true, opacity: 0.8
+            }));
+
+            for(let i=0; i<60; i++) {
+                const sprite = new THREE.Sprite(materials[Math.floor(Math.random()*materials.length)]);
+                // Spread wide and tall
+                sprite.position.set(
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 50 - 10, // Start lower
+                    (Math.random() - 0.5) * 20
+                );
+                const scale = Math.random() * 0.8 + 0.5;
+                sprite.scale.set(scale, scale, 1);
+
+                sprite.userData = {
+                    speedY: Math.random() * 0.02 + 0.01,
+                    wobble: Math.random() * Math.PI * 2
+                };
+
+                group.add(sprite);
+                sprites.push(sprite);
+            }
+        });
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            sprites.forEach(s => {
+                s.position.y += s.userData.speedY; // Float up like heat/bubbles
+                s.position.x += Math.sin(Date.now() * 0.001 + s.userData.wobble) * 0.01;
+
+                // Reset if too high
+                if(s.position.y > 20) s.position.y = -30;
+            });
+
+            group.rotation.y = window.scrollY * 0.0005; // Rotate scene on scroll
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- SCROLL INTERACTION (OVEN & CARDS) ---
+
+        // 1. OVEN DOOR OPENING
+        const doorTimeline = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "500px top", // Short distance to open
+                scrub: 1,
+                pin: false
+            }
+        });
+
+        doorTimeline
+            .to(".door-panel", {
+                rotationX: -90, // Rotate down like oven door
+                y: 100,
+                opacity: 0,
+                ease: "power2.in"
+            })
+            .to("#oven-door", { pointerEvents: "none" }, "<"); // Allow clicks through
+
+        // 2. PASTRY CARDS ENTRANCE
+        gsap.utils.toArray('.pastry-card').forEach((card, i) => {
+            // Parallax entrance
+            const dir = i % 2 === 0 ? -100 : 100; // Alternating sides
+            const rot = i % 2 === 0 ? -5 : 5;
+
+            gsap.from(card, {
+                x: dir,
+                rotation: rot,
+                opacity: 0,
+                duration: 1.5,
+                ease: "elastic.out(1, 0.7)",
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                }
+            });
+        });
+
+        // 3. STAT BARS FILL
+        gsap.utils.toArray('.stat-bar').forEach(bar => {
+            gsap.from(bar, {
+                scaleX: 0,
+                transformOrigin: "left center",
+                duration: 1.5,
+                scrollTrigger: {
+                    trigger: bar,
+                    start: "top 90%"
+                }
+            });
+        });
+
+        // LOADER
+        window.addEventListener('load', () => {
+            document.body.classList.add('loaded');
+            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
+        });
+
+        // RESIZE
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
