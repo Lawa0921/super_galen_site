@@ -631,7 +631,7 @@
 
         // Config
         const CONFIG = {
-            particleCount: 2000,
+            particleCount: 1500, // Slightly reduced count
             particleRange: 150,
             cameraZ: 60,
             color1: 0x00FF00, // Neon Green
@@ -677,50 +677,69 @@
         gridHelperTop.position.y = 20;
         scene.add(gridHelperTop);
 
-        // 2. Floating Data (Particles) - Individual Animation Logic
-        const particlesGeo = new THREE.BufferGeometry();
-        const count = 1500;
-        const posArray = new Float32Array(count * 3);
-        const colorArray = new Float32Array(count * 3);
+        // 2. Floating Icons (Sprites)
 
-        // Initial Positions
-        for(let i=0; i<count; i++) {
-            posArray[i*3] = (Math.random() - 0.5) * 200; // x
-            posArray[i*3+1] = (Math.random() - 0.5) * 40; // y
-            posArray[i*3+2] = (Math.random() - 0.5) * 200; // z (Range -100 to 100)
-
-            // Random Green/Gold/Magenta
-            const r = Math.random();
-            if(r < 0.6) { // Green
-                colorArray[i*3] = 0; colorArray[i*3+1] = 1; colorArray[i*3+2] = 0;
-            } else if (r < 0.8) { // Gold
-                colorArray[i*3] = 1; colorArray[i*3+1] = 0.8; colorArray[i*3+2] = 0;
-            } else { // Magenta
-                colorArray[i*3] = 1; colorArray[i*3+1] = 0; colorArray[i*3+2] = 1;
-            }
+        // Texture Generation Helper
+        function createEmojiTexture(char, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = 'bold 80px "Orbitron", "Noto Sans TC", sans-serif'; // Fallback
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(char, 64, 64);
+            return new THREE.CanvasTexture(canvas);
         }
 
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+        const textures = [
+            createEmojiTexture('$', '#00FF00'),  // Money Green
+            createEmojiTexture('¥', '#FFD700'),  // Gold
+            createEmojiTexture('%', '#00FFFF'),  // Cyan
+            createEmojiTexture('📈', '#FF00FF'), // Magenta
+            createEmojiTexture('1', '#00FF00'),  // Data
+            createEmojiTexture('0', '#00FF00'),  // Data
+        ];
 
-        const particlesMat = new THREE.PointsMaterial({
-            size: 0.5,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
+        // Create separate point clouds for each texture for performance (simple batching)
+        const particlesGroup = new THREE.Group();
+        scene.add(particlesGroup);
+
+        const particlesPerTexture = Math.floor(CONFIG.particleCount / textures.length);
+
+        textures.forEach(tex => {
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(particlesPerTexture * 3);
+
+            for(let i=0; i<particlesPerTexture; i++) {
+                pos[i*3] = (Math.random() - 0.5) * 200; // x
+                pos[i*3+1] = (Math.random() - 0.5) * 40; // y
+                pos[i*3+2] = (Math.random() - 0.5) * 200; // z
+            }
+
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+            const mat = new THREE.PointsMaterial({
+                size: 2.5, // Larger for visibility
+                map: tex,
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            const points = new THREE.Points(geo, mat);
+            particlesGroup.add(points);
         });
-
-        const particles = new THREE.Points(particlesGeo, particlesMat);
-        scene.add(particles);
 
         // --- Animation Loop ---
         let mouseX = 0;
         let mouseY = 0;
-        let targetSpeed = 0.02; // Reduced base speed for comfort
+        let targetSpeed = 0.02;
 
         window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005; // Reduced sensitivity
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
             mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
         });
 
@@ -729,20 +748,21 @@
             gridHelper.position.z = (gridHelper.position.z + targetSpeed) % 4;
             gridHelperTop.position.z = (gridHelperTop.position.z + targetSpeed) % 4;
 
-            // Seamless Particle Loop: Animate individual vertices
-            const positions = particles.geometry.attributes.position.array;
+            // Animate Particles
+            particlesGroup.children.forEach(points => {
+                const positions = points.geometry.attributes.position.array;
+                const count = positions.length / 3;
 
-            for(let i=0; i<count; i++) {
-                const i3 = i * 3;
-                // Slower Z movement
-                positions[i3+2] += targetSpeed * 2;
+                for(let i=0; i<count; i++) {
+                    const i3 = i * 3;
+                    positions[i3+2] += targetSpeed * 4;
 
-                // Wrap around smoothly
-                if(positions[i3+2] > 100) {
-                    positions[i3+2] = -100;
+                    if(positions[i3+2] > 100) {
+                        positions[i3+2] = -100;
+                    }
                 }
-            }
-            particles.geometry.attributes.position.needsUpdate = true;
+                points.geometry.attributes.position.needsUpdate = true;
+            });
 
             // Mouse interaction
             scene.rotation.y += (mouseX - scene.rotation.y) * 0.05;
@@ -762,9 +782,8 @@
             end: "bottom bottom",
             onUpdate: (self) => {
                 gsap.to('#scroll-progress', { height: (self.progress * 100) + '%', duration: 0.1 });
-                // Velocity based speed - Capped lower for comfort
                 targetSpeed = 0.02 + Math.abs(self.getVelocity() / 8000);
-                if(targetSpeed > 0.2) targetSpeed = 0.2; // Cap speed
+                if(targetSpeed > 0.2) targetSpeed = 0.2;
             }
         });
 
@@ -815,7 +834,7 @@
             });
         });
 
-        // 4. Global Color Sync (Three.js Bloom Color)
+        // 4. Global Color Sync
         const sections = gsap.utils.toArray('[data-color]');
         sections.forEach(section => {
             ScrollTrigger.create({
@@ -839,7 +858,7 @@
             });
         }
 
-        // Optimized Resize (Debounce could be added, but simple update is usually fine for desktops)
+        // Optimized Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
