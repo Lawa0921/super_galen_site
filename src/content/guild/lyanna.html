@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>允曦 Lyanna | 華語助理教授 & MMT 諮詢師</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;600;900&family=Space+Grotesk:wght@300;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #0a0f14;
+            --c-text: #e0e6ed;
+            --c-primary: #00d2ff; /* Cyber Teal */
+            --c-secondary: #ffb86c; /* Warm Gold */
+            --c-accent: #ff4757; /* Alert Red */
+            --f-main: 'Noto Serif TC', serif;
+            --f-mono: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-main);
+            overflow-x: hidden;
+        }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: -1;
+        }
+
+        /* --- UI Elements --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            color: var(--c-text); text-decoration: none;
+            font-family: var(--f-mono); font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.2); padding: 0.5rem 1rem;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .nav-back:hover {
+            border-color: var(--c-primary); color: var(--c-primary);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 4rem 2rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 1200px; width: 100%;
+            position: relative; z-index: 10;
+            margin: 0 auto;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            margin: 0;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #fff, var(--c-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+        }
+
+        h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 2rem;
+            border-left: 5px solid var(--c-secondary);
+            padding-left: 1rem;
+        }
+
+        h3 {
+            font-family: var(--f-mono);
+            color: var(--c-secondary);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.8);
+            max-width: 800px;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight {
+            color: var(--c-primary);
+            font-weight: bold;
+        }
+
+        .box-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Hero Section --- */
+        #hero .content-wrapper {
+            display: flex;
+            gap: 4rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            flex-shrink: 0;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+            filter: grayscale(20%) contrast(1.1);
+            position: relative;
+            z-index: 2;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .avatar-bg-glow {
+            position: absolute;
+            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            background: radial-gradient(circle, var(--c-primary), transparent 70%);
+            opacity: 0.3;
+            z-index: 1;
+            filter: blur(20px);
+            animation: pulse-glow 4s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { opacity: 0.2; transform: scale(0.9); }
+            100% { opacity: 0.5; transform: scale(1.1); }
+        }
+
+        .role-tag {
+            font-family: var(--f-mono);
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--c-primary);
+            color: var(--c-primary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+        }
+
+        /* --- Services Grid --- */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .service-card {
+            background: rgba(10, 20, 30, 0.6);
+            border: 1px solid rgba(0, 210, 255, 0.1);
+            padding: 2.5rem;
+            transition: 0.4s;
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--c-secondary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--c-primary);
+            transform: scaleY(0);
+            transition: 0.4s;
+            transform-origin: bottom;
+        }
+
+        .service-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .service-icon {
+            font-size: 2.5rem;
+            color: var(--c-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* --- Gallery Section --- */
+        #gallery {
+            overflow: hidden;
+        }
+        .gallery-track {
+            display: flex;
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+        .gallery-item {
+            min-width: 300px;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.3s;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: 0.5s;
+        }
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+        .gallery-item:hover {
+            transform: scale(1.05);
+            z-index: 2;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+            border-color: var(--c-primary);
+        }
+
+        /* --- Quote Section --- */
+        .quote-box {
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .quote-text {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 300;
+            font-style: italic;
+            color: #fff;
+        }
+        .quote-icon {
+            font-size: 4rem;
+            color: rgba(255,255,255,0.1);
+            position: absolute;
+            top: -2rem; left: -2rem;
+        }
+
+        /* --- Footer --- */
+        footer {
+            background: #000;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .social-btn {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: #fff; text-decoration: none;
+            transition: 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .social-btn:hover {
+            background: var(--c-primary);
+            color: #000;
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 0 20px var(--c-primary);
+        }
+
+        /* --- Mobile Tweaks --- */
+        @media (max-width: 768px) {
+            .content-wrapper { flex-direction: column; text-align: center; }
+            .avatar-container { margin: 0 auto; width: 200px; height: 200px; }
+            section { padding: 3rem 1.5rem; }
+            h2 { border-left: none; border-bottom: 3px solid var(--c-secondary); padding-bottom: 0.5rem; padding-left: 0; display: inline-block; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/guild/" class="nav-back"><i class="fa-solid fa-chevron-left"></i> GUILD HALL</a>
+    <div id="webgl-container"></div>
+
+    <!-- HERO -->
+    <section id="hero">
+        <div class="container">
+            <div class="content-wrapper">
+                <div class="avatar-container gs-hero">
+                    <div class="avatar-bg-glow"></div>
+                    <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna" class="avatar-img">
+                </div>
+                <div style="flex: 1;">
+                    <span class="role-tag gs-hero">Chinese Assistant Professor</span>
+                    <h1 class="gs-hero">允曦 Lyanna</h1>
+                    <h3 class="gs-hero" style="color: #fff; opacity: 0.8; font-weight: 300;">華語教師培訓創辦者 | MMT 諮詢師</h3>
+                    <p class="gs-hero" style="margin-top: 2rem;">
+                        專注於陪伴對華語教學有熱情的人，從「不知道是否適合這條路」，到「具備資格、清楚方向，真正走出去」。
+                    </p>
+                    <div class="gs-hero" style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: flex-start;">
+                        <span style="color: var(--c-secondary); border-bottom: 1px solid var(--c-secondary);">#教育部證照</span>
+                        <span style="color: var(--c-primary); border-bottom: 1px solid var(--c-primary);">#職涯引導</span>
+                        <span style="color: #fff; border-bottom: 1px solid #fff;">#人生方向</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHAT I DO -->
+    <section id="what-i-do">
+        <div class="container">
+            <div class="box-glass gs-fade">
+                <h2>我在做什麼</h2>
+                <div class="services-grid">
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <h3>師資培訓</h3>
+                        <p>教育部華語教師證照系統化培訓。將龐雜的知識拆解成可執行的學習系統，助你高效通關。</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-compass"></i></div>
+                        <h3>職涯規劃</h3>
+                        <p>海外華語教學與職涯規劃引導。不只是教書，更帶你探索如何將華語變成一條穩定、走得出去的路。</p>
+                    </div>
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                        <h3>轉職探索</h3>
+                        <p>結合 MMT 天賦分析與人際關係諮詢。讓學習不只停在證照，而是回到人生整體的選擇。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHY -->
+    <section id="why">
+        <div class="container" style="display: flex; flex-direction: column; align-items: flex-end; text-align: right;">
+            <div style="max-width: 800px;" class="gs-fade">
+                <h2>為什麼我做這件事</h2>
+                <p>
+                    在陪伴許多老師與學員的過程中，我發現多數人卡住的，<span class="highlight">從來不只是考試</span>。
+                </p>
+                <div style="font-size: 1.5rem; color: #fff; margin: 2rem 0; font-family: var(--f-mono);">
+                    <div class="typing-text">「我適合嗎？」</div>
+                    <div class="typing-text">「我能走多遠？」</div>
+                    <div class="typing-text">「如果真的出國，生活與關係該怎麼面對？」</div>
+                </div>
+                <p>
+                    因此，我將華語教學專業，結合 <span style="color: var(--c-secondary)">MMT 天賦分析</span> 與人際關係諮詢，
+                    陪你釐清方向與節奏。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section id="gallery-section" style="display: block; padding: 4rem 0;">
+        <div class="container">
+            <h2 class="gs-fade" style="margin-left: 2rem;">教學現場</h2>
+        </div>
+        <div class="gallery-track-wrapper" style="overflow-x: auto; padding: 0 2rem;">
+            <div class="gallery-track" id="track">
+                <!-- JS will inject images here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- TEACHING STYLE -->
+    <section id="style">
+        <div class="container">
+            <div class="box-glass gs-fade">
+                <h2>我的教學特色</h2>
+                <div style="display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem;">
+                    <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
+                        <i class="fa-solid fa-layer-group" style="font-size: 2rem; color: var(--c-primary); margin-top: 5px;"></i>
+                        <div>
+                            <h3 style="margin: 0 0 0.5rem 0;">專業結構清楚</h3>
+                            <p style="margin: 0;">將教育部華語教師證照拆解成可執行的學習系統，不再迷失在書海中。</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
+                        <i class="fa-solid fa-hand-holding-heart" style="font-size: 2rem; color: var(--c-secondary); margin-top: 5px;"></i>
+                        <div>
+                            <h3 style="margin: 0 0 0.5rem 0;">陪伴式引導</h3>
+                            <p style="margin: 0;">不只教內容，而是陪你釐清方向與節奏，建立自信。</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
+                        <i class="fa-solid fa-earth-americas" style="font-size: 2rem; color: var(--c-accent); margin-top: 5px;"></i>
+                        <div>
+                            <h3 style="margin: 0 0 0.5rem 0;">跨領域視角</h3>
+                            <p style="margin: 0;">目前任教於美國 UTA，結合教學、職涯、關係與海外生活經驗，提供最真實的建議。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- QUOTE / CTA -->
+    <section id="cta">
+        <div class="container">
+            <div class="quote-box gs-fade">
+                <i class="fa-solid fa-quote-left quote-icon"></i>
+                <p class="quote-text">
+                    我相信，真正能走得遠的，不只是會考試的人，<br>
+                    而是<span class="highlight">對自己有理解、對選擇有準備的人</span>。
+                </p>
+                <div style="margin-top: 4rem;">
+                    <p>我希望能用我走過的經驗，陪你把「華語」變成一條穩定、清楚、走得出去的路。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="social-links">
+                <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-btn" title="Threads">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-btn" title="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-btn" title="Books">
+                    <i class="fa-solid fa-book-open"></i>
+                </a>
+            </div>
+            <p style="color: #666; font-family: var(--f-mono);">
+                Made with <i class="fa-solid fa-bolt" style="color: var(--c-primary);"></i> by <a href="/guild/" style="color: #888; text-decoration: none;">SuperGalen's Dungeon</a>
+            </p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- DYNAMIC GALLERY INJECTION ---
+        const track = document.getElementById('track');
+        // We have gallery_1.webp to gallery_8.webp
+        for(let i=1; i<=8; i++) {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.innerHTML = `<img src="/assets/img/guild/lyanna/gallery_${i}.webp" loading="lazy" alt="Gallery ${i}">`;
+            track.appendChild(div);
+        }
+
+        // --- THREE.JS BACKGROUND ---
+        // Concept: "Connecting Nodes" (Education/Network)
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0a0f14, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 100;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Particles
+        const particleCount = 200;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = [];
+
+        for(let i=0; i<particleCount; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 400; // x
+            positions[i*3+1] = (Math.random() - 0.5) * 400; // y
+            positions[i*3+2] = (Math.random() - 0.5) * 200; // z
+            velocities.push({
+                x: (Math.random() - 0.5) * 0.2,
+                y: (Math.random() - 0.5) * 0.2,
+                z: (Math.random() - 0.5) * 0.2
+            });
+        }
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const material = new THREE.PointsMaterial({
+            color: 0x00d2ff,
+            size: 2,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // Lines (Connections)
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x00d2ff,
+            transparent: true,
+            opacity: 0.15
+        });
+        const lineGeometry = new THREE.BufferGeometry();
+        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+        scene.add(lines);
+
+        // Mouse Interaction
+        const mouse = new THREE.Vector2();
+        const target = new THREE.Vector2();
+
+        // Optimization: Debounce mouse move
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Smooth mouse follow
+            target.x = mouseX * 50;
+            target.y = mouseY * 50;
+
+            // Camera gentle movement
+            camera.position.x += (mouseX * 10 - camera.position.x) * 0.05;
+            camera.position.y += (mouseY * 10 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            const posAttribute = particles.geometry.attributes.position;
+            const positions = posAttribute.array;
+
+            // Update particles
+            for(let i=0; i<particleCount; i++) {
+                // Move by velocity
+                positions[i*3] += velocities[i].x;
+                positions[i*3+1] += velocities[i].y;
+                positions[i*3+2] += velocities[i].z;
+
+                // Boundary check (loop around)
+                if(positions[i*3] > 200) positions[i*3] = -200;
+                if(positions[i*3] < -200) positions[i*3] = 200;
+                if(positions[i*3+1] > 200) positions[i*3+1] = -200;
+                if(positions[i*3+1] < -200) positions[i*3+1] = 200;
+            }
+            posAttribute.needsUpdate = true;
+
+            // Connect nearby particles
+            const linePositions = [];
+            for(let i=0; i<particleCount; i++) {
+                for(let j=i+1; j<particleCount; j++) {
+                    const dx = positions[i*3] - positions[j*3];
+                    const dy = positions[i*3+1] - positions[j*3+1];
+                    const dz = positions[i*3+2] - positions[j*3+2];
+                    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                    if (dist < 40) {
+                        linePositions.push(
+                            positions[i*3], positions[i*3+1], positions[i*3+2],
+                            positions[j*3], positions[j*3+1], positions[j*3+2]
+                        );
+                    }
+                }
+            }
+            lines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+
+        // --- GSAP ANIMATIONS ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero Reveal
+        const tl = gsap.timeline();
+        tl.from(".gs-hero", {
+            y: 100,
+            opacity: 0,
+            duration: 1.2,
+            stagger: 0.2,
+            ease: "power4.out"
+        });
+
+        // Section Fade Ins
+        gsap.utils.toArray('.gs-fade').forEach(elem => {
+            gsap.from(elem, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: elem,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // Typing effect for the "Questions"
+        gsap.utils.toArray('.typing-text').forEach(text => {
+            gsap.from(text, {
+                opacity: 0,
+                x: -20,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: text,
+                    start: "top 85%"
+                }
+            });
+        });
+
+        // Gallery Horizontal Scroll
+        gsap.to(".gallery-track", {
+            x: -1000, // Approximate scroll distance
+            ease: "none",
+            scrollTrigger: {
+                trigger: "#gallery-section",
+                start: "top center",
+                end: "bottom top",
+                scrub: 1
+            }
+        });
+
+    </script>
+</body>
+</html>
