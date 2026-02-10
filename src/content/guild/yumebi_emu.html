@@ -32,7 +32,7 @@
             --accent-pink: #ff1493; /* Deep Pink */
             --accent-purple: #9400d3; /* Dark Violet */
             --accent-cyan: #00ffff;
-            --glass-bg: rgba(20, 0, 20, 0.4);
+            --glass-bg: rgba(20, 0, 20, 0.6);
             --glass-border: rgba(255, 20, 147, 0.5);
             --neon-glow: 0 0 10px var(--accent-pink), 0 0 20px var(--accent-purple);
         }
@@ -123,6 +123,20 @@
             margin-bottom: 2rem;
             font-family: 'Orbitron', sans-serif;
             letter-spacing: -0.05em;
+            position: relative;
+        }
+
+        .hero-title::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0.5;
+            filter: blur(20px);
+            z-index: -1;
         }
 
         .hero-subtitle {
@@ -394,7 +408,7 @@
         <section id="hero">
             <div class="container" style="text-align: center;">
                 <h2 class="hero-subtitle gs-reveal">LITTLE DEVIL</h2>
-                <h1 class="hero-title gs-reveal">YUMEBI EMU</h1>
+                <h1 class="hero-title gs-reveal" data-text="YUMEBI EMU">YUMEBI EMU</h1>
                 <div style="font-size: 1.5rem; margin-top: 1rem; color: #ddd; min-height: 2em;">
                     <span class="typewriter-text">ENTERING LUCID DREAM STATE...</span>
                 </div>
@@ -411,17 +425,25 @@
                 <div class="profile-wrapper">
                     <div class="demon-wing wing-left" style="--s: -1"></div>
                     <div class="demon-wing wing-right" style="--s: 1"></div>
-                    <img src="/assets/img/guild/yumebi_emu/work1.webp" alt="Yumebi Emu" class="profile-img">
+                    <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Yumebi Emu" class="profile-img">
                 </div>
 
                 <h2 style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-pink); text-shadow: 0 0 20px var(--accent-pink);">夢寐愛姆</h2>
                 <h3 style="font-size: 1.5rem; margin-bottom: 2rem; color: var(--accent-purple); letter-spacing: 0.2em;">ETERNAL 20 IDOL</h3>
 
                 <p style="font-size: 1.2rem; line-height: 2; margin-bottom: 2rem; color: #eee;">
-                    喜歡在直播中和大家一起閒聊日常 ヾ(´︶`*)ﾉ♬<br>
-                    透過擅長的 <span class="glow-text">夢境魔法 (ASMR)</span>，把失眠的人通通哄睡。<br>
-                    觀眾都認為我有點天然呆... <span style="color:var(--accent-cyan); font-weight:bold;">但我覺得我很聰明！</span>
+                    我是一位 ASMR 創作者，永遠 20 歲的偶像！<br>
+                    喜歡在直播中和大家一起閒聊彼此的日常 ヾ(´︶`*)ﾉ♬<br>
+                    透過擅長的 <span class="glow-text">夢境魔法 (ASMR)</span>，把失眠的人通通哄睡，<br>
+                    陪伴所有孤獨的人度過漫漫長夜。
                 </p>
+
+                <div style="background: rgba(255,20,147,0.1); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;">
+                    <p style="color: #fff; font-style: italic;">
+                        "觀眾都認為我有點天然呆，但我覺得我很聰明！"<br>
+                        "想成為像照亮冬天的太陽般溫暖親切的人。"
+                    </p>
+                </div>
 
                 <div class="social-container">
                      <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank" title="YouTube Main"><i class="fa-brands fa-youtube"></i></a>
@@ -476,10 +498,10 @@
                 <!-- Card 1 -->
                 <div class="glass-panel gs-card" style="flex: 1; min-width: 320px; text-align: center;">
                     <i class="fa-solid fa-heart-pulse" style="font-size: 4rem; color: var(--accent-pink); margin-bottom: 1.5rem; filter: drop-shadow(0 0 10px var(--accent-pink));"></i>
-                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem;">DREAM WITCH</h3>
+                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem;">WARM LIKE SUN</h3>
                     <p style="margin-top: 1rem; line-height: 1.8; font-size: 1.1rem;">
                         想成為像照亮冬天的太陽般溫暖親切的人。<br>
-                        陪伴所有孤獨的人度過漫漫長夜。
+                        努力經營個人 IP，常駐在 YouTube 直播。
                     </p>
                 </div>
 
@@ -651,8 +673,8 @@
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0;
-        bloomPass.strength = 1.5; // Slightly reduced bloom to not hide mirrors
-        bloomPass.radius = 0.8;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
         // --- Objects ---
@@ -668,98 +690,150 @@
         const tunnel = new THREE.Mesh(torusGeo, torusMat);
         scene.add(tunnel);
 
-        // 2. Shattered Mirrors (Floating Shards)
+        // 2. Shattered Image (Puzzle Mode)
+        // We will create a plane, subdivide it, and explode the faces
         const shardGroup = new THREE.Group();
         scene.add(shardGroup);
 
         const loader = new THREE.TextureLoader();
-        // Load textures for the mirror shards
-        const texPaths = [
-            '/assets/img/guild/yumebi_emu/work1.webp',
-            '/assets/img/guild/yumebi_emu/work2.webp',
-            '/assets/img/guild/yumebi_emu/work3.webp',
-            '/assets/img/guild/yumebi_emu/work4.webp',
-            '/assets/img/guild/yumebi_emu/focus_eyes.webp',
-            '/assets/img/guild/yumebi_emu/focus_lips.webp'
-        ];
+        const mainTex = loader.load('/assets/img/guild/yumebi_emu/avatar.webp');
+        mainTex.colorSpace = THREE.SRGBColorSpace;
 
-        const textures = texPaths.map(path => {
-            const t = loader.load(path);
-            t.colorSpace = THREE.SRGBColorSpace;
-            return t;
-        });
+        // Create a grid of triangles
+        const width = 20;
+        const height = 20;
+        const segments = 8;
 
-        const shardCount = 80;
-        for(let i=0; i<shardCount; i++) {
-            // Random triangle shape
-            const shape = new THREE.Shape();
-            const x1 = Math.random() - 0.5;
-            const y1 = Math.random() - 0.5;
-            const x2 = Math.random() - 0.5;
-            const y2 = Math.random() - 0.5;
-            const x3 = Math.random() - 0.5;
-            const y3 = Math.random() - 0.5;
+        // Use PlaneGeometry to get UVs easily
+        const baseGeo = new THREE.PlaneGeometry(width, height, segments, segments);
+        const posAttribute = baseGeo.attributes.position;
+        const uvAttribute = baseGeo.attributes.uv;
+        const indexAttribute = baseGeo.index;
 
-            shape.moveTo(x1, y1);
-            shape.lineTo(x2, y2);
-            shape.lineTo(x3, y3);
-            shape.lineTo(x1, y1);
+        // Iterate over faces (triangles)
+        for (let i = 0; i < indexAttribute.count; i += 3) {
+            const a = indexAttribute.getX(i);
+            const b = indexAttribute.getX(i+1);
+            const c = indexAttribute.getX(i+2);
 
-            const geometry = new THREE.ShapeGeometry(shape);
+            const v1 = new THREE.Vector3().fromBufferAttribute(posAttribute, a);
+            const v2 = new THREE.Vector3().fromBufferAttribute(posAttribute, b);
+            const v3 = new THREE.Vector3().fromBufferAttribute(posAttribute, c);
 
-            // Randomly assign a texture
-            const tex = textures[Math.floor(Math.random() * textures.length)];
+            const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttribute, a);
+            const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttribute, b);
+            const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttribute, c);
 
-            // Map the texture to the shard coordinates (UV mapping)
-            const uvs = geometry.attributes.uv;
-            for (let j = 0; j < uvs.count; j++) {
-                // Simple planar mapping based on vertex position
-                const pos = geometry.attributes.position;
-                const x = pos.getX(j);
-                const y = pos.getY(j);
-                // Map -0.5..0.5 to 0..1, plus some random offset to show different parts
-                const u = (x + 0.5) + (Math.random() * 0.5);
-                const v = (y + 0.5) + (Math.random() * 0.5);
-                uvs.setXY(j, u, v);
-            }
+            const shapeGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array([
+                v1.x, v1.y, v1.z,
+                v2.x, v2.y, v2.z,
+                v3.x, v3.y, v3.z
+            ]);
+            const uvs = new Float32Array([
+                uv1.x, uv1.y,
+                uv2.x, uv2.y,
+                uv3.x, uv3.y
+            ]);
+
+            shapeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            shapeGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+            shapeGeo.computeVertexNormals();
+
+            // Calculate center for explosion origin
+            const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
 
             const material = new THREE.MeshBasicMaterial({
-                map: tex,
+                map: mainTex,
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.6 + Math.random() * 0.4
+                opacity: 0.8
             });
 
-            const shard = new THREE.Mesh(geometry, material);
+            const mesh = new THREE.Mesh(shapeGeo, material);
 
-            // Random Position
-            shard.position.set(
-                (Math.random() - 0.5) * 60,
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 30 - 10
-            );
-
-            // Random Rotation
-            shard.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
-            );
-
-            // Random Scale
-            const s = Math.random() * 3 + 1;
-            shard.scale.set(s,s,s);
-
-            // Store animation data
-            shard.userData = {
-                rotSpeedX: (Math.random() - 0.5) * 0.02,
-                rotSpeedY: (Math.random() - 0.5) * 0.02,
-                floatSpeed: (Math.random() - 0.5) * 0.05,
-                initialY: shard.position.y
+            // Initial State: Exploded
+            mesh.userData = {
+                originPos: new THREE.Vector3(0,0,0), // The geometry is already positioned at the right place relative to origin
+                originRot: new THREE.Euler(0,0,0),
+                // Exploded State
+                targetPos: new THREE.Vector3(
+                    center.x + (Math.random()-0.5) * 50,
+                    center.y + (Math.random()-0.5) * 50,
+                    center.z + (Math.random()-0.5) * 50
+                ),
+                targetRot: new THREE.Euler(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                ),
+                phase: 'exploded'
             };
 
-            shardGroup.add(shard);
+            // Set initial transform to exploded
+            mesh.position.copy(mesh.userData.targetPos);
+            mesh.rotation.copy(mesh.userData.targetRot);
+
+            shardGroup.add(mesh);
         }
+
+        // Mouse Interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Parallax effect on shardGroup
+            gsap.to(shardGroup.rotation, {
+                x: mouse.y * 0.1,
+                y: mouse.x * 0.1,
+                duration: 1
+            });
+        });
+
+        // Click to Assemble/Explode
+        let assembled = false;
+        window.addEventListener('click', () => {
+            assembled = !assembled;
+
+            shardGroup.children.forEach(mesh => {
+                if(assembled) {
+                    // Assemble
+                    gsap.to(mesh.position, {
+                        x: 0, y: 0, z: 0,
+                        duration: 1.5,
+                        ease: "power2.inOut",
+                        delay: Math.random() * 0.5
+                    });
+                    gsap.to(mesh.rotation, {
+                        x: 0, y: 0, z: 0,
+                        duration: 1.5,
+                        ease: "power2.inOut",
+                        delay: Math.random() * 0.5
+                    });
+                } else {
+                    // Explode
+                    gsap.to(mesh.position, {
+                        x: mesh.userData.targetPos.x,
+                        y: mesh.userData.targetPos.y,
+                        z: mesh.userData.targetPos.z,
+                        duration: 1.5,
+                        ease: "power2.inOut",
+                        delay: Math.random() * 0.5
+                    });
+                    gsap.to(mesh.rotation, {
+                        x: mesh.userData.targetRot.x,
+                        y: mesh.userData.targetRot.y,
+                        z: mesh.userData.targetRot.z,
+                        duration: 1.5,
+                        ease: "power2.inOut",
+                        delay: Math.random() * 0.5
+                    });
+                }
+            });
+        });
 
         // --- Animation Loop ---
         let time = 0;
@@ -771,17 +845,12 @@
             tunnel.rotation.z = time * 0.2;
             tunnel.rotation.x = Math.sin(time) * 0.2;
 
-            // Animate Shards
-            shardGroup.children.forEach(shard => {
-                shard.rotation.x += shard.userData.rotSpeedX;
-                shard.rotation.y += shard.userData.rotSpeedY;
-                shard.position.y = shard.userData.initialY + Math.sin(time + shard.position.x) * 2;
-
-                // Keep texture upright relative to view slightly? No, let them spin wildly for chaos.
-            });
-
-            // Slowly rotate entire shard group
-            shardGroup.rotation.y = time * 0.05;
+            // Float Shards slightly if exploded
+            if (!assembled) {
+                shardGroup.children.forEach((mesh, i) => {
+                     mesh.position.y += Math.sin(time * 2 + i) * 0.02;
+                });
+            }
 
             composer.render();
         });
@@ -825,12 +894,9 @@
             scrub: 1,
             onUpdate: (self) => {
                 const p = self.progress;
-                camera.position.z = 20 - (p * 30); // Fly deeper
-                camera.rotation.z = p * Math.PI; // Spin camera
+                camera.position.z = 20 - (p * 15); // Move closer
+                camera.rotation.z = p * Math.PI * 0.2; // Slight spin
                 tunnel.material.opacity = 0.1 + (p * 0.2);
-
-                // Explode shards outward as we scroll?
-                shardGroup.scale.setScalar(1 + p * 0.5);
             }
         });
     </script>
