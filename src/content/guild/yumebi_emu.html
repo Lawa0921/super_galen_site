@@ -174,7 +174,7 @@
             100% { background-position: -100% 0; }
         }
 
-        /* --- Sensory Focus (Updated: Darker & Spotlight) --- */
+        /* --- Sensory Focus (Updated: Precise Object Position) --- */
         .sensory-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -191,19 +191,21 @@
             transition: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             cursor: pointer;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            background: #000; /* Deep Black Background */
+            background: #000;
         }
 
         .sense-card img {
             width: 100%; height: 100%;
             object-fit: cover;
-            /* Default: Very dark, barely visible */
+            /* Default: Very dark */
             filter: grayscale(0.8) brightness(0.4) contrast(1.5);
             opacity: 0.6;
             transition: all 0.8s ease;
-            /* Spotlight Mask: Only show center circle clearly */
-            mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0.2) 60%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 20%, rgba(0,0,0,0.2) 60%, transparent 100%);
+            /* Spotlight Mask */
+            mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0.2) 60%, transparent 100%);
+            -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0.2) 60%, transparent 100%);
+
+            /* Zoom scale applied in HTML */
         }
 
         .sense-overlay {
@@ -245,12 +247,11 @@
             z-index: 20;
         }
 
-        /* Hover: Light up the "Spotlight" */
         .sense-card:hover img {
-            filter: grayscale(0) brightness(1.2) contrast(1.1);
+            filter: grayscale(0) brightness(1.1) contrast(1.1);
             opacity: 1;
-            transform: scale(1.1);
-            /* Expand mask */
+            /* Zoom slightly more on hover */
+            transform: scale(3.2) !important; /* Force override inline scale */
             mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.5) 80%, transparent 100%);
             -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.5) 80%, transparent 100%);
         }
@@ -478,7 +479,7 @@
             </div>
         </section>
 
-        <!-- Sensory Focus (Kaleidoscope Target) -->
+        <!-- Sensory Focus (Updated: Using precise CSS crops) -->
         <section id="sensory">
             <div class="container">
                 <h2 style="text-align: center; font-size: 4rem; margin-bottom: 1rem; color: var(--text-primary); text-shadow: 0 0 30px var(--accent-pink);">
@@ -488,21 +489,24 @@
 
                 <div class="sensory-grid">
                     <div class="sense-card gs-card">
-                        <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes">
+                        <!-- Eyes: 50% X, 45% Y -->
+                        <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Eyes" style="object-position: 50% 45%; transform: scale(3);">
                         <div class="sense-overlay">
                             <h3>GAZE</h3>
                             <p>Stare into the abyss...</p>
                         </div>
                     </div>
                     <div class="sense-card gs-card" style="margin-top: 5rem;">
-                        <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Nose">
+                        <!-- Nose: 50% X, 55% Y -->
+                        <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Nose" style="object-position: 50% 55%; transform: scale(3);">
                         <div class="sense-overlay">
                             <h3>BREATH</h3>
                             <p>Feel the rhythm...</p>
                         </div>
                     </div>
                     <div class="sense-card gs-card">
-                        <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips">
+                        <!-- Lips: 55% X, 62% Y -->
+                        <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Lips" style="object-position: 55% 62%; transform: scale(3);">
                         <div class="sense-overlay">
                             <h3>WHISPER</h3>
                             <p>Hear the spell...</p>
@@ -543,8 +547,8 @@
             <div class="container">
                 <h2 style="text-align: center; margin-bottom: 2rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan);">DREAM FRAGMENTS</h2>
                 <div class="gallery-hint">
-                    <h3>CLICK TO COLLECT</h3>
-                    <p>SHARDS OF MEMORY</p>
+                    <h3>CLICK TO ASSEMBLE</h3>
+                    <p>ALIGN THE SECTOR</p>
                 </div>
             </div>
         </section>
@@ -570,8 +574,15 @@
             let angle = 0;
 
             p.preload = () => {
-                imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/focus_eyes.webp');
-                imgLips = p.loadImage('/assets/img/guild/yumebi_emu/focus_lips.webp');
+                // Using available images or fallback to avatar
+                // Since specific crop files may not exist, we'll try to load them but handle failure gracefully
+                imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/focus_eyes.webp', () => {}, () => {
+                     // Fallback
+                     imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/avatar.webp');
+                });
+                imgLips = p.loadImage('/assets/img/guild/yumebi_emu/focus_lips.webp', () => {}, () => {
+                     imgLips = p.loadImage('/assets/img/guild/yumebi_emu/avatar.webp');
+                });
             };
 
             p.setup = () => {
@@ -584,35 +595,30 @@
             p.draw = () => {
                 p.clear();
 
-                // Only draw if images are loaded
                 if(!imgEyes || !imgLips) return;
 
                 p.translate(p.width / 2, p.height / 2);
-
-                // Slowly rotate the whole system
                 p.rotate(angle * 0.2);
 
                 let symmetry = 8;
                 let angleStep = 360 / symmetry;
 
-                // Layer 1: Eyes (Outer Ring)
                 for (let i = 0; i < symmetry; i++) {
                     p.push();
                     p.rotate(i * angleStep + angle);
-                    p.translate(0, 350 + Math.sin(angle * 0.5) * 50); // Breathing radius
+                    p.translate(0, 350 + Math.sin(angle * 0.5) * 50);
                     p.rotate(90);
-                    p.tint(255, 105, 180, 80); // Pink tint, low opacity
+                    p.tint(255, 105, 180, 80);
                     p.image(imgEyes, 0, 0, 300, 150);
                     p.pop();
                 }
 
-                // Layer 2: Lips (Inner Ring)
                 for (let i = 0; i < symmetry; i++) {
                     p.push();
-                    p.rotate(i * angleStep - angle * 1.5); // Counter rotate
+                    p.rotate(i * angleStep - angle * 1.5);
                     p.translate(0, 150);
                     p.rotate(-90);
-                    p.tint(157, 0, 255, 100); // Purple tint
+                    p.tint(157, 0, 255, 100);
                     p.image(imgLips, 0, 0, 200, 200);
                     p.pop();
                 }
@@ -628,38 +634,6 @@
         new p5(p5Sketch);
     </script>
 
-    <!-- Script for Floating Hearts -->
-    <script>
-        function createHeart() {
-            const container = document.getElementById('hearts-container');
-            if(!container) return;
-
-            const heart = document.createElement('div');
-            heart.classList.add('floating-heart');
-            heart.innerHTML = '<i class="fa-solid fa-heart"></i>';
-
-            // Random position
-            const left = Math.random() * 100;
-            const size = Math.random() * 2 + 1; // 1rem to 3rem
-            const duration = Math.random() * 3 + 3; // 3s to 6s
-
-            heart.style.left = left + '%';
-            heart.style.bottom = '-50px';
-            heart.style.fontSize = size + 'rem';
-            heart.style.animationDuration = duration + 's';
-
-            container.appendChild(heart);
-
-            // Cleanup
-            setTimeout(() => {
-                heart.remove();
-            }, duration * 1000);
-        }
-
-        // Spawn hearts
-        setInterval(createHeart, 800);
-    </script>
-
     <!-- Three.js Background Script -->
     <script type="module">
         import * as THREE from 'three';
@@ -670,7 +644,6 @@
         // --- Scene Setup ---
         const container = document.getElementById('three-container');
         const scene = new THREE.Scene();
-        // Darker fog
         scene.fog = new THREE.FogExp2(0x05000a, 0.003);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -681,25 +654,25 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Fade in
         setTimeout(() => { container.style.opacity = 1; }, 500);
 
         // --- Post Processing ---
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
 
+        // Reduced Bloom Strength further
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2;
-        bloomPass.radius = 0.5;
+        bloomPass.threshold = 0.15;
+        bloomPass.strength = 0.4; // Reduced to 0.4
+        bloomPass.radius = 0.3;
         composer.addPass(bloomPass);
 
         // --- Objects ---
 
-        // 1. Torus Tunnel (Hypnotic)
+        // 1. Torus Tunnel
         const torusGeo = new THREE.TorusGeometry(10, 3, 16, 100);
         const torusMat = new THREE.MeshBasicMaterial({
-            color: 0x9400d3, // Dark Violet
+            color: 0x9400d3,
             wireframe: true,
             transparent: true,
             opacity: 0.1
@@ -707,16 +680,65 @@
         const tunnel = new THREE.Mesh(torusGeo, torusMat);
         scene.add(tunnel);
 
-        // 2. Shattered Image (Puzzle Mode)
-        // We will create a plane, subdivide it, and explode the faces
+        // 2. Rotating Disc (Background Guide)
+        const discGroup = new THREE.Group();
+        scene.add(discGroup);
+
+        const ringGeo = new THREE.RingGeometry(12, 14, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0xff1493,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.1
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        discGroup.add(ring);
+
+        // Indicator (Target Zone at Top)
+        const indicatorGeo = new THREE.ConeGeometry(1, 2, 4);
+        const indicatorMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        const indicator = new THREE.Mesh(indicatorGeo, indicatorMat);
+        indicator.position.y = 15;
+        indicator.rotation.x = Math.PI;
+        scene.add(indicator); // Add to scene, not rotating group, so it stays fixed
+
+        // Sectors (Visual Guide on the rotating disc)
+        for(let i=0; i<6; i++) {
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 12, 0),
+                new THREE.Vector3(0, 16, 0)
+            ]);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 });
+            const line = new THREE.Line(lineGeo, lineMat);
+            line.rotation.z = (i / 6) * Math.PI * 2;
+            discGroup.add(line);
+        }
+
+        // 3. Shard Rotator Group
+        const rotatorGroup = new THREE.Group();
+        scene.add(rotatorGroup);
+
+        // Create the Shards
         const shardGroup = new THREE.Group();
-        scene.add(shardGroup);
+        rotatorGroup.add(shardGroup);
 
         const loader = new THREE.TextureLoader();
-        const mainTex = loader.load('/assets/img/guild/yumebi_emu/avatar.webp');
-        mainTex.colorSpace = THREE.SRGBColorSpace;
 
-        // Create a grid of triangles
+        const textureUrls = [
+            '/assets/img/guild/yumebi_emu/avatar.webp',
+            '/assets/img/guild/yumebi_emu/work1.webp',
+            '/assets/img/guild/yumebi_emu/work2.webp',
+            '/assets/img/guild/yumebi_emu/work3.webp',
+            '/assets/img/guild/yumebi_emu/work4.webp',
+            '/assets/img/guild/yumebi_emu/work5.webp'
+        ];
+
+        const textures = textureUrls.map(url => {
+            const t = loader.load(url);
+            t.colorSpace = THREE.SRGBColorSpace;
+            return t;
+        });
+
         const width = 20;
         const height = 20;
         const segments = 8;
@@ -726,7 +748,8 @@
         const uvAttribute = baseGeo.attributes.uv;
         const indexAttribute = baseGeo.index;
 
-        // Iterate over faces (triangles)
+        const shardMeshes = [];
+
         for (let i = 0; i < indexAttribute.count; i += 3) {
             const a = indexAttribute.getX(i);
             const b = indexAttribute.getX(i+1);
@@ -756,156 +779,101 @@
             shapeGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
             shapeGeo.computeVertexNormals();
 
-            // Calculate center for explosion origin
             const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
 
+            // Darker Material for Brightness Fix
             const material = new THREE.MeshBasicMaterial({
-                map: mainTex,
+                map: textures[0],
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.9,
+                color: 0x888888 // Grey tint to darken
             });
 
             const mesh = new THREE.Mesh(shapeGeo, material);
 
-            // Initial State: Exploded
-            mesh.userData = {
-                originPos: new THREE.Vector3(0,0,0),
-                originRot: new THREE.Euler(0,0,0),
-                targetPos: new THREE.Vector3(
-                    center.x + (Math.random()-0.5) * 50,
-                    center.y + (Math.random()-0.5) * 50,
-                    center.z + (Math.random()-0.5) * 50
-                ),
-                targetRot: new THREE.Euler(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
-                ),
-                phase: 'exploded'
-            };
+            // Calculate Orbit Position (Ring Formation)
+            // Random angle around Z
+            const orbitAngle = Math.random() * Math.PI * 2;
+            const orbitRadius = 15 + Math.random() * 5;
 
-            mesh.position.copy(mesh.userData.targetPos);
-            mesh.rotation.copy(mesh.userData.targetRot);
-
-            shardGroup.add(mesh);
-        }
-
-        // 3. Gallery Shards
-        const galleryGroup = new THREE.Group();
-        galleryGroup.visible = false; // Initially hidden
-        scene.add(galleryGroup);
-
-        const galleryImages = [
-            '/assets/img/guild/yumebi_emu/work1.webp',
-            '/assets/img/guild/yumebi_emu/work2.webp',
-            '/assets/img/guild/yumebi_emu/work3.webp',
-            '/assets/img/guild/yumebi_emu/work4.webp',
-            '/assets/img/guild/yumebi_emu/work5.webp'
-        ];
-
-        // Create scattered gallery shards
-        galleryImages.forEach((src, idx) => {
-            const tex = loader.load(src);
-            tex.colorSpace = THREE.SRGBColorSpace;
-            const geo = new THREE.PlaneGeometry(12, 16); // Portrait size
-            const mat = new THREE.MeshBasicMaterial({
-                map: tex,
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.9
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-
-            // Calculate final grid position
-            const col = idx % 3;
-            const row = Math.floor(idx / 3);
-            const finalX = (col - 1) * 14;
-            const finalY = (row === 0) ? 6 : -8; // Simple 3 top, 2 bottom arrangement
+            // Target position is (0,0,0) (assembled)
+            // Orbit position is circling around
 
             mesh.userData = {
-                finalPos: new THREE.Vector3(finalX, finalY, 0),
-                finalRot: new THREE.Euler(0, 0, 0),
-                scatterPos: new THREE.Vector3(
-                    (Math.random() - 0.5) * 80,
-                    (Math.random() - 0.5) * 80,
-                    (Math.random() - 0.5) * 50 - 20 // Behind or way forward
-                ),
-                scatterRot: new THREE.Euler(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
+                orbitRadius: orbitRadius,
+                orbitAngle: orbitAngle, // Initial phase
+                orbitSpeed: (Math.random() + 0.5) * 0.01,
+                assembledPos: new THREE.Vector3(0,0,0), // Relative to parent
+                rotationSpeed: new THREE.Vector3(
+                    (Math.random()-0.5) * 0.02,
+                    (Math.random()-0.5) * 0.02,
+                    (Math.random()-0.5) * 0.02
                 )
             };
 
-            // Start scattered
-            mesh.position.copy(mesh.userData.scatterPos);
-            mesh.rotation.copy(mesh.userData.scatterRot);
+            // Start in orbit
+            mesh.position.set(
+                Math.cos(orbitAngle) * orbitRadius,
+                Math.sin(orbitAngle) * orbitRadius,
+                (Math.random() - 0.5) * 5
+            );
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
 
-            galleryGroup.add(mesh);
-        });
+            shardGroup.add(mesh);
+            shardMeshes.push(mesh);
+        }
 
-        // Mouse Interaction
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        // --- Interaction State ---
+        let isAssembled = false;
+        let currentTextureIndex = 0;
+        let rotationSpeed = 0.005;
 
-        window.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            // Parallax
-            gsap.to(shardGroup.rotation, { x: mouse.y * 0.1, y: mouse.x * 0.1, duration: 1 });
-            gsap.to(galleryGroup.rotation, { x: mouse.y * 0.05, y: mouse.x * 0.05, duration: 1 });
-        });
-
-        // Click to Assemble/Explode
-        let avatarAssembled = false;
-        let galleryAssembled = false;
-
+        // Click Logic
         window.addEventListener('click', () => {
-            // Determine context based on scroll or visibility
-            // If galleryGroup is visible (controlled by ScrollTrigger logic below), toggle gallery
-            // Otherwise, toggle avatar
+            if(rotatorGroup.visible) {
+                isAssembled = !isAssembled;
 
-            if (galleryGroup.visible && galleryGroup.position.z > -50) {
-                // In Gallery Mode
-                galleryAssembled = !galleryAssembled;
-
-                galleryGroup.children.forEach(mesh => {
-                    const targetP = galleryAssembled ? mesh.userData.finalPos : mesh.userData.scatterPos;
-                    const targetR = galleryAssembled ? mesh.userData.finalRot : mesh.userData.scatterRot;
-
-                    gsap.to(mesh.position, {
-                        x: targetP.x, y: targetP.y, z: targetP.z,
-                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.2
+                if(isAssembled) {
+                    // Snap to Center (Assemble)
+                    shardMeshes.forEach(mesh => {
+                        gsap.to(mesh.position, {
+                            x: 0, y: 0, z: 0,
+                            duration: 0.8,
+                            ease: "power3.inOut"
+                        });
+                        gsap.to(mesh.rotation, {
+                            x: 0, y: 0, z: 0,
+                            duration: 0.8,
+                            ease: "power3.inOut"
+                        });
                     });
-                    gsap.to(mesh.rotation, {
-                        x: targetR.x, y: targetR.y, z: targetR.z,
-                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.2
+
+                    // Stop Disc Rotation
+                    rotationSpeed = 0;
+
+                } else {
+                    // Return to Orbit
+                    shardMeshes.forEach(mesh => {
+                        // We animate back to "some" orbit position, but the update loop handles the circular motion
+                        // So we just need to "release" them from 0,0,0.
+                        // We set a flag or just let the loop take over?
+                        // Let's tween them out to a radius.
+
+                        const r = mesh.userData.orbitRadius;
+                        const a = mesh.userData.orbitAngle + time; // Current theoretical angle
+
+                        gsap.to(mesh.position, {
+                            x: Math.cos(a) * r,
+                            y: Math.sin(a) * r,
+                            z: (Math.random() - 0.5) * 5,
+                            duration: 1.2,
+                            ease: "power2.out"
+                        });
                     });
-                });
 
-                // Hide hint
-                const hint = document.querySelector('.gallery-hint');
-                if(hint && galleryAssembled) hint.style.opacity = 0;
-
-            } else {
-                // In Avatar Mode
-                avatarAssembled = !avatarAssembled;
-
-                shardGroup.children.forEach(mesh => {
-                    const targetP = avatarAssembled ? new THREE.Vector3(0,0,0) : mesh.userData.targetPos;
-                    const targetR = avatarAssembled ? new THREE.Vector3(0,0,0) : mesh.userData.targetRot;
-
-                    gsap.to(mesh.position, {
-                        x: targetP.x, y: targetP.y, z: targetP.z,
-                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.5
-                    });
-                    gsap.to(mesh.rotation, {
-                        x: targetR.x, y: targetR.y, z: targetR.z,
-                        duration: 1.5, ease: "power2.inOut", delay: Math.random() * 0.5
-                    });
-                });
+                    rotationSpeed = 0.005;
+                }
             }
         });
 
@@ -913,28 +881,58 @@
         let time = 0;
 
         gsap.ticker.add(() => {
-            time += 0.005;
+            time += 0.01;
 
-            // Rotate Tunnel
             tunnel.rotation.z = time * 0.2;
             tunnel.rotation.x = Math.sin(time) * 0.2;
 
-            // Float Shards
-            if (!avatarAssembled) {
-                shardGroup.children.forEach((mesh, i) => {
-                     mesh.position.y += Math.sin(time * 2 + i) * 0.02;
+            // Disc Group Rotation (Visual Guide)
+            discGroup.rotation.z -= rotationSpeed;
+
+            // Determine active sector based on Disc Rotation relative to Indicator (Top)
+            // Indicator is at PI/2 (90 deg) visually? No, position y=15 is Top (90deg).
+            // Rotation is CCW.
+
+            if (!isAssembled) {
+                // Update Shard Positions (Orbiting)
+                shardMeshes.forEach(mesh => {
+                    // Update angle
+                    mesh.userData.orbitAngle += mesh.userData.orbitSpeed;
+
+                    // Only update position if we are NOT mid-tween to center
+                    // We can check distance to center roughly
+                    if (mesh.position.length() > 2) {
+                        const r = mesh.userData.orbitRadius;
+                        const a = mesh.userData.orbitAngle;
+                        mesh.position.x = Math.cos(a) * r;
+                        mesh.position.y = Math.sin(a) * r;
+
+                        mesh.rotation.x += mesh.userData.rotationSpeed.x;
+                        mesh.rotation.y += mesh.userData.rotationSpeed.y;
+                    }
                 });
-            }
-            if (!galleryAssembled) {
-                galleryGroup.children.forEach((mesh, i) => {
-                    mesh.rotation.z += 0.002 * (i%2==0 ? 1 : -1);
-                });
+
+                // Logic for Texture Swapping based on Sector
+                // Normalize angle to 0-2PI
+                let angle = Math.abs(discGroup.rotation.z % (Math.PI * 2));
+                // 6 Sectors
+                const sectorSize = (Math.PI * 2) / 6;
+                const newIndex = Math.floor(angle / sectorSize);
+
+                if (newIndex !== currentTextureIndex) {
+                    currentTextureIndex = newIndex;
+                    const tex = textures[currentTextureIndex % textures.length];
+
+                    shardMeshes.forEach(mesh => {
+                        mesh.material.map = tex;
+                        mesh.material.needsUpdate = true;
+                    });
+                }
             }
 
             composer.render();
         });
 
-        // --- Resize ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -942,9 +940,9 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP Integration ---
         gsap.registerPlugin(ScrollTrigger);
 
+        // Reveal Animations
         gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
             gsap.fromTo(elem,
                 { opacity: 0, y: 50, rotation: 5 },
@@ -965,7 +963,7 @@
             );
         });
 
-        // Camera Scroll & Scene Switching
+        // Camera Scroll
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
@@ -974,32 +972,28 @@
             onUpdate: (self) => {
                 const p = self.progress;
 
-                // General Camera Movement
-                camera.position.z = 20 - (p * 5);
-                camera.rotation.z = p * Math.PI * 0.2;
+                camera.position.z = 20 + (p * 10);
                 tunnel.material.opacity = 0.1 + (p * 0.2);
 
-                // Scene Switching Logic
-                // 0.0 - 0.4: Avatar Shards Visible
-                // 0.4 - 0.6: Transition
-                // 0.6 - 1.0: Gallery Shards Visible
+                if (p > 0.85) {
+                    rotatorGroup.visible = true;
+                    discGroup.visible = true;
+                    indicator.visible = true;
 
-                if (p < 0.5) {
-                    shardGroup.visible = true;
-                    // Fade out as we go down
-                    shardGroup.position.z = p * 50;
-                    shardGroup.scale.setScalar(1 - p);
+                    // Fade in
+                    const opacity = (p - 0.85) * 6;
+                    shardMeshes.forEach(m => m.material.opacity = Math.min(0.9, opacity));
 
-                    galleryGroup.visible = false;
+                    // Position Groups relative to camera
+                    const zPos = camera.position.z - 30;
+                    rotatorGroup.position.z = zPos;
+                    discGroup.position.z = zPos - 2;
+                    indicator.position.z = zPos - 2;
+
                 } else {
-                    shardGroup.visible = false;
-
-                    galleryGroup.visible = true;
-                    // Fly in from distance
-                    // p goes 0.5 -> 1.0
-                    // z goes -50 -> 0
-                    const galleryProgress = (p - 0.5) * 2; // 0 to 1
-                    galleryGroup.position.z = -50 + (galleryProgress * 50);
+                    rotatorGroup.visible = false;
+                    discGroup.visible = false;
+                    indicator.visible = false;
                 }
             }
         });
