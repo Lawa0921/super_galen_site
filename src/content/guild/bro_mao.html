@@ -473,7 +473,7 @@
     <section id="sec-hero" class="section">
         <div class="content-wrapper">
             <div class="avatar-container gs-hero">
-                <img src="/assets/img/guild/bro_mao/avatar.webp" alt="Bro Mao Avatar">
+                <img src="/assets/img/guild/bro_mao/avatar.webp" alt="Bro Mao Avatar" loading="lazy">
             </div>
             <h1 class="hero-title gs-hero" data-text="BRO MAO">BRO MAO</h1>
             <br>
@@ -717,11 +717,11 @@
         // --- Animation Loop ---
         let mouseX = 0;
         let mouseY = 0;
-        let targetSpeed = 0.05;
+        let targetSpeed = 0.02; // Reduced base speed for comfort
 
         window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005; // Reduced sensitivity
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
         });
 
         gsap.ticker.add(() => {
@@ -734,10 +734,10 @@
 
             for(let i=0; i<count; i++) {
                 const i3 = i * 3;
-                positions[i3+2] += targetSpeed * 4; // Move Z forward
+                // Slower Z movement
+                positions[i3+2] += targetSpeed * 2;
 
                 // Wrap around smoothly
-                // Camera is at Z=60. Range is roughly -100 to 100.
                 if(positions[i3+2] > 100) {
                     positions[i3+2] = -100;
                 }
@@ -762,9 +762,9 @@
             end: "bottom bottom",
             onUpdate: (self) => {
                 gsap.to('#scroll-progress', { height: (self.progress * 100) + '%', duration: 0.1 });
-                // Velocity based speed
-                targetSpeed = 0.05 + Math.abs(self.getVelocity() / 5000);
-                if(targetSpeed > 0.5) targetSpeed = 0.5; // Cap speed
+                // Velocity based speed - Capped lower for comfort
+                targetSpeed = 0.02 + Math.abs(self.getVelocity() / 8000);
+                if(targetSpeed > 0.2) targetSpeed = 0.2; // Cap speed
             }
         });
 
