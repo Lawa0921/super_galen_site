@@ -753,3 +753,15 @@ members:
         label: "Izakaya Owner"
       - id: "vibe_coder"
         label: "Vibe Coder"
+
+  - id: "mochang"
+    name: "墨唱"
+    avatar: "/assets/img/guild/mochang/avatar.webp"
+    page: "/guild/mochang.html"
+    tags:
+      - id: "game_dev"
+        label: "遊戲開發"
+      - id: "pipa_musician"
+        label: "琵琶演奏"
+      - id: "composer"
+        label: "詞曲創作"
