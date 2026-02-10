@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Omnichat Test - Staging v1</title>
+  <title>Omnichat Test - Beta v2</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -42,7 +42,7 @@
 
     .version-badge {
       display: inline-block;
-      background: #3b82f6;
+      background: #f59e0b;
       color: white;
       padding: 4px 12px;
       border-radius: 4px;
@@ -68,9 +68,13 @@
       width: 30%;
     }
 
-    .nav-link {
-      display: inline-block;
+    .nav-links {
       margin-top: 15px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .nav-link {
       color: #2563eb;
       text-decoration: none;
     }
@@ -82,25 +86,33 @@
 </head>
 
 <body>
-  <h1>Omnichat Test <span class="version-badge">Staging v1</span></h1>
+  <h1>Omnichat Test <span class="version-badge">Beta v2 - Video Support</span></h1>
 
   <div class="info-box">
     <h2>Configuration</h2>
     <table class="config-table">
       <tr>
+        <th>Environment</th>
+        <td>Beta</td>
+      </tr>
+      <tr>
         <th>Chat Client URL</th>
-        <td><code>uat-chat-plugin.easychat.co</code></td>
+        <td><code>uat-chat-client.omnichat.ai</code></td>
       </tr>
       <tr>
         <th>Plugin Script</th>
-        <td><code>easychat.js</code></td>
+        <td><code>easychat-v2.js</code></td>
+      </tr>
+      <tr>
+        <th>Language</th>
+        <td>zh-Hant</td>
       </tr>
       <tr>
         <th>Video Support</th>
-        <td>No</td>
+        <td>Yes (developing)</td>
       </tr>
     </table>
-    <div style="margin-top: 15px; font-size: 14px; color: #6b7280;">
+    <div class="nav-links">
       <strong>Staging:</strong>
       <a href="omnichat-test-v1.html" class="nav-link">v1</a> |
       <a href="omnichat-test-v2.html" class="nav-link">v2</a>
@@ -118,20 +130,21 @@
       <li>Verify the chat dialog opens correctly</li>
       <li>Send a message to start a conversation</li>
       <li>Note the Room ID from Omnichat backend</li>
+      <li>Test video call functionality (if available)</li>
     </ol>
   </div>
 
   <!-- Start of Omnichat code -->
-  <script>var a = document.createElement('a'); a.setAttribute('href', 'javascript:;'); a.setAttribute('id', 'easychat-floating-button');
-    var span = document.createElement('span'); span.setAttribute('id', 'easychat-unread-badge'); span.setAttribute('style', 'display: none'); var d1 = document.createElement('div'); d1.setAttribute('id', 'easychat-close-btn'); d1.setAttribute('class', 'easychat-close-btn-close'); var d2 = document.createElement('div'); d2.setAttribute('id', 'easychat-chat-dialog'); d2.setAttribute('class', 'easychat-chat-dialog-close'); var ifrm = document.createElement('iframe'); ifrm.setAttribute('id', 'easychat-chat-dialog-iframe');
-    ifrm.setAttribute('src', 'https://uat-chat-plugin.easychat.co/?appkey=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0ZWFtTmFtZSI6ImJlNGRjNzJmLWZhNWItNDRlNC04MzNiLWUxZTRlZDIzNDA4YyJ9.uObnx9MHwEI3jQ9SE5itx72LQ7ODsjTWZ4hD5Bs-5MI&lang=en');
-    ifrm.style.width = '100%'; ifrm.style.height = '100%'; ifrm.style.frameborder = '0'; ifrm.style.scrolling = 'on'; d2.appendChild(ifrm);
-    if (!document.getElementById("easychat-floating-button")) {
-      document.body.appendChild(a); document.body.appendChild(span); document.body.appendChild(d1); document.body.appendChild(d2);
+  <script>var a=document.createElement('a');a.setAttribute('href','javascript:;');a.setAttribute('id','easychat-floating-button');
+    var span=document.createElement('span');span.setAttribute('id', 'easychat-unread-badge');span.setAttribute('style','display: none');var d1=document.createElement('div');d1.setAttribute('id','easychat-close-btn');d1.setAttribute('class','easychat-close-btn-close');var d2=document.createElement('div');d2.setAttribute('id','easychat-chat-dialog');d2.setAttribute('class','easychat-chat-dialog-close');var ifrm=document.createElement('iframe');ifrm.setAttribute('id','easychat-chat-dialog-iframe');
+    ifrm.setAttribute('src','https://uat-chat-client.omnichat.ai/?appkey=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0ZWFtTmFtZSI6ImY0Y2U3MDNjLTg0YzItNDEzZC1hNWU0LTg0YTA2N2E5OTJkNSJ9.0fHg9Z6SDZ3knCS9KP4DnTnM1LBAEQl371sMfKRkMI4&lang=zh-Hant');
+    ifrm.style.width='100%';ifrm.style.height='100%';ifrm.style.frameborder='0';ifrm.style.scrolling='on';d2.appendChild(ifrm);
+    if(!document.getElementById("easychat-floating-button")){
+      document.body.appendChild(a);document.body.appendChild(span);document.body.appendChild(d1);document.body.appendChild(d2);
     }
 
-    var scriptURL = 'https://dev-chat-plugin.easychat.co/easychat.js';
-    if (!document.getElementById("omnichat-plugin")) {
+    var scriptURL = 'https://dev-chat-plugin.easychat.co/easychat-v2.js';
+    if(!document.getElementById("omnichat-plugin")) {
       var scriptTag = document.createElement('script');
       scriptTag.src = scriptURL;
       scriptTag.id = 'omnichat-plugin';
