@@ -742,6 +742,18 @@ members:
       - id: "poet"
         label: "詩意瘋子"
 
+  - id: "liuan"
+    name: "健身自由教練 Liuan"
+    avatar: "/assets/img/guild/liuan/avatar.webp"
+    page: "/guild/liuan.html"
+    tags:
+      - id: "fitness_coach"
+        label: "健身教練"
+      - id: "meme_master"
+        label: "謎因大師"
+      - id: "exercise_physiology"
+        label: "運動生理學"
+
   - id: "elora"
     name: "Elora"
     avatar: "/assets/img/guild/elora/avatar.webp"
