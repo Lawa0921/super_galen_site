@@ -736,11 +736,11 @@
         // --- Animation Loop ---
         let mouseX = 0;
         let mouseY = 0;
-        let targetSpeed = 0.02;
+        let targetSpeed = 0.005; // Base speed: Slow drift
 
         window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0002; // Reduced sensitivity
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0002;
         });
 
         gsap.ticker.add(() => {
@@ -755,7 +755,8 @@
 
                 for(let i=0; i<count; i++) {
                     const i3 = i * 3;
-                    positions[i3+2] += targetSpeed * 4;
+                    // Move forward slowly
+                    positions[i3+2] += targetSpeed * 2;
 
                     if(positions[i3+2] > 100) {
                         positions[i3+2] = -100;
@@ -782,8 +783,9 @@
             end: "bottom bottom",
             onUpdate: (self) => {
                 gsap.to('#scroll-progress', { height: (self.progress * 100) + '%', duration: 0.1 });
-                targetSpeed = 0.02 + Math.abs(self.getVelocity() / 8000);
-                if(targetSpeed > 0.2) targetSpeed = 0.2;
+                // Velocity based speed - Capped significantly lower
+                targetSpeed = 0.005 + Math.abs(self.getVelocity() / 15000);
+                if(targetSpeed > 0.05) targetSpeed = 0.05; // Max speed cap
             }
         });
 
