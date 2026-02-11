@@ -7,7 +7,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;500;700;900&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@300;500;700;900&family=Montserrat:wght@300;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- GSAP -->
@@ -19,21 +19,19 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
     </script>
 
     <style>
-        /* --- CORE VARIABLES --- */
         :root {
-            --c-bg: #050510; /* Deep Space */
-            --c-text: #e0e0e0;
-            --c-gold: #ffd700;
-            --c-purple: #9b59b6;
-            --c-blue: #3498db;
-            --c-glass: rgba(20, 20, 30, 0.7);
-
+            --c-bg: #000000;
+            --c-gold: #FFD700;
+            --c-gold-dim: #AA8800;
+            --c-purple: #9D00FF;
+            --c-blue: #00FFFF;
             --f-title: 'Cinzel', serif;
             --f-body: 'Noto Serif TC', serif;
             --f-ui: 'Montserrat', sans-serif;
@@ -43,353 +41,315 @@
             margin: 0;
             overflow-x: hidden;
             background-color: var(--c-bg);
-            color: var(--c-text);
+            color: #fff;
             font-family: var(--f-body);
         }
 
-        /* --- LAYOUT & CANVAS --- */
         #canvas-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             z-index: 0;
-            pointer-events: none;
         }
 
+        /* --- UI OVERLAY --- */
         .scrolly-container {
-            position: relative;
-            z-index: 10;
+            position: relative; z-index: 10;
         }
 
         section {
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            padding: 2rem;
+            padding: 4rem;
             box-sizing: border-box;
             position: relative;
+            perspective: 1000px;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* Nav */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-family: var(--f-ui);
-            font-weight: bold;
-            font-size: 0.9rem; letter-spacing: 2px;
+            font-family: var(--f-ui); font-weight: 900;
+            font-size: 0.8rem; letter-spacing: 3px;
             color: var(--c-gold); text-decoration: none;
-            padding: 0.8rem 1.5rem;
-            background: rgba(0,0,0,0.4);
+            padding: 1rem 2rem;
             border: 1px solid var(--c-gold);
-            backdrop-filter: blur(5px);
-            transition: 0.3s;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            transition: 0.4s;
             text-transform: uppercase;
         }
         .nav-back:hover {
-            background: var(--c-gold); color: var(--c-bg);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            background: var(--c-gold); color: #000;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            box-shadow: 0 0 30px var(--c-gold);
         }
 
-        .glass-panel {
-            background: var(--c-glass);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+        /* Glass Cards */
+        .glass-card {
+            background: rgba(10, 10, 15, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
             padding: 3rem;
-            max-width: 650px;
-            width: 100%;
+            max-width: 600px;
             position: relative;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            transition: transform 0.3s, box-shadow 0.3s;
+            transform-style: preserve-3d;
+            border-left: 5px solid var(--c-gold);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            opacity: 0; /* JS Fade in */
+            transform: translateY(50px);
+            transition: transform 0.3s;
         }
-        .glass-panel:hover {
-            border-color: rgba(255, 215, 0, 0.3);
-            box-shadow: 0 10px 50px rgba(52, 152, 219, 0.15);
+        .glass-card:hover {
+            transform: scale(1.02) translateY(0) !important;
+            border-color: var(--c-gold);
         }
-        /* Tech/Sci-fi Corners */
-        .glass-panel::before, .glass-panel::after {
-            content: ''; position: absolute; width: 20px; height: 20px;
-            border: 1px solid var(--c-gold);
-            transition: 0.3s;
-        }
-        .glass-panel::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
-        .glass-panel::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
 
+        /* Tech Decoration */
+        .glass-card::before {
+            content: ''; position: absolute; top: -10px; right: -10px;
+            width: 40px; height: 40px;
+            border-top: 2px solid var(--c-gold);
+            border-right: 2px solid var(--c-gold);
+        }
+        .glass-card::after {
+            content: ''; position: absolute; bottom: -10px; left: -10px;
+            width: 40px; height: 40px;
+            border-bottom: 2px solid var(--c-gold);
+            border-left: 2px solid var(--c-gold);
+        }
+
+        /* Layout Helpers */
+        .left { margin-right: auto; }
+        .right { margin-left: auto; }
+        .center { margin: 0 auto; }
+
+        h1 {
+            font-family: var(--f-title); font-size: 8vw; line-height: 0.9;
+            color: transparent; -webkit-text-stroke: 2px var(--c-gold);
+            text-transform: uppercase; margin: 0;
+            position: relative; z-index: 2;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            mix-blend-mode: lighten;
+            opacity: 0; transform: translateY(50px);
+        }
+        h1 span { display: block; font-size: 2rem; letter-spacing: 10px; color: #fff; -webkit-text-stroke: 0; margin-top: 1rem; font-family: var(--f-ui); }
 
         h2 {
-            font-family: var(--f-title);
-            color: var(--c-gold);
-            font-size: 2.5rem; margin: 0 0 1rem 0;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 0.5rem;
-            display: inline-block;
+            font-family: var(--f-title); font-size: 3rem; color: #fff;
+            margin: 0 0 1rem 0; text-transform: uppercase;
         }
-
         .subtitle {
-            font-family: var(--f-ui);
-            color: var(--c-blue);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 1.5rem;
-            display: block;
+            font-family: var(--f-ui); color: var(--c-gold); letter-spacing: 4px;
+            font-size: 0.9rem; margin-bottom: 1rem; display: block; font-weight: 700;
         }
 
         p {
-            font-size: 1.1rem; line-height: 2; margin-bottom: 1.5rem; color: #ccc;
-            text-align: justify;
+            font-size: 1.1rem; line-height: 1.8; color: #ddd; margin-bottom: 1.5rem;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
         }
 
-        .highlight { color: var(--c-gold); font-weight: bold; }
-        .highlight-blue { color: var(--c-blue); font-weight: bold; }
+        .highlight { color: var(--c-gold); font-weight: 700; text-shadow: 0 0 10px var(--c-gold-dim); }
+        .highlight-blue { color: var(--c-blue); font-weight: 700; text-shadow: 0 0 10px rgba(0,255,255,0.4); }
 
-        ul.star-list {
-            list-style: none; padding: 0; margin: 0;
-        }
-        ul.star-list li {
-            margin-bottom: 1rem; padding-left: 1.5rem; position: relative;
-            font-size: 1.05rem; color: #ddd;
-        }
-        ul.star-list li::before {
-            content: '✦'; position: absolute; left: 0; top: 2px; color: var(--c-gold);
-        }
-
-
-        /* --- HERO --- */
-        #hero {
-            flex-direction: column; text-align: center;
-            height: 100vh;
-        }
-        .avatar-frame {
-            width: 220px; height: 220px; margin-bottom: 2rem;
-            position: relative;
+        /* HERO Avatar */
+        .hero-avatar {
+            width: 300px; height: 300px;
+            position: absolute; right: 10%; top: 20%;
             border-radius: 50%;
-            padding: 5px;
-            background: linear-gradient(45deg, var(--c-blue), var(--c-purple), var(--c-gold));
-            animation: rotate-border 4s linear infinite;
+            border: 2px solid var(--c-gold);
+            box-shadow: 0 0 50px var(--c-gold);
+            overflow: hidden;
+            z-index: 1;
+            opacity: 0; transform: scale(0.8);
         }
-        .avatar-img {
-            width: 100%; height: 100%; border-radius: 50%;
-            object-fit: cover; border: 4px solid var(--c-bg);
-            background: var(--c-bg);
-            position: relative; z-index: 2;
-        }
-        @keyframes rotate-border { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
-
-        .hero-title {
-            font-family: var(--f-title); font-size: 4.5rem;
-            background: linear-gradient(to right, #fff, #aaa);
-            -webkit-background-clip: text; color: transparent;
-            margin: 0; letter-spacing: 5px;
-            text-shadow: 0 0 30px rgba(255,255,255,0.3);
-        }
-        .hero-role {
-            font-family: var(--f-ui); font-size: 1rem; letter-spacing: 4px; color: var(--c-blue);
-            margin-top: 1rem; text-transform: uppercase;
-        }
-
-        /* --- COURSE DECK --- */
-        #course-deck {
-            height: 200vh; /* Extra height for scroll duration */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* Content is handled by Canvas */
-        }
-        .deck-instructions {
-            position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
-            font-family: var(--f-ui); color: var(--c-gold); letter-spacing: 2px; font-size: 0.8rem;
-            background: rgba(0,0,0,0.5); padding: 0.5rem 1rem; border-radius: 20px;
-            pointer-events: none; opacity: 0;
-            border: 1px solid var(--c-gold);
-        }
+        .hero-avatar img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.2); transition: 1s; }
+        .hero-avatar:hover img { filter: grayscale(0%); transform: scale(1.1); }
 
 
-        /* --- FOOTER --- */
-        footer {
-            padding: 3rem; text-align: center; font-family: var(--f-ui); font-size: 0.8rem; color: #555;
-            background: #000; position: relative; z-index: 10;
+        /* COURSE GALLERY SCROLL SECTION */
+        #course-tunnel {
+            height: 400vh; /* Long scroll for tunnel */
+            justify-content: flex-start;
+            padding: 0;
         }
-        .social-links {
-            display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;
-        }
-        .social-btn {
-            width: 50px; height: 50px; border-radius: 50%;
-            border: 1px solid var(--c-text); color: var(--c-text);
+        .tunnel-content {
+            position: sticky; top: 0; height: 100vh; width: 100%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; text-decoration: none;
-            transition: 0.3s;
+            pointer-events: none; /* Let clicks pass to 3D if needed */
         }
-        .social-btn:hover {
-            background: var(--c-gold); color: #000; border-color: var(--c-gold);
-            transform: scale(1.1); box-shadow: 0 0 20px var(--c-gold);
+        .tunnel-text {
+            text-align: center;
+            background: rgba(0,0,0,0.6); padding: 2rem;
+            backdrop-filter: blur(5px); border: 1px solid #333;
+            transform: translateY(-20vh); /* Move up a bit */
         }
 
+        /* FOOTER */
+        footer {
+            padding: 4rem 2rem; text-align: center; font-family: var(--f-ui);
+            background: #000; position: relative; z-index: 20; border-top: 1px solid #333;
+        }
+        .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .social-icon {
+            font-size: 2rem; color: #555; transition: 0.3s;
+        }
+        .social-icon:hover { color: var(--c-gold); text-shadow: 0 0 20px var(--c-gold); transform: translateY(-5px); }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.8rem; }
-            .glass-panel { padding: 2rem 1.5rem; }
-            section { padding: 1rem; }
+            h1 { font-size: 15vw; }
+            h1 span { font-size: 1rem; }
+            section { padding: 1.5rem; }
+            .hero-avatar { width: 200px; height: 200px; top: 15%; right: 50%; transform: translateX(50%) scale(0.8); position: relative; margin-bottom: 2rem; margin-top: 5rem; }
+            .glass-card { padding: 1.5rem; width: 100%; }
+            #hero { justify-content: flex-start; padding-top: 6rem; }
         }
     </style>
 </head>
 <body>
 
     <a href="/guild/" class="nav-back">Guild Hall</a>
-
     <div id="canvas-container"></div>
 
     <div class="scrolly-container">
 
         <!-- 1. HERO -->
         <section id="hero">
-            <div class="avatar-frame">
-                <img src="/assets/img/guild/lyanna/avatar.webp" class="avatar-img" alt="Lyanna">
+            <div class="hero-avatar">
+                <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna">
             </div>
-            <h1 class="hero-title">LYANNA</h1>
-            <div class="hero-role">The Cosmic Navigator</div>
-            <div style="margin-top: 2rem; font-family: var(--f-ui); color: #888;">SCROLL TO EXPLORE</div>
-        </section>
+            <h1 class="glitch-text">LYANNA<span>COSMIC NAVIGATOR</span></h1>
 
-        <!-- 2. INTRO (Why) -->
-        <section id="philosophy">
-            <div class="glass-panel">
-                <span class="subtitle">01. Origin</span>
-                <h2>The Compass</h2>
-                <p>
-                    我是 <b>允曦 Lyanna</b>，華語教師培訓課程創辦者，也是一位 <span class="highlight">MMT 個人天賦諮詢師</span>。
-                </p>
-                <p>
-                    在陪伴許多老師與學員的過程中，我發現多數人卡住的，從來不只是考試。
-                    而是：<br>
-                    <span class="highlight-blue">「我適合嗎？」</span><br>
-                    <span class="highlight-blue">「我能走多遠？」</span>
-                </p>
-                <p>
-                    因此，我將華語教學專業結合天賦分析，讓學習不只停在證照，而是回到人生整體的選擇。
-                    我不只教你如何考試，更陪你找到<span class="highlight">屬於你的航道</span>。
-                </p>
+            <div style="margin-top: 2rem; font-family: var(--f-ui); color: var(--c-gold); letter-spacing: 2px;">
+                <i class="fa-solid fa-arrow-down"></i> INITIATE SEQUENCE
             </div>
         </section>
 
-        <!-- 3. SERVICES (What) -->
-        <section id="services" style="align-items: flex-start;">
-            <div class="glass-panel" style="margin-left: auto; margin-right: 5%;">
-                <span class="subtitle">02. Methodology</span>
-                <h2>The Map</h2>
-                <p>我專注於陪伴對華語教學有熱情的人，從迷惘到真正走出去。</p>
-                <ul class="star-list">
-                    <li><b>教育部華語教師證照</b>：系統化培訓，拆解考試難點。</li>
-                    <li><b>海外職涯規劃</b>：結合真實海外教學經驗，提供落地建議。</li>
-                    <li><b>轉職與人生探索</b>：運用 MMT 天賦系統，釐清你的核心優勢。</li>
+        <!-- 2. ORIGIN -->
+        <section id="origin" style="align-items: flex-start;">
+            <div class="glass-card left">
+                <span class="subtitle">01. THE COMPASS</span>
+                <h2>ORIGIN</h2>
+                <p>我是 <b>允曦 Lyanna</b>，華語教師培訓課程創辦者，<br>同時也是 <span class="highlight">MMT 個人天賦諮詢師</span>。</p>
+                <p>在引導無數學員的過程中，我發現真正的障礙從來不是考試，而是對未來的迷惘：<br>
+                <span class="highlight-blue">「我適合嗎？」</span> <span class="highlight-blue">「這條路能走多遠？」</span></p>
+                <p>我將華語教學專業結合天賦分析，陪你找到<span class="highlight">屬於你的航道</span>。</p>
+            </div>
+        </section>
+
+        <!-- 3. METHODOLOGY -->
+        <section id="method" style="align-items: flex-end;">
+            <div class="glass-card right">
+                <span class="subtitle">02. THE MAP</span>
+                <h2>METHODOLOGY</h2>
+                <p>我不只教你如何考試，更陪你釐清方向。</p>
+                <ul style="list-style:none; padding:0; line-height:2; color:#ddd;">
+                    <li><i class="fa-solid fa-star" style="color:var(--c-gold)"></i> <b>教育部華語教師證照</b>：系統化培訓，拆解難點。</li>
+                    <li><i class="fa-solid fa-star" style="color:var(--c-gold)"></i> <b>海外職涯規劃</b>：真實海外經驗，落地建議。</li>
+                    <li><i class="fa-solid fa-star" style="color:var(--c-gold)"></i> <b>轉職與人生探索</b>：運用 MMT 系統，釐清核心優勢。</li>
                 </ul>
-                <p style="margin-top: 2rem;">
-                    真正能走得遠的，不只是會考試的人，而是<span class="highlight">對自己有理解、對選擇有準備的人</span>。
-                </p>
+                <p>真正能走得遠的，是對自己有理解、對選擇有準備的人。</p>
             </div>
         </section>
 
-        <!-- 4. COURSE DECK (The 3D Carousel) -->
-        <section id="course-deck">
-            <!-- Invisible trigger for GSAP/ThreeJS -->
-            <div class="deck-instructions">SCROLL TO ROTATE DECK</div>
-        </section>
-
-        <!-- 5. FINAL CALL -->
-        <section id="contact">
-            <div class="glass-panel" style="text-align: center;">
-                <span class="subtitle">03. Boarding</span>
-                <h2>Start Your Journey</h2>
-                <p>
-                    如果你正在思考是否要投入華語教學、是否適合走向海外，
-                    或正在轉職的路口。
-                </p>
-                <p>
-                    希望能用我走過的經驗，陪你把「華語」變成一條<span class="highlight">穩定、清楚、走得出去的路</span>。
-                </p>
+        <!-- 4. TUNNEL GALLERY -->
+        <section id="course-tunnel">
+            <div class="tunnel-content">
+                <div class="tunnel-text">
+                    <h2 style="font-size: 4rem; color: var(--c-gold);">THE COURSE</h2>
+                    <p>SCROLL TO DIVE DEEP</p>
+                </div>
             </div>
         </section>
 
-        <!-- FOOTER -->
+        <!-- 5. FINAL -->
+        <section id="final" style="justify-content: center; align-items: center;">
+            <div class="glass-card center" style="text-align: center; border-color: var(--c-blue);">
+                <span class="subtitle">03. BOARDING</span>
+                <h2>START YOUR JOURNEY</h2>
+                <p>如果你正在思考是否投入華語教學，或站在人生的十字路口。</p>
+                <p>讓我用走過的經驗，陪你把「華語」變成一條<br><span class="highlight" style="font-size:1.5rem;">穩定、清楚、走得出去的路</span>。</p>
+            </div>
+        </section>
+
         <footer>
-            <div class="social-links">
-                <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-btn"><i class="fa-solid fa-book"></i></a>
+            <div class="social-row">
+                <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-icon"><i class="fa-solid fa-book"></i></a>
             </div>
-            <p>Made with <i class="fa-solid fa-heart" style="color:var(--c-gold);"></i> by <a href="#" style="color:#777;text-decoration:none;">SuperGalen's Dungeon</a></p>
-            <br>
-            <a href="/guild/" style="color: #444; text-decoration: none; font-size: 0.7rem;">RETURN TO GUILD</a>
+            <p>Made with <i class="fa-solid fa-bolt" style="color:var(--c-gold);"></i> by <a href="#" style="color:#666;">SuperGalen's Dungeon</a></p>
+            <a href="/guild/" style="color: #444; font-size: 0.7rem; text-decoration: none;">RETURN TO GUILD</a>
         </footer>
-
     </div>
 
+    <!-- SCRIPT -->
     <script type="module">
         import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- 1. SETUP ---
+        // --- 1. SCENE SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050510, 0.03); // Deep space fog
+        // scene.fog = new THREE.FogExp2(0x000000, 0.02); // Removed fog to let bloom shine
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.toneMapping = THREE.ReinhardToneMapping;
         container.appendChild(renderer.domElement);
 
-        // --- 2. STARS (Constellation) ---
-        const starCount = 800;
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = [];
+        // --- 2. POST PROCESSING (BLOOM) ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.5; // Intense bloom
+        bloomPass.radius = 0.5;
 
-        for(let i=0; i<starCount; i++) {
-            const x = (Math.random() - 0.5) * 60;
-            const y = (Math.random() - 0.5) * 60;
-            const z = (Math.random() - 0.5) * 100; // Deep Z
-            starPos.push(x, y, z);
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- 3. GOLDEN FLUX (Instanced Particles) ---
+        const particleCount = 2000;
+        const geometry = new THREE.TetrahedronGeometry(0.05); // Sharp shards
+        const material = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+        const particles = new THREE.InstancedMesh(geometry, material, particleCount);
+
+        const dummy = new THREE.Object3D();
+        const pData = []; // Store speed/offset
+
+        for (let i = 0; i < particleCount; i++) {
+            dummy.position.set(
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 100 - 20
+            );
+            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            dummy.scale.setScalar(Math.random() * 2 + 0.5);
+            dummy.updateMatrix();
+            particles.setMatrixAt(i, dummy.matrix);
+
+            pData.push({
+                x: dummy.position.x,
+                y: dummy.position.y,
+                z: dummy.position.z,
+                speed: Math.random() * 0.1 + 0.02,
+                rotSpeed: (Math.random() - 0.5) * 0.05
+            });
         }
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        scene.add(particles);
 
-        const starMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.1,
-            transparent: true,
-            opacity: 0.8
-        });
-        const starSystem = new THREE.Points(starGeo, starMat);
-        scene.add(starSystem);
-
-        // Lines connecting stars (Constellation effect)
-        const lineGeo = new THREE.BufferGeometry();
-        const linePos = [];
-        // Connect random pairs if close
-        for(let i=0; i<300; i++) {
-             const idx1 = Math.floor(Math.random() * starCount);
-             const idx2 = Math.floor(Math.random() * starCount);
-
-             const x1 = starPos[idx1*3]; const y1 = starPos[idx1*3+1]; const z1 = starPos[idx1*3+2];
-             const x2 = starPos[idx2*3]; const y2 = starPos[idx2*3+1]; const z2 = starPos[idx2*3+2];
-
-             // Distance check roughly
-             const dist = Math.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2);
-             if (dist < 15) {
-                linePos.push(x1,y1,z1, x2,y2,z2);
-             }
-        }
-        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePos, 3));
-        const lineMat = new THREE.LineBasicMaterial({ color: 0x3498db, transparent: true, opacity: 0.2 });
-        const lines = new THREE.LineSegments(lineGeo, lineMat);
-        scene.add(lines);
-
-
-        // --- 3. COURSE CAROUSEL (3D Deck) ---
-        const deckGroup = new THREE.Group();
-        deckGroup.position.set(0, -50, -20); // Hidden initially
-        deckGroup.visible = false;
-        scene.add(deckGroup);
+        // --- 4. COURSE SPIRAL TUNNEL ---
+        const tunnelGroup = new THREE.Group();
+        scene.add(tunnelGroup);
 
         const slideUrls = [
             '/assets/img/guild/lyanna/slide_1.webp',
@@ -398,115 +358,126 @@
             '/assets/img/guild/lyanna/slide_4.webp',
             '/assets/img/guild/lyanna/slide_5.webp'
         ];
-
         const loader = new THREE.TextureLoader();
-        const radius = 5;
-        const totalSlides = slideUrls.length;
 
-        slideUrls.forEach((url, i) => {
-            loader.load(url, (tex) => {
+        // Create 20 items (repeat textures)
+        for (let i = 0; i < 20; i++) {
+            loader.load(slideUrls[i % slideUrls.length], (tex) => {
                 tex.colorSpace = THREE.SRGBColorSpace;
-                // Default aspect 1.5 if not loaded yet, but usually we wait.
-                // We'll fix aspect ratio to standard slide (16:9 or 4:3)
-                const geo = new THREE.PlaneGeometry(5, 3.5);
-                const mat = new THREE.MeshBasicMaterial({
-                    map: tex,
-                    side: THREE.DoubleSide
-                });
+                const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+                const geo = new THREE.PlaneGeometry(8, 5); // Bigger cards
                 const mesh = new THREE.Mesh(geo, mat);
 
-                // Cylinder layout
-                const angle = (i / totalSlides) * Math.PI * 2;
-                mesh.position.x = Math.sin(angle) * radius;
-                mesh.position.z = Math.cos(angle) * radius;
+                // Spiral Position
+                const angle = i * 0.5;
+                const radius = 10;
+                const zPos = -30 - (i * 15); // Deep spacing
 
-                // Rotate to face CENTER (so camera inside sees them)
-                // mesh.lookAt(0, 0, 0);
-                // Actually we want them facing OUT if camera is outside, or IN if camera is inside.
-                // Let's make them face OUT and camera rotates around them?
-                // Or camera inside?
-                // Let's try: Cards in a circle, rotating around Y axis.
+                mesh.position.set(Math.cos(angle)*radius, Math.sin(angle)*radius, zPos);
 
-                mesh.rotation.y = angle; // Tangential? No.
-                mesh.lookAt(0,0,0);
-                mesh.rotation.y += Math.PI; // Face outwards
+                // Look at center line, but slightly tilted
+                mesh.lookAt(0,0, zPos + 20);
+                mesh.rotation.z = angle; // Tilt with spiral
 
-                deckGroup.add(mesh);
+                tunnelGroup.add(mesh);
             });
-        });
+        }
+        tunnelGroup.visible = false; // Hidden until tunnel section
 
-
-        // --- 4. ANIMATION LOOP ---
-        const clock = new THREE.Clock();
-
-        // Mouse Interaction
-        let mouseX = 0;
-        let mouseY = 0;
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
-        });
+        // --- 5. ANIMATION LOOP ---
+        let time = 0;
+        let speedMult = 1; // Speed multiplier for "Warp"
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            time += 0.01;
 
-            // Star motion
-            starSystem.rotation.y += 0.0002;
-            lines.rotation.y += 0.0002;
+            // Particles Flow
+            for (let i = 0; i < particleCount; i++) {
+                const d = pData[i];
+                // Move towards camera (positive Z)
+                d.z += d.speed * speedMult;
 
-            // Parallax
-            scene.rotation.x += (mouseY - scene.rotation.x) * 0.05;
-            scene.rotation.y += (mouseX - scene.rotation.y) * 0.05;
+                // Wrap around
+                if (d.z > 10) d.z = -100;
 
-            renderer.render(scene, camera);
+                dummy.position.set(d.x, d.y, d.z);
+                dummy.rotation.x += d.rotSpeed;
+                dummy.rotation.y += d.rotSpeed;
+                dummy.updateMatrix();
+                particles.setMatrixAt(i, dummy.matrix);
+            }
+            particles.instanceMatrix.needsUpdate = true;
+
+            // Camera subtle movement (unless in tunnel)
+            if(!tunnelGroup.visible) {
+                camera.rotation.z = Math.sin(time * 0.2) * 0.05;
+                camera.position.x = Math.sin(time * 0.1) * 0.5;
+                camera.position.y = Math.cos(time * 0.1) * 0.5;
+            }
+
+            composer.render();
         }
         animate();
 
 
-        // --- 5. GSAP SCROLL LOGIC ---
-        // Register
+        // --- 6. GSAP INTERACTION ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // A. Deep Space Dive
-        const tl = gsap.timeline({
+        // A. Reveal Hero
+        gsap.to(".hero-avatar", { opacity: 1, scale: 1, duration: 2, ease: "elastic.out(1, 0.5)" });
+        gsap.to("h1", { opacity: 1, y: 0, duration: 1.5, delay: 0.5 });
+
+        // B. Section Enters
+        gsap.utils.toArray(".glass-card").forEach(card => {
+            gsap.to(card, {
+                opacity: 1, y: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // C. Tunnel Sequence (The "Explosive" Part)
+        // We want the tunnel mesh group to move towards the camera (simulate flying through)
+        // Total distance needed = 20 cards * 15 z-spacing = 300 units
+
+        const tunnelTimeline = gsap.timeline({
             scrollTrigger: {
-                trigger: "body",
+                trigger: "#course-tunnel",
                 start: "top top",
-                end: "bottom bottom",
-                scrub: 1
+                end: "bottom bottom", // 400vh long
+                scrub: 0.1,
+                onEnter: () => {
+                    tunnelGroup.visible = true;
+                    speedMult = 8; // WARP SPEED PARTICLES
+                },
+                onLeave: () => {
+                    // speedMult = 1; // Keep it fast?
+                },
+                onLeaveBack: () => {
+                    tunnelGroup.visible = false;
+                    speedMult = 1;
+                }
             }
         });
 
-        tl.to(camera.position, { z: -10, ease: "none" });
-
-        // B. Reveal Deck Section
-        ScrollTrigger.create({
-            trigger: "#course-deck",
-            start: "top center",
-            end: "bottom bottom",
-            onEnter: () => {
-                deckGroup.visible = true;
-                gsap.to(deckGroup.position, { y: 0, z: -15, duration: 1.5, ease: "power2.out" });
-                gsap.to(".deck-instructions", { opacity: 1, duration: 0.5 });
-            },
-            onLeaveBack: () => {
-                gsap.to(deckGroup.position, { y: -50, duration: 1, onComplete: () => { deckGroup.visible = false; } });
-                gsap.to(".deck-instructions", { opacity: 0 });
-            }
+        // Move the tunnel group Z towards camera
+        // Starting Z is mostly negative. We want to bring them past camera (Z=5)
+        // Last card is at -330. We need to move group +350.
+        tunnelTimeline.to(tunnelGroup.position, {
+            z: 350,
+            ease: "none"
         });
 
-        // C. Rotate Deck
-        gsap.to(deckGroup.rotation, {
-            y: Math.PI * 2,
-            ease: "none",
-            scrollTrigger: {
-                trigger: "#course-deck",
-                start: "top bottom",
-                end: "bottom top",
-                scrub: 1
-            }
-        });
+        // Spin camera wildly during tunnel
+        tunnelTimeline.to(camera.rotation, {
+            z: Math.PI * 2, // Full rotation
+            ease: "none"
+        }, "<");
 
 
         // Resize
@@ -514,6 +485,7 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
