@@ -32,9 +32,10 @@
             --accent-pink: #ff1493; /* Deep Pink */
             --accent-purple: #9400d3; /* Dark Violet */
             --accent-cyan: #00ffff;
+            --accent-hot: #ff0055; /* Hot Pink/Red for Succubus */
             --glass-bg: rgba(20, 0, 20, 0.4);
             --glass-border: rgba(255, 20, 147, 0.3);
-            --neon-glow: 0 0 10px var(--accent-pink), 0 0 20px var(--accent-purple);
+            --neon-glow: 0 0 15px var(--accent-hot), 0 0 30px var(--accent-purple);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,7 +46,7 @@
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
-            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23FF1493"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') 12 12, auto;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23FF0055"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') 12 12, auto;
         }
 
         h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -66,28 +67,28 @@
             width: 100%; height: 100%;
             z-index: -2;
             pointer-events: none;
-            opacity: 0.3;
+            opacity: 0.4;
             mix-blend-mode: screen;
         }
 
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-size: 1.2rem; color: var(--accent-pink);
+            font-size: 1.2rem; color: var(--accent-hot);
             text-decoration: none; font-family: 'Orbitron';
             font-weight: 900;
-            border: 2px solid var(--accent-pink);
+            border: 2px solid var(--accent-hot);
             padding: 0.5rem 1.5rem;
             background: rgba(0,0,0,0.8);
             backdrop-filter: blur(5px);
             transition: 0.3s;
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-            text-shadow: 0 0 5px var(--accent-pink);
-            box-shadow: 0 0 10px var(--accent-pink);
+            text-shadow: 0 0 5px var(--accent-hot);
+            box-shadow: 0 0 10px var(--accent-hot);
         }
         .nav-back:hover {
-            background: var(--accent-pink);
+            background: var(--accent-hot);
             color: #000;
-            box-shadow: 0 0 30px var(--accent-pink);
+            box-shadow: 0 0 30px var(--accent-hot);
         }
 
         /* --- Sections --- */
@@ -103,7 +104,7 @@
 
         /* Parallax Spacers for Sensory Sections */
         .sensory-section {
-            height: 120vh; /* Extra scroll space for parallax feel */
+            height: 150vh; /* Extra scroll space for parallax feel */
             justify-content: center;
             align-items: flex-end; /* Align right side for text */
             position: relative;
@@ -134,7 +135,7 @@
             -webkit-text-fill-color: transparent;
             text-align: center;
             line-height: 1;
-            filter: drop-shadow(0 0 30px rgba(255, 20, 147, 0.8));
+            filter: drop-shadow(0 0 30px rgba(255, 0, 85, 0.8));
             margin-bottom: 2rem;
             font-family: 'Orbitron', sans-serif;
             letter-spacing: -0.05em;
@@ -146,7 +147,7 @@
             position: absolute;
             left: 0; top: 0;
             width: 100%; height: 100%;
-            background: linear-gradient(to bottom, transparent, var(--accent-cyan));
+            background: linear-gradient(to bottom, transparent, var(--accent-hot));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             opacity: 0.5;
@@ -156,10 +157,10 @@
 
         .hero-subtitle {
             font-size: clamp(1.5rem, 4vw, 2.5rem);
-            color: var(--accent-cyan);
+            color: var(--accent-hot);
             letter-spacing: 0.5em;
             text-align: center;
-            text-shadow: 0 0 20px var(--accent-cyan);
+            text-shadow: 0 0 20px var(--accent-hot);
             font-weight: 700;
             margin-bottom: 1rem;
         }
@@ -189,8 +190,7 @@
             100% { background-position: -100% 0; }
         }
 
-        /* --- Sensory Focus: Parallax Assets --- */
-        /* These act as "Holes" or "Overlays" in the scroll */
+        /* --- Sensory Focus: Bolder, Larger --- */
         .sensory-img-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -201,39 +201,53 @@
 
         .sensory-img {
             position: absolute;
-            /* Start off-screen or scaled */
             opacity: 0;
-            transition: opacity 1s;
+            /* Scale up significantly for "Bold" feel */
+            transform: scale(1.5);
+            transition: opacity 1s, transform 0.5s;
         }
 
         /* Specific Styles for each feature */
         #sensory-eyes .sensory-img {
-            top: 20%; left: 10%; width: 50vw; max-width: 600px;
-            mask-image: radial-gradient(circle, black 40%, transparent 70%);
-            -webkit-mask-image: radial-gradient(circle, black 40%, transparent 70%);
+            top: 10%; left: 0; width: 100vw; max-width: none;
+            /* Full width background style */
+            object-fit: cover;
+            height: 100%;
+            mask-image: radial-gradient(circle, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle, black 30%, transparent 80%);
+            filter: brightness(0.7) contrast(1.2);
         }
         #sensory-nose .sensory-img {
-            top: 40%; right: 10%; width: 40vw; max-width: 500px;
-            mask-image: radial-gradient(circle, black 40%, transparent 70%);
-            -webkit-mask-image: radial-gradient(circle, black 40%, transparent 70%);
+            top: 10%; right: 0; width: 100vw; max-width: none;
+            object-fit: cover;
+            height: 100%;
+            mask-image: radial-gradient(circle at 70% 50%, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(circle at 70% 50%, black 30%, transparent 80%);
+            filter: brightness(0.6) hue-rotate(-20deg);
         }
         #sensory-lips .sensory-img {
-            bottom: 10%; left: 20%; width: 60vw; max-width: 700px;
-            mask-image: radial-gradient(ellipse, black 40%, transparent 70%);
-            -webkit-mask-image: radial-gradient(ellipse, black 40%, transparent 70%);
+            bottom: 0; left: 0; width: 100vw; max-width: none;
+            object-fit: cover;
+            height: 100%;
+            mask-image: radial-gradient(ellipse at 50% 80%, black 40%, transparent 90%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 80%, black 40%, transparent 90%);
+            filter: brightness(0.8) contrast(1.5);
         }
 
         .sensory-title {
-            font-size: 4rem;
-            color: var(--accent-cyan);
-            text-shadow: 0 0 20px var(--accent-cyan);
+            font-size: 5rem;
+            color: var(--accent-hot);
+            text-shadow: 0 0 30px var(--accent-hot);
             font-family: 'Orbitron';
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
         .sensory-desc {
-            font-size: 1.5rem;
+            font-size: 2rem;
             color: #fff;
             margin-top: 1rem;
             text-shadow: 0 0 10px #000;
+            font-style: italic;
         }
 
         /* --- Profile Avatar --- */
@@ -364,7 +378,7 @@
         /* Mobile Adjustments */
         @media(max-width: 768px) {
             .hero-title { font-size: 3.5rem; }
-            .sensory-img { width: 80vw !important; }
+            .sensory-img { width: 100vw !important; opacity: 0.5 !important; }
             .glass-panel { padding: 2rem; }
         }
 
@@ -492,7 +506,7 @@
             <div class="container">
                 <h2 style="text-align: center; margin-bottom: 2rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan);">DREAM FRAGMENTS</h2>
                 <div class="gallery-hint">
-                    <h3>CLICK TO HEAL</h3>
+                    <h3>CLICK TO CAPTURE</h3>
                     <p>ALIGN THE SECTOR</p>
                 </div>
             </div>
@@ -532,32 +546,45 @@
 
             p.draw = () => {
                 p.clear();
-                // Simple kaleidoscope background
                 if(!imgEyes || !imgLips) return;
 
                 p.translate(p.width / 2, p.height / 2);
-                p.rotate(angle * 0.1); // Slower
+                // Hypnotic Rotation
+                p.rotate(angle * 0.5);
 
-                let symmetry = 6;
+                // More complex symmetry for Kaleidoscope
+                let symmetry = 8;
                 let angleStep = 360 / symmetry;
 
                 for (let i = 0; i < symmetry; i++) {
                     p.push();
                     p.rotate(i * angleStep + angle);
-                    p.translate(0, 300);
+
+                    // Layer 1: Eyes (Outer)
+                    p.push();
+                    p.translate(0, 400 + Math.sin(angle * 2) * 20);
                     p.rotate(90);
-                    p.tint(255, 105, 180, 40); // Very faint
-                    p.image(imgEyes, 0, 0, 400, 200);
+                    p.tint(255, 0, 100, 50); // Deep Pink Tint
+                    p.image(imgEyes, 0, 0, 500, 250);
+                    p.pop();
+
+                    // Layer 2: Lips (Inner)
+                    p.push();
+                    p.translate(0, 200 + Math.cos(angle * 2) * 20);
+                    p.rotate(-90);
+                    p.tint(150, 0, 255, 60); // Purple Tint
+                    p.image(imgLips, 0, 0, 300, 300);
+                    p.pop();
+
                     p.pop();
                 }
-                angle += 0.2;
+                angle += 0.3;
             };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
         };
-        // Only load p5 if assets exist (they do)
         new p5(p5Sketch);
     </script>
 
@@ -574,7 +601,7 @@
         scene.fog = new THREE.FogExp2(0x05000a, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 50; // Start further back for deep scroll
+        camera.position.z = 50;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -589,21 +616,21 @@
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.4;
-        bloomPass.radius = 0.3;
+        bloomPass.strength = 0.5; // Slightly stronger for "Bold" feel
+        bloomPass.radius = 0.4;
         composer.addPass(bloomPass);
 
         // --- Objects ---
 
-        // 1. Deep Starfield Tunnel
+        // 1. Starfield Tunnel
         const starGeo = new THREE.BufferGeometry();
         const starCount = 3000;
         const starPos = new Float32Array(starCount * 3);
 
         for(let i=0; i<starCount * 3; i+=3) {
-            starPos[i] = (Math.random() - 0.5) * 100;   // X: Wide spread
-            starPos[i+1] = (Math.random() - 0.5) * 100; // Y: Wide spread
-            starPos[i+2] = (Math.random() - 0.5) * 200; // Z: Deep tunnel (-100 to 100)
+            starPos[i] = (Math.random() - 0.5) * 100;
+            starPos[i+1] = (Math.random() - 0.5) * 100;
+            starPos[i+2] = (Math.random() - 0.5) * 200;
         }
 
         starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
@@ -611,11 +638,10 @@
         const starField = new THREE.Points(starGeo, starMat);
         scene.add(starField);
 
-        // 2. Fractured Mirror Wheel (Finale)
-        const mirrorGroup = new THREE.Group();
-        // Position at the END of the tunnel (Z = -20)
-        mirrorGroup.position.z = -20;
-        scene.add(mirrorGroup);
+        // 2. Heart Shard Group (Finale)
+        const heartGroup = new THREE.Group();
+        heartGroup.position.z = -20;
+        scene.add(heartGroup);
 
         const loader = new THREE.TextureLoader();
         const textureUrls = [
@@ -630,40 +656,61 @@
         const textures = textureUrls.map(url => {
             const t = loader.load(url);
             t.colorSpace = THREE.SRGBColorSpace;
-            // Ensure texture centers correctly on the circle
-            t.center.set(0.5, 0.5);
+            // Center texture on the Heart Shape
+            // We need to map UVs based on Bounding Box.
+            // Will do manually in loop.
             return t;
         });
 
-        // Create Fractured Circle
-        const radius = 12;
-        const segments = 32;
-        const circleGeo = new THREE.CircleGeometry(radius, segments);
+        // Create Heart Shape
+        const x = 0, y = 0;
+        const heartShape = new THREE.Shape();
+        heartShape.moveTo( x + 5, y + 5 );
+        heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
+        heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
+        heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
+        heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
+        heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
+        heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
 
-        // Perturb vertices to create jagged edges (Fracture)
-        const posAttr = circleGeo.attributes.position;
-        // Skip center vertex (index 0)
-        for (let i = 1; i < posAttr.count; i++) {
-            // Add noise to radius
-            const x = posAttr.getX(i);
-            const y = posAttr.getY(i);
-            // Don't perturb too much or UVs break
-            const noise = (Math.random() - 0.5) * 0.5;
-            posAttr.setX(i, x + noise);
-            posAttr.setY(i, y + noise);
-        }
+        // Triangulate Heart (to make shards)
+        // We create a ShapeGeometry, then use its faces as shards
+        // But ShapeGeometry makes many small triangles. Let's use lower detail.
+        const geometry = new THREE.ShapeGeometry( heartShape, 8 );
 
-        // Break into Triangle Shards
-        const indexAttr = circleGeo.index;
+        // Center the geometry
+        geometry.computeBoundingBox();
+        const centerOffset = new THREE.Vector3();
+        geometry.boundingBox.getCenter(centerOffset);
+        geometry.translate(-centerOffset.x, -centerOffset.y, -centerOffset.z);
+
+        // Flip Y because Three.js shapes are often inverted relative to screen Y
+        geometry.scale(1, -1, 1);
+        geometry.scale(1.2, 1.2, 1); // Scale up a bit
+
+        // Extract Triangles into Shard Meshes
+        const posAttr = geometry.attributes.position;
+        const indexAttr = geometry.index;
+        const uvAttr = geometry.attributes.uv; // ShapeGeometry generates UVs automatically
+
         const shards = [];
 
-        // We group triangles into larger "Chunks" for a better shattered look?
-        // Or keep simple triangles. Let's stick to triangles for simplicity but group them visually via motion.
+        // For ShapeGeometry, indices define faces.
+        // We iterate indices.
+        // If no index, iterate vertices (3 by 3)
 
-        for (let i = 0; i < indexAttr.count; i += 3) {
-            const a = indexAttr.getX(i);
-            const b = indexAttr.getX(i+1);
-            const c = indexAttr.getX(i+2);
+        const count = indexAttr ? indexAttr.count : posAttr.count;
+
+        for (let i = 0; i < count; i += 3) {
+            let a, b, c;
+
+            if (indexAttr) {
+                a = indexAttr.getX(i);
+                b = indexAttr.getX(i+1);
+                c = indexAttr.getX(i+2);
+            } else {
+                a = i; b = i+1; c = i+2;
+            }
 
             const v1 = new THREE.Vector3().fromBufferAttribute(posAttr, a);
             const v2 = new THREE.Vector3().fromBufferAttribute(posAttr, b);
@@ -678,10 +725,12 @@
                 v3.x, v3.y, v3.z
             ]);
 
-            const uvAttr = circleGeo.attributes.uv;
+            // UVs from ShapeGeometry are usually correct for bounding box 0..1
+            // We verify or just copy.
             const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttr, a);
             const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttr, b);
             const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttr, c);
+
             const uvs = new Float32Array([
                 uv1.x, uv1.y,
                 uv2.x, uv2.y,
@@ -692,87 +741,89 @@
             shapeGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
             shapeGeo.computeVertexNormals();
 
-            // Recenter geometry to local origin (0,0,0) for correct rotation
+            // Center locally
             shapeGeo.translate(-center.x, -center.y, -center.z);
 
             const mat = new THREE.MeshBasicMaterial({
                 map: textures[0],
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.7,
-                color: 0x999999
+                opacity: 0.8,
+                color: 0xaaaaaa
             });
 
             const mesh = new THREE.Mesh(shapeGeo, mat);
 
-            // Base Position (Assembled)
+            // Home Position (Heart Shape)
             mesh.position.copy(center);
+
+            // Kaleidoscope Position (Idle)
+            // Arrange in symmetrical rings based on index
+            const angle = (i / count) * Math.PI * 4; // Wrap around twice
+            const radius = 10 + (i % 5) * 2;
 
             mesh.userData = {
                 homePos: center.clone(),
-                // Cracked State: Just slightly offset on Z and tilted
-                crackedPos: center.clone().add(new THREE.Vector3(0, 0, (Math.random()-0.5)*2)),
-                crackedRot: new THREE.Euler(
-                    (Math.random()-0.5) * 0.2,
-                    (Math.random()-0.5) * 0.2,
-                    (Math.random()-0.5) * 0.2
-                )
+                homeRot: new THREE.Euler(0, 0, 0),
+                kaleidoPos: new THREE.Vector3(
+                    Math.cos(angle) * radius,
+                    Math.sin(angle) * radius,
+                    (Math.random() - 0.5) * 5
+                ),
+                kaleidoRot: new THREE.Euler(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                ),
+                rotateSpeed: (Math.random() - 0.5) * 0.02
             };
 
-            // Start in Cracked State
-            mesh.position.copy(mesh.userData.crackedPos);
-            mesh.rotation.copy(mesh.userData.crackedRot);
+            // Start in Kaleidoscope Mode
+            mesh.position.copy(mesh.userData.kaleidoPos);
+            mesh.rotation.copy(mesh.userData.kaleidoRot);
 
-            mirrorGroup.add(mesh);
+            heartGroup.add(mesh);
             shards.push(mesh);
         }
 
         // --- Interaction ---
-        let isHealed = false;
+        let isAssembled = false;
         let currentTextureIndex = 0;
         let rotationSpeed = 0.005;
 
         window.addEventListener('click', () => {
-            // Only trigger if camera is close enough (Finale)
             if(camera.position.z < 10) {
-                isHealed = !isHealed;
+                isAssembled = !isAssembled;
 
-                if(isHealed) {
-                    // Heal: Snap to Flat Plane
+                if(isAssembled) {
+                    // Snap Together
                     shards.forEach(mesh => {
                         gsap.to(mesh.position, {
                             x: mesh.userData.homePos.x,
                             y: mesh.userData.homePos.y,
                             z: mesh.userData.homePos.z,
-                            duration: 1.0,
-                            ease: "power2.out"
+                            duration: 0.8,
+                            ease: "back.out(1.5)"
                         });
                         gsap.to(mesh.rotation, {
                             x: 0, y: 0, z: 0,
-                            duration: 1.0,
+                            duration: 0.8,
                             ease: "power2.out"
                         });
                         gsap.to(mesh.material, { opacity: 1, duration: 0.5 });
                     });
                     rotationSpeed = 0;
                 } else {
-                    // Crack Again
+                    // Disperse to Kaleidoscope
                     shards.forEach(mesh => {
                         gsap.to(mesh.position, {
-                            x: mesh.userData.crackedPos.x,
-                            y: mesh.userData.crackedPos.y,
-                            z: mesh.userData.crackedPos.z,
-                            duration: 0.5,
-                            ease: "power2.in"
+                            x: mesh.userData.kaleidoPos.x,
+                            y: mesh.userData.kaleidoPos.y,
+                            z: mesh.userData.kaleidoPos.z,
+                            duration: 1.2,
+                            ease: "power2.inOut"
                         });
-                        gsap.to(mesh.rotation, {
-                            x: mesh.userData.crackedRot.x,
-                            y: mesh.userData.crackedRot.y,
-                            z: mesh.userData.crackedRot.z,
-                            duration: 0.5,
-                            ease: "power2.in"
-                        });
-                        gsap.to(mesh.material, { opacity: 0.7, duration: 0.5 });
+                         gsap.to(mesh.material, { opacity: 0.8, duration: 0.5 });
                     });
                     rotationSpeed = 0.005;
                 }
@@ -784,20 +835,26 @@
         gsap.ticker.add(() => {
             time += 0.01;
 
-            // Infinite Starfield Tunnel
+            // Tunnel
             const positions = starField.geometry.attributes.position.array;
             for(let i=2; i<positions.length; i+=3) {
-                positions[i] += 0.2; // Move forward
-                if(positions[i] > 50) positions[i] -= 200; // Reset
+                positions[i] += 0.2;
+                if(positions[i] > 50) positions[i] -= 200;
             }
             starField.geometry.attributes.position.needsUpdate = true;
 
-            // Mirror Rotation
-            if (!isHealed) {
-                mirrorGroup.rotation.z -= rotationSpeed;
+            // Heart/Kaleidoscope Animation
+            if (!isAssembled) {
+                heartGroup.rotation.z += rotationSpeed;
 
-                // Texture Swapping
-                let angle = Math.abs(mirrorGroup.rotation.z % (Math.PI * 2));
+                // Gentle sway of individual shards
+                shards.forEach(mesh => {
+                    mesh.rotation.x += mesh.userData.rotateSpeed;
+                    mesh.rotation.y += mesh.userData.rotateSpeed;
+                });
+
+                // Texture Cycle
+                let angle = Math.abs(heartGroup.rotation.z % (Math.PI * 2));
                 const sectorSize = (Math.PI * 2) / 6;
                 const newIndex = Math.floor(angle / sectorSize);
 
@@ -828,11 +885,10 @@
             const img = section.querySelector('.sensory-img');
             const text = section.querySelector('.sensory-content');
 
-            // Image Reveal
             gsap.fromTo(img,
                 { opacity: 0, scale: 0.8 },
                 {
-                    opacity: 0.8, scale: 1.1,
+                    opacity: 0.6, scale: 1.2,
                     scrollTrigger: {
                         trigger: section,
                         start: "top 60%",
@@ -842,7 +898,6 @@
                 }
             );
 
-            // Text Reveal
             gsap.fromTo(text,
                 { opacity: 0, x: i % 2 === 0 ? 50 : -50 },
                 {
@@ -857,19 +912,14 @@
             );
         });
 
-        // Main Camera "Deep Dive" Scroll
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
             end: "bottom bottom",
-            scrub: 0.5, // Smooth scrub
+            scrub: 0.5,
             onUpdate: (self) => {
                 const p = self.progress;
-                // Move from Z=50 (Start) to Z=-10 (Close to Mirror at -20)
                 camera.position.z = 50 - (p * 60);
-
-                // Fog gets thinner as we approach the "Clarity" of the mirror?
-                // Or denser? Let's keep it uniform for tunnel feel.
             }
         });
     </script>
