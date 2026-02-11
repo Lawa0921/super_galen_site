@@ -67,7 +67,7 @@
             width: 100%; height: 100%;
             z-index: -2;
             pointer-events: none;
-            opacity: 0.4;
+            opacity: 0.3;
             mix-blend-mode: screen;
         }
 
@@ -100,22 +100,6 @@
             align-items: center;
             padding: 4rem 2rem;
             position: relative;
-        }
-
-        /* Parallax Spacers for Sensory Sections */
-        .sensory-section {
-            height: 150vh; /* Extra scroll space for parallax feel */
-            justify-content: center;
-            align-items: flex-end; /* Align right side for text */
-            position: relative;
-            z-index: 10;
-        }
-
-        .sensory-content {
-            width: 100%;
-            max-width: 500px;
-            text-align: right;
-            padding-right: 5vw;
         }
 
         .container {
@@ -190,65 +174,64 @@
             100% { background-position: -100% 0; }
         }
 
-        /* --- Sensory Focus: Bolder, Larger --- */
-        .sensory-img-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            pointer-events: none;
+        /* --- Sensory Focus: Shards (Floating Frames) --- */
+        .sensory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 4rem;
+            margin-top: 4rem;
+            padding: 2rem;
+        }
+
+        .shard-frame {
+            position: relative;
+            /* Jagged Polygon Mask */
+            clip-path: polygon(10% 0, 100% 10%, 90% 100%, 0 90%);
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid var(--accent-hot);
+            box-shadow: 0 0 30px var(--accent-hot);
             overflow: hidden;
+            transition: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        .sensory-img {
+        .shard-frame img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            /* Slightly Dark and Moody */
+            filter: grayscale(0.5) contrast(1.2) brightness(0.8);
+            transition: 0.5s;
+        }
+
+        .shard-label {
             position: absolute;
-            opacity: 0;
-            /* Scale up significantly for "Bold" feel */
-            transform: scale(1.5);
-            transition: opacity 1s, transform 0.5s;
-        }
-
-        /* Specific Styles for each feature */
-        #sensory-eyes .sensory-img {
-            top: 10%; left: 0; width: 100vw; max-width: none;
-            /* Full width background style */
-            object-fit: cover;
-            height: 100%;
-            mask-image: radial-gradient(circle, black 30%, transparent 80%);
-            -webkit-mask-image: radial-gradient(circle, black 30%, transparent 80%);
-            filter: brightness(0.7) contrast(1.2);
-        }
-        #sensory-nose .sensory-img {
-            top: 10%; right: 0; width: 100vw; max-width: none;
-            object-fit: cover;
-            height: 100%;
-            mask-image: radial-gradient(circle at 70% 50%, black 30%, transparent 80%);
-            -webkit-mask-image: radial-gradient(circle at 70% 50%, black 30%, transparent 80%);
-            filter: brightness(0.6) hue-rotate(-20deg);
-        }
-        #sensory-lips .sensory-img {
-            bottom: 0; left: 0; width: 100vw; max-width: none;
-            object-fit: cover;
-            height: 100%;
-            mask-image: radial-gradient(ellipse at 50% 80%, black 40%, transparent 90%);
-            -webkit-mask-image: radial-gradient(ellipse at 50% 80%, black 40%, transparent 90%);
-            filter: brightness(0.8) contrast(1.5);
-        }
-
-        .sensory-title {
-            font-size: 5rem;
-            color: var(--accent-hot);
-            text-shadow: 0 0 30px var(--accent-hot);
+            bottom: 10%; right: 10%;
             font-family: 'Orbitron';
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-        .sensory-desc {
             font-size: 2rem;
-            color: #fff;
-            margin-top: 1rem;
-            text-shadow: 0 0 10px #000;
-            font-style: italic;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px var(--accent-cyan);
+            opacity: 0.8;
+            transform: rotate(-5deg);
         }
+
+        .shard-frame:hover {
+            transform: scale(1.05) rotate(2deg);
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); /* Expands to full box */
+            box-shadow: 0 0 50px var(--accent-hot), 0 0 100px var(--accent-purple);
+            z-index: 10;
+        }
+
+        .shard-frame:hover img {
+            filter: grayscale(0) contrast(1.1) brightness(1.1);
+            transform: scale(1.1);
+        }
+
+        /* Specific Styles */
+        .shard-eyes { clip-path: polygon(20% 0, 100% 20%, 80% 100%, 0 80%); }
+        .shard-nose { clip-path: polygon(0 20%, 80% 0, 100% 80%, 20% 100%); margin-top: 4rem; }
+        .shard-lips { clip-path: polygon(10% 0, 100% 10%, 90% 100%, 0 90%); }
+
 
         /* --- Profile Avatar --- */
         .profile-wrapper {
@@ -378,7 +361,8 @@
         /* Mobile Adjustments */
         @media(max-width: 768px) {
             .hero-title { font-size: 3.5rem; }
-            .sensory-img { width: 100vw !important; opacity: 0.5 !important; }
+            .sensory-grid { grid-template-columns: 1fr; }
+            .shard-frame { width: 80%; margin: 0 auto; }
             .glass-panel { padding: 2rem; }
         }
 
@@ -444,34 +428,24 @@
             </div>
         </section>
 
-        <!-- Sensory Focus: Deep Dive -->
-        <section id="sensory-eyes" class="sensory-section">
-            <div class="sensory-img-container">
-                <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" class="sensory-img gs-sensory-img">
-            </div>
-            <div class="sensory-content gs-sensory-text">
-                <h2 class="sensory-title">THE GAZE</h2>
-                <p class="sensory-desc">Into the deep soul...</p>
-            </div>
-        </section>
-
-        <section id="sensory-nose" class="sensory-section" style="align-items: flex-start; text-align: left;">
-            <div class="sensory-img-container">
-                <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" class="sensory-img gs-sensory-img">
-            </div>
-            <div class="sensory-content gs-sensory-text" style="padding-left: 5vw;">
-                <h2 class="sensory-title">THE BREATH</h2>
-                <p class="sensory-desc">Rhythm of the dream...</p>
-            </div>
-        </section>
-
-        <section id="sensory-lips" class="sensory-section">
-            <div class="sensory-img-container">
-                <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" class="sensory-img gs-sensory-img">
-            </div>
-            <div class="sensory-content gs-sensory-text">
-                <h2 class="sensory-title">THE WHISPER</h2>
-                <p class="sensory-desc">Spells of the night...</p>
+        <!-- Sensory Focus: Floating Mirror Frames -->
+        <section id="sensory">
+            <div class="container">
+                <h2 style="text-align: center; font-size: 3.5rem; color: var(--accent-hot); margin-bottom: 2rem; text-shadow: 0 0 20px var(--accent-hot);">SENSORY FRAGMENTS</h2>
+                <div class="sensory-grid">
+                    <div class="shard-frame shard-eyes gs-card">
+                        <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes">
+                        <span class="shard-label">GAZE</span>
+                    </div>
+                    <div class="shard-frame shard-nose gs-card">
+                        <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Breath">
+                        <span class="shard-label">BREATH</span>
+                    </div>
+                    <div class="shard-frame shard-lips gs-card">
+                        <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips">
+                        <span class="shard-label">WHISPER</span>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -506,7 +480,7 @@
             <div class="container">
                 <h2 style="text-align: center; margin-bottom: 2rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan);">DREAM FRAGMENTS</h2>
                 <div class="gallery-hint">
-                    <h3>CLICK TO CAPTURE</h3>
+                    <h3>CLICK TO ASSEMBLE</h3>
                     <p>ALIGN THE SECTOR</p>
                 </div>
             </div>
@@ -549,10 +523,8 @@
                 if(!imgEyes || !imgLips) return;
 
                 p.translate(p.width / 2, p.height / 2);
-                // Hypnotic Rotation
                 p.rotate(angle * 0.5);
 
-                // More complex symmetry for Kaleidoscope
                 let symmetry = 8;
                 let angleStep = 360 / symmetry;
 
@@ -560,19 +532,17 @@
                     p.push();
                     p.rotate(i * angleStep + angle);
 
-                    // Layer 1: Eyes (Outer)
                     p.push();
                     p.translate(0, 400 + Math.sin(angle * 2) * 20);
                     p.rotate(90);
-                    p.tint(255, 0, 100, 50); // Deep Pink Tint
+                    p.tint(255, 0, 100, 50);
                     p.image(imgEyes, 0, 0, 500, 250);
                     p.pop();
 
-                    // Layer 2: Lips (Inner)
                     p.push();
                     p.translate(0, 200 + Math.cos(angle * 2) * 20);
                     p.rotate(-90);
-                    p.tint(150, 0, 255, 60); // Purple Tint
+                    p.tint(150, 0, 255, 60);
                     p.image(imgLips, 0, 0, 300, 300);
                     p.pop();
 
@@ -601,7 +571,7 @@
         scene.fog = new THREE.FogExp2(0x05000a, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 50;
+        camera.position.z = 20;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -616,32 +586,15 @@
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.5; // Slightly stronger for "Bold" feel
+        bloomPass.strength = 0.4;
         bloomPass.radius = 0.4;
         composer.addPass(bloomPass);
 
         // --- Objects ---
 
-        // 1. Starfield Tunnel
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 3000;
-        const starPos = new Float32Array(starCount * 3);
-
-        for(let i=0; i<starCount * 3; i+=3) {
-            starPos[i] = (Math.random() - 0.5) * 100;
-            starPos[i+1] = (Math.random() - 0.5) * 100;
-            starPos[i+2] = (Math.random() - 0.5) * 200;
-        }
-
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.8 });
-        const starField = new THREE.Points(starGeo, starMat);
-        scene.add(starField);
-
-        // 2. Heart Shard Group (Finale)
-        const heartGroup = new THREE.Group();
-        heartGroup.position.z = -20;
-        scene.add(heartGroup);
+        // 1. Shard Field (Background Storm)
+        const shardGroup = new THREE.Group();
+        scene.add(shardGroup);
 
         const loader = new THREE.TextureLoader();
         const textureUrls = [
@@ -656,61 +609,30 @@
         const textures = textureUrls.map(url => {
             const t = loader.load(url);
             t.colorSpace = THREE.SRGBColorSpace;
-            // Center texture on the Heart Shape
-            // We need to map UVs based on Bounding Box.
-            // Will do manually in loop.
             return t;
         });
 
-        // Create Heart Shape
-        const x = 0, y = 0;
-        const heartShape = new THREE.Shape();
-        heartShape.moveTo( x + 5, y + 5 );
-        heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
-        heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
-        heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
-        heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
-        heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
-        heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
+        // Create Fractured Circle (Mirror) Base
+        const radius = 12;
+        const circleGeo = new THREE.CircleGeometry(radius, 32);
 
-        // Triangulate Heart (to make shards)
-        // We create a ShapeGeometry, then use its faces as shards
-        // But ShapeGeometry makes many small triangles. Let's use lower detail.
-        const geometry = new THREE.ShapeGeometry( heartShape, 8 );
+        // Perturb vertices
+        const posAttr = circleGeo.attributes.position;
+        for (let i = 1; i < posAttr.count; i++) {
+            const x = posAttr.getX(i);
+            const y = posAttr.getY(i);
+            const noise = (Math.random() - 0.5) * 0.5;
+            posAttr.setX(i, x + noise);
+            posAttr.setY(i, y + noise);
+        }
 
-        // Center the geometry
-        geometry.computeBoundingBox();
-        const centerOffset = new THREE.Vector3();
-        geometry.boundingBox.getCenter(centerOffset);
-        geometry.translate(-centerOffset.x, -centerOffset.y, -centerOffset.z);
-
-        // Flip Y because Three.js shapes are often inverted relative to screen Y
-        geometry.scale(1, -1, 1);
-        geometry.scale(1.2, 1.2, 1); // Scale up a bit
-
-        // Extract Triangles into Shard Meshes
-        const posAttr = geometry.attributes.position;
-        const indexAttr = geometry.index;
-        const uvAttr = geometry.attributes.uv; // ShapeGeometry generates UVs automatically
-
+        const indexAttr = circleGeo.index;
         const shards = [];
 
-        // For ShapeGeometry, indices define faces.
-        // We iterate indices.
-        // If no index, iterate vertices (3 by 3)
-
-        const count = indexAttr ? indexAttr.count : posAttr.count;
-
-        for (let i = 0; i < count; i += 3) {
-            let a, b, c;
-
-            if (indexAttr) {
-                a = indexAttr.getX(i);
-                b = indexAttr.getX(i+1);
-                c = indexAttr.getX(i+2);
-            } else {
-                a = i; b = i+1; c = i+2;
-            }
+        for (let i = 0; i < indexAttr.count; i += 3) {
+            const a = indexAttr.getX(i);
+            const b = indexAttr.getX(i+1);
+            const c = indexAttr.getX(i+2);
 
             const v1 = new THREE.Vector3().fromBufferAttribute(posAttr, a);
             const v2 = new THREE.Vector3().fromBufferAttribute(posAttr, b);
@@ -725,12 +647,10 @@
                 v3.x, v3.y, v3.z
             ]);
 
-            // UVs from ShapeGeometry are usually correct for bounding box 0..1
-            // We verify or just copy.
+            const uvAttr = circleGeo.attributes.uv;
             const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttr, a);
             const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttr, b);
             const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttr, c);
-
             const uvs = new Float32Array([
                 uv1.x, uv1.y,
                 uv2.x, uv2.y,
@@ -740,70 +660,100 @@
             shapeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             shapeGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
             shapeGeo.computeVertexNormals();
-
-            // Center locally
             shapeGeo.translate(-center.x, -center.y, -center.z);
 
             const mat = new THREE.MeshBasicMaterial({
                 map: textures[0],
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.8,
-                color: 0xaaaaaa
+                opacity: 0.5,
+                color: 0x888888
             });
 
             const mesh = new THREE.Mesh(shapeGeo, mat);
 
-            // Home Position (Heart Shape)
-            mesh.position.copy(center);
+            // Assembled (Final) Position
+            mesh.userData.homePos = center.clone();
+            mesh.userData.homeRot = new THREE.Euler(0, 0, 0);
 
-            // Kaleidoscope Position (Idle)
-            // Arrange in symmetrical rings based on index
-            const angle = (i / count) * Math.PI * 4; // Wrap around twice
-            const radius = 10 + (i % 5) * 2;
+            // Chaos (Start) Position: Far Z, random XY
+            mesh.userData.chaosPos = new THREE.Vector3(
+                (Math.random()-0.5) * 100,
+                (Math.random()-0.5) * 80,
+                (Math.random()) * 50 + 20 // Z 20 to 70
+            );
+            mesh.userData.chaosRot = new THREE.Euler(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
 
-            mesh.userData = {
-                homePos: center.clone(),
-                homeRot: new THREE.Euler(0, 0, 0),
-                kaleidoPos: new THREE.Vector3(
-                    Math.cos(angle) * radius,
-                    Math.sin(angle) * radius,
-                    (Math.random() - 0.5) * 5
-                ),
-                kaleidoRot: new THREE.Euler(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
-                ),
-                rotateSpeed: (Math.random() - 0.5) * 0.02
-            };
+            // Start State: Chaos
+            mesh.position.copy(mesh.userData.chaosPos);
+            mesh.rotation.copy(mesh.userData.chaosRot);
 
-            // Start in Kaleidoscope Mode
-            mesh.position.copy(mesh.userData.kaleidoPos);
-            mesh.rotation.copy(mesh.userData.kaleidoRot);
-
-            heartGroup.add(mesh);
+            shardGroup.add(mesh);
             shards.push(mesh);
         }
 
-        // --- Interaction ---
+        // --- Scroll Interaction (Storm Logic) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        let scrollProgress = 0;
         let isAssembled = false;
         let currentTextureIndex = 0;
         let rotationSpeed = 0.005;
 
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1, // Smooth scrub
+            onUpdate: (self) => {
+                scrollProgress = self.progress;
+
+                // If not assembled, drive Shard positions with Scroll
+                if (!isAssembled) {
+                    shards.forEach(mesh => {
+                        // Interpolate between Chaos and "Pre-Assemble" (Orbit)
+                        // Pre-Assemble: Just a bit dispersed from Home
+                        const orbitPos = mesh.userData.homePos.clone().multiplyScalar(1.5);
+                        orbitPos.z += (Math.random()-0.5) * 5;
+
+                        const p = Math.pow(scrollProgress, 2); // Accelerate towards end
+
+                        // Lerp Position
+                        mesh.position.lerpVectors(mesh.userData.chaosPos, orbitPos, p);
+
+                        // Lerp Rotation (Chaos -> Aligned-ish)
+                        // Actually let's keep rotation chaotic until click, just reduce speed
+                    });
+
+                    // Rotate the whole group based on scroll speed?
+                    // Or just position.
+                    // Let's rotate the group faster as we go down
+                    shardGroup.rotation.z = scrollProgress * Math.PI * 4;
+
+                    // Also Move Group Z towards Camera? No, shards move towards center.
+                }
+            }
+        });
+
+        // --- Click Interaction (Finale) ---
         window.addEventListener('click', () => {
-            if(camera.position.z < 10) {
+            // Only near bottom
+            if (scrollProgress > 0.9) {
                 isAssembled = !isAssembled;
 
                 if(isAssembled) {
-                    // Snap Together
+                    // Snap to Perfect
                     shards.forEach(mesh => {
                         gsap.to(mesh.position, {
                             x: mesh.userData.homePos.x,
                             y: mesh.userData.homePos.y,
                             z: mesh.userData.homePos.z,
                             duration: 0.8,
-                            ease: "back.out(1.5)"
+                            ease: "back.out(1.2)"
                         });
                         gsap.to(mesh.rotation, {
                             x: 0, y: 0, z: 0,
@@ -812,49 +762,37 @@
                         });
                         gsap.to(mesh.material, { opacity: 1, duration: 0.5 });
                     });
-                    rotationSpeed = 0;
                 } else {
-                    // Disperse to Kaleidoscope
+                    // Release to Orbit (End of scroll state)
                     shards.forEach(mesh => {
-                        gsap.to(mesh.position, {
-                            x: mesh.userData.kaleidoPos.x,
-                            y: mesh.userData.kaleidoPos.y,
-                            z: mesh.userData.kaleidoPos.z,
-                            duration: 1.2,
+                        const orbitPos = mesh.userData.homePos.clone().multiplyScalar(1.5);
+                        orbitPos.z += (Math.random()-0.5) * 5;
+
+                         gsap.to(mesh.position, {
+                            x: orbitPos.x, y: orbitPos.y, z: orbitPos.z,
+                            duration: 1.0,
                             ease: "power2.inOut"
                         });
-                         gsap.to(mesh.material, { opacity: 0.8, duration: 0.5 });
+                        // Add some rotation
+                        gsap.to(mesh.rotation, {
+                            x: Math.random(), y: Math.random(),
+                            duration: 1.0
+                        });
+                         gsap.to(mesh.material, { opacity: 0.5, duration: 0.5 });
                     });
-                    rotationSpeed = 0.005;
                 }
             }
         });
 
         // --- Animation Loop ---
-        let time = 0;
         gsap.ticker.add(() => {
-            time += 0.01;
-
-            // Tunnel
-            const positions = starField.geometry.attributes.position.array;
-            for(let i=2; i<positions.length; i+=3) {
-                positions[i] += 0.2;
-                if(positions[i] > 50) positions[i] -= 200;
-            }
-            starField.geometry.attributes.position.needsUpdate = true;
-
-            // Heart/Kaleidoscope Animation
+            // Texture Swapping based on Group Rotation
+            // Group rotation is driven by Scroll, so as you scroll, texture changes!
             if (!isAssembled) {
-                heartGroup.rotation.z += rotationSpeed;
+                // Gentle idle rotation added to scroll rotation
+                shardGroup.rotation.z += 0.001;
 
-                // Gentle sway of individual shards
-                shards.forEach(mesh => {
-                    mesh.rotation.x += mesh.userData.rotateSpeed;
-                    mesh.rotation.y += mesh.userData.rotateSpeed;
-                });
-
-                // Texture Cycle
-                let angle = Math.abs(heartGroup.rotation.z % (Math.PI * 2));
+                let angle = Math.abs(shardGroup.rotation.z % (Math.PI * 2));
                 const sectorSize = (Math.PI * 2) / 6;
                 const newIndex = Math.floor(angle / sectorSize);
 
@@ -867,7 +805,6 @@
                     });
                 }
             }
-
             composer.render();
         });
 
@@ -878,50 +815,21 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        gsap.registerPlugin(ScrollTrigger);
+        // GSAP reveals
+        gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
+            gsap.fromTo(elem,
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 1, scrollTrigger: { trigger: elem, start: "top 80%" }}
+            );
+        });
 
-        // Sensory Parallax
-        gsap.utils.toArray('.sensory-section').forEach((section, i) => {
-            const img = section.querySelector('.sensory-img');
-            const text = section.querySelector('.sensory-content');
-
-            gsap.fromTo(img,
+        gsap.utils.toArray('.gs-card').forEach((elem, i) => {
+            gsap.fromTo(elem,
                 { opacity: 0, scale: 0.8 },
-                {
-                    opacity: 0.6, scale: 1.2,
-                    scrollTrigger: {
-                        trigger: section,
-                        start: "top 60%",
-                        end: "bottom 40%",
-                        scrub: 1
-                    }
-                }
-            );
-
-            gsap.fromTo(text,
-                { opacity: 0, x: i % 2 === 0 ? 50 : -50 },
-                {
-                    opacity: 1, x: 0,
-                    scrollTrigger: {
-                        trigger: section,
-                        start: "top 70%",
-                        end: "top 40%",
-                        scrub: 1
-                    }
-                }
+                { opacity: 1, scale: 1, duration: 0.8, delay: i*0.2, scrollTrigger: { trigger: elem, start: "top 80%" }}
             );
         });
 
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.5,
-            onUpdate: (self) => {
-                const p = self.progress;
-                camera.position.z = 50 - (p * 60);
-            }
-        });
     </script>
 </body>
 </html>
