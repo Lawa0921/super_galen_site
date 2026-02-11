@@ -31,13 +31,22 @@
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; background: transparent; color: white; font-family: var(--f-body); overflow-x: hidden; }
+        body {
+            margin: 0;
+            background: var(--c-void);
+            color: white;
+            font-family: var(--f-body);
+            overflow-x: hidden;
+        }
 
-        /* WebGL */
+        /*
+           Layering Fix:
+           - WebGL (Back)
+           - P5 (Middle)
+           - Scroller (Top)
+        */
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
-
-        /* P5 Canvas */
-        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: auto; background: var(--c-void); }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: auto; background: transparent; }
 
         /* Loader */
         #loader {
@@ -74,8 +83,8 @@
         }
 
         @keyframes pulse-glow {
-            0%, 100% { opacity: 0.8; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); text-shadow: 0 0 30px var(--c-plasma); }
+            0%, 100% { opacity: 0.8; transform: scale(1); filter: drop-shadow(0 0 5px var(--c-plasma)); }
+            50% { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 20px var(--c-plasma)); }
         }
 
         /* Magic Data Slate */
@@ -166,8 +175,9 @@
     </div>
 
     <!-- Background Layers -->
-    <div id="p5-container"></div>
+    <!-- Swapped Order in DOM (for stacking context if z-index matches, but using explicit z-index) -->
     <div id="webgl-container"></div>
+    <div id="p5-container"></div>
 
     <div class="scroller">
 
@@ -224,6 +234,9 @@
                     <b>鎮壓巨獸 (Roller)</b><br>
                     秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
                 </p>
+                <div class="holo-frame">
+                    <img src="/assets/img/guild/xmasfun689/roller.webp" class="holo-img">
+                </div>
                 <div class="skill-grid">
                     <div class="skill-item" style="border-color:var(--c-gold); color:var(--c-gold);">SKILL: EXCAVATION</div>
                     <div class="skill-item" style="border-color:var(--c-gold); color:var(--c-gold);">SKILL: PAVING</div>
@@ -285,6 +298,7 @@
             let circuits = [];
             let floaters = [];
             let mainNode;
+            let hexagonGrid = [];
 
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -315,12 +329,35 @@
                     floaters.push(new Floater());
                 }
 
+                // Init Hexagon Grid
+                let hexSize = 100;
+                let cols = p.width / hexSize + 2;
+                let rows = p.height / hexSize + 2;
+                for(let c=0; c<cols; c++) {
+                    for(let r=0; r<rows; r++) {
+                        if(p.random() > 0.8) {
+                            let x = c * hexSize * 1.5;
+                            let y = r * hexSize * 0.866;
+                            if(r%2==1) x += hexSize * 0.75;
+                            hexagonGrid.push({x: x, y: y, size: hexSize*0.4, alpha: p.random(10, 40)});
+                        }
+                    }
+                }
+
                 // Main Node position (matches CSS .node-marker)
                 mainNode = { x: p.width/2, y: p.height * 0.08, size: 20 };
             };
 
             p.draw = () => {
                 p.clear();
+
+                // 0. Hexagon Grid (Faint Background)
+                p.noFill();
+                p.strokeWeight(1);
+                hexagonGrid.forEach(hex => {
+                    p.stroke(0, 243, 255, hex.alpha);
+                    drawHex(p, hex.x, hex.y, hex.size);
+                });
 
                 // 1. Gears (Background) - 2D Planar
                 p.stroke(255, 215, 0, 100); // Gold, semi-transparent
@@ -349,30 +386,24 @@
                 if(maxScroll <= 0) maxScroll = 1;
 
                 // Calculate beam intensity based on scroll (Top = Strongest connection)
-                // The user wants: "When scrolling UP, the plasma should extend UP to a node"
-                // Let's interpret: Beam connects [Screen Bottom/Center] to [Top Node]
-                // As you scroll UP (scrollY approaches 0), the connection becomes clearer/stronger.
-
                 let scrollRatio = p.constrain(scrollY / maxScroll, 0, 1);
-                // Inverse logic: Closer to top = more intense beam
-                let intensity = 1 - scrollRatio * 0.5; // Always somewhat visible
 
-                // Beam Source: Bottom of screen, following scroll?
-                // Or maybe just a fixed beam that pulses?
-                // "The plasma should extend upwards to a specific node"
+                // Beam Logic:
+                // The connection is ALWAYS visible but pulses more intensely
+                let intensity = 1 - scrollRatio * 0.3;
 
                 let startX = p.width / 2;
-                let startY = p.height + 100; // Below screen
+                let startY = p.height + 200; // Below screen
                 let endX = mainNode.x;
                 let endY = mainNode.y + 40; // Connect to bottom of node icon
 
+                // Core Beam
                 p.noFill();
-                p.stroke(0, 243, 255, 150 + intensity * 105);
-                p.strokeWeight(4 + intensity * 4);
+                p.stroke(0, 243, 255, 180 + intensity * 75);
+                p.strokeWeight(4 + intensity * 6);
 
-                // Draw jagged lightning beam
                 p.beginShape();
-                let segments = 40;
+                let segments = 60;
                 for(let i=0; i<=segments; i++) {
                     let t = i / segments;
                     let x = p.lerp(startX, endX, t);
@@ -380,9 +411,23 @@
 
                     // Noise offset for "fluid/electric" look
                     // Offset reduces near the target (Top Node) to "connect" cleanly
-                    let noiseScale = 50 * (1-t); // Less noise at top
-                    let xOff = (p.noise(i * 0.1, p.frameCount * 0.05) - 0.5) * noiseScale * 4;
+                    let noiseScale = 60 * (1-t); // Less noise at top
+                    let xOff = (p.noise(i * 0.15, p.frameCount * 0.1) - 0.5) * noiseScale * 4;
 
+                    p.vertex(x + xOff, y);
+                }
+                p.endShape();
+
+                // Outer Glow Beam (Softer, wider)
+                p.stroke(0, 136, 255, 80);
+                p.strokeWeight(15 + intensity * 10);
+                p.beginShape();
+                for(let i=0; i<=segments; i++) {
+                    let t = i / segments;
+                    let x = p.lerp(startX, endX, t);
+                    let y = p.lerp(startY, endY, t);
+                    let noiseScale = 60 * (1-t);
+                    let xOff = (p.noise(i * 0.15, p.frameCount * 0.1) - 0.5) * noiseScale * 4;
                     p.vertex(x + xOff, y);
                 }
                 p.endShape();
@@ -391,17 +436,29 @@
                 p.noFill();
                 p.stroke(0, 243, 255, 80);
                 p.strokeWeight(2);
-                p.ellipse(mainNode.x, mainNode.y, 90);
+                p.ellipse(mainNode.x, mainNode.y, 90 + p.sin(p.frameCount*2)*10);
 
                 // Inner Spin
                 p.push();
                 p.translate(mainNode.x, mainNode.y);
-                p.rotate(p.frameCount * 2);
+                p.rotate(p.frameCount * 3);
                 p.stroke(0, 243, 255, 150);
-                p.line(-20, 0, 20, 0);
-                p.line(0, -20, 0, 20);
+                p.strokeWeight(3);
+                p.line(-25, 0, 25, 0);
+                p.line(0, -25, 0, 25);
                 p.pop();
             };
+
+            function drawHex(p, x, y, r) {
+                p.beginShape();
+                for(let i=0; i<6; i++) {
+                    let angle = 60 * i;
+                    let hx = x + r * p.cos(angle);
+                    let hy = y + r * p.sin(angle);
+                    p.vertex(hx, hy);
+                }
+                p.endShape(p.CLOSE);
+            }
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
@@ -522,8 +579,8 @@
         // --- Init Scene ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Light fog to blend but not obscure p5
-        scene.fog = new THREE.FogExp2(0x050508, 0.02);
+        // REMOVED FOG or made it very light and transparent-aware
+        // scene.fog = new THREE.FogExp2(0x050508, 0.02);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(-5, 0, 15);
@@ -538,9 +595,11 @@
         // --- Post Processing ---
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
+
+        // Lower bloom threshold to pick up more but keep radius tight
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2;
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.0;
         bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
@@ -685,12 +744,23 @@
         // --- SCROLL INTERACTION ---
 
         window.addEventListener('load', () => {
-            document.getElementById('load-bar').style.width = '100%';
-            setTimeout(() => {
-                gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
-                gsap.to('.slate-earth', { opacity: 1, y: 0, duration: 1, delay: 0.5, ease: "power2.out" });
-            }, 500);
+            const loader = document.getElementById('loader');
+            if(loader) {
+                document.getElementById('load-bar').style.width = '100%';
+                setTimeout(() => {
+                    gsap.to(loader, { opacity: 0, duration: 0.5, onComplete: () => loader.remove() });
+                    gsap.to('.slate-earth', { opacity: 1, y: 0, duration: 1, delay: 0.5, ease: "power2.out" });
+                }, 500);
+            }
         });
+
+        // Failsafe Loader
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            if(loader) {
+                gsap.to(loader, { opacity: 0, duration: 0.5, onComplete: () => loader.remove() });
+            }
+        }, 5000);
 
         const tl = gsap.timeline({
             scrollTrigger: {
