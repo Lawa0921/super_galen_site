@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;600;900&family=Ma+Shan+Zheng&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
 
     <!-- Libraries -->
     <script type="importmap">
@@ -91,13 +91,23 @@
         /* --- Navigation --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: var(--c-text); text-decoration: none;
-            font-family: var(--f-serif); font-size: 1rem;
-            border-bottom: 1px solid transparent;
-            transition: 0.3s;
-            mix-blend-mode: difference;
+            display: flex; align-items: center; gap: 0.5rem;
+            color: rgba(255,255,255,0.6); text-decoration: none;
+            font-family: var(--f-serif); font-size: 0.9rem; letter-spacing: 1px;
+            padding: 0.5rem 1.2rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
         }
-        .nav-back:hover { border-color: var(--c-gold); color: var(--c-gold); }
+        .nav-back:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: var(--c-gold);
+            color: var(--c-gold);
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+        }
 
         /* --- Layout --- */
         section {
@@ -303,7 +313,7 @@
                     </div>
                 </div>
                 <div class="gs-reveal avatar-container">
-                    <img src="/assets/img/guild/mochang/avatar.webp" alt="Mo Chang" class="avatar-img">
+                    <img src="/assets/img/guild/mochang/avatar.webp" alt="Mo Chang" class="avatar-img" decoding="async">
                 </div>
             </div>
         </div>
@@ -389,7 +399,7 @@
     <section id="resonance">
         <div class="container">
             <div class="content-block gs-reveal" data-speed="0.9">
-                <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi">
+                    <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi" loading="lazy" decoding="async">
                 <span class="tag" style="color: #bd4dff">HARMONICS</span>
                 <h2>Ink & Strings</h2>
                 <p>
