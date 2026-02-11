@@ -502,6 +502,7 @@
                 <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-link interactive-el"><i class="fa-brands fa-instagram"></i></a>
                 <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-link interactive-el"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-link interactive-el"><i class="fa-solid fa-link"></i></a>
+                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-link interactive-el"><i class="fa-brands fa-line"></i></a>
             </div>
 
             <div class="copyright">
@@ -671,8 +672,6 @@
             end: "bottom bottom",
             onUpdate: (self) => {
                 gsap.to('#scroll-progress', { width: (self.progress * 100) + '%', duration: 0.1 });
-                // Velocity calc for particle speed
-                targetSpeed = 0.005 + Math.abs(self.getVelocity() / 20000);
             }
         });
 
