@@ -174,7 +174,7 @@
             100% { background-position: -100% 0; }
         }
 
-        /* --- Sensory Focus (Updated: Precise Object Position) --- */
+        /* --- Sensory Focus (Updated: Using Provided WebP Assets) --- */
         .sensory-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -197,15 +197,10 @@
         .sense-card img {
             width: 100%; height: 100%;
             object-fit: cover;
-            /* Default: Very dark */
-            filter: grayscale(0.8) brightness(0.4) contrast(1.5);
-            opacity: 0.6;
+            /* Default: Standard view */
+            filter: grayscale(0.5) brightness(0.7) contrast(1.2);
+            opacity: 0.8;
             transition: all 0.8s ease;
-            /* Spotlight Mask */
-            mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0.2) 60%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0.2) 60%, transparent 100%);
-
-            /* Zoom scale applied in HTML */
         }
 
         .sense-overlay {
@@ -217,7 +212,7 @@
             justify-content: flex-end;
             align-items: center;
             padding: 2rem;
-            background: transparent;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
             opacity: 0.8;
             transition: 0.5s;
             pointer-events: none;
@@ -250,10 +245,7 @@
         .sense-card:hover img {
             filter: grayscale(0) brightness(1.1) contrast(1.1);
             opacity: 1;
-            /* Zoom slightly more on hover */
-            transform: scale(3.2) !important; /* Force override inline scale */
-            mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.5) 80%, transparent 100%);
-            -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.5) 80%, transparent 100%);
+            transform: scale(1.1); /* Gentle zoom */
         }
 
         .sense-card:hover .sense-overlay h3,
@@ -489,24 +481,21 @@
 
                 <div class="sensory-grid">
                     <div class="sense-card gs-card">
-                        <!-- Eyes: 50% X, 45% Y -->
-                        <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Eyes" style="object-position: 50% 45%; transform: scale(3);">
+                        <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes">
                         <div class="sense-overlay">
                             <h3>GAZE</h3>
                             <p>Stare into the abyss...</p>
                         </div>
                     </div>
                     <div class="sense-card gs-card" style="margin-top: 5rem;">
-                        <!-- Nose: 50% X, 55% Y -->
-                        <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Nose" style="object-position: 50% 55%; transform: scale(3);">
+                        <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Nose">
                         <div class="sense-overlay">
                             <h3>BREATH</h3>
                             <p>Feel the rhythm...</p>
                         </div>
                     </div>
                     <div class="sense-card gs-card">
-                        <!-- Lips: 55% X, 62% Y -->
-                        <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Lips" style="object-position: 55% 62%; transform: scale(3);">
+                        <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips">
                         <div class="sense-overlay">
                             <h3>WHISPER</h3>
                             <p>Hear the spell...</p>
@@ -547,7 +536,7 @@
             <div class="container">
                 <h2 style="text-align: center; margin-bottom: 2rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan);">DREAM FRAGMENTS</h2>
                 <div class="gallery-hint">
-                    <h3>CLICK TO ASSEMBLE</h3>
+                    <h3>CLICK TO REFRACT</h3>
                     <p>ALIGN THE SECTOR</p>
                 </div>
             </div>
@@ -575,7 +564,6 @@
 
             p.preload = () => {
                 // Using available images or fallback to avatar
-                // Since specific crop files may not exist, we'll try to load them but handle failure gracefully
                 imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/focus_eyes.webp', () => {}, () => {
                      // Fallback
                      imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/avatar.webp');
@@ -660,16 +648,16 @@
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
 
-        // Reduced Bloom Strength further
+        // Bloom
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.15;
-        bloomPass.strength = 0.4; // Reduced to 0.4
+        bloomPass.strength = 0.4;
         bloomPass.radius = 0.3;
         composer.addPass(bloomPass);
 
         // --- Objects ---
 
-        // 1. Torus Tunnel
+        // 1. Torus Tunnel (Subtle)
         const torusGeo = new THREE.TorusGeometry(10, 3, 16, 100);
         const torusMat = new THREE.MeshBasicMaterial({
             color: 0x9400d3,
@@ -694,36 +682,13 @@
         const ring = new THREE.Mesh(ringGeo, ringMat);
         discGroup.add(ring);
 
-        // Indicator (Target Zone at Top)
-        const indicatorGeo = new THREE.ConeGeometry(1, 2, 4);
-        const indicatorMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-        const indicator = new THREE.Mesh(indicatorGeo, indicatorMat);
-        indicator.position.y = 15;
-        indicator.rotation.x = Math.PI;
-        scene.add(indicator); // Add to scene, not rotating group, so it stays fixed
-
-        // Sectors (Visual Guide on the rotating disc)
-        for(let i=0; i<6; i++) {
-            const lineGeo = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0, 12, 0),
-                new THREE.Vector3(0, 16, 0)
-            ]);
-            const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 });
-            const line = new THREE.Line(lineGeo, lineMat);
-            line.rotation.z = (i / 6) * Math.PI * 2;
-            discGroup.add(line);
-        }
-
-        // 3. Shard Rotator Group
+        // --- Shard Logic Redesign: Voronoi/Fractured Plane ---
         const rotatorGroup = new THREE.Group();
         scene.add(rotatorGroup);
-
-        // Create the Shards
         const shardGroup = new THREE.Group();
         rotatorGroup.add(shardGroup);
 
         const loader = new THREE.TextureLoader();
-
         const textureUrls = [
             '/assets/img/guild/yumebi_emu/avatar.webp',
             '/assets/img/guild/yumebi_emu/work1.webp',
@@ -739,15 +704,30 @@
             return t;
         });
 
+        // Generate irregular shards using simple triangulation perturbation
         const width = 20;
         const height = 20;
-        const segments = 8;
+        const segments = 6;
+        const planeGeo = new THREE.PlaneGeometry(width, height, segments, segments);
 
-        const baseGeo = new THREE.PlaneGeometry(width, height, segments, segments);
-        const posAttribute = baseGeo.attributes.position;
-        const uvAttribute = baseGeo.attributes.uv;
-        const indexAttribute = baseGeo.index;
+        // Randomize vertices slightly to look like broken glass
+        const positionAttribute = planeGeo.attributes.position;
+        for ( let i = 0; i < positionAttribute.count; i ++ ) {
+            const x = positionAttribute.getX( i );
+            const y = positionAttribute.getY( i );
+            const z = positionAttribute.getZ( i );
 
+            // Don't perturb edges too much or texture mapping gets weird
+            if (Math.abs(x) < width/2 && Math.abs(y) < height/2) {
+                positionAttribute.setX( i, x + (Math.random() - 0.5) * 2 );
+                positionAttribute.setY( i, y + (Math.random() - 0.5) * 2 );
+                positionAttribute.setZ( i, z + (Math.random() - 0.5) * 2 );
+            }
+        }
+        planeGeo.computeVertexNormals();
+
+        // Convert to separate meshes (Triangle Soup)
+        const indexAttribute = planeGeo.index;
         const shardMeshes = [];
 
         for (let i = 0; i < indexAttribute.count; i += 3) {
@@ -755,20 +735,25 @@
             const b = indexAttribute.getX(i+1);
             const c = indexAttribute.getX(i+2);
 
-            const v1 = new THREE.Vector3().fromBufferAttribute(posAttribute, a);
-            const v2 = new THREE.Vector3().fromBufferAttribute(posAttribute, b);
-            const v3 = new THREE.Vector3().fromBufferAttribute(posAttribute, c);
+            const v1 = new THREE.Vector3().fromBufferAttribute(positionAttribute, a);
+            const v2 = new THREE.Vector3().fromBufferAttribute(positionAttribute, b);
+            const v3 = new THREE.Vector3().fromBufferAttribute(positionAttribute, c);
 
-            const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttribute, a);
-            const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttribute, b);
-            const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttribute, c);
+            const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
 
+            // Create geometry for single triangle
             const shapeGeo = new THREE.BufferGeometry();
             const positions = new Float32Array([
                 v1.x, v1.y, v1.z,
                 v2.x, v2.y, v2.z,
                 v3.x, v3.y, v3.z
             ]);
+
+            // UV mapping
+            const uvAttribute = planeGeo.attributes.uv;
+            const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttribute, a);
+            const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttribute, b);
+            const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttribute, c);
             const uvs = new Float32Array([
                 uv1.x, uv1.y,
                 uv2.x, uv2.y,
@@ -779,46 +764,42 @@
             shapeGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
             shapeGeo.computeVertexNormals();
 
-            const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
-
-            // Darker Material for Brightness Fix
+            // Material: "Broken Glass" look
             const material = new THREE.MeshBasicMaterial({
                 map: textures[0],
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.9,
-                color: 0x888888 // Grey tint to darken
+                opacity: 0.6,
+                color: 0xaaaaaa
             });
 
             const mesh = new THREE.Mesh(shapeGeo, material);
 
-            // Calculate Orbit Position (Ring Formation)
-            // Random angle around Z
-            const orbitAngle = Math.random() * Math.PI * 2;
-            const orbitRadius = 15 + Math.random() * 5;
+            // Store "Home" position (Assembled)
+            // But center it relative to the mesh so local rotation works
+            // Actually, simplified: Just keep vertices as is, and we move the whole mesh
+            // Wait, to rotate nicely, pivot should be center.
+            // Let's center vertices around (0,0,0) and move mesh to center.
 
-            // Target position is (0,0,0) (assembled)
-            // Orbit position is circling around
+            // Centering geometry
+            shapeGeo.translate(-center.x, -center.y, -center.z);
+            mesh.position.copy(center); // Place mesh at original triangle center
 
             mesh.userData = {
-                orbitRadius: orbitRadius,
-                orbitAngle: orbitAngle, // Initial phase
-                orbitSpeed: (Math.random() + 0.5) * 0.01,
-                assembledPos: new THREE.Vector3(0,0,0), // Relative to parent
-                rotationSpeed: new THREE.Vector3(
-                    (Math.random()-0.5) * 0.02,
-                    (Math.random()-0.5) * 0.02,
-                    (Math.random()-0.5) * 0.02
+                homePos: center.clone(),
+                homeRot: new THREE.Euler(0, 0, 0),
+                // Shattered State: Expanded and Rotated
+                shatteredPos: center.clone().multiplyScalar(1.5 + Math.random()), // Push out
+                shatteredRot: new THREE.Euler(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
                 )
             };
 
-            // Start in orbit
-            mesh.position.set(
-                Math.cos(orbitAngle) * orbitRadius,
-                Math.sin(orbitAngle) * orbitRadius,
-                (Math.random() - 0.5) * 5
-            );
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            // Start in Shattered State
+            mesh.position.copy(mesh.userData.shatteredPos);
+            mesh.rotation.copy(mesh.userData.shatteredRot);
 
             shardGroup.add(mesh);
             shardMeshes.push(mesh);
@@ -835,41 +816,44 @@
                 isAssembled = !isAssembled;
 
                 if(isAssembled) {
-                    // Snap to Center (Assemble)
+                    // Assemble: Move to Home
                     shardMeshes.forEach(mesh => {
                         gsap.to(mesh.position, {
-                            x: 0, y: 0, z: 0,
+                            x: mesh.userData.homePos.x,
+                            y: mesh.userData.homePos.y,
+                            z: mesh.userData.homePos.z,
                             duration: 0.8,
-                            ease: "power3.inOut"
+                            ease: "back.out(1.2)"
                         });
                         gsap.to(mesh.rotation, {
                             x: 0, y: 0, z: 0,
                             duration: 0.8,
-                            ease: "power3.inOut"
+                            ease: "power2.out"
                         });
+                        // Increase Opacity
+                         gsap.to(mesh.material, { opacity: 1, duration: 0.5 });
                     });
 
-                    // Stop Disc Rotation
                     rotationSpeed = 0;
 
                 } else {
-                    // Return to Orbit
+                    // Shatter
                     shardMeshes.forEach(mesh => {
-                        // We animate back to "some" orbit position, but the update loop handles the circular motion
-                        // So we just need to "release" them from 0,0,0.
-                        // We set a flag or just let the loop take over?
-                        // Let's tween them out to a radius.
-
-                        const r = mesh.userData.orbitRadius;
-                        const a = mesh.userData.orbitAngle + time; // Current theoretical angle
-
                         gsap.to(mesh.position, {
-                            x: Math.cos(a) * r,
-                            y: Math.sin(a) * r,
-                            z: (Math.random() - 0.5) * 5,
-                            duration: 1.2,
-                            ease: "power2.out"
+                            x: mesh.userData.shatteredPos.x,
+                            y: mesh.userData.shatteredPos.y,
+                            z: mesh.userData.shatteredPos.z,
+                            duration: 1.0,
+                            ease: "power2.inOut"
                         });
+                        gsap.to(mesh.rotation, {
+                            x: mesh.userData.shatteredRot.x,
+                            y: mesh.userData.shatteredRot.y,
+                            z: mesh.userData.shatteredRot.z,
+                            duration: 1.0,
+                            ease: "power2.inOut"
+                        });
+                        gsap.to(mesh.material, { opacity: 0.6, duration: 0.5 });
                     });
 
                     rotationSpeed = 0.005;
@@ -884,38 +868,15 @@
             time += 0.01;
 
             tunnel.rotation.z = time * 0.2;
-            tunnel.rotation.x = Math.sin(time) * 0.2;
 
-            // Disc Group Rotation (Visual Guide)
-            discGroup.rotation.z -= rotationSpeed;
-
-            // Determine active sector based on Disc Rotation relative to Indicator (Top)
-            // Indicator is at PI/2 (90 deg) visually? No, position y=15 is Top (90deg).
-            // Rotation is CCW.
-
+            // Rotate the entire Shard Group
+            // This creates the "Refraction" effect as texture stays mapped to UVs but geometry moves
             if (!isAssembled) {
-                // Update Shard Positions (Orbiting)
-                shardMeshes.forEach(mesh => {
-                    // Update angle
-                    mesh.userData.orbitAngle += mesh.userData.orbitSpeed;
+                rotatorGroup.rotation.y = Math.sin(time * 0.5) * 0.5; // Sway
+                rotatorGroup.rotation.z += rotationSpeed;
 
-                    // Only update position if we are NOT mid-tween to center
-                    // We can check distance to center roughly
-                    if (mesh.position.length() > 2) {
-                        const r = mesh.userData.orbitRadius;
-                        const a = mesh.userData.orbitAngle;
-                        mesh.position.x = Math.cos(a) * r;
-                        mesh.position.y = Math.sin(a) * r;
-
-                        mesh.rotation.x += mesh.userData.rotationSpeed.x;
-                        mesh.rotation.y += mesh.userData.rotationSpeed.y;
-                    }
-                });
-
-                // Logic for Texture Swapping based on Sector
-                // Normalize angle to 0-2PI
-                let angle = Math.abs(discGroup.rotation.z % (Math.PI * 2));
-                // 6 Sectors
+                 // Determine Sector
+                let angle = Math.abs(rotatorGroup.rotation.z % (Math.PI * 2));
                 const sectorSize = (Math.PI * 2) / 6;
                 const newIndex = Math.floor(angle / sectorSize);
 
@@ -978,22 +939,18 @@
                 if (p > 0.85) {
                     rotatorGroup.visible = true;
                     discGroup.visible = true;
-                    indicator.visible = true;
 
                     // Fade in
                     const opacity = (p - 0.85) * 6;
-                    shardMeshes.forEach(m => m.material.opacity = Math.min(0.9, opacity));
+                    shardMeshes.forEach(m => m.material.opacity = Math.min(isAssembled ? 1 : 0.6, opacity));
 
-                    // Position Groups relative to camera
                     const zPos = camera.position.z - 30;
                     rotatorGroup.position.z = zPos;
                     discGroup.position.z = zPos - 2;
-                    indicator.position.z = zPos - 2;
 
                 } else {
                     rotatorGroup.visible = false;
                     discGroup.visible = false;
-                    indicator.visible = false;
                 }
             }
         });
