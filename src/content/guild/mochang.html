@@ -222,19 +222,37 @@
 
         /* --- Footer --- */
         footer {
-            padding: 6rem 0; text-align: center; background: #050505; border-top: 1px solid #222;
+            padding: 4rem 2rem; text-align: center;
+            border-top: 1px solid #222;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .social-icons {
-            display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;
+        footer .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
         }
         .social-link {
-            color: #fff; font-size: 1.5rem; transition: 0.3s; width: 60px; height: 60px;
-            display: flex; align-items: center; justify-content: center;
-            border: 1px solid #333; border-radius: 50%; background: #111;
+            font-size: 2rem; color: #fff; text-decoration: none;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
         }
         .social-link:hover {
-            color: var(--c-gold); border-color: var(--c-gold); transform: translateY(-5px);
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            color: var(--c-gold); transform: scale(1.1);
+            text-shadow: 0 0 20px var(--c-gold);
+            border-color: var(--c-gold);
+        }
+        .social-icons {
+             display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;
         }
 
         /* --- Mobile --- */
@@ -294,7 +312,7 @@
     <!-- 2. ORIGIN -->
     <section id="origin">
         <div class="container">
-            <div class="content-block gs-reveal">
+            <div class="content-block gs-reveal" data-speed="0.8">
                 <span class="tag" style="color: var(--c-gold)">THE ORIGIN</span>
                 <h2>Game & MUD</h2>
                 <p>
@@ -329,7 +347,7 @@
     <!-- 3. WANDERING -->
     <section id="wandering">
         <div class="container" style="display: flex; justify-content: flex-end;">
-            <div class="content-block gs-reveal" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right; max-width: 700px;">
+            <div class="content-block gs-reveal" data-speed="1.2" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right; max-width: 700px;">
                 <span class="tag" style="color: var(--c-accent)">THE DRIFT</span>
                 <h2>The Lost Decade</h2>
                 <p style="margin-left: auto;">
@@ -370,7 +388,7 @@
     <!-- 4. RESONANCE -->
     <section id="resonance">
         <div class="container">
-            <div class="content-block gs-reveal">
+            <div class="content-block gs-reveal" data-speed="0.9">
                 <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi">
                 <span class="tag" style="color: #bd4dff">HARMONICS</span>
                 <h2>Ink & Strings</h2>
@@ -396,7 +414,7 @@
         </div>
     </section>
 
-    <!-- 5. GALLERY / FOOTER -->
+    <!-- 5. GALLERY -->
     <section id="gallery" style="flex-direction: column;">
         <div class="container" style="text-align: center; margin-bottom: 4rem;">
             <span class="tag">THE ARCHIVE</span>
@@ -413,20 +431,21 @@
                 </a>
             </div>
         </div>
-
-        <footer>
-            <div class="container">
-                <div class="social-icons">
-                    <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
-                </div>
-                <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
-                    Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
-                </p>
-            </div>
-        </footer>
     </section>
+
+    <!-- FOOTER (Moved outside section) -->
+    <footer>
+        <div class="container">
+            <div class="social-icons">
+                <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
+            </div>
+            <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
+                Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
+            </p>
+        </div>
+    </footer>
 
     <script type="module">
         import * as THREE from 'three';
@@ -435,6 +454,7 @@
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a1a1a);
+        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05); // Add Fog for depth
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
@@ -444,12 +464,11 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- ASSETS: GLYPH TEXTURES ---
+        // --- ASSETS ---
         function createGlyphTexture(char, font="64px 'Ma Shan Zheng'") {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            // Background clear
             ctx.clearRect(0, 0, 128, 128);
             ctx.font = font;
             ctx.fillStyle = "white";
@@ -462,7 +481,6 @@
         const glyphChars = ['墨', '唱', 'Code', 'Lua', 'GAME', '♪', '♫', '宮', '商', '角', '徵', '羽'];
         const glyphTextures = glyphChars.map(c => createGlyphTexture(c, c.length > 1 ? "bold 32px 'Noto Serif TC'" : "64px 'Ma Shan Zheng'"));
 
-        // --- PARTICLES (INK) ---
         function createInkTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
@@ -476,16 +494,19 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        const inkCount = 300;
+        // --- PARTICLES (INK) ---
+        const inkCount = 800; // Increased count
         const inkGeom = new THREE.BufferGeometry();
         const inkPos = new Float32Array(inkCount * 3);
         const inkSizes = new Float32Array(inkCount);
+        const inkSpeeds = new Float32Array(inkCount); // Individual speeds
 
         for(let i=0; i<inkCount; i++) {
-            inkPos[i*3] = (Math.random() - 0.5) * 20;
-            inkPos[i*3+1] = (Math.random() - 0.5) * 20;
-            inkPos[i*3+2] = (Math.random() - 0.5) * 10;
-            inkSizes[i] = Math.random() * 2;
+            inkPos[i*3] = (Math.random() - 0.5) * 40;
+            inkPos[i*3+1] = (Math.random() - 0.5) * 40;
+            inkPos[i*3+2] = (Math.random() - 0.5) * 20 - 5;
+            inkSizes[i] = Math.random() * 3;
+            inkSpeeds[i] = 0.5 + Math.random();
         }
 
         inkGeom.setAttribute('position', new THREE.BufferAttribute(inkPos, 3));
@@ -506,25 +527,23 @@
 
         // --- FLOATING GLYPHS ---
         const glyphGroup = new THREE.Group();
-        // Create multiple sprites for background depth
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 40; i++) { // Increased count
              const texIndex = Math.floor(Math.random() * glyphTextures.length);
              const mat = new THREE.SpriteMaterial({
                 map: glyphTextures[texIndex],
                 transparent: true,
-                opacity: 0.1 + Math.random() * 0.2,
+                opacity: 0.1 + Math.random() * 0.4, // Higher opacity
                 color: 0xaaaaaa
             });
             const sprite = new THREE.Sprite(mat);
             sprite.position.set(
-                (Math.random()-0.5) * 25,
-                (Math.random()-0.5) * 25,
-                (Math.random()-0.5) * 10 - 5
+                (Math.random()-0.5) * 30,
+                (Math.random()-0.5) * 60, // Spread vertically for scroll
+                (Math.random()-0.5) * 15 - 5
             );
-            sprite.scale.set(2, 2, 1);
-            // Custom properties for animation
+            sprite.scale.set(3, 3, 1);
             sprite.userData = {
-                speedY: Math.random() * 0.01 + 0.002,
+                speedY: Math.random() * 0.02 + 0.005,
                 originalY: sprite.position.y,
                 phase: Math.random() * Math.PI * 2
             };
@@ -532,154 +551,169 @@
         }
         scene.add(glyphGroup);
 
-        // --- INTERACTIVE TRAIL ---
-        // Simple trail implementation using instanced mesh or points update
+        // --- TRAIL ---
         const trailMax = 50;
         const trailGeom = new THREE.BufferGeometry();
         const trailPositions = new Float32Array(trailMax * 3).fill(9999);
         trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-
         const trailMaterial = new THREE.PointsMaterial({
             color: 0xd4af37,
             size: 0.5,
-            transparent: true,
-            opacity: 0.8,
-            map: createInkTexture(),
-            blending: THREE.AdditiveBlending
+            transparent: true, opacity: 0.8,
+            map: createInkTexture(), blending: THREE.AdditiveBlending
         });
-
         const trailPoints = new THREE.Points(trailGeom, trailMaterial);
         scene.add(trailPoints);
 
-        // Raycasting for trail
         const raycaster = new THREE.Raycaster();
         const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
         const mouseVec = new THREE.Vector2();
-
         let trailIndex = 0;
 
         document.addEventListener('mousemove', (e) => {
-            // CSS Cursor
             const c = document.getElementById('cursor');
             const cd = document.getElementById('cursor-dot');
             if(c && cd) {
-                gsap.to(c, { x: e.clientX, y: e.clientY, duration: 0.1 }); // Use GSAP for smoother follow
+                gsap.to(c, { x: e.clientX, y: e.clientY, duration: 0.1 });
                 gsap.to(cd, { x: e.clientX, y: e.clientY, duration: 0.05 });
-
-                // Fallback direct set for responsiveness if GSAP lags or for initial set
-                // c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
             }
-
-            // 3D Mouse
             mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // Hover listeners
-        document.querySelectorAll('a, .content-block, .keyword, .quest-item').forEach(el => {
-            el.addEventListener('mouseenter', () => document.getElementById('cursor').classList.add('hovered'));
-            el.addEventListener('mouseleave', () => document.getElementById('cursor').classList.remove('hovered'));
-        });
-
         // --- ANIMATION LOOP ---
         const clock = new THREE.Clock();
+        const globalUniforms = {
+            scrollSpeed: 0
+        };
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // 1. Ink Flow
+            // Dynamic Ink
             const positions = inkSystem.geometry.attributes.position.array;
+            const turbulence = 1 + globalUniforms.scrollSpeed * 50; // Speed up with scroll
+
             for(let i=0; i<inkCount; i++) {
                 const x = positions[i*3];
                 const y = positions[i*3+1];
 
-                // Flow field
-                positions[i*3] += Math.sin(y * 0.2 + time * 0.1) * 0.005;
-                positions[i*3+1] += Math.cos(x * 0.2 + time * 0.1) * 0.005;
+                positions[i*3] += Math.sin(y * 0.1 + time * 0.5) * 0.01 * turbulence;
+                positions[i*3+1] += Math.cos(x * 0.1 + time * 0.5) * 0.01 * turbulence;
 
-                // Border check
-                if(Math.abs(positions[i*3]) > 15) positions[i*3] *= -0.9;
-                if(Math.abs(positions[i*3+1]) > 15) positions[i*3+1] *= -0.9;
+                // Reset bounds
+                if(Math.abs(positions[i*3]) > 25) positions[i*3] *= -0.9;
+                if(Math.abs(positions[i*3+1]) > 25) positions[i*3+1] *= -0.9;
             }
             inkSystem.geometry.attributes.position.needsUpdate = true;
 
-            // 2. Floating Glyphs
+            // Glyphs Float
             glyphGroup.children.forEach(sprite => {
-                sprite.position.y += Math.sin(time + sprite.userData.phase) * 0.002;
-                sprite.material.rotation = Math.sin(time * 0.2 + sprite.userData.phase) * 0.05;
+                sprite.position.y += Math.sin(time + sprite.userData.phase) * 0.005;
+                sprite.material.rotation = Math.sin(time * 0.5 + sprite.userData.phase) * 0.1;
             });
 
-            // 3. Trail Logic
+            // Trail Logic
             raycaster.setFromCamera(mouseVec, camera);
             const target = new THREE.Vector3();
             raycaster.ray.intersectPlane(plane, target);
-
             if(target) {
-                // Update current trail point
                 const arr = trailPoints.geometry.attributes.position.array;
                 arr[trailIndex * 3] = target.x;
                 arr[trailIndex * 3 + 1] = target.y;
                 arr[trailIndex * 3 + 2] = 0;
-
                 trailIndex = (trailIndex + 1) % trailMax;
                 trailPoints.geometry.attributes.position.needsUpdate = true;
             }
-
-            // Dissipate trail
-             const tArr = trailPoints.geometry.attributes.position.array;
-             for(let i=0; i<trailMax; i++) {
-                 // Push old points away or fade (here we just jitter)
+            const tArr = trailPoints.geometry.attributes.position.array;
+            for(let i=0; i<trailMax; i++) {
                  if(i !== trailIndex) {
                      tArr[i*3+1] += 0.02; // Float up
                      tArr[i*3] += (Math.random()-0.5) * 0.02; // Jitter
-
-                     // If too high, reset to abyss
                      if(tArr[i*3+1] > 10) tArr[i*3+1] = 9999;
                  }
-             }
-             trailPoints.geometry.attributes.position.needsUpdate = true;
-
+            }
+            trailPoints.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
         animate();
 
-
-        // --- GSAP SCROLL ---
+        // --- ENHANCED SCROLL INTERACTIONS ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Reveal
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
-            gsap.from(elem, {
-                y: 50,
-                opacity: 0,
-                duration: 1,
+        // 1. Camera Movement (Deep Dive)
+        gsap.to(camera.position, {
+            z: 2, // Move closer
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        gsap.to(camera.rotation, {
+            z: 0.2, // Slight tilt
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // 2. Parallax Content
+        gsap.utils.toArray('[data-speed]').forEach(el => {
+            gsap.to(el, {
+                y: (i, target) => -ScrollTrigger.maxScroll(window) * target.dataset.speed * 0.1,
+                ease: "none",
                 scrollTrigger: {
-                    trigger: elem,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0
                 }
             });
         });
 
-        // Quest Items Stagger
+        // 3. Scroll Velocity for Particles
+        ScrollTrigger.create({
+            onUpdate: self => {
+                const vel = Math.abs(self.getVelocity());
+                // Smoothly decay velocity effect
+                gsap.to(globalUniforms, {
+                    scrollSpeed: vel / 5000,
+                    duration: 0.5,
+                    overwrite: true
+                });
+            }
+        });
+
+        // Standard Reveals
+        gsap.utils.toArray('.gs-reveal').forEach(elem => {
+            gsap.from(elem, {
+                y: 50, opacity: 0, duration: 1,
+                scrollTrigger: {
+                    trigger: elem, start: "top 85%", toggleActions: "play none none reverse"
+                }
+            });
+        });
+
         gsap.utils.toArray('.quest-grid').forEach(grid => {
             gsap.from(grid.children, {
                 y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
-                scrollTrigger: {
-                    trigger: grid,
-                    start: "top 90%"
-                }
+                scrollTrigger: { trigger: grid, start: "top 90%" }
             });
         });
 
-        // Color Transitions
+        // Color Logic
         const sections = [
             { id: '#hero', color: 0xcccccc },
-            { id: '#origin', color: 0x00ff00 }, // Matrix Green
-            { id: '#wandering', color: 0xff4d4d }, // Fire Red
-            { id: '#resonance', color: 0xbd4dff }  // Magic Purple
+            { id: '#origin', color: 0x00ff00 },
+            { id: '#wandering', color: 0xff4d4d },
+            { id: '#resonance', color: 0xbd4dff }
         ];
 
         sections.forEach(sec => {
@@ -692,15 +726,31 @@
             });
         });
 
-        // Loader
-        window.onload = () => {
-            setTimeout(() => {
-                gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => document.getElementById('loader').remove() });
-                gsap.from('h1', { scale: 1.2, duration: 1.5, ease: "power2.out" });
-            }, 1000);
+        // --- ROBUST PRELOADER ---
+        const waitForImages = () => {
+            const images = document.querySelectorAll('img');
+            const promises = Array.from(images).map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = resolve;
+                    img.onerror = resolve; // Continue even if error
+                });
+            });
+            return Promise.all(promises);
         };
 
-        // Resize
+        const waitForFonts = () => {
+             return document.fonts.ready;
+        };
+
+        const minTime = new Promise(resolve => setTimeout(resolve, 1500)); // Min 1.5s loading
+
+        Promise.all([waitForImages(), waitForFonts(), minTime]).then(() => {
+            const loader = document.getElementById('loader');
+            gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.remove() });
+            gsap.from('h1', { scale: 1.2, duration: 1.5, ease: "power2.out" });
+        });
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
