@@ -32,8 +32,8 @@
             --accent-pink: #ff1493; /* Deep Pink */
             --accent-purple: #9400d3; /* Dark Violet */
             --accent-cyan: #00ffff;
-            --glass-bg: rgba(20, 0, 20, 0.6);
-            --glass-border: rgba(255, 20, 147, 0.5);
+            --glass-bg: rgba(20, 0, 20, 0.4);
+            --glass-border: rgba(255, 20, 147, 0.3);
             --neon-glow: 0 0 10px var(--accent-pink), 0 0 20px var(--accent-purple);
         }
 
@@ -70,7 +70,6 @@
             mix-blend-mode: screen;
         }
 
-        /* --- Navigation --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
             font-size: 1.2rem; color: var(--accent-pink);
@@ -91,7 +90,7 @@
             box-shadow: 0 0 30px var(--accent-pink);
         }
 
-        /* --- Layout --- */
+        /* --- Sections --- */
         section {
             min-height: 100vh;
             display: flex;
@@ -100,6 +99,22 @@
             align-items: center;
             padding: 4rem 2rem;
             position: relative;
+        }
+
+        /* Parallax Spacers for Sensory Sections */
+        .sensory-section {
+            height: 120vh; /* Extra scroll space for parallax feel */
+            justify-content: center;
+            align-items: flex-end; /* Align right side for text */
+            position: relative;
+            z-index: 10;
+        }
+
+        .sensory-content {
+            width: 100%;
+            max-width: 500px;
+            text-align: right;
+            padding-right: 5vw;
         }
 
         .container {
@@ -153,7 +168,7 @@
         .glass-panel {
             background: var(--glass-bg);
             border: 2px solid var(--glass-border);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px);
             padding: 4rem;
             border-radius: 30px;
             box-shadow: 0 0 50px rgba(148, 0, 211, 0.3), inset 0 0 20px rgba(255, 20, 147, 0.2);
@@ -174,84 +189,51 @@
             100% { background-position: -100% 0; }
         }
 
-        /* --- Sensory Focus (Updated: Using Provided WebP Assets) --- */
-        .sensory-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 3rem;
-            margin-top: 4rem;
-        }
-
-        .sense-card {
-            position: relative;
-            height: 400px;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 20, 147, 0.3);
-            transition: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-            background: #000;
-        }
-
-        .sense-card img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            /* Default: Standard view */
-            filter: grayscale(0.5) brightness(0.7) contrast(1.2);
-            opacity: 0.8;
-            transition: all 0.8s ease;
-        }
-
-        .sense-overlay {
+        /* --- Sensory Focus: Parallax Assets --- */
+        /* These act as "Holes" or "Overlays" in the scroll */
+        .sensory-img-container {
             position: absolute;
-            bottom: 0; left: 0; width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 2rem;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            opacity: 0.8;
-            transition: 0.5s;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
             pointer-events: none;
+            overflow: hidden;
         }
 
-        .sense-overlay h3 {
-            font-size: 2.5rem;
-            color: var(--accent-cyan);
-            text-shadow: 0 0 10px var(--accent-cyan);
-            transform: translateY(20px);
-            transition: 0.5s;
-            opacity: 0.5;
-        }
-
-        .sense-overlay p {
-            font-size: 1.2rem;
+        .sensory-img {
+            position: absolute;
+            /* Start off-screen or scaled */
             opacity: 0;
-            transform: translateY(20px);
-            transition: 0.5s 0.1s;
+            transition: opacity 1s;
+        }
+
+        /* Specific Styles for each feature */
+        #sensory-eyes .sensory-img {
+            top: 20%; left: 10%; width: 50vw; max-width: 600px;
+            mask-image: radial-gradient(circle, black 40%, transparent 70%);
+            -webkit-mask-image: radial-gradient(circle, black 40%, transparent 70%);
+        }
+        #sensory-nose .sensory-img {
+            top: 40%; right: 10%; width: 40vw; max-width: 500px;
+            mask-image: radial-gradient(circle, black 40%, transparent 70%);
+            -webkit-mask-image: radial-gradient(circle, black 40%, transparent 70%);
+        }
+        #sensory-lips .sensory-img {
+            bottom: 10%; left: 20%; width: 60vw; max-width: 700px;
+            mask-image: radial-gradient(ellipse, black 40%, transparent 70%);
+            -webkit-mask-image: radial-gradient(ellipse, black 40%, transparent 70%);
+        }
+
+        .sensory-title {
+            font-size: 4rem;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 20px var(--accent-cyan);
+            font-family: 'Orbitron';
+        }
+        .sensory-desc {
+            font-size: 1.5rem;
             color: #fff;
-        }
-
-        .sense-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 30px var(--accent-pink);
-            border-color: var(--accent-cyan);
-            z-index: 20;
-        }
-
-        .sense-card:hover img {
-            filter: grayscale(0) brightness(1.1) contrast(1.1);
-            opacity: 1;
-            transform: scale(1.1); /* Gentle zoom */
-        }
-
-        .sense-card:hover .sense-overlay h3,
-        .sense-card:hover .sense-overlay p {
-            opacity: 1;
-            transform: translateY(0);
+            margin-top: 1rem;
+            text-shadow: 0 0 10px #000;
         }
 
         /* --- Profile Avatar --- */
@@ -315,9 +297,9 @@
             border-color: #fff;
         }
 
-        /* --- Gallery (Updated: 3D Placeholder) --- */
+        /* --- Gallery Finale --- */
         #gallery {
-            min-height: 120vh; /* Extra scroll space */
+            min-height: 150vh; /* Long scroll for finale */
         }
         .gallery-hint {
             position: absolute;
@@ -327,7 +309,7 @@
             z-index: 20;
         }
         .gallery-hint h3 {
-            font-size: 2rem;
+            font-size: 3rem;
             color: var(--accent-pink);
             text-shadow: 0 0 20px var(--accent-pink);
             animation: pulse 2s infinite;
@@ -342,23 +324,6 @@
         @keyframes pulse {
             0%, 100% { opacity: 0.5; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.1); }
-        }
-
-        /* --- Floating Hearts --- */
-        .floating-heart {
-            position: absolute;
-            color: var(--accent-pink);
-            font-size: 2rem;
-            animation: float-up 4s linear infinite;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        @keyframes float-up {
-            0% { transform: translateY(0) scale(0.5); opacity: 0; }
-            20% { opacity: 0.8; }
-            100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
         }
 
         .glow-text {
@@ -399,11 +364,8 @@
         /* Mobile Adjustments */
         @media(max-width: 768px) {
             .hero-title { font-size: 3.5rem; }
-            .sensory-grid { grid-template-columns: 1fr; }
-            .wing-left { left: -40px; width: 120px; height: 120px; }
-            .wing-right { right: -40px; width: 120px; height: 120px; }
+            .sensory-img { width: 80vw !important; }
             .glass-panel { padding: 2rem; }
-            .sense-card { height: 300px; }
         }
 
     </style>
@@ -412,9 +374,6 @@
     <a href="/guild/" class="nav-back">GUILD</a>
     <div id="three-container"></div>
     <div id="p5-container"></div>
-
-    <!-- Floating Hearts Container -->
-    <div id="hearts-container" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0;"></div>
 
     <main>
         <!-- Hero -->
@@ -471,37 +430,34 @@
             </div>
         </section>
 
-        <!-- Sensory Focus (Updated: Using precise CSS crops) -->
-        <section id="sensory">
-            <div class="container">
-                <h2 style="text-align: center; font-size: 4rem; margin-bottom: 1rem; color: var(--text-primary); text-shadow: 0 0 30px var(--accent-pink);">
-                    SENSORY <span style="color: var(--accent-cyan);">FOCUS</span>
-                </h2>
-                <p style="text-align: center; margin-bottom: 4rem; color: var(--accent-purple); font-family: 'Orbitron'; letter-spacing: 0.2em;">FALL INTO THE KALEIDOSCOPE</p>
+        <!-- Sensory Focus: Deep Dive -->
+        <section id="sensory-eyes" class="sensory-section">
+            <div class="sensory-img-container">
+                <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" class="sensory-img gs-sensory-img">
+            </div>
+            <div class="sensory-content gs-sensory-text">
+                <h2 class="sensory-title">THE GAZE</h2>
+                <p class="sensory-desc">Into the deep soul...</p>
+            </div>
+        </section>
 
-                <div class="sensory-grid">
-                    <div class="sense-card gs-card">
-                        <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes">
-                        <div class="sense-overlay">
-                            <h3>GAZE</h3>
-                            <p>Stare into the abyss...</p>
-                        </div>
-                    </div>
-                    <div class="sense-card gs-card" style="margin-top: 5rem;">
-                        <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Nose">
-                        <div class="sense-overlay">
-                            <h3>BREATH</h3>
-                            <p>Feel the rhythm...</p>
-                        </div>
-                    </div>
-                    <div class="sense-card gs-card">
-                        <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips">
-                        <div class="sense-overlay">
-                            <h3>WHISPER</h3>
-                            <p>Hear the spell...</p>
-                        </div>
-                    </div>
-                </div>
+        <section id="sensory-nose" class="sensory-section" style="align-items: flex-start; text-align: left;">
+            <div class="sensory-img-container">
+                <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" class="sensory-img gs-sensory-img">
+            </div>
+            <div class="sensory-content gs-sensory-text" style="padding-left: 5vw;">
+                <h2 class="sensory-title">THE BREATH</h2>
+                <p class="sensory-desc">Rhythm of the dream...</p>
+            </div>
+        </section>
+
+        <section id="sensory-lips" class="sensory-section">
+            <div class="sensory-img-container">
+                <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" class="sensory-img gs-sensory-img">
+            </div>
+            <div class="sensory-content gs-sensory-text">
+                <h2 class="sensory-title">THE WHISPER</h2>
+                <p class="sensory-desc">Spells of the night...</p>
             </div>
         </section>
 
@@ -536,7 +492,7 @@
             <div class="container">
                 <h2 style="text-align: center; margin-bottom: 2rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan);">DREAM FRAGMENTS</h2>
                 <div class="gallery-hint">
-                    <h3>CLICK TO REFRACT</h3>
+                    <h3>CLICK TO HEAL</h3>
                     <p>ALIGN THE SECTOR</p>
                 </div>
             </div>
@@ -563,14 +519,8 @@
             let angle = 0;
 
             p.preload = () => {
-                // Using available images or fallback to avatar
-                imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/focus_eyes.webp', () => {}, () => {
-                     // Fallback
-                     imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/avatar.webp');
-                });
-                imgLips = p.loadImage('/assets/img/guild/yumebi_emu/focus_lips.webp', () => {}, () => {
-                     imgLips = p.loadImage('/assets/img/guild/yumebi_emu/avatar.webp');
-                });
+                imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/focus_eyes.webp');
+                imgLips = p.loadImage('/assets/img/guild/yumebi_emu/focus_lips.webp');
             };
 
             p.setup = () => {
@@ -582,43 +532,32 @@
 
             p.draw = () => {
                 p.clear();
-
+                // Simple kaleidoscope background
                 if(!imgEyes || !imgLips) return;
 
                 p.translate(p.width / 2, p.height / 2);
-                p.rotate(angle * 0.2);
+                p.rotate(angle * 0.1); // Slower
 
-                let symmetry = 8;
+                let symmetry = 6;
                 let angleStep = 360 / symmetry;
 
                 for (let i = 0; i < symmetry; i++) {
                     p.push();
                     p.rotate(i * angleStep + angle);
-                    p.translate(0, 350 + Math.sin(angle * 0.5) * 50);
+                    p.translate(0, 300);
                     p.rotate(90);
-                    p.tint(255, 105, 180, 80);
-                    p.image(imgEyes, 0, 0, 300, 150);
+                    p.tint(255, 105, 180, 40); // Very faint
+                    p.image(imgEyes, 0, 0, 400, 200);
                     p.pop();
                 }
-
-                for (let i = 0; i < symmetry; i++) {
-                    p.push();
-                    p.rotate(i * angleStep - angle * 1.5);
-                    p.translate(0, 150);
-                    p.rotate(-90);
-                    p.tint(157, 0, 255, 100);
-                    p.image(imgLips, 0, 0, 200, 200);
-                    p.pop();
-                }
-
-                angle += 0.5;
+                angle += 0.2;
             };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
         };
-
+        // Only load p5 if assets exist (they do)
         new p5(p5Sketch);
     </script>
 
@@ -632,10 +571,10 @@
         // --- Scene Setup ---
         const container = document.getElementById('three-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x05000a, 0.003);
+        scene.fog = new THREE.FogExp2(0x05000a, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 20;
+        camera.position.z = 50; // Start further back for deep scroll
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -648,45 +587,35 @@
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
 
-        // Bloom
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.15;
+        bloomPass.threshold = 0.2;
         bloomPass.strength = 0.4;
         bloomPass.radius = 0.3;
         composer.addPass(bloomPass);
 
         // --- Objects ---
 
-        // 1. Torus Tunnel (Subtle)
-        const torusGeo = new THREE.TorusGeometry(10, 3, 16, 100);
-        const torusMat = new THREE.MeshBasicMaterial({
-            color: 0x9400d3,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.1
-        });
-        const tunnel = new THREE.Mesh(torusGeo, torusMat);
-        scene.add(tunnel);
+        // 1. Deep Starfield Tunnel
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 3000;
+        const starPos = new Float32Array(starCount * 3);
 
-        // 2. Rotating Disc (Background Guide)
-        const discGroup = new THREE.Group();
-        scene.add(discGroup);
+        for(let i=0; i<starCount * 3; i+=3) {
+            starPos[i] = (Math.random() - 0.5) * 100;   // X: Wide spread
+            starPos[i+1] = (Math.random() - 0.5) * 100; // Y: Wide spread
+            starPos[i+2] = (Math.random() - 0.5) * 200; // Z: Deep tunnel (-100 to 100)
+        }
 
-        const ringGeo = new THREE.RingGeometry(12, 14, 64);
-        const ringMat = new THREE.MeshBasicMaterial({
-            color: 0xff1493,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.1
-        });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        discGroup.add(ring);
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.8 });
+        const starField = new THREE.Points(starGeo, starMat);
+        scene.add(starField);
 
-        // --- Shard Logic Redesign: Voronoi/Fractured Plane ---
-        const rotatorGroup = new THREE.Group();
-        scene.add(rotatorGroup);
-        const shardGroup = new THREE.Group();
-        rotatorGroup.add(shardGroup);
+        // 2. Fractured Mirror Wheel (Finale)
+        const mirrorGroup = new THREE.Group();
+        // Position at the END of the tunnel (Z = -20)
+        mirrorGroup.position.z = -20;
+        scene.add(mirrorGroup);
 
         const loader = new THREE.TextureLoader();
         const textureUrls = [
@@ -701,47 +630,47 @@
         const textures = textureUrls.map(url => {
             const t = loader.load(url);
             t.colorSpace = THREE.SRGBColorSpace;
+            // Ensure texture centers correctly on the circle
+            t.center.set(0.5, 0.5);
             return t;
         });
 
-        // Generate irregular shards using simple triangulation perturbation
-        const width = 20;
-        const height = 20;
-        const segments = 6;
-        const planeGeo = new THREE.PlaneGeometry(width, height, segments, segments);
+        // Create Fractured Circle
+        const radius = 12;
+        const segments = 32;
+        const circleGeo = new THREE.CircleGeometry(radius, segments);
 
-        // Randomize vertices slightly to look like broken glass
-        const positionAttribute = planeGeo.attributes.position;
-        for ( let i = 0; i < positionAttribute.count; i ++ ) {
-            const x = positionAttribute.getX( i );
-            const y = positionAttribute.getY( i );
-            const z = positionAttribute.getZ( i );
-
-            // Don't perturb edges too much or texture mapping gets weird
-            if (Math.abs(x) < width/2 && Math.abs(y) < height/2) {
-                positionAttribute.setX( i, x + (Math.random() - 0.5) * 2 );
-                positionAttribute.setY( i, y + (Math.random() - 0.5) * 2 );
-                positionAttribute.setZ( i, z + (Math.random() - 0.5) * 2 );
-            }
+        // Perturb vertices to create jagged edges (Fracture)
+        const posAttr = circleGeo.attributes.position;
+        // Skip center vertex (index 0)
+        for (let i = 1; i < posAttr.count; i++) {
+            // Add noise to radius
+            const x = posAttr.getX(i);
+            const y = posAttr.getY(i);
+            // Don't perturb too much or UVs break
+            const noise = (Math.random() - 0.5) * 0.5;
+            posAttr.setX(i, x + noise);
+            posAttr.setY(i, y + noise);
         }
-        planeGeo.computeVertexNormals();
 
-        // Convert to separate meshes (Triangle Soup)
-        const indexAttribute = planeGeo.index;
-        const shardMeshes = [];
+        // Break into Triangle Shards
+        const indexAttr = circleGeo.index;
+        const shards = [];
 
-        for (let i = 0; i < indexAttribute.count; i += 3) {
-            const a = indexAttribute.getX(i);
-            const b = indexAttribute.getX(i+1);
-            const c = indexAttribute.getX(i+2);
+        // We group triangles into larger "Chunks" for a better shattered look?
+        // Or keep simple triangles. Let's stick to triangles for simplicity but group them visually via motion.
 
-            const v1 = new THREE.Vector3().fromBufferAttribute(positionAttribute, a);
-            const v2 = new THREE.Vector3().fromBufferAttribute(positionAttribute, b);
-            const v3 = new THREE.Vector3().fromBufferAttribute(positionAttribute, c);
+        for (let i = 0; i < indexAttr.count; i += 3) {
+            const a = indexAttr.getX(i);
+            const b = indexAttr.getX(i+1);
+            const c = indexAttr.getX(i+2);
+
+            const v1 = new THREE.Vector3().fromBufferAttribute(posAttr, a);
+            const v2 = new THREE.Vector3().fromBufferAttribute(posAttr, b);
+            const v3 = new THREE.Vector3().fromBufferAttribute(posAttr, c);
 
             const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
 
-            // Create geometry for single triangle
             const shapeGeo = new THREE.BufferGeometry();
             const positions = new Float32Array([
                 v1.x, v1.y, v1.z,
@@ -749,11 +678,10 @@
                 v3.x, v3.y, v3.z
             ]);
 
-            // UV mapping
-            const uvAttribute = planeGeo.attributes.uv;
-            const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttribute, a);
-            const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttribute, b);
-            const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttribute, c);
+            const uvAttr = circleGeo.attributes.uv;
+            const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttr, a);
+            const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttr, b);
+            const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttr, c);
             const uvs = new Float32Array([
                 uv1.x, uv1.y,
                 uv2.x, uv2.y,
@@ -764,98 +692,88 @@
             shapeGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
             shapeGeo.computeVertexNormals();
 
-            // Material: "Broken Glass" look
-            const material = new THREE.MeshBasicMaterial({
+            // Recenter geometry to local origin (0,0,0) for correct rotation
+            shapeGeo.translate(-center.x, -center.y, -center.z);
+
+            const mat = new THREE.MeshBasicMaterial({
                 map: textures[0],
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.6,
-                color: 0xaaaaaa
+                opacity: 0.7,
+                color: 0x999999
             });
 
-            const mesh = new THREE.Mesh(shapeGeo, material);
+            const mesh = new THREE.Mesh(shapeGeo, mat);
 
-            // Store "Home" position (Assembled)
-            // But center it relative to the mesh so local rotation works
-            // Actually, simplified: Just keep vertices as is, and we move the whole mesh
-            // Wait, to rotate nicely, pivot should be center.
-            // Let's center vertices around (0,0,0) and move mesh to center.
-
-            // Centering geometry
-            shapeGeo.translate(-center.x, -center.y, -center.z);
-            mesh.position.copy(center); // Place mesh at original triangle center
+            // Base Position (Assembled)
+            mesh.position.copy(center);
 
             mesh.userData = {
                 homePos: center.clone(),
-                homeRot: new THREE.Euler(0, 0, 0),
-                // Shattered State: Expanded and Rotated
-                shatteredPos: center.clone().multiplyScalar(1.5 + Math.random()), // Push out
-                shatteredRot: new THREE.Euler(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
+                // Cracked State: Just slightly offset on Z and tilted
+                crackedPos: center.clone().add(new THREE.Vector3(0, 0, (Math.random()-0.5)*2)),
+                crackedRot: new THREE.Euler(
+                    (Math.random()-0.5) * 0.2,
+                    (Math.random()-0.5) * 0.2,
+                    (Math.random()-0.5) * 0.2
                 )
             };
 
-            // Start in Shattered State
-            mesh.position.copy(mesh.userData.shatteredPos);
-            mesh.rotation.copy(mesh.userData.shatteredRot);
+            // Start in Cracked State
+            mesh.position.copy(mesh.userData.crackedPos);
+            mesh.rotation.copy(mesh.userData.crackedRot);
 
-            shardGroup.add(mesh);
-            shardMeshes.push(mesh);
+            mirrorGroup.add(mesh);
+            shards.push(mesh);
         }
 
-        // --- Interaction State ---
-        let isAssembled = false;
+        // --- Interaction ---
+        let isHealed = false;
         let currentTextureIndex = 0;
         let rotationSpeed = 0.005;
 
-        // Click Logic
         window.addEventListener('click', () => {
-            if(rotatorGroup.visible) {
-                isAssembled = !isAssembled;
+            // Only trigger if camera is close enough (Finale)
+            if(camera.position.z < 10) {
+                isHealed = !isHealed;
 
-                if(isAssembled) {
-                    // Assemble: Move to Home
-                    shardMeshes.forEach(mesh => {
+                if(isHealed) {
+                    // Heal: Snap to Flat Plane
+                    shards.forEach(mesh => {
                         gsap.to(mesh.position, {
                             x: mesh.userData.homePos.x,
                             y: mesh.userData.homePos.y,
                             z: mesh.userData.homePos.z,
-                            duration: 0.8,
-                            ease: "back.out(1.2)"
+                            duration: 1.0,
+                            ease: "power2.out"
                         });
                         gsap.to(mesh.rotation, {
                             x: 0, y: 0, z: 0,
-                            duration: 0.8,
+                            duration: 1.0,
                             ease: "power2.out"
                         });
-                        // Increase Opacity
-                         gsap.to(mesh.material, { opacity: 1, duration: 0.5 });
+                        gsap.to(mesh.material, { opacity: 1, duration: 0.5 });
                     });
-
                     rotationSpeed = 0;
-
                 } else {
-                    // Shatter
-                    shardMeshes.forEach(mesh => {
+                    // Crack Again
+                    shards.forEach(mesh => {
                         gsap.to(mesh.position, {
-                            x: mesh.userData.shatteredPos.x,
-                            y: mesh.userData.shatteredPos.y,
-                            z: mesh.userData.shatteredPos.z,
-                            duration: 1.0,
-                            ease: "power2.inOut"
+                            x: mesh.userData.crackedPos.x,
+                            y: mesh.userData.crackedPos.y,
+                            z: mesh.userData.crackedPos.z,
+                            duration: 0.5,
+                            ease: "power2.in"
                         });
                         gsap.to(mesh.rotation, {
-                            x: mesh.userData.shatteredRot.x,
-                            y: mesh.userData.shatteredRot.y,
-                            z: mesh.userData.shatteredRot.z,
-                            duration: 1.0,
-                            ease: "power2.inOut"
+                            x: mesh.userData.crackedRot.x,
+                            y: mesh.userData.crackedRot.y,
+                            z: mesh.userData.crackedRot.z,
+                            duration: 0.5,
+                            ease: "power2.in"
                         });
-                        gsap.to(mesh.material, { opacity: 0.6, duration: 0.5 });
+                        gsap.to(mesh.material, { opacity: 0.7, duration: 0.5 });
                     });
-
                     rotationSpeed = 0.005;
                 }
             }
@@ -863,28 +781,30 @@
 
         // --- Animation Loop ---
         let time = 0;
-
         gsap.ticker.add(() => {
             time += 0.01;
 
-            tunnel.rotation.z = time * 0.2;
+            // Infinite Starfield Tunnel
+            const positions = starField.geometry.attributes.position.array;
+            for(let i=2; i<positions.length; i+=3) {
+                positions[i] += 0.2; // Move forward
+                if(positions[i] > 50) positions[i] -= 200; // Reset
+            }
+            starField.geometry.attributes.position.needsUpdate = true;
 
-            // Rotate the entire Shard Group
-            // This creates the "Refraction" effect as texture stays mapped to UVs but geometry moves
-            if (!isAssembled) {
-                rotatorGroup.rotation.y = Math.sin(time * 0.5) * 0.5; // Sway
-                rotatorGroup.rotation.z += rotationSpeed;
+            // Mirror Rotation
+            if (!isHealed) {
+                mirrorGroup.rotation.z -= rotationSpeed;
 
-                 // Determine Sector
-                let angle = Math.abs(rotatorGroup.rotation.z % (Math.PI * 2));
+                // Texture Swapping
+                let angle = Math.abs(mirrorGroup.rotation.z % (Math.PI * 2));
                 const sectorSize = (Math.PI * 2) / 6;
                 const newIndex = Math.floor(angle / sectorSize);
 
                 if (newIndex !== currentTextureIndex) {
                     currentTextureIndex = newIndex;
                     const tex = textures[currentTextureIndex % textures.length];
-
-                    shardMeshes.forEach(mesh => {
+                    shards.forEach(mesh => {
                         mesh.material.map = tex;
                         mesh.material.needsUpdate = true;
                     });
@@ -903,55 +823,53 @@
 
         gsap.registerPlugin(ScrollTrigger);
 
-        // Reveal Animations
-        gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
-            gsap.fromTo(elem,
-                { opacity: 0, y: 50, rotation: 5 },
+        // Sensory Parallax
+        gsap.utils.toArray('.sensory-section').forEach((section, i) => {
+            const img = section.querySelector('.sensory-img');
+            const text = section.querySelector('.sensory-content');
+
+            // Image Reveal
+            gsap.fromTo(img,
+                { opacity: 0, scale: 0.8 },
                 {
-                    opacity: 1, y: 0, rotation: 0, duration: 1.2, delay: i * 0.1, ease: "back.out(1.7)",
-                    scrollTrigger: { trigger: elem, start: "top 85%" }
+                    opacity: 0.8, scale: 1.1,
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 60%",
+                        end: "bottom 40%",
+                        scrub: 1
+                    }
+                }
+            );
+
+            // Text Reveal
+            gsap.fromTo(text,
+                { opacity: 0, x: i % 2 === 0 ? 50 : -50 },
+                {
+                    opacity: 1, x: 0,
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 70%",
+                        end: "top 40%",
+                        scrub: 1
+                    }
                 }
             );
         });
 
-        gsap.utils.toArray('.gs-card').forEach((elem, i) => {
-             gsap.fromTo(elem,
-                { opacity: 0, scale: 0.5, rotation: -10 },
-                {
-                    opacity: 1, scale: 1, rotation: 0, duration: 1, delay: i * 0.1, ease: "elastic.out(1, 0.5)",
-                    scrollTrigger: { trigger: elem, start: "top 90%" }
-                }
-            );
-        });
-
-        // Camera Scroll
+        // Main Camera "Deep Dive" Scroll
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
             end: "bottom bottom",
-            scrub: 1,
+            scrub: 0.5, // Smooth scrub
             onUpdate: (self) => {
                 const p = self.progress;
+                // Move from Z=50 (Start) to Z=-10 (Close to Mirror at -20)
+                camera.position.z = 50 - (p * 60);
 
-                camera.position.z = 20 + (p * 10);
-                tunnel.material.opacity = 0.1 + (p * 0.2);
-
-                if (p > 0.85) {
-                    rotatorGroup.visible = true;
-                    discGroup.visible = true;
-
-                    // Fade in
-                    const opacity = (p - 0.85) * 6;
-                    shardMeshes.forEach(m => m.material.opacity = Math.min(isAssembled ? 1 : 0.6, opacity));
-
-                    const zPos = camera.position.z - 30;
-                    rotatorGroup.position.z = zPos;
-                    discGroup.position.z = zPos - 2;
-
-                } else {
-                    rotatorGroup.visible = false;
-                    discGroup.visible = false;
-                }
+                // Fog gets thinner as we approach the "Clarity" of the mirror?
+                // Or denser? Let's keep it uniform for tunnel feel.
             }
         });
     </script>
