@@ -3,577 +3,916 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lyanna | Language Architect</title>
-    <meta name="description" content="Lyanna - 華語教學與職涯引導專家. Professional Mandarin Instructor & Career Consultant.">
+    <title>Lyanna | The Language Architect</title>
+    <meta name="description" content="Professional Mandarin Instructor & Career Consultant">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+TC:wght@300;500;700&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+TC:wght@300;500;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.module.js" type="module"></script>
 
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --text-primary: #f0f0f0;
-            --text-secondary: #a0a0a0;
-            --accent-gold: #c5a065; /* Muted Gold */
-            --accent-subtle: #4a4a4a;
+            --bg-color: #0f1014;
+            --text-primary: #e2e2e2;
+            --text-secondary: #8f9094;
+            --accent: #c6a87c; /* Muted Gold */
+            --accent-dim: rgba(198, 168, 124, 0.2);
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Noto Serif TC', serif;
+            --font-sans: 'Lato', sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-primary);
-            font-family: 'Noto Serif TC', serif;
+            font-family: var(--font-body);
             overflow-x: hidden;
-            width: 100vw;
-            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+            opacity: 0; /* JS Fade in */
+            transition: opacity 1s ease;
         }
 
-        h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
-        .montserrat-font { font-family: 'Montserrat', sans-serif; }
+        body.loaded {
+            opacity: 1;
+        }
 
-        /* --- Canvas Wrapper --- */
+        /* --- Canvas Background --- */
         #webgl-container {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
             z-index: -1;
-            opacity: 0;
-            transition: opacity 1.5s ease;
+            pointer-events: none;
+            opacity: 0.6; /* Subtle */
         }
 
-        /* --- Navigation --- */
+        /* --- UI Elements --- */
+        .nav-fixed {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            mix-blend-mode: difference;
+        }
+
         .nav-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-size: 0.9rem; color: var(--text-secondary);
-            text-decoration: none; font-family: 'Montserrat', sans-serif;
-            border-bottom: 1px solid transparent;
-            transition: 0.3s;
-            letter-spacing: 0.1em;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
+
         .nav-back:hover {
-            color: var(--accent-gold);
-            border-bottom: 1px solid var(--accent-gold);
+            opacity: 1;
         }
 
-        /* --- Layout --- */
-        main {
-            position: relative;
-            z-index: 10;
+        .nav-back::before {
+            content: '';
+            width: 20px;
+            height: 1px;
+            background: currentColor;
+            transition: width 0.3s;
         }
 
+        .nav-back:hover::before {
+            width: 30px;
+        }
+
+        /* --- Sections --- */
         section {
             min-height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* --- Hero --- */
+        .hero {
+            align-items: center;
+            text-align: center;
+        }
+
+        .avatar-container {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 3rem auto;
+            border: 1px solid var(--accent-dim);
+            position: relative;
+        }
+
+        .avatar-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(20%) contrast(1.1);
+            transform: scale(1.1);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            position: relative;
+            display: inline-block;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0%;
+            height: 1px;
+            background: var(--accent);
+            transition: width 1s ease-out;
+        }
+
+        body.loaded h1::after {
+            width: 60px;
+        }
+
+        .subtitle {
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-top: 1.5rem;
+            opacity: 0.8;
+        }
+
+        /* --- Text Reveal Utility --- */
+        .reveal-text span {
+            display: inline-block;
+            opacity: 0; /* Set by JS */
+            transform: translateY(20px);
+        }
+
+        .line-reveal {
+            overflow: hidden;
+            display: block;
+        }
+
+        .line-reveal span {
+            display: block;
+            transform: translateY(100%);
+        }
+
+        /* --- Content Layout --- */
+        .intro-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: start;
+            margin-top: 10vh;
+        }
+
+        .bio-block h2 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--accent);
+        }
+
+        .bio-text {
+            font-size: 1.1rem;
+            line-height: 2;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            text-align: justify;
+        }
+
+        .quote-block {
+            border-left: 1px solid var(--accent);
+            padding-left: 2rem;
+            margin-top: 3rem;
+            font-style: italic;
+        }
+
+        /* --- Horizontal Gallery (Curriculum) --- */
+        .gallery-section {
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex; /* Reset */
+            background: #0b0c0f; /* Slightly darker */
+            z-index: 5;
+        }
+
+        .gallery-wrapper {
+            display: flex;
+            height: 100%;
+            width: fit-content; /* Important for horizontal scroll */
+        }
+
+        .gallery-intro {
+            width: 40vw;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem;
+            flex-shrink: 0;
+            background: var(--bg-color);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            z-index: 2;
+        }
+
+        .gallery-intro h2 {
+            font-family: var(--font-display);
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .gallery-item {
+            width: 60vw;
+            height: 100%;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .gallery-item-inner {
+            width: 80%;
+            height: 70%;
+            position: relative;
+            overflow: hidden; /* Mask for parallax */
+        }
+
+        .gallery-img {
+            width: 130%; /* Larger for parallax */
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            left: -15%;
+            top: 0;
+            filter: grayscale(30%) brightness(0.8);
+            transition: filter 0.5s ease;
+        }
+
+        .gallery-item:hover .gallery-img {
+            filter: grayscale(0%) brightness(1);
+        }
+
+        .gallery-caption {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            font-family: var(--font-sans);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            background: rgba(0,0,0,0.7);
+            padding: 0.5rem 1rem;
+            backdrop-filter: blur(5px);
+            z-index: 2;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .gallery-item:hover .gallery-caption {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* --- Philosophy Section --- */
+        .philosophy {
+            min-height: 80vh;
+            text-align: center;
+        }
+
+        .philosophy-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .big-quote {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 3rem;
+        }
+
+        /* --- Footer --- */
+        .footer {
+            min-height: 30vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 4rem 2rem;
-            position: relative;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            background: #050505;
         }
 
-        /* --- Typography & Elements --- */
-        .hero-title {
-            font-size: clamp(2.5rem, 6vw, 5rem);
-            color: var(--text-primary);
-            font-weight: 400;
-            margin-bottom: 1rem;
-            text-align: center;
-            opacity: 0; /* JS reveal */
-            transform: translateY(20px);
-        }
-
-        .hero-subtitle {
-            font-family: 'Montserrat', sans-serif;
-            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
-            color: var(--accent-gold);
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            text-align: center;
-            margin-bottom: 3rem;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        .divider-line {
-            width: 1px; height: 100px;
-            background: linear-gradient(to bottom, transparent, var(--accent-gold), transparent);
-            margin: 2rem auto;
-            opacity: 0.5;
-        }
-
-        .content-block {
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: center; /* Default center, override for specific blocks */
-        }
-
-        p {
-            margin-bottom: 1.5rem;
-            color: var(--text-secondary);
-            font-size: 1.05rem;
-            text-align: justify;
-        }
-
-        .highlight { color: var(--text-primary); font-weight: 500; border-bottom: 1px solid var(--accent-subtle); padding-bottom: 2px; }
-
-        /* --- Profile Image --- */
-        .profile-container {
-            width: 200px; height: 200px;
-            border-radius: 50%; /* Circle */
-            overflow: hidden;
-            margin-bottom: 2rem;
-            position: relative;
-            opacity: 0;
-            transform: scale(0.9);
-            border: 1px solid var(--accent-subtle);
-        }
-        .profile-img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            filter: grayscale(20%) contrast(1.1);
-            transition: filter 0.5s ease;
-        }
-        .profile-container:hover .profile-img { filter: grayscale(0%); }
-
-        /* --- Grid Layouts --- */
-        .grid-2-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            max-width: 1200px;
-            width: 100%;
-            align-items: center;
-        }
-
-        .text-left { text-align: left; }
-
-        /* --- Course Gallery (Horizontal Scroll) --- */
-        .gallery-wrapper {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-            position: relative; /* Context for absolute positioning if needed */
-            background-color: var(--bg-color); /* Ensure opacity */
-            z-index: 5;
-        }
-
-        .gallery-track {
-            display: flex;
-            gap: 4rem; /* Spacing between slides */
-            padding: 0 50vw 0 10vw; /* Start with offset so first item is visible */
-            width: max-content; /* Ensure width fits content */
-        }
-
-        .gallery-item {
-            flex: 0 0 auto; /* Don't shrink */
-            width: 60vw; /* Large width */
-            max-width: 800px;
-            aspect-ratio: 16/9;
-            background: #222;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--accent-subtle);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: transform 0.3s ease;
-        }
-
-        .gallery-img {
-            width: 100%; height: 100%;
-            object-fit: contain; /* Ensure full slide is visible without cropping */
-            background: #222; /* Fallback for letterboxing */
-        }
-
-        .gallery-caption {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            padding: 1rem;
-            background: rgba(0,0,0,0.7);
-            color: #fff;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.9rem;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .gallery-item:hover .gallery-caption { opacity: 1; }
-
-        /* --- Footer --- */
         .social-links {
-            display: flex; gap: 2rem; margin-top: 2rem;
-            justify-content: center;
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
         }
-        .social-icon {
+
+        .social-link {
             color: var(--text-secondary);
-            font-size: 1.5rem;
+            text-decoration: none;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .social-link:hover {
+            color: var(--accent);
+        }
+
+        .social-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        .social-link:hover::after {
+            width: 100%;
+        }
+
+        .copyright {
+            color: #444;
+            font-size: 0.8rem;
+            font-family: var(--font-sans);
+        }
+
+        .copyright a {
+            color: #555;
+            text-decoration: none;
             transition: color 0.3s;
         }
-        .social-icon:hover { color: var(--accent-gold); }
 
-        footer {
-            padding: 3rem;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--accent-subtle);
-            font-family: 'Montserrat', sans-serif;
+        .copyright a:hover {
+            color: #777;
         }
-        footer a { color: var(--text-secondary); text-decoration: none; }
 
-        /* --- Responsive --- */
+        /* --- Mobile Responsiveness --- */
         @media (max-width: 768px) {
-            .grid-2-col { grid-template-columns: 1fr; gap: 2rem; }
-            .hero-title { font-size: 3rem; }
-            .gallery-item { width: 85vw; }
-            .gallery-track { padding-left: 5vw; } /* Less offset on mobile */
-            p { text-align: left; }
+            .intro-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .gallery-wrapper {
+                flex-direction: column;
+                width: 100%;
+                height: auto;
+            }
+
+            .gallery-section {
+                height: auto;
+                overflow: visible;
+            }
+
+            .gallery-intro, .gallery-item {
+                width: 100%;
+                height: 60vh;
+                border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.05);
+            }
+
+            .gallery-intro {
+                padding: 2rem;
+                height: auto;
+                min-height: 40vh;
+            }
+
+            h1 {
+                font-size: 3rem;
+            }
+
+            .gallery-img {
+                width: 100%; /* Disable parallax on mobile for performance/layout */
+                left: 0;
+                transform: none !important;
+            }
         }
     </style>
 </head>
 <body>
 
-    <a href="/guild/" class="nav-back">Guild Index</a>
+    <!-- Three.js Background -->
     <div id="webgl-container"></div>
 
-    <main>
-        <!-- Hero Section -->
-        <section id="hero">
-            <div class="profile-container gs-hero">
-                <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna" class="profile-img">
+    <!-- Navigation -->
+    <nav class="nav-fixed">
+        <a href="/guild/" class="nav-back">Guild Index</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="avatar-container reveal-fade">
+                <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna" class="avatar-img">
             </div>
+            <h1 class="split-text-char">LYANNA</h1>
+            <div class="subtitle reveal-fade">The Language Architect</div>
+        </div>
 
-            <h1 class="hero-title gs-hero">LYANNA</h1>
-            <div class="hero-subtitle gs-hero">The Language Architect</div>
+        <!-- Scroll Indicator -->
+        <div style="position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); opacity: 0.5;">
+            <div style="width: 1px; height: 60px; background: linear-gradient(to bottom, var(--text-secondary), transparent);"></div>
+        </div>
+    </section>
 
-            <div class="divider-line gs-hero" style="height: 60px;"></div>
-
-            <p class="gs-hero" style="text-align: center; max-width: 600px; font-family: 'Montserrat'; font-size: 0.9rem; letter-spacing: 0.05em;">
-                PROFESSIONAL MANDARIN INSTRUCTOR & CAREER CONSULTANT
-            </p>
-
-            <div style="margin-top: 3rem; opacity: 0;" class="gs-hero">
-                <i class="fa-solid fa-chevron-down" style="color: var(--accent-subtle); animation: float 2s infinite ease-in-out;"></i>
-            </div>
-        </section>
-
-        <!-- Origin / Bio -->
-        <section id="origin">
-            <div class="grid-2-col">
-                <div class="gs-reveal text-left">
-                    <h2 style="font-size: 2rem; margin-bottom: 2rem; color: var(--accent-gold);">The Foundation</h2>
-                    <h3 class="montserrat-font" style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 2rem; text-transform: uppercase;">Origin Story</h3>
-                </div>
-                <div class="gs-reveal">
-                    <p>
-                        我是 <span class="highlight">允曦 Lyanna</span>，一位專注於「結構」與「連結」的華語教學者。
-                    </p>
-                    <p>
-                        身為教育部華語教師證照培訓講師與 MMT 個人天賦諮詢師，我長期任教於美國 UTA，並投入海內外師資培訓。我的角色不僅是傳遞語言知識，更是協助教學者<span class="highlight">「看見自己的天賦，找到適合的舞台」</span>。
-                    </p>
-                    <p>
-                        在陪伴許多老師與學員的過程中，我發現多數人卡住的，從來不只是考試，而是對未來的迷惘：「我適合嗎？」、「我能走多遠？」。
-                    </p>
-                    <p>
-                        因此，我將華語教學專業結合職涯諮詢，讓學習不只停在證照，而是回到人生整體的選擇。
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Philosophy / Methodology -->
-        <section id="methodology" style="background: rgba(255,255,255,0.02);">
-            <div class="content-block gs-reveal">
-                <i class="fa-solid fa-quote-left" style="font-size: 2rem; color: var(--accent-subtle); margin-bottom: 1rem;"></i>
-                <p style="font-size: 1.5rem; color: var(--text-primary); text-align: center; font-family: 'Cinzel'; line-height: 1.6;">
-                    "真正能走得遠的，不只是會考試的人，<br>而是對自己有理解、對選擇有準備的人。"
-                </p>
-                <div class="divider-line" style="height: 40px; background: var(--accent-gold);"></div>
-
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin-top: 3rem;">
-                    <div style="flex: 1; min-width: 250px; padding: 1rem; border: 1px solid var(--accent-subtle);">
-                        <h4 class="montserrat-font" style="color: var(--accent-gold); margin-bottom: 1rem;">Structure</h4>
-                        <p style="font-size: 0.9rem; text-align: center;">將證照考試拆解為可執行的系統化步驟。</p>
+    <!-- Intro / Philosophy -->
+    <section class="intro">
+        <div class="container">
+            <div class="intro-grid">
+                <div class="bio-block">
+                    <h2 class="split-text-word">About Me</h2>
+                    <div class="bio-text reveal-lines">
+                        我是 允曦 Lyanna，華語教師培訓課程創辦者、教育部華語教師證照培訓講師，同時也是 MMT 個人天賦與人際關係諮詢師。目前任教於美國 UTA，長期投入海內外華語教學、師資培訓與職涯引導。
                     </div>
-                    <div style="flex: 1; min-width: 250px; padding: 1rem; border: 1px solid var(--accent-subtle);">
-                        <h4 class="montserrat-font" style="color: var(--accent-gold); margin-bottom: 1rem;">Guidance</h4>
-                        <p style="font-size: 0.9rem; text-align: center;">陪伴式引導，釐清職涯方向與個人節奏。</p>
+                    <div class="bio-text reveal-lines">
+                        我專注於陪伴對華語教學有熱情的人，從「不知道是否適合這條路」，到「具備資格、清楚方向，真正走出去」。
                     </div>
-                    <div style="flex: 1; min-width: 250px; padding: 1rem; border: 1px solid var(--accent-subtle);">
-                        <h4 class="montserrat-font" style="color: var(--accent-gold); margin-bottom: 1rem;">Perspective</h4>
-                        <p style="font-size: 0.9rem; text-align: center;">結合教學、職涯與海外生活經驗的跨領域視角。</p>
+                </div>
+                <div class="bio-block" style="padding-top: 4rem;">
+                    <h2 class="split-text-word">Why I Do This</h2>
+                    <div class="bio-text reveal-lines">
+                        在陪伴許多老師與學員的過程中，我發現多數人卡住的，從來不只是考試。而是：「我適合嗎？」「我能走多遠？」「如果真的出國，生活與關係該怎麼面對？」
+                    </div>
+                    <div class="quote-block reveal-lines">
+                        因此，我將華語教學專業，結合 MMT 天賦分析與人際關係諮詢，讓學習不只停在證照，而是回到人生整體的選擇。
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Course Gallery (Horizontal Scroll) -->
-        <section id="courses" style="padding: 0; height: auto; overflow: hidden;">
-            <div class="gallery-wrapper">
-                <div style="position: absolute; top: 10%; left: 5vw; z-index: 10;">
-                    <h2 style="font-size: 3rem; color: var(--text-primary); opacity: 0.1;">CURRICULUM</h2>
+    <!-- Horizontal Gallery Section -->
+    <section class="gallery-section" id="gallery">
+        <div class="gallery-wrapper">
+            <!-- Intro Card -->
+            <div class="gallery-intro">
+                <h2 class="split-text-word">Curriculum</h2>
+                <div class="bio-text reveal-lines">
+                    <p>• 專業結構清楚：將證照拆解成可執行的系統</p>
+                    <p>• 陪伴式引導：陪你釐清方向與節奏</p>
+                    <p>• 跨領域視角：結合教學、職涯、關係與海外生活</p>
                 </div>
-
-                <div class="gallery-track">
-                    <!-- Intro Card -->
-                    <div class="gallery-item" style="background: transparent; border: none; display: flex; flex-direction: column; justify-content: center;">
-                        <h2 style="font-size: 2.5rem; color: var(--accent-gold);">Professional Training</h2>
-                        <p style="text-align: left; margin-top: 1rem; color: var(--text-secondary);">
-                            系統化培訓課程，從零基礎到專業證照。<br>
-                            Systematic training from foundation to certification.
-                        </p>
-                        <i class="fa-solid fa-arrow-right-long" style="font-size: 2rem; color: var(--text-secondary); margin-top: 2rem;"></i>
-                    </div>
-
-                    <!-- Slide 1 -->
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/lyanna/slide_1.webp" alt="Course Slide 1" class="gallery-img">
-                        <div class="gallery-caption">Course Overview</div>
-                    </div>
-                    <!-- Slide 2 -->
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/lyanna/slide_2.webp" alt="Course Slide 2" class="gallery-img">
-                        <div class="gallery-caption">Core Methodology</div>
-                    </div>
-                    <!-- Slide 3 -->
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/lyanna/slide_3.webp" alt="Course Slide 3" class="gallery-img">
-                        <div class="gallery-caption">Certification Path</div>
-                    </div>
-                    <!-- Slide 4 -->
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/lyanna/slide_4.webp" alt="Course Slide 4" class="gallery-img">
-                        <div class="gallery-caption">Career Planning</div>
-                    </div>
-                    <!-- Slide 5 -->
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/lyanna/slide_5.webp" alt="Course Slide 5" class="gallery-img">
-                        <div class="gallery-caption">Global Opportunities</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Finale / Contact -->
-        <section id="contact">
-            <div class="content-block gs-reveal">
-                <h2 style="margin-bottom: 2rem;">Ready to Begin?</h2>
-                <p style="text-align: center;">
-                    如果你正在思考是否投入華語教學、走向海外，或正處於職涯轉換的路口。<br>
-                    我希望能用我走過的經驗，陪你把「華語」變成一條穩定、清楚的路。
-                </p>
-
-                <div class="social-links">
-                    <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-icon" title="Threads">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                    <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-icon" title="Instagram">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                    <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-icon" title="Books">
-                        <i class="fa-solid fa-book-open"></i>
-                    </a>
-                </div>
+                <div class="subtitle" style="margin-top: 2rem;">SCROLL TO EXPLORE →</div>
             </div>
 
-            <footer>
-                <p>Made with love by <a href="/guild/">SuperGalen's Dungeon</a></p>
-            </footer>
-        </section>
-    </main>
+            <!-- Slides -->
+            <div class="gallery-item">
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/lyanna/slide_1.webp" alt="Course Structure" class="gallery-img">
+                </div>
+                <div class="gallery-caption">Course Structure</div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/lyanna/slide_2.webp" alt="Teacher Training" class="gallery-img">
+                </div>
+                <div class="gallery-caption">Teacher Training</div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/lyanna/slide_3.webp" alt="Global Certification" class="gallery-img">
+                </div>
+                <div class="gallery-caption">Global Certification</div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/lyanna/slide_4.webp" alt="Career Path" class="gallery-img">
+                </div>
+                <div class="gallery-caption">Career Path</div>
+            </div>
+            <div class="gallery-item">
+                <div class="gallery-item-inner">
+                    <img src="/assets/img/guild/lyanna/slide_5.webp" alt="MMT Consultation" class="gallery-img">
+                </div>
+                <div class="gallery-caption">MMT Consultation</div>
+            </div>
+        </div>
+    </section>
 
-    <style>
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(10px); }
+    <!-- Final Message -->
+    <section class="philosophy">
+        <div class="container philosophy-content">
+            <div class="big-quote split-text-word">
+                "我相信，真正能走得遠的，<br>不只是會考試的人，<br>而是對自己有理解、對選擇有準備的人。"
+            </div>
+            <div class="bio-text reveal-lines" style="text-align: center;">
+                如果你正在思考是否要投入華語教學、是否適合走向海外，<br>
+                我希望能用我走過的經驗，陪你把「華語」變成一條穩定、清楚、走得出去的路。
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="social-links reveal-fade">
+            <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-link">Threads</a>
+            <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-link">Book</a>
+            <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-link">Instagram</a>
+        </div>
+        <div class="copyright reveal-fade">
+            Made with love by <a href="/guild/">SuperGalen's Dungeon</a>
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. Utilities ---
+
+        // Helper to split text into spans for animation
+        function splitText(element, type = 'char') {
+            const text = element.innerText;
+            element.innerHTML = '';
+
+            if (type === 'char') {
+                [...text].forEach(char => {
+                    const span = document.createElement('span');
+                    span.innerText = char;
+                    span.style.display = 'inline-block'; // Necessary for transform
+                    if (char === ' ') span.style.width = '0.3em'; // Preserve spaces
+                    element.appendChild(span);
+                });
+            } else if (type === 'word') {
+                const words = text.split(' ');
+                words.forEach((word, i) => {
+                    const span = document.createElement('span');
+                    span.innerText = word;
+                    span.style.display = 'inline-block';
+                    element.appendChild(span);
+                    if (i < words.length - 1) {
+                        const space = document.createTextNode(' ');
+                        element.appendChild(space);
+                    }
+                });
+            }
         }
-    </style>
 
-    <script type="module">
-        import * as THREE from 'three';
+        // --- 2. Animations (GSAP) ---
 
-        // --- Scene Setup ---
-        const container = document.getElementById('webgl-container');
-        const scene = new THREE.Scene();
-        // Soft gradient background via fog or just plain color
-        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.02); // Matches CSS bg
+        document.addEventListener('DOMContentLoaded', () => {
+            gsap.registerPlugin(ScrollTrigger);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 30);
+            // Initial Load
+            document.body.classList.add('loaded');
 
-        const renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            alpha: true
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // --- Objects: Abstract Structure (Icosahedron Wireframe) ---
-        // Subtle rotating geometric structure to represent "Language System"
-        const geometry = new THREE.IcosahedronGeometry(10, 1); // Level 1 subdivision
-        const material = new THREE.LineBasicMaterial({
-            color: 0x4a4a4a, // Dark Grey
-            transparent: true,
-            opacity: 0.15,
-            depthWrite: false
-        });
-        const structure = new THREE.LineSegments(geometry, material);
-        scene.add(structure);
-
-        // Inner core (Golden connection)
-        const coreGeo = new THREE.IcosahedronGeometry(4, 0);
-        const coreMat = new THREE.MeshBasicMaterial({
-            color: 0xc5a065, // Muted Gold
-            wireframe: true,
-            transparent: true,
-            opacity: 0.1
-        });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        scene.add(core);
-
-        // --- Particles: Dust Motes ---
-        // Just a few floating points to add depth
-        const particlesGeo = new THREE.BufferGeometry();
-        const particleCount = 100;
-        const posArray = new Float32Array(particleCount * 3);
-
-        for(let i=0; i < particleCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 40;
-        }
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-        const particleMat = new THREE.PointsMaterial({
-            size: 0.1,
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.4
-        });
-        const particles = new THREE.Points(particlesGeo, particleMat);
-        scene.add(particles);
-
-        // Fade in
-        window.addEventListener('load', () => {
-            container.style.opacity = 1;
-        });
-
-        // --- Animation Loop ---
-        let mouseX = 0;
-        let mouseY = 0;
-
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
-        });
-
-        const clock = new THREE.Clock();
-
-        function animate() {
-            const time = clock.getElapsedTime();
-
-            // Slow rotation
-            structure.rotation.y = time * 0.05;
-            structure.rotation.x = Math.sin(time * 0.1) * 0.05;
-
-            core.rotation.x = -time * 0.1;
-            core.rotation.z = time * 0.05;
-
-            // Subtle parallax
-            camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // --- Resize ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // --- GSAP Animations ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Hero Reveal
-        const heroTl = gsap.timeline();
-        heroTl.to('.gs-hero', {
-            y: 0, opacity: 1, duration: 1, stagger: 0.2, ease: "power2.out"
-        });
-
-        // Content Reveal
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
-            gsap.from(elem, {
-                y: 50, opacity: 0, duration: 1, ease: "power2.out",
-                scrollTrigger: {
-                    trigger: elem,
-                    start: "top 80%"
-                }
-            });
-        });
-
-        // Horizontal Scroll for Gallery
-        // The track moves left as we scroll down
-        const galleryWrapper = document.querySelector('.gallery-wrapper');
-        const galleryTrack = document.querySelector('.gallery-track');
-
-        // Calculate the distance to scroll
-        function initGalleryScroll() {
-            // Recalculate width
-            const trackWidth = galleryTrack.scrollWidth;
-            const wrapperWidth = galleryWrapper.offsetWidth;
-            const scrollAmount = trackWidth - wrapperWidth + window.innerWidth * 0.1; // Add some padding
-
-            // Reset any previous animations
-            ScrollTrigger.getAll().forEach(t => {
-                if(t.trigger === galleryWrapper) t.kill();
+            // Hero Animations
+            gsap.from('.avatar-img', {
+                duration: 2,
+                scale: 1.5,
+                filter: 'sepia(100%) blur(10px)',
+                ease: 'power2.out'
             });
 
-            gsap.fromTo(galleryTrack,
-                { x: 0 },
-                {
-                    x: -scrollAmount,
-                    ease: "none",
+            // Split Text Animations (Headers)
+            document.querySelectorAll('.split-text-char').forEach(el => {
+                splitText(el, 'char');
+                gsap.from(el.children, {
                     scrollTrigger: {
-                        trigger: galleryWrapper,
+                        trigger: el,
+                        start: 'top 80%',
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 1.5,
+                    stagger: 0.05,
+                    ease: 'power4.out'
+                });
+            });
+
+            document.querySelectorAll('.split-text-word').forEach(el => {
+                // For English/Chinese mixed, word splitting is tricky.
+                // We'll treat the whole block as lines for simplicity or use specific manual spans if needed.
+                // Here we just use a simple fade up for simplicity as our custom splitter is basic.
+                gsap.from(el, {
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 85%',
+                    },
+                    y: 30,
+                    opacity: 0,
+                    duration: 1.2,
+                    ease: 'power2.out'
+                });
+            });
+
+            // Line Reveals (Paragraphs)
+            document.querySelectorAll('.reveal-lines').forEach(el => {
+                gsap.from(el, {
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 90%',
+                    },
+                    y: 20,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    ease: 'power2.out'
+                });
+            });
+
+            // Fade Reveals
+            document.querySelectorAll('.reveal-fade').forEach(el => {
+                gsap.from(el, {
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 90%',
+                    },
+                    opacity: 0,
+                    duration: 1.5,
+                    ease: 'power2.out'
+                });
+            });
+
+            // --- Horizontal Scroll & Parallax ---
+            if (window.innerWidth > 768) {
+                const gallerySection = document.getElementById('gallery');
+                const galleryWrapper = document.querySelector('.gallery-wrapper');
+                const galleryImages = document.querySelectorAll('.gallery-img');
+
+                // Calculate horizontal scroll distance
+                const totalWidth = galleryWrapper.scrollWidth;
+                const windowWidth = window.innerWidth;
+                const scrollDistance = totalWidth - windowWidth;
+
+                // Main Horizontal Scroll
+                const scrollTween = gsap.to(galleryWrapper, {
+                    x: -scrollDistance,
+                    ease: 'none',
+                    scrollTrigger: {
+                        trigger: gallerySection,
                         pin: true,
                         scrub: 1,
-                        start: "top top",
-                        end: "+=" + scrollAmount, // Scroll duration based on width
-                        invalidateOnRefresh: true
+                        start: 'top top',
+                        end: () => `+=${scrollDistance}`,
+                        invalidateOnRefresh: true,
+                        onUpdate: (self) => {
+                            // Parallax Effect for Images inside the containers
+                            // As the container moves LEFT, we move the image RIGHT (relative to container)
+                            // to create a "window" effect.
+                            galleryImages.forEach(img => {
+                                // Simple parallax based on global progress for now
+                                // Refinement: Calculate relative position of each image if needed
+                                // But a global shift works well for a uniform strip
+                                const progress = self.progress;
+                                const parallaxAmt = 15; // %
+                                // We want the image to slide slightly opposite to the scroll
+                                // The scroll moves wrapper LEFT (-x).
+                                // We move image RIGHT (+x) to counteract it slightly.
+                                // Since all images are in the wrapper, they all move.
+                                // We need a subtle local movement.
+
+                                // Actually, GSAP ScrollTrigger proxy is better for per-image:
+                                // But let's keep it simple: just animate x position
+                                // We set initial CSS left: -15% and width: 130%
+                                // We move to x: 0 (or slight positive)
+                            });
+                        }
+                    }
+                });
+
+                // Per-image Parallax inside the pinned container
+                // We can't use standard ScrollTrigger markers easily inside a pinned horizontal scroll
+                // So we manually animate the 'x' of images based on the progress of the main tween
+                galleryImages.forEach((img, i) => {
+                    gsap.to(img, {
+                        x: '10%', // Move right slightly
+                        ease: 'none',
+                        scrollTrigger: {
+                            trigger: gallerySection,
+                            start: 'top top',
+                            end: () => `+=${scrollDistance}`,
+                            scrub: true
+                        }
+                    });
+                });
+            }
+        });
+
+        // --- 3. Three.js Background (Organic Constellations) ---
+
+        const initThree = () => {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+
+            // Fog for depth
+            scene.fog = new THREE.FogExp2(0x0f1014, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const count = 150; // Fewer, more deliberate points
+            const positions = new Float32Array(count * 3);
+            const originalPositions = new Float32Array(count * 3);
+            const sizes = new Float32Array(count);
+
+            for (let i = 0; i < count; i++) {
+                const x = (Math.random() - 0.5) * 50;
+                const y = (Math.random() - 0.5) * 40;
+                const z = (Math.random() - 0.5) * 30;
+
+                positions[i * 3] = x;
+                positions[i * 3 + 1] = y;
+                positions[i * 3 + 2] = z;
+
+                originalPositions[i * 3] = x;
+                originalPositions[i * 3 + 1] = y;
+                originalPositions[i * 3 + 2] = z;
+
+                sizes[i] = Math.random();
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const particlesMaterial = new THREE.PointsMaterial({
+                color: 0xc6a87c, // Gold accent
+                size: 0.15,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+
+            // Lines (Connections)
+            // We'll create a dynamic line geometry that updates every frame
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0xc6a87c,
+                transparent: true,
+                opacity: 0.15
+            });
+
+            // We will render lines manually or use a specific set of close neighbors
+            // For performance, let's just create a fixed web of lines between close points
+            // and animate the points.
+
+            // Actually, dynamic lines can be expensive. Let's create a fixed set of "constellations"
+            // that move with the points.
+            const maxConnections = 200;
+            const lineGeometry = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(maxConnections * 2 * 3); // 2 points per line
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+            const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+            scene.add(lines);
+
+            // Mouse Interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX - window.innerWidth / 2) * 0.05;
+                mouseY = (e.clientY - window.innerHeight / 2) * 0.05;
+            });
+
+            // Animation Loop
+            const clock = new THREE.Clock();
+
+            const animate = () => {
+                const time = clock.getElapsedTime();
+
+                // Smooth Camera/Group Movement
+                targetX = mouseX * 0.5;
+                targetY = mouseY * 0.5;
+
+                // Very subtle rotation
+                particles.rotation.y += 0.001;
+                lines.rotation.y += 0.001;
+
+                // Breathe effect on positions
+                const positions = particles.geometry.attributes.position.array;
+                let lineIndex = 0;
+
+                // Update particles
+                for(let i = 0; i < count; i++) {
+                    const i3 = i * 3;
+
+                    // Organic float
+                    positions[i3 + 1] = originalPositions[i3 + 1] + Math.sin(time * 0.5 + positions[i3]) * 1;
+                    positions[i3] = originalPositions[i3] + Math.cos(time * 0.3 + positions[i3+1]) * 0.5;
+                }
+
+                particles.geometry.attributes.position.needsUpdate = true;
+
+                // Update Lines (Dynamic Distance Check - simplified)
+                // We connect points that are close to form ephemeral structures
+                const connectDistance = 8;
+                let connectionCount = 0;
+
+                for(let i = 0; i < count; i++) {
+                    for(let j = i + 1; j < count; j++) {
+                        if(connectionCount >= maxConnections) break;
+
+                        const dx = positions[i*3] - positions[j*3];
+                        const dy = positions[i*3+1] - positions[j*3+1];
+                        const dz = positions[i*3+2] - positions[j*3+2];
+                        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                        if(dist < connectDistance) {
+                            // Add line
+                            const lPos = lines.geometry.attributes.position.array;
+                            lPos[connectionCount * 6] = positions[i*3];
+                            lPos[connectionCount * 6 + 1] = positions[i*3+1];
+                            lPos[connectionCount * 6 + 2] = positions[i*3+2];
+
+                            lPos[connectionCount * 6 + 3] = positions[j*3];
+                            lPos[connectionCount * 6 + 4] = positions[j*3+1];
+                            lPos[connectionCount * 6 + 5] = positions[j*3+2];
+
+                            connectionCount++;
+                        }
                     }
                 }
-            );
-        }
+                lines.geometry.setDrawRange(0, connectionCount * 2);
+                lines.geometry.attributes.position.needsUpdate = true;
 
-        // Initialize after load to ensure widths are correct
-        // Use a timeout to ensure images have layout dimensions
-        window.addEventListener('load', () => {
-            setTimeout(initGalleryScroll, 100);
-        });
+                // Camera Parallax
+                camera.position.x += (mouseX - camera.position.x) * 0.02;
+                camera.position.y += (-mouseY - camera.position.y) * 0.02;
+                camera.lookAt(scene.position);
 
-        // Re-init on resize
-        window.addEventListener('resize', () => {
-            setTimeout(initGalleryScroll, 100);
-        });
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            };
 
+            animate();
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        initThree();
     </script>
 </body>
 </html>
