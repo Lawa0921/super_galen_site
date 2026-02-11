@@ -484,6 +484,109 @@
             particleGroup.add(m);
         }
 
+        // 5. Heavy Machinery Gears (Background)
+        const gearGroup = new THREE.Group();
+        gearGroup.position.z = -10; // Closer to be visible but behind core
+        scene.add(gearGroup);
+
+        // Add Lights for Metallic Effect
+        const pointLight = new THREE.PointLight(0x00F3FF, 2, 50);
+        pointLight.position.set(0, 0, 0);
+        scene.add(pointLight);
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Soft white light
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xFFD700, 0.5); // Gold rim light
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+
+        function createGear(radius, teeth, color, x, y, z) {
+            const shape = new THREE.Shape();
+            const outerRadius = radius;
+            const innerRadius = radius * 0.8;
+            const holeRadius = radius * 0.3;
+
+            const numPoints = teeth * 2;
+            const angleStep = (Math.PI * 2) / numPoints;
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = i * angleStep;
+                const r = (i % 2 === 0) ? outerRadius : innerRadius;
+                if (i === 0) shape.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                else shape.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            }
+
+            const holePath = new THREE.Path();
+            holePath.absarc(0, 0, holeRadius, 0, Math.PI * 2, true);
+            shape.holes.push(holePath);
+
+            const extrudeSettings = { depth: 0.5, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.1, bevelThickness: 0.1 };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: color,
+                emissiveIntensity: 0.4
+            });
+            const gear = new THREE.Mesh(geometry, material);
+            gear.position.set(x, y, z);
+            gear.userData = { speed: (Math.random() - 0.5) * 0.02 };
+            gearGroup.add(gear);
+            return gear;
+        }
+
+        // Create scattered gears (Brighter for visibility)
+        createGear(5, 12, 0x444444, -12, 4, -2);
+        createGear(3, 8, 0x666666, -8, 6, 0);
+        createGear(8, 16, 0x333333, 8, -4, -5);
+        createGear(4, 10, 0x555555, 12, 0, -2);
+        createGear(6, 14, 0x222222, 0, -10, -8);
+
+        // 6. Smoke System
+        const smokeParticles = [];
+        const smokeGroup = new THREE.Group();
+        scene.add(smokeGroup);
+
+        // Generate Smoke Texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
+        grad.addColorStop(0, 'rgba(200,200,200,0.1)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,128,128);
+        const smokeTex = new THREE.CanvasTexture(canvas);
+
+        const smokeMat = new THREE.SpriteMaterial({
+            map: smokeTex,
+            color: 0x00F3FF, /* Cyan Tint */
+            transparent: true,
+            opacity: 0.4,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        for (let i = 0; i < 30; i++) {
+            const smoke = new THREE.Sprite(smokeMat);
+            smoke.position.set(
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 20 - 5,
+                (Math.random() - 0.5) * 20 - 5
+            );
+            smoke.scale.set(10, 10, 1);
+            smoke.userData = {
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.01,
+                    Math.random() * 0.02,
+                    0
+                ),
+                rotationSpeed: (Math.random() - 0.5) * 0.005
+            };
+            smokeGroup.add(smoke);
+            smokeParticles.push(smoke);
+        }
+
         // Animation
         const clock = new THREE.Clock();
 
@@ -496,6 +599,21 @@
             core.scale.set(s, s, s);
             core.rotation.y = t;
             core.rotation.z = t * 0.5;
+
+            // Gears Rotate
+            gearGroup.children.forEach(gear => {
+                gear.rotation.z += gear.userData.speed;
+            });
+
+            // Smoke Drift
+            smokeParticles.forEach(smoke => {
+                smoke.position.add(smoke.userData.velocity);
+                smoke.material.rotation += smoke.userData.rotationSpeed;
+                if(smoke.position.y > 15) {
+                    smoke.position.y = -10;
+                    smoke.position.x = (Math.random() - 0.5) * 40;
+                }
+            });
 
             // Grid Wave
             gridHelper.position.z = (t * 2) % 2;
