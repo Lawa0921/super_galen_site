@@ -422,14 +422,6 @@
             <p style="margin: 0 auto; margin-bottom: 2rem;">
                 點擊下方連結，聆聽我的音樂作品與生活隨筆。
             </p>
-            <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
-                <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="keyword" style="font-size: 1.2rem; padding: 1rem 2rem;">
-                    <i class="fa-brands fa-youtube"></i> Watch on YouTube
-                </a>
-                <a href="https://www.instagram.com/feihailuo" target="_blank" class="keyword" style="font-size: 1.2rem; padding: 1rem 2rem;">
-                    <i class="fa-brands fa-instagram"></i> Instagram Gallery
-                </a>
-            </div>
         </div>
     </section>
 
@@ -593,14 +585,15 @@
 
             // Dynamic Ink
             const positions = inkSystem.geometry.attributes.position.array;
-            const turbulence = 1 + globalUniforms.scrollSpeed * 50; // Speed up with scroll
+            const turbulence = 1 + globalUniforms.scrollSpeed * 20; // Reduced scroll speed effect
 
             for(let i=0; i<inkCount; i++) {
                 const x = positions[i*3];
                 const y = positions[i*3+1];
 
-                positions[i*3] += Math.sin(y * 0.1 + time * 0.5) * 0.01 * turbulence;
-                positions[i*3+1] += Math.cos(x * 0.1 + time * 0.5) * 0.01 * turbulence;
+                // Reduced base speed (0.01 -> 0.005)
+                positions[i*3] += Math.sin(y * 0.1 + time * 0.3) * 0.005 * turbulence;
+                positions[i*3+1] += Math.cos(x * 0.1 + time * 0.3) * 0.005 * turbulence;
 
                 // Reset bounds
                 if(Math.abs(positions[i*3]) > 25) positions[i*3] *= -0.9;
