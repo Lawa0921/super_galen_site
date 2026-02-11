@@ -39,11 +39,15 @@
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
             background-color: var(--c-bg);
             color: var(--c-text);
             font-family: var(--font-body);
             overflow-x: hidden;
+            width: 100%;
+        }
+
+        body {
             opacity: 0;
             transition: opacity 1s ease;
             cursor: default;
@@ -548,7 +552,7 @@
                 flex-direction: column !important;
                 gap: 2rem;
                 padding: 2rem 1rem !important; /* Further reduce padding */
-                width: 100% !important;
+                width: auto !important;
                 max-width: 100% !important;
                 border-radius: 10px !important;
                 box-shadow: 5px 5px 15px rgba(0,0,0,0.1) !important;
@@ -915,8 +919,9 @@
         // 2. PASTRY CARDS ENTRANCE
         gsap.utils.toArray('.pastry-card').forEach((card, i) => {
             // Parallax entrance
-            const dir = i % 2 === 0 ? -100 : 100; // Alternating sides
-            const rot = i % 2 === 0 ? -5 : 5;
+            const isMobile = window.innerWidth < 768;
+            const dir = isMobile ? 0 : (i % 2 === 0 ? -100 : 100); // Alternating sides
+            const rot = isMobile ? 0 : (i % 2 === 0 ? -5 : 5);
 
             gsap.from(card, {
                 x: dir,
