@@ -29,7 +29,7 @@
             --c-ink: #000000;
             --c-paper: #f0f0f0;
             --c-gold: #d4af37;
-            --c-accent: #ff4d4d;
+            --c-accent: #ff4d4d; /* Red seal color */
             --c-text: #e0e0e0;
 
             --f-serif: 'Noto Serif TC', serif;
@@ -42,7 +42,7 @@
             color: var(--c-text);
             font-family: var(--f-serif);
             overflow-x: hidden;
-            cursor: none;
+            cursor: none; /* Custom cursor used */
         }
 
         /* --- Loader --- */
@@ -53,24 +53,34 @@
         }
         .ink-drop {
             width: 20px; height: 20px; background: #fff; border-radius: 50%;
-            animation: drop 1s ease-in forwards;
+            animation: drop 1.5s ease-in-out infinite;
         }
         @keyframes drop {
             0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(0.5); }
-            100% { transform: scale(50); opacity: 0; }
+            50% { transform: scale(0.5); opacity: 0.8; }
+            100% { transform: scale(30); opacity: 0; }
         }
 
         /* --- Custom Cursor --- */
         #cursor {
-            position: fixed; top: 0; left: 0; width: 30px; height: 30px;
-            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.5);
             border-radius: 50%; pointer-events: none; z-index: 10000;
             transform: translate(-50%, -50%);
             mix-blend-mode: exclusion;
-            transition: width 0.2s, height 0.2s;
+            transition: transform 0.1s, width 0.3s, height 0.3s, border-color 0.3s;
         }
-        #cursor.hovered { width: 60px; height: 60px; background: radial-gradient(circle, var(--c-gold) 0%, rgba(0,0,0,0) 70%); }
+        #cursor-dot {
+            position: fixed; top: 0; left: 0; width: 4px; height: 4px;
+            background: var(--c-gold);
+            border-radius: 50%; pointer-events: none; z-index: 10001;
+            transform: translate(-50%, -50%);
+        }
+        .hovered {
+            width: 50px !important; height: 50px !important;
+            background: rgba(212, 175, 55, 0.1);
+            border-color: var(--c-gold) !important;
+        }
 
         /* --- Canvas --- */
         #webgl-container {
@@ -85,6 +95,7 @@
             font-family: var(--f-serif); font-size: 1rem;
             border-bottom: 1px solid transparent;
             transition: 0.3s;
+            mix-blend-mode: difference;
         }
         .nav-back:hover { border-color: var(--c-gold); color: var(--c-gold); }
 
@@ -102,72 +113,108 @@
         h1 {
             font-family: var(--f-cali); font-size: clamp(4rem, 15vw, 10rem);
             line-height: 0.8; margin: 0; color: #fff;
-            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+            text-shadow: 0 0 30px rgba(255,255,255,0.1);
             mix-blend-mode: overlay;
+            letter-spacing: -5px;
         }
         h2 {
-            font-family: var(--f-cali); font-size: clamp(2.5rem, 8vw, 5rem);
-            margin-bottom: 1rem; color: var(--c-gold);
+            font-family: var(--f-cali); font-size: clamp(2.5rem, 6vw, 4rem);
+            margin-bottom: 1.5rem; color: var(--c-gold);
+            position: relative; display: inline-block;
         }
+        h2::after {
+            content: ''; position: absolute; left: 0; bottom: -10px; width: 50px; height: 3px;
+            background: var(--c-accent);
+        }
+
         .tag {
-            font-family: var(--f-serif); font-size: 0.9rem; letter-spacing: 3px;
+            font-family: var(--f-serif); font-size: 0.8rem; letter-spacing: 3px;
             color: #888; text-transform: uppercase; display: block; margin-bottom: 0.5rem;
         }
 
         p {
             font-size: 1.1rem; line-height: 1.8; color: #ccc;
-            max-width: 600px; margin-bottom: 1.5rem;
+            max-width: 650px; margin-bottom: 1.5rem;
             text-align: justify;
+            font-weight: 300;
+        }
+
+        .quote {
+            font-style: italic; border-left: 3px solid var(--c-gold);
+            padding-left: 1rem; margin: 2rem 0; color: #eee;
+            background: linear-gradient(90deg, rgba(212,175,55,0.1), transparent);
         }
 
         /* --- Hero Section --- */
         .hero-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 4rem; align-items: center;
         }
         .avatar-container {
-            position: relative; width: 100%; max-width: 400px; aspect-ratio: 2/3;
+            position: relative; width: 100%; aspect-ratio: 3/4;
             overflow: hidden; border-radius: 4px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            transform: rotate(2deg);
+            transition: transform 0.5s ease;
         }
+        .avatar-container:hover { transform: rotate(0deg) scale(1.02); }
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
-            filter: sepia(0.2) contrast(1.1) grayscale(0.3);
+            filter: sepia(0.2) contrast(1.1) grayscale(0.2);
+            transition: filter 0.5s;
         }
-        .ink-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/textures/water.jpg'); /* Placeholder for noise if needed, but using CSS blend */
-            mix-blend-mode: multiply; opacity: 0.5;
+        .avatar-container:hover .avatar-img { filter: sepia(0) contrast(1) grayscale(0); }
+
+        /* --- Content Modules --- */
+        .content-block {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 3rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 2px solid var(--c-gold);
+            position: relative; overflow: visible;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        /* --- Timeline/Content --- */
-        .content-block {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            padding: 3rem; border: 1px solid rgba(255,255,255,0.05);
-            border-left: 2px solid var(--c-gold);
-            position: relative; overflow: hidden;
+        /* Decorative Corners */
+        .content-block::after {
+            content: ''; position: absolute; bottom: 0; right: 0; width: 20px; height: 20px;
+            border-bottom: 2px solid var(--c-gold); border-right: 2px solid var(--c-gold);
         }
-        .content-block::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.05), transparent);
-            transform: translateX(-100%); transition: 0.5s; pointer-events: none;
-        }
-        .content-block:hover::before { transform: translateX(100%); transition: 1s; }
 
         .chibi-box {
-            position: absolute; right: -50px; bottom: -20px; width: 150px; opacity: 0.8;
-            transform: rotate(-10deg); filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+            position: absolute; right: -60px; top: -40px; width: 140px;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.6));
+            transform: rotate(5deg);
             transition: 0.3s;
+            z-index: 20;
         }
-        .content-block:hover .chibi-box { right: -20px; opacity: 1; transform: rotate(0deg); }
+        .content-block:hover .chibi-box { transform: rotate(0deg) scale(1.1); }
 
-        /* --- Skills/Keywords --- */
+        /* --- Quest Log (Skills) --- */
+        .quest-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem; margin-top: 2rem;
+        }
+        .quest-item {
+            background: rgba(255,255,255,0.03); border: 1px solid #333;
+            padding: 1rem; text-align: center; border-radius: 4px;
+            transition: 0.3s; cursor: default;
+        }
+        .quest-item:hover {
+            background: rgba(212, 175, 55, 0.1); border-color: var(--c-gold);
+            transform: translateY(-5px);
+        }
+        .quest-icon { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--c-gold); }
+        .quest-label { font-size: 0.9rem; color: #ccc; }
+        .quest-sub { font-size: 0.7rem; color: #666; display: block; margin-top: 0.3rem; }
+
+        /* --- Keywords --- */
         .keywords {
             display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;
         }
         .keyword {
             border: 1px solid #444; padding: 0.5rem 1.5rem; border-radius: 50px;
-            font-size: 0.9rem; transition: 0.3s; cursor: pointer;
+            font-size: 0.9rem; transition: 0.3s; cursor: pointer; color: #aaa;
         }
         .keyword:hover {
             border-color: var(--c-gold); color: var(--c-gold); background: rgba(212, 175, 55, 0.1);
@@ -175,30 +222,31 @@
 
         /* --- Footer --- */
         footer {
-            padding: 4rem 0; text-align: center; background: #000; border-top: 1px solid #333;
+            padding: 6rem 0; text-align: center; background: #050505; border-top: 1px solid #222;
         }
         .social-icons {
             display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;
         }
         .social-link {
-            color: #fff; font-size: 1.5rem; transition: 0.3s; width: 50px; height: 50px;
+            color: #fff; font-size: 1.5rem; transition: 0.3s; width: 60px; height: 60px;
             display: flex; align-items: center; justify-content: center;
-            border: 1px solid #333; border-radius: 50%;
+            border: 1px solid #333; border-radius: 50%; background: #111;
         }
         .social-link:hover {
             color: var(--c-gold); border-color: var(--c-gold); transform: translateY(-5px);
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
         }
 
         /* --- Mobile --- */
         @media (max-width: 768px) {
-            .hero-grid { grid-template-columns: 1fr; text-align: center; }
+            .hero-grid { grid-template-columns: 1fr; gap: 2rem; text-align: center; }
             h1 { font-size: 4rem; }
-            .avatar-container { margin: 0 auto; width: 80%; }
+            .avatar-container { margin: 0 auto; width: 70%; transform: none; }
             .content-block { padding: 1.5rem; }
-            .chibi-box { display: none; }
-            #cursor { display: none; }
+            .chibi-box { width: 100px; right: -10px; top: -30px; }
+            #cursor, #cursor-dot { display: none; }
             body { cursor: auto; }
+            .quest-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -207,10 +255,12 @@
     <!-- LOADING -->
     <div id="loader">
         <div class="ink-drop"></div>
+        <p style="margin-top: 2rem; font-family: var(--f-serif); letter-spacing: 2px;">LOADING THE INK...</p>
     </div>
 
     <!-- CURSOR -->
     <div id="cursor"></div>
+    <div id="cursor-dot"></div>
 
     <a href="/guild/" class="nav-back">← GUILD</a>
     <div id="webgl-container"></div>
@@ -222,10 +272,17 @@
                 <div class="gs-reveal">
                     <span class="tag">INK & SOUND ALCHEMIST</span>
                     <h1>墨唱</h1>
-                    <h2 style="font-family: var(--f-serif); font-size: 1.5rem; letter-spacing: 5px; color: #fff; opacity: 0.8;">MO CHANG</h2>
-                    <p style="margin-top: 2rem; color: #aaa;">
-                        "Strings of the Pipa, Code of the World. Wandering through the realms of Game, Food, and Sound."
+                    <h2 style="font-family: var(--f-serif); font-size: 1.2rem; letter-spacing: 5px; color: #fff; opacity: 0.6; margin-top: -1rem; display: block; border: none;">
+                        MO CHANG
+                    </h2>
+                    <p class="quote">
+                        "在代碼與邏輯的迷宮中探索了十年，如今在音符與水墨間尋找歸途。"
                     </p>
+                    <div class="keywords" style="justify-content: flex-start;">
+                        <span class="keyword">Game Dev</span>
+                        <span class="keyword">Musician</span>
+                        <span class="keyword">Writer</span>
+                    </div>
                 </div>
                 <div class="gs-reveal avatar-container">
                     <img src="/assets/img/guild/mochang/avatar.webp" alt="Mo Chang" class="avatar-img">
@@ -241,13 +298,30 @@
                 <span class="tag" style="color: var(--c-gold)">THE ORIGIN</span>
                 <h2>Game & MUD</h2>
                 <p>
-                    曾經，我是一個熱愛遊戲的少年。在 MUD (Multi-User Dungeon) 的純文字世界裡，我看見了無限的想像。
-                    立志投身遊戲業界，在代碼與邏輯的迷宮中探索了十年。
+                    故事始於 2000 年的校園。當許多人沉迷於圖形化的網路遊戲時，我卻一腳踏入了 <strong>MUD (Multi-User Dungeon)</strong> 的純文字世界。
+                    在那裡，一行行文字構築出恢弘的江湖，每一個指令都是對世界的探索。
                 </p>
                 <p>
-                    <i class="fa-solid fa-code"></i> C++ / Python / Lua <br>
-                    <i class="fa-solid fa-gamepad"></i> Game Design / Scripting
+                    2005年，帶著這份熱愛，我正式踏入台灣遊戲業界。從企劃轉職到開發，歷經十年的浮沉與打磨。
+                    看過無數專案的起落，最終帶著一絲心灰意冷，我選擇了轉身離開這個曾經夢想的舞台。
                 </p>
+                <div class="quest-grid">
+                    <div class="quest-item">
+                        <i class="fa-solid fa-terminal quest-icon"></i>
+                        <div class="quest-label">MUD Dev</div>
+                        <span class="quest-sub">2000 Era</span>
+                    </div>
+                    <div class="quest-item">
+                        <i class="fa-solid fa-code quest-icon"></i>
+                        <div class="quest-label">Game Scripting</div>
+                        <span class="quest-sub">Lua / Python</span>
+                    </div>
+                    <div class="quest-item">
+                        <i class="fa-solid fa-ghost quest-icon"></i>
+                        <div class="quest-label">Departure</div>
+                        <span class="quest-sub">10 Years Later</span>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -255,18 +329,39 @@
     <!-- 3. WANDERING -->
     <section id="wandering">
         <div class="container" style="display: flex; justify-content: flex-end;">
-            <div class="content-block gs-reveal" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right;">
+            <div class="content-block gs-reveal" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right; max-width: 700px;">
                 <span class="tag" style="color: var(--c-accent)">THE DRIFT</span>
-                <h2>Chef & MIS</h2>
-                <p>
-                    離開遊戲業後，我曾拿起菜刀，試圖在味覺中尋找答案。
-                    命運卻讓我誤打誤撞成為了資訊人員 (MIS)。
-                    在這漫長的十年裡，我亦是外送員、街頭藝人、詞作人。
+                <h2>The Lost Decade</h2>
+                <p style="margin-left: auto;">
+                    離開遊戲業後，我本想拿起菜刀，成為一名廚師，卻命運般地誤打誤撞進入資訊業，變成了一個稍微有點悠閒的 <strong>"MIS"</strong>。
                 </p>
-                <div class="keywords" style="justify-content: flex-end;">
-                    <span class="keyword">Delivery</span>
-                    <span class="keyword">Street Perfomer</span>
-                    <span class="keyword">Lyricist</span>
+                <p style="margin-left: auto;">
+                    在這段看似平靜的漫長歲月裡，我不甘於單調，於是開啟了無數個"副本"：
+                    兼職過外送員感受城市脈動，當過街頭藝人體驗冷暖，也曾作為詞作人為旋律填上靈魂。
+                    這些零碎的經歷，如同墨跡般暈染了我的人生畫卷。
+                </p>
+
+                <div class="quest-grid" style="direction: rtl;">
+                    <div class="quest-item">
+                        <i class="fa-solid fa-server quest-icon"></i>
+                        <div class="quest-label">MIS</div>
+                        <span class="quest-sub">Current Class</span>
+                    </div>
+                    <div class="quest-item">
+                        <i class="fa-solid fa-utensils quest-icon"></i>
+                        <div class="quest-label">Chef</div>
+                        <span class="quest-sub">Almost Class</span>
+                    </div>
+                    <div class="quest-item">
+                        <i class="fa-solid fa-motorcycle quest-icon"></i>
+                        <div class="quest-label">Delivery</div>
+                        <span class="quest-sub">Side Quest</span>
+                    </div>
+                    <div class="quest-item">
+                        <i class="fa-solid fa-guitar quest-icon"></i>
+                        <div class="quest-label">Street Art</div>
+                        <span class="quest-sub">宜蘭不上街頭</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -277,31 +372,39 @@
         <div class="container">
             <div class="content-block gs-reveal">
                 <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi">
-                <span class="tag" style="color: #bd4dff">CURRENT FORM</span>
+                <span class="tag" style="color: #bd4dff">HARMONICS</span>
                 <h2>Ink & Strings</h2>
                 <p>
-                    如今，我有了一位妻子和一個孩子。在生活的縫隙中，我拿起了琵琶與空靈鼓。
-                    自學編曲與 DAW，我試圖將古風與現代結合，書寫屬於自己的旋律。
+                    如今，年近不惑，我有了一位妻子和一個孩子。在陪伴家人的縫隙中，我重拾了兒時對音樂的憧憬。
+                    那些曾經玩不起的樂器，現在成了我靈魂的出口。
                 </p>
                 <p>
+                    從去年五月開始，我嘗試自己寫詞、寫歌，參與共同創作。
+                    目前正自學 <strong>編曲與 DAW</strong>，期望能將古風的水墨意境與現代音樂結合，達到全獨立創作的目標。
+                </p>
+                <p class="quote">
                     "宜蘭不上街頭的街頭藝人，正在尋找下一個音符。"
                 </p>
+
                 <div class="keywords">
-                    <span class="keyword">Pipa (琵琶)</span>
-                    <span class="keyword">Ethereal Drum</span>
-                    <span class="keyword">Composition</span>
-                    <span class="keyword">DAW</span>
+                    <span class="keyword"><i class="fa-solid fa-music"></i> Pipa (琵琶)</span>
+                    <span class="keyword"><i class="fa-solid fa-circle-notch"></i> Ethereal Drum (空靈鼓)</span>
+                    <span class="keyword"><i class="fa-solid fa-pen-fancy"></i> Songwriting</span>
+                    <span class="keyword"><i class="fa-solid fa-headphones"></i> DAW Learning</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 5. GALLERY -->
-    <section id="gallery">
-        <div class="container" style="text-align: center;">
-            <span class="tag">CREATIONS</span>
-            <h2 class="gs-reveal">The Archive</h2>
-            <div style="margin-top: 3rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+    <!-- 5. GALLERY / FOOTER -->
+    <section id="gallery" style="flex-direction: column;">
+        <div class="container" style="text-align: center; margin-bottom: 4rem;">
+            <span class="tag">THE ARCHIVE</span>
+            <h2 class="gs-reveal">Echoes of Creation</h2>
+            <p style="margin: 0 auto; margin-bottom: 2rem;">
+                點擊下方連結，聆聽我的音樂作品與生活隨筆。
+            </p>
+            <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
                 <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="keyword" style="font-size: 1.2rem; padding: 1rem 2rem;">
                     <i class="fa-brands fa-youtube"></i> Watch on YouTube
                 </a>
@@ -310,20 +413,20 @@
                 </a>
             </div>
         </div>
-    </section>
 
-    <footer>
-        <div class="container">
-            <div class="social-icons">
-                <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
+        <footer>
+            <div class="container">
+                <div class="social-icons">
+                    <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+                <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
+                    Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
+                </p>
             </div>
-            <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
-                Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
-            </p>
-        </div>
-    </footer>
+        </footer>
+    </section>
 
     <script type="module">
         import * as THREE from 'three';
@@ -331,7 +434,6 @@
         // --- SETUP ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Dark background color
         scene.background = new THREE.Color(0x1a1a1a);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -342,153 +444,212 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- INK TEXTURE ---
+        // --- ASSETS: GLYPH TEXTURES ---
+        function createGlyphTexture(char, font="64px 'Ma Shan Zheng'") {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            // Background clear
+            ctx.clearRect(0, 0, 128, 128);
+            ctx.font = font;
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(char, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const glyphChars = ['墨', '唱', 'Code', 'Lua', 'GAME', '♪', '♫', '宮', '商', '角', '徵', '羽'];
+        const glyphTextures = glyphChars.map(c => createGlyphTexture(c, c.length > 1 ? "bold 32px 'Noto Serif TC'" : "64px 'Ma Shan Zheng'"));
+
+        // --- PARTICLES (INK) ---
         function createInkTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-
-            // Soft gradient
             const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
-            grad.addColorStop(0, 'rgba(255,255,255,1)');
-            grad.addColorStop(0.2, 'rgba(255,255,255,0.8)');
-            grad.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            grad.addColorStop(0, 'rgba(255,255,255,0.8)');
+            grad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
             grad.addColorStop(1, 'rgba(255,255,255,0)');
-
             ctx.fillStyle = grad;
             ctx.fillRect(0,0,128,128);
-
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- PARTICLES ---
-        const particleCount = 200;
-        const geom = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const sizes = new Float32Array(particleCount);
-        const speeds = [];
+        const inkCount = 300;
+        const inkGeom = new THREE.BufferGeometry();
+        const inkPos = new Float32Array(inkCount * 3);
+        const inkSizes = new Float32Array(inkCount);
 
-        for(let i=0; i<particleCount; i++) {
-            positions[i*3] = (Math.random() - 0.5) * 15;
-            positions[i*3+1] = (Math.random() - 0.5) * 15;
-            positions[i*3+2] = (Math.random() - 0.5) * 5;
-            sizes[i] = Math.random() * 2;
-            speeds.push({
-                x: (Math.random() - 0.5) * 0.01,
-                y: (Math.random() - 0.5) * 0.01,
-                rot: (Math.random() - 0.5) * 0.02
-            });
+        for(let i=0; i<inkCount; i++) {
+            inkPos[i*3] = (Math.random() - 0.5) * 20;
+            inkPos[i*3+1] = (Math.random() - 0.5) * 20;
+            inkPos[i*3+2] = (Math.random() - 0.5) * 10;
+            inkSizes[i] = Math.random() * 2;
         }
 
-        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geom.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        inkGeom.setAttribute('position', new THREE.BufferAttribute(inkPos, 3));
+        inkGeom.setAttribute('size', new THREE.BufferAttribute(inkSizes, 1));
 
-        const mat = new THREE.PointsMaterial({
+        const inkMat = new THREE.PointsMaterial({
             size: 0.5,
             map: createInkTexture(),
             transparent: true,
-            opacity: 0.6,
-            vertexColors: false,
-            color: 0xcccccc, // Light grey/white ink on dark bg
+            opacity: 0.4,
             depthWrite: false,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            color: 0xcccccc
         });
 
-        const points = new THREE.Points(geom, mat);
-        scene.add(points);
+        const inkSystem = new THREE.Points(inkGeom, inkMat);
+        scene.add(inkSystem);
 
-        // --- GOLD PARTICLES (Accents) ---
-        const goldCount = 50;
-        const goldGeom = new THREE.BufferGeometry();
-        const goldPos = new Float32Array(goldCount * 3);
-
-        for(let i=0; i<goldCount; i++) {
-            goldPos[i*3] = (Math.random() - 0.5) * 10;
-            goldPos[i*3+1] = (Math.random() - 0.5) * 10;
-            goldPos[i*3+2] = (Math.random() - 0.5) * 5;
+        // --- FLOATING GLYPHS ---
+        const glyphGroup = new THREE.Group();
+        // Create multiple sprites for background depth
+        for (let i = 0; i < 20; i++) {
+             const texIndex = Math.floor(Math.random() * glyphTextures.length);
+             const mat = new THREE.SpriteMaterial({
+                map: glyphTextures[texIndex],
+                transparent: true,
+                opacity: 0.1 + Math.random() * 0.2,
+                color: 0xaaaaaa
+            });
+            const sprite = new THREE.Sprite(mat);
+            sprite.position.set(
+                (Math.random()-0.5) * 25,
+                (Math.random()-0.5) * 25,
+                (Math.random()-0.5) * 10 - 5
+            );
+            sprite.scale.set(2, 2, 1);
+            // Custom properties for animation
+            sprite.userData = {
+                speedY: Math.random() * 0.01 + 0.002,
+                originalY: sprite.position.y,
+                phase: Math.random() * Math.PI * 2
+            };
+            glyphGroup.add(sprite);
         }
-        goldGeom.setAttribute('position', new THREE.BufferAttribute(goldPos, 3));
+        scene.add(glyphGroup);
 
-        const goldMat = new THREE.PointsMaterial({
-            size: 0.2,
-            color: 0xd4af37, // Gold
+        // --- INTERACTIVE TRAIL ---
+        // Simple trail implementation using instanced mesh or points update
+        const trailMax = 50;
+        const trailGeom = new THREE.BufferGeometry();
+        const trailPositions = new Float32Array(trailMax * 3).fill(9999);
+        trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+
+        const trailMaterial = new THREE.PointsMaterial({
+            color: 0xd4af37,
+            size: 0.5,
             transparent: true,
             opacity: 0.8,
+            map: createInkTexture(),
             blending: THREE.AdditiveBlending
         });
 
-        const goldPoints = new THREE.Points(goldGeom, goldMat);
-        scene.add(goldPoints);
+        const trailPoints = new THREE.Points(trailGeom, trailMaterial);
+        scene.add(trailPoints);
 
-        // --- INTERACTION ---
-        const mouse = new THREE.Vector2();
-        const target = new THREE.Vector2();
+        // Raycasting for trail
+        const raycaster = new THREE.Raycaster();
+        const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        const mouseVec = new THREE.Vector2();
 
-        // Touch/Mouse handling
-        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        let trailIndex = 0;
 
-        if (!isTouch) {
-            document.addEventListener('mousemove', (e) => {
-                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        document.addEventListener('mousemove', (e) => {
+            // CSS Cursor
+            const c = document.getElementById('cursor');
+            const cd = document.getElementById('cursor-dot');
+            if(c && cd) {
+                gsap.to(c, { x: e.clientX, y: e.clientY, duration: 0.1 }); // Use GSAP for smoother follow
+                gsap.to(cd, { x: e.clientX, y: e.clientY, duration: 0.05 });
 
-                // Cursor
-                const cursor = document.getElementById('cursor');
-                cursor.style.top = e.clientY + 'px';
-                cursor.style.left = e.clientX + 'px';
-            });
+                // Fallback direct set for responsiveness if GSAP lags or for initial set
+                // c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
+            }
 
-            document.querySelectorAll('a, .content-block, .keyword').forEach(el => {
-                el.addEventListener('mouseenter', () => document.getElementById('cursor').classList.add('hovered'));
-                el.addEventListener('mouseleave', () => document.getElementById('cursor').classList.remove('hovered'));
-            });
-        }
+            // 3D Mouse
+            mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
 
-        // --- ANIMATION ---
+        // Hover listeners
+        document.querySelectorAll('a, .content-block, .keyword, .quest-item').forEach(el => {
+            el.addEventListener('mouseenter', () => document.getElementById('cursor').classList.add('hovered'));
+            el.addEventListener('mouseleave', () => document.getElementById('cursor').classList.remove('hovered'));
+        });
+
+        // --- ANIMATION LOOP ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Ink flow
-            const pos = points.geometry.attributes.position.array;
-            for(let i=0; i<particleCount; i++) {
-                // Flow field simulation (Perlin-ish noise simplified)
-                const x = pos[i*3];
-                const y = pos[i*3+1];
+            // 1. Ink Flow
+            const positions = inkSystem.geometry.attributes.position.array;
+            for(let i=0; i<inkCount; i++) {
+                const x = positions[i*3];
+                const y = positions[i*3+1];
 
-                pos[i*3] += Math.sin(y * 0.5 + time * 0.5) * 0.01;
-                pos[i*3+1] += Math.cos(x * 0.5 + time * 0.5) * 0.01;
+                // Flow field
+                positions[i*3] += Math.sin(y * 0.2 + time * 0.1) * 0.005;
+                positions[i*3+1] += Math.cos(x * 0.2 + time * 0.1) * 0.005;
 
-                // Mouse interaction (repel)
-                const dx = x - mouse.x * 5;
-                const dy = y - mouse.y * 5;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if(dist < 2) {
-                    pos[i*3] += dx * 0.02;
-                    pos[i*3+1] += dy * 0.02;
-                }
-
-                // Wrap around
-                if(Math.abs(pos[i*3]) > 8) pos[i*3] *= -0.9;
-                if(Math.abs(pos[i*3+1]) > 8) pos[i*3+1] *= -0.9;
+                // Border check
+                if(Math.abs(positions[i*3]) > 15) positions[i*3] *= -0.9;
+                if(Math.abs(positions[i*3+1]) > 15) positions[i*3+1] *= -0.9;
             }
-            points.geometry.attributes.position.needsUpdate = true;
-            points.rotation.z += 0.001;
+            inkSystem.geometry.attributes.position.needsUpdate = true;
 
-            // Gold float
-            goldPoints.rotation.y -= 0.002;
-            goldPoints.position.y = Math.sin(time) * 0.5;
+            // 2. Floating Glyphs
+            glyphGroup.children.forEach(sprite => {
+                sprite.position.y += Math.sin(time + sprite.userData.phase) * 0.002;
+                sprite.material.rotation = Math.sin(time * 0.2 + sprite.userData.phase) * 0.05;
+            });
+
+            // 3. Trail Logic
+            raycaster.setFromCamera(mouseVec, camera);
+            const target = new THREE.Vector3();
+            raycaster.ray.intersectPlane(plane, target);
+
+            if(target) {
+                // Update current trail point
+                const arr = trailPoints.geometry.attributes.position.array;
+                arr[trailIndex * 3] = target.x;
+                arr[trailIndex * 3 + 1] = target.y;
+                arr[trailIndex * 3 + 2] = 0;
+
+                trailIndex = (trailIndex + 1) % trailMax;
+                trailPoints.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // Dissipate trail
+             const tArr = trailPoints.geometry.attributes.position.array;
+             for(let i=0; i<trailMax; i++) {
+                 // Push old points away or fade (here we just jitter)
+                 if(i !== trailIndex) {
+                     tArr[i*3+1] += 0.02; // Float up
+                     tArr[i*3] += (Math.random()-0.5) * 0.02; // Jitter
+
+                     // If too high, reset to abyss
+                     if(tArr[i*3+1] > 10) tArr[i*3+1] = 9999;
+                 }
+             }
+             trailPoints.geometry.attributes.position.needsUpdate = true;
+
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP ---
+
+        // --- GSAP SCROLL ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // 1. Reveal Content
+        // Reveal
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.from(elem, {
                 y: 50,
@@ -496,42 +657,46 @@
                 duration: 1,
                 scrollTrigger: {
                     trigger: elem,
-                    start: "top 80%",
+                    start: "top 85%",
                     toggleActions: "play none none reverse"
                 }
             });
         });
 
-        // 2. Scene Colors based on Section
-        // Hero: Dark/White -> Origin: Green (Code) -> Wandering: Red/Orange (Kitchen) -> Resonance: Purple/Gold
-        const colors = [
-            { id: '#hero', color: 0xcccccc, gold: 0xd4af37 },
-            { id: '#origin', color: 0x00ff00, gold: 0x004400 }, // Matrix green
-            { id: '#wandering', color: 0xff4d4d, gold: 0xffaa00 }, // Fire
-            { id: '#resonance', color: 0xbd4dff, gold: 0xffffff } // Magic
-        ];
-
-        colors.forEach(sec => {
-            ScrollTrigger.create({
-                trigger: sec.id,
-                start: "top center",
-                end: "bottom center",
-                onEnter: () => {
-                    gsap.to(mat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 });
-                    gsap.to(goldMat.color, { r: new THREE.Color(sec.gold).r, g: new THREE.Color(sec.gold).g, b: new THREE.Color(sec.gold).b, duration: 1 });
-                },
-                onEnterBack: () => {
-                    gsap.to(mat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 });
-                    gsap.to(goldMat.color, { r: new THREE.Color(sec.gold).r, g: new THREE.Color(sec.gold).g, b: new THREE.Color(sec.gold).b, duration: 1 });
+        // Quest Items Stagger
+        gsap.utils.toArray('.quest-grid').forEach(grid => {
+            gsap.from(grid.children, {
+                y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
+                scrollTrigger: {
+                    trigger: grid,
+                    start: "top 90%"
                 }
             });
         });
 
-        // Remove Loader
+        // Color Transitions
+        const sections = [
+            { id: '#hero', color: 0xcccccc },
+            { id: '#origin', color: 0x00ff00 }, // Matrix Green
+            { id: '#wandering', color: 0xff4d4d }, // Fire Red
+            { id: '#resonance', color: 0xbd4dff }  // Magic Purple
+        ];
+
+        sections.forEach(sec => {
+            ScrollTrigger.create({
+                trigger: sec.id,
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 }),
+                onEnterBack: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 })
+            });
+        });
+
+        // Loader
         window.onload = () => {
             setTimeout(() => {
                 gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => document.getElementById('loader').remove() });
-                gsap.from('h1', { scale: 1.5, opacity: 0, duration: 1.5, ease: "power4.out" });
+                gsap.from('h1', { scale: 1.2, duration: 1.5, ease: "power2.out" });
             }, 1000);
         };
 
