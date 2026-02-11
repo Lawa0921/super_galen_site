@@ -854,19 +854,29 @@
         });
 
         // 4. Global Color Sync
+        // Pre-allocate colors to avoid garbage collection during scroll
+        const colorCache = {};
+
         const sections = gsap.utils.toArray('[data-color]');
         sections.forEach(section => {
+            // Cache the color object
+            const hex = section.dataset.color;
+            if (!colorCache[hex]) {
+                colorCache[hex] = new THREE.Color(hex);
+            }
+
             ScrollTrigger.create({
                 trigger: section,
                 start: "top center",
                 end: "bottom center",
-                onEnter: () => updateSceneColor(section.dataset.color),
-                onEnterBack: () => updateSceneColor(section.dataset.color)
+                onEnter: () => updateSceneColor(hex),
+                onEnterBack: () => updateSceneColor(hex)
             });
         });
 
         function updateSceneColor(hex) {
-            const color = new THREE.Color(hex);
+            const color = colorCache[hex];
+
             gsap.to(gridHelper.material.color, {
                 r: color.r, g: color.g, b: color.b,
                 duration: 1
