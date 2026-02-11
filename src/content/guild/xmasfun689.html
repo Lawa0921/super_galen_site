@@ -295,18 +295,19 @@
                 p.textFont('monospace');
 
                 // Init Gears - Thicker and more opaque
-                for(let i=0; i<8; i++) {
+                // Add more gears for better background coverage
+                for(let i=0; i<6; i++) {
                     gears.push(new Gear(
                         p.random(p.width),
                         p.random(p.height),
-                        p.random(60, 150),
+                        p.random(80, 200), // Larger gears
                         Math.floor(p.random(8, 20))
                     ));
                 }
 
-                // Init Circuits
-                for(let i=0; i<10; i++) {
-                    circuits.push(new Circuit());
+                // Init Fluid Circuits
+                for(let i=0; i<15; i++) {
+                    circuits.push(new FluidCircuit());
                 }
 
                 // Init Floating Data Bits
@@ -315,117 +316,91 @@
                 }
 
                 // Main Node position (matches CSS .node-marker)
-                mainNode = { x: p.width/2, y: p.height * 0.08, size: 20, active: false };
+                mainNode = { x: p.width/2, y: p.height * 0.08, size: 20 };
             };
 
             p.draw = () => {
                 p.clear();
 
-                // 1. Gears (Background)
-                p.stroke(255, 215, 0, 150);
-                p.strokeWeight(2);
+                // 1. Gears (Background) - 2D Planar
+                p.stroke(255, 215, 0, 100); // Gold, semi-transparent
+                p.strokeWeight(3);
                 p.noFill();
                 gears.forEach(g => {
                     g.update();
                     g.display();
                 });
 
-                // 2. Circuits (Midground)
+                // 2. Fluid Circuits (Midground)
                 circuits.forEach(c => {
                     c.update();
                     c.display();
                 });
 
-                // 3. Floating Data (Atmosphere) - Responsive to mouse
+                // 3. Floating Data (Atmosphere)
                 floaters.forEach(f => {
                     f.update();
                     f.display();
                 });
 
-                // 4. Plasma Beam (Foreground) - Reactive to scroll & mouse
+                // 4. Plasma Beam (Foreground) - Connects Bottom to Top Node
                 let scrollY = window.scrollY;
                 let maxScroll = document.documentElement.scrollHeight - window.innerHeight;
                 if(maxScroll <= 0) maxScroll = 1;
 
+                // Calculate beam intensity based on scroll (Top = Strongest connection)
+                // The user wants: "When scrolling UP, the plasma should extend UP to a node"
+                // Let's interpret: Beam connects [Screen Bottom/Center] to [Top Node]
+                // As you scroll UP (scrollY approaches 0), the connection becomes clearer/stronger.
+
                 let scrollRatio = p.constrain(scrollY / maxScroll, 0, 1);
-                let energy = 1 - scrollRatio; // 1 at Top, 0 at Bottom
+                // Inverse logic: Closer to top = more intense beam
+                let intensity = 1 - scrollRatio * 0.5; // Always somewhat visible
 
-                let currentTipY = p.map(energy, 0, 1, p.height + 200, mainNode.y);
+                // Beam Source: Bottom of screen, following scroll?
+                // Or maybe just a fixed beam that pulses?
+                // "The plasma should extend upwards to a specific node"
 
-                // Draw Beam
-                p.stroke(0, 243, 255, 150 + energy * 105);
-                p.strokeWeight(3 + energy * 5);
+                let startX = p.width / 2;
+                let startY = p.height + 100; // Below screen
+                let endX = mainNode.x;
+                let endY = mainNode.y + 40; // Connect to bottom of node icon
 
-                let segments = 30;
-                let lastX = p.width/2;
-                let lastY = p.height;
-
-                // Start from bottom
-                for(let i=1; i<=segments; i++) {
-                    let t = i / segments;
-                    let thisY = p.lerp(p.height, currentTipY, t);
-
-                    // Jitter
-                    let jitter = p.random(-5, 5) + p.random(-20, 20) * energy;
-
-                    // Mouse Interaction: Displace if mouse is close
-                    let d = p.dist(p.mouseX, p.mouseY, p.width/2, thisY);
-                    if(d < 150) {
-                        let force = p.map(d, 0, 150, 50, 0);
-                        let dir = (p.mouseX < p.width/2) ? 1 : -1;
-                        jitter += force * dir;
-                    }
-
-                    let thisX = p.width/2 + jitter;
-
-                    if(i === segments) {
-                        thisX = p.width/2;
-                        thisY = currentTipY;
-                    }
-
-                    // Only draw if within screen
-                    if(lastY < p.height + 10 && thisY > -10) {
-                        p.line(lastX, lastY, thisX, thisY);
-                    }
-                    lastX = thisX;
-                    lastY = thisY;
-                }
-
-                // 5. Node Visuals
                 p.noFill();
-                p.stroke(0, 243, 255, 50);
-                p.strokeWeight(1);
-                p.ellipse(mainNode.x, mainNode.y, 80);
+                p.stroke(0, 243, 255, 150 + intensity * 105);
+                p.strokeWeight(4 + intensity * 4);
 
-                // Rotate a scanner
+                // Draw jagged lightning beam
+                p.beginShape();
+                let segments = 40;
+                for(let i=0; i<=segments; i++) {
+                    let t = i / segments;
+                    let x = p.lerp(startX, endX, t);
+                    let y = p.lerp(startY, endY, t);
+
+                    // Noise offset for "fluid/electric" look
+                    // Offset reduces near the target (Top Node) to "connect" cleanly
+                    let noiseScale = 50 * (1-t); // Less noise at top
+                    let xOff = (p.noise(i * 0.1, p.frameCount * 0.05) - 0.5) * noiseScale * 4;
+
+                    p.vertex(x + xOff, y);
+                }
+                p.endShape();
+
+                // 5. Node Visuals - Always Active/Scanning
+                p.noFill();
+                p.stroke(0, 243, 255, 80);
+                p.strokeWeight(2);
+                p.ellipse(mainNode.x, mainNode.y, 90);
+
+                // Inner Spin
                 p.push();
                 p.translate(mainNode.x, mainNode.y);
-                p.rotate(p.frameCount * 1.5);
-                p.stroke(0, 243, 255, 100);
-                p.line(0, 0, 40, 0);
+                p.rotate(p.frameCount * 2);
+                p.stroke(0, 243, 255, 150);
+                p.line(-20, 0, 20, 0);
+                p.line(0, -20, 0, 20);
                 p.pop();
-
-                // Activation Visuals
-                if(energy > 0.9) {
-                    mainNode.active = true;
-                    // Pulse
-                    p.stroke(0, 243, 255);
-                    p.strokeWeight(3);
-                    let pulse = p.sin(p.frameCount * 10) * 20;
-                    p.ellipse(mainNode.x, mainNode.y, 60 + pulse);
-
-                    // Rays
-                    p.push();
-                    p.translate(mainNode.x, mainNode.y);
-                    p.rotate(p.frameCount * 2);
-                    for(let i=0; i<8; i++) {
-                        p.rotate(45);
-                        p.line(30, 0, 50 + pulse/2, 0);
-                    }
-                    p.pop();
-                } else {
-                    mainNode.active = false;
-                }
             };
 
             p.windowResized = () => {
@@ -441,7 +416,7 @@
                     this.r = r;
                     this.teeth = teeth;
                     this.angle = 0;
-                    this.speed = p.random(0.1, 0.5) * (p.random() > 0.5 ? 1 : -1);
+                    this.speed = p.random(0.05, 0.2) * (p.random() > 0.5 ? 1 : -1);
                 }
                 update() {
                     this.angle += this.speed;
@@ -450,60 +425,52 @@
                     p.push();
                     p.translate(this.x, this.y);
                     p.rotate(this.angle);
-                    p.ellipse(0, 0, this.r * 1.6);
+                    // Gear Body
+                    p.ellipse(0, 0, this.r * 1.8);
+                    p.ellipse(0, 0, this.r * 0.5); // Center hole
+                    // Teeth
                     for(let i=0; i<360; i+=360/this.teeth) {
                         p.push();
                         p.rotate(i);
-                        p.rect(0, -this.r, 12, 12);
+                        p.rect(0, -this.r, 15, 20);
                         p.pop();
                     }
-                    p.line(-this.r, 0, this.r, 0);
-                    p.line(0, -this.r, 0, this.r);
+                    // Spokes
+                    p.line(-this.r * 0.8, 0, this.r * 0.8, 0);
+                    p.line(0, -this.r * 0.8, 0, this.r * 0.8);
                     p.pop();
                 }
             }
 
-            class Circuit {
+            class FluidCircuit {
                 constructor() {
                     this.reset();
                 }
                 reset() {
                     this.x = p.random(p.width);
                     this.y = p.random(p.height);
-                    this.prevX = this.x;
-                    this.prevY = this.y;
-                    this.color = p.color(0, 243, 255, 150);
-                    this.timer = 0;
-                    this.dir = Math.floor(p.random(4));
+                    this.speedY = p.random(-1, -3); // Flow upwards
+                    this.amp = p.random(10, 30);
+                    this.freq = p.random(0.02, 0.05);
+                    this.offset = p.random(1000);
+                    this.len = p.random(50, 150);
+                    this.color = p.color(0, 243, 255, p.random(50, 150));
                 }
                 update() {
-                    this.timer++;
-                    if(this.timer > 20) {
-                        this.dir = Math.floor(p.random(4));
-                        this.timer = 0;
-                    }
-                    this.prevX = this.x;
-                    this.prevY = this.y;
-
-                    let speed = 4;
-                    if(this.dir === 0) this.y -= speed;
-                    if(this.dir === 1) this.x += speed;
-                    if(this.dir === 2) this.y += speed;
-                    if(this.dir === 3) this.x -= speed;
-
-                    if(this.x < 0 || this.x > p.width || this.y < 0 || this.y > p.height) {
-                        this.reset();
-                    }
+                    this.y += this.speedY;
+                    if(this.y < -this.len) this.reset();
                 }
                 display() {
+                    p.noFill();
                     p.stroke(this.color);
                     p.strokeWeight(2);
-                    p.line(this.prevX, this.prevY, this.x, this.y);
-                    if(this.timer === 0) {
-                        p.fill(this.color);
-                        p.noStroke();
-                        p.rect(this.x, this.y, 6, 6);
+                    p.beginShape();
+                    for(let i=0; i<this.len; i+=5) {
+                        let y = this.y + i;
+                        let x = this.x + p.sin((y + this.offset) * this.freq) * this.amp;
+                        p.vertex(x, y);
                     }
+                    p.endShape();
                 }
             }
 
@@ -517,11 +484,10 @@
                     this.speed = p.random(0.5, 2);
                     this.char = String.fromCharCode(0x30A0 + Math.random() * 96);
                     this.alpha = p.random(50, 150);
-                    this.baseX = this.x; // Remember original X
+                    this.baseX = this.x;
                 }
                 update() {
                     this.y -= this.speed;
-
                     // Mouse repulsion
                     let d = p.dist(p.mouseX, p.mouseY, this.x, this.y);
                     if(d < 100) {
@@ -529,16 +495,14 @@
                         this.x += p.cos(angle) * 2;
                         this.y += p.sin(angle) * 2;
                     } else {
-                        // Drift back to base X slowly
                         this.x = p.lerp(this.x, this.baseX, 0.02);
                     }
-
                     if(this.y < -50) this.reset();
                 }
                 display() {
                     p.fill(255, 255, 255, this.alpha);
                     p.noStroke();
-                    p.textSize(14); // Slightly larger
+                    p.textSize(14);
                     p.text(this.char, this.x, this.y);
                 }
             }
