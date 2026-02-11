@@ -3,32 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XmasFun689 - Magitek Warlord Protocol</title>
+    <title>XmasFun689 - Plasma Core</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Share+Tech+Mono&family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
     <style>
         :root {
-            --c-void: #050508;
-            --c-gold: #FFD700;
+            --c-void: #020205;
             --c-plasma: #00F3FF;
-            --c-water: #0088ff;
-            --c-alert: #ff3333;
-            --c-earth: #8B4513;
+            --c-core: #0066FF;
+            --c-gold: #FFD700;
+            --c-alert: #FF3333;
 
-            --f-magic: 'Cinzel', serif;
             --f-tech: 'Share Tech Mono', monospace;
-            --f-mech: 'Orbitron', sans-serif;
+            --f-head: 'Orbitron', sans-serif;
             --f-body: 'Noto Serif TC', serif;
         }
 
@@ -39,195 +36,132 @@
             color: white;
             font-family: var(--f-body);
             overflow-x: hidden;
-            cursor: crosshair; /* Tech feel */
         }
 
-        /*
-           Layering:
-           - WebGL (Back, z-index 0)
-           - HUD Overlay (Fixed, z-index 5)
-           - P5 (Overlay/Atmosphere, z-index 2)
-           - Scroller (Top, z-index 10)
-        */
-        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
-        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; pointer-events: auto; background: transparent; mix-blend-mode: screen; }
+        /* Layers */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
 
-        /* Loader */
-        #loader {
-            position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* CRT Scanline Overlay */
+        .scanlines {
+            position: fixed; inset: 0; z-index: 99; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            opacity: 0.6;
         }
-        .loader-text { font-family: var(--f-mech); color: var(--c-plasma); font-size: 1.5rem; letter-spacing: 5px; text-shadow: 0 0 10px var(--c-plasma); }
-        .loader-bar { width: 200px; height: 4px; background: #222; margin-top: 20px; position: relative; overflow: hidden; border: 1px solid #444; }
-        .loader-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--c-plasma); box-shadow: 0 0 15px var(--c-plasma); }
-
-        /* HUD Overlay */
-        .hud-overlay {
-            position: fixed; inset: 0; z-index: 5; pointer-events: none;
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
-        }
-        .hud-corner {
-            position: absolute; width: 100px; height: 100px;
-            border: 2px solid rgba(0, 243, 255, 0.3);
-            transition: all 0.3s;
-        }
-        .tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
-        .tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
-        .bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
-        .br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
-
-        .scan-line {
-            position: absolute; top: 0; left: 0; width: 100%; height: 5px;
-            background: rgba(0, 243, 255, 0.1);
-            animation: scan 4s linear infinite;
-            pointer-events: none;
-            z-index: 6;
-        }
-        @keyframes scan { 0% { top: -10%; opacity: 0; } 50% { opacity: 1; } 100% { top: 110%; opacity: 0; } }
 
         /* Layout */
-        .scroller { position: relative; z-index: 10; padding-bottom: 20vh; }
-
+        .scroller { position: relative; z-index: 10; padding-bottom: 10vh; }
         .section {
             min-height: 100vh;
-            display: flex; align-items: center;
+            display: flex; align-items: center; justify-content: center;
             padding: 4rem 5%;
             pointer-events: none;
-            perspective: 1000px;
         }
 
-        /* Magic Data Slate - Tech Enhanced */
-        .data-slate {
+        /* Tech Card */
+        .tech-card {
             pointer-events: auto;
             width: 100%; max-width: 600px;
-            background: rgba(10, 12, 16, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(5, 10, 20, 0.85);
+            border: 1px solid var(--c-plasma);
             padding: 2.5rem;
             position: relative;
-            transform-style: preserve-3d;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            /* Tech Corners */
             clip-path: polygon(
                 20px 0, 100% 0,
                 100% calc(100% - 20px), calc(100% - 20px) 100%,
                 0 100%, 0 20px
             );
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15), inset 0 0 30px rgba(0, 243, 255, 0.05);
         }
 
-        .data-slate::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, currentColor, transparent);
+        .tech-card::before { /* Top Left Accent */
+            content: ''; position: absolute; top: 0; left: 0; width: 40px; height: 4px;
+            background: var(--c-plasma); box-shadow: 0 0 10px var(--c-plasma);
+        }
+        .tech-card::after { /* Bottom Right Accent */
+            content: ''; position: absolute; bottom: 0; right: 0; width: 40px; height: 4px;
+            background: var(--c-plasma); box-shadow: 0 0 10px var(--c-plasma);
         }
 
-        /* Elemental Themes */
-        .slate-earth { color: var(--c-gold); border-left: 4px solid var(--c-gold); }
-        .slate-water { color: var(--c-water); border-left: 4px solid var(--c-water); }
-        .slate-plasma { color: var(--c-plasma); border-left: 4px solid var(--c-plasma); }
-        .slate-alert { color: var(--c-alert); border-left: 4px solid var(--c-alert); }
+        /* Theme Variants */
+        .card-gold { border-color: var(--c-gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
+        .card-gold::before, .card-gold::after { background: var(--c-gold); box-shadow: 0 0 10px var(--c-gold); }
+
+        .card-alert { border-color: var(--c-alert); box-shadow: 0 0 20px rgba(255, 50, 50, 0.15); }
+        .card-alert::before, .card-alert::after { background: var(--c-alert); box-shadow: 0 0 10px var(--c-alert); }
 
         /* Typography */
         h1 {
-            font-family: var(--f-mech); font-size: 3rem; margin: 0; line-height: 1.1;
+            font-family: var(--f-head); font-size: 3.5rem; margin: 0; line-height: 1;
             text-transform: uppercase; color: white;
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            text-shadow: 0 0 15px var(--c-plasma);
             letter-spacing: 2px;
         }
         h2 {
-            font-family: var(--f-mech); font-size: 1.8rem; margin: 0 0 1.5rem;
-            color: white; display: flex; align-items: center; gap: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;
+            font-family: var(--f-head); font-size: 2rem; margin: 0 0 1.5rem;
+            color: var(--c-plasma); display: flex; align-items: center; gap: 1rem;
+            text-shadow: 0 0 10px var(--c-plasma);
         }
-        .sub-code {
-            font-family: var(--f-tech); color: #888; font-size: 0.8rem;
-            letter-spacing: 2px; margin-bottom: 0.5rem; display: block;
+        .code-line {
+            font-family: var(--f-tech); color: var(--c-plasma); font-size: 0.9rem;
+            letter-spacing: 2px; margin-bottom: 0.5rem; display: block; opacity: 0.8;
         }
 
-        p { color: #ccc; line-height: 1.8; font-size: 1.05rem; margin-bottom: 1.5rem; text-align: justify; }
+        p { color: #ddd; line-height: 1.8; font-size: 1.1rem; margin-bottom: 1.5rem; text-align: justify; }
 
-        .highlight { color: white; font-weight: bold; text-shadow: 0 0 5px white; }
+        .highlight { color: var(--c-plasma); font-weight: bold; text-shadow: 0 0 5px var(--c-plasma); }
         .gold { color: var(--c-gold); text-shadow: 0 0 5px var(--c-gold); }
-        .cyan { color: var(--c-plasma); text-shadow: 0 0 5px var(--c-plasma); }
-        .blue { color: var(--c-water); text-shadow: 0 0 5px var(--c-water); }
 
-        /* Images & Cards */
+        /* Images */
         .holo-frame {
-            position: relative;
-            padding: 2px;
-            background: rgba(0,0,0,0.5);
-            margin-bottom: 1.5rem;
-            border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden;
+            position: relative; padding: 4px;
+            background: rgba(0, 243, 255, 0.05);
+            margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
-        .holo-img {
-            width: 100%; display: block;
-            filter: sepia(20%) contrast(1.1) brightness(0.9);
-            transition: 0.3s;
+        .holo-img { width: 100%; display: block; filter: contrast(1.1) brightness(0.9); }
+        .holo-tag {
+            position: absolute; bottom: 5px; right: 5px;
+            background: rgba(0,0,0,0.8); color: var(--c-plasma);
+            font-family: var(--f-tech); font-size: 0.7rem; padding: 2px 8px;
+            border: 1px solid var(--c-plasma);
         }
-        .holo-frame:hover .holo-img {
-            filter: none;
-            transform: scale(1.02);
-        }
-        .status-tag {
-            position: absolute; bottom: 10px; right: 10px;
-            background: rgba(0,0,0,0.8); border: 1px solid var(--c-plasma);
-            color: var(--c-plasma); font-family: var(--f-tech);
-            font-size: 0.7rem; padding: 2px 8px;
-            letter-spacing: 1px;
-            box-shadow: 0 0 10px var(--c-plasma);
-        }
-
-        /* Skill Bars */
-        .skill-bar-container { margin-bottom: 1rem; }
-        .skill-label { display: flex; justify-content: space-between; font-family: var(--f-tech); font-size: 0.8rem; margin-bottom: 5px; color: #aaa; }
-        .skill-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); position: relative; }
-        .skill-fill { height: 100%; background: currentColor; width: 0%; transition: width 1.5s ease-out; box-shadow: 0 0 10px currentColor; }
 
         /* Footer */
         .footer {
-            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: linear-gradient(to top, #000, transparent); pointer-events: auto;
-            position: relative; z-index: 20;
+            height: 40vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative; z-index: 20; background: linear-gradient(to top, #000, transparent);
         }
         .social-bar { display: flex; gap: 2rem; margin-bottom: 2rem; }
         .social-btn {
             width: 70px; height: 70px;
-            border: 2px solid rgba(255,255,255,0.2);
-            display: flex; align-items: center; justify-content: center; color: white;
-            transition: 0.3s; background: rgba(0,0,0,0.8);
-            text-decoration: none;
-            font-size: 1.5rem;
+            border: 2px solid var(--c-plasma);
+            display: flex; align-items: center; justify-content: center; color: var(--c-plasma);
+            transition: 0.3s; background: rgba(0,0,0,0.6);
+            text-decoration: none; font-size: 1.5rem;
             clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
         }
         .social-btn:hover {
-            border-color: var(--c-plasma); color: var(--c-plasma);
-            transform: scale(1.1) rotate(5deg);
+            background: var(--c-plasma); color: #000;
             box-shadow: 0 0 30px var(--c-plasma);
-            background: rgba(0, 243, 255, 0.1);
+            transform: scale(1.1);
         }
         .social-btn svg { width: 30px; height: 30px; fill: currentColor; }
 
         @media (max-width: 768px) {
-            .section { padding: 4rem 1rem; justify-content: center; }
-            .data-slate { padding: 1.5rem; width: 100%; }
-            h1 { font-size: 2rem; }
-            .hud-corner { width: 50px; height: 50px; }
+            .section { padding: 4rem 1rem; }
+            h1 { font-size: 2.5rem; }
+            .tech-card { padding: 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="loader-text">INITIALIZING CORE...</div>
-        <div class="loader-bar"><div class="loader-fill" id="load-bar"></div></div>
-    </div>
-
-    <!-- HUD Overlay -->
-    <div class="hud-overlay">
-        <div class="hud-corner tl"></div>
-        <div class="hud-corner tr"></div>
-        <div class="hud-corner bl"></div>
-        <div class="hud-corner br"></div>
-        <div class="scan-line"></div>
-    </div>
+    <div class="scanlines"></div>
 
     <!-- Background Layers -->
     <div id="webgl-container"></div>
@@ -235,101 +169,82 @@
 
     <div class="scroller">
 
-        <!-- 1. Hero / Profile -->
-        <section class="section" style="padding-top: 15vh;">
-            <div class="data-slate slate-earth">
+        <!-- 1. Hero -->
+        <section class="section">
+            <div class="tech-card">
                 <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; flex-wrap: wrap;">
                     <div style="position:relative;">
-                        <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:120px; height:120px; border-radius:10px; object-fit:cover; border:2px solid var(--c-gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);">
-                        <div style="position:absolute; bottom:-10px; right:-10px; background:var(--c-void); border:1px solid var(--c-gold); padding:4px 10px; font-size:0.8rem; font-family:var(--f-tech); color:var(--c-gold); box-shadow: 0 0 10px var(--c-gold);">LV.8 COMMANDER</div>
+                        <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:120px; height:120px; object-fit:cover; border:2px solid var(--c-plasma); box-shadow: 0 0 20px var(--c-plasma); clip-path: circle(50%);">
+                        <div style="position:absolute; bottom:-5px; right:-10px; background:#000; border:1px solid var(--c-plasma); padding:2px 8px; font-size:0.7rem; font-family:var(--f-tech); color:var(--c-plasma);">LV.8</div>
                     </div>
                     <div>
-                        <span class="sub-code" style="color:var(--c-gold);">// ID: XMASFUN689</span>
-                        <h1>Magitek<br>Warlord</h1>
+                        <span class="code-line">// ID: XMASFUN689</span>
+                        <h1>PLASMA<br>ENGINEER</h1>
                     </div>
                 </div>
 
                 <p>
-                    「擁有 <span class="gold">戰士的體格</span>，卻守護著 <span class="cyan">召喚師的靈魂</span>。」
+                    「擁有 <span class="gold">戰士的體格</span>，卻守護著 <span class="highlight">召喚師的靈魂</span>。」
                 </p>
                 <p>
-                    在這個鋼鐵與粉塵交織的迷宮中，我是引導秩序的魔導士。
+                    在這個鋼鐵與電漿交織的矩陣中，我是引導能量的工程師。
                     八年的工地煉金術，將汗水與意志熔鑄成城市的基石。
-                    我手握雷電與流水，駕馭著大地的鋼鐵巨獸。
+                    我手握雷電 (Power) 與流水 (Cooling)，駕馭著大地的鋼鐵巨獸。
                 </p>
 
-                <!-- RPG Stats -->
-                <div style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="skill-bar-container" style="color: var(--c-gold);">
-                        <div class="skill-label"><span>STR (Strength)</span><span>S+</span></div>
-                        <div class="skill-track"><div class="skill-fill" style="width: 95%;"></div></div>
-                    </div>
-                    <div class="skill-bar-container" style="color: var(--c-plasma);">
-                        <div class="skill-label"><span>INT (Intelligence)</span><span>A</span></div>
-                        <div class="skill-track"><div class="skill-fill" style="width: 80%;"></div></div>
-                    </div>
-                    <div class="skill-bar-container" style="color: var(--c-gold);">
-                        <div class="skill-label"><span>DEF (Defense)</span><span>S</span></div>
-                        <div class="skill-track"><div class="skill-fill" style="width: 90%;"></div></div>
-                    </div>
-                    <div class="skill-bar-container" style="color: var(--c-water);">
-                        <div class="skill-label"><span>DEX (Dexterity)</span><span>B+</span></div>
-                        <div class="skill-track"><div class="skill-fill" style="width: 75%;"></div></div>
-                    </div>
+                <!-- Circuit Stats -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2rem;">
+                    <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">STR: S+</div>
+                    <div style="border: 1px solid var(--c-plasma); padding: 5px 10px; color: var(--c-plasma); font-family: var(--f-tech);">INT: A</div>
+                    <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">DEF: S</div>
+                    <div style="border: 1px solid var(--c-core); padding: 5px 10px; color: var(--c-core); font-family: var(--f-tech);">MANA: HIGH</div>
                 </div>
             </div>
         </section>
 
-        <!-- 2. Hangar Bay (Machinery) -->
+        <!-- 2. Machines -->
         <section class="section">
-            <div class="data-slate slate-earth">
-                <span class="sub-code">HANGAR BAY: HEAVY UNITS</span>
+            <div class="tech-card card-gold">
+                <span class="code-line">Module: HEAVY_MACHINERY</span>
                 <h2 style="color: var(--c-gold);"><i class="fa-solid fa-truck-monster"></i> Iron Legion</h2>
 
-                <div class="holo-frame">
+                <div class="holo-frame" style="border-color: var(--c-gold);">
                     <img src="/assets/img/guild/xmasfun689/excavator.webp" class="holo-img">
-                    <div class="status-tag">SYSTEM: ONLINE</div>
+                    <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">EXCAVATOR_UNIT</div>
                 </div>
-                <h3 style="font-family: var(--f-mech); color: var(--c-gold); margin: 0.5rem 0;">TYPE-01: EXCAVATOR</h3>
                 <p>
-                    <b>大地魔像</b> - 我的首席召喚獸。這隻鋼鐵手臂能輕易撕裂大地，重塑地形。
+                    <b>大地魔像 (Excavator)</b><br>
+                    我的首席召喚獸。這隻鋼鐵手臂能輕易撕裂大地，重塑地形。
                     雖然與執照擦肩而過（嘆），但這份操作手感早已刻入靈魂。
                 </p>
 
-                <div style="height: 20px;"></div>
-
-                <div class="holo-frame">
+                <div class="holo-frame" style="border-color: var(--c-gold);">
                     <img src="/assets/img/guild/xmasfun689/roller.webp" class="holo-img">
-                    <div class="status-tag">SYSTEM: STANDBY</div>
+                    <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">ROLLER_UNIT</div>
                 </div>
-                <h3 style="font-family: var(--f-mech); color: var(--c-gold); margin: 0.5rem 0;">TYPE-02: ROLLER</h3>
                 <p>
-                    <b>鎮壓巨獸</b> - 秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
+                    <b>鎮壓巨獸 (Roller)</b><br>
+                    秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
                 </p>
             </div>
         </section>
 
-        <!-- 3. Dual Arts (Skills) -->
+        <!-- 3. Skills (Circuits) -->
         <section class="section">
-            <div class="data-slate slate-plasma">
-                <span class="sub-code">SYSTEM: ELEMENTAL MATRIX</span>
-                <h2 style="color: var(--c-plasma);"><i class="fa-solid fa-bolt"></i> Hybird Mage</h2>
+            <div class="tech-card">
+                <span class="code-line">System: ELEMENTAL_MATRIX</span>
+                <h2><i class="fa-solid fa-bolt"></i> Circuit Mage</h2>
 
-                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-                    <div style="flex: 1; border: 1px solid var(--c-water); padding: 1rem; background: rgba(0, 136, 255, 0.1);">
-                        <i class="fa-solid fa-droplet" style="font-size: 2rem; color: var(--c-water); margin-bottom: 0.5rem;"></i>
-                        <h4 style="margin: 0; color: var(--c-water); font-family: var(--f-mech);">WATER</h4>
-                        <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #ccc;">PLUMBING LICENSE</div>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
+                    <div style="flex: 1; border: 1px solid var(--c-core); padding: 1rem; background: rgba(0, 102, 255, 0.1);">
+                        <i class="fa-solid fa-droplet" style="font-size: 2rem; color: var(--c-core); margin-bottom: 0.5rem;"></i>
+                        <h4 style="margin: 0; color: var(--c-core); font-family: var(--f-head);">WATER</h4>
+                        <div style="font-size: 0.7rem; color: #aaa;">COOLING SYS</div>
                     </div>
                     <div style="flex: 1; border: 1px solid var(--c-plasma); padding: 1rem; background: rgba(0, 243, 255, 0.1);">
                         <i class="fa-solid fa-bolt" style="font-size: 2rem; color: var(--c-plasma); margin-bottom: 0.5rem;"></i>
-                        <h4 style="margin: 0; color: var(--c-plasma); font-family: var(--f-mech);">THUNDER</h4>
-                        <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #ccc;">ELECTRICAL LICENSE</div>
-                    </div>
-                    <div style="flex: 1; border: 1px solid var(--c-gold); padding: 1rem; background: rgba(255, 215, 0, 0.1);">
-                        <i class="fa-solid fa-cube" style="font-size: 2rem; color: var(--c-gold); margin-bottom: 0.5rem;"></i>
-                        <h4 style="margin: 0; color: var(--c-gold); font-family: var(--f-mech);">EARTH</h4>
-                        <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #ccc;">CONSTRUCTION</div>
+                        <h4 style="margin: 0; color: var(--c-plasma); font-family: var(--f-head);">THUNDER</h4>
+                        <div style="font-size: 0.7rem; color: #aaa;">POWER GRID</div>
                     </div>
                 </div>
 
@@ -337,21 +252,21 @@
                     <b>水之脈絡</b> - 建築物如同巨大的生物，而管道是它的血管。我通曉流體力學，確保生命之源在其中順暢流動。<br><br>
                     <b>雷之神經</b> - 編織能量的網。在看不見的牆壁中，佈設著傳遞意志的神經網路。
                 </p>
-                <p class="highlight" style="color: var(--c-plasma); text-align: center; border: 1px dashed var(--c-plasma); padding: 10px;">
-                    「朋友都叫我水電土三系混合大法師。」
-                </p>
+                <div style="background: rgba(0, 243, 255, 0.1); border-left: 3px solid var(--c-plasma); padding: 10px;">
+                    <p style="margin:0; font-style:italic; color:white;">「朋友都叫我水電土三系混合大法師。」</p>
+                </div>
             </div>
         </section>
 
-        <!-- 4. Soft Core (Personal) -->
+        <!-- 4. Personal -->
         <section class="section">
-            <div class="data-slate slate-alert" style="border-color: #ff69b4;">
-                <span class="sub-code" style="color: #ff69b4;">SECRET: PERSONAL ARCHIVES</span>
-                <h2 style="color: #ff69b4;"><i class="fa-solid fa-heart"></i> Inner Sanctum</h2>
+            <div class="tech-card card-alert">
+                <span class="code-line" style="color: var(--c-alert);">File: INNER_SANCTUM</span>
+                <h2 style="color: var(--c-alert); text-shadow: 0 0 10px var(--c-alert);"><i class="fa-solid fa-heart"></i> Soft Core</h2>
 
-                <div class="holo-frame" style="border-color: #ff69b4;">
+                <div class="holo-frame" style="border-color: var(--c-alert);">
                     <img src="/assets/img/guild/xmasfun689/plushies.webp" class="holo-img">
-                    <div class="status-tag" style="border-color: #ff69b4; color: #ff69b4; box-shadow: 0 0 10px #ff69b4;">MORALE: MAX</div>
+                    <div class="holo-tag" style="border-color: var(--c-alert); color: var(--c-alert);">MORALE_BOOSTER</div>
                 </div>
 
                 <p>
@@ -366,7 +281,7 @@
         </section>
 
         <footer class="footer">
-            <h2 style="font-family: var(--f-mech); color: var(--c-plasma);">ESTABLISH CONNECTION</h2>
+            <h2 style="font-family: var(--f-head); color: var(--c-plasma);">LINK START</h2>
             <div class="social-bar">
                 <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-btn">
                     <svg viewBox="0 0 192 192"><path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.3586 44.7443 69.0639 51.1409 58.7414 61.5332C48.0296 72.3168 41.5234 87.1649 41.5234 103.565C41.5234 117.588 46.545 130.499 54.835 140.579C65.7337 153.834 81.3327 163.504 99.4102 166.703C102.508 167.251 105.702 167.533 108.995 167.533C116.791 167.533 124.28 165.719 131.026 162.434C132.887 161.528 133.659 159.288 132.753 157.427L129.569 150.891C128.81 149.333 127.185 148.431 125.532 148.651C120.306 149.348 114.789 149.713 108.995 149.713C86.3262 149.713 67.2458 137.067 59.2132 118.665C58.0583 116.02 57.2435 113.256 56.8154 110.383C67.6256 122.791 82.5273 130.829 99.2801 130.829C117.389 130.829 131.812 119.863 135.003 103.623C138.256 104.922 141.282 106.467 144.032 108.232C147.218 110.276 149.435 112.551 150.812 115.014C152.022 117.178 152.275 119.294 151.722 121.285C150.551 125.498 144.27 129.809 132.172 129.809C120.395 129.809 113.06 120.211 113.06 109.283V104.225C113.06 87.0544 108.57 73.0805 99.2798 64.9388C94.2798 60.5566 88.0808 58.129 80.9922 58.129C69.349 58.129 59.4586 66.8643 57.1793 79.5248C56.6366 82.5393 56.3503 85.6728 56.3503 88.8927C56.3503 112.016 70.8038 131.992 91.1396 139.754C92.4276 140.245 93.1818 141.748 92.7766 143.068L90.7397 149.72C90.2526 151.31 88.4655 152.179 86.9174 151.58C60.1065 141.205 41.5234 114.976 41.5234 88.8927C41.5234 84.1481 42.062 79.5393 43.0833 75.109C47.2343 56.9802 62.7725 43.3333 80.9922 43.3333C91.1294 43.3333 100.323 46.8049 107.458 52.6074C120.61 63.3039 127.887 81.3768 127.887 104.225V109.283C127.887 114.397 129.742 115.014 132.172 115.014C137.962 115.014 139.799 111.411 140.222 109.89C141.751 104.387 137.818 99.5544 132.766 96.6496C127.382 93.5539 121.293 91.3149 114.887 90.0243C114.004 77.0864 107.561 65.6542 97.4334 58.1566C97.3629 58.1044 97.2923 58.0524 97.2216 58.0006C117.817 58.1189 129.405 70.8129 130.569 93.1251C133.626 94.2473 136.562 95.597 139.356 97.1429C147.168 101.464 154.686 109.043 154.686 122.997C154.686 123.649 154.653 124.288 154.589 124.914C156.974 122.381 158.825 119.349 160.038 116.033C161.948 110.812 161.764 105.776 159.493 101.72C155.632 94.8213 149.098 90.7516 141.537 88.9883ZM80.9922 72.9238C85.5065 72.9238 89.6083 74.4561 92.8348 77.0163C96.345 79.8009 98.2329 83.8742 98.2329 88.8927C98.2329 93.9112 96.345 97.9845 92.8348 100.769C89.6083 103.329 85.5065 104.862 80.9922 104.862C76.4779 104.862 72.3761 103.329 69.1496 100.769C65.6394 97.9845 63.7515 93.9112 63.7515 88.8927C63.7515 83.8742 65.6394 79.8009 69.1496 77.0163C72.3761 74.4561 76.4779 72.9238 80.9922 72.9238Z"/></svg>
@@ -377,63 +292,29 @@
         </footer>
     </div>
 
-    <!-- P5.js Background Script -->
+    <!-- P5.js (PCB Overlay) -->
     <script>
         const sketch = (p) => {
-            let circuits = [];
-            let floaters = [];
-            let mainNode;
-            let hexagonGrid = [];
+            let traces = [];
 
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
-                p.angleMode(p.DEGREES);
-                p.rectMode(p.CENTER);
-                p.textAlign(p.CENTER, p.CENTER);
-                p.textFont('Orbitron');
+                p.frameRate(30);
 
-                // Init Fluid Circuits
-                for(let i=0; i<25; i++) circuits.push(new FluidCircuit());
-
-                // Init Floating Data Bits
-                for(let i=0; i<30; i++) floaters.push(new Floater());
-
-                // Main Node
-                mainNode = { x: p.width/2, y: p.height * 0.08, size: 20 };
+                // Create PCB Traces
+                for(let i=0; i<30; i++) {
+                    traces.push(new Trace(p));
+                }
             };
 
             p.draw = () => {
                 p.clear();
 
-                // Mouse Target Reticle
-                p.push();
-                p.translate(p.mouseX, p.mouseY);
-                p.noFill();
-                p.stroke(0, 243, 255, 100);
-                p.strokeWeight(1);
-                p.rotate(p.frameCount * 2);
-                p.arc(0, 0, 40, 40, 0, 90);
-                p.arc(0, 0, 40, 40, 180, 270);
-                p.stroke(255, 215, 0, 100);
-                p.rotate(p.frameCount * -4);
-                p.rect(0,0, 20, 20);
-                p.pop();
-
-                // Circuits
-                circuits.forEach(c => { c.update(); c.display(); });
-
-                // Floaters
-                floaters.forEach(f => { f.update(); f.display(); });
-
-                // Connection Lines (Mouse Interaction)
-                p.stroke(0, 243, 255, 20);
-                p.strokeWeight(1);
-                floaters.forEach(f => {
-                    let d = p.dist(p.mouseX, p.mouseY, f.x, f.y);
-                    if(d < 150) {
-                        p.line(p.mouseX, p.mouseY, f.x, f.y);
-                    }
+                // Draw Traces
+                traces.forEach(t => {
+                    t.update();
+                    t.display();
                 });
             };
 
@@ -441,258 +322,222 @@
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
 
-            class FluidCircuit {
-                constructor() { this.reset(); }
+            class Trace {
+                constructor(p) {
+                    this.p = p;
+                    this.reset();
+                }
                 reset() {
-                    this.x = p.random(p.width);
-                    this.y = p.random(p.height);
-                    this.speedY = p.random(-2, -5);
-                    this.amp = p.random(10, 30);
-                    this.freq = p.random(0.02, 0.05);
-                    this.offset = p.random(1000);
-                    this.len = p.random(50, 150);
-                    this.color = p.random() > 0.5 ? p.color(0, 243, 255, p.random(50, 200)) : p.color(255, 215, 0, p.random(50, 200));
-                }
-                update() {
-                    this.y += this.speedY;
-                    if(this.y < -this.len) this.reset();
-                }
-                display() {
-                    p.noFill();
-                    p.stroke(this.color);
-                    p.strokeWeight(p.random(1, 3));
-                    p.beginShape();
-                    for(let i=0; i<this.len; i+=5) {
-                        let y = this.y + i;
-                        let x = this.x + p.sin((y + this.offset) * this.freq) * this.amp;
-                        p.vertex(x, y);
+                    // Start from random edge
+                    if(this.p.random() > 0.5) {
+                        this.x = this.p.random(this.p.width);
+                        this.y = -10;
+                        this.dir = {x:0, y:1};
+                    } else {
+                        this.x = -10;
+                        this.y = this.p.random(this.p.height);
+                        this.dir = {x:1, y:0};
                     }
-                    p.endShape();
-                }
-            }
 
-            class Floater {
-                constructor() { this.reset(); }
-                reset() {
-                    this.x = p.random(p.width);
-                    this.y = p.random(p.height, p.height + 200);
-                    this.speed = p.random(0.5, 2);
-                    this.char = String.fromCharCode(0x30A0 + Math.random() * 96);
-                    this.alpha = p.random(50, 150);
+                    this.path = [{x: this.x, y: this.y}];
+                    this.maxLength = this.p.random(100, 300);
+                    this.speed = this.p.random(2, 5);
+                    this.color = this.p.random() > 0.8 ? [255, 215, 0] : [0, 243, 255]; // Gold or Plasma
+                    this.head = 0; // Current progress
                 }
                 update() {
-                    this.y -= this.speed;
-                    if(this.y < -50) this.reset();
+                    // Move head
+                    this.head += this.speed;
+
+                    // Add segments logic (simplified orthogonal)
+                    let last = this.path[this.path.length-1];
+                    let nextX = last.x + this.dir.x * this.speed;
+                    let nextY = last.y + this.dir.y * this.speed;
+
+                    // Random Turn
+                    if(this.p.random() < 0.05) {
+                        if(this.dir.x !== 0) this.dir = {x:0, y: this.p.random() > 0.5 ? 1 : -1};
+                        else this.dir = {x: this.p.random() > 0.5 ? 1 : -1, y:0};
+                    }
+
+                    this.path.push({x: nextX, y: nextY});
+
+                    // Reset if too long or out of bounds
+                    if(this.path.length > 50 || nextX > this.p.width || nextY > this.p.height || nextX < 0 || nextY < 0) {
+                        this.reset();
+                    }
                 }
                 display() {
-                    p.fill(255, 255, 255, this.alpha);
-                    p.noStroke();
-                    p.textSize(12);
-                    p.text(this.char, this.x, this.y);
+                    this.p.noFill();
+                    this.p.stroke(this.color[0], this.color[1], this.color[2], 150);
+                    this.p.strokeWeight(2);
+
+                    this.p.beginShape();
+                    for(let i=0; i<this.path.length; i++) {
+                        this.p.vertex(this.path[i].x, this.path[i].y);
+                    }
+                    this.p.endShape();
+
+                    // Head Dot
+                    let last = this.path[this.path.length-1];
+                    this.p.noStroke();
+                    this.p.fill(255);
+                    this.p.ellipse(last.x, last.y, 4, 4);
                 }
             }
         };
         new p5(sketch);
     </script>
 
-    <!-- MAIN SCRIPT (Three.js) -->
+    <!-- Three.js (Plasma Environment) -->
     <script type="module">
         import * as THREE from 'https://esm.sh/three@0.160.0';
         import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
         import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+        gsap.registerPlugin(ScrollTrigger);
 
-        // --- Init Scene ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050508, 0.02);
+        scene.fog = new THREE.FogExp2(0x020205, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(-5, 0, 15);
-        camera.lookAt(0, 0, 0);
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 10);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        renderer.setClearColor(0x000000, 0);
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing ---
+        // Bloom
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
-
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.1;
-        bloomPass.strength = 1.2;
-        bloomPass.radius = 0.5;
+        bloomPass.strength = 2.0; // High Bloom for Plasma
+        bloomPass.radius = 0.8;
         composer.addPass(bloomPass);
 
-        // --- Lights ---
-        const ambient = new THREE.AmbientLight(0x222222);
-        scene.add(ambient);
-
-        const mainLight = new THREE.PointLight(0xffffff, 1, 50);
-        mainLight.position.set(-10, 10, 10);
-        scene.add(mainLight);
-
-        // Warning Light (Rotating Red)
-        const warnLight = new THREE.SpotLight(0xff0000, 10, 40, Math.PI/4, 0.5, 1);
-        warnLight.position.set(0, 10, 5);
-        scene.add(warnLight);
-        const warnTarget = new THREE.Object3D();
-        scene.add(warnTarget);
-        warnLight.target = warnTarget;
-
-        // --- MATERIALS ---
-        const matGold = new THREE.MeshStandardMaterial({
-            color: 0xFFD700, metalness: 0.8, roughness: 0.2, emissive: 0xFFD700, emissiveIntensity: 0.1
-        });
-        const matBlue = new THREE.MeshStandardMaterial({
-            color: 0x0077BE, metalness: 0.9, roughness: 0.1, emissive: 0x0077BE, emissiveIntensity: 0.2
-        });
-        const matCyan = new THREE.MeshStandardMaterial({
-            color: 0x00F3FF, metalness: 0.9, roughness: 0.1, emissive: 0x00F3FF, emissiveIntensity: 0.3
-        });
-        const matWire = new THREE.MeshBasicMaterial({
-            color: 0x333333, wireframe: true, transparent: true, opacity: 0.3
-        });
-
-        // --- OBJECTS ---
-        function createGear(radius, teeth, mat) {
-            const group = new THREE.Group();
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.6, 16, 50), mat);
-            ring.rotation.x = Math.PI/2;
-            group.add(ring);
-            const toothGeo = new THREE.BoxGeometry(1.5, 1, 2);
-            for(let i=0; i<360; i+=360/teeth) {
-                const rad = i * Math.PI / 180;
-                const tooth = new THREE.Mesh(toothGeo, mat);
-                tooth.position.set(Math.cos(rad)*radius, 0, Math.sin(rad)*radius);
-                tooth.rotation.y = -rad;
-                group.add(tooth);
-            }
-            const spoke = new THREE.Mesh(new THREE.BoxGeometry(radius*2, 0.5, 0.5), mat);
-            group.add(spoke);
-            const spoke2 = spoke.clone();
-            spoke2.rotation.y = Math.PI/2;
-            group.add(spoke2);
-            return group;
-        }
-
-        const gearGroup = new THREE.Group();
-        gearGroup.position.x = 5;
-        scene.add(gearGroup);
-
-        const gear1 = createGear(5, 12, matGold);
-        gear1.position.y = -6;
-        gearGroup.add(gear1);
-
-        const gear2 = createGear(4, 10, matBlue);
-        gear2.position.y = 2;
-        gearGroup.add(gear2);
-
-        const gear3 = createGear(3, 8, matCyan);
-        gear3.position.y = 9;
-        gearGroup.add(gear3);
-
-        // Wireframe Terrain (Grid)
+        // 1. Grid Floor (Infinite Plane)
         const gridHelper = new THREE.GridHelper(100, 50, 0x00F3FF, 0x111111);
-        gridHelper.position.y = -10;
-        gridHelper.rotation.x = 0.1;
+        gridHelper.position.y = -5;
         scene.add(gridHelper);
 
-        // --- PARTICLES ---
-        function createSmokeTexture() {
-            const size = 128;
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-            grad.addColorStop(0, 'rgba(255,255,255,0.4)');
-            grad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, size, size);
-            return new THREE.CanvasTexture(canvas);
+        // 2. Plasma Core (Center)
+        const coreGeo = new THREE.SphereGeometry(2, 32, 32);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF, wireframe: true, transparent: true, opacity: 0.5 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
+
+        const coreInner = new THREE.Mesh(
+            new THREE.SphereGeometry(1.5, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+        );
+        core.add(coreInner);
+
+        // 3. Lightning Arcs
+        const arcGroup = new THREE.Group();
+        scene.add(arcGroup);
+
+        function createLightning() {
+            const points = [];
+            let y = -5;
+            for(let i=0; i<10; i++) {
+                points.push(new THREE.Vector3(0, y, 0));
+                y += 1.5;
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
+            const line = new THREE.Line(geo, mat);
+            // Save base positions
+            line.userData = {
+                basePoints: points.map(p => p.clone()),
+                offset: Math.random() * 100
+            };
+            return line;
         }
 
-        const smokeMat = new THREE.SpriteMaterial({
-            map: createSmokeTexture(), color: 0x88ccff, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false
-        });
-        const smokeParticles = [];
-        for(let i=0; i<30; i++) {
-            const s = new THREE.Sprite(smokeMat.clone());
-            s.position.set((Math.random()-0.5)*30, (Math.random()-0.5)*20, (Math.random()-0.5)*10);
-            s.scale.setScalar(5 + Math.random()*5);
-            s.userData = { speed: 0.01 + Math.random()*0.02 };
-            scene.add(s);
-            smokeParticles.push(s);
+        const bolts = [];
+        for(let i=0; i<5; i++) {
+            const bolt = createLightning();
+            bolt.position.x = (i - 2) * 5;
+            bolt.position.z = -5;
+            arcGroup.add(bolt);
+            bolts.push(bolt);
         }
 
-        // --- ANIMATION ---
+        // 4. Data Particles (Cubes)
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+        const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const cubeMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF });
+
+        for(let i=0; i<50; i++) {
+            const m = new THREE.Mesh(cubeGeo, cubeMat);
+            m.position.set(
+                (Math.random()-0.5) * 30,
+                (Math.random()-0.5) * 20,
+                (Math.random()-0.5) * 10
+            );
+            m.userData = { speed: 0.05 + Math.random()*0.1 };
+            particleGroup.add(m);
+        }
+
+        // Animation
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // Gears
-            gear1.rotation.y = t * 0.3;
-            gear2.rotation.y = -t * 0.4;
-            gear3.rotation.y = t * 0.5;
+            // Core Pulse
+            const s = 1 + Math.sin(t * 5) * 0.1;
+            core.scale.set(s, s, s);
+            core.rotation.y = t;
+            core.rotation.z = t * 0.5;
 
-            // Smoke
-            smokeParticles.forEach(s => {
-                s.position.y += s.userData.speed;
-                s.material.rotation += 0.001;
-                if(s.position.y > 15) s.position.y = -10;
+            // Grid Wave
+            gridHelper.position.z = (t * 2) % 2;
+
+            // Lightning Jitter
+            bolts.forEach(bolt => {
+                const positions = bolt.geometry.attributes.position.array;
+                const bases = bolt.userData.basePoints;
+                for(let i=0; i<bases.length; i++) {
+                    if(i === 0 || i === bases.length-1) continue; // Pin ends
+                    positions[i*3] = bases[i].x + (Math.random()-0.5) * 0.5;
+                    positions[i*3+2] = bases[i].z + (Math.random()-0.5) * 0.5;
+                }
+                bolt.geometry.attributes.position.needsUpdate = true;
+
+                // Random Flash
+                bolt.visible = Math.random() > 0.1;
             });
 
-            // Warning Light
-            warnTarget.position.x = Math.sin(t * 5) * 20;
-            warnTarget.position.z = Math.cos(t * 5) * 20;
-            warnLight.intensity = 5 + Math.sin(t * 10) * 5;
-
-            // Grid movement
-            gridHelper.position.z = (t * 2) % 2;
+            // Particle Flow
+            particleGroup.children.forEach(p => {
+                p.position.y += p.userData.speed;
+                if(p.position.y > 10) p.position.y = -10;
+            });
 
             composer.render();
         }
         animate();
 
-        // --- SCROLL INTERACTION ---
-        window.addEventListener('load', () => {
-            const loader = document.getElementById('loader');
-            if(loader) {
-                document.getElementById('load-bar').style.width = '100%';
-                setTimeout(() => {
-                    gsap.to(loader, { opacity: 0, duration: 0.5, onComplete: () => loader.remove() });
-                    gsap.from('.slate-earth', { opacity: 0, y: 50, duration: 1, delay: 0.5 });
-                }, 800);
+        // Scroll
+        gsap.to(camera.position, {
+            z: 20,
+            y: 5,
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
             }
         });
 
-        const tl = gsap.timeline({
-            scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 }
-        });
-
-        tl.to(camera.position, { y: 5, z: 8, x: -2, duration: 1 });
-        tl.to(gearGroup.rotation, { z: 1, duration: 1 }, "<");
-
-        // Reveal Cards
-        gsap.utils.toArray('.data-slate').forEach((panel, i) => {
-            if(i===0) return;
-            gsap.from(panel, {
-                opacity: 0, rotateX: -20, z: -100,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: panel, start: "top 80%", end: "top 50%", scrub: 1
-                }
-            });
-        });
-
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
