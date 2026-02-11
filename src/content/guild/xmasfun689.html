@@ -75,6 +75,12 @@
                 0 100%, 0 20px
             );
             box-shadow: 0 0 20px rgba(0, 243, 255, 0.15), inset 0 0 30px rgba(0, 243, 255, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .tech-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 243, 255, 0.3), inset 0 0 50px rgba(0, 243, 255, 0.1);
         }
 
         .tech-card::before { /* Top Left Accent */
@@ -302,8 +308,8 @@
                 canvas.parent('p5-container');
                 p.frameRate(30);
 
-                // Create PCB Traces
-                for(let i=0; i<30; i++) {
+                // Create PCB Traces - Increased Density
+                for(let i=0; i<60; i++) {
                     traces.push(new Trace(p));
                 }
             };
@@ -341,36 +347,33 @@
 
                     this.path = [{x: this.x, y: this.y}];
                     this.maxLength = this.p.random(100, 300);
-                    this.speed = this.p.random(2, 5);
+                    this.speed = this.p.random(4, 8); // Faster
                     this.color = this.p.random() > 0.8 ? [255, 215, 0] : [0, 243, 255]; // Gold or Plasma
-                    this.head = 0; // Current progress
+                    this.head = 0;
                 }
                 update() {
-                    // Move head
                     this.head += this.speed;
 
-                    // Add segments logic (simplified orthogonal)
                     let last = this.path[this.path.length-1];
                     let nextX = last.x + this.dir.x * this.speed;
                     let nextY = last.y + this.dir.y * this.speed;
 
-                    // Random Turn
-                    if(this.p.random() < 0.05) {
+                    // Random Turn - More erratic
+                    if(this.p.random() < 0.1) {
                         if(this.dir.x !== 0) this.dir = {x:0, y: this.p.random() > 0.5 ? 1 : -1};
                         else this.dir = {x: this.p.random() > 0.5 ? 1 : -1, y:0};
                     }
 
                     this.path.push({x: nextX, y: nextY});
 
-                    // Reset if too long or out of bounds
-                    if(this.path.length > 50 || nextX > this.p.width || nextY > this.p.height || nextX < 0 || nextY < 0) {
+                    if(this.path.length > 60 || nextX > this.p.width || nextY > this.p.height || nextX < 0 || nextY < 0) {
                         this.reset();
                     }
                 }
                 display() {
                     this.p.noFill();
-                    this.p.stroke(this.color[0], this.color[1], this.color[2], 150);
-                    this.p.strokeWeight(2);
+                    this.p.stroke(this.color[0], this.color[1], this.color[2], 200); // Brighter
+                    this.p.strokeWeight(3); // Thicker
 
                     this.p.beginShape();
                     for(let i=0; i<this.path.length; i++) {
@@ -382,7 +385,7 @@
                     let last = this.path[this.path.length-1];
                     this.p.noStroke();
                     this.p.fill(255);
-                    this.p.ellipse(last.x, last.y, 4, 4);
+                    this.p.ellipse(last.x, last.y, 6, 6); // Bigger dot
                 }
             }
         };
@@ -484,26 +487,26 @@
             particleGroup.add(m);
         }
 
-        // 5. Heavy Machinery Gears (Background)
+        // 5. Heavy Machinery Gears (Background) - WALL OF GEARS
         const gearGroup = new THREE.Group();
-        gearGroup.position.z = -10; // Closer to be visible but behind core
+        gearGroup.position.z = -10; // Closer base position
         scene.add(gearGroup);
 
         // Add Lights for Metallic Effect
-        const pointLight = new THREE.PointLight(0x00F3FF, 2, 50);
-        pointLight.position.set(0, 0, 0);
+        const pointLight = new THREE.PointLight(0x00F3FF, 4, 60); // Even stronger light
+        pointLight.position.set(0, 0, 5);
         scene.add(pointLight);
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Soft white light
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Very bright ambient
         scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xFFD700, 0.5); // Gold rim light
-        dirLight.position.set(5, 5, 5);
+        const dirLight = new THREE.DirectionalLight(0xFFD700, 1.5); // Very bright gold light
+        dirLight.position.set(10, 10, 5);
         scene.add(dirLight);
 
         function createGear(radius, teeth, color, x, y, z) {
             const shape = new THREE.Shape();
             const outerRadius = radius;
-            const innerRadius = radius * 0.8;
-            const holeRadius = radius * 0.3;
+            const innerRadius = radius * 0.85; // Sharp teeth
+            const holeRadius = radius * 0.5; // Larger hollow center
 
             const numPoints = teeth * 2;
             const angleStep = (Math.PI * 2) / numPoints;
@@ -523,24 +526,32 @@
             const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
             const material = new THREE.MeshStandardMaterial({
                 color: color,
-                metalness: 0.9,
+                metalness: 0.95,
                 roughness: 0.1,
                 emissive: color,
-                emissiveIntensity: 0.4
+                emissiveIntensity: 0.5 // Stronger glow
             });
             const gear = new THREE.Mesh(geometry, material);
             gear.position.set(x, y, z);
-            gear.userData = { speed: (Math.random() - 0.5) * 0.02 };
+            gear.userData = { speed: (Math.random() - 0.5) * 0.05 }; // Faster rotation
             gearGroup.add(gear);
             return gear;
         }
 
-        // Create scattered gears (Brighter for visibility)
-        createGear(5, 12, 0x444444, -12, 4, -2);
-        createGear(3, 8, 0x666666, -8, 6, 0);
-        createGear(8, 16, 0x333333, 8, -4, -5);
-        createGear(4, 10, 0x555555, 12, 0, -2);
-        createGear(6, 14, 0x222222, 0, -10, -8);
+        // Generate Wall of Gears
+        for (let i = 0; i < 50; i++) { // More gears
+            const radius = 2 + Math.random() * 8;
+            const teeth = Math.floor(8 + radius * 2);
+            const x = (Math.random() - 0.5) * 60;
+            const y = (Math.random() - 0.5) * 40;
+            const z = -5 - Math.random() * 20; // Varied depth
+
+            // Industrial colors
+            const colors = [0x555555, 0x333333, 0x888888, 0x666600];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            createGear(radius, teeth, color, x, y, z);
+        }
 
         // 6. Smoke System
         const smokeParticles = [];
@@ -562,7 +573,7 @@
             map: smokeTex,
             color: 0x00F3FF, /* Cyan Tint */
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.6, // More visible smoke
             depthWrite: false,
             blending: THREE.AdditiveBlending
         });
@@ -643,7 +654,7 @@
         }
         animate();
 
-        // Scroll
+        // Scroll Camera
         gsap.to(camera.position, {
             z: 20,
             y: 5,
@@ -653,6 +664,22 @@
                 end: "bottom bottom",
                 scrub: 1
             }
+        });
+
+        // GSAP Entry Animations
+        gsap.utils.toArray('.tech-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 100,
+                opacity: 0,
+                scale: 0.9,
+                duration: 0.8,
+                ease: "power3.out"
+            });
         });
 
         // Resize
