@@ -37,8 +37,8 @@ test.describe('SPJ Guild Page', () => {
   });
 
   test('should display Hero section', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('Book of Heavens');
-    await expect(page.locator('.subtitle')).toContainText('Materialization Alchemist');
+    await expect(page.locator('h1')).toContainText('The Golden Tavern');
+    await expect(page.locator('.subtitle')).toContainText('of Materialization');
     await expect(page.locator('#canvas-container canvas')).toBeVisible();
   });
 
@@ -59,9 +59,9 @@ test.describe('SPJ Guild Page', () => {
 
     // Scroll to Projects
     await page.evaluate(() => document.getElementById('projects')?.scrollIntoView());
-    await expect(page.locator('#projects h2')).toContainText("Bounty Board");
+    await expect(page.locator('#projects h2')).toContainText("Quest Board");
 
-    const cards = page.locator('.bounty-card');
+    const cards = page.locator('.wanted-poster');
     await expect(cards).toHaveCount(3);
   });
 });
