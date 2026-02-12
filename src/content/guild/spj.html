@@ -230,44 +230,165 @@
 
         @keyframes blink { 50% { opacity: 0; } }
 
-        /* --- Guild Board --- */
+        /* --- Guild Board & Tavern --- */
+        #guild {
+            /* Warm Tavern Light Radial Gradient */
+            background: radial-gradient(circle at center, rgba(139, 69, 19, 0.2) 0%, rgba(5, 5, 16, 0.95) 80%);
+            border-top: 1px solid rgba(255, 215, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .bounty-board-container {
+            background: #2c1810;
+            background-image: repeating-linear-gradient(
+                90deg,
+                rgba(255,255,255, 0.03) 0px,
+                rgba(255,255,255, 0.03) 1px,
+                transparent 1px,
+                transparent 30px
+            ), repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0, 0.2) 0px,
+                rgba(0,0,0, 0.2) 1px,
+                transparent 1px,
+                transparent 30px
+            ); /* Wood Texture Feel */
+            border: 8px solid #4a2c20;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .bounty-board-container::before {
+            content: "GUILD BOARD";
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4a2c20;
+            color: #d4af37;
+            padding: 5px 20px;
+            font-family: var(--font-fantasy);
+            border: 2px solid #d4af37;
+            border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
         .bounty-board {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 2rem;
-            margin-top: 3rem;
+            margin-top: 2rem;
+            perspective: 1000px;
         }
 
         .quest-card {
-            background: rgba(20, 20, 30, 0.8);
-            border: 1px solid var(--accent-gold);
+            background: #f4e4bc; /* Parchment */
+            color: #2b1b17; /* Ink */
             padding: 1.5rem;
             position: relative;
-            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: top center;
+            font-family: var(--font-main);
         }
 
+        .quest-card::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: #c0392b; /* Red Pin */
+            border-radius: 50%;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            transform: translateX(-50%);
+            z-index: 5;
+        }
+
+        /* Random Rotations */
+        .quest-card:nth-child(1) { transform: rotate(-2deg); }
+        .quest-card:nth-child(2) { transform: rotate(1.5deg); }
+        .quest-card:nth-child(3) { transform: rotate(-1deg); }
+
         .quest-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+            transform: scale(1.05) rotate(0deg) !important;
+            z-index: 10;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
         }
 
         .quest-rank {
             position: absolute;
-            top: -10px;
+            top: 10px;
             right: 10px;
-            background: var(--accent-gold);
-            color: #000;
-            font-weight: bold;
-            padding: 2px 8px;
-            font-family: var(--font-cyber);
-            font-size: 0.8rem;
+            font-family: var(--font-fantasy);
+            font-weight: 900;
+            font-size: 1.5rem;
+            color: #8e44ad; /* Magic Rank Color */
+            opacity: 0.8;
+            border: 2px solid #8e44ad;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: rotate(15deg);
         }
 
         .quest-title {
-            color: var(--accent-cyan);
+            color: #2c3e50;
             font-family: var(--font-fantasy);
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             margin-bottom: 0.5rem;
+            margin-top: 1rem;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+            padding-bottom: 5px;
+        }
+
+        .quest-desc {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .quest-icon {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 2rem;
+            opacity: 0.2;
+            color: #000;
+        }
+
+        /* Tavern Sign */
+        .tavern-sign {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .neon-sign {
+            font-family: var(--font-cyber);
+            font-size: 2.5rem;
+            color: #fff;
+            text-shadow:
+                0 0 5px #fff,
+                0 0 10px #ff00de,
+                0 0 20px #ff00de,
+                0 0 40px #ff00de;
+            animation: flicker 2s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                opacity: 0.4;
+            }
         }
 
         /* --- Footer --- */
@@ -362,32 +483,42 @@
         </div>
     </section>
 
-    <!-- Guild: Adventure -->
+    <!-- Guild: Adventure & Tavern -->
     <section id="guild">
         <div class="container">
-            <h2 style="text-align: center; color: var(--accent-gold); margin-bottom: 3rem;" class="gs-reveal">Adventure Guild</h2>
-            <p style="text-align: center; max-width: 700px; margin: 0 auto 3rem;" class="gs-reveal">
-                我的另一個夢想，是成立一個「塞趴卷冒險公會」。就像異世界轉生番那樣，現實世界的冒險者們可以在這裡交流、組隊、接任務。
+            <!-- Tavern Sign -->
+            <div class="tavern-sign gs-reveal">
+                <div class="neon-sign">SPJ'S TAVERN</div>
+                <p style="color: var(--accent-gold); margin-top: 0.5rem; font-family: var(--font-fantasy);">EST. 2024</p>
+            </div>
+
+            <p style="text-align: center; max-width: 700px; margin: 0 auto 3rem; text-shadow: 0 0 10px #000;" class="gs-reveal">
+                我的另一個夢想，是成立一個「塞趴卷冒險公會」。<br>
+                就像異世界轉生番那樣，現實世界的冒險者們可以在這裡交流、組隊、接任務。
             </p>
 
-            <div class="bounty-board">
-                <div class="quest-card gs-reveal">
-                    <span class="quest-rank">RANK S</span>
-                    <div class="quest-title">Team Up</div>
-                    <p>尋找志同道合的冒險者，一起攻克名為「現實」的副本。</p>
-                    <i class="fa-solid fa-users" style="color: var(--accent-gold); font-size: 1.5rem;"></i>
-                </div>
-                <div class="quest-card gs-reveal">
-                    <span class="quest-rank">RANK A</span>
-                    <div class="quest-title">Resource Share</div>
-                    <p>聚集資源，讓每個人的創意都能獲得支持與養分。</p>
-                    <i class="fa-solid fa-gem" style="color: var(--accent-cyan); font-size: 1.5rem;"></i>
-                </div>
-                <div class="quest-card gs-reveal">
-                    <span class="quest-rank">RANK B</span>
-                    <div class="quest-title">Tavern Talk</div>
-                    <p>在酒館裡分享彼此的故事，交流技術與情報。</p>
-                    <i class="fa-solid fa-beer-mug-empty" style="color: var(--accent-purple); font-size: 1.5rem;"></i>
+            <div class="bounty-board-container gs-reveal">
+                <div class="bounty-board">
+                    <div class="quest-card">
+                        <div class="quest-rank">S</div>
+                        <div class="quest-title">Team Up</div>
+                        <p class="quest-desc">尋找志同道合的冒險者，一起攻克名為「現實」的副本。</p>
+                        <i class="fa-solid fa-users quest-icon"></i>
+                    </div>
+
+                    <div class="quest-card">
+                        <div class="quest-rank">A</div>
+                        <div class="quest-title">Resource Share</div>
+                        <p class="quest-desc">聚集資源，讓每個人的創意都能獲得支持與養分。</p>
+                        <i class="fa-solid fa-gem quest-icon"></i>
+                    </div>
+
+                    <div class="quest-card">
+                        <div class="quest-rank">B</div>
+                        <div class="quest-title">Tavern Talk</div>
+                        <p class="quest-desc">在酒館裡分享彼此的故事，交流技術與情報。</p>
+                        <i class="fa-solid fa-beer-mug-empty quest-icon"></i>
+                    </div>
                 </div>
             </div>
         </div>
