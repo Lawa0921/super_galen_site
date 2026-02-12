@@ -27,15 +27,15 @@
 
     <style>
         :root {
-            --bg-deep: #05000a;
+            --bg-deep: #1a0b1f; /* Lighter Deep Purple */
             --text-primary: #fff0f5;
-            --accent-pink: #ff1493; /* Deep Pink */
-            --accent-purple: #9400d3; /* Dark Violet */
-            --accent-cyan: #00ffff;
-            --accent-hot: #ff0055; /* Hot Pink/Red */
-            --glass-bg: rgba(20, 0, 20, 0.4);
-            --glass-border: rgba(255, 20, 147, 0.3);
-            --neon-glow: 0 0 15px var(--accent-hot), 0 0 30px var(--accent-purple);
+            --accent-pink: #ff69b4; /* Hot Pink */
+            --accent-purple: #9370db; /* Medium Purple */
+            --accent-gold: #ffd700; /* Gold for Magic */
+            --accent-cyan: #00ffff; /* Cyan for Digital */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --neon-glow: 0 0 15px var(--accent-pink), 0 0 30px var(--accent-purple);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,7 +46,7 @@
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
-            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23FF0055"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') 12 12, auto;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23FF69B4"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') 12 12, auto;
         }
 
         h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -67,28 +67,27 @@
             width: 100%; height: 100%;
             z-index: -2;
             pointer-events: none;
-            opacity: 0.6; /* Increased visibility */
+            opacity: 0.4;
             mix-blend-mode: screen;
         }
 
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-size: 1.2rem; color: var(--accent-hot);
+            font-size: 1.2rem; color: var(--accent-pink);
             text-decoration: none; font-family: 'Orbitron';
             font-weight: 900;
-            border: 2px solid var(--accent-hot);
+            border: 2px solid var(--accent-pink);
             padding: 0.5rem 1.5rem;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.6);
             backdrop-filter: blur(5px);
+            border-radius: 20px;
             transition: 0.3s;
-            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-            text-shadow: 0 0 5px var(--accent-hot);
-            box-shadow: 0 0 10px var(--accent-hot);
+            box-shadow: 0 0 15px rgba(255,105,180,0.3);
         }
         .nav-back:hover {
-            background: var(--accent-hot);
-            color: #000;
-            box-shadow: 0 0 30px var(--accent-hot);
+            background: var(--accent-pink);
+            color: #fff;
+            box-shadow: 0 0 30px var(--accent-pink);
         }
 
         /* --- Sections --- */
@@ -114,121 +113,106 @@
         .hero-title {
             font-size: clamp(4rem, 15vw, 10rem);
             font-weight: 900;
-            background: linear-gradient(to bottom, #fff, var(--accent-pink), var(--accent-purple));
+            background: linear-gradient(to bottom, #fff, var(--accent-pink), #fff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
             line-height: 1;
-            filter: drop-shadow(0 0 30px rgba(255, 0, 85, 0.8));
+            filter: drop-shadow(0 0 20px rgba(255, 105, 180, 0.6));
             margin-bottom: 2rem;
-            font-family: 'Orbitron', sans-serif;
-            letter-spacing: -0.05em;
-            position: relative;
-        }
-
-        .hero-title::after {
-            content: attr(data-text);
-            position: absolute;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(to bottom, transparent, var(--accent-hot));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0.5;
-            filter: blur(20px);
-            z-index: -1;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.05em;
         }
 
         .hero-subtitle {
             font-size: clamp(1.5rem, 4vw, 2.5rem);
-            color: var(--accent-hot);
+            color: var(--accent-gold);
             letter-spacing: 0.5em;
             text-align: center;
-            text-shadow: 0 0 20px var(--accent-hot);
+            text-shadow: 0 0 10px var(--accent-gold);
             font-weight: 700;
             margin-bottom: 1rem;
         }
 
         /* --- Components --- */
         .glass-panel {
-            background: var(--glass-bg);
-            border: 2px solid var(--glass-border);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
             padding: 4rem;
-            border-radius: 30px;
-            box-shadow: 0 0 50px rgba(148, 0, 211, 0.3), inset 0 0 20px rgba(255, 20, 147, 0.2);
+            border-radius: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(255, 105, 180, 0.1);
             position: relative;
             overflow: hidden;
         }
 
-        .glass-panel::before {
-            content: '';
-            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-pink), transparent);
-            animation: shimmer 3s infinite linear;
-            background-size: 200% 100%;
-        }
-
-        @keyframes shimmer {
-            0% { background-position: 100% 0; }
-            100% { background-position: -100% 0; }
-        }
-
-        /* --- Sensory Focus: Shards --- */
+        /* --- Sensory Focus: Dream Bubbles --- */
         .sensory-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 4rem;
             margin-top: 4rem;
-            padding: 2rem;
         }
 
-        .shard-frame {
+        .bubble-card {
+            width: 300px; height: 300px;
+            border-radius: 50%;
             position: relative;
-            clip-path: polygon(10% 0, 100% 10%, 90% 100%, 0 90%);
-            width: 100%;
-            aspect-ratio: 1/1;
-            background: rgba(0,0,0,0.8);
-            border: 2px solid var(--accent-hot);
-            box-shadow: 0 0 30px var(--accent-hot);
-            overflow: hidden;
-            transition: 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+            transition: transform 0.5s ease;
         }
 
-        .shard-frame img {
+        .bubble-mask {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bubble-mask img {
             width: 100%; height: 100%;
             object-fit: cover;
-            filter: grayscale(0.5) contrast(1.2) brightness(0.8);
+            transform: scale(1.1);
+            transition: 0.8s ease;
+            filter: brightness(0.9) saturate(1.2);
+        }
+
+        .bubble-glow {
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.5), 0 0 20px var(--accent-pink);
+            pointer-events: none;
+            opacity: 0.6;
             transition: 0.5s;
         }
 
-        .shard-label {
+        .bubble-label {
             position: absolute;
-            bottom: 10%; right: 10%;
-            font-family: 'Orbitron';
-            font-size: 2rem;
-            color: var(--accent-cyan);
-            text-shadow: 0 0 10px var(--accent-cyan);
+            bottom: -3rem; width: 100%;
+            text-align: center;
+            font-family: 'Cinzel';
+            font-size: 1.5rem;
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px var(--accent-gold);
             opacity: 0.8;
-            transform: rotate(-5deg);
         }
 
-        .shard-frame:hover {
-            transform: scale(1.05) rotate(2deg);
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-            box-shadow: 0 0 50px var(--accent-hot), 0 0 100px var(--accent-purple);
-            z-index: 10;
+        .bubble-card:hover {
+            transform: translateY(-10px) scale(1.05);
         }
-
-        .shard-frame:hover img {
-            filter: grayscale(0) contrast(1.1) brightness(1.1);
-            transform: scale(1.1);
+        .bubble-card:hover img {
+            transform: scale(1.2) rotate(5deg);
+            filter: brightness(1.1);
         }
-
-        .shard-eyes { clip-path: polygon(20% 0, 100% 20%, 80% 100%, 0 80%); }
-        .shard-nose { clip-path: polygon(0 20%, 80% 0, 100% 80%, 20% 100%); margin-top: 4rem; }
-        .shard-lips { clip-path: polygon(10% 0, 100% 10%, 90% 100%, 0 90%); }
-
+        .bubble-card:hover .bubble-glow {
+            opacity: 1;
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.8), 0 0 40px var(--accent-pink);
+        }
 
         /* --- Profile Avatar --- */
         .profile-wrapper {
@@ -240,26 +224,26 @@
             width: 100%; height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid var(--accent-pink);
-            box-shadow: 0 0 50px var(--accent-pink), inset 0 0 20px #000;
+            border: 3px solid var(--accent-pink);
+            box-shadow: 0 0 40px rgba(255, 105, 180, 0.4);
             position: relative;
             z-index: 2;
         }
-        .demon-wing {
+
+        /* Floating particles CSS for profile */
+        .sparkle {
             position: absolute;
-            top: 15%;
-            width: 180px;
-            height: 180px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23FF1493' d='M486.6 22.2c-5.2-3.8-12.4-3.5-17.3 0.8C421.9 66.8 322.6 153 256 153c-1.1 0-2.2 0-3.3-0.1c-1.3 22.4-5.3 43.6-11.4 63.3c35.6-7.3 75.2-12.7 116.5-14.8c4.6-0.2 8.7 2.4 10.6 6.6s1.1 9.2-2.1 12.3c-23.8 23.3-64.8 54.8-111.4 69.9c-23.7 34.6-59.3 64-106.9 83.1c11.9 14.7 22.9 31.6 32.3 50.8c2.9 6 0.8 13.2-4.9 16.5s-13.4 1.4-16.7-4.2c-15-25.5-35-46.7-58.8-61.6c-21.7 8.3-43.8 12.6-65.4 12.6C15.6 388 0.7 374.3 0.1 356.6c-0.6-16.1 11.2-29.8 26.9-31.8c30.4-3.8 58.7-14.2 83.5-29.8c24.6-15.5 45.4-36 61.2-60.5C215.8 213 241.6 189.9 256 166.4V153c0-63.5-62.7-124-118.8-158.3c-5.4-3.3-6.9-10.4-3.4-15.5s10.8-6.5 16.1-3.2C208.3 12.7 288 84.1 288 153c66.6 0 165.9-86.2 211.5-127.6c4.9-4.3 12.2-4.7 17.4-0.8s6.3 10.9 2.6 16.4c-19.1 28.6-43.2 53.6-68.8 74.8c30.8 11.8 58.1 28.5 79.7 50.1c4.6 4.6 4.6 12 0 16.6s-12 4.6-16.6 0c-19-19-42.9-33.6-69.6-43.7c47.9 39.7 85.9 91 106 149.7c2.3 6.7-1.3 14-8 16.3s-14-1.3-16.3-8c-18.7-54.7-54.2-102.5-98.8-139.5c-44-36.4-97.8-62.9-155.6-76.4c5.9-19.3 9.6-40.1 10.9-61.9z'/%3E%3C/svg%3E");
-            background-size: contain;
-            background-repeat: no-repeat;
-            opacity: 0.8;
-            filter: drop-shadow(0 0 10px var(--accent-purple));
-            animation: wing-beat 4s ease-in-out infinite;
-            z-index: 1;
+            width: 10px; height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            filter: blur(2px);
+            animation: float-sparkle 3s infinite;
         }
-        .wing-left { left: -90px; transform: scaleX(-1); }
-        .wing-right { right: -90px; }
+        @keyframes float-sparkle {
+            0% { transform: translate(0,0) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(20px, -50px) scale(1.5); opacity: 0; }
+        }
 
         /* --- Social Links --- */
         .social-container {
@@ -271,29 +255,26 @@
         }
 
         .social-link {
-            width: 60px; height: 60px;
+            width: 50px; height: 50px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-            border: 2px solid var(--accent-pink);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--accent-pink);
             display: flex; justify-content: center; align-items: center;
             color: #fff;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             text-decoration: none;
             transition: 0.3s;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(255, 20, 147, 0.3);
+            backdrop-filter: blur(5px);
         }
         .social-link:hover {
             background: var(--accent-pink);
-            transform: translateY(-5px) rotate(360deg);
-            box-shadow: 0 0 30px var(--accent-pink);
-            border-color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px var(--accent-pink);
         }
 
         /* --- Gallery Finale --- */
         #gallery {
-            min-height: 150vh; /* Long scroll for finale */
+            min-height: 150vh;
         }
         .gallery-hint {
             position: absolute;
@@ -309,57 +290,26 @@
             animation: pulse 2s infinite;
         }
         .gallery-hint p {
-            font-size: 1rem;
-            color: var(--accent-cyan);
+            font-size: 1.2rem;
+            color: var(--accent-gold);
             letter-spacing: 0.2em;
             margin-top: 1rem;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
         }
 
         .glow-text {
-            text-shadow: 0 0 10px var(--accent-pink), 0 0 20px var(--accent-purple);
-            font-weight: 900;
-        }
-
-        .typewriter-text {
-            display: inline-block;
-            overflow: hidden;
-            border-right: .15em solid var(--accent-pink);
-            white-space: nowrap;
-            margin: 0 auto;
-            letter-spacing: .15em;
-            font-family: 'Orbitron';
             color: var(--accent-pink);
             text-shadow: 0 0 10px var(--accent-pink);
-            animation:
-                typing 3.5s steps(40, end),
-                blink-caret .75s step-end infinite;
-        }
-
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
-        @keyframes blink-caret {
-            from, to { border-color: transparent }
-            50% { border-color: var(--accent-pink); }
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-10px);}
-            60% {transform: translateY(-5px);}
         }
 
         /* Mobile Adjustments */
         @media(max-width: 768px) {
-            .hero-title { font-size: 3.5rem; }
-            .sensory-grid { grid-template-columns: 1fr; }
-            .shard-frame { width: 80%; margin: 0 auto; }
+            .hero-title { font-size: 3rem; }
+            .bubble-card { width: 200px; height: 200px; }
             .glass-panel { padding: 2rem; }
         }
 
@@ -374,100 +324,92 @@
         <!-- Hero -->
         <section id="hero">
             <div class="container" style="text-align: center;">
-                <h2 class="hero-subtitle gs-reveal">LITTLE DEVIL</h2>
+                <h2 class="hero-subtitle gs-reveal">LUCID DREAMER</h2>
                 <h1 class="hero-title gs-reveal" data-text="YUMEBI EMU">YUMEBI EMU</h1>
-                <div style="font-size: 1.5rem; margin-top: 1rem; color: #ddd; min-height: 2em;">
-                    <span class="typewriter-text">ENTERING LUCID DREAM STATE...</span>
-                </div>
+                <p style="font-size: 1.5rem; margin-top: 1rem; color: #eee; font-style: italic;" class="gs-reveal">
+                    "Eternal 20-year-old Idol"
+                </p>
             </div>
 
             <div style="position: absolute; bottom: 50px; animation: bounce 2s infinite;">
-                <i class="fa-solid fa-chevron-down" style="color: var(--accent-pink); font-size: 3rem; filter: drop-shadow(0 0 10px var(--accent-pink));"></i>
+                <i class="fa-solid fa-gem" style="color: var(--accent-pink); font-size: 2rem; filter: drop-shadow(0 0 10px var(--accent-pink));"></i>
             </div>
         </section>
 
         <!-- Identity -->
         <section id="identity">
-            <div class="glass-panel container gs-reveal" style="max-width: 900px; text-align: center; border: 3px solid var(--accent-purple);">
+            <div class="glass-panel container gs-reveal" style="max-width: 900px; text-align: center;">
                 <div class="profile-wrapper">
-                    <div class="demon-wing wing-left" style="--s: -1"></div>
-                    <div class="demon-wing wing-right" style="--s: 1"></div>
                     <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Yumebi Emu" class="profile-img">
+                    <div class="sparkle" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+                    <div class="sparkle" style="top: 80%; right: 20%; animation-delay: 1s;"></div>
+                    <div class="sparkle" style="top: 10%; right: 10%; animation-delay: 2s;"></div>
                 </div>
 
-                <h2 style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-pink); text-shadow: 0 0 20px var(--accent-pink);">夢寐愛姆</h2>
-                <h3 style="font-size: 1.5rem; margin-bottom: 2rem; color: var(--accent-purple); letter-spacing: 0.2em;">ETERNAL 20 IDOL</h3>
+                <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-primary);">夢寐愛姆</h2>
 
-                <p style="font-size: 1.2rem; line-height: 2; margin-bottom: 2rem; color: #eee;">
+                <p style="font-size: 1.2rem; line-height: 2; margin-bottom: 2rem; color: #ddd;">
                     我是一位 ASMR 創作者，永遠 20 歲的偶像！<br>
-                    喜歡在直播中和大家一起閒聊彼此的日常 ヾ(´︶`*)ﾉ♬<br>
+                    喜歡在直播中和大家一起閒聊彼此的日常。<br>
                     透過擅長的 <span class="glow-text">夢境魔法 (ASMR)</span>，把失眠的人通通哄睡，<br>
                     陪伴所有孤獨的人度過漫漫長夜。
                 </p>
 
-                <div style="background: rgba(255,20,147,0.1); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;">
+                <div style="background: rgba(255,105,180,0.1); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;">
                     <p style="color: #fff; font-style: italic;">
-                        "觀眾都認為我有點天然呆，但我覺得我很聰明！"<br>
                         "想成為像照亮冬天的太陽般溫暖親切的人。"
                     </p>
                 </div>
 
                 <div class="social-container">
-                     <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank" title="YouTube Main"><i class="fa-brands fa-youtube"></i></a>
-                     <a href="https://www.youtube.com/@eemumu0621" class="social-link" target="_blank" title="ASMR Channel"><i class="fa-solid fa-microphone-lines"></i></a>
-                     <a href="https://www.twitch.tv/yumebiemu" class="social-link" target="_blank" title="Twitch"><i class="fa-brands fa-twitch"></i></a>
-                     <a href="https://www.threads.net/@yumebi_emu" class="social-link" target="_blank" title="Threads"><i class="fa-brands fa-threads"></i></a>
-                     <a href="https://www.instagram.com/yumebi_emu/" class="social-link" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                     <a href="https://discord.com/invite/twEj2UkKWj" class="social-link" target="_blank" title="Discord"><i class="fa-brands fa-discord"></i></a>
-                     <a href="https://www.hivebee.com.tw/user1d611745829147/Subscribe" class="social-link" target="_blank" title="Hivebee"><i class="fa-solid fa-star"></i></a>
-                     <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/?ref=pages_you_manage" class="social-link" target="_blank" title="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                     <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank"><i class="fa-brands fa-youtube"></i></a>
+                     <a href="https://www.youtube.com/@eemumu0621" class="social-link" target="_blank"><i class="fa-solid fa-microphone-lines"></i></a>
+                     <a href="https://www.twitch.tv/yumebiemu" class="social-link" target="_blank"><i class="fa-brands fa-twitch"></i></a>
+                     <a href="https://www.threads.net/@yumebi_emu" class="social-link" target="_blank"><i class="fa-brands fa-threads"></i></a>
+                     <a href="https://www.instagram.com/yumebi_emu/" class="social-link" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                     <a href="https://discord.com/invite/twEj2UkKWj" class="social-link" target="_blank"><i class="fa-brands fa-discord"></i></a>
+                     <a href="https://www.hivebee.com.tw/user1d611745829147/Subscribe" class="social-link" target="_blank"><i class="fa-solid fa-star"></i></a>
+                     <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/?ref=pages_you_manage" class="social-link" target="_blank"><i class="fa-brands fa-facebook"></i></a>
                 </div>
             </div>
         </section>
 
-        <!-- Sensory Focus: Floating Mirror Frames -->
+        <!-- Sensory Focus: Dream Bubbles -->
         <section id="sensory">
             <div class="container">
-                <h2 style="text-align: center; font-size: 3.5rem; color: var(--accent-hot); margin-bottom: 2rem; text-shadow: 0 0 20px var(--accent-hot);">SENSORY FRAGMENTS</h2>
+                <h2 style="text-align: center; font-size: 3rem; color: var(--accent-pink); margin-bottom: 1rem; text-shadow: 0 0 20px var(--accent-pink);">DREAM FRAGMENTS</h2>
                 <div class="sensory-grid">
-                    <div class="shard-frame shard-eyes gs-card">
-                        <img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes">
-                        <span class="shard-label">GAZE</span>
+                    <div class="bubble-card gs-card">
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes"></div>
+                        <div class="bubble-glow"></div>
+                        <span class="bubble-label">GAZE</span>
                     </div>
-                    <div class="shard-frame shard-nose gs-card">
-                        <img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Breath">
-                        <span class="shard-label">BREATH</span>
+                    <div class="bubble-card gs-card" style="margin-top: 3rem;">
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Breath"></div>
+                        <div class="bubble-glow"></div>
+                        <span class="bubble-label">BREATH</span>
                     </div>
-                    <div class="shard-frame shard-lips gs-card">
-                        <img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips">
-                        <span class="shard-label">WHISPER</span>
+                    <div class="bubble-card gs-card">
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips"></div>
+                        <div class="bubble-glow"></div>
+                        <span class="bubble-label">WHISPER</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Traits / Skills -->
+        <!-- Traits -->
         <section id="traits">
             <div class="container" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem;">
-                <!-- Card 1 -->
                 <div class="glass-panel gs-card" style="flex: 1; min-width: 320px; text-align: center;">
-                    <i class="fa-solid fa-heart-pulse" style="font-size: 4rem; color: var(--accent-pink); margin-bottom: 1.5rem; filter: drop-shadow(0 0 10px var(--accent-pink));"></i>
-                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem;">WARM LIKE SUN</h3>
-                    <p style="margin-top: 1rem; line-height: 1.8; font-size: 1.1rem;">
-                        想成為像照亮冬天的太陽般溫暖親切的人。<br>
-                        努力經營個人 IP，常駐在 YouTube 直播。
-                    </p>
+                    <i class="fa-solid fa-heart" style="font-size: 3rem; color: var(--accent-pink); margin-bottom: 1.5rem;"></i>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">WARMTH</h3>
+                    <p>努力經營個人 IP，常駐在 YouTube 直播。</p>
                 </div>
-
-                <!-- Card 2 -->
                 <div class="glass-panel gs-card" style="flex: 1; min-width: 320px; text-align: center;">
-                    <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 4rem; color: var(--accent-cyan); margin-bottom: 1.5rem; filter: drop-shadow(0 0 10px var(--accent-cyan));"></i>
-                    <h3 style="font-size: 1.8rem; margin-bottom: 1rem;">MAGIC SKILLS</h3>
-                    <ul style="list-style: none; margin-top: 1rem; line-height: 2.2; font-size: 1.2rem;">
-                        <li>🔮 塔羅占卜 (Tarot Divination)</li>
-                        <li>🍳 烹飪料理 (Culinary Arts)</li>
-                        <li>💤 哄睡魔法 (Sleep Hypnosis)</li>
-                    </ul>
+                    <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 3rem; color: var(--accent-gold); margin-bottom: 1.5rem;"></i>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">MAGIC</h3>
+                    <p>塔羅占卜 · 烹飪料理 · 哄睡魔法</p>
                 </div>
             </div>
         </section>
@@ -475,10 +417,9 @@
         <!-- Gallery (3D Scene) -->
         <section id="gallery">
             <div class="container">
-                <h2 style="text-align: center; margin-bottom: 2rem; font-size: 3rem; color: var(--accent-cyan); text-shadow: 0 0 20px var(--accent-cyan);">DREAM FRAGMENTS</h2>
                 <div class="gallery-hint">
-                    <h3>CLICK TO ASSEMBLE</h3>
-                    <p>ALIGN THE SECTOR</p>
+                    <h3>CRYSTALIZE</h3>
+                    <p>TAP TO UNLOCK MEMORY</p>
                 </div>
             </div>
         </section>
@@ -488,7 +429,7 @@
             <div class="glass-panel" style="text-align: center;">
                 <p style="font-size: 1.5rem; color: var(--accent-pink);">Sweet Dreams...</p>
                 <div style="margin-top: 2rem;">
-                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan); font-size: 1.2rem;">VISIT DIGITAL CARD</a>
+                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan);">DIGITAL CARD</a>
                 </div>
                 <footer style="margin-top: 3rem; font-size: 0.8rem; color: #888;">
                     Made with <span style="color: var(--accent-pink);">♥</span> by <a href="/guild/" style="color: #aaa;">SuperGalen's Dungeon</a>
@@ -497,55 +438,34 @@
         </section>
     </main>
 
-    <!-- P5.js Kaleidoscope Script -->
+    <!-- P5.js Background -->
     <script>
+        // Simple Hypnotic Background
         const p5Sketch = (p) => {
-            let imgEyes, imgLips;
-            let angle = 0;
-
-            p.preload = () => {
-                imgEyes = p.loadImage('/assets/img/guild/yumebi_emu/focus_eyes.webp');
-                imgLips = p.loadImage('/assets/img/guild/yumebi_emu/focus_lips.webp');
-            };
-
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
-                p.angleMode(p.DEGREES);
-                p.imageMode(p.CENTER);
+                p.noFill();
             };
 
             p.draw = () => {
                 p.clear();
-                if(!imgEyes || !imgLips) return;
+                p.translate(p.width/2, p.height/2);
+                let t = p.frameCount * 0.005;
 
-                p.translate(p.width / 2, p.height / 2);
-                p.rotate(angle * 0.5);
+                // Hypnotic Rings
+                for(let i=0; i<5; i++) {
+                    p.stroke(255, 105, 180, 50 - i*10); // Fading Pink
+                    p.strokeWeight(2);
+                    p.rotate(t * (i%2==0 ? 1 : -1));
 
-                let symmetry = 8;
-                let angleStep = 360 / symmetry;
-
-                for (let i = 0; i < symmetry; i++) {
-                    p.push();
-                    p.rotate(i * angleStep + angle);
-
-                    p.push();
-                    p.translate(0, 400 + Math.sin(angle * 2) * 20);
-                    p.rotate(90);
-                    p.tint(255, 0, 100, 50);
-                    p.image(imgEyes, 0, 0, 500, 250);
-                    p.pop();
-
-                    p.push();
-                    p.translate(0, 200 + Math.cos(angle * 2) * 20);
-                    p.rotate(-90);
-                    p.tint(150, 0, 255, 60);
-                    p.image(imgLips, 0, 0, 300, 300);
-                    p.pop();
-
-                    p.pop();
+                    p.beginShape();
+                    for(let a=0; a<p.TWO_PI; a+=0.1) {
+                        let r = 300 + i*50 + p.sin(a*5 + t*5)*20;
+                        p.vertex(r*p.cos(a), r*p.sin(a));
+                    }
+                    p.endShape(p.CLOSE);
                 }
-                angle += 0.3;
             };
 
             p.windowResized = () => {
@@ -555,20 +475,21 @@
         new p5(p5Sketch);
     </script>
 
-    <!-- Three.js Background Script -->
+    <!-- Three.js Gem Heart Script -->
     <script type="module">
         import * as THREE from 'three';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
-        // --- Scene Setup ---
+        // Setup
         const container = document.getElementById('three-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x05000a, 0.002);
+        // Fog for depth
+        scene.fog = new THREE.FogExp2(0x1a0b1f, 0.005);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 20;
+        camera.position.z = 30;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -577,41 +498,21 @@
 
         setTimeout(() => { container.style.opacity = 1; }, 500);
 
-        // --- Post Processing ---
+        // Bloom
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.4;
-        bloomPass.radius = 0.4;
+        bloomPass.strength = 0.6; // Magical Glow
+        bloomPass.radius = 0.5;
+        bloomPass.threshold = 0.1;
         composer.addPass(bloomPass);
 
-        // --- Objects ---
-
-        // 1. Starfield Tunnel (Re-Added)
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 4000;
-        const starPos = new Float32Array(starCount * 3);
-
-        for(let i=0; i<starCount * 3; i+=3) {
-            starPos[i] = (Math.random() - 0.5) * 150;
-            starPos[i+1] = (Math.random() - 0.5) * 150;
-            starPos[i+2] = (Math.random() - 0.5) * 300; // Deep tunnel
-        }
-
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.8 });
-        const starField = new THREE.Points(starGeo, starMat);
-        scene.add(starField);
-
-        // 2. Shard Field (Container)
-        const shardContainer = new THREE.Group();
-        scene.add(shardContainer);
-
-        // Use a Sub-Group for Base Rotation to separate from Scroll Rotation
-        const shardBaseGroup = new THREE.Group();
-        shardContainer.add(shardBaseGroup);
+        // --- GEM HEART ---
+        const heartGroup = new THREE.Group();
+        // Place deep in scene
+        heartGroup.position.z = -10;
+        scene.add(heartGroup);
 
         const loader = new THREE.TextureLoader();
         const textureUrls = [
@@ -626,98 +527,143 @@
         const textures = textureUrls.map(url => {
             const t = loader.load(url);
             t.colorSpace = THREE.SRGBColorSpace;
+            t.center.set(0.5, 0.5);
             return t;
         });
 
-        // Create Fractured Circle (Mirror) Base
-        const radius = 12;
-        const circleGeo = new THREE.CircleGeometry(radius, 32);
+        // 1. Create Heart Shape
+        const x = 0, y = 0;
+        const heartShape = new THREE.Shape();
+        heartShape.moveTo( x + 5, y + 5 );
+        heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
+        heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
+        heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
+        heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
+        heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
+        heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
 
-        const posAttr = circleGeo.attributes.position;
-        for (let i = 1; i < posAttr.count; i++) {
-            const x = posAttr.getX(i);
-            const y = posAttr.getY(i);
-            const noise = (Math.random() - 0.5) * 0.5;
-            posAttr.setX(i, x + noise);
-            posAttr.setY(i, y + noise);
-        }
+        // 2. Extrude Options
+        const extrudeSettings = {
+            steps: 2,
+            depth: 1, // Thick Gem
+            bevelEnabled: true,
+            bevelThickness: 0.5,
+            bevelSize: 0.5,
+            bevelSegments: 2
+        };
 
-        const indexAttr = circleGeo.index;
+        // 3. Voronoi/Shattering simulation via manually placed triangles/shapes
+        // For simplicity and performance, we will create multiple Extruded Shapes that form the heart
+        // Or actually, just one big heart that is fractured.
+        // Let's stick to the "Shards forming Heart" logic but use thick geometry.
+        // We can reuse the ShapeGeometry triangulation logic but create ExtrudeGeometry for each face.
+
+        const baseGeo = new THREE.ShapeGeometry(heartShape, 4); // Low tesselation for distinct shards
+        baseGeo.center();
+        baseGeo.scale(1, -1, 1); // Flip
+        baseGeo.scale(0.8, 0.8, 1);
+
+        const pos = baseGeo.attributes.position;
+        const index = baseGeo.index;
         const shards = [];
 
-        for (let i = 0; i < indexAttr.count; i += 3) {
-            const a = indexAttr.getX(i);
-            const b = indexAttr.getX(i+1);
-            const c = indexAttr.getX(i+2);
+        // Gem Material
+        // Use Physical Material for glass effect
+        const gemMat = new THREE.MeshPhysicalMaterial({
+            color: 0xff1493, // Deep Pink
+            metalness: 0.1,
+            roughness: 0.1,
+            transmission: 0.6, // Glassy
+            thickness: 2,
+            clearcoat: 1,
+            transparent: true,
+            opacity: 0.8,
+            emissive: 0x440022,
+            side: THREE.DoubleSide
+        });
 
-            const v1 = new THREE.Vector3().fromBufferAttribute(posAttr, a);
-            const v2 = new THREE.Vector3().fromBufferAttribute(posAttr, b);
-            const v3 = new THREE.Vector3().fromBufferAttribute(posAttr, c);
+        // Image Material (for the front face)
+        const picMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: textures[0],
+            transparent: true,
+            opacity: 0.5 // Holographic
+        });
+
+        // Loop triangles
+        const cnt = index ? index.count : pos.count;
+        for(let i=0; i<cnt; i+=3) {
+            // Get vertices for this shard
+            let a, b, c;
+            if(index) {
+                a = index.getX(i); b = index.getX(i+1); c = index.getX(i+2);
+            } else {
+                a = i; b = i+1; c = i+2;
+            }
+
+            const v1 = new THREE.Vector3().fromBufferAttribute(pos, a);
+            const v2 = new THREE.Vector3().fromBufferAttribute(pos, b);
+            const v3 = new THREE.Vector3().fromBufferAttribute(pos, c);
 
             const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
 
-            const shapeGeo = new THREE.BufferGeometry();
-            const positions = new Float32Array([
-                v1.x, v1.y, v1.z,
-                v2.x, v2.y, v2.z,
-                v3.x, v3.y, v3.z
-            ]);
+            // Create a Shape from these 3 points for extrusion
+            const triangleShape = new THREE.Shape();
+            triangleShape.moveTo(v1.x, v1.y);
+            triangleShape.lineTo(v2.x, v2.y);
+            triangleShape.lineTo(v3.x, v3.y);
+            triangleShape.lineTo(v1.x, v1.y);
 
-            const uvAttr = circleGeo.attributes.uv;
-            const uv1 = new THREE.Vector2().fromBufferAttribute(uvAttr, a);
-            const uv2 = new THREE.Vector2().fromBufferAttribute(uvAttr, b);
-            const uv3 = new THREE.Vector2().fromBufferAttribute(uvAttr, c);
-            const uvs = new Float32Array([
-                uv1.x, uv1.y,
-                uv2.x, uv2.y,
-                uv3.x, uv3.y
-            ]);
-
-            shapeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            shapeGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-            shapeGeo.computeVertexNormals();
-            shapeGeo.translate(-center.x, -center.y, -center.z);
-
-            const mat = new THREE.MeshBasicMaterial({
-                map: textures[0],
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.5,
-                color: 0x888888
+            // Extrude this shard
+            const shardGeo = new THREE.ExtrudeGeometry(triangleShape, {
+                depth: 1 + Math.random(), // Varying thickness
+                bevelEnabled: true,
+                bevelSize: 0.1,
+                bevelThickness: 0.1
             });
 
-            const mesh = new THREE.Mesh(shapeGeo, mat);
+            // UV Mapping for the Picture: Map based on position relative to heart bounds
+            // Approximate bounds: x: -10 to 10, y: -10 to 10
+            const uvAttr = shardGeo.attributes.uv;
+            const posAttr = shardGeo.attributes.position;
+            for(let j=0; j<uvAttr.count; j++) {
+                const x = posAttr.getX(j);
+                const y = posAttr.getY(j);
+                // Map -10..10 to 0..1
+                uvAttr.setXY(j, (x/20) + 0.5, (y/20) + 0.5);
+            }
 
-            mesh.userData.homePos = center.clone();
-            mesh.userData.homeRot = new THREE.Euler(0, 0, 0);
+            // Center geometry locally
+            shardGeo.translate(-center.x, -center.y, -center.z);
 
-            // Chaos (Start) Position: Far Z, random XY
-            mesh.userData.chaosPos = new THREE.Vector3(
-                (Math.random()-0.5) * 100,
-                (Math.random()-0.5) * 80,
-                (Math.random()) * 50 + 20
-            );
-            mesh.userData.chaosRot = new THREE.Euler(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
-            );
+            // Mesh with 2 materials (Face=pic, Sides=gem)
+            // ExtrudeGeometry: Index 0 = Faces, Index 1 = Sides
+            const mesh = new THREE.Mesh(shardGeo, [picMat, gemMat]);
 
-            mesh.position.copy(mesh.userData.chaosPos);
-            mesh.rotation.copy(mesh.userData.chaosRot);
+            mesh.position.copy(center);
 
-            shardBaseGroup.add(mesh);
+            // Animation Data
+            mesh.userData = {
+                homePos: center.clone(),
+                // Breathing/Orbit state
+                orbitOffset: center.clone().multiplyScalar(0.5).add(new THREE.Vector3(0,0, (Math.random()-0.5)*5)),
+                rotSpeed: (Math.random()-0.5) * 0.02
+            };
+
+            // Start expanded
+            mesh.position.add(mesh.userData.orbitOffset);
+
+            heartGroup.add(mesh);
             shards.push(mesh);
         }
 
-        // --- Scroll Interaction (Storm Logic) ---
-        gsap.registerPlugin(ScrollTrigger);
-
+        // --- Interaction ---
+        let isCrystalized = false;
         let scrollProgress = 0;
-        let isAssembled = false;
-        let currentTextureIndex = 0;
-        let baseRotation = 0;
+        let currentTexIdx = 0;
 
+        // Scroll
+        gsap.registerPlugin(ScrollTrigger);
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
@@ -725,99 +671,86 @@
             scrub: 1,
             onUpdate: (self) => {
                 scrollProgress = self.progress;
+                camera.position.z = 30 - (scrollProgress * 20); // Move closer
 
-                if (!isAssembled) {
-                    shards.forEach(mesh => {
-                        const orbitPos = mesh.userData.homePos.clone().multiplyScalar(1.5);
-                        orbitPos.z += (Math.random()-0.5) * 5;
-                        const p = Math.pow(scrollProgress, 2);
-                        mesh.position.lerpVectors(mesh.userData.chaosPos, orbitPos, p);
-                    });
-
-                    // Rotate CONTAINER based on scroll
-                    shardContainer.rotation.z = scrollProgress * Math.PI * 4;
+                // Rotate heart
+                if(!isCrystalized) {
+                    heartGroup.rotation.y = scrollProgress * Math.PI * 4;
                 }
             }
         });
 
-        // --- Click Interaction ---
+        // Click
         window.addEventListener('click', () => {
-            if (scrollProgress > 0.9) {
-                isAssembled = !isAssembled;
+            if(scrollProgress > 0.8) {
+                isCrystalized = !isCrystalized;
 
-                if(isAssembled) {
-                    // Assemble
-                    shards.forEach(mesh => {
-                        gsap.to(mesh.position, {
-                            x: mesh.userData.homePos.x,
-                            y: mesh.userData.homePos.y,
-                            z: mesh.userData.homePos.z,
-                            duration: 0.8,
-                            ease: "back.out(1.2)"
+                if(isCrystalized) {
+                    // Tighten
+                    shards.forEach(m => {
+                        gsap.to(m.position, {
+                            x: m.userData.homePos.x,
+                            y: m.userData.homePos.y,
+                            z: m.userData.homePos.z,
+                            duration: 1,
+                            ease: "elastic.out(1, 0.5)"
                         });
-                        gsap.to(mesh.rotation, {
-                            x: 0, y: 0, z: 0,
-                            duration: 0.8,
-                            ease: "power2.out"
-                        });
-                        gsap.to(mesh.material, { opacity: 1, duration: 0.5 });
+                        gsap.to(m.rotation, {x:0, y:0, z:0, duration: 1});
                     });
+                    // Change material to solid
+                    picMat.opacity = 1;
+                    gemMat.transmission = 0.2; // Less transparent
                 } else {
-                    // Release
-                    shards.forEach(mesh => {
-                        const orbitPos = mesh.userData.homePos.clone().multiplyScalar(1.5);
-                        orbitPos.z += (Math.random()-0.5) * 5;
-
-                         gsap.to(mesh.position, {
-                            x: orbitPos.x, y: orbitPos.y, z: orbitPos.z,
-                            duration: 1.0,
+                    // Expand
+                    shards.forEach(m => {
+                        gsap.to(m.position, {
+                            x: m.userData.homePos.x + m.userData.orbitOffset.x,
+                            y: m.userData.homePos.y + m.userData.orbitOffset.y,
+                            z: m.userData.homePos.z + m.userData.orbitOffset.z,
+                            duration: 1.5,
                             ease: "power2.inOut"
                         });
-                        gsap.to(mesh.rotation, {
-                            x: Math.random(), y: Math.random(),
-                            duration: 1.0
-                        });
-                         gsap.to(mesh.material, { opacity: 0.5, duration: 0.5 });
                     });
+                    picMat.opacity = 0.5;
+                    gemMat.transmission = 0.6;
                 }
             }
         });
 
-        // --- Animation Loop ---
+        // Loop
         gsap.ticker.add(() => {
+            if(!isCrystalized) {
+                // Breathing
+                const t = Date.now() * 0.001;
+                shards.forEach(m => {
+                    m.rotation.z = Math.sin(t + m.position.x) * 0.1;
+                });
 
-            // 1. Starfield
-            const positions = starField.geometry.attributes.position.array;
-            for(let i=2; i<positions.length; i+=3) {
-                positions[i] += 0.5; // Move forward
-                if(positions[i] > 50) positions[i] -= 250; // Loop
-            }
-            starField.geometry.attributes.position.needsUpdate = true;
-
-            // 2. Texture Swapping Logic
-            if (!isAssembled) {
-                // Combine Scroll Rotation + Base Rotation
-                baseRotation += 0.002;
-                shardBaseGroup.rotation.z = baseRotation;
-
-                // Total effective angle for texture calculation
-                const totalAngle = Math.abs((shardContainer.rotation.z + baseRotation) % (Math.PI * 2));
-                const sectorSize = (Math.PI * 2) / 6;
-                const newIndex = Math.floor(totalAngle / sectorSize);
-
-                if (newIndex !== currentTextureIndex) {
-                    currentTextureIndex = newIndex;
-                    // Safely access texture array
-                    if(textures.length > 0) {
-                        const tex = textures[currentTextureIndex % textures.length];
-                        shards.forEach(mesh => {
-                            mesh.material.map = tex;
-                            mesh.material.needsUpdate = true;
-                        });
-                    }
+                // Texture Cycle based on Heart Rotation
+                let angle = Math.abs(heartGroup.rotation.y % (Math.PI*2));
+                let idx = Math.floor(angle / (Math.PI/3));
+                if(idx !== currentTexIdx) {
+                    currentTexIdx = idx;
+                    const t = textures[idx % textures.length];
+                    picMat.map = t;
+                    picMat.needsUpdate = true;
                 }
             }
             composer.render();
+        });
+
+        // Particles
+        const partGeo = new THREE.BufferGeometry();
+        const pCnt = 200;
+        const pPos = new Float32Array(pCnt * 3);
+        for(let i=0; i<pCnt*3; i++) pPos[i] = (Math.random()-0.5)*40;
+        partGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const partMat = new THREE.PointsMaterial({color: 0xff69b4, size: 0.2, transparent:true});
+        const particles = new THREE.Points(partGeo, partMat);
+        scene.add(particles);
+
+        gsap.ticker.add(()=>{
+            particles.rotation.y += 0.002;
         });
 
         window.addEventListener('resize', () => {
@@ -827,21 +760,10 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Reveals
+        // GSAP
         gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
-            gsap.fromTo(elem,
-                { opacity: 0, y: 50 },
-                { opacity: 1, y: 0, duration: 1, scrollTrigger: { trigger: elem, start: "top 80%" }}
-            );
+            gsap.fromTo(elem, {opacity:0, y:30}, {opacity:1, y:0, duration:1, delay:i*0.1});
         });
-
-        gsap.utils.toArray('.gs-card').forEach((elem, i) => {
-            gsap.fromTo(elem,
-                { opacity: 0, scale: 0.8 },
-                { opacity: 1, scale: 1, duration: 0.8, delay: i*0.2, scrollTrigger: { trigger: elem, start: "top 80%" }}
-            );
-        });
-
     </script>
 </body>
 </html>
