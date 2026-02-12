@@ -30,7 +30,7 @@
             --c-secondary: #20b2aa; /* Light Sea Green (Healing) */
             --c-text: #f0f0f0;
             --c-muted: #888;
-            --f-display: 'Cormorant Garmond', serif;
+            --f-display: 'Cormorant Garamond', serif;
             --f-body: 'Noto Sans TC', sans-serif;
         }
 
@@ -229,9 +229,19 @@
             transform: translateY(-3px);
         }
 
+        /* Hero Social Icons */
+        .hero-social {
+            margin-top: 2rem;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
         /* Responsive */
         @media (max-width: 900px) {
             .hero-grid { grid-template-columns: 1fr; text-align: center; }
+            .hero-social { justify-content: center; }
             .avatar-frame { width: 70%; margin: 0 auto 2rem auto; }
             h1 { font-size: 3.5rem; }
             section { padding: 4rem 1.5rem; }
@@ -260,7 +270,7 @@
                     <p class="gs-reveal" style="font-size: 1.25rem; color: #ccc; margin-top: 1.5rem;">
                         "從激昂的鼓聲中甦醒，<br>在手碟的共鳴裡安放靈魂。"
                     </p>
-                    <div class="gs-reveal" style="margin-top: 2rem; display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; md:justify-content: flex-start;">
+                    <div class="gs-reveal hero-social">
                         <span><i class="fa-solid fa-drum" style="color:var(--c-primary)"></i> 爵士鼓</span>
                         <span><i class="fa-solid fa-compact-disc" style="color:var(--c-secondary)"></i> 手碟</span>
                         <span><i class="fa-solid fa-chalkboard-user" style="color:var(--c-primary)"></i> 教學</span>
@@ -397,9 +407,10 @@
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 15;
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        // Optimization: Disable antialias (bloom blurs anyway), cap pixel ratio
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
         // --- LIGHTING ---
@@ -416,7 +427,8 @@
 
         // --- POST PROCESSING (Softer Bloom) ---
         const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        // Optimization: Half resolution for bloom pass
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.3; // Higher threshold to limit bloom to brightest parts
         bloomPass.strength = 0.35; // Significantly reduced bloom strength
         bloomPass.radius = 0.5; // Tighter bloom
@@ -434,7 +446,8 @@
         const ringCount = 12; // Fewer rings for less clutter
 
         for(let i=0; i<ringCount; i++) {
-            const geometry = new THREE.TorusGeometry(3 + i * 1.0, 0.015, 16, 100); // Thinner, more spaced out
+            // Optimization: Reduced geometry segments (8 radial, 60 tubular)
+            const geometry = new THREE.TorusGeometry(3 + i * 1.0, 0.015, 8, 60);
             const material = new THREE.MeshBasicMaterial({
                 color: i % 2 === 0 ? 0xd4af37 : 0x20b2aa,
                 transparent: true,
@@ -457,21 +470,6 @@
             rings.push(ring);
         }
 
-        // Central Core (The "Soul")
-        const coreGeo = new THREE.IcosahedronGeometry(1.5, 1);
-        const coreMat = new THREE.MeshPhysicalMaterial({
-            color: 0xd4af37,
-            roughness: 0.2,
-            metalness: 0.8,
-            transmission: 0.2,
-            emissive: 0x20b2aa,
-            emissiveIntensity: 0.2,
-            wireframe: true
-        });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        group.add(core);
-
-
         // --- ANIMATION ---
         const clock = new THREE.Clock();
 
@@ -488,10 +486,6 @@
                 const scale = 1 + Math.sin(time * 0.5 + i * 0.2) * 0.05;
                 ring.scale.set(scale, scale, scale);
             });
-
-            // Rotate core
-            core.rotation.y = time * 0.1;
-            core.rotation.z = Math.sin(time * 0.2) * 0.1;
 
             // Float group
             group.position.y = Math.sin(time * 0.3) * 0.2;
