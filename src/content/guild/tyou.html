@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>秋桑 Tyou | 物理系跑咖筆記</title>
+    <title>秋桑 Tyou | The Quantum Barista</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Kurenaido&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
@@ -14,19 +14,21 @@
 
     <style>
         :root {
-            --color-bg: #E0DCC8;   /* Oatmeal */
-            --color-text: #333333; /* Dark Grey */
-            --color-accent: #556B2F; /* Olive Green */
-            --color-light: #FDFBF7;
+            --color-bg: #1a1510; /* Deep Coffee/Black */
+            --color-primary: #00FFFF; /* Cyber Cyan (Physics/Logic) */
+            --color-secondary: #FFB347; /* Golden Amber (Coffee/Warmth) */
+            --color-text: #E0E0E0;
+            --color-glass: rgba(26, 21, 16, 0.7);
             --font-main: 'Noto Serif TC', serif;
-            --font-display: 'Playfair Display', serif;
-            --font-hand: 'Zen Kurenaido', cursive;
+            --font-tech: 'Orbitron', sans-serif;
+            --font-code: 'Source Code Pro', monospace;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Custom cursor */
         }
 
         body {
@@ -44,9 +46,9 @@
             left: 0;
             width: 100%;
             height: 100vh;
-            z-index: -2;
-            opacity: 0; /* Fade in */
-            transition: opacity 2s ease;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 1.5s ease-out;
         }
 
         #canvas-p5 {
@@ -55,10 +57,32 @@
             left: 0;
             width: 100%;
             height: 100vh;
-            z-index: -1;
+            z-index: 999;
             pointer-events: none;
-            opacity: 0.6;
-            mix-blend-mode: multiply;
+            mix-blend-mode: screen;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--color-primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+            mix-blend-mode: difference;
+            transition: width 0.3s, height 0.3s, border-color 0.3s;
+        }
+
+        #cursor.hovered {
+            width: 60px;
+            height: 60px;
+            border-color: var(--color-secondary);
+            background: rgba(255, 179, 71, 0.1);
         }
 
         /* --- Layout --- */
@@ -69,205 +93,211 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 4rem 2rem;
+            padding: 6rem 2rem;
             position: relative;
         }
 
         .content-wrapper {
-            max-width: 900px;
+            max-width: 1000px;
             width: 100%;
             z-index: 10;
         }
 
+        /* --- Typography --- */
         h1, h2, h3 {
-            font-family: var(--font-display);
-            font-weight: 700;
-            line-height: 1.2;
+            font-family: var(--font-tech);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #fff;
         }
 
-        .handwritten {
-            font-family: var(--font-hand);
-            color: var(--color-accent);
+        .code-label {
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+            display: block;
+            text-shadow: 0 0 5px var(--color-primary);
+        }
+
+        .highlight-cyan { color: var(--color-primary); text-shadow: 0 0 10px rgba(0, 255, 255, 0.4); }
+        .highlight-amber { color: var(--color-secondary); text-shadow: 0 0 10px rgba(255, 179, 71, 0.4); }
+
+        /* --- Components --- */
+        .glass-card {
+            background: var(--color-glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--color-primary), transparent);
         }
 
         /* --- Hero --- */
-        .hero-avatar {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            border: 3px solid var(--color-accent);
-            padding: 5px;
-            margin: 0 auto 2rem;
+        .hero-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
             position: relative;
-            overflow: hidden;
         }
 
-        .hero-avatar img {
-            width: 100%;
-            height: 100%;
+        .avatar-frame {
+            width: 250px;
+            height: 250px;
+            position: relative;
+            margin-bottom: 2rem;
+            border-radius: 50%; /* Ensuring circular frame */
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Rotating rings around avatar */
+        .avatar-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            border-top-color: var(--color-primary);
+            border-bottom-color: var(--color-secondary);
+            animation: spin 10s linear infinite;
+        }
+
+        .ring-1 { width: 100%; height: 100%; animation-duration: 8s; }
+        .ring-2 { width: 110%; height: 110%; animation-duration: 12s; animation-direction: reverse; opacity: 0.7; }
+        .ring-3 { width: 120%; height: 120%; animation-duration: 15s; opacity: 0.5; border-left-color: var(--color-primary); }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .avatar-img {
+            width: 90%;
+            height: 90%;
             object-fit: cover;
             border-radius: 50%;
+            filter: grayscale(20%) contrast(1.1);
         }
 
-        .hero-title {
-            font-size: 3.5rem;
-            text-align: center;
+        .hero-glitch {
+            font-size: 4rem;
+            position: relative;
             margin-bottom: 0.5rem;
         }
 
-        .hero-subtitle {
-            font-size: 1.2rem;
-            text-align: center;
-            font-family: var(--font-main);
-            opacity: 0.8;
-            letter-spacing: 0.1em;
+        /* --- Data Grid (Timeline) --- */
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
         }
 
-        /* --- Text Sections --- */
-        .text-block {
-            background: rgba(224, 220, 200, 0.85); /* Semi-transparent oatmeal */
-            backdrop-filter: blur(5px);
-            padding: 3rem;
-            border-left: 5px solid var(--color-accent);
-            margin-bottom: 4rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        .data-module {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            padding: 1.5rem;
+            position: relative;
+            transition: 0.3s;
         }
 
-        .section-label {
-            font-family: var(--font-display);
-            font-size: 1rem;
-            color: var(--color-accent);
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
+        .data-module:hover {
+            border-color: var(--color-secondary);
+            transform: translateY(-5px);
+            background: rgba(255, 179, 71, 0.05);
+        }
+
+        .module-header {
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: #666;
             margin-bottom: 1rem;
-            display: block;
+            display: flex;
+            justify-content: space-between;
         }
 
-        /* --- Timeline --- */
-        .timeline-container {
+        /* --- Interactive Elements --- */
+        .interactive-el { cursor: none; } /* Handled by custom cursor */
+
+        /* --- Social HUD --- */
+        .hud-social {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 100;
+        }
+
+        .hud-link {
+            color: #666;
+            font-size: 1.2rem;
+            transition: 0.3s;
             position: relative;
-            padding-left: 2rem;
-            border-left: 2px solid var(--color-accent);
         }
 
-        .timeline-item {
-            margin-bottom: 2rem;
-            position: relative;
-        }
-
-        .timeline-item::before {
+        .hud-link::after {
             content: '';
             position: absolute;
-            left: -2.6rem;
-            top: 0.5rem;
-            width: 1rem;
-            height: 1rem;
-            background: var(--color-bg);
-            border: 2px solid var(--color-accent);
-            border-radius: 50%;
+            right: -10px;
+            top: 50%;
+            width: 0;
+            height: 1px;
+            background: var(--color-primary);
+            transition: 0.3s;
         }
 
-        .timeline-role {
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
+        .hud-link:hover { color: var(--color-primary); }
+        .hud-link:hover::after { width: 20px; }
 
-        .timeline-desc {
-            font-size: 0.95rem;
-            opacity: 0.8;
-        }
-
-        /* --- Philosophy --- */
-        .quote-box {
-            font-size: 2rem;
-            font-family: var(--font-main);
-            text-align: center;
-            font-weight: 300;
-            line-height: 1.6;
-            margin: 4rem 0;
-            position: relative;
-        }
-
-        .quote-box::before {
-            content: '"';
-            font-family: var(--font-display);
-            font-size: 6rem;
-            color: var(--color-accent);
-            opacity: 0.2;
-            position: absolute;
-            top: -3rem;
-            left: -1rem;
-        }
-
-        /* --- Gallery --- */
-        .gallery-frame {
+        /* --- Gallery (Hologram) --- */
+        .holo-frame {
             position: relative;
             width: 100%;
             height: 60vh;
-            overflow: hidden;
-            margin: 4rem 0;
-            border: 10px solid #fff;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-        }
-
-        .gallery-img {
-            width: 100%;
-            height: 120%; /* For parallax */
-            object-fit: cover;
-            position: absolute;
-            top: -10%;
-        }
-
-        /* --- Social --- */
-        .social-grid {
+            border: 1px solid var(--color-secondary);
+            background: rgba(255, 179, 71, 0.05);
             display: flex;
             justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .social-link {
-            display: flex;
             align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            color: var(--color-text);
-            font-size: 1.2rem;
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--color-accent);
-            border-radius: 50px;
-            transition: all 0.3s ease;
+            overflow: hidden;
         }
 
-        .social-link:hover {
-            background: var(--color-accent);
-            color: #fff;
-            transform: translateY(-3px);
+        .holo-img {
+            max-height: 80%;
+            opacity: 0.9;
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
         }
 
-        /* --- Utilities --- */
-        .highlight {
-            position: relative;
-            z-index: 1;
-        }
-        .highlight::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 0.4em;
-            background: rgba(85, 107, 47, 0.2); /* Low opacity olive */
-            z-index: -1;
-        }
-
+        /* --- Responsive --- */
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.5rem; }
+            .hero-glitch { font-size: 2.5rem; }
             .section { padding: 4rem 1.5rem; }
+            #cursor { display: none; }
+            * { cursor: auto; }
+            .hud-social {
+                position: relative;
+                flex-direction: row;
+                bottom: auto;
+                right: auto;
+                margin-top: 2rem;
+                justify-content: center;
+            }
         }
     </style>
 
-    <!-- Import Map for Three.js -->
+    <!-- Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -279,277 +309,354 @@
 </head>
 <body>
 
+    <div id="cursor"></div>
     <div id="canvas-three"></div>
     <div id="canvas-p5"></div>
 
-    <!-- Hero -->
+    <!-- Hero Section -->
     <section class="section">
-        <div class="content-wrapper gs-reveal">
-            <div class="hero-avatar">
-                <img src="/assets/img/guild/tyou/avatar.webp" alt="Tyou">
+        <div class="content-wrapper hero-container gs-reveal">
+            <div class="avatar-frame">
+                <div class="avatar-ring ring-1"></div>
+                <div class="avatar-ring ring-2"></div>
+                <div class="avatar-ring ring-3"></div>
+                <img src="/assets/img/guild/tyou/avatar.webp" alt="Tyou" class="avatar-img">
             </div>
-            <h1 class="hero-title">秋桑 <span style="font-weight: 300;">Tyou</span></h1>
-            <div class="hero-subtitle">
-                The Coffee Physicist <span style="color: var(--color-accent);">//</span> INTP Explorer
+
+            <h1 class="hero-glitch">TYOU <span class="highlight-cyan">秋桑</span></h1>
+
+            <div style="font-family: var(--font-code); margin-bottom: 2rem;">
+                [CLASS: PHYSICIST] <span style="color: #666;">>></span> [ROLE: BARISTA]
             </div>
-            <div style="text-align: center; margin-top: 1rem; font-family: var(--font-hand); font-size: 1.5rem; color: var(--color-accent);">
-                不為打卡，只為一杯好咖啡
+
+            <p style="max-width: 600px; margin: 0 auto; color: #aaa;">
+                Applying <span class="highlight-cyan">Quantum Logic</span> to the Art of <span class="highlight-amber">Coffee Extraction</span>.
+                <br>Analyzing space, atmosphere, and the human variable.
+            </p>
+        </div>
+    </section>
+
+    <!-- 01. Logic Core (INTP) -->
+    <section class="section">
+        <div class="content-wrapper">
+            <span class="code-label">01 // SYSTEM_INIT: LOGIC_CORE</span>
+
+            <div class="glass-card gs-reveal">
+                <h2 style="margin-bottom: 1.5rem; color: var(--color-primary);">The INTP Approach</h2>
+                <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+                    大學、研究所皆主修物理。這賦予了我一種近乎強迫症的邏輯思維。<br>
+                    跑咖對我來說，不是隨機漫步，而是一場<span class="highlight-cyan">實驗數據的收集</span>。
+                </p>
+                <div style="margin-top: 2rem; border-top: 1px solid #333; padding-top: 1rem; font-family: var(--font-code); font-size: 0.9rem; color: #888;">
+                    > Variables: Atmosphere, Noise_Level, Lighting, Coffee_Density.<br>
+                    > Objective: Find the optimal relaxation state.
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Intro -->
+    <!-- 02. Transformation (Career) -->
     <section class="section">
         <div class="content-wrapper">
-            <span class="section-label">01. The Habit</span>
-            <div class="text-block gs-reveal">
-                <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-                    我是住在日本的秋桑，跑咖是一種<span class="highlight">生活習慣</span>。不是為了打卡，也不是追流行，而是單純喜歡找一個可以坐下來、慢慢喝完一杯咖啡的地方。
-                </p>
-                <p>
-                    起初是因為太多朋友問：「哪個地區有推薦的店？」但常常去過就忘。於是，我決定把這些記憶寫成一本可以隨時翻閱的筆記。
-                </p>
+            <span class="code-label">02 // DATA_STREAM: CAREER_PATH</span>
+
+            <div class="data-grid">
+                <div class="data-module gs-reveal interactive-el">
+                    <div class="module-header">
+                        <span>PHASE_1</span>
+                        <span>[PHYSICS]</span>
+                    </div>
+                    <h3>ACADEMIA</h3>
+                    <p style="margin-top: 0.5rem; color: #aaa;">The rigorous training of logic and structure. Defining the universe through equations.</p>
+                </div>
+
+                <div class="data-module gs-reveal interactive-el" style="transition-delay: 0.1s;">
+                    <div class="module-header">
+                        <span>PHASE_2</span>
+                        <span>[DESIGN]</span>
+                    </div>
+                    <h3>VISUALS</h3>
+                    <p style="margin-top: 0.5rem; color: #aaa;">Transition to Graphic Design. Understanding composition, color, and visual communication.</p>
+                </div>
+
+                <div class="data-module gs-reveal interactive-el" style="transition-delay: 0.2s;">
+                    <div class="module-header">
+                        <span>PHASE_3</span>
+                        <span>[COFFEE]</span>
+                    </div>
+                    <h3>THE GRIND</h3>
+                    <p style="margin-top: 0.5rem; color: #aaa;">5 years as a Barista. From indie shops to chains. Learning the variables of extraction.</p>
+                </div>
+
+                <div class="data-module gs-reveal interactive-el" style="transition-delay: 0.3s;">
+                    <div class="module-header">
+                        <span>CURRENT</span>
+                        <span>[JAPAN]</span>
+                    </div>
+                    <h3>EXPLORER</h3>
+                    <p style="margin-top: 0.5rem; color: #aaa;">Living in Japan (30+). Tourism writer, Toy Store Manager. Collecting experiences.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Logic (Physics) -->
+    <!-- 03. Philosophy (The Guide) -->
     <section class="section">
         <div class="content-wrapper">
-            <span class="section-label">02. The Logic</span>
-            <div class="text-block gs-reveal">
-                <h2 style="margin-bottom: 1.5rem;">Physics & Coffee</h2>
-                <p>
-                    大學、研究所都是物理系，完全的 <span class="highlight">INTP 教科書</span>。
-                </p>
-                <p style="margin-top: 1rem;">
-                    我在意的不是「好不好喝」或「好不好拍」，而是這家店<span class="highlight">適不適合某一個人</span>。雖然有多年咖啡實務背景，但我不想賣弄專業。比起技術名詞，我更在意一杯咖啡能不能讓人放鬆。
-                </p>
-            </div>
-        </div>
-    </section>
+            <span class="code-label">03 // ANALYSIS_RESULT: PHILOSOPHY</span>
 
-    <!-- Career -->
-    <section class="section">
-        <div class="content-wrapper">
-            <span class="section-label">03. The Grind</span>
-            <div class="text-block gs-reveal">
-                <div class="timeline-container">
-                    <div class="timeline-item">
-                        <div class="timeline-role">Physics Major</div>
-                        <div class="timeline-desc">大學 & 研究所 | The Logical Foundation</div>
+            <div class="glass-card gs-reveal" style="border-left: 2px solid var(--color-secondary);">
+                <h2 style="margin-bottom: 2rem; color: var(--color-secondary);">NOT A REVIEW. A GUIDE.</h2>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <p style="margin-bottom: 1rem;">
+                            我不寫評分，也不拍大光圈糖水照。<br>
+                            我在意的是這家店<span class="highlight-amber">適不適合你</span>。
+                        </p>
+                        <p>
+                            比起技術名詞，我更在意一杯咖啡能不能讓人放鬆。<br>
+                            「只要有人喜歡，就是好咖啡。」
+                        </p>
                     </div>
-                    <div class="timeline-item">
-                        <div class="timeline-role">Graphic Design</div>
-                        <div class="timeline-desc">畢業後的第一份工作</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-role">Barista (5 Years)</div>
-                        <div class="timeline-desc">從個人小店到連鎖體系，摸索咖啡的溫度</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-role">Japan Life (30歲~)</div>
-                        <div class="timeline-desc">咖啡食品業界 -> 觀光推廣寫手 -> 觀光業界</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-role">Toy Store Manager</div>
-                        <div class="timeline-desc">現在是玩具店店長 😂 喜歡的事情太多，結果什麼都做了</div>
+
+                    <div class="holo-frame interactive-el" style="flex: 1; min-width: 300px;">
+                        <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot" class="holo-img">
+                        <div style="position: absolute; bottom: 10px; right: 10px; font-family: var(--font-code); font-size: 0.8rem; color: var(--color-secondary);">
+                            OBJ: K-POT-01
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Philosophy -->
-    <section class="section">
-        <div class="content-wrapper">
-            <div class="quote-box gs-reveal">
-                <span class="handwritten">只要有人喜歡，就是好咖啡。</span><br>
-                <span style="font-size: 1.2rem; opacity: 0.7; display: block; margin-top: 1rem;">
-                    我的帳號不是攻略，也不是評分。<br>
-                    更像是一本陪你跑日本咖啡廳的導覽手冊。
-                </span>
-            </div>
-
-            <div class="gallery-frame gs-reveal">
-                <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot" class="gallery-img">
-            </div>
-        </div>
-    </section>
-
     <!-- Footer -->
-    <section class="section" style="background: rgba(85, 107, 47, 0.1);">
-        <div class="content-wrapper">
-            <h2 style="text-align: center; margin-bottom: 3rem;">Connect with Tyou</h2>
-            <div class="social-grid gs-reveal">
-                <a href="https://www.threads.com/@japan.coffee__tyou.tw" target="_blank" class="social-link">
-                    <i class="fa-brands fa-threads"></i> Threads
-                </a>
-                <a href="https://www.instagram.com/japan.coffee__tyou.tw/" target="_blank" class="social-link">
-                    <i class="fa-brands fa-instagram"></i> Instagram
-                </a>
-                <a href="https://vocus.cc/user/@japan-coffee-tyou" target="_blank" class="social-link">
-                    <i class="fa-solid fa-pen-nib"></i> Vocus
-                </a>
-                <a href="https://www.youtube.com/@japan.coffee_tyouSAN" target="_blank" class="social-link">
-                    <i class="fa-brands fa-youtube"></i> YouTube
-                </a>
-                <a href="https://linkgoods.com/japancoffeebytyou" target="_blank" class="social-link">
-                    <i class="fa-solid fa-link"></i> LinkGoods
-                </a>
+    <section class="section">
+        <div class="content-wrapper" style="text-align: center;">
+            <h2 class="gs-reveal">INITIATE CONNECTION</h2>
+            <div class="hud-social gs-reveal">
+                <a href="https://www.threads.com/@japan.coffee__tyou.tw" target="_blank" class="hud-link interactive-el">THREADS</a>
+                <a href="https://www.instagram.com/japan.coffee__tyou.tw/" target="_blank" class="hud-link interactive-el">INSTAGRAM</a>
+                <a href="https://vocus.cc/user/@japan-coffee-tyou" target="_blank" class="hud-link interactive-el">VOCUS</a>
+                <a href="https://www.youtube.com/@japan.coffee_tyouSAN" target="_blank" class="hud-link interactive-el">YOUTUBE</a>
+                <a href="https://linkgoods.com/japancoffeebytyou" target="_blank" class="hud-link interactive-el">LINKGOODS</a>
             </div>
-            <div style="text-align: center; margin-top: 4rem; opacity: 0.6; font-size: 0.9rem;">
-                <a href="/guild/" style="text-decoration: none; color: inherit;">Back to Guild</a>
+
+            <div style="margin-top: 4rem; opacity: 0.5; font-family: var(--font-code); font-size: 0.8rem;">
+                <a href="/guild/" style="color: inherit; text-decoration: none;" class="interactive-el">< RETURN_TO_BASE</a>
             </div>
         </div>
     </section>
 
-    <!-- Scripts -->
+    <!-- Three.js Logic -->
     <script type="module">
         import * as THREE from 'three';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
-        // --- GSAP Setup ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Reveal Animations
-        gsap.utils.toArray('.gs-reveal').forEach(el => {
-            gsap.from(el, {
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
-                },
-                y: 50,
-                opacity: 0,
-                duration: 1.2,
-                ease: "power3.out"
-            });
-        });
-
-        // Parallax for Gallery
-        gsap.to('.gallery-img', {
-            scrollTrigger: {
-                trigger: '.gallery-frame',
-                start: "top bottom",
-                end: "bottom top",
-                scrub: true
-            },
-            y: "20%",
-            ease: "none"
-        });
-
-        // --- Three.js Setup ---
+        // --- Setup ---
         const container = document.getElementById('canvas-three');
         const scene = new THREE.Scene();
-        // Oatmeal Fog
-        scene.fog = new THREE.FogExp2(0xE0DCC8, 0.015);
+        // Deep space fog
+        scene.fog = new THREE.FogExp2(0x1a1510, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 20;
+        camera.position.z = 30;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
+        // --- Post Processing (Bloom) ---
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(10, 10, 10);
-        scene.add(dirLight);
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.5, // Strength (High for cyber look)
+            0.4, // Radius
+            0.1  // Threshold
+        );
+        composer.addPass(bloomPass);
 
-        // Group for rotation
-        const group = new THREE.Group();
-        scene.add(group);
+        // --- Particles: Morphing System ---
+        // We will have one BufferGeometry, but animate the positions
+        const particleCount = 4000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
 
-        // Objects
-        const geometries = [];
+        // Target Positions (Morph Targets)
+        const targets = {
+            grid: [],    // Physics/Order
+            sphere: [],  // Transition
+            chaos: []    // Coffee/Fluid
+        };
 
-        // 1. Coffee Beans (Ellipsoids)
-        const beanGeo = new THREE.SphereGeometry(1, 16, 16);
-        beanGeo.scale(1, 0.6, 0.4); // Bean shape
-        const beanMat = new THREE.MeshStandardMaterial({
-            color: 0x4B3621, // Coffee Brown
-            roughness: 0.8,
-            metalness: 0.1
-        });
+        // 1. Grid (Cube)
+        const gridSize = Math.cbrt(particleCount);
+        const gridSpacing = 2.5;
+        let idx = 0;
+        for(let x=0; x<gridSize; x++) {
+            for(let y=0; y<gridSize; y++) {
+                for(let z=0; z<gridSize; z++) {
+                    if(idx >= particleCount) break;
+                    const px = (x - gridSize/2) * gridSpacing;
+                    const py = (y - gridSize/2) * gridSpacing;
+                    const pz = (z - gridSize/2) * gridSpacing;
+                    targets.grid.push(px, py, pz);
 
-        for(let i=0; i<30; i++) {
-            const bean = new THREE.Mesh(beanGeo, beanMat);
-            bean.position.set(
-                (Math.random() - 0.5) * 60,
-                (Math.random() - 0.5) * 60,
-                (Math.random() - 0.5) * 40
-            );
-            bean.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            bean.userData = {
-                rotSpeed: {
-                    x: (Math.random()-0.5) * 0.01,
-                    y: (Math.random()-0.5) * 0.01
+                    // Initial pos = Grid
+                    positions[idx*3] = px;
+                    positions[idx*3+1] = py;
+                    positions[idx*3+2] = pz;
+
+                    // Color: Cyan
+                    colors[idx*3] = 0.0;
+                    colors[idx*3+1] = 1.0;
+                    colors[idx*3+2] = 1.0;
+
+                    idx++;
                 }
-            };
-            group.add(bean);
+            }
         }
 
-        // 2. Physics Shapes (Icosahedrons - Wireframe)
-        const shapeGeo = new THREE.IcosahedronGeometry(2, 0);
-        const lineMat = new THREE.LineBasicMaterial({
-            color: 0x556B2F, // Olive
+        // 2. Sphere (Torus Knot approx)
+        for(let i=0; i<particleCount; i++) {
+            const u = Math.random() * Math.PI * 2;
+            const v = Math.random() * Math.PI * 2;
+            const tubeRadius = 5;
+            const knotRadius = 12;
+            // Torus Knot logic
+            const p = 2, q = 3;
+            const r = knotRadius * (2 + Math.cos(q * u)) * 0.5;
+            const tx = r * Math.cos(p * u);
+            const ty = r * Math.sin(p * u);
+            const tz = - knotRadius * Math.sin(q * u);
+
+            // Random spread around tube
+            const x = tx + (Math.random()-0.5) * tubeRadius;
+            const y = ty + (Math.random()-0.5) * tubeRadius;
+            const z = tz + (Math.random()-0.5) * tubeRadius;
+
+            targets.sphere.push(x, y, z);
+        }
+
+        // 3. Chaos (Galaxy/Vortex)
+        for(let i=0; i<particleCount; i++) {
+             const angle = Math.random() * Math.PI * 2;
+             const radius = Math.random() * 30 + 5;
+             const spiral = angle + radius * 0.1;
+
+             const x = Math.cos(spiral) * radius;
+             const y = (Math.random() - 0.5) * 10;
+             const z = Math.sin(spiral) * radius;
+
+             targets.chaos.push(x, y, z);
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.3,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
             transparent: true,
-            opacity: 0.4
+            opacity: 0.8
         });
 
-        for(let i=0; i<15; i++) {
-            const wireframe = new THREE.WireframeGeometry(shapeGeo);
-            const line = new THREE.LineSegments(wireframe, lineMat);
-            line.position.set(
-                (Math.random() - 0.5) * 80,
-                (Math.random() - 0.5) * 80,
-                (Math.random() - 0.5) * 50
-            );
-            line.scale.setScalar(Math.random() * 2 + 0.5);
-            line.userData = {
-                rotSpeed: {
-                    x: (Math.random()-0.5) * 0.005,
-                    y: (Math.random()-0.5) * 0.005
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+        // --- Animation Loop ---
+        let scrollProgress = 0;
+
+        // Scroll Trigger for Morphing
+        // Map 0 -> Grid, 0.5 -> Sphere, 1 -> Chaos
+        gsap.to({}, {
+            scrollTrigger: {
+                trigger: document.body,
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.5,
+                onUpdate: (self) => {
+                    scrollProgress = self.progress;
                 }
-            };
-            group.add(line);
-        }
-
-        // Reveal Scene
-        setTimeout(() => container.style.opacity = 1, 100);
-
-        // Animation Loop
-        let scrollY = 0;
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
+            }
         });
+
+        // Fade In
+        setTimeout(() => container.style.opacity = 1, 100);
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate group based on scroll + time
-            group.rotation.y = scrollY * 0.0005 + performance.now() * 0.0001;
-            group.rotation.x = scrollY * 0.0002;
+            // Time factor
+            const time = performance.now() * 0.001;
 
-            // Animate individual objects
-            group.children.forEach(child => {
-                if (child.userData.rotSpeed) {
-                    child.rotation.x += child.userData.rotSpeed.x;
-                    child.rotation.y += child.userData.rotSpeed.y;
+            // Update Positions
+            const posAttr = particleSystem.geometry.attributes.position;
+            const colAttr = particleSystem.geometry.attributes.color;
+
+            // Determine blending factor
+            // Phase 1: Grid -> Sphere (0 to 0.5)
+            // Phase 2: Sphere -> Chaos (0.5 to 1.0)
+
+            for(let i=0; i<particleCount; i++) {
+                const i3 = i * 3;
+                let tx, ty, tz;
+                let r, g, b;
+
+                if(scrollProgress < 0.5) {
+                    // Interpolate Grid -> Sphere
+                    const t = scrollProgress * 2; // 0 to 1
+                    tx = targets.grid[i3] + (targets.sphere[i3] - targets.grid[i3]) * t;
+                    ty = targets.grid[i3+1] + (targets.sphere[i3+1] - targets.grid[i3+1]) * t;
+                    tz = targets.grid[i3+2] + (targets.sphere[i3+2] - targets.grid[i3+2]) * t;
+
+                    // Color: Cyan -> Mix
+                    r = 0;
+                    g = 1;
+                    b = 1 - t * 0.5; // Less blue
+                } else {
+                    // Interpolate Sphere -> Chaos
+                    const t = (scrollProgress - 0.5) * 2; // 0 to 1
+                    tx = targets.sphere[i3] + (targets.chaos[i3] - targets.sphere[i3]) * t;
+                    ty = targets.sphere[i3+1] + (targets.chaos[i3+1] - targets.sphere[i3+1]) * t;
+                    tz = targets.sphere[i3+2] + (targets.chaos[i3+2] - targets.sphere[i3+2]) * t;
+
+                    // Color: Mix -> Amber
+                    r = t; // Add Red -> Orange/Yellow
+                    g = 1 - t * 0.3; // Reduce Green slightly
+                    b = 0.5 - t * 0.5; // Remove Blue
                 }
-            });
 
-            // Camera drift
-            camera.position.y = -scrollY * 0.01;
+                // Add subtle noise movement
+                const noise = Math.sin(time + i) * 0.2;
 
-            renderer.render(scene, camera);
+                posAttr.array[i3] = tx + noise;
+                posAttr.array[i3+1] = ty + noise;
+                posAttr.array[i3+2] = tz;
+
+                colAttr.array[i3] = r;
+                colAttr.array[i3+1] = g;
+                colAttr.array[i3+2] = b;
+            }
+
+            posAttr.needsUpdate = true;
+            colAttr.needsUpdate = true;
+
+            // Rotate System
+            particleSystem.rotation.y = time * 0.1;
+            particleSystem.rotation.z = scrollProgress * 0.5;
+
+            composer.render();
         }
         animate();
 
@@ -558,50 +665,81 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // --- GSAP Reveals ---
+        gsap.utils.toArray('.gs-reveal').forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 90%",
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+        });
+
+        // Custom Cursor Logic
+        const cursor = document.getElementById('cursor');
+        if (window.matchMedia("(min-width: 768px)").matches) {
+            window.addEventListener('mousemove', (e) => {
+                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            });
+
+            document.querySelectorAll('.interactive-el, a').forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+            });
+        }
     </script>
 
-    <!-- p5.js Sketch -->
+    <!-- p5.js HUD Overlay -->
     <script>
         function setup() {
             const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('canvas-p5');
-            noFill();
-            stroke(85, 107, 47, 40); // Olive with low opacity
-            strokeWeight(1);
+            frameRate(30);
         }
 
         function draw() {
             clear();
 
-            // Draw Perlin Noise "Isolines"
-            // mimicking steam or physics fields
-            let t = millis() * 0.0005;
+            // Draw Crosshairs following mouse
+            stroke(0, 255, 255, 100);
+            strokeWeight(1);
 
-            beginShape();
-            for (let x = 0; x < width; x += 20) {
-                let y = height * 0.8 + map(noise(x * 0.005, t), 0, 1, -100, 100);
+            // Horizontal line
+            line(0, mouseY, width, mouseY);
+            // Vertical line
+            line(mouseX, 0, mouseX, height);
 
-                // Mouse interaction distorts lines
-                let d = dist(x, y, mouseX, mouseY);
-                if (d < 200) {
-                    y += (200 - d) * 0.5;
-                }
-
-                curveVertex(x, y);
+            // Random Glitch "Data" text
+            if(frameCount % 60 === 0) {
+                fill(0, 255, 255, 150);
+                noStroke();
+                textSize(10);
+                text("SCANNING..." + int(random(1000)), mouseX + 10, mouseY - 10);
             }
+
+            // Corner HUDS
+            stroke(0, 255, 255, 150);
+            noFill();
+
+            // Top Left
+            beginShape();
+            vertex(20, 50);
+            vertex(20, 20);
+            vertex(50, 20);
             endShape();
 
+            // Bottom Right
             beginShape();
-            for (let x = 0; x < width; x += 20) {
-                let y = height * 0.2 + map(noise(x * 0.005 + 100, t * 0.5), 0, 1, -100, 100);
-                 // Mouse interaction
-                let d = dist(x, y, mouseX, mouseY);
-                if (d < 200) {
-                    y -= (200 - d) * 0.5;
-                }
-                curveVertex(x, y);
-            }
+            vertex(width - 50, height - 20);
+            vertex(width - 20, height - 20);
+            vertex(width - 20, height - 50);
             endShape();
         }
 
