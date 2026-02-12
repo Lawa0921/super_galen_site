@@ -14,6 +14,7 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
 
     <style>
         :root {
@@ -25,6 +26,8 @@
             --font-display: 'Cinzel', serif;
             --font-body: 'Noto Serif TC', serif;
             --font-sans: 'Lato', sans-serif;
+            --card-width: 320px;
+            --card-height: 480px;
         }
 
         * {
@@ -41,6 +44,7 @@
             -webkit-font-smoothing: antialiased;
             opacity: 0;
             transition: opacity 1.5s ease;
+            cursor: none; /* Custom cursor */
         }
 
         body.loaded {
@@ -57,6 +61,40 @@
         ::-webkit-scrollbar-thumb {
             background: #ccc;
             border-radius: 2px;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor-follower {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
+            mix-blend-mode: difference;
+        }
+        #cursor-dot {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 4px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+        body.hovering #cursor-follower {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(212, 175, 55, 0.1);
+            border-color: transparent;
         }
 
         /* --- Canvas Background --- */
@@ -104,7 +142,6 @@
         section {
             position: relative;
             width: 100%;
-            padding: 10vh 0; /* Huge vertical spacing */
         }
 
         .container {
@@ -122,12 +159,18 @@
 
         /* Glass Panel for Readability */
         .glass-panel {
-            background: rgba(252, 251, 249, 0.85); /* Matches bg-color but translucent */
-            backdrop-filter: blur(8px);
+            background: rgba(252, 251, 249, 0.7); /* Lighter touch */
+            backdrop-filter: blur(12px);
             padding: 3rem;
             border-radius: 2px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-5px) rotateX(2deg); /* Subtle 3D tilt */
+            box-shadow: 0 15px 50px -10px rgba(0, 0, 0, 0.08);
         }
 
         /* --- Typography --- */
@@ -194,22 +237,21 @@
             justify-content: center;
             align-items: center; /* Center everything */
             text-align: center;
+            padding: 0;
         }
 
         .hero-title-wrapper {
             position: relative;
             z-index: 5;
-            /* No blend mode here, use simple stacking for cleanliness */
-            padding: 2rem;
+            padding: 4rem;
         }
-
-        /* The "Golden Thread" path visualization placeholder (optional) */
 
         /* --- Bio Scroll --- */
         .bio-section {
             min-height: 100vh;
             display: flex;
             align-items: center;
+            padding: 10vh 0;
         }
 
         .bio-grid {
@@ -237,52 +279,92 @@
             filter: sepia(0.1) contrast(0.95); /* Soft vintage */
         }
 
-        /* --- Curriculum (The Steps) --- */
-        .curriculum-section {
-            padding: 15vh 0;
+        /* --- CARD DECK SECTION (New) --- */
+        .deck-section {
+            height: 400vh; /* Long scroll area */
+            position: relative;
         }
 
-        .step-item {
+        .deck-sticky-wrapper {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .deck-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 2rem;
             display: grid;
-            grid-template-columns: 1fr 1.5fr; /* Text | Image */
+            grid-template-columns: 1fr 1fr;
             gap: 4rem;
-            margin-bottom: 15vh;
             align-items: center;
         }
 
-        .step-item:nth-child(even) {
-            grid-template-columns: 1.5fr 1fr; /* Image | Text */
-            direction: rtl; /* Flip visual order */
-        }
-
-        .step-item:nth-child(even) .step-text {
-            direction: ltr; /* Reset text direction */
-            text-align: right; /* Maintain standard alignment inside, visual RTL structure */
-        }
-
-        .step-img-mask {
-            width: 100%;
-            aspect-ratio: 16/10;
-            overflow: hidden;
+        .deck-text-area {
             position: relative;
-            border-radius: 2px;
+            height: 300px; /* Fixed height for text transition */
         }
 
-        .step-img {
+        .deck-text-item {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+
+        .deck-text-item.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .deck-visual-area {
+            position: relative;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        .card-stack {
+            position: relative;
+            width: var(--card-width);
+            height: var(--card-height);
+        }
+
+        .card-item {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            transform-origin: center bottom;
+            transition: box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card-item:hover {
+            box-shadow: 0 30px 60px rgba(212, 175, 55, 0.2);
+        }
+
+        .card-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scale(1.2); /* Zoom out effect */
-            transition: transform 1.5s ease-out;
-        }
-
-        .step-num {
-            font-family: var(--font-display);
-            font-size: 4rem;
-            color: var(--accent);
-            opacity: 0.3;
-            margin-bottom: 1rem;
-            display: block;
         }
 
         /* --- Philosophy Quote --- */
@@ -292,7 +374,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            /* Translucent background handled by glass-panel */
+            padding: 10vh 0;
         }
 
         /* --- Footer --- */
@@ -340,6 +422,10 @@
 
         /* --- Mobile --- */
         @media (max-width: 768px) {
+            :root {
+                --card-width: 260px;
+                --card-height: 380px;
+            }
             .container { padding: 0 1.5rem; }
             .nav-fixed { top: 1.5rem; left: 1.5rem; }
 
@@ -348,14 +434,15 @@
                 gap: 3rem;
             }
 
-            .step-item, .step-item:nth-child(even) {
+            .deck-container {
                 grid-template-columns: 1fr;
-                direction: ltr;
                 gap: 2rem;
-                margin-bottom: 10vh;
             }
-            .step-item:nth-child(even) .step-text {
-                text-align: left;
+            .deck-text-area {
+                height: 200px;
+                order: 2; /* Visual below cards? Or above? Let's keep above */
+                order: -1;
+                margin-bottom: 2rem;
             }
 
             .glass-panel { padding: 1.5rem; }
@@ -364,19 +451,23 @@
         }
     </style>
 </head>
-<body>
+<body class="magnet-container">
+
+    <!-- Custom Cursor -->
+    <div id="cursor-follower"></div>
+    <div id="cursor-dot"></div>
 
     <!-- Three.js Background -->
     <div id="webgl-container"></div>
 
     <!-- Navigation -->
     <nav class="nav-fixed">
-        <a href="/guild/" class="nav-back">Guild Index</a>
+        <a href="/guild/" class="nav-back magnet-target">Guild Index</a>
     </nav>
 
     <!-- Hero -->
     <section class="hero-section">
-        <div class="hero-title-wrapper glass-panel">
+        <div class="hero-title-wrapper glass-panel magnet-target" data-magnet-strength="30">
             <span class="sub-display reveal-text">The Language Architect</span>
             <h1 class="display-text reveal-text">LYANNA</h1>
             <p class="reveal-text" style="max-width: 500px; margin: 0 auto;">
@@ -411,83 +502,73 @@
         </div>
     </section>
 
-    <!-- Curriculum Steps -->
-    <section class="curriculum-section">
-        <div class="container">
-            <div style="text-align: center; margin-bottom: 6rem;">
-                <span class="sub-display">The Path</span>
-                <h2 style="font-size: 2.5rem;">My Methodology</h2>
-            </div>
+    <!-- CARD DECK SECTION -->
+    <section class="deck-section">
+        <div class="deck-sticky-wrapper">
+            <div class="deck-container">
+                <!-- Text Description -->
+                <div class="deck-text-area glass-panel">
+                    <div class="deck-text-item active" data-index="0">
+                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">01</div>
+                        <h3>Structure & Clarity</h3>
+                        <p>專業結構清楚。將教育部華語教師證照拆解成可執行的學習系統。讓龐大的知識體系變得清晰、可觸及。</p>
+                    </div>
+                    <div class="deck-text-item" data-index="1">
+                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">02</div>
+                        <h3>Guidance & Pace</h3>
+                        <p>陪伴式引導。不只教內容，而是陪你釐清方向與節奏。多數人卡住的從來不只是考試，而是對未來的迷惘。</p>
+                    </div>
+                    <div class="deck-text-item" data-index="2">
+                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">03</div>
+                        <h3>Global Vision</h3>
+                        <p>跨領域視角。結合教學、職涯、關係與海外生活經驗。讓學習不只停在證照，而是回到人生整體的選擇。</p>
+                    </div>
+                     <div class="deck-text-item" data-index="3">
+                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">04</div>
+                        <h3>Career Planning</h3>
+                        <p>職涯規劃引導。海外教學實戰經驗分享，協助你從零開始建立個人品牌，找到屬於你的教學定位。</p>
+                    </div>
+                    <div class="deck-text-item" data-index="4">
+                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">05</div>
+                        <h3>Inner Understanding</h3>
+                        <p>MMT 天賦分析。結合天賦分析與人際關係諮詢，解決的不只是教學問題，更是人生課題。</p>
+                    </div>
+                </div>
 
-            <!-- Step 1 -->
-            <div class="step-item">
-                <div class="step-text glass-panel">
-                    <div class="step-num">01</div>
-                    <h3>Structure & Clarity</h3>
-                    <p>專業結構清楚。將教育部華語教師證照拆解成可執行的學習系統。讓龐大的知識體系變得清晰、可觸及。</p>
-                </div>
-                <div class="step-img-mask parallax-mask">
-                    <img src="/assets/img/guild/lyanna/slide_1.webp" class="step-img" alt="Structure">
-                </div>
-            </div>
-
-            <!-- Step 2 -->
-            <div class="step-item">
-                <div class="step-text glass-panel">
-                    <div class="step-num">02</div>
-                    <h3>Guidance & Pace</h3>
-                    <p>陪伴式引導。不只教內容，而是陪你釐清方向與節奏。多數人卡住的從來不只是考試，而是對未來的迷惘。</p>
-                </div>
-                <div class="step-img-mask parallax-mask">
-                    <img src="/assets/img/guild/lyanna/slide_2.webp" class="step-img" alt="Guidance">
-                </div>
-            </div>
-
-            <!-- Step 3 -->
-            <div class="step-item">
-                <div class="step-text glass-panel">
-                    <div class="step-num">03</div>
-                    <h3>Global Vision</h3>
-                    <p>跨領域視角。結合教學、職涯、關係與海外生活經驗。讓學習不只停在證照，而是回到人生整體的選擇。</p>
-                </div>
-                <div class="step-img-mask parallax-mask">
-                    <img src="/assets/img/guild/lyanna/slide_3.webp" class="step-img" alt="Global Vision">
-                </div>
-            </div>
-
-             <!-- Step 4 (MMT) -->
-             <div class="step-item">
-                <div class="step-text glass-panel">
-                    <div class="step-num">04</div>
-                    <h3>Inner Understanding</h3>
-                    <p>MMT 天賦分析。結合天賦分析與人際關係諮詢，解決的不只是教學問題，更是人生課題。</p>
-                </div>
-                <div class="step-img-mask parallax-mask">
-                    <img src="/assets/img/guild/lyanna/slide_5.webp" class="step-img" alt="Inner Understanding">
+                <!-- Visual Cards -->
+                <div class="deck-visual-area">
+                    <div class="card-stack">
+                        <!-- Reverse order for z-index stacking in HTML, but we animate them specifically -->
+                        <!-- Actually, standard order is fine if we use Z-index in CSS or GSAP -->
+                        <div class="card-item" style="z-index: 5;"><img src="/assets/img/guild/lyanna/slide_1.webp" class="card-img"></div>
+                        <div class="card-item" style="z-index: 4;"><img src="/assets/img/guild/lyanna/slide_2.webp" class="card-img"></div>
+                        <div class="card-item" style="z-index: 3;"><img src="/assets/img/guild/lyanna/slide_3.webp" class="card-img"></div>
+                        <div class="card-item" style="z-index: 2;"><img src="/assets/img/guild/lyanna/slide_4.webp" class="card-img"></div>
+                        <div class="card-item" style="z-index: 1;"><img src="/assets/img/guild/lyanna/slide_5.webp" class="card-img"></div>
+                    </div>
                 </div>
             </div>
-
         </div>
     </section>
 
     <!-- Philosophy -->
     <section class="philosophy-section">
-        <div class="container editorial-col glass-panel">
+        <div class="container editorial-col glass-panel magnet-target">
             <p class="display-text" style="font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.6; color: var(--text-primary);">
                 "真正能走得遠的，<br>不只是會考試的人，<br>
                 而是對<span class="highlight">自己有理解</span>、<br>
                 對<span class="highlight">選擇有準備</span>的人。"
             </p>
             <div class="social-links" style="margin-top: 4rem;">
-                <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-link">Threads</a>
-                <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-link">Books</a>
-                <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-link">Instagram</a>
+                <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-link magnet-target">Threads</a>
+                <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-link magnet-target">Books</a>
+                <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-link magnet-target">Instagram</a>
             </div>
         </div>
     </section>
 
     <footer class="simple-footer">
-        Made with love by <a href="/guild/">SuperGalen's Dungeon</a>
+        Made with love by <a href="/guild/" class="magnet-target">SuperGalen's Dungeon</a>
     </footer>
 
     <script type="module">
@@ -512,6 +593,45 @@
         }
         requestAnimationFrame(raf);
 
+        // --- CUSTOM CURSOR ---
+        const cursor = document.getElementById('cursor-follower');
+        const dot = document.getElementById('cursor-dot');
+
+        let mouseX = 0;
+        let mouseY = 0;
+        let cursorX = 0;
+        let cursorY = 0;
+        let dotX = 0;
+        let dotY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        // Magnet Effect
+        const magnets = document.querySelectorAll('.magnet-target');
+        magnets.forEach(magnet => {
+            magnet.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            magnet.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        function animateCursor() {
+            // Smooth follower
+            cursorX += (mouseX - cursorX) * 0.1;
+            cursorY += (mouseY - cursorY) * 0.1;
+            cursor.style.transform = `translate(\${cursorX}px, \${cursorY}px) translate(-50%, -50%)`;
+
+            // Fast dot
+            dotX += (mouseX - dotX) * 0.5;
+            dotY += (mouseY - dotY) * 0.5;
+            dot.style.transform = `translate(\${dotX}px, \${dotY}px) translate(-50%, -50%)`;
+
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+
         // --- GSAP ANIMATIONS ---
         gsap.registerPlugin(ScrollTrigger);
 
@@ -529,7 +649,7 @@
         document.querySelectorAll('.parallax-mask').forEach(mask => {
             const img = mask.querySelector('img');
             gsap.to(img, {
-                y: '10%', // Move down slightly as we scroll down (opposing motion)
+                y: '10%', // Move down slightly as we scroll down
                 scrollTrigger: {
                     trigger: mask,
                     start: 'top bottom',
@@ -555,30 +675,70 @@
             });
         });
 
-        // Curriculum Steps Entrance
-        document.querySelectorAll('.step-item').forEach(step => {
-            gsap.from(step, {
-                scrollTrigger: {
-                    trigger: step,
-                    start: 'top 80%'
-                },
-                y: 50,
+        // --- CARD DECK ANIMATION ---
+        const cards = gsap.utils.toArray('.card-item');
+        const texts = gsap.utils.toArray('.deck-text-item');
+        const totalCards = cards.length;
+
+        // Initial setup for Fan
+        gsap.set(cards, {
+            rotation: (i) => (i - (totalCards-1)/2) * 5, // Slight fan
+            y: (i) => i * 4, // Slight vertical offset
+            x: 0,
+            opacity: 1
+        });
+
+        // Timeline
+        const deckTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: '.deck-section',
+                start: 'top top',
+                end: 'bottom bottom',
+                scrub: 1,
+                pin: '.deck-sticky-wrapper',
+                anticipatePin: 1
+            }
+        });
+
+        // Animate each card (except last one which stays)
+        cards.forEach((card, i) => {
+            if (i === totalCards - 1) return; // Last card stays put
+
+            deckTl.to(card, {
+                xPercent: 120, // Slide right off screen
+                rotation: 20, // Rotate out
                 opacity: 0,
                 duration: 1,
-                ease: 'power2.out'
-            });
+                ease: 'power2.inOut'
+            }, i * 1.5); // Stagger timing
+
+            // Text Switching
+            // Hide current text
+            deckTl.to(texts[i], {
+                opacity: 0,
+                y: -20,
+                duration: 0.5
+            }, i * 1.5);
+
+            // Show next text
+            if (texts[i+1]) {
+                deckTl.to(texts[i+1], {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.5
+                }, i * 1.5 + 0.5); // Overlap slightly
+            }
         });
+
 
         // --- THREE.JS BACKGROUND: THE GOLDEN THREAD ---
         const initThree = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            // Add Fog for depth fade
             scene.fog = new THREE.Fog(0xfcfbf9, 60, 150);
 
-            // Camera setup
             const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.z = 120; // Move back slightly
+            camera.position.z = 120;
             camera.position.y = 0;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -605,47 +765,40 @@
 
             // Create The Thread
             const isMobile = window.innerWidth < 768;
-            // Increased spread to push thread to edges
             const spreadX = isMobile ? 50 : 120;
             const spreadY = isMobile ? 120 : 200;
-            // Thinner thread for elegance
             const tubeRadius = isMobile ? 0.12 : 0.15;
 
             const curvePoints = [];
-            // Create a wider, more open loop
-            for (let i = 0; i < 15; i++) {
-                const angle = (i / 15) * Math.PI * 2;
-                // Spiral shape
+            for (let i = 0; i < 20; i++) { // Increased length
+                const angle = (i / 20) * Math.PI * 2;
                 const r = spreadX * (0.8 + Math.random() * 0.4);
                 const x = Math.cos(angle * 3) * r;
-                const y = (Math.random() - 0.5) * spreadY;
-                const z = (Math.random() - 0.5) * 60; // Keep Z variation moderate
-
+                const y = (Math.random() - 0.5) * spreadY * 1.5; // Taller
+                const z = (Math.random() - 0.5) * 60;
                 curvePoints.push(new THREE.Vector3(x, y, z));
             }
             const curve = new THREE.CatmullRomCurve3(curvePoints);
             curve.closed = true;
-            curve.tension = 0.3; // Very smooth
+            curve.tension = 0.3;
 
             const geometry = new THREE.TubeGeometry(curve, 600, tubeRadius, 24, true);
 
-            // Material: Lighter, more translucent Gold
             const material = new THREE.MeshPhysicalMaterial({
                 color: 0xeebb44,
                 emissive: 0x443311,
-                emissiveIntensity: 0.2, // Reduced glow
+                emissiveIntensity: 0.2,
                 roughness: 0.2,
                 metalness: 0.8,
                 clearcoat: 1.0,
                 clearcoatRoughness: 0.1,
                 transparent: true,
-                opacity: 0.85 // Reduced opacity
+                opacity: 0.85
             });
 
             const threadMesh = new THREE.Mesh(geometry, material);
             scene.add(threadMesh);
 
-            // Particles - fewer, more subtle
             const pGeo = new THREE.BufferGeometry();
             const pCount = 80;
             const pPos = new Float32Array(pCount * 3);
@@ -667,9 +820,8 @@
             const clock = new THREE.Clock();
 
             const animate = () => {
-                const time = clock.getElapsedTime() * 0.15; // Slower
+                const time = clock.getElapsedTime() * 0.15;
 
-                // Gentle rotation
                 threadMesh.rotation.x = Math.sin(time * 0.5) * 0.15;
                 threadMesh.rotation.y = time * 0.2;
 
@@ -680,11 +832,9 @@
                 const maxScroll = document.body.scrollHeight - window.innerHeight;
                 const scrollProgress = scrollY / (maxScroll || 1);
 
-                // Move camera down and slightly back
-                camera.position.y = -scrollProgress * 40;
-                // Sway slightly to reveal different thread angles
-                camera.position.x = Math.sin(scrollProgress * Math.PI) * 15;
-                camera.lookAt(0, -scrollProgress * 40, 0);
+                camera.position.y = -scrollProgress * 60;
+                camera.position.x = Math.sin(scrollProgress * Math.PI) * 20;
+                camera.lookAt(0, -scrollProgress * 60, 0);
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
@@ -692,7 +842,6 @@
 
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
