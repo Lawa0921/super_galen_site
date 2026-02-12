@@ -62,18 +62,21 @@
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             z-index: -2; pointer-events: none;
+            /* Add a subtle overlay to ensure base text contrast globally */
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%);
         }
 
         /* --- Navigation --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: rgba(255,255,255,0.8); text-decoration: none;
+            color: rgba(255,255,255,0.9); text-decoration: none;
             font-family: var(--f-body); font-weight: 500;
-            padding: 0.5rem 1.2rem;
-            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.6rem 1.4rem;
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 30px;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(5px);
+            background: rgba(10,10,10,0.6);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
         }
         .nav-back:hover {
@@ -88,6 +91,7 @@
             line-height: 1; margin: 0;
             color: var(--c-text);
             letter-spacing: -0.02em;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8);
         }
         h2 {
             font-family: var(--f-display);
@@ -96,17 +100,30 @@
             color: var(--c-primary);
             margin-bottom: 1.5rem;
             display: flex; align-items: center; gap: 1rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
         h2 i { font-size: 0.8em; opacity: 0.8; }
 
         .subtitle {
             font-size: 1.2rem; color: var(--c-secondary);
             margin-top: 1rem; letter-spacing: 0.1em; text-transform: uppercase;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            font-weight: 500;
         }
 
         p {
-            font-size: 1.1rem; max-width: 650px; color: #ddd;
+            font-size: 1.15rem; max-width: 650px; color: #eee;
             margin-bottom: 1.5rem;
+            font-weight: 400;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); /* Enhance readability */
+            padding: 1rem;
+            background: rgba(0,0,0,0.4); /* Subtle backing for bare paragraphs */
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+        }
+        /* Remove backing for p inside cards/containers */
+        .feature-card p, .philosophy-text p {
+            background: none; backdrop-filter: none; padding: 0;
         }
 
         .highlight { color: var(--c-primary); font-weight: 500; }
@@ -130,8 +147,8 @@
             position: relative; width: 100%; aspect-ratio: 1/1;
             border-radius: 50%;
             overflow: hidden;
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            box-shadow: 0 0 60px rgba(0,0,0,0.8);
         }
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
@@ -145,20 +162,24 @@
             gap: 2rem; margin-top: 3rem;
         }
         .feature-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 2.5rem; border-radius: 8px;
+            background: rgba(15, 15, 15, 0.75); /* Darker glass */
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 2.5rem; border-radius: 12px;
             transition: 0.4s;
             position: relative; overflow: hidden;
+            backdrop-filter: blur(16px); /* Strong blur */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .feature-card:hover {
-            background: rgba(255,255,255,0.06);
+            background: rgba(25, 25, 25, 0.85);
             transform: translateY(-5px);
             border-color: var(--c-primary);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
         }
         .card-icon {
             font-size: 2.5rem; color: var(--c-secondary);
             margin-bottom: 1.5rem; display: block;
+            filter: drop-shadow(0 0 10px rgba(32, 178, 170, 0.3));
         }
         .feature-card h3 {
             font-size: 1.5rem; margin: 0 0 1rem 0; color: #fff;
@@ -168,7 +189,11 @@
         /* --- Philosophy Section --- */
         .philosophy-text {
             border-left: 2px solid var(--c-primary);
-            padding-left: 2rem; margin-top: 2rem;
+            padding: 2rem; margin-top: 2rem;
+            background: rgba(10, 10, 10, 0.7); /* Contain text */
+            backdrop-filter: blur(12px);
+            border-radius: 0 12px 12px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
         }
 
         /* --- Gallery --- */
@@ -378,23 +403,23 @@
         container.appendChild(renderer.domElement);
 
         // --- LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3); // Reduced ambient
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xd4af37, 2, 50); // Gold light
+        const pointLight = new THREE.PointLight(0xd4af37, 1.2, 50); // Reduced intensity
         pointLight.position.set(5, 5, 5);
         scene.add(pointLight);
 
-        const blueLight = new THREE.PointLight(0x20b2aa, 1, 40); // Teal light
+        const blueLight = new THREE.PointLight(0x20b2aa, 0.8, 40); // Reduced intensity
         blueLight.position.set(-5, -5, 5);
         scene.add(blueLight);
 
         // --- POST PROCESSING (Softer Bloom) ---
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.6; // Reduced strength for organic feel
-        bloomPass.radius = 0.8; // Softer radius
+        bloomPass.threshold = 0.3; // Higher threshold to limit bloom to brightest parts
+        bloomPass.strength = 0.35; // Significantly reduced bloom strength
+        bloomPass.radius = 0.5; // Tighter bloom
 
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
@@ -406,14 +431,14 @@
 
         // Create multiple rings to simulate sound waves
         const rings = [];
-        const ringCount = 15;
+        const ringCount = 12; // Fewer rings for less clutter
 
         for(let i=0; i<ringCount; i++) {
-            const geometry = new THREE.TorusGeometry(3 + i * 0.8, 0.02, 16, 100);
+            const geometry = new THREE.TorusGeometry(3 + i * 1.0, 0.015, 16, 100); // Thinner, more spaced out
             const material = new THREE.MeshBasicMaterial({
-                color: i % 2 === 0 ? 0xd4af37 : 0x20b2aa, // Alternating Gold/Teal
+                color: i % 2 === 0 ? 0xd4af37 : 0x20b2aa,
                 transparent: true,
-                opacity: 0.1 + (1 - i/ringCount) * 0.4, // Fade out outer rings
+                opacity: 0.05 + (1 - i/ringCount) * 0.15, // Very low opacity (max 0.2)
                 side: THREE.DoubleSide
             });
             const ring = new THREE.Mesh(geometry, material);
@@ -423,8 +448,8 @@
             ring.rotation.y = Math.random() * Math.PI;
 
             ring.userData = {
-                speedX: (Math.random() - 0.5) * 0.002,
-                speedY: (Math.random() - 0.5) * 0.002,
+                speedX: (Math.random() - 0.5) * 0.001, // Slower idle speed
+                speedY: (Math.random() - 0.5) * 0.001,
                 baseScale: 1
             };
 
