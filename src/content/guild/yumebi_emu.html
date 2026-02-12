@@ -32,7 +32,7 @@
             --accent-pink: #ff1493; /* Deep Pink */
             --accent-purple: #9400d3; /* Dark Violet */
             --accent-cyan: #00ffff;
-            --accent-hot: #ff0055; /* Hot Pink/Red for Succubus */
+            --accent-hot: #ff0055; /* Hot Pink/Red */
             --glass-bg: rgba(20, 0, 20, 0.4);
             --glass-border: rgba(255, 20, 147, 0.3);
             --neon-glow: 0 0 15px var(--accent-hot), 0 0 30px var(--accent-purple);
@@ -67,7 +67,7 @@
             width: 100%; height: 100%;
             z-index: -2;
             pointer-events: none;
-            opacity: 0.3;
+            opacity: 0.6; /* Increased visibility */
             mix-blend-mode: screen;
         }
 
@@ -174,7 +174,7 @@
             100% { background-position: -100% 0; }
         }
 
-        /* --- Sensory Focus: Shards (Floating Frames) --- */
+        /* --- Sensory Focus: Shards --- */
         .sensory-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -185,7 +185,6 @@
 
         .shard-frame {
             position: relative;
-            /* Jagged Polygon Mask */
             clip-path: polygon(10% 0, 100% 10%, 90% 100%, 0 90%);
             width: 100%;
             aspect-ratio: 1/1;
@@ -199,7 +198,6 @@
         .shard-frame img {
             width: 100%; height: 100%;
             object-fit: cover;
-            /* Slightly Dark and Moody */
             filter: grayscale(0.5) contrast(1.2) brightness(0.8);
             transition: 0.5s;
         }
@@ -217,7 +215,7 @@
 
         .shard-frame:hover {
             transform: scale(1.05) rotate(2deg);
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); /* Expands to full box */
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
             box-shadow: 0 0 50px var(--accent-hot), 0 0 100px var(--accent-purple);
             z-index: 10;
         }
@@ -227,7 +225,6 @@
             transform: scale(1.1);
         }
 
-        /* Specific Styles */
         .shard-eyes { clip-path: polygon(20% 0, 100% 20%, 80% 100%, 0 80%); }
         .shard-nose { clip-path: polygon(0 20%, 80% 0, 100% 80%, 20% 100%); margin-top: 4rem; }
         .shard-lips { clip-path: polygon(10% 0, 100% 10%, 90% 100%, 0 90%); }
@@ -592,9 +589,29 @@
 
         // --- Objects ---
 
-        // 1. Shard Field (Background Storm)
-        const shardGroup = new THREE.Group();
-        scene.add(shardGroup);
+        // 1. Starfield Tunnel (Re-Added)
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 4000;
+        const starPos = new Float32Array(starCount * 3);
+
+        for(let i=0; i<starCount * 3; i+=3) {
+            starPos[i] = (Math.random() - 0.5) * 150;
+            starPos[i+1] = (Math.random() - 0.5) * 150;
+            starPos[i+2] = (Math.random() - 0.5) * 300; // Deep tunnel
+        }
+
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.8 });
+        const starField = new THREE.Points(starGeo, starMat);
+        scene.add(starField);
+
+        // 2. Shard Field (Container)
+        const shardContainer = new THREE.Group();
+        scene.add(shardContainer);
+
+        // Use a Sub-Group for Base Rotation to separate from Scroll Rotation
+        const shardBaseGroup = new THREE.Group();
+        shardContainer.add(shardBaseGroup);
 
         const loader = new THREE.TextureLoader();
         const textureUrls = [
@@ -616,7 +633,6 @@
         const radius = 12;
         const circleGeo = new THREE.CircleGeometry(radius, 32);
 
-        // Perturb vertices
         const posAttr = circleGeo.attributes.position;
         for (let i = 1; i < posAttr.count; i++) {
             const x = posAttr.getX(i);
@@ -672,7 +688,6 @@
 
             const mesh = new THREE.Mesh(shapeGeo, mat);
 
-            // Assembled (Final) Position
             mesh.userData.homePos = center.clone();
             mesh.userData.homeRot = new THREE.Euler(0, 0, 0);
 
@@ -680,7 +695,7 @@
             mesh.userData.chaosPos = new THREE.Vector3(
                 (Math.random()-0.5) * 100,
                 (Math.random()-0.5) * 80,
-                (Math.random()) * 50 + 20 // Z 20 to 70
+                (Math.random()) * 50 + 20
             );
             mesh.userData.chaosRot = new THREE.Euler(
                 Math.random() * Math.PI,
@@ -688,11 +703,10 @@
                 Math.random() * Math.PI
             );
 
-            // Start State: Chaos
             mesh.position.copy(mesh.userData.chaosPos);
             mesh.rotation.copy(mesh.userData.chaosRot);
 
-            shardGroup.add(mesh);
+            shardBaseGroup.add(mesh);
             shards.push(mesh);
         }
 
@@ -702,51 +716,37 @@
         let scrollProgress = 0;
         let isAssembled = false;
         let currentTextureIndex = 0;
-        let rotationSpeed = 0.005;
+        let baseRotation = 0;
 
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
             end: "bottom bottom",
-            scrub: 1, // Smooth scrub
+            scrub: 1,
             onUpdate: (self) => {
                 scrollProgress = self.progress;
 
-                // If not assembled, drive Shard positions with Scroll
                 if (!isAssembled) {
                     shards.forEach(mesh => {
-                        // Interpolate between Chaos and "Pre-Assemble" (Orbit)
-                        // Pre-Assemble: Just a bit dispersed from Home
                         const orbitPos = mesh.userData.homePos.clone().multiplyScalar(1.5);
                         orbitPos.z += (Math.random()-0.5) * 5;
-
-                        const p = Math.pow(scrollProgress, 2); // Accelerate towards end
-
-                        // Lerp Position
+                        const p = Math.pow(scrollProgress, 2);
                         mesh.position.lerpVectors(mesh.userData.chaosPos, orbitPos, p);
-
-                        // Lerp Rotation (Chaos -> Aligned-ish)
-                        // Actually let's keep rotation chaotic until click, just reduce speed
                     });
 
-                    // Rotate the whole group based on scroll speed?
-                    // Or just position.
-                    // Let's rotate the group faster as we go down
-                    shardGroup.rotation.z = scrollProgress * Math.PI * 4;
-
-                    // Also Move Group Z towards Camera? No, shards move towards center.
+                    // Rotate CONTAINER based on scroll
+                    shardContainer.rotation.z = scrollProgress * Math.PI * 4;
                 }
             }
         });
 
-        // --- Click Interaction (Finale) ---
+        // --- Click Interaction ---
         window.addEventListener('click', () => {
-            // Only near bottom
             if (scrollProgress > 0.9) {
                 isAssembled = !isAssembled;
 
                 if(isAssembled) {
-                    // Snap to Perfect
+                    // Assemble
                     shards.forEach(mesh => {
                         gsap.to(mesh.position, {
                             x: mesh.userData.homePos.x,
@@ -763,7 +763,7 @@
                         gsap.to(mesh.material, { opacity: 1, duration: 0.5 });
                     });
                 } else {
-                    // Release to Orbit (End of scroll state)
+                    // Release
                     shards.forEach(mesh => {
                         const orbitPos = mesh.userData.homePos.clone().multiplyScalar(1.5);
                         orbitPos.z += (Math.random()-0.5) * 5;
@@ -773,7 +773,6 @@
                             duration: 1.0,
                             ease: "power2.inOut"
                         });
-                        // Add some rotation
                         gsap.to(mesh.rotation, {
                             x: Math.random(), y: Math.random(),
                             duration: 1.0
@@ -786,23 +785,36 @@
 
         // --- Animation Loop ---
         gsap.ticker.add(() => {
-            // Texture Swapping based on Group Rotation
-            // Group rotation is driven by Scroll, so as you scroll, texture changes!
-            if (!isAssembled) {
-                // Gentle idle rotation added to scroll rotation
-                shardGroup.rotation.z += 0.001;
 
-                let angle = Math.abs(shardGroup.rotation.z % (Math.PI * 2));
+            // 1. Starfield
+            const positions = starField.geometry.attributes.position.array;
+            for(let i=2; i<positions.length; i+=3) {
+                positions[i] += 0.5; // Move forward
+                if(positions[i] > 50) positions[i] -= 250; // Loop
+            }
+            starField.geometry.attributes.position.needsUpdate = true;
+
+            // 2. Texture Swapping Logic
+            if (!isAssembled) {
+                // Combine Scroll Rotation + Base Rotation
+                baseRotation += 0.002;
+                shardBaseGroup.rotation.z = baseRotation;
+
+                // Total effective angle for texture calculation
+                const totalAngle = Math.abs((shardContainer.rotation.z + baseRotation) % (Math.PI * 2));
                 const sectorSize = (Math.PI * 2) / 6;
-                const newIndex = Math.floor(angle / sectorSize);
+                const newIndex = Math.floor(totalAngle / sectorSize);
 
                 if (newIndex !== currentTextureIndex) {
                     currentTextureIndex = newIndex;
-                    const tex = textures[currentTextureIndex % textures.length];
-                    shards.forEach(mesh => {
-                        mesh.material.map = tex;
-                        mesh.material.needsUpdate = true;
-                    });
+                    // Safely access texture array
+                    if(textures.length > 0) {
+                        const tex = textures[currentTextureIndex % textures.length];
+                        shards.forEach(mesh => {
+                            mesh.material.map = tex;
+                            mesh.material.needsUpdate = true;
+                        });
+                    }
                 }
             }
             composer.render();
@@ -815,7 +827,7 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // GSAP reveals
+        // Reveals
         gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
             gsap.fromTo(elem,
                 { opacity: 0, y: 50 },
