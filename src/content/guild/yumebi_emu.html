@@ -282,6 +282,7 @@
             text-align: center;
             pointer-events: none;
             z-index: 20;
+            transition: opacity 0.5s;
         }
         .gallery-hint h3 {
             font-size: 3rem;
@@ -294,6 +295,28 @@
             color: var(--accent-gold);
             letter-spacing: 0.2em;
             margin-top: 1rem;
+        }
+
+        .hint-shatter {
+            opacity: 0;
+            position: absolute;
+            top: 60%; left: 50%; transform: translate(-50%, -50%);
+            color: var(--accent-cyan);
+            font-family: 'Cinzel';
+            text-shadow: 0 0 10px var(--accent-cyan);
+            pointer-events: none;
+            transition: opacity 0.5s;
+            text-align: center;
+        }
+
+        .gallery-content {
+            opacity: 0;
+            transition: opacity 1s;
+            pointer-events: none;
+        }
+        .gallery-content.active {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         @keyframes pulse {
@@ -417,25 +440,28 @@
         <!-- Gallery (3D Scene) -->
         <section id="gallery">
             <div class="container">
-                <div class="gallery-hint">
+                <div class="gallery-hint" id="hint-assemble">
                     <h3>CRYSTALIZE</h3>
                     <p>TAP TO UNLOCK MEMORY</p>
                 </div>
+                <div class="hint-shatter" id="hint-shatter">
+                    <h3>SHATTER</h3>
+                    <p>TAP TO RELEASE MAGIC</p>
+                </div>
             </div>
-        </section>
 
-        <!-- Footer -->
-        <section style="height: 50vh;">
-            <div class="glass-panel" style="text-align: center;">
-                <p style="font-size: 1.5rem; color: var(--accent-pink);">Sweet Dreams...</p>
+            <!-- Final Overlay Content (Hidden until crystalized) -->
+            <div class="gallery-content container glass-panel" id="final-card" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 500px; text-align: center; background: rgba(0,0,0,0.4);">
+                <p style="font-size: 1.8rem; color: var(--accent-pink); margin-bottom: 1rem;">Sweet Dreams...</p>
                 <div style="margin-top: 2rem;">
-                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan);">DIGITAL CARD</a>
+                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan); font-size: 1.2rem;">DIGITAL CARD</a>
                 </div>
                 <footer style="margin-top: 3rem; font-size: 0.8rem; color: #888;">
                     Made with <span style="color: var(--accent-pink);">♥</span> by <a href="/guild/" style="color: #aaa;">SuperGalen's Dungeon</a>
                 </footer>
             </div>
         </section>
+
     </main>
 
     <!-- P5.js Background -->
@@ -503,10 +529,85 @@
         composer.addPass(new RenderPass(scene, camera));
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.strength = 0.6; // Magical Glow
-        bloomPass.radius = 0.5;
+        bloomPass.strength = 1.0; // Magical Glow
+        bloomPass.radius = 0.6;
         bloomPass.threshold = 0.1;
         composer.addPass(bloomPass);
+
+        // --- MAGIC CIRCLE ---
+        // Create a custom texture for the magic circle
+        const magicCanvas = document.createElement('canvas');
+        magicCanvas.width = 1024; magicCanvas.height = 1024;
+        const ctx = magicCanvas.getContext('2d');
+
+        // Outer Glow Ring
+        ctx.shadowColor = '#FF69B4';
+        ctx.shadowBlur = 20;
+        ctx.strokeStyle = '#FF69B4';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.arc(512, 512, 400, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Middle Ring
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#9370db'; // Purple
+        ctx.beginPath();
+        ctx.arc(512, 512, 360, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Pentagram
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = '#FFD700'; // Gold
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        for(let i=0; i<5; i++) {
+            const angle = (i * 4 * Math.PI) / 5 - Math.PI/2;
+            const x = 512 + 360 * Math.cos(angle);
+            const y = 512 + 360 * Math.sin(angle);
+            if(i===0) ctx.moveTo(x,y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Runes
+        ctx.font = 'bold 60px "Cinzel", serif';
+        ctx.fillStyle = '#FFD700';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 10;
+        const runes = ['★', 'D', 'R', 'E', 'A', 'M', '★', 'A', 'S', 'M', 'R'];
+        for(let i=0; i<runes.length; i++) {
+            const angle = (i / runes.length) * Math.PI * 2;
+            const x = 512 + 380 * Math.cos(angle);
+            const y = 512 + 380 * Math.sin(angle);
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle + Math.PI/2);
+            ctx.fillText(runes[i], 0, 0);
+            ctx.restore();
+        }
+
+        const magicTex = new THREE.CanvasTexture(magicCanvas);
+        magicTex.anisotropy = 16;
+
+        const magicPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(40, 40),
+            new THREE.MeshBasicMaterial({
+                map: magicTex,
+                transparent: true,
+                opacity: 0.8, // Brighter
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        magicPlane.position.z = -5;
+        scene.add(magicPlane);
+
 
         // --- GEM HEART ---
         const heartGroup = new THREE.Group();
@@ -553,11 +654,6 @@
         };
 
         // 3. Voronoi/Shattering simulation via manually placed triangles/shapes
-        // For simplicity and performance, we will create multiple Extruded Shapes that form the heart
-        // Or actually, just one big heart that is fractured.
-        // Let's stick to the "Shards forming Heart" logic but use thick geometry.
-        // We can reuse the ShapeGeometry triangulation logic but create ExtrudeGeometry for each face.
-
         const baseGeo = new THREE.ShapeGeometry(heartShape, 4); // Low tesselation for distinct shards
         baseGeo.center();
         baseGeo.scale(1, -1, 1); // Flip
@@ -657,10 +753,57 @@
             shards.push(mesh);
         }
 
-        // --- Interaction ---
+        // --- PARTICLES (SPARKLES) ---
+        const sparkleCanvas = document.createElement('canvas');
+        sparkleCanvas.width = 64; sparkleCanvas.height = 64;
+        const sCtx = sparkleCanvas.getContext('2d');
+        sCtx.fillStyle = '#FFFFFF';
+        // Draw cross star
+        sCtx.beginPath();
+        sCtx.moveTo(32, 0); sCtx.lineTo(36, 28); sCtx.lineTo(64, 32); sCtx.lineTo(36, 36); sCtx.lineTo(32, 64);
+        sCtx.lineTo(28, 36); sCtx.lineTo(0, 32); sCtx.lineTo(28, 28); sCtx.closePath();
+        sCtx.fill();
+        // Blur center
+        sCtx.filter = 'blur(4px)';
+        sCtx.beginPath();
+        sCtx.arc(32, 32, 10, 0, Math.PI*2);
+        sCtx.fill();
+
+        const sparkleTex = new THREE.CanvasTexture(sparkleCanvas);
+        const partGeo = new THREE.BufferGeometry();
+        const pCnt = 300;
+        const pPos = new Float32Array(pCnt * 3);
+        const pSizes = new Float32Array(pCnt);
+        for(let i=0; i<pCnt*3; i+=3) {
+            pPos[i] = (Math.random()-0.5)*50;
+            pPos[i+1] = (Math.random()-0.5)*50;
+            pPos[i+2] = (Math.random()-0.5)*30;
+            pSizes[i/3] = Math.random();
+        }
+        partGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        partGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
+
+        const partMat = new THREE.PointsMaterial({
+            color: 0xff69b4,
+            size: 0.5,
+            map: sparkleTex,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const particles = new THREE.Points(partGeo, partMat);
+        scene.add(particles);
+
+        // --- INTERACTION ---
         let isCrystalized = false;
         let scrollProgress = 0;
         let currentTexIdx = 0;
+
+        // UI Elements
+        const hintAssemble = document.getElementById('hint-assemble');
+        const hintShatter = document.getElementById('hint-shatter');
+        const finalCard = document.getElementById('final-card');
 
         // Scroll
         gsap.registerPlugin(ScrollTrigger);
@@ -673,55 +816,87 @@
                 scrollProgress = self.progress;
                 camera.position.z = 30 - (scrollProgress * 20); // Move closer
 
+                // Fade out hero magic
+                if(scrollProgress > 0.1) {
+                    // Reduce magic circle opacity as we get closer or keep it?
+                    // Let's keep it spinning
+                }
+
                 // Rotate heart
                 if(!isCrystalized) {
                     heartGroup.rotation.y = scrollProgress * Math.PI * 4;
+                    magicPlane.rotation.z = -scrollProgress * Math.PI * 2;
                 }
             }
         });
 
-        // Click
+        // Click Logic
         window.addEventListener('click', () => {
             if(scrollProgress > 0.8) {
-                isCrystalized = !isCrystalized;
-
-                if(isCrystalized) {
-                    // Tighten
-                    shards.forEach(m => {
-                        gsap.to(m.position, {
-                            x: m.userData.homePos.x,
-                            y: m.userData.homePos.y,
-                            z: m.userData.homePos.z,
-                            duration: 1,
-                            ease: "elastic.out(1, 0.5)"
-                        });
-                        gsap.to(m.rotation, {x:0, y:0, z:0, duration: 1});
-                    });
-                    // Change material to solid
-                    picMat.opacity = 1;
-                    gemMat.transmission = 0.2; // Less transparent
-                } else {
-                    // Expand
-                    shards.forEach(m => {
-                        gsap.to(m.position, {
-                            x: m.userData.homePos.x + m.userData.orbitOffset.x,
-                            y: m.userData.homePos.y + m.userData.orbitOffset.y,
-                            z: m.userData.homePos.z + m.userData.orbitOffset.z,
-                            duration: 1.5,
-                            ease: "power2.inOut"
-                        });
-                    });
-                    picMat.opacity = 0.5;
-                    gemMat.transmission = 0.6;
-                }
+                toggleCrystal();
             }
         });
+
+        function toggleCrystal() {
+            isCrystalized = !isCrystalized;
+
+            if(isCrystalized) {
+                // ASSEMBLE
+                shards.forEach(m => {
+                    gsap.to(m.position, {
+                        x: m.userData.homePos.x,
+                        y: m.userData.homePos.y,
+                        z: m.userData.homePos.z,
+                        duration: 1,
+                        ease: "elastic.out(1, 0.5)"
+                    });
+                    gsap.to(m.rotation, {x:0, y:0, z:0, duration: 1});
+                });
+
+                // Material Changes
+                gsap.to(picMat, {opacity: 1, duration: 1});
+                gsap.to(gemMat, {transmission: 0.2, duration: 1});
+
+                // Important: Reset rotation to face camera properly
+                gsap.to(heartGroup.rotation, {y: 0, duration: 1.5, ease: "power2.out"});
+
+                // UI Updates
+                hintAssemble.style.opacity = 0;
+                hintShatter.style.opacity = 1;
+                finalCard.classList.add('active');
+
+            } else {
+                // SHATTER (EXPLODE)
+                shards.forEach(m => {
+                    gsap.to(m.position, {
+                        x: m.userData.homePos.x + m.userData.orbitOffset.x,
+                        y: m.userData.homePos.y + m.userData.orbitOffset.y,
+                        z: m.userData.homePos.z + m.userData.orbitOffset.z,
+                        duration: 1.5,
+                        ease: "power2.inOut"
+                    });
+                });
+
+                // Material Changes
+                gsap.to(picMat, {opacity: 0.5, duration: 1});
+                gsap.to(gemMat, {transmission: 0.6, duration: 1});
+
+                // Important: Allow rotation to be controlled by scroll again
+                // Note: We don't animate heartGroup.rotation here, it snaps back to scroll control in the loop
+
+                // UI Updates
+                hintAssemble.style.opacity = 1;
+                hintShatter.style.opacity = 0;
+                finalCard.classList.remove('active');
+            }
+        }
 
         // Loop
         gsap.ticker.add(() => {
+            const t = Date.now() * 0.001;
+
             if(!isCrystalized) {
                 // Breathing
-                const t = Date.now() * 0.001;
                 shards.forEach(m => {
                     m.rotation.z = Math.sin(t + m.position.x) * 0.1;
                 });
@@ -735,22 +910,23 @@
                     picMat.map = t;
                     picMat.needsUpdate = true;
                 }
+            } else {
+                 // Gently float when assembled
+                 heartGroup.position.y = Math.sin(t) * 0.5;
             }
-            composer.render();
-        });
 
-        // Particles
-        const partGeo = new THREE.BufferGeometry();
-        const pCnt = 200;
-        const pPos = new Float32Array(pCnt * 3);
-        for(let i=0; i<pCnt*3; i++) pPos[i] = (Math.random()-0.5)*40;
-        partGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const partMat = new THREE.PointsMaterial({color: 0xff69b4, size: 0.2, transparent:true});
-        const particles = new THREE.Points(partGeo, partMat);
-        scene.add(particles);
+            // Magic Circle Animation
+            magicPlane.rotation.z -= 0.005;
 
-        gsap.ticker.add(()=>{
+            // Particles
             particles.rotation.y += 0.002;
+            const positions = particles.geometry.attributes.position.array;
+            for(let i=1; i<positions.length; i+=3) {
+                positions[i] += Math.sin(t + positions[i-1]) * 0.05; // Float Y
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            composer.render();
         });
 
         window.addEventListener('resize', () => {
@@ -760,7 +936,7 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // GSAP
+        // GSAP Reveal
         gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
             gsap.fromTo(elem, {opacity:0, y:30}, {opacity:1, y:0, duration:1, delay:i*0.1});
         });
