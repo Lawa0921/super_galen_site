@@ -449,10 +449,13 @@
 
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.008); // Reduced fog density
+        scene.fog = new THREE.FogExp2(0x020205, 0.008);
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 40); // Slightly closer start
+        camera.position.set(0, 0, 50); // Start position for scroll animation
+
+        // Expose camera to window for debug/verification
+        window.camera = camera;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -485,13 +488,11 @@
         );
         core.add(coreInner);
 
-        // Core Text (Hidden initially, visible up close)
-        const loader = new THREE.FontLoader();
-        // Fallback or simple geometry since FontLoader requires external JSON
+        // Secret Core (Icosahedron Geometry) - No FontLoader needed
         const boxGeo = new THREE.IcosahedronGeometry(0.8, 0);
         const boxMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true });
         const secretCore = new THREE.Mesh(boxGeo, boxMat);
-        secretCore.scale.set(0,0,0); // Hidden
+        secretCore.scale.set(0,0,0); // Hidden initially
         core.add(secretCore);
 
         // 3. Lightning Arcs
@@ -719,34 +720,29 @@
         }
         animate();
 
-        // Initial Zoom In Animation
-        gsap.to(camera.position, {
-            z: 10,
-            duration: 2.5,
-            ease: "power2.inOut",
-            onComplete: () => {
-                // Connect Scroll Trigger after zoom
-                // Final scroll moves camera VERY close to the core (Z=2)
-                const tl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: "body",
-                        start: "top top",
-                        end: "bottom bottom",
-                        scrub: 1
-                    }
-                });
-
-                tl.to(camera.position, {
-                    z: 3, // Very close to core (radius 2)
-                    y: 0, // Centered vertically
-                    duration: 1
-                })
-                .to(gearGroup.position, {
-                    z: -30, // Move gears away to clear view
-                    duration: 0.5
-                }, "<50%"); // Overlap
+        // Unified Scroll Interaction (Immediate Control)
+        // Camera moves from Z=50 (Start) -> Z=3 (Finale) based on scroll
+        const camTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1.5 // Smooth scrub
             }
         });
+
+        camTl.to(camera.position, {
+            z: 3, // Finale Position (Close to Core)
+            y: 0,
+            ease: "power1.inOut" // Smooth curve
+        });
+
+        // Background Elements React to Scroll
+        camTl.to(gearGroup.position, {
+            z: -30, // Move gears away at the end
+            ease: "power1.in",
+            duration: 0.3 // Only at the very end
+        }, ">0.7"); // Start at 70% scroll progress
 
         // GSAP Entry Animations
         gsap.utils.toArray('.tech-card').forEach((card, i) => {
