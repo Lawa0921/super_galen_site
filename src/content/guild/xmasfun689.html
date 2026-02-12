@@ -9,7 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Updated FontAwesome to 6.5.1 for Threads Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -51,7 +52,7 @@
         }
 
         /* Layout */
-        .scroller { position: relative; z-index: 10; height: 1200vh; /* Extreme Height for slow zoom */ }
+        .scroller { position: relative; z-index: 10; height: 3000vh; /* Ultra Extreme Height */ }
         .section {
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
@@ -699,18 +700,22 @@
         }
 
         // 2. Foreground Smoke (Visible at Start Z=50)
-        // Moved closer to camera start position (Z=50) for immediate visibility
-        for (let i = 0; i < 40; i++) {
-            const smoke = new THREE.Sprite(smokeMat);
+        // Brighter material for foreground to ensure visibility against dark background
+        const lightSmokeMat = smokeMat.clone();
+        lightSmokeMat.color.setHex(0xaaaaaa); // Light Grey
+        lightSmokeMat.opacity = 0.5;
+
+        for (let i = 0; i < 60; i++) {
+            const smoke = new THREE.Sprite(lightSmokeMat);
             smoke.position.set(
-                (Math.random() - 0.5) * 60,
                 (Math.random() - 0.5) * 40,
-                35 + Math.random() * 20 // Placed at Z=35 to 55 (Around camera)
+                (Math.random() - 0.5) * 20,
+                40 + Math.random() * 15 // Placed directly at Z=40-55 (Camera is at 50)
             );
-            smoke.scale.set(20, 20, 1); // Larger scale
+            smoke.scale.set(15, 15, 1);
             smoke.userData = {
-                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.01, Math.random() * 0.01, 0),
-                rotationSpeed: (Math.random() - 0.5) * 0.005
+                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.005, Math.random() * 0.005, 0),
+                rotationSpeed: (Math.random() - 0.5) * 0.002
             };
             smokeGroup.add(smoke);
             smokeParticles.push(smoke);
