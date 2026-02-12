@@ -837,10 +837,10 @@
         });
 
         // Click Logic
-        window.addEventListener('click', () => {
-            if(scrollProgress > 0.8) {
-                toggleCrystal();
-            }
+        window.addEventListener('click', (e) => {
+            // Ignore if clicking a link or interactive element
+            if (e.target.closest('a') || e.target.closest('button')) return;
+            toggleCrystal();
         });
 
         function toggleCrystal() {
@@ -859,9 +859,16 @@
                     gsap.to(m.rotation, {x:0, y:0, z:0, duration: 1});
                 });
 
-                // Material Changes
-                gsap.to(picMat, {opacity: 1, duration: 1});
-                gsap.to(gemMat, {transmission: 0.2, duration: 1});
+                // Material Changes - IMPROVED VISIBILITY
+                // Reduce bloom, reduce transmission (make opaque), full opacity on pic
+                gsap.to(picMat, {opacity: 1.0, duration: 1});
+                gsap.to(gemMat, {
+                    transmission: 0.1, // Almost opaque
+                    opacity: 1.0,
+                    roughness: 0.4, // Less shiny
+                    duration: 1
+                });
+                gsap.to(bloomPass, {strength: 0.3, duration: 1}); // Dim bloom
 
                 // Important: Reset rotation to face camera properly
                 gsap.to(heartGroup.rotation, {y: 0, duration: 1.5, ease: "power2.out"});
@@ -891,9 +898,15 @@
                     });
                 });
 
-                // Material Changes
+                // Material Changes - RESTORE MAGIC
                 gsap.to(picMat, {opacity: 0.5, duration: 1});
-                gsap.to(gemMat, {transmission: 0.6, duration: 1});
+                gsap.to(gemMat, {
+                    transmission: 0.6,
+                    opacity: 0.8,
+                    roughness: 0.1,
+                    duration: 1
+                });
+                gsap.to(bloomPass, {strength: 1.0, duration: 1}); // Restore bloom
 
                 // UI Updates
                 hintAssemble.style.opacity = 1;
