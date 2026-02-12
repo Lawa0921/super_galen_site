@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>塞趴卷 - 具現化系鍊金術師</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            --ink: #2b2b2b;
+            --paper: #f0e6d2;
+            --paper-shadow: #d1c4b0;
+            --wood-dark: #1a120b;
+            --gold: #c5a059;
+            --red: #8a2be2; /* Changed to Mystic Purple/Red for Alchemy */
+            --accent: #800000; /* Seal Red */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--wood-dark);
+            color: var(--ink);
+            font-family: 'Noto Serif TC', serif;
+            overflow: hidden; /* We handle scroll via GSAP */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- UI Layers --- */
+        #viewport {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        #world {
+            /* The Infinite Board */
+            width: 250vw; /* Wide canvas */
+            height: 150vh; /* Tall canvas */
+            position: absolute;
+            top: 0; left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+            /* Wood Texture Background */
+            background-color: #1a120b;
+            background-image:
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E"),
+                repeating-linear-gradient(90deg, #2a1e12 0px, #1a120b 40px, #22180e 80px);
+            box-shadow: inset 0 0 200px rgba(0,0,0,0.8);
+        }
+
+        /* --- Items on the Board --- */
+        .item {
+            position: absolute;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .paper {
+            background: var(--paper);
+            box-shadow: 10px 20px 40px rgba(0,0,0,0.3);
+            padding: 3rem;
+            position: relative;
+        }
+
+        /* Paper Texture */
+        .paper::before {
+            content: '';
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+
+        /* Tape / Pin */
+        .tape {
+            position: absolute;
+            width: 120px; height: 30px;
+            background: rgba(255, 255, 255, 0.4);
+            top: -15px; left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            backdrop-filter: blur(2px);
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 900;
+            border-bottom: 3px solid var(--ink);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        /* --- Specific Items --- */
+
+        /* 1. Hero: Wanted Poster (Center) */
+        #hero-poster {
+            top: 20vh; left: 80vw;
+            width: 450px;
+            background: #e3d5c0;
+            text-align: center;
+            padding: 2rem;
+            transform: rotate(-2deg);
+            z-index: 5;
+        }
+
+        #hero-poster img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            filter: sepia(0.4) contrast(1.1) grayscale(0.2);
+            border: 4px solid var(--ink);
+            margin-bottom: 1rem;
+        }
+
+        .wanted-title {
+            font-family: 'Cinzel', serif;
+            font-size: 4rem;
+            font-weight: 900;
+            letter-spacing: 5px;
+            margin: 1rem 0;
+            color: var(--wood-dark);
+        }
+
+        .wanted-reward {
+            font-size: 1.5rem;
+            color: var(--accent);
+            font-weight: 900;
+            border-top: 2px solid var(--wood-dark);
+            border-bottom: 2px solid var(--wood-dark);
+            padding: 0.5rem 0;
+            margin-top: 1rem;
+        }
+
+        /* 2. Intro: Diary Page (Left) */
+        #intro-page {
+            top: 30vh; left: 20vw;
+            width: 400px;
+            transform: rotate(3deg);
+            z-index: 2;
+        }
+
+        /* 3. Dream: Blueprint (Bottom Right) */
+        #dream-blueprint {
+            top: 80vh; left: 140vw;
+            width: 500px;
+            background: #2c3e50; /* Blueprint Blue */
+            color: #ecf0f1;
+            padding: 3rem;
+            transform: rotate(1deg);
+            box-shadow: 10px 20px 50px rgba(0,0,0,0.5);
+        }
+        #dream-blueprint .paper::before { opacity: 0; } /* Remove paper texture */
+        #dream-blueprint h2 { border-color: #ecf0f1; }
+        #dream-blueprint p { color: #bdc3c7; }
+
+        /* Grid pattern for blueprint */
+        #dream-blueprint::after {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+
+        /* 4. Projects: Sticky Notes (Bottom Center) */
+        #projects-board {
+            top: 90vh; left: 60vw;
+            width: 600px;
+            display: flex;
+            gap: 2rem;
+            transform: rotate(-1deg);
+            z-index: 4;
+        }
+
+        .sticky-note {
+            background: #ffeb3b;
+            color: #333;
+            padding: 1.5rem;
+            width: 200px;
+            height: 200px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s;
+        }
+        .sticky-note:nth-child(2) { background: #ff9800; transform: rotate(3deg); top: 20px; position: relative; }
+        .sticky-note:nth-child(3) { background: #00bcd4; transform: rotate(-2deg); }
+        .sticky-note:hover { transform: scale(1.1) !important; z-index: 10; }
+
+        /* Navigation Hints */
+        #nav-hint {
+            position: fixed;
+            bottom: 2rem; left: 50%;
+            transform: translateX(-50%);
+            color: var(--paper);
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+            opacity: 0.7;
+            z-index: 100;
+            pointer-events: none;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        /* 3D Overlay */
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 20; pointer-events: none; /* Overlay only */
+            mix-blend-mode: hard-light; /* Blend lights */
+        }
+
+        /* Footer / Return */
+        .return-seal {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            width: 80px; height: 80px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 900;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 100;
+            font-family: 'Noto Serif TC', serif;
+            border: 2px dashed rgba(255,255,255,0.3);
+            transition: transform 0.3s;
+        }
+        .return-seal:hover { transform: rotate(15deg) scale(1.1); }
+
+    </style>
+</head>
+<body>
+
+    <!-- 3D Atmosphere (Lighting/Dust) -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <a href="/guild/" class="return-seal">返回<br>大廳</a>
+    <div id="nav-hint">SCROLL TO EXPLORE THE DESK</div>
+
+    <!-- The Infinite Board -->
+    <div id="viewport">
+        <div id="world">
+
+            <!-- 1. Intro (Diary) -->
+            <div id="intro-page" class="item paper">
+                <div class="tape"></div>
+                <h2>鍊金術師<br>日誌</h2>
+                <p>我是一個曾經做過很多 Side Project 的軟體工程師。</p>
+                <p>最近想把<span style="color:var(--accent)">「文字小鎮」</span>這個概念做成一個遊戲。</p>
+                <p style="font-style: italic; opacity: 0.8; margin-top: 2rem;">2024.05.20 陰</p>
+            </div>
+
+            <!-- 2. Hero (Poster) -->
+            <div id="hero-poster" class="item paper">
+                <div class="tape" style="transform: translateX(-50%) rotate(2deg); top: -20px;"></div>
+                <h2 style="font-family: 'Cinzel'; border: none; font-size: 3rem; margin-bottom: 0;">WANTED</h2>
+                <div style="font-family: 'Cinzel'; letter-spacing: 5px; margin-bottom: 1rem;">DEAD OR ALIVE</div>
+
+                <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ Avatar">
+
+                <div class="wanted-title">SPJ</div>
+                <p style="font-size: 1.2rem; font-weight: 900;">具現化系鍊金術師</p>
+                <p>擅長將創意轉化為現實的代碼魔法師。</p>
+
+                <div class="wanted-reward">Reward: $ 999,999,999</div>
+            </div>
+
+            <!-- 3. Dream (Blueprint) -->
+            <div id="dream-blueprint" class="item paper">
+                <h2>公會藍圖</h2>
+                <p>目標：建立一個真實的冒險者公會。</p>
+                <p>系統架構：</p>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: #bdc3c7;">
+                    <li>冒險者交流 (Network)</li>
+                    <li>組隊副本 (Party System)</li>
+                    <li>資源共享 (Resource Pool)</li>
+                </ul>
+                <p>這不只是結果，而是<span style="color: #f1c40f;">「有溫度的過程」</span>。</p>
+                <div style="border: 1px solid #fff; width: 100%; height: 100px; margin-top: 1rem; display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+                    [ ARCHITECTURAL DIAGRAM ]
+                </div>
+            </div>
+
+            <!-- 4. Projects (Sticky Notes) -->
+            <div id="projects-board" class="item">
+                <div class="sticky-note">
+                    <div style="font-weight: 900; font-size: 1.2rem;">文字小鎮</div>
+                    <div>天書系統<br>無限創意</div>
+                    <div style="text-align: right; font-size: 2rem; opacity: 0.2;">01</div>
+                </div>
+                <div class="sticky-note">
+                    <div style="font-weight: 900; font-size: 1.2rem;">冒險公會</div>
+                    <div>現實副本<br>組隊交流</div>
+                    <div style="text-align: right; font-size: 2rem; opacity: 0.2;">02</div>
+                </div>
+                <div class="sticky-note">
+                    <div style="font-weight: 900; font-size: 1.2rem;">傳說紀錄</div>
+                    <div>寫作<br>分享故事</div>
+                    <div style="text-align: right; font-size: 2rem; opacity: 0.2;">03</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- 1. GSAP Scroll Interaction (Panning the Board) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // We create a "virtual scroll" height
+        // The user scrolls down, but we translate the #world X and Y
+
+        const world = document.querySelector("#world");
+
+        // Define the path of the camera (Scanning the items)
+        // 0% -> Intro (20vw, 30vh) centered
+        // 30% -> Hero (80vw, 20vh) centered
+        // 60% -> Dream (140vw, 80vh) centered
+        // 100% -> Projects (60vw, 90vh) centered
+
+        // To center an element at X,Y in a 100vw/100vh viewport:
+        // Translate world to: -X + 50vw, -Y + 50vh
+
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "+=4000", // Long scroll distance
+                scrub: 1,
+                pin: true // Pin the body content
+            }
+        });
+
+        // Step 1: Start at Intro
+        // Initial CSS puts Intro at 20vw, 30vh.
+        // We want Intro centered: World X = -20vw + 50vw = 30vw? No, let's start with a wide shot.
+
+        // Let's set initial view to see Intro and Hero roughly
+        gsap.set(world, { x: 0, y: 0, scale: 1 });
+
+        // Move to Hero (Center strictly)
+        // Hero is at left: 80vw, top: 20vh. Width 450px.
+        // Approx center of Hero is 80vw + 225px, 20vh + 200px.
+        // Let's just approximate pan.
+
+        tl.to(world, { x: "-20vw", y: "-10vh", scale: 1, duration: 2, ease: "power1.inOut" }) // Pan right slightly
+          .to(world, { x: "-60vw", y: "0vh", scale: 1.1, duration: 3, ease: "power1.inOut" }) // Focus Hero
+          .to(world, { x: "-100vw", y: "-50vh", scale: 1, duration: 3, ease: "power1.inOut" }) // Move to Blueprint (140vw, 80vh)
+          .to(world, { x: "-40vw", y: "-60vh", scale: 1.1, duration: 3, ease: "power1.inOut" }); // Back to Projects (60vw, 90vh)
+
+        // Parallax for items (Making them feel floating)
+        gsap.utils.toArray(".item").forEach((item, i) => {
+            gsap.to(item, {
+                y: (i + 1) * 50, // Move slightly different speeds
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "+=4000",
+                    scrub: true
+                }
+            });
+        });
+
+
+        // --- 2. Three.js Atmosphere (Lantern Light & Dust) ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Dust Particles
+        const particlesCnt = 1000;
+        const posArray = new Float32Array(particlesCnt * 3);
+        for(let i = 0; i < particlesCnt * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 20; // Spread out
+        }
+
+        const material = new THREE.PointsMaterial({
+            size: 0.02,
+            color: 0xffd700, // Gold dust
+            transparent: true,
+            opacity: 0.6
+        });
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMesh = new THREE.Points(geometry, material);
+        scene.add(particlesMesh);
+
+        // Lantern Light (Spotlight moving)
+        // We simulate a light source swaying
+        const light = new THREE.SpotLight(0xffaa00, 10);
+        light.position.set(0, 0, 2);
+        light.angle = Math.PI / 4;
+        light.penumbra = 0.5;
+        light.decay = 2;
+        light.distance = 50;
+        scene.add(light);
+        scene.add(light.target);
+
+        // Mouse Interaction
+        let mouseX = 0;
+        let mouseY = 0;
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Sway particles
+            particlesMesh.rotation.y = time * 0.05;
+            particlesMesh.position.y = Math.sin(time * 0.2) * 0.2;
+
+            // Sway Light
+            light.position.x = Math.sin(time * 0.5) * 2 + mouseX * 0.5;
+            light.position.y = Math.cos(time * 0.3) * 1 + mouseY * 0.5;
+            light.target.position.x = light.position.x;
+            light.target.position.y = light.position.y;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
