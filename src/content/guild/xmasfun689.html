@@ -40,7 +40,7 @@
 
         /* Layers */
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
-        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
 
         /* CRT Scanline Overlay */
         .scanlines {
@@ -323,32 +323,38 @@
                     t.display();
                 });
 
-                // Random Lightning Strike
-                if (p.random() < 0.02) { // Low chance
-                    drawLightning(p);
+                // Plasma Current (From Center)
+                if (p.random() < 0.05) { // Frequent little sparks
+                    drawPlasmaSpark(p);
                 }
             };
 
-            function drawLightning(p) {
+            function drawPlasmaSpark(p) {
                 p.push();
-                p.stroke(255);
-                p.strokeWeight(2);
+                p.stroke(0, 243, 255, 200); // Cyan
+                p.strokeWeight(p.random(1, 3));
                 p.noFill();
 
-                let x = p.random(p.width);
-                let y = 0;
+                // Start from center
+                let cx = p.width / 2;
+                let cy = p.height / 2;
+
+                // Random Direction
+                let angle = p.random(p.TWO_PI);
+                let len = p.random(100, 400);
 
                 p.beginShape();
-                p.vertex(x, y);
-                while(y < p.height) {
-                    x += p.random(-20, 20);
-                    y += p.random(10, 50);
-                    p.vertex(x, y);
+                p.vertex(cx, cy);
+
+                let steps = 10;
+                for(let i=0; i<steps; i++) {
+                    let r = (len / steps) * (i+1);
+                    // Jitter
+                    let jx = cx + Math.cos(angle) * r + p.random(-20, 20);
+                    let jy = cy + Math.sin(angle) * r + p.random(-20, 20);
+                    p.vertex(jx, jy);
                 }
                 p.endShape();
-
-                // Flash Screen
-                p.background(255, 255, 255, 20);
                 p.pop();
             }
 
@@ -443,10 +449,10 @@
 
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.02);
+        scene.fog = new THREE.FogExp2(0x020205, 0.008); // Reduced fog density
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 50); // Start Far away
+        camera.position.set(0, 0, 40); // Slightly closer start
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -538,7 +544,7 @@
 
         // 5. Heavy Machinery Gears (Background) - WALL OF GEARS
         const gearGroup = new THREE.Group();
-        gearGroup.position.z = -10; // Closer base position
+        gearGroup.position.z = -5; // Much closer to be visible behind core
         scene.add(gearGroup);
 
         // Add Lights for Metallic Effect
@@ -588,12 +594,12 @@
         }
 
         // Generate Wall of Gears
-        for (let i = 0; i < 50; i++) { // More gears
-            const radius = 2 + Math.random() * 8;
+        for (let i = 0; i < 40; i++) {
+            const radius = 3 + Math.random() * 8; // Larger gears
             const teeth = Math.floor(8 + radius * 2);
-            const x = (Math.random() - 0.5) * 60;
-            const y = (Math.random() - 0.5) * 40;
-            const z = -5 - Math.random() * 20; // Varied depth
+            const x = (Math.random() - 0.5) * 50; // Tighter cluster
+            const y = (Math.random() - 0.5) * 30;
+            const z = -2 - Math.random() * 15; // Closer depth range
 
             // Industrial colors
             const colors = [0x555555, 0x333333, 0x888888, 0x666600];
