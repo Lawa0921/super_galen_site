@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>秋桑 Tyou | The Coffee Analyst</title>
+    <title>秋桑 Tyou | The Analytical Wanderer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -14,12 +14,12 @@
 
     <style>
         :root {
-            /* Palette: Oatmeal, Olive Green, Dark Grey */
-            --color-bg: #F0EFE9;      /* Warm Oatmeal / Paper */
-            --color-text: #2F3632;    /* Dark Charcoal / Green-Black */
-            --color-accent: #6B7F36;  /* Olive Green */
-            --color-warm: #C5A880;    /* Latte Gold */
-            --color-paper: rgba(255, 252, 245, 0.95); /* High opacity paper */
+            /* Palette: Oatmeal, Olive Green, Dark Grey - Muted/Low Contrast */
+            --color-bg: #F0EFE9;
+            --color-text: #3A403C;    /* Softer Charcoal */
+            --color-accent: #788548;  /* Muted Olive */
+            --color-warm: #C5A880;
+            --color-paper: rgba(255, 252, 245, 0.92);
 
             --font-main: 'Noto Serif TC', serif;
             --font-hand: 'La Belle Aurore', cursive;
@@ -38,9 +38,9 @@
             color: var(--color-text);
             font-family: var(--font-main);
             overflow-x: hidden;
-            line-height: 1.8;
-            /* Texture overlay for paper feel */
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjRjBFRkU5Ii8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNDNUE4ODAiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==');
+            line-height: 2.0; /* Increased line-height for airiness */
+            /* Texture overlay for paper feel - Fainter */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjRjBFRkU5Ii8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNDNUE4ODAiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPgo8L3N2Zz4=');
         }
 
         /* --- Canvas Layers --- */
@@ -51,9 +51,9 @@
             width: 100%;
             height: 100vh;
             z-index: -1;
-            /* Soft blur for depth */
-            filter: blur(0px);
-            transition: filter 0.5s;
+            /* Subtle blur to make icons feel like background texture */
+            filter: blur(1px);
+            opacity: 0.8;
         }
 
         #canvas-p5 {
@@ -62,13 +62,12 @@
             left: 0;
             width: 100%;
             height: 100vh;
-            z-index: 0; /* Behind content, above Three.js */
+            z-index: 0;
             pointer-events: none;
-            opacity: 0.4; /* Reduced opacity for readability */
+            opacity: 0.3;
             mix-blend-mode: multiply;
         }
 
-        /* Stamp Container (Above everything) */
         #stamp-container {
             position: fixed;
             top: 0;
@@ -76,62 +75,63 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 5; /* Below content but above background */
+            z-index: 5;
             overflow: hidden;
         }
 
         .coffee-stamp {
             position: absolute;
-            width: 150px;
-            height: 150px;
+            width: 120px;
+            height: 120px;
             opacity: 0;
             transform: translate(-50%, -50%) scale(1.5) rotate(-10deg);
             pointer-events: none;
             mix-blend-mode: multiply;
-            /* Coffee Ring SVG */
+            /* Sepia tone filter for aged look */
+            filter: sepia(0.6) contrast(0.8);
             background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M100 10 C50 10 10 50 10 100 C10 150 50 190 100 190 C150 190 190 150 190 100 C190 50 150 10 100 10 Z M100 20 C145 20 180 55 180 100 C180 145 145 180 100 180 C55 180 20 145 20 100 C20 55 55 20 100 20 Z" fill="%238B5A2B" opacity="0.4"/><path d="M100 5 C45 5 5 45 5 100 C5 155 45 195 100 195 C155 195 195 155 195 100 C195 45 155 5 100 5 Z M100 15 C148 15 185 52 185 100 C185 148 148 185 100 185 C52 185 15 148 15 100 C15 52 52 15 100 15 Z" fill="%238B5A2B" opacity="0.2"/></svg>');
             background-size: contain;
             background-repeat: no-repeat;
         }
 
-        /* --- Custom Cursor --- */
+        /* --- Custom Cursor - Smaller, less intrusive --- */
         #cursor {
             position: fixed;
             top: 0;
             left: 0;
-            width: 20px;
-            height: 20px;
+            width: 8px;
+            height: 8px;
             background: var(--color-accent);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 1000;
             mix-blend-mode: multiply;
-            transition: width 0.3s, height 0.3s, background-color 0.3s;
-            opacity: 0.8;
+            transition: width 0.4s ease, height 0.4s ease, background-color 0.4s ease;
+            opacity: 0.7;
         }
 
         #cursor.hovered {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             background: var(--color-warm);
-            opacity: 0.5;
+            opacity: 0.3;
         }
 
-        /* Cursor Text */
         #cursor-text {
             position: fixed;
             top: 0;
             left: 0;
-            transform: translate(-50%, -50%); /* Centered on cursor */
+            transform: translate(-50%, -50%);
             font-family: var(--font-hand);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--color-text);
             pointer-events: none;
             z-index: 1001;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.5s;
             white-space: nowrap;
+            letter-spacing: 0.1em;
         }
 
         /* --- Layout --- */
@@ -142,95 +142,81 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 6rem 2rem;
+            padding: 8rem 2rem; /* More padding */
             position: relative;
-            z-index: 10; /* Above canvas */
+            z-index: 10;
         }
 
         .content-wrapper {
-            max-width: 900px;
+            max-width: 800px; /* Narrower width for reading */
             width: 100%;
             position: relative;
         }
 
         /* --- Typography --- */
         h1, h2, h3 {
-            font-weight: 700;
-            letter-spacing: -0.02em;
+            font-weight: 500; /* Lighter weight */
+            letter-spacing: 0.05em; /* More spacing */
             color: var(--color-text);
+            line-height: 1.4;
         }
 
         .handwritten {
             font-family: var(--font-hand);
             color: var(--color-accent);
-            font-size: 1.5rem;
-            transform: rotate(-2deg);
+            font-size: 1.4rem;
+            transform: rotate(-1deg);
             display: inline-block;
+            opacity: 0.9;
         }
 
         .data-tag {
             font-family: var(--font-data);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            border: 1px solid var(--color-text);
-            padding: 0.2rem 0.6rem;
-            border-radius: 20px;
+            letter-spacing: 0.15em;
+            border: 1px solid rgba(58, 64, 60, 0.3); /* Fainter border */
+            padding: 0.3rem 0.8rem;
+            border-radius: 2px; /* Less rounded */
             display: inline-block;
-            margin-bottom: 1rem;
-            background: #fff; /* Solid background for tags */
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            background: transparent;
+            color: #666;
         }
 
         /* --- Components --- */
         .paper-card {
             background: var(--color-paper);
-            padding: 3rem;
-            box-shadow: 10px 10px 30px rgba(47, 54, 50, 0.15); /* Stronger shadow */
-            border: 1px solid rgba(107, 127, 54, 0.2);
+            padding: 4rem 3rem; /* More internal breathing room */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03); /* Very subtle shadow */
+            border: 1px solid rgba(107, 127, 54, 0.1);
             position: relative;
-            backdrop-filter: blur(8px); /* Blur background behind card */
-            border-radius: 2px;
+            border-radius: 1px;
         }
 
-        /* "Tape" effect */
-        .paper-card::before {
-            content: '';
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+        /* Removed "Tape" for cleaner look */
 
         /* --- Hero --- */
         .hero-title {
-            font-size: 4rem;
-            margin-bottom: 1rem;
+            font-size: 3.5rem; /* Smaller than before */
+            margin-bottom: 1.5rem;
             position: relative;
-            line-height: 1.1;
-            /* Text shadow to lift from background */
-            text-shadow: 2px 2px 0px rgba(240, 239, 233, 0.8);
+            font-weight: 300; /* Thin */
         }
 
         .hero-subtitle {
-            font-size: 1.2rem;
-            color: #444; /* Darker for readability */
-            max-width: 600px;
+            font-size: 1.05rem;
+            color: #555;
+            max-width: 550px;
             margin: 0 auto;
-            background: rgba(240, 239, 233, 0.6); /* Subtle highlight */
-            padding: 0.5rem;
-            border-radius: 4px;
+            line-height: 2.2;
+            letter-spacing: 0.03em;
         }
 
         .avatar-container {
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 2rem;
+            width: 160px; /* Smaller avatar */
+            height: 160px;
+            margin: 0 auto 3rem;
             position: relative;
         }
 
@@ -239,118 +225,124 @@
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
-            /* Sepia tone for "Wenqing" look */
-            filter: sepia(0.2) contrast(0.9);
-            border: 3px solid #fff;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            filter: sepia(0.3) contrast(0.9) brightness(1.05); /* Muted vintage look */
+            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
 
-        /* --- Timeline (Grid) --- */
+        /* --- Timeline (Minimalist) --- */
         .timeline-grid {
             display: grid;
-            grid-template-columns: 100px 1fr;
-            gap: 2rem;
-            margin-top: 3rem;
+            grid-template-columns: 80px 1fr;
+            gap: 3rem;
+            margin-top: 2rem;
             position: relative;
         }
 
-        /* Vertical Line */
         .timeline-grid::before {
             content: '';
             position: absolute;
-            left: 49px;
-            top: 0;
-            bottom: 0;
+            left: 39px;
+            top: 10px;
+            bottom: 10px;
             width: 1px;
             background: var(--color-text);
-            opacity: 0.3;
+            opacity: 0.1; /* Very faint line */
+            border-left: 1px dashed var(--color-text); /* Dashed line */
+            background: transparent;
         }
 
         .timeline-item {
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             position: relative;
         }
 
         .timeline-year {
             font-family: var(--font-data);
-            font-weight: 700;
+            font-size: 0.8rem;
             text-align: right;
-            padding-top: 0.3rem;
-            background: var(--color-bg); /* Mask line behind text */
-            z-index: 1;
+            padding-top: 0.4rem;
+            color: #888;
         }
 
         .timeline-content h3 {
-            font-size: 1.4rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
             color: var(--color-accent);
+            font-weight: 400;
+        }
+
+        .timeline-content p {
+            font-size: 0.95rem;
+            color: #666;
         }
 
         /* --- Interactive Polaroid --- */
         .polaroid-container {
             display: flex;
             justify-content: center;
-            margin-top: 2rem;
+            margin-top: 3rem;
             perspective: 1000px;
         }
 
         .polaroid {
             background: #fff;
-            padding: 1rem 1rem 3rem 1rem;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
-            transform: rotate(3deg);
-            transition: transform 0.3s;
-            max-width: 300px;
+            padding: 0.8rem 0.8rem 2.5rem 0.8rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Lighter shadow */
+            transform: rotate(2deg);
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            max-width: 280px;
+            border: 1px solid #eee;
         }
 
         .polaroid:hover {
-            transform: rotate(0deg) scale(1.05);
-            z-index: 20;
+            transform: rotate(0deg) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
 
         .polaroid img {
             width: 100%;
-            filter: grayscale(20%);
+            filter: grayscale(10%) sepia(10%);
         }
 
         .polaroid-caption {
             font-family: var(--font-hand);
             text-align: center;
             margin-top: 1rem;
-            color: #555;
-            font-size: 1.2rem;
+            color: #888;
+            font-size: 1rem;
+            letter-spacing: 0.1em;
         }
 
         /* --- Social Footer --- */
         .social-links {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             justify-content: center;
-            margin-top: 2rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
         }
 
         .social-btn {
             font-family: var(--font-data);
             text-decoration: none;
-            color: var(--color-text);
-            border: 1px solid var(--color-text);
-            padding: 0.8rem 1.5rem;
-            border-radius: 4px;
+            color: #666;
+            font-size: 0.8rem;
+            border-bottom: 1px solid transparent;
+            padding-bottom: 2px;
             transition: 0.3s;
-            background: rgba(255,255,255,0.8);
         }
 
         .social-btn:hover {
-            background: var(--color-accent);
-            color: #fff;
+            color: var(--color-accent);
             border-color: var(--color-accent);
         }
 
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.5rem; }
-            .timeline-grid { grid-template-columns: 60px 1fr; gap: 1rem; }
-            .timeline-grid::before { left: 29px; }
-            .paper-card { padding: 1.5rem; }
+            .hero-title { font-size: 2.2rem; }
+            .timeline-grid { grid-template-columns: 50px 1fr; gap: 1.5rem; }
+            .timeline-grid::before { left: 24px; }
+            .paper-card { padding: 2rem 1.5rem; }
         }
     </style>
 
@@ -367,7 +359,7 @@
 <body>
 
     <div id="cursor"></div>
-    <div id="cursor-text">Click to Stamp</div>
+    <div id="cursor-text">Stamp</div>
     <div id="canvas-three"></div>
     <div id="canvas-p5"></div>
     <div id="stamp-container"></div>
@@ -382,11 +374,13 @@
                 <img src="/assets/img/guild/tyou/avatar.webp" alt="Tyou" class="avatar-img">
             </div>
 
-            <span class="data-tag gs-reveal">INTP / Physicist / Barista</span>
+            <div class="gs-reveal" style="margin-bottom: 1rem;">
+                <span class="data-tag">Physicist . Barista . Wanderer</span>
+            </div>
 
             <h1 class="hero-title gs-reveal">
                 The Analytical<br>
-                <span style="color: var(--color-accent); font-style: italic;">Wanderer</span>
+                <span style="color: var(--color-accent); font-family: var(--font-main); font-style: italic;">Wanderer</span>
             </h1>
 
             <p class="hero-subtitle gs-reveal">
@@ -394,8 +388,8 @@
                 跑咖是一種生活習慣，不是為了打卡，而是尋找一個可以安放靈魂的角落。
             </p>
 
-            <div style="margin-top: 2rem;" class="gs-reveal">
-                <span class="handwritten">Coffee. Travel. Life.</span>
+            <div style="margin-top: 4rem;" class="gs-reveal">
+                <span class="handwritten" style="font-size: 1.2rem; color: #999;">est. Tokyo</span>
             </div>
         </div>
     </section>
@@ -404,25 +398,28 @@
     <section class="section">
         <div class="content-wrapper">
             <div class="paper-card gs-reveal">
-                <span class="data-tag">Chapter 01: The Logic</span>
-                <h2>Physics & The INTP Mind</h2>
+                <span class="data-tag">01 / The Logic</span>
+                <h2>Physics & The Quiet Mind</h2>
 
-                <div style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 2rem;">
+                <div style="margin-top: 2.5rem; display: flex; flex-wrap: wrap; gap: 3rem;">
                     <div style="flex: 1; min-width: 300px;">
-                        <p style="margin-bottom: 1rem;">
+                        <p style="margin-bottom: 1.5rem;">
                             大學、研究所皆主修物理。這賦予了我一種近乎強迫症的邏輯思維。<br>
-                            雖然是教科書級的 <span style="font-family: var(--font-data); color: var(--color-accent);">INTP</span>，但我並不想用冰冷的數據來定義生活。
+                            雖然是教科書級的 <span style="font-family: var(--font-data); font-size: 0.9em;">INTP</span>，但我並不想用冰冷的數據來定義生活。
                         </p>
                         <p>
                             我用物理學家的眼光觀察空間結構、光線折射、聲音傳遞。<br>
                             但用旅人的心，去感受那杯咖啡的溫度。
                         </p>
                     </div>
-                    <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
-                        <div style="width: 100%; height: 1px; background: var(--color-text); position: relative;">
-                            <span class="handwritten" style="position: absolute; top: -30px; left: 0;">Variables</span>
-                            <span class="handwritten" style="position: absolute; bottom: -30px; right: 0;">Atmosphere</span>
-                        </div>
+                    <!-- Decorative element: Minimalist Diagram -->
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: center; opacity: 0.6;">
+                         <div style="position: relative; width: 150px; height: 150px; border: 1px solid var(--color-accent); border-radius: 50%;">
+                            <div style="position: absolute; top: 50%; left: 50%; width: 1px; height: 160px; background: var(--color-text); transform: translate(-50%, -50%) rotate(45deg);"></div>
+                            <div style="position: absolute; top: 50%; left: 50%; width: 160px; height: 1px; background: var(--color-text); transform: translate(-50%, -50%) rotate(45deg);"></div>
+                            <span class="handwritten" style="position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 1rem;">Space</span>
+                            <span class="handwritten" style="position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 1rem;">Time</span>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -432,31 +429,33 @@
     <!-- 02. Timeline -->
     <section class="section">
         <div class="content-wrapper">
-            <span class="data-tag gs-reveal">Chapter 02: The Path</span>
+            <div style="text-align: center; margin-bottom: 2rem;" class="gs-reveal">
+                <span class="data-tag">02 / The Path</span>
+            </div>
 
-            <div class="paper-card gs-reveal" style="padding-bottom: 0;">
+            <div class="paper-card gs-reveal" style="padding-bottom: 2rem;">
                 <div class="timeline-grid">
                     <div class="timeline-item">
-                        <div class="timeline-year">Phase 1</div>
+                        <div class="timeline-year">Phase I</div>
                     </div>
                     <div class="timeline-item timeline-content">
-                        <h3>Academia (Physics)</h3>
+                        <h3>Academia</h3>
                         <p>Rigorous training in logic. Understanding the universe through equations.</p>
                     </div>
 
                     <div class="timeline-item">
-                        <div class="timeline-year">Phase 2</div>
+                        <div class="timeline-year">Phase II</div>
                     </div>
                     <div class="timeline-item timeline-content">
-                        <h3>Design & Coffee</h3>
+                        <h3>Design & Brew</h3>
                         <p>畢業後轉身投入平面設計，隨後在咖啡產業耕耘五年。<br>從個人小店到連鎖體系，學會的不只是沖煮，而是「服務」的本質。</p>
                     </div>
 
                     <div class="timeline-item">
-                        <div class="timeline-year">Current</div>
+                        <div class="timeline-year">Now</div>
                     </div>
                     <div class="timeline-item timeline-content">
-                        <h3>Japan (The Explorer)</h3>
+                        <h3>Japan Explorer</h3>
                         <p>30歲移居日本。觀光推廣寫手、玩具店店長。<br>喜歡的事情太多，結果就什麼都做了。</p>
                     </div>
                 </div>
@@ -467,34 +466,42 @@
     <!-- 03. Philosophy -->
     <section class="section">
         <div class="content-wrapper">
-            <div class="paper-card gs-reveal" style="background: #fff;">
-                <span class="data-tag">Chapter 03: The Guide</span>
+            <div class="paper-card gs-reveal" style="background: #fff; border: none; box-shadow: none;">
+                <div style="text-align: center;">
+                    <span class="data-tag" style="margin-bottom: 2rem;">03 / The Guide</span>
 
-                <h2 style="font-size: 2.5rem; margin: 1rem 0;">Not a Review.<br><span style="color: var(--color-accent);">A Companion.</span></h2>
+                    <h2 style="font-size: 2.2rem; margin: 0 auto 2rem; font-weight: 300; max-width: 600px;">
+                        Not a Review.<br>
+                        <span style="color: var(--color-accent); font-style: italic;">A Quiet Companion.</span>
+                    </h2>
 
-                <p style="font-size: 1.1rem; margin-bottom: 2rem;">
-                    我的帳號不是攻略，也不是評分表。<br>
-                    它更像是一本陪你一起跑日本咖啡廳的<span class="handwritten">手寫筆記</span>。
-                </p>
+                    <p style="font-size: 1.05rem; color: #666; margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                        我的帳號不是攻略，也不是評分表。<br>
+                        它更像是一本陪你一起跑日本咖啡廳的<span class="handwritten" style="color: var(--color-text);">手寫筆記</span>。<br>
+                        把店內空間氣氛、老闆的距離感、店家的理念故事，平實地寫出來。
+                    </p>
 
-                <div class="polaroid-container">
-                    <div class="polaroid interactive-el">
-                        <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot">
-                        <div class="polaroid-caption">Find your space.</div>
+                    <div class="polaroid-container">
+                        <div class="polaroid interactive-el">
+                            <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot">
+                            <div class="polaroid-caption">Just sit & breathe.</div>
+                        </div>
                     </div>
-                </div>
 
-                <p style="margin-top: 2rem; text-align: center; color: #777;">
-                    「只要有人喜歡，就是好咖啡。」
-                </p>
+                    <p style="margin-top: 3rem; text-align: center; color: #999; font-size: 0.9rem; letter-spacing: 0.05em;">
+                        「只要有人喜歡，就是好咖啡。」
+                    </p>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <section class="section">
+    <section class="section" style="min-height: 50vh;">
         <div class="content-wrapper" style="text-align: center;">
-            <h2 class="gs-reveal" style="font-family: var(--font-hand); font-size: 3rem; margin-bottom: 2rem;">Let's get lost together.</h2>
+            <h2 class="gs-reveal" style="font-family: var(--font-hand); font-size: 2.5rem; margin-bottom: 2.5rem; color: var(--color-text); opacity: 0.8;">
+                Let's get lost together.
+            </h2>
 
             <div class="social-links gs-reveal">
                 <a href="https://www.threads.com/@japan.coffee__tyou.tw" target="_blank" class="social-btn interactive-el">Threads</a>
@@ -504,62 +511,51 @@
                 <a href="https://linkgoods.com/japancoffeebytyou" target="_blank" class="social-btn interactive-el">LinkGoods</a>
             </div>
 
-            <div style="margin-top: 4rem; opacity: 0.5; font-family: var(--font-data); font-size: 0.8rem;">
-                <a href="/guild/" style="color: inherit; text-decoration: none;" class="interactive-el">← RETURN TO GUILD</a>
+            <div style="margin-top: 5rem; opacity: 0.4; font-family: var(--font-data); font-size: 0.7rem; letter-spacing: 0.1em;">
+                <a href="/guild/" style="color: inherit; text-decoration: none;" class="interactive-el">RETURN TO GUILD</a>
             </div>
         </div>
     </section>
 
-    <!-- Interactive: Coffee Stamp -->
+    <!-- Interactive: Coffee Stamp (Subtle) -->
     <script>
         const stampContainer = document.getElementById('stamp-container');
         const cursorText = document.getElementById('cursor-text');
 
-        // Show "Click to Stamp" text on hover over empty space
-        document.addEventListener('mousemove', (e) => {
-             // Simple logic: if not hovering interactive element, show text
-             // But we only want to do this logic occasionally to avoid perf hit
-        });
-
         // Stamp Logic
         document.addEventListener('click', (e) => {
-            // Check if clicking a link or interactive element (don't stamp if clicking a link)
             if (e.target.closest('a') || e.target.closest('.interactive-el')) return;
 
             const stamp = document.createElement('div');
             stamp.classList.add('coffee-stamp');
 
-            // Randomize position slightly around click
             const x = e.clientX;
             const y = e.clientY;
 
             stamp.style.left = x + 'px';
             stamp.style.top = y + 'px';
 
-            // Randomize rotation and scale
             const rot = Math.random() * 360;
-            const scale = 0.8 + Math.random() * 0.5;
+            // Smaller, more random stamps
+            const scale = 0.5 + Math.random() * 0.4;
 
             stampContainer.appendChild(stamp);
 
-            // Animate In
             gsap.to(stamp, {
-                opacity: 0.6,
+                opacity: 0.3, // Very faint
                 scale: scale,
                 rotation: rot,
-                duration: 0.4,
-                ease: "back.out(1.7)"
+                duration: 1.5, // Slow fade in
+                ease: "power2.out"
             });
 
-            // Fade out eventually to keep DOM clean? Or keep them as "Log"
-            // Let's keep a max limit
-            if(stampContainer.children.length > 10) {
-                stampContainer.removeChild(stampContainer.firstChild);
+            if(stampContainer.children.length > 8) {
+                gsap.to(stampContainer.firstChild, { opacity: 0, duration: 1, onComplete: () => stampContainer.firstChild.remove() });
             }
         });
     </script>
 
-    <!-- Three.js: Floating Icons (Physics Enhanced) -->
+    <!-- Three.js: Floating Icons (Calm / Ambient) -->
     <script type="module">
         import * as THREE from 'three';
 
@@ -567,8 +563,8 @@
         const container = document.getElementById('canvas-three');
         const scene = new THREE.Scene();
 
-        // Soft ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+        // Very soft ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
         scene.add(ambientLight);
 
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -576,7 +572,7 @@
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
         // --- Helper: Generate Icon Texture ---
@@ -599,18 +595,18 @@
             return texture;
         }
 
+        // Muted Icon Colors
         const icons = [
-            { code: '\uf0f4', color: '#6B7F36' }, // Mug (Olive)
-            { code: '\uf5d2', color: '#C5A880' }, // Atom (Gold)
-            { code: '\uf072', color: '#2F3632' }, // Plane (Dark)
-            { code: '\uf3c5', color: '#6B7F36' }, // Map Marker (Olive)
-            { code: '\uf030', color: '#2F3632' }, // Camera (Dark)
-            { code: '\uf303', color: '#C5A880' }, // Pen (Gold)
-            { code: '\uf4e2', color: '#6B7F36' }, // Mug Saucer
+            { code: '\uf0f4', color: '#788548' }, // Mug (Olive)
+            { code: '\uf5d2', color: '#9AA58C' }, // Atom (Pale Olive)
+            { code: '\uf072', color: '#666666' }, // Plane (Grey)
+            { code: '\uf3c5', color: '#788548' }, // Map Marker
+            { code: '\uf030', color: '#666666' }, // Camera
+            { code: '\uf303', color: '#C5A880' }, // Pen (Pale Gold)
         ];
 
         // --- Create Sprites ---
-        const particleCount = 45;
+        const particleCount = 20; // Reduced count for "Zen" feel
         const particles = [];
 
         (async () => {
@@ -619,7 +615,7 @@
                 return new THREE.SpriteMaterial({
                     map: texture,
                     transparent: true,
-                    opacity: 0.6 // Slightly more transparent for readability
+                    opacity: 0.12 // Barely visible watermark
                 });
             }));
 
@@ -627,21 +623,20 @@
                 const material = materials[Math.floor(Math.random() * materials.length)];
                 const sprite = new THREE.Sprite(material);
 
-                // Random Pos
-                sprite.position.x = (Math.random() - 0.5) * 60;
-                sprite.position.y = (Math.random() - 0.5) * 60;
-                sprite.position.z = (Math.random() - 0.5) * 30;
+                // Spread out more
+                sprite.position.x = (Math.random() - 0.5) * 70;
+                sprite.position.y = (Math.random() - 0.5) * 70;
+                sprite.position.z = (Math.random() - 0.5) * 20; // Flatter depth
 
-                const scale = Math.random() * 1.5 + 1;
+                const scale = Math.random() * 1.2 + 0.8;
                 sprite.scale.set(scale, scale, 1);
 
                 sprite.userData = {
-                    vx: (Math.random() - 0.5) * 0.02,
-                    vy: (Math.random() - 0.5) * 0.02,
+                    vx: (Math.random() - 0.5) * 0.005, // Very slow drift
+                    vy: (Math.random() - 0.5) * 0.005,
                     origScale: scale,
                     floatOffset: Math.random() * Math.PI * 2,
-                    floatSpeed: Math.random() * 0.5 + 0.5,
-                    turbulence: 0
+                    floatSpeed: Math.random() * 0.2 + 0.1 // Very slow bobbing
                 };
 
                 scene.add(sprite);
@@ -651,7 +646,6 @@
             animate();
         })();
 
-        // Mouse & Scroll Interaction
         let mouseX = 0;
         let mouseY = 0;
         let lastScrollY = window.scrollY;
@@ -665,87 +659,73 @@
         window.addEventListener('scroll', () => {
             const newScrollY = window.scrollY;
             const delta = newScrollY - lastScrollY;
-            scrollSpeed = delta * 0.01; // Sensitivity
+            scrollSpeed = delta * 0.005; // Reduced sensitivity
             lastScrollY = newScrollY;
         });
 
-        // --- Animation Loop ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Dampen scroll speed
-            scrollSpeed *= 0.95;
+            scrollSpeed *= 0.92; // Higher damping
 
             particles.forEach(p => {
-                // Base float
-                p.position.y += Math.sin(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.005;
-                p.position.x += Math.cos(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.002;
+                // Gentle Ambient Float
+                p.position.y += Math.sin(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.002;
 
-                // Scroll Turbulence (Stirring effect)
-                // Particles move faster and swirl when scrolling
-                p.userData.turbulence += (Math.abs(scrollSpeed) * 2 - p.userData.turbulence) * 0.1;
+                // Slow Scroll Parallax
+                p.position.y += scrollSpeed;
 
-                // Add vertical movement based on scroll direction (Parallax)
-                p.position.y += scrollSpeed * 2;
+                // Minimal Drift
+                p.position.x += p.userData.vx;
+                p.position.y += p.userData.vy;
 
-                // Brownian Drift
-                p.position.x += p.userData.vx * (1 + p.userData.turbulence * 5);
-                p.position.y += p.userData.vy * (1 + p.userData.turbulence * 5);
-
-                // Mouse Attraction (Magnetic)
-                // Project mouse to world Z roughly
-                const distX = (mouseX * 25) - p.position.x;
-                const distY = (mouseY * 25) - p.position.y;
+                // Very weak mouse repulsion (just to show it's alive)
+                const distX = (mouseX * 30) - p.position.x;
+                const distY = (mouseY * 30) - p.position.y;
                 const dist = Math.sqrt(distX*distX + distY*distY);
 
-                if (dist < 10) {
-                    // Gentle pull
-                    p.position.x += distX * 0.005;
-                    p.position.y += distY * 0.005;
-                    // Slightly larger
-                    p.scale.lerp(new THREE.Vector3(p.userData.origScale * 1.2, p.userData.origScale * 1.2, 1), 0.1);
-                } else {
-                    p.scale.lerp(new THREE.Vector3(p.userData.origScale, p.userData.origScale, 1), 0.1);
+                if (dist < 8) {
+                    p.position.x -= distX * 0.002;
+                    p.position.y -= distY * 0.002;
                 }
 
                 // Wrap
-                if(p.position.x > 35) p.position.x = -35;
-                if(p.position.x < -35) p.position.x = 35;
-                if(p.position.y > 35) p.position.y = -35;
-                if(p.position.y < -35) p.position.y = 35;
+                if(p.position.x > 40) p.position.x = -40;
+                if(p.position.x < -40) p.position.x = 40;
+                if(p.position.y > 40) p.position.y = -40;
+                if(p.position.y < -40) p.position.y = 40;
 
-                // Rotation
-                p.material.rotation = Math.sin(time + p.userData.floatOffset) * 0.1 + (scrollSpeed * 0.5);
+                // Slow rotation
+                p.material.rotation = Math.sin(time * 0.5 + p.userData.floatOffset) * 0.05;
             });
 
-            // Camera Sway
-            camera.position.x += (mouseX * 1 - camera.position.x) * 0.02;
-            camera.position.y += (mouseY * 1 - camera.position.y) * 0.02;
+            // Very subtle camera sway
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.01;
+            camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.01;
             camera.lookAt(0,0,0);
 
             renderer.render(scene, camera);
         }
 
-        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP Reveals ---
+        // --- GSAP Reveals (Slower, smoother) ---
         gsap.utils.toArray('.gs-reveal').forEach(el => {
             gsap.from(el, {
                 scrollTrigger: {
                     trigger: el,
-                    start: "top 85%",
+                    start: "top 90%", // Trigger earlier
                 },
-                y: 30,
+                y: 40,
                 opacity: 0,
-                duration: 1,
+                duration: 1.5, // Longer duration
                 ease: "power2.out"
             });
         });
@@ -754,10 +734,9 @@
         const cursor = document.getElementById('cursor');
         if (window.matchMedia("(min-width: 768px)").matches) {
             window.addEventListener('mousemove', (e) => {
-                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
-                gsap.to(cursorText, { x: e.clientX, y: e.clientY - 30, duration: 0.2 });
+                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.15 });
+                gsap.to(cursorText, { x: e.clientX, y: e.clientY - 25, duration: 0.3 });
 
-                // Check if hovering interactive
                 const hovered = document.elementFromPoint(e.clientX, e.clientY)?.closest('a, .interactive-el');
                 if(hovered) {
                     cursor.classList.add('hovered');
@@ -770,7 +749,7 @@
         }
     </script>
 
-    <!-- p5.js: Organic Map Lines (Subtle) -->
+    <!-- p5.js: Organic Map Lines (Barely There) -->
     <script>
         let t = 0;
 
@@ -778,24 +757,24 @@
             const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('canvas-p5');
             noFill();
-            stroke(85, 107, 47, 30); // Olive Green, very low opacity
+            // Olive Green, extremely low opacity
+            stroke(120, 133, 72, 15);
         }
 
         function draw() {
             clear();
-
             strokeWeight(1);
 
-            for(let i = 0; i < 5; i++) {
-                let yBase = height * ((i + 1) / 6);
+            for(let i = 0; i < 4; i++) {
+                let yBase = height * ((i + 1) / 5);
 
                 beginShape();
                 curveVertex(0, yBase);
                 curveVertex(0, yBase);
 
-                for(let x = 0; x <= width + 50; x += 50) {
-                    let n = noise(x * 0.001, i * 0.5, t * 0.1);
-                    let yOffset = map(n, 0, 1, -50, 50);
+                for(let x = 0; x <= width + 50; x += 80) { // Lower resolution for smoother curves
+                    let n = noise(x * 0.0005, i * 0.5, t * 0.05);
+                    let yOffset = map(n, 0, 1, -40, 40);
 
                     curveVertex(x, yBase + yOffset);
                 }
@@ -805,7 +784,7 @@
                 endShape();
             }
 
-            t += 0.002;
+            t += 0.001; // Slower time
         }
 
         function windowResized() {
