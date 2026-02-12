@@ -347,8 +347,8 @@
 
                     this.path = [{x: this.x, y: this.y}];
                     this.maxLength = this.p.random(100, 300);
-                    this.speed = this.p.random(4, 8); // Faster
-                    this.color = this.p.random() > 0.8 ? [255, 215, 0] : [0, 243, 255]; // Gold or Plasma
+                    this.speed = this.p.random(4, 10); // Even Faster
+                    this.color = this.p.random() > 0.8 ? [255, 215, 0] : [0, 255, 255]; // Pure Gold or Pure Cyan
                     this.head = 0;
                 }
                 update() {
@@ -366,26 +366,38 @@
 
                     this.path.push({x: nextX, y: nextY});
 
-                    if(this.path.length > 60 || nextX > this.p.width || nextY > this.p.height || nextX < 0 || nextY < 0) {
+                    if(this.path.length > 80 || nextX > this.p.width || nextY > this.p.height || nextX < 0 || nextY < 0) {
                         this.reset();
                     }
                 }
                 display() {
                     this.p.noFill();
-                    this.p.stroke(this.color[0], this.color[1], this.color[2], 200); // Brighter
-                    this.p.strokeWeight(3); // Thicker
 
+                    // Glow Effect (Layer 1 - Blur/Wide)
+                    this.p.stroke(this.color[0], this.color[1], this.color[2], 50);
+                    this.p.strokeWeight(8);
                     this.p.beginShape();
-                    for(let i=0; i<this.path.length; i++) {
-                        this.p.vertex(this.path[i].x, this.path[i].y);
-                    }
+                    for(let i=0; i<this.path.length; i++) this.p.vertex(this.path[i].x, this.path[i].y);
+                    this.p.endShape();
+
+                    // Core Line (Layer 2 - Sharp/Bright)
+                    this.p.stroke(this.color[0], this.color[1], this.color[2], 255); // Max Opacity
+                    this.p.strokeWeight(3);
+                    this.p.beginShape();
+                    for(let i=0; i<this.path.length; i++) this.p.vertex(this.path[i].x, this.path[i].y);
                     this.p.endShape();
 
                     // Head Dot
                     let last = this.path[this.path.length-1];
                     this.p.noStroke();
+
+                    // Dot Glow
+                    this.p.fill(this.color[0], this.color[1], this.color[2], 100);
+                    this.p.ellipse(last.x, last.y, 12, 12);
+
+                    // Dot Core
                     this.p.fill(255);
-                    this.p.ellipse(last.x, last.y, 6, 6); // Bigger dot
+                    this.p.ellipse(last.x, last.y, 6, 6);
                 }
             }
         };
@@ -406,7 +418,7 @@
         scene.fog = new THREE.FogExp2(0x020205, 0.02);
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 10);
+        camera.position.set(0, 0, 50); // Start Far away
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -654,15 +666,23 @@
         }
         animate();
 
-        // Scroll Camera
+        // Initial Zoom In Animation
         gsap.to(camera.position, {
-            z: 20,
-            y: 5,
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
+            z: 10,
+            duration: 2.5,
+            ease: "power2.inOut",
+            onComplete: () => {
+                // Connect Scroll Trigger after zoom
+                gsap.to(camera.position, {
+                    z: -5, // Move even closer into the gears
+                    y: 2,
+                    scrollTrigger: {
+                        trigger: "body",
+                        start: "top top",
+                        end: "bottom bottom",
+                        scrub: 1
+                    }
+                });
             }
         });
 
