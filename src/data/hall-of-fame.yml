@@ -789,3 +789,15 @@ members:
         label: "琵琶演奏"
       - id: "composer"
         label: "詞曲創作"
+
+  - id: "chueh"
+    name: "闕 Chueh"
+    avatar: "/assets/img/guild/chueh/avatar.webp"
+    page: "/guild/chueh.html"
+    tags:
+      - id: "handpan"
+        label: "手碟"
+      - id: "drummer"
+        label: "爵士鼓"
+      - id: "musician"
+        label: "音樂人"
