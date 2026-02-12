@@ -8,335 +8,473 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@400;600;900&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
 
     <style>
         :root {
-            --ink: #2b2b2b;
-            --paper: #f0e6d2;
-            --paper-shadow: #d1c4b0;
-            --wood-dark: #1a120b;
-            --gold: #c5a059;
-            --red: #8a2be2; /* Changed to Mystic Purple/Red for Alchemy */
-            --accent: #800000; /* Seal Red */
+            --wood-dark: #2c1e14;
+            --wood-light: #5d4037;
+            --parchment: #f3e5cd;
+            --ink: #2f2f2f;
+            --gold: #d4af37;
+            --red: #8b0000;
+            --paper-shadow: rgba(0,0,0,0.4);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--wood-dark);
+            background-color: #1a120b;
             color: var(--ink);
             font-family: 'Noto Serif TC', serif;
-            overflow: hidden; /* We handle scroll via GSAP */
-            height: 100vh;
-            width: 100vw;
+            overflow-x: hidden;
         }
 
-        /* --- UI Layers --- */
-        #viewport {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            overflow: hidden;
+        /* --- 1. Background Atmosphere --- */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            background: radial-gradient(circle at 50% 30%, #3e2723 0%, #1a120b 100%);
+        }
+
+        /* --- 2. The Quest Board (Main Container) --- */
+        #quest-board {
+            width: 100%;
+            max-width: 1000px;
+            margin: 4rem auto;
+            position: relative;
+            background-image: repeating-linear-gradient(90deg, #3e2723 0px, #2c1e14 40px, #332219 80px);
+            box-shadow:
+                0 0 50px rgba(0,0,0,0.8),
+                inset 0 0 100px rgba(0,0,0,0.9);
+            border: 20px solid #25160c;
+            border-radius: 8px;
+            padding: 4rem 2rem;
+            /* Wood Grain Texture Overlay */
+            background-blend-mode: multiply;
+        }
+
+        #quest-board::before {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        /* --- 3. Header Sign --- */
+        .guild-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
             z-index: 10;
         }
 
-        #world {
-            /* The Infinite Board */
-            width: 250vw; /* Wide canvas */
-            height: 150vh; /* Tall canvas */
-            position: absolute;
-            top: 0; left: 0;
-            transform-origin: 0 0;
-            will-change: transform;
-            /* Wood Texture Background */
-            background-color: #1a120b;
-            background-image:
-                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E"),
-                repeating-linear-gradient(90deg, #2a1e12 0px, #1a120b 40px, #22180e 80px);
-            box-shadow: inset 0 0 200px rgba(0,0,0,0.8);
-        }
-
-        /* --- Items on the Board --- */
-        .item {
-            position: absolute;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .paper {
-            background: var(--paper);
-            box-shadow: 10px 20px 40px rgba(0,0,0,0.3);
-            padding: 3rem;
-            position: relative;
-        }
-
-        /* Paper Texture */
-        .paper::before {
-            content: '';
-            position: absolute;
-            top:0; left:0; width:100%; height:100%;
-            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
-            pointer-events: none;
-            mix-blend-mode: multiply;
-        }
-
-        /* Tape / Pin */
-        .tape {
-            position: absolute;
-            width: 120px; height: 30px;
-            background: rgba(255, 255, 255, 0.4);
-            top: -15px; left: 50%;
-            transform: translateX(-50%) rotate(-2deg);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            backdrop-filter: blur(2px);
-        }
-
-        h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-            font-weight: 900;
-            border-bottom: 3px solid var(--ink);
-            padding-bottom: 0.5rem;
+        .header-plaque {
+            background: #4e342e;
             display: inline-block;
+            padding: 1rem 3rem;
+            border: 4px solid #3e2723;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transform: rotate(-1deg);
+        }
+
+        .header-plaque h1 {
+            color: var(--gold);
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 0 #000;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .header-plaque .subtitle {
+            color: #d7ccc8;
+            font-size: 0.9rem;
+            letter-spacing: 4px;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        /* --- 4. Content Styles (Pinned Papers) --- */
+        .paper-note {
+            background: var(--parchment);
+            color: var(--ink);
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            box-shadow: 5px 10px 20px var(--paper-shadow);
+            position: relative;
+            /* Subtle paper texture */
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E");
+            transform-origin: center top;
+            transition: transform 0.3s ease;
+        }
+
+        .paper-note:hover {
+            transform: scale(1.02) rotate(0deg) !important;
+            z-index: 20;
+            box-shadow: 10px 20px 40px rgba(0,0,0,0.4);
+        }
+
+        /* Pin Visual */
+        .pin {
+            position: absolute;
+            top: -10px; left: 50%;
+            transform: translateX(-50%);
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #b0bec5, #546e7a);
+            box-shadow: 2px 4px 6px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+
+        .section-title {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .section-date {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: normal;
         }
 
         p {
             font-size: 1.1rem;
             line-height: 1.8;
             margin-bottom: 1rem;
-            font-weight: 600;
-            color: #444;
+            color: #333;
         }
 
-        .vertical-text {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
+        .highlight {
+            background: rgba(255, 215, 0, 0.3);
+            padding: 0 4px;
+            font-weight: bold;
+            color: #8b0000;
         }
 
-        /* --- Specific Items --- */
+        /* --- 5. Specific Sections --- */
 
-        /* 1. Hero: Wanted Poster (Center) */
-        #hero-poster {
-            top: 20vh; left: 80vw;
-            width: 450px;
-            background: #e3d5c0;
-            text-align: center;
-            padding: 2rem;
+        /* Hero: Registration Form */
+        #registration-form {
+            max-width: 800px;
+            margin: 0 auto 4rem auto;
+            transform: rotate(1deg);
+            display: flex;
+            gap: 2rem;
+            background: #fff8e1; /* Lighter form paper */
+        }
+
+        .profile-photo-container {
+            flex: 0 0 250px;
+            border: 1px solid #8d6e63;
+            padding: 10px;
+            background: #fff;
             transform: rotate(-2deg);
-            z-index: 5;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
         }
 
-        #hero-poster img {
+        .profile-photo {
             width: 100%;
-            height: 400px;
+            height: 300px;
             object-fit: cover;
-            filter: sepia(0.4) contrast(1.1) grayscale(0.2);
-            border: 4px solid var(--ink);
+            filter: sepia(0.2);
+        }
+
+        .form-details {
+            flex: 1;
+        }
+
+        .form-field {
             margin-bottom: 1rem;
+            border-bottom: 1px dashed #aaa;
+            padding-bottom: 5px;
+            display: flex;
+            align-items: baseline;
         }
 
-        .wanted-title {
-            font-family: 'Cinzel', serif;
-            font-size: 4rem;
+        .label {
             font-weight: 900;
-            letter-spacing: 5px;
+            margin-right: 10px;
+            color: #5d4037;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .value {
+            font-family: 'IM Fell English', serif;
+            font-size: 1.4rem;
+            color: var(--ink);
+        }
+
+        .guild-stamp {
+            border: 3px double var(--red);
+            color: var(--red);
+            padding: 0.5rem 1rem;
+            display: inline-block;
+            font-weight: 900;
+            transform: rotate(-10deg);
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        /* Intro & Dream: Side-by-side Notices */
+        .notices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .notices-grid { grid-template-columns: 1fr; }
+            #registration-form { flex-direction: column; }
+            .profile-photo-container { width: 100%; height: auto; }
+            .profile-photo { height: auto; }
+        }
+
+        /* Projects: Wanted Posters Grid */
+        #bounty-board {
+            background: transparent;
+            box-shadow: none;
+            padding: 0;
+            transform: none;
+        }
+
+        .poster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .wanted-poster {
+            background: #efebe9;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .wanted-poster::before { /* Nail */
+            content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 8px; background: #333; border-radius: 50%;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .wanted-poster:hover {
+            transform: translateY(-5px) scale(1.02);
+            z-index: 10;
+            box-shadow: 10px 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .poster-img {
+            width: 100%;
+            height: 180px;
+            background: #333;
             margin: 1rem 0;
-            color: var(--wood-dark);
+            border: 2px solid #3e2723;
+            object-fit: cover;
+            filter: grayscale(0.5) contrast(1.2);
         }
 
-        .wanted-reward {
-            font-size: 1.5rem;
-            color: var(--accent);
+        .poster-title {
+            font-family: 'Cinzel', serif;
             font-weight: 900;
-            border-top: 2px solid var(--wood-dark);
-            border-bottom: 2px solid var(--wood-dark);
-            padding: 0.5rem 0;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #3e2723;
+        }
+
+        .reward-tag {
+            background: var(--red);
+            color: #fff;
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-top: 1rem;
+            border-radius: 2px;
+        }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            color: #a1887f;
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
             margin-top: 1rem;
         }
 
-        /* 2. Intro: Diary Page (Left) */
-        #intro-page {
-            top: 30vh; left: 20vw;
-            width: 400px;
-            transform: rotate(3deg);
-            z-index: 2;
+        .social-link {
+            width: 40px; height: 40px;
+            background: #5d4037;
+            color: #d7ccc8;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
         }
+        .social-link:hover { background: var(--gold); color: #3e2723; }
 
-        /* 3. Dream: Blueprint (Bottom Right) */
-        #dream-blueprint {
-            top: 80vh; left: 140vw;
-            width: 500px;
-            background: #2c3e50; /* Blueprint Blue */
-            color: #ecf0f1;
-            padding: 3rem;
-            transform: rotate(1deg);
-            box-shadow: 10px 20px 50px rgba(0,0,0,0.5);
-        }
-        #dream-blueprint .paper::before { opacity: 0; } /* Remove paper texture */
-        #dream-blueprint h2 { border-color: #ecf0f1; }
-        #dream-blueprint p { color: #bdc3c7; }
-
-        /* Grid pattern for blueprint */
-        #dream-blueprint::after {
-            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-            background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
-            pointer-events: none;
-        }
-
-        /* 4. Projects: Sticky Notes (Bottom Center) */
-        #projects-board {
-            top: 90vh; left: 60vw;
-            width: 600px;
-            display: flex;
-            gap: 2rem;
-            transform: rotate(-1deg);
-            z-index: 4;
-        }
-
-        .sticky-note {
-            background: #ffeb3b;
-            color: #333;
-            padding: 1.5rem;
-            width: 200px;
-            height: 200px;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
-            font-size: 0.9rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.2s;
-        }
-        .sticky-note:nth-child(2) { background: #ff9800; transform: rotate(3deg); top: 20px; position: relative; }
-        .sticky-note:nth-child(3) { background: #00bcd4; transform: rotate(-2deg); }
-        .sticky-note:hover { transform: scale(1.1) !important; z-index: 10; }
-
-        /* Navigation Hints */
-        #nav-hint {
-            position: fixed;
-            bottom: 2rem; left: 50%;
-            transform: translateX(-50%);
-            color: var(--paper);
-            font-family: 'Cinzel', serif;
-            letter-spacing: 2px;
-            opacity: 0.7;
-            z-index: 100;
-            pointer-events: none;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
-        }
-
-        /* 3D Overlay */
-        #canvas-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 20; pointer-events: none; /* Overlay only */
-            mix-blend-mode: hard-light; /* Blend lights */
-        }
-
-        /* Footer / Return */
-        .return-seal {
+        /* Return Button */
+        .return-btn {
             position: fixed;
             top: 2rem; left: 2rem;
-            width: 80px; height: 80px;
-            background: var(--accent);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
+            background: rgba(62, 39, 35, 0.9);
+            color: #d7ccc8;
+            padding: 0.8rem 1.5rem;
             text-decoration: none;
-            font-weight: 900;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            z-index: 100;
+            border: 1px solid #8d6e63;
+            border-radius: 4px;
             font-family: 'Noto Serif TC', serif;
-            border: 2px dashed rgba(255,255,255,0.3);
-            transition: transform 0.3s;
+            font-weight: 600;
+            z-index: 100;
+            transition: all 0.3s;
         }
-        .return-seal:hover { transform: rotate(15deg) scale(1.1); }
+        .return-btn:hover {
+            background: var(--gold);
+            color: #3e2723;
+        }
 
     </style>
 </head>
 <body>
 
-    <!-- 3D Atmosphere (Lighting/Dust) -->
-    <div id="canvas-container"></div>
+    <!-- Return Link -->
+    <a href="/guild/" class="return-btn">← 返回公會大廳</a>
 
-    <!-- UI Overlay -->
-    <a href="/guild/" class="return-seal">返回<br>大廳</a>
-    <div id="nav-hint">SCROLL TO EXPLORE THE DESK</div>
+    <!-- 3D Atmosphere Background -->
+    <div id="bg-canvas"></div>
 
-    <!-- The Infinite Board -->
-    <div id="viewport">
-        <div id="world">
+    <!-- Main Content Board -->
+    <div id="quest-board">
 
-            <!-- 1. Intro (Diary) -->
-            <div id="intro-page" class="item paper">
-                <div class="tape"></div>
-                <h2>鍊金術師<br>日誌</h2>
-                <p>我是一個曾經做過很多 Side Project 的軟體工程師。</p>
-                <p>最近想把<span style="color:var(--accent)">「文字小鎮」</span>這個概念做成一個遊戲。</p>
-                <p style="font-style: italic; opacity: 0.8; margin-top: 2rem;">2024.05.20 陰</p>
+        <!-- Header -->
+        <div class="guild-header">
+            <div class="header-plaque">
+                <h1>塞趴卷冒險公會</h1>
+                <div class="subtitle">Sepajuan Adventure Guild</div>
             </div>
-
-            <!-- 2. Hero (Poster) -->
-            <div id="hero-poster" class="item paper">
-                <div class="tape" style="transform: translateX(-50%) rotate(2deg); top: -20px;"></div>
-                <h2 style="font-family: 'Cinzel'; border: none; font-size: 3rem; margin-bottom: 0;">WANTED</h2>
-                <div style="font-family: 'Cinzel'; letter-spacing: 5px; margin-bottom: 1rem;">DEAD OR ALIVE</div>
-
-                <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ Avatar">
-
-                <div class="wanted-title">SPJ</div>
-                <p style="font-size: 1.2rem; font-weight: 900;">具現化系鍊金術師</p>
-                <p>擅長將創意轉化為現實的代碼魔法師。</p>
-
-                <div class="wanted-reward">Reward: $ 999,999,999</div>
-            </div>
-
-            <!-- 3. Dream (Blueprint) -->
-            <div id="dream-blueprint" class="item paper">
-                <h2>公會藍圖</h2>
-                <p>目標：建立一個真實的冒險者公會。</p>
-                <p>系統架構：</p>
-                <ul style="margin-left: 1.5rem; margin-bottom: 1rem; color: #bdc3c7;">
-                    <li>冒險者交流 (Network)</li>
-                    <li>組隊副本 (Party System)</li>
-                    <li>資源共享 (Resource Pool)</li>
-                </ul>
-                <p>這不只是結果，而是<span style="color: #f1c40f;">「有溫度的過程」</span>。</p>
-                <div style="border: 1px solid #fff; width: 100%; height: 100px; margin-top: 1rem; display: flex; align-items: center; justify-content: center; opacity: 0.5;">
-                    [ ARCHITECTURAL DIAGRAM ]
-                </div>
-            </div>
-
-            <!-- 4. Projects (Sticky Notes) -->
-            <div id="projects-board" class="item">
-                <div class="sticky-note">
-                    <div style="font-weight: 900; font-size: 1.2rem;">文字小鎮</div>
-                    <div>天書系統<br>無限創意</div>
-                    <div style="text-align: right; font-size: 2rem; opacity: 0.2;">01</div>
-                </div>
-                <div class="sticky-note">
-                    <div style="font-weight: 900; font-size: 1.2rem;">冒險公會</div>
-                    <div>現實副本<br>組隊交流</div>
-                    <div style="text-align: right; font-size: 2rem; opacity: 0.2;">02</div>
-                </div>
-                <div class="sticky-note">
-                    <div style="font-weight: 900; font-size: 1.2rem;">傳說紀錄</div>
-                    <div>寫作<br>分享故事</div>
-                    <div style="text-align: right; font-size: 2rem; opacity: 0.2;">03</div>
-                </div>
-            </div>
-
         </div>
+
+        <!-- 1. Hero: Registration Form -->
+        <div id="registration-form" class="paper-note">
+            <div class="pin"></div>
+            <div class="profile-photo-container">
+                <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ Avatar" class="profile-photo">
+            </div>
+            <div class="form-details">
+                <div class="section-title">公會成員註冊單<span class="section-date">No. SPJ-001</span></div>
+
+                <div class="form-field">
+                    <span class="label">姓名 Name:</span>
+                    <span class="value">塞趴卷 SPJ</span>
+                </div>
+
+                <div class="form-field">
+                    <span class="label">職業 Class:</span>
+                    <span class="value">具現化系鍊金術師</span>
+                </div>
+
+                <div class="form-field">
+                    <span class="label">等級 Level:</span>
+                    <span class="value">99 (MAX)</span>
+                </div>
+
+                <div class="form-field">
+                    <span class="label">技能 Skills:</span>
+                    <span class="value" style="font-size: 1rem;">Side Project 開發、文字具現化、公會營運</span>
+                </div>
+
+                <div class="guild-stamp">審核通過 APPROVED</div>
+            </div>
+        </div>
+
+        <!-- 2. Notices Grid -->
+        <div class="notices-grid">
+
+            <!-- Notice 1: Intro -->
+            <div id="intro-note" class="paper-note" style="transform: rotate(-1deg);">
+                <div class="pin" style="background: radial-gradient(circle at 30% 30%, #ff8a65, #bf360c);"></div>
+                <div class="section-title">鍊金術師日誌</div>
+                <p>我是一個曾經做過很多 Side Project 的<span class="highlight">軟體工程師</span>。</p>
+                <p>最近想把<span class="highlight">「文字小鎮」</span>這個概念做成一個遊戲，有種像是「天書系統」的感覺，讓我可以把我的創意都在裡面實現。</p>
+                <p>每一行代碼，都是通往新世界的咒語。</p>
+            </div>
+
+            <!-- Notice 2: Dream -->
+            <div id="dream-note" class="paper-note" style="transform: rotate(1.5deg);">
+                <div class="pin" style="background: radial-gradient(circle at 30% 30%, #ffd54f, #ff6f00);"></div>
+                <div class="section-title">公會願景公告</div>
+                <p>我還有一個夢想，是成立一個<span class="highlight">塞趴卷冒險公會</span>。</p>
+                <p>就像動漫或異世界轉生番那樣，一群現實世界的冒險者會在公會交流、組隊、接任務、打副本，希望可以聚集更多資源。</p>
+                <p>同時我也喜歡紀錄跟寫作，可以把這些過程的故事分享出來，讓事情不是只有死板板的結果，而是有溫度的過程。</p>
+            </div>
+        </div>
+
+        <!-- 3. Projects: Bounty Board -->
+        <div id="bounty-board">
+            <h2 style="font-family: 'Cinzel'; color: #d7ccc8; text-align: center; margin-bottom: 2rem; font-size: 2rem; text-shadow: 2px 2px 4px #000;">懸賞佈告欄 (Projects)</h2>
+
+            <div class="poster-grid">
+                <!-- Poster 1 -->
+                <div class="wanted-poster" style="transform: rotate(-2deg);">
+                    <img src="https://placehold.co/600x400/3e2723/d4af37?text=文字小鎮" alt="文字小鎮" class="poster-img">
+                    <div class="poster-title">文字小鎮</div>
+                    <p style="font-size: 0.9rem;">透過天書系統，實現無限創意的遊戲世界。</p>
+                    <div class="reward-tag">Rank S</div>
+                </div>
+
+                <!-- Poster 2 -->
+                <div class="wanted-poster" style="transform: rotate(1deg);">
+                    <img src="https://placehold.co/600x400/3e2723/d4af37?text=冒險公會" alt="冒險公會" class="poster-img">
+                    <div class="poster-title">塞趴卷公會</div>
+                    <p style="font-size: 0.9rem;">現實世界的冒險者集散地。組隊、交流、資源共享。</p>
+                    <div class="reward-tag">Rank A</div>
+                </div>
+
+                <!-- Poster 3 -->
+                <div class="wanted-poster" style="transform: rotate(-1.5deg);">
+                    <img src="https://placehold.co/600x400/3e2723/d4af37?text=紀錄傳說" alt="紀錄傳說" class="poster-img">
+                    <div class="poster-title">紀錄與寫作</div>
+                    <p style="font-size: 0.9rem;">分享有溫度的過程故事，而不僅僅是冰冷的結果。</p>
+                    <div class="reward-tag">Rank B</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-note">
+            <p>© 2024 塞趴卷冒險公會 Guild ID: #SPJ-001</p>
+            <div class="social-icons">
+                <a href="https://www.threads.net/@spj.story" target="_blank" class="social-link" title="Threads">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
+                </a>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Logic -->
+    <!-- Scripts -->
     <script type="importmap">
         {
             "imports": {
@@ -348,88 +486,57 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- 1. GSAP Scroll Interaction (Panning the Board) ---
+        // --- GSAP Interactions ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // We create a "virtual scroll" height
-        // The user scrolls down, but we translate the #world X and Y
-
-        const world = document.querySelector("#world");
-
-        // Define the path of the camera (Scanning the items)
-        // 0% -> Intro (20vw, 30vh) centered
-        // 30% -> Hero (80vw, 20vh) centered
-        // 60% -> Dream (140vw, 80vh) centered
-        // 100% -> Projects (60vw, 90vh) centered
-
-        // To center an element at X,Y in a 100vw/100vh viewport:
-        // Translate world to: -X + 50vw, -Y + 50vh
-
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "+=4000", // Long scroll distance
-                scrub: 1,
-                pin: true // Pin the body content
-            }
-        });
-
-        // Step 1: Start at Intro
-        // Initial CSS puts Intro at 20vw, 30vh.
-        // We want Intro centered: World X = -20vw + 50vw = 30vw? No, let's start with a wide shot.
-
-        // Let's set initial view to see Intro and Hero roughly
-        gsap.set(world, { x: 0, y: 0, scale: 1 });
-
-        // Move to Hero (Center strictly)
-        // Hero is at left: 80vw, top: 20vh. Width 450px.
-        // Approx center of Hero is 80vw + 225px, 20vh + 200px.
-        // Let's just approximate pan.
-
-        tl.to(world, { x: "-20vw", y: "-10vh", scale: 1, duration: 2, ease: "power1.inOut" }) // Pan right slightly
-          .to(world, { x: "-60vw", y: "0vh", scale: 1.1, duration: 3, ease: "power1.inOut" }) // Focus Hero
-          .to(world, { x: "-100vw", y: "-50vh", scale: 1, duration: 3, ease: "power1.inOut" }) // Move to Blueprint (140vw, 80vh)
-          .to(world, { x: "-40vw", y: "-60vh", scale: 1.1, duration: 3, ease: "power1.inOut" }); // Back to Projects (60vw, 90vh)
-
-        // Parallax for items (Making them feel floating)
-        gsap.utils.toArray(".item").forEach((item, i) => {
-            gsap.to(item, {
-                y: (i + 1) * 50, // Move slightly different speeds
-                ease: "none",
+        // Animate Papers on Scroll
+        gsap.utils.toArray('.paper-note, .wanted-poster').forEach(item => {
+            gsap.from(item, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out",
                 scrollTrigger: {
-                    trigger: "body",
-                    start: "top top",
-                    end: "+=4000",
-                    scrub: true
+                    trigger: item,
+                    start: "top 85%"
                 }
             });
         });
 
+        // Header Parallax
+        gsap.to(".header-plaque", {
+            y: 30,
+            rotation: 0,
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom top",
+                scrub: 1
+            }
+        });
 
-        // --- 2. Three.js Atmosphere (Lantern Light & Dust) ---
-        const container = document.getElementById('canvas-container');
+        // --- Three.js Ambient Dust ---
+        const container = document.getElementById('bg-canvas');
         const scene = new THREE.Scene();
-
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false }); // Perf optimization
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
         // Dust Particles
-        const particlesCnt = 1000;
+        const particlesCnt = 500;
         const posArray = new Float32Array(particlesCnt * 3);
         for(let i = 0; i < particlesCnt * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 20; // Spread out
+            posArray[i] = (Math.random() - 0.5) * 15;
         }
 
         const material = new THREE.PointsMaterial({
-            size: 0.02,
-            color: 0xffd700, // Gold dust
+            size: 0.03,
+            color: 0xffd700,
             transparent: true,
-            opacity: 0.6
+            opacity: 0.4
         });
 
         const geometry = new THREE.BufferGeometry();
@@ -437,40 +544,15 @@
         const particlesMesh = new THREE.Points(geometry, material);
         scene.add(particlesMesh);
 
-        // Lantern Light (Spotlight moving)
-        // We simulate a light source swaying
-        const light = new THREE.SpotLight(0xffaa00, 10);
-        light.position.set(0, 0, 2);
-        light.angle = Math.PI / 4;
-        light.penumbra = 0.5;
-        light.decay = 2;
-        light.distance = 50;
-        scene.add(light);
-        scene.add(light.target);
-
-        // Mouse Interaction
-        let mouseX = 0;
-        let mouseY = 0;
-        document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
-        });
-
+        // Animation Loop
         const clock = new THREE.Clock();
-
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Sway particles
-            particlesMesh.rotation.y = time * 0.05;
-            particlesMesh.position.y = Math.sin(time * 0.2) * 0.2;
-
-            // Sway Light
-            light.position.x = Math.sin(time * 0.5) * 2 + mouseX * 0.5;
-            light.position.y = Math.cos(time * 0.3) * 1 + mouseY * 0.5;
-            light.target.position.x = light.position.x;
-            light.target.position.y = light.position.y;
+            // Subtle drift
+            particlesMesh.rotation.y = time * 0.02;
+            particlesMesh.position.y = Math.sin(time * 0.1) * 0.2;
 
             renderer.render(scene, camera);
         }
