@@ -37,8 +37,8 @@ test.describe('SPJ Guild Page', () => {
   });
 
   test('should display Hero section', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('The Golden Tavern');
-    await expect(page.locator('.subtitle')).toContainText('of Materialization');
+    await expect(page.locator('h1')).toContainText('具現化酒館');
+    await expect(page.locator('.subtitle')).toContainText('The Materialization Tavern');
     await expect(page.locator('#canvas-container canvas')).toBeVisible();
   });
 
@@ -49,17 +49,17 @@ test.describe('SPJ Guild Page', () => {
         if(hud) hud.style.opacity = '1';
     });
     await expect(page.locator('#hud')).toBeVisible();
-    await expect(page.locator('.char-name')).toHaveText('SPJ');
+    await expect(page.locator('.id-name')).toContainText('SPJ');
   });
 
   test('should display content sections', async ({ page }) => {
     // Scroll to Intro
-    await page.evaluate(() => document.getElementById('intro')?.scrollIntoView());
-    await expect(page.locator('#intro h2')).toContainText("The Alchemist's Log");
+    await page.evaluate(() => document.getElementById('intro-note')?.scrollIntoView());
+    await expect(page.locator('#intro-note h2')).toContainText("鍊金術師日誌");
 
     // Scroll to Projects
-    await page.evaluate(() => document.getElementById('projects')?.scrollIntoView());
-    await expect(page.locator('#projects h2')).toContainText("Quest Board");
+    await page.evaluate(() => document.getElementById('projects-note')?.scrollIntoView());
+    await expect(page.locator('#projects-note h2')).toContainText("懸賞佈告欄");
 
     const cards = page.locator('.wanted-poster');
     await expect(cards).toHaveCount(3);

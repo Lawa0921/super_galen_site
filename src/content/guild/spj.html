@@ -1,35 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPJ - The Materialization Alchemist</title>
-    <meta name="description" content="Sepajuan Adventure Guild - The Golden Tavern of Materialization">
+    <title>塞趴卷 - 具現化系鍊金術師</title>
+    <meta name="description" content="塞趴卷冒險公會 - 具現化系鍊金術師的酒館佈告欄">
 
-    <!-- Fonts -->
+    <!-- Fonts: Use Noto Serif TC for Chinese text -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
 
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <!-- SplitType for Text Effects -->
-    <script src="https://unpkg.com/split-type"></script>
-    <!-- p5.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
 
     <style>
         :root {
-            --primary: #FFD700; /* Gold */
-            --secondary: #DAA520; /* Goldenrod */
-            --accent: #B22222; /* Crimson (Tavern Rug/Drink) */
-            --wood: #3E2723; /* Dark Wood */
-            --parchment: #F5E6CA; /* Parchment White */
-            --ink: #2F2F2F; /* Ink Black */
-            --bg-dark: #0A0502; /* Very dark brown/black for tavern shadow */
-            --glass: rgba(10, 5, 2, 0.7); /* Dark wood tint */
-            --border: rgba(218, 165, 32, 0.4); /* Gold border */
+            --wood-dark: #3E2723;
+            --wood-light: #5D4037;
+            --parchment: #F5E6CA;
+            --parchment-shadow: #D7CCC8;
+            --ink: #2F2F2F;
+            --gold: #FFD700;
+            --secondary: #DAA520;
+            --accent: #8B0000; /* Wax Seal Red */
         }
 
         * {
@@ -40,41 +35,38 @@
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--parchment);
-            font-family: 'Cormorant Garamond', serif;
+            background-color: #1a1a1a;
+            color: var(--ink);
+            font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
             opacity: 0;
         }
 
-        /* Custom Cursor - Quill Pen / Wand Tip */
+        /* Custom Cursor - Quill Pen */
         #cursor {
-            width: 12px;
-            height: 12px;
-            background: var(--primary);
-            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23FFD700"><path d="M12 2L2 22l10-4 10 4L12 2z"/></svg>') no-repeat center center;
+            background-size: contain;
             position: fixed;
             pointer-events: none;
             z-index: 9999;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) rotate(-45deg);
             transition: transform 0.1s;
-            mix-blend-mode: screen;
-            box-shadow: 0 0 10px var(--primary), 0 0 20px var(--secondary);
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.5));
         }
         #cursor.hovered {
-            transform: translate(-50%, -50%) scale(2.5);
-            background: transparent;
-            border: 2px solid var(--primary);
+            transform: translate(-50%, -50%) rotate(0deg) scale(1.5);
         }
 
-        /* Preloader - Old Scroll/Seal Style */
+        /* Preloader */
         #loader {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #050302;
+            background: #251605; /* Deep wood color */
             z-index: 1000;
             display: flex;
             justify-content: center;
@@ -83,35 +75,38 @@
         }
 
         .loader-seal {
-            width: 80px;
-            height: 80px;
-            border: 4px solid var(--primary);
+            width: 100px;
+            height: 100px;
+            background: var(--accent);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: var(--parchment);
             font-family: 'Cinzel', serif;
-            color: var(--primary);
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            font-size: 3rem;
+            font-weight: bold;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.3), 5px 5px 15px rgba(0,0,0,0.5);
+            border: 4px dashed rgba(255,255,255,0.2);
             animation: pulse-seal 2s infinite ease-in-out;
         }
 
         @keyframes pulse-seal {
-            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-            50% { transform: scale(1.1); box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
-            100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
         .loader-text {
-            font-family: 'Cinzel', serif;
-            color: var(--secondary);
-            letter-spacing: 3px;
+            font-family: 'Noto Serif TC', serif;
+            color: var(--parchment);
+            letter-spacing: 5px;
+            margin-top: 1.5rem;
             font-size: 1.2rem;
-            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
+        /* 3D Container */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -121,6 +116,7 @@
             z-index: -1;
         }
 
+        /* Navigation */
         nav {
             position: fixed;
             top: 2rem;
@@ -131,352 +127,289 @@
         .back-btn {
             color: var(--parchment);
             text-decoration: none;
-            font-family: 'Cinzel', serif;
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 600;
             font-size: 1rem;
-            border: 2px solid var(--secondary);
             padding: 0.8rem 1.5rem;
-            background: rgba(62, 39, 35, 0.9); /* Wood texture hint */
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            border-radius: 4px; /* Slight round for old feel */
+            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="%235D4037"/><rect x="5" y="5" width="90" height="90" fill="none" stroke="%23DAA520" stroke-width="2"/></svg>');
+            background-size: cover;
+            border-radius: 4px;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.6);
             transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
         .back-btn:hover {
-            background: var(--secondary);
-            color: #2e1a0f;
-            box-shadow: 0 0 20px var(--primary);
-            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.8);
+            color: var(--gold);
         }
 
-        /* Sections */
-        section {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center; /* Center horizontally */
-            position: relative;
-            padding: 4rem 2rem;
-            pointer-events: none; /* Let clicks pass through to 3D unless on content */
+        /* Main Layout - Bulletin Board */
+        main {
+            padding-top: 100vh; /* Allow scrolling past initial view */
+            padding-bottom: 20vh;
         }
 
-        .content-wrapper {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: center; /* Default center */
+        /* The Hero "Sign" hanging at the top */
+        .tavern-sign {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
         }
 
-        .content-box {
-            pointer-events: auto;
-            background: rgba(30, 20, 15, 0.85); /* Dark wood stain */
-            border: 2px solid var(--secondary); /* Gold frame */
-            padding: 3rem;
-            max-width: 700px;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.5);
-            transform: translateY(50px);
-            opacity: 0;
-            position: relative;
+        .sign-wood {
+            background: #4E342E;
+            padding: 2rem;
+            border: 4px solid #3E2723;
             border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            position: relative;
         }
 
-        /* Decorative corner screws/bolts */
-        .content-box::after {
+        /* Chains holding the sign */
+        .sign-wood::before, .sign-wood::after {
             content: '';
             position: absolute;
-            top: 10px; right: 10px;
-            width: 10px; height: 10px;
-            background: var(--secondary);
-            border-radius: 50%;
-            box-shadow: -650px 0 0 var(--secondary), 0 300px 0 var(--secondary), -650px 300px 0 var(--secondary); /* Simulating 4 corners roughly */
+            top: -100px;
+            width: 4px;
+            height: 100px;
+            background: repeating-linear-gradient(0deg, #333, #333 10px, #111 10px, #111 20px);
         }
-
-        h1, h2 {
-            font-family: 'Cinzel', serif;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-align: center;
-        }
+        .sign-wood::before { left: 20%; }
+        .sign-wood::after { right: 20%; }
 
         h1 {
-            font-size: 4.5rem;
-            line-height: 1.1;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.4), 2px 2px 0px #000;
-            font-weight: 700;
-        }
-        h2 {
-            font-size: 2.5rem;
-            color: var(--secondary);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1rem;
-        }
-
-        p {
-            font-size: 1.3rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-            color: var(--parchment);
-            font-family: 'IM Fell English', serif; /* Old book font */
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-        }
-
-        .highlight {
-            color: var(--primary);
-            font-weight: bold;
-            font-style: italic;
-        }
-
-        /* Hero Section */
-        #hero {
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            height: 100vh;
-        }
-
-        #hero .title-container {
-            pointer-events: auto;
-            background: radial-gradient(circle, rgba(0,0,0,0.6) 0%, transparent 70%);
-            padding: 4rem;
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+            color: var(--gold);
+            font-size: 3.5rem;
+            text-shadow: 2px 2px 0 #000, 0 0 20px rgba(255, 215, 0, 0.5);
+            margin-bottom: 0.5rem;
         }
 
         .subtitle {
-            font-family: 'IM Fell English', serif;
-            font-size: 1.8rem;
-            color: var(--parchment);
-            letter-spacing: 4px;
-            margin-top: 1rem;
-            text-transform: uppercase;
-            font-style: italic;
+            color: #D7CCC8;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
         }
 
-        /* Bounty Board (Quest Board) */
-        .bounty-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem; /* More space for posters */
-            margin-top: 2rem;
-            perspective: 1000px;
-        }
-
-        .wanted-poster {
-            background: #F5E6CA; /* Parchment */
-            color: #2F2F2F; /* Ink */
-            padding: 1.5rem;
+        /* Parchment Notes Container */
+        .board-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15vh; /* Space between notes */
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
             position: relative;
-            transform: rotate(var(--rot, 0deg));
-            box-shadow: 2px 5px 15px rgba(0,0,0,0.4);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: none;
-            /* Ragged edges simulation using clip-path could be complex, keeping simple box for now but with texture */
-            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noise)" opacity="0.1"/></svg>');
         }
 
-        .wanted-poster::before { /* Pin */
-            content: '';
+        /* Shared Parchment Style */
+        .parchment {
+            background: var(--parchment);
+            color: var(--ink);
+            padding: 3rem;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 5px 10px 20px rgba(0,0,0,0.4);
+            position: relative;
+            transform-origin: center top;
+            transition: transform 0.3s ease;
+        }
+
+        /* Nail/Pin visual */
+        .pin {
             position: absolute;
             top: -10px;
             left: 50%;
             transform: translateX(-50%);
-            width: 12px;
-            height: 12px;
-            background: #8B4513; /* Pin head */
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle at 30% 30%, #a9a9a9, #555);
             border-radius: 50%;
-            box-shadow: 1px 2px 3px rgba(0,0,0,0.5);
-            z-index: 10;
+            box-shadow: 2px 4px 6px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+
+        .parchment h2 {
+            font-size: 2rem;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+        }
+
+        .parchment p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 900;
+            background: rgba(255, 255, 0, 0.2); /* Highlighter effect */
+            padding: 0 4px;
+        }
+
+        /* Specific Notes Rotation */
+        #intro-note { transform: rotate(-2deg); }
+        #dream-note { transform: rotate(1.5deg); }
+        #projects-note { transform: rotate(-1deg); width: 100%; max-width: 900px; background: transparent; box-shadow: none; padding: 0; }
+
+        /* Wanted Posters Grid */
+        .poster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .wanted-poster {
+            background: #EFEBE9; /* Lighter paper */
+            padding: 1rem;
+            box-shadow: 3px 6px 15px rgba(0,0,0,0.3);
+            text-align: center;
+            position: relative;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Paper texture overlay */
+            background-image: linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.3"/></svg>');
         }
 
         .wanted-poster:hover {
             transform: scale(1.05) rotate(0deg) !important;
-            z-index: 20;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-        }
-
-        .poster-header {
-            text-align: center;
-            border-bottom: 2px solid #2F2F2F;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-        }
-
-        .poster-title {
-            font-family: 'Cinzel', serif;
-            font-weight: 700;
-            font-size: 1.8rem;
-            text-transform: uppercase;
-        }
-
-        .poster-rank {
-            font-family: 'IM Fell English', serif;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #8B0000; /* Red Ink for Rank */
+            z-index: 10;
         }
 
         .poster-image {
             width: 100%;
-            height: 150px;
+            height: 160px;
             background: #333;
-            margin-bottom: 1rem;
-            border: 2px solid #2F2F2F;
-            filter: sepia(0.8) contrast(1.2); /* Old photo look */
             object-fit: cover;
+            border: 2px solid var(--ink);
+            margin: 1rem 0;
+            filter: sepia(0.6) contrast(1.1);
         }
 
-        .poster-desc {
-            font-family: 'IM Fell English', serif;
-            font-size: 1.1rem;
-            line-height: 1.4;
-            text-align: center;
+        .poster-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            margin-top: 0.5rem;
         }
 
         .poster-reward {
-            margin-top: 1rem;
-            text-align: center;
+            font-family: 'Cinzel', serif;
+            color: var(--accent);
             font-weight: bold;
-            font-family: 'Cinzel', serif;
-            color: #8B0000;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            border-top: 1px solid #ccc;
+            padding-top: 0.5rem;
         }
 
-        /* Socials - Wax Seal Style */
-        .social-links {
-            display: flex;
-            gap: 2rem;
-            margin-top: 3rem;
-            justify-content: center;
-        }
-
-        .social-seal {
-            width: 60px;
-            height: 60px;
-            background: #8B0000; /* Red Wax */
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #F5E6CA; /* Stamp color */
-            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.3), 2px 2px 5px rgba(0,0,0,0.5);
-            transition: transform 0.3s;
-            border: 2px dashed rgba(0,0,0,0.2);
-        }
-
-        .social-seal:hover {
-            transform: scale(1.1);
-            background: #A52A2A;
-        }
-
-        footer {
-            padding: 2rem;
-            text-align: center;
-            font-family: 'Cinzel', serif;
-            color: #888;
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            background: #050302;
-        }
-
-        /* HUD - Adventurer Plate */
+        /* HUD - Adventurer Card */
         #hud {
             position: fixed;
             top: 2rem;
             right: 2rem;
             z-index: 100;
-            font-family: 'Cinzel', serif;
-            color: var(--parchment);
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.5rem;
-            opacity: 0; /* Animate in */
-            pointer-events: none;
+            opacity: 0;
+            transform: translateX(50px);
         }
 
-        .hud-plate {
+        .id-card {
+            background: #FFF8E1;
+            border: 1px solid #8D6E63;
+            padding: 1rem;
             display: flex;
             gap: 1rem;
-            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="%233E2723"/></svg>'); /* Wood color fallback */
-            background-size: cover;
-            border: 3px solid #8B4513; /* Wood Border */
-            outline: 2px solid var(--secondary); /* Gold Trim */
-            padding: 1rem;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.8);
-            border-radius: 4px;
-            position: relative;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            transform: rotate(2deg); /* Slightly skewed like a card on a table */
+            max-width: 300px;
         }
 
-        /* Bolts on plate */
-        .hud-plate::before, .hud-plate::after {
-            content: ''; position: absolute; width: 6px; height: 6px; background: var(--secondary); border-radius: 50%;
-            top: 6px;
-        }
-        .hud-plate::before { left: 6px; }
-        .hud-plate::after { right: 6px; }
-
-        .char-avatar {
-            width: 60px;
-            height: 60px;
-            border: 2px solid var(--secondary);
-            background: #1a1a1a;
-            overflow: hidden;
+        .id-photo {
+            width: 80px;
+            height: 100px;
+            border: 1px solid #5D4037;
+            background: #ccc;
+            padding: 4px;
+            background-clip: content-box;
+            object-fit: cover;
         }
 
-        .char-details {
+        .id-info {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            justify-content: center;
         }
 
-        .char-name {
-            color: var(--primary);
-            font-size: 1.3rem;
-            font-weight: bold;
-            text-shadow: 1px 1px 0 #000;
+        .id-name {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--wood-dark);
         }
 
-        .char-class {
+        .id-title {
             font-size: 0.8rem;
-            color: #ccc;
-            font-style: italic;
-            font-family: 'IM Fell English', serif;
+            color: #6D4C41;
+            margin-bottom: 0.5rem;
         }
 
-        .stat-bars {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-top: 6px;
-            width: 160px;
-        }
-
-        .stat-bar {
-            height: 8px;
-            background: #222;
-            border: 1px solid #555;
-            position: relative;
-        }
-
-        .stat-bar .bar-fill {
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .stat-bar.hp .bar-fill { background: linear-gradient(90deg, #8B0000, #FF0000); } /* Red HP */
-        .stat-bar.mp .bar-fill { background: linear-gradient(90deg, #00008B, #00BFFF); } /* Blue Mana */
-
-        .guild-badge {
-            font-size: 0.9rem;
-            color: var(--secondary);
-            text-shadow: 0 0 5px var(--secondary);
-            margin-top: 5px;
+        .stamp {
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            transform: rotate(-10deg);
             font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #aaa;
+            font-size: 0.8rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Socials */
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .social-btn {
+            background: var(--accent);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+        .social-btn:hover {
+            transform: scale(1.1);
         }
 
     </style>
@@ -485,124 +418,107 @@
 
     <!-- Preloader -->
     <div id="loader">
-        <div class="loader-seal">S</div>
-        <div class="loader-text">Summoning The Tavern...</div>
+        <div class="loader-seal">公會</div>
+        <div class="loader-text">正在開啟酒館大門...</div>
     </div>
 
     <!-- 3D Background -->
     <div id="canvas-container"></div>
-    <!-- p5.js Overlay (Embers) -->
-    <div id="p5-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none;"></div>
 
     <div id="cursor"></div>
 
-    <!-- Adventure Guild HUD -->
+    <!-- HUD -->
     <div id="hud">
-        <div class="hud-plate">
-            <div class="char-avatar">
-                <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+        <div class="id-card">
+            <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ" class="id-photo">
+            <div class="id-info">
+                <div class="id-name">塞趴卷 SPJ</div>
+                <div class="id-title">具現化系鍊金術師 Lv.99</div>
+                <div class="stamp">SEPAJUAN GUILD</div>
             </div>
-            <div class="char-details">
-                <div class="char-name">SPJ</div>
-                <div class="char-class">Lvl. 99 Materialization Alchemist</div>
-                <div class="stat-bars">
-                    <div class="stat-bar hp" title="Coffee Levels">
-                        <div class="bar-fill" style="width: 85%;"></div>
-                    </div>
-                    <div class="stat-bar mp" title="Creative Mana">
-                        <div class="bar-fill" style="width: 92%;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="guild-badge">
-            ⚜ SEPAJUAN GUILD ⚜
         </div>
     </div>
 
     <nav>
-        <a href="/guild/" class="back-btn" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">← Leave Tavern</a>
+        <a href="/guild/" class="back-btn" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">← 返回公會大廳</a>
     </nav>
 
+    <!-- Hanging Sign (Hero) -->
+    <div class="tavern-sign">
+        <div class="sign-wood">
+            <h1>具現化酒館</h1>
+            <div class="subtitle">The Materialization Tavern</div>
+        </div>
+    </div>
+
+    <!-- Scrollable Board Content -->
     <main>
-        <section id="hero">
-            <div class="title-container" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
-                <h1>The Golden Tavern</h1>
-                <div class="subtitle">of Materialization</div>
+        <div class="board-content">
+
+            <!-- Note 1: Intro -->
+            <div id="intro-note" class="parchment" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                <div class="pin"></div>
+                <h2>鍊金術師日誌</h2>
+                <p>我是一個曾經做過很多 Side Project 的<span class="highlight">軟體工程師</span>。</p>
+                <p>最近想把<span class="highlight">「文字小鎮」</span>這個概念做成一個遊戲，有種像是「天書系統」的感覺，讓我可以把我的創意都在裡面實現。</p>
             </div>
-        </section>
 
-        <section id="intro">
-            <div class="content-wrapper">
-                <div class="content-box">
-                    <h2>The Alchemist's Log</h2>
-                    <p>Welcome, traveler, to my domain. I am a <span class="highlight">Software Alchemist</span> who has forged many tools in the fires of curiosity. Recently, I've been transmuting the concept of <span class="highlight">"Text Town"</span> into a playable reality—a "Book of Heavens" system where creativity takes physical form.</p>
-                </div>
+            <!-- Note 2: Dream -->
+            <div id="dream-note" class="parchment" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                <div class="pin"></div>
+                <h2>公會願景</h2>
+                <p>我還有一個夢想，是成立一個<span class="highlight">塞趴卷冒險公會</span>。</p>
+                <p>就像動漫或異世界轉生番那樣，一群現實世界的冒險者會在公會交流、組隊、接任務、打副本，希望可以聚集更多資源。</p>
+                <p>同時我也喜歡紀錄跟寫作，可以把這些過程的故事分享出來，讓事情不是只有死板板的結果，而是有溫度的過程。</p>
+                <p>我想成為<span class="highlight">具現化系的鍊金術魔法師</span>。</p>
             </div>
-        </section>
 
-        <section id="dream">
-            <div class="content-wrapper">
-                <div class="content-box">
-                    <h2>Sepajuan Guild</h2>
-                    <p>I dream of raising a true <span class="highlight">Adventure Guild</span>.</p>
-                    <p>Imagine a bustling tavern where creators gather, form parties, and accept quests. Not just a chat room, but a place with warmth, stories, and shared glory.</p>
-                    <p>My goal is to be a <span class="highlight">Materialization Alchemist</span>: taking the ethereal mana of ideas and weaving it into the tangible reality of this world.</p>
-                </div>
-            </div>
-        </section>
+            <!-- Note 3: Projects (Posters) -->
+            <div id="projects-note" class="parchment">
+                <div class="pin"></div>
+                <h2 style="text-align: center; color: var(--parchment); text-shadow: 2px 2px 4px #000; border-bottom: none;">懸賞佈告欄</h2>
 
-        <section id="projects">
-            <div class="content-wrapper">
-                <div class="content-box" style="width: 100%; max-width: 1000px; background: rgba(30, 20, 15, 0.9);">
-                    <h2>Quest Board</h2>
-                    <div class="bounty-grid">
-                        <!-- Bounty 1 -->
-                        <div class="wanted-poster" style="--rot: -2deg;" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
-                            <div class="poster-header">
-                                <div class="poster-title">Text Town</div>
-                                <div class="poster-rank">Rank: S</div>
-                            </div>
-                            <img src="https://placehold.co/600x400/3E2723/DAA520?text=Text+Town" alt="Text Town" class="poster-image">
-                            <div class="poster-desc">Create a world governed by the "Book of Heavens". Infinite possibilities via text.</div>
-                            <div class="poster-reward">Reward: Eternal Glory</div>
-                        </div>
-
-                        <!-- Bounty 2 -->
-                        <div class="wanted-poster" style="--rot: 3deg;" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
-                            <div class="poster-header">
-                                <div class="poster-title">The Guild</div>
-                                <div class="poster-rank">Rank: A</div>
-                            </div>
-                            <img src="https://placehold.co/600x400/3E2723/DAA520?text=The+Guild" alt="The Guild" class="poster-image">
-                            <div class="poster-desc">Establish a gathering hall for real-world adventurers to party up.</div>
-                            <div class="poster-reward">Reward: Community</div>
-                        </div>
-
-                        <!-- Bounty 3 -->
-                        <div class="wanted-poster" style="--rot: -1deg;" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
-                            <div class="poster-header">
-                                <div class="poster-title">Chronicle</div>
-                                <div class="poster-rank">Rank: B</div>
-                            </div>
-                            <img src="https://placehold.co/600x400/3E2723/DAA520?text=Chronicle" alt="Chronicle" class="poster-image">
-                            <div class="poster-desc">Record the warm stories of the journey, not just the cold results.</div>
-                            <div class="poster-reward">Reward: Wisdom</div>
-                        </div>
+                <div class="poster-grid">
+                    <!-- Poster 1 -->
+                    <div class="wanted-poster" style="transform: rotate(-3deg);">
+                        <div class="pin"></div>
+                        <img src="https://placehold.co/600x400/3E2723/DAA520?text=文字小鎮" alt="文字小鎮" class="poster-image">
+                        <div class="poster-title">文字小鎮</div>
+                        <p>透過天書系統，實現無限創意的遊戲世界。</p>
+                        <div class="poster-reward">懸賞級別: S</div>
                     </div>
 
-                    <div class="social-links">
-                        <a href="https://www.threads.net/@spj.story" target="_blank" class="social-seal" title="Threads" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
-                        </a>
+                    <!-- Poster 2 -->
+                    <div class="wanted-poster" style="transform: rotate(2deg);">
+                        <div class="pin"></div>
+                        <img src="https://placehold.co/600x400/3E2723/DAA520?text=冒險公會" alt="冒險公會" class="poster-image">
+                        <div class="poster-title">塞趴卷公會</div>
+                        <p>現實世界的冒險者集散地。組隊、交流、資源共享。</p>
+                        <div class="poster-reward">懸賞級別: A</div>
+                    </div>
+
+                    <!-- Poster 3 -->
+                    <div class="wanted-poster" style="transform: rotate(-1deg);">
+                        <div class="pin"></div>
+                        <img src="https://placehold.co/600x400/3E2723/DAA520?text=紀錄傳說" alt="紀錄傳說" class="poster-image">
+                        <div class="poster-title">紀錄與寫作</div>
+                        <p>分享有溫度的過程故事，而不僅僅是冰冷的結果。</p>
+                        <div class="poster-reward">懸賞級別: B</div>
                     </div>
                 </div>
+
+                <div class="social-links">
+                    <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn" title="Threads" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
+                    </a>
+                </div>
             </div>
-        </section>
+
+        </div>
     </main>
 
     <footer>
-        <p>The Golden Tavern © 2024. Guild ID: #SPJ-001</p>
+        <p>© 2024 塞趴卷 SPJ - 冒險公會 ID: #SPJ-001</p>
     </footer>
 
     <script type="importmap">
@@ -616,178 +532,83 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Init Scene ---
+        // --- Init Scene (Bulletin Board Background) ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050302, 0.03); // Dark brown/black fog for intimacy
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 5, 10);
-        camera.lookAt(0, 0, 0);
+        // Camera setup - we want a fairly flat view, looking at the board
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 30); // Start centered
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.shadowMap.enabled = true; // Shadows are key for "pinned" look depth
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Warm Bloom) ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.5, 0.9);
-        bloomPass.strength = 1.2;
-        bloomPass.radius = 0.5;
-        bloomPass.threshold = 0.7; // Only very bright things glow
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // --- Lighting ---
-        // Ambient (Dim tavern)
-        const ambientLight = new THREE.AmbientLight(0xffaa00, 0.05); // Very dim orange
+        // --- Lighting (Warm Tavern Atmosphere) ---
+        const ambientLight = new THREE.AmbientLight(0xffaa55, 0.4); // Warm ambient
         scene.add(ambientLight);
 
-        // Candle/Lantern Lights
-        function createLanternLight(x, y, z, intensity = 2, color = 0xFF8800) {
-            const light = new THREE.PointLight(color, intensity, 15);
-            light.position.set(x, y, z);
-            light.castShadow = false; // Perf
-            return light;
-        }
+        // Moving Lantern Light (Simulates player holding a lantern or nearby candle flicker)
+        const lanternLight = new THREE.PointLight(0xffaa00, 1.5, 50);
+        lanternLight.position.set(0, 0, 15);
+        lanternLight.castShadow = true;
+        lanternLight.shadow.mapSize.width = 1024;
+        lanternLight.shadow.mapSize.height = 1024;
+        scene.add(lanternLight);
 
-        const centerLight = createLanternLight(0, 4, 0, 3, 0xFFAA00); // Main table light
-        scene.add(centerLight);
-
-        const backLight = createLanternLight(0, 6, -10, 2, 0xFF4400); // Background ambiance
-        scene.add(backLight);
-
-        // --- Materials ---
-        const woodMat = new THREE.MeshStandardMaterial({ color: 0x3E2723, roughness: 0.8, metalness: 0.1 });
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.3, metalness: 0.8, emissive: 0x332200 });
-        const paperMat = new THREE.MeshStandardMaterial({ color: 0xF5E6CA, roughness: 0.9, metalness: 0 });
-        const emissiveMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 }); // Glowing particles/runes
-
-        // --- Geometry Groups ---
-
-        // 1. The Tavern Table (Hero Center)
-        const tableGroup = new THREE.Group();
-        const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.5, 32), woodMat);
-        tableTop.position.y = -0.5;
-        tableGroup.add(tableTop);
-        scene.add(tableGroup);
-
-        // 2. The Book of Heavens (Open Tome)
-        const bookGroup = new THREE.Group();
-        // Spine
-        const spine = new THREE.Mesh(new THREE.BoxGeometry(0.5, 3, 0.2), new THREE.MeshStandardMaterial({color: 0x220000}));
-        spine.rotation.x = Math.PI / 2;
-        bookGroup.add(spine);
-
-        // Covers (Left/Right) - angled
-        const coverGeo = new THREE.BoxGeometry(2.5, 3.2, 0.1);
-        const coverL = new THREE.Mesh(coverGeo, new THREE.MeshStandardMaterial({color: 0x4A0404}));
-        coverL.position.set(-1.3, 0, 0.1);
-        coverL.rotation.y = -0.3;
-        const coverR = new THREE.Mesh(coverGeo, new THREE.MeshStandardMaterial({color: 0x4A0404}));
-        coverR.position.set(1.3, 0, 0.1);
-        coverR.rotation.y = 0.3;
-        bookGroup.add(coverL, coverR);
-
-        // Pages (Thick block)
-        const pageGeo = new THREE.BoxGeometry(2.3, 3, 0.2);
-        const pageL = new THREE.Mesh(pageGeo, paperMat);
-        pageL.position.set(-1.25, 0.05, 0.15);
-        pageL.rotation.y = -0.3;
-        const pageR = new THREE.Mesh(pageGeo, paperMat);
-        pageR.position.set(1.25, 0.05, 0.15);
-        pageR.rotation.y = 0.3;
-        bookGroup.add(pageL, pageR);
-
-        // Floating Runes above book
-        const runesGroup = new THREE.Group();
-        const runeGeo = new THREE.TorusGeometry(0.5, 0.05, 8, 32);
-        const rune1 = new THREE.Mesh(runeGeo, emissiveMat);
-        const rune2 = new THREE.Mesh(runeGeo, emissiveMat);
-        rune1.rotation.x = Math.PI / 2;
-        rune2.rotation.x = Math.PI / 2; rune2.rotation.y = Math.PI / 2; rune2.scale.set(1.5, 1.5, 1.5);
-
-        runesGroup.add(rune1, rune2);
-        runesGroup.position.set(0, 1.5, 0);
-        bookGroup.add(runesGroup);
-
-        bookGroup.rotation.x = -Math.PI / 4; // Tilted to face camera slightly
-        bookGroup.position.set(0, 0.5, 0);
-        scene.add(bookGroup);
-
-
-        // 3. Materializing Environment (Hidden initially)
-        // A collection of objects that "construct" themselves: Pillars, Barrels, Quest Board
-        const guildHallGroup = new THREE.Group();
-        guildHallGroup.visible = false; // Reveal later
-
-        // Pillars
-        const pillarGeo = new THREE.BoxGeometry(1, 10, 1);
-        const p1 = new THREE.Mesh(pillarGeo, woodMat); p1.position.set(-8, 5, -5);
-        const p2 = new THREE.Mesh(pillarGeo, woodMat); p2.position.set(8, 5, -5);
-        guildHallGroup.add(p1, p2);
-
-        // Barrels
-        const barrelGeo = new THREE.CylinderGeometry(0.8, 0.8, 2, 16);
-        const b1 = new THREE.Mesh(barrelGeo, woodMat); b1.position.set(-6, 1, 2);
-        const b2 = new THREE.Mesh(barrelGeo, woodMat); b2.position.set(-7, 1, 3);
-        guildHallGroup.add(b1, b2);
-
-        // Quest Board (Physical Object)
+        // --- The Board (Background) ---
+        // Create a large wood texture plane
         const boardGroup = new THREE.Group();
-        const boardBack = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 0.2), woodMat);
-        const boardPaper = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 3.5), paperMat);
-        boardPaper.position.z = 0.11;
-        boardGroup.add(boardBack, boardPaper);
-        boardGroup.position.set(0, 3, -8);
-        guildHallGroup.add(boardGroup);
 
-        scene.add(guildHallGroup);
-
-        // 4. "Materialization" Particles
-        // Instead of stars, these are "Golden Dust" specs rising from the book
-        const particlesCount = 300;
-        const posArray = new Float32Array(particlesCount * 3);
-        const speedArray = new Float32Array(particlesCount);
-
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 10;
-        }
-        for(let i = 0; i < particlesCount; i++) {
-            speedArray[i] = Math.random() * 0.05 + 0.02;
-        }
-
-        const dustGeo = new THREE.BufferGeometry();
-        dustGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const dustMat = new THREE.PointsMaterial({
-            size: 0.1,
-            color: 0xFFD700,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
+        // We'll simulate wood planks using multiple long boxes for depth
+        const woodMat = new THREE.MeshStandardMaterial({
+            color: 0x3E2723,
+            roughness: 0.9,
+            metalness: 0.1
         });
-        const dustParticles = new THREE.Points(dustGeo, dustMat);
-        scene.add(dustParticles);
 
+        const plankCount = 20;
+        const boardWidth = 60;
+        const boardHeight = 80;
+        const plankHeight = boardHeight / plankCount;
+
+        for (let i = 0; i < plankCount; i++) {
+            const plank = new THREE.Mesh(
+                new THREE.BoxGeometry(boardWidth, plankHeight - 0.2, 1), // Slight gap
+                woodMat
+            );
+            plank.position.y = (i * plankHeight) - (boardHeight / 2);
+            plank.position.z = -5; // Behind content
+            plank.receiveShadow = true;
+
+            // Randomize slightly for old feel
+            plank.rotation.z = (Math.random() - 0.5) * 0.01;
+            plank.position.x = (Math.random() - 0.5) * 0.5;
+
+            boardGroup.add(plank);
+        }
+        scene.add(boardGroup);
 
         // --- Interaction ---
         let mouseX = 0;
         let mouseY = 0;
 
         document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.01;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.01;
 
-            // Update custom cursor
+            // Move the lantern light with mouse slightly
+            gsap.to(lanternLight.position, {
+                x: mouseX,
+                y: -mouseY + 5, // Offset
+                duration: 1
+            });
+
+            // Move cursor
             const cursor = document.getElementById('cursor');
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
@@ -796,180 +617,52 @@
         window.expandCursor = () => document.getElementById('cursor').classList.add('hovered');
         window.shrinkCursor = () => document.getElementById('cursor').classList.remove('hovered');
 
-
         // --- Animation Loop ---
-        const clock = new THREE.Clock();
-
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
 
-            // Camera Parallax
-            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY * 5 + 5 - camera.position.y) * 0.05; // Base Y is 5
-            camera.lookAt(0, 0, 0);
+            // Candle flicker effect
+            lanternLight.intensity = 1.2 + Math.random() * 0.1;
 
-            // Flicker Lights
-            centerLight.intensity = 3 + Math.sin(time * 10) * 0.2 + Math.cos(time * 23) * 0.2;
-            backLight.intensity = 2 + Math.sin(time * 8) * 0.3;
-
-            // Rotate Runes
-            runesGroup.rotation.y = time * 0.5;
-            runesGroup.children[0].rotation.z = time * 0.2;
-            runesGroup.children[1].rotation.x = time * -0.3;
-
-            // Particles Upward Flow
-            const positions = dustParticles.geometry.attributes.position.array;
-            for(let i = 1; i < particlesCount * 3; i += 3) {
-                positions[i] += 0.02; // Y-up
-                if (positions[i] > 10) {
-                    positions[i] = -2; // Reset
-                }
-            }
-            dustParticles.geometry.attributes.position.needsUpdate = true;
-
-            composer.render();
+            renderer.render(scene, camera);
         }
         animate();
 
-
         // --- GSAP Scroll ---
+        // Map scroll to Camera movement (Scanning down the board)
         gsap.registerPlugin(ScrollTrigger);
 
-        // Intro Sequence
+        // Initial Intro
         const tlIntro = gsap.timeline();
-        tlIntro.to(".loader-seal", { scale: 50, opacity: 0, duration: 1.5, ease: "power2.inOut" })
-               .to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").style.display = "none" }, "-=0.5")
+        tlIntro.to(".loader-seal", { rotation: 360, opacity: 0, duration: 1 })
+               .to("#loader", { yPercent: -100, duration: 0.8, ease: "power2.inOut" })
                .to("body", { opacity: 1, duration: 0.5 })
-               .to("#hud", { opacity: 1, duration: 1 });
+               .to("#hud", { opacity: 1, x: 0, duration: 0.8, ease: "back.out(1.7)" });
 
+        // Parallax Scroll
+        // As we scroll down the HTML body, we move the 3D camera down to match
+        // Total scroll height ~ 200vh + content
+        // We want the camera to start at Y=0 and go down to Y=-40 approx
 
-        // Materialization Scroll
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.5,
+            onUpdate: (self) => {
+                // Map scroll progress (0-1) to Camera Y (10 to -30)
+                const yPos = 10 - (self.progress * 40);
+                camera.position.y = yPos;
             }
         });
 
-        // 1. Hero -> Intro (Zoom into Book)
-        tl.to(camera.position, { z: 5, y: 3, duration: 2 }, "p1")
-          .to(bookGroup.rotation, { x: -Math.PI/6, duration: 2 }, "p1");
-
-        // 2. Intro -> Dream (Tavern Materializes)
-        tl.call(() => { guildHallGroup.visible = true; }, null, "p2") // Turn on visibility
-          .from(guildHallGroup.scale, { x: 0.01, y: 0.01, z: 0.01, duration: 1 }, "p2+=0.1") // Expand out
-          .to(camera.position, { z: 15, y: 6, duration: 2 }, "p2") // Pull back to see room
-          .to(runesGroup.scale, { x: 3, y: 3, z: 3, duration: 2 }, "p2"); // Runes expand to fill room
-
-        // 3. Dream -> Projects (Focus on Quest Board)
-        tl.to(camera.position, { x: 0, y: 3, z: -2, duration: 2 }, "p3") // Move past table towards back wall
-          .to(camera.rotation, { x: 0, duration: 2 }, "p3"); // Look straight at board
-
-        // Content Fade-ins
-        gsap.utils.toArray('.content-box').forEach(box => {
-            gsap.fromTo(box,
-                { y: 50, opacity: 0 },
-                {
-                    scrollTrigger: {
-                        trigger: box,
-                        start: "top 80%",
-                        end: "top 50%",
-                        scrub: 0.5
-                    },
-                    y: 0,
-                    opacity: 1
-                }
-            );
-        });
-
-        // Wanted Posters Stagger
-        gsap.from(".wanted-poster", {
-            scrollTrigger: {
-                trigger: ".bounty-grid",
-                start: "top 70%"
-            },
-            y: 100,
-            opacity: 0,
-            stagger: 0.2,
-            duration: 0.8,
-            ease: "back.out(1.7)"
-        });
-
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-    </script>
-
-    <!-- p5.js Sketch for Magical Embers Overlay -->
-    <script>
-        const overlaySketch = (p) => {
-            let embers = [];
-
-            p.setup = () => {
-                const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
-                canvas.parent('p5-overlay');
-                p.clear();
-            };
-
-            p.draw = () => {
-                p.clear();
-
-                // Add new ember occasionally
-                if (p.frameCount % 5 === 0) {
-                    embers.push(new Ember(p));
-                }
-
-                for (let i = embers.length - 1; i >= 0; i--) {
-                    embers[i].update();
-                    embers[i].show();
-                    if (embers[i].finished()) {
-                        embers.splice(i, 1);
-                    }
-                }
-            };
-
-            class Ember {
-                constructor(p) {
-                    this.p = p;
-                    this.x = p.random(p.width);
-                    this.y = p.height + 10;
-                    this.vx = p.random(-1, 1);
-                    this.vy = p.random(-2, -5);
-                    this.alpha = 255;
-                    this.color = p.random() > 0.5 ? [255, 215, 0] : [255, 69, 0]; // Gold or RedOrange
-                    this.size = p.random(2, 5);
-                }
-
-                update() {
-                    this.x += this.vx + this.p.sin(this.p.frameCount * 0.1) * 0.5; // Wavy motion
-                    this.y += this.vy;
-                    this.alpha -= 2;
-                }
-
-                show() {
-                    this.p.noStroke();
-                    this.p.fill(this.color[0], this.color[1], this.color[2], this.alpha);
-                    this.p.ellipse(this.x, this.y, this.size);
-                }
-
-                finished() {
-                    return this.alpha < 0;
-                }
-            }
-
-            p.windowResized = () => {
-                p.resizeCanvas(window.innerWidth, window.innerHeight);
-            };
-        };
-
-        new p5(overlaySketch);
     </script>
 </body>
 </html>
