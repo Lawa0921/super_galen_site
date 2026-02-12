@@ -17,11 +17,11 @@
 
     <style>
         :root {
-            --bg-color: #08090b;
-            --text-primary: #f0f0f0;
-            --text-secondary: #a0a0a0;
+            --bg-color: #fcfbf9; /* Cream Paper */
+            --text-primary: #2c2c2c; /* Charcoal Ink */
+            --text-secondary: #6e6e6e; /* Soft Grey */
             --accent: #d4af37; /* Rich Gold */
-            --accent-dim: rgba(212, 175, 55, 0.15);
+            --accent-dim: rgba(212, 175, 55, 0.1);
             --font-display: 'Cinzel', serif;
             --font-body: 'Noto Serif TC', serif;
             --font-sans: 'Lato', sans-serif;
@@ -47,19 +47,16 @@
             opacity: 1;
         }
 
-        /* Custom Scrollbar */
+        /* Custom Scrollbar - Minimal */
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
         ::-webkit-scrollbar-track {
             background: var(--bg-color);
         }
         ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
+            background: #ccc;
+            border-radius: 2px;
         }
 
         /* --- Canvas Background --- */
@@ -71,25 +68,27 @@
             height: 100vh;
             z-index: -1;
             pointer-events: none;
+            /* Optional: Grain overlay */
+            filter: contrast(1.05) brightness(1.02);
         }
 
         /* --- UI Elements --- */
         .nav-fixed {
             position: fixed;
-            top: 2rem;
-            left: 2rem;
+            top: 2.5rem;
+            left: 3rem;
             z-index: 100;
-            mix-blend-mode: exclusion;
+            mix-blend-mode: difference;
         }
 
         .nav-back {
             text-decoration: none;
-            color: var(--text-primary);
+            color: #fff; /* Difference mode makes it visible on light/dark */
             font-family: var(--font-sans);
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             letter-spacing: 3px;
             text-transform: uppercase;
-            opacity: 0.6;
+            opacity: 0.7;
             transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             display: flex;
             align-items: center;
@@ -101,32 +100,80 @@
             letter-spacing: 5px;
         }
 
-        /* --- Sections --- */
+        /* --- Sections (High Margin Editorial) --- */
         section {
             position: relative;
             width: 100%;
-            padding: 0;
+            padding: 10vh 0; /* Huge vertical spacing */
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0 2rem;
+            padding: 0 4rem; /* Wide gutters */
             position: relative;
             z-index: 2;
         }
 
-        /* --- Typography Helpers --- */
-        .char-split {
-            display: inline-block;
-            white-space: pre;
+        .editorial-col {
+            max-width: 680px; /* Reading width */
+            margin: 0 auto;
         }
 
-        .word-split {
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-family: var(--font-display);
+            font-weight: 400;
+            line-height: 1.2;
+            color: var(--text-primary);
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 2.2; /* Breathable */
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            letter-spacing: 0.02em;
+        }
+
+        .display-text {
+            font-size: clamp(3rem, 6vw, 5rem);
+            letter-spacing: -0.02em;
+            margin-bottom: 2rem;
+        }
+
+        .sub-display {
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight {
+            position: relative;
             display: inline-block;
-            white-space: pre;
-            overflow: hidden;
-            vertical-align: bottom;
+            color: var(--text-primary); /* Keep dark */
+        }
+
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: var(--accent-dim); /* Highlighter effect */
+            z-index: -1;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .text-reveal.active .highlight::after {
+            transform: scaleX(1);
         }
 
         /* --- Hero --- */
@@ -135,278 +182,168 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
+            align-items: center; /* Center everything */
             text-align: center;
         }
 
-        .hero-content {
+        .hero-title-wrapper {
             position: relative;
             z-index: 5;
+            mix-blend-mode: multiply; /* Ink effect */
         }
 
-        .avatar-frame {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 4rem;
+        /* The "Golden Thread" path visualization placeholder (optional) */
+
+        /* --- Bio Scroll --- */
+        .bio-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .bio-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6rem;
+            align-items: center;
+        }
+
+        .bio-image-wrapper {
+            width: 100%;
+            aspect-ratio: 4/5;
             position: relative;
-            border-radius: 50%;
+            overflow: hidden;
+            /* Simple elegant frame */
         }
 
-        .avatar-img {
+        .bio-img {
+            width: 100%;
+            height: 120%; /* Parallax overflow */
+            object-fit: cover;
+            object-position: top;
+            transform: translateY(-10%); /* Start slightly up */
+            filter: sepia(0.2) contrast(0.95); /* Soft vintage */
+        }
+
+        /* --- Curriculum (The Steps) --- */
+        .curriculum-section {
+            padding: 15vh 0;
+        }
+
+        .step-item {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr; /* Text | Image */
+            gap: 4rem;
+            margin-bottom: 15vh;
+            align-items: center;
+        }
+
+        .step-item:nth-child(even) {
+            grid-template-columns: 1.5fr 1fr; /* Image | Text */
+            direction: rtl; /* Flip visual order */
+        }
+
+        .step-item:nth-child(even) .step-text {
+            direction: ltr; /* Reset text direction */
+            text-align: right;
+        }
+
+        .step-img-mask {
+            width: 100%;
+            aspect-ratio: 16/10;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .step-img {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
             object-fit: cover;
-            filter: sepia(30%) contrast(1.1) brightness(0.9);
-            opacity: 0; /* JS Fade */
-            transform: scale(0.8);
+            transform: scale(1.2); /* Zoom out effect */
+            transition: transform 1.5s ease-out;
         }
 
-        .avatar-ring {
-            position: absolute;
-            inset: -10px;
-            border: 1px solid var(--accent);
-            border-radius: 50%;
-            opacity: 0;
-            transform: scale(1.2);
-        }
-
-        h1 {
+        .step-num {
             font-family: var(--font-display);
-            font-size: clamp(3rem, 7vw, 6rem);
-            font-weight: 400;
-            letter-spacing: 0.2em; /* Start relaxed */
-            line-height: 1.1;
-            margin-bottom: 2rem;
-            color: var(--text-primary);
-            text-transform: uppercase;
-            position: relative;
+            font-size: 5rem;
+            color: rgba(0,0,0,0.05); /* Very subtle watermark */
+            position: absolute;
+            top: -2rem;
+            left: -2rem;
+            z-index: -1;
         }
 
-        .subtitle {
-            font-family: var(--font-sans);
+        /* --- Philosophy Quote --- */
+        .philosophy-section {
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: #f4f2ee; /* Slightly darker cream */
+        }
+
+        /* --- Footer --- */
+        .simple-footer {
+            padding: 4rem 0;
+            text-align: center;
+            border-top: 1px solid rgba(0,0,0,0.05);
             font-size: 0.85rem;
-            letter-spacing: 6px;
-            text-transform: uppercase;
-            color: var(--accent);
-            opacity: 0;
+            color: #888;
         }
 
-        /* --- Intro Scroll --- */
-        .intro-section {
-            min-height: 150vh; /* Allow scroll space */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .intro-text-wrapper {
-            max-width: 700px;
-            text-align: center;
-        }
-
-        .intro-line {
-            font-size: clamp(1.1rem, 2vw, 1.4rem);
-            line-height: 2.2;
-            color: var(--text-secondary);
-            margin-bottom: 3rem;
-            opacity: 0.4; /* Default dim */
-            transition: opacity 0.5s;
-        }
-
-        .intro-line.active {
-            opacity: 1;
-            color: var(--text-primary);
-        }
-
-        .highlight {
-            color: var(--accent);
-            position: relative;
-            display: inline-block;
-        }
-
-        .highlight::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 1px;
-            background: var(--accent);
-            transform: scaleX(0);
-            transform-origin: right;
-            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .intro-line:hover .highlight::after {
-            transform: scaleX(1);
-            transform-origin: left;
-        }
-
-        /* --- Parallax Stack Gallery (The "Deck") --- */
-        .deck-section {
-            height: 400vh; /* Long scroll area */
-            position: relative;
-        }
-
-        .deck-container {
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            width: 100%;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .deck-card {
-            position: absolute;
-            width: clamp(300px, 40vw, 500px);
-            aspect-ratio: 3/4;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            transform-origin: center center;
-            opacity: 0;
-            z-index: 1;
-        }
-
-        .card-inner {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            background: #111;
-        }
-
-        .card-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: grayscale(20%);
-            transition: transform 0.5s ease;
-        }
-
-        .card-content {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 2rem;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            transform: translateY(100%);
-            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .deck-card.active .card-content {
-            transform: translateY(0);
-        }
-
-        .card-title {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            color: var(--accent);
-            margin-bottom: 0.5rem;
-        }
-
-        .card-desc {
-            font-family: var(--font-sans);
-            font-size: 0.9rem;
-            color: #ccc;
-            line-height: 1.6;
-        }
-
-        /* --- Philosophy / Contact --- */
-        .contact-section {
-            min-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            position: relative;
-        }
-
-        .big-text {
-            font-family: var(--font-display);
-            font-size: clamp(2rem, 5vw, 4rem);
-            line-height: 1.4;
-            max-width: 900px;
-            margin-bottom: 4rem;
-        }
-
-        .social-row {
-            display: flex;
-            gap: 3rem;
-            margin-top: 2rem;
-        }
-
-        .social-btn {
+        .simple-footer a {
+            color: #555;
             text-decoration: none;
-            color: var(--text-secondary);
+            transition: color 0.3s;
+        }
+        .simple-footer a:hover { color: var(--accent); }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .social-link {
             font-family: var(--font-sans);
             text-transform: uppercase;
+            font-size: 0.8rem;
             letter-spacing: 2px;
-            font-size: 0.9rem;
-            padding-bottom: 5px;
+            color: var(--text-primary);
+            text-decoration: none;
+            padding-bottom: 3px;
             border-bottom: 1px solid transparent;
             transition: all 0.3s;
         }
 
-        .social-btn:hover {
-            color: var(--accent);
+        .social-link:hover {
             border-bottom: 1px solid var(--accent);
-        }
-
-        /* --- Footer --- */
-        footer {
-            padding: 2rem;
-            text-align: center;
-            font-family: var(--font-sans);
-            font-size: 0.8rem;
-            color: #444;
-            border-top: 1px solid rgba(255,255,255,0.05);
-        }
-
-        footer a {
-            color: #666;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        footer a:hover {
-            color: #888;
+            color: var(--accent);
         }
 
         /* --- Mobile --- */
         @media (max-width: 768px) {
-            .deck-section {
-                height: auto;
+            .container { padding: 0 1.5rem; }
+            .nav-fixed { top: 1.5rem; left: 1.5rem; }
+
+            .bio-grid {
+                grid-template-columns: 1fr;
+                gap: 3rem;
             }
-            .deck-container {
-                position: relative;
-                height: auto;
-                flex-direction: column;
-                padding: 4rem 0;
-                gap: 4rem;
-                top: auto;
-                display: block;
+
+            .step-item, .step-item:nth-child(even) {
+                grid-template-columns: 1fr;
+                direction: ltr;
+                gap: 2rem;
+                margin-bottom: 10vh;
             }
-            .deck-card {
-                position: relative;
-                top: auto;
-                left: auto;
-                transform: none !important;
-                opacity: 1 !important;
-                margin: 0 auto 4rem;
-                width: 85vw;
-                aspect-ratio: 3/4;
+            .step-item:nth-child(even) .step-text {
+                text-align: left;
             }
-            .card-content {
-                transform: translateY(0);
-            }
+
+            .display-text { font-size: 2.5rem; }
         }
     </style>
 </head>
@@ -422,94 +359,94 @@
 
     <!-- Hero -->
     <section class="hero-section">
-        <div class="hero-content">
-            <div class="avatar-frame">
-                <div class="avatar-ring"></div>
-                <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna" class="avatar-img">
-            </div>
-            <h1 id="hero-title">LYANNA</h1>
-            <div class="subtitle" id="hero-subtitle">The Language Architect</div>
-        </div>
-    </section>
-
-    <!-- Intro Narrative -->
-    <section class="intro-section">
-        <div class="container intro-text-wrapper">
-            <p class="intro-line">
-                我是 <span class="highlight">允曦 Lyanna</span>，華語教師培訓課程創辦者。<br>
-                同時也是 MMT 個人天賦與人際關係諮詢師。
-            </p>
-            <p class="intro-line">
-                我專注於陪伴對華語教學有熱情的人。<br>
-                從「不知道是否適合這條路」，到「具備資格、清楚方向」。
-            </p>
-            <p class="intro-line">
-                多數人卡住的，從來不只是考試。<br>
-                而是：「我適合嗎？」「我能走多遠？」
-            </p>
-            <p class="intro-line">
-                因此，我將華語教學專業，結合 MMT 天賦分析。<br>
-                讓學習不只停在證照，而是回到人生整體的選擇。
+        <div class="hero-title-wrapper">
+            <span class="sub-display reveal-text">The Language Architect</span>
+            <h1 class="display-text reveal-text">LYANNA</h1>
+            <p class="reveal-text" style="max-width: 500px; margin: 0 auto;">
+                Accompaniment. Direction. Clarity.<br>
+                A path woven with intention.
             </p>
         </div>
     </section>
 
-    <!-- The Deck (Curriculum) -->
-    <section class="deck-section" id="deck-trigger">
-        <div class="deck-container">
+    <!-- Bio / Intro -->
+    <section class="bio-section">
+        <div class="container">
+            <div class="bio-grid">
+                <div class="bio-text editorial-col">
+                    <span class="sub-display">Who I Am</span>
+                    <h2 style="font-size: 2rem; margin-bottom: 2rem;">允曦 Lyanna</h2>
+                    <p class="text-reveal">
+                        華語教師培訓課程創辦者。<br>
+                        教育部華語教師證照培訓講師。<br>
+                        MMT 個人天賦與人際關係諮詢師。
+                    </p>
+                    <p class="text-reveal">
+                        目前任教於美國 UTA，長期投入海內外華語教學、師資培訓與職涯引導。
+                        我專注於陪伴對華語教學有熱情的人，從<span class="highlight">「不知道是否適合這條路」</span>，
+                        到<span class="highlight">「具備資格、清楚方向」</span>。
+                    </p>
+                </div>
+                <div class="bio-image-wrapper parallax-mask">
+                    <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna Portrait" class="bio-img">
+                </div>
+            </div>
+        </div>
+    </section>
 
-            <!-- Card 1 -->
-            <div class="deck-card">
-                <div class="card-inner">
-                    <img src="/assets/img/guild/lyanna/slide_1.webp" class="card-img" alt="Course Structure">
-                    <div class="card-content">
-                        <div class="card-title">Professional Structure</div>
-                        <div class="card-desc">將教育部華語教師證照拆解成可執行的學習系統，結構清晰，目標明確。</div>
-                    </div>
+    <!-- Curriculum Steps -->
+    <section class="curriculum-section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 6rem;">
+                <span class="sub-display">The Path</span>
+                <h2 style="font-size: 2.5rem;">My Methodology</h2>
+            </div>
+
+            <!-- Step 1 -->
+            <div class="step-item">
+                <div class="step-text">
+                    <div class="step-num">01</div>
+                    <h3>Structure & Clarity</h3>
+                    <p>專業結構清楚。將教育部華語教師證照拆解成可執行的學習系統。讓龐大的知識體系變得清晰、可觸及。</p>
+                </div>
+                <div class="step-img-mask parallax-mask">
+                    <img src="/assets/img/guild/lyanna/slide_1.webp" class="step-img" alt="Structure">
                 </div>
             </div>
 
-            <!-- Card 2 -->
-            <div class="deck-card">
-                <div class="card-inner">
-                    <img src="/assets/img/guild/lyanna/slide_2.webp" class="card-img" alt="Teacher Training">
-                    <div class="card-content">
-                        <div class="card-title">Teacher Training</div>
-                        <div class="card-desc">不僅傳授教學技巧，更注重師資養成的全方位素質培養與心態建設。</div>
-                    </div>
+            <!-- Step 2 -->
+            <div class="step-item">
+                <div class="step-text">
+                    <div class="step-num">02</div>
+                    <h3>Guidance & Pace</h3>
+                    <p>陪伴式引導。不只教內容，而是陪你釐清方向與節奏。多數人卡住的從來不只是考試，而是對未來的迷惘。</p>
+                </div>
+                <div class="step-img-mask parallax-mask">
+                    <img src="/assets/img/guild/lyanna/slide_2.webp" class="step-img" alt="Guidance">
                 </div>
             </div>
 
-            <!-- Card 3 -->
-            <div class="deck-card">
-                <div class="card-inner">
-                    <img src="/assets/img/guild/lyanna/slide_3.webp" class="card-img" alt="Global Vision">
-                    <div class="card-content">
-                        <div class="card-title">Global Vision</div>
-                        <div class="card-desc">結合海外教學經驗，提供真實的職涯規劃引導與國際接軌建議。</div>
-                    </div>
+            <!-- Step 3 -->
+            <div class="step-item">
+                <div class="step-text">
+                    <div class="step-num">03</div>
+                    <h3>Global Vision</h3>
+                    <p>跨領域視角。結合教學、職涯、關係與海外生活經驗。讓學習不只停在證照，而是回到人生整體的選擇。</p>
+                </div>
+                <div class="step-img-mask parallax-mask">
+                    <img src="/assets/img/guild/lyanna/slide_3.webp" class="step-img" alt="Global Vision">
                 </div>
             </div>
 
-            <!-- Card 4 -->
-            <div class="deck-card">
-                <div class="card-inner">
-                    <img src="/assets/img/guild/lyanna/slide_4.webp" class="card-img" alt="Career Path">
-                    <div class="card-content">
-                        <div class="card-title">Career Path</div>
-                        <div class="card-desc">陪伴式引導，協助轉職者探索人生方向，釐清節奏，穩定前行。</div>
-                    </div>
+             <!-- Step 4 (MMT) -->
+             <div class="step-item">
+                <div class="step-text">
+                    <div class="step-num">04</div>
+                    <h3>Inner Understanding</h3>
+                    <p>MMT 天賦分析。結合天賦分析與人際關係諮詢，解決的不只是教學問題，更是人生課題。</p>
                 </div>
-            </div>
-
-            <!-- Card 5 -->
-            <div class="deck-card">
-                <div class="card-inner">
-                    <img src="/assets/img/guild/lyanna/slide_5.webp" class="card-img" alt="MMT Consultation">
-                    <div class="card-content">
-                        <div class="card-title">MMT Consultation</div>
-                        <div class="card-desc">結合天賦分析與人際關係諮詢，解決的不只是教學問題，更是人生課題。</div>
-                    </div>
+                <div class="step-img-mask parallax-mask">
+                    <img src="/assets/img/guild/lyanna/slide_5.webp" class="step-img" alt="Inner Understanding">
                 </div>
             </div>
 
@@ -517,408 +454,222 @@
     </section>
 
     <!-- Philosophy -->
-    <section class="contact-section">
-        <div class="container">
-            <div class="big-text split-lines">
-                "真正能走得遠的，<br>不只是會考試的人，<br>而是對自己有理解、對選擇有準備的人。"
-            </div>
-
-            <p class="intro-line active" style="margin-bottom: 3rem;">
-                我希望能用我走過的經驗，<br>陪你把「華語」變成一條穩定、清楚、走得出去的路。
+    <section class="philosophy-section">
+        <div class="container editorial-col">
+            <p class="display-text" style="font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.6; color: var(--text-primary);">
+                "真正能走得遠的，<br>不只是會考試的人，<br>
+                而是對<span class="highlight">自己有理解</span>、<br>
+                對<span class="highlight">選擇有準備</span>的人。"
             </p>
-
-            <div class="social-row reveal-up">
-                <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-btn">Threads</a>
-                <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-btn">Book</a>
-                <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-btn">Instagram</a>
+            <div class="social-links" style="margin-top: 4rem;">
+                <a href="https://www.threads.com/@fun_2_journey" target="_blank" class="social-link">Threads</a>
+                <a href="https://www.mosme.net/mosme/book?s=%E5%85%81%E6%9B%A6" target="_blank" class="social-link">Books</a>
+                <a href="https://www.instagram.com/fun_2_journey/" target="_blank" class="social-link">Instagram</a>
             </div>
         </div>
     </section>
 
-    <footer>
+    <footer class="simple-footer">
         Made with love by <a href="/guild/">SuperGalen's Dungeon</a>
     </footer>
 
     <script type="module">
         import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+        import Lenis from 'https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm';
 
-        // --- 1. Animation Utilities ---
-
-        // Custom SplitText function (Char)
-        function splitTextChar(element) {
-            const text = element.innerText;
-            element.innerHTML = '';
-            [...text].forEach(char => {
-                const span = document.createElement('span');
-                span.innerText = char;
-                span.classList.add('char-split');
-                if (char === ' ') span.style.width = '0.3em';
-                element.appendChild(span);
-            });
-            return element.querySelectorAll('span');
-        }
-
-        // Custom SplitText function (Line/Block)
-        // Simple wrap for now
-        function splitLines(element) {
-            // Very basic line split by <br> or logical blocks if needed
-            // For now we just animate the container or manual spans
-            return element;
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Wait for a moment to ensure fonts load
-            setTimeout(() => {
-                document.body.classList.add('loaded');
-                initAnimations();
-            }, 500);
+        // --- LENIS SMOOTH SCROLL ---
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
         });
 
-        function initAnimations() {
-            // --- Hero Sequence ---
-            const tl = gsap.timeline();
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
 
-            // 1. Avatar Reveal
-            tl.to('.avatar-img', {
-                opacity: 1,
-                scale: 1,
-                duration: 1.5,
-                ease: 'power3.out'
-            })
-            .to('.avatar-ring', {
-                opacity: 0.6,
-                scale: 1,
-                duration: 1.5,
-                ease: 'power3.out'
-            }, '-=1.2');
+        // --- GSAP ANIMATIONS ---
+        gsap.registerPlugin(ScrollTrigger);
 
-            // 2. Title Cinematic Reveal
-            const titleChars = splitTextChar(document.getElementById('hero-title'));
+        // Hero Reveal
+        gsap.from('.reveal-text', {
+            y: 50,
+            opacity: 0,
+            duration: 1.5,
+            stagger: 0.2,
+            ease: 'power3.out',
+            delay: 0.5
+        });
 
-            // Set initial state for chars: blurry and spaced out
-            gsap.set(titleChars, {
-                opacity: 0,
-                filter: 'blur(15px)',
-                y: 20,
-                x: (i) => (i - titleChars.length/2) * 20 // Spread out from center
-            });
-
-            tl.to(titleChars, {
-                opacity: 1,
-                filter: 'blur(0px)',
-                y: 0,
-                x: 0,
-                duration: 2,
-                stagger: {
-                    amount: 1,
-                    from: 'center'
-                },
-                ease: 'power4.out'
-            }, '-=1'); // Overlap with avatar
-
-            // 3. Subtitle
-            tl.to('#hero-subtitle', {
-                opacity: 0.8,
-                letterSpacing: '8px', // Expand spacing
-                duration: 1.5,
-                ease: 'power2.out'
-            }, '-=1');
-
-            // --- Intro Scroll Interaction ---
-            const lines = document.querySelectorAll('.intro-line');
-            lines.forEach(line => {
-                gsap.to(line, {
-                    scrollTrigger: {
-                        trigger: line,
-                        start: 'top 75%',
-                        end: 'bottom 25%',
-                        toggleClass: 'active',
-                        toggleActions: 'play reverse play reverse'
-                    }
-                });
-            });
-
-            // --- Deck of Cards (Desktop Only) ---
-            if (window.innerWidth > 768) {
-                const deckSection = document.querySelector('.deck-section');
-                const cards = gsap.utils.toArray('.deck-card');
-
-                // Main Timeline - Fully synced
-                const tl = gsap.timeline({
-                    scrollTrigger: {
-                        trigger: deckSection,
-                        pin: '.deck-container',
-                        start: 'top top',
-                        end: '+=400%', // Scroll distance matches stack
-                        scrub: 1,
-                        anticipatePin: 1
-                    }
-                });
-
-                // Reset z-indexes programmatically
-                gsap.set(cards, { zIndex: (i) => i + 10 });
-
-                cards.forEach((card, i) => {
-                    // 1. Entrance (Fly in from bottom)
-                    tl.fromTo(card,
-                        {
-                            y: '120vh',
-                            scale: 0.8,
-                            rotation: (Math.random() - 0.5) * 15,
-                            opacity: 0,
-                            filter: 'blur(20px)'
-                        },
-                        {
-                            y: 0,
-                            scale: 1,
-                            rotation: 0,
-                            opacity: 1,
-                            filter: 'blur(0px)',
-                            duration: 1,
-                            ease: 'power2.out'
-                        }
-                    );
-
-                    // 2. Reveal Content (Text slide up)
-                    const content = card.querySelector('.card-content');
-                    tl.to(content, {
-                        transform: 'translateY(0)',
-                        duration: 0.5,
-                        ease: 'power2.out'
-                    }, '<+0.2'); // Overlap slightly with entrance finish
-
-                    // 3. Hold phase (Space between cards)
-                    tl.to({}, { duration: 0.5 });
-
-                    // 4. Exit (Fly up) - except last card
-                    if (i < cards.length - 1) {
-                         tl.to(card, {
-                            y: '-100vh',
-                            scale: 0.9,
-                            opacity: 0,
-                            filter: 'blur(10px)',
-                            duration: 0.8,
-                            ease: 'power2.in'
-                        });
-                        // Hide content specifically to prevent overlap ghosting
-                        tl.to(content, { opacity: 0, duration: 0.2 }, '<');
-                    }
-                });
-            } else {
-                // Mobile: Simple fade up
-                gsap.utils.toArray('.deck-card').forEach(card => {
-                    gsap.from(card, {
-                        scrollTrigger: {
-                            trigger: card,
-                            start: 'top 85%'
-                        },
-                        y: 50,
-                        opacity: 0,
-                        duration: 1
-                    });
-                });
-            }
-
-            // --- Philosophy Reveal ---
-            gsap.from('.split-lines', {
+        // Parallax Images
+        document.querySelectorAll('.parallax-mask').forEach(mask => {
+            const img = mask.querySelector('img');
+            gsap.to(img, {
+                y: '10%', // Move down slightly as we scroll down (opposing motion)
                 scrollTrigger: {
-                    trigger: '.contact-section',
-                    start: 'top 70%'
-                },
-                y: 50,
-                opacity: 0,
-                filter: 'blur(10px)',
-                duration: 1.5,
-                ease: 'power3.out'
+                    trigger: mask,
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: true
+                }
             });
+        });
 
-            gsap.from('.reveal-up', {
-                 scrollTrigger: {
-                    trigger: '.contact-section',
-                    start: 'top 80%'
+        // Text Reveals
+        document.querySelectorAll('.text-reveal').forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: 'top 85%',
+                    toggleClass: 'active',
+                    toggleActions: 'play none none reverse'
                 },
                 y: 30,
                 opacity: 0,
-                stagger: 0.2,
-                duration: 1
+                duration: 1,
+                ease: 'power2.out'
             });
-        }
+        });
 
-        // --- 2. Three.js Background (Flow Field) ---
+        // Curriculum Steps Entrance
+        document.querySelectorAll('.step-item').forEach(step => {
+            gsap.from(step, {
+                scrollTrigger: {
+                    trigger: step,
+                    start: 'top 80%'
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                ease: 'power2.out'
+            });
+        });
 
-        // Simple Simplex Noise Implementation (2D)
-        // Source: https://github.com/jwagner/simplex-noise.js (Simplified)
-        const perm = new Uint8Array(512);
-        const p = new Uint8Array(256);
-        for(let i=0; i<256; i++) p[i] = i;
-        for(let i=0; i<256; i++) {
-            let r = Math.floor(Math.random() * (256 - i)) + i;
-            let t = p[i]; p[i] = p[r]; p[r] = t;
-            perm[i] = perm[i + 256] = p[i];
-        }
-
-        function noise(x, y) {
-            const F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
-            const G2 = (3.0 - Math.sqrt(3.0)) / 6.0;
-            let n0, n1, n2;
-            let s = (x + y) * F2;
-            let i = Math.floor(x + s);
-            let j = Math.floor(y + s);
-            let t = (i + j) * G2;
-            let X0 = i - t;
-            let Y0 = j - t;
-            let x0 = x - X0;
-            let y0 = y - Y0;
-            let i1, j1;
-            if (x0 > y0) { i1 = 1; j1 = 0; } else { i1 = 0; j1 = 1; }
-            let x1 = x0 - i1 + G2;
-            let y1 = y0 - j1 + G2;
-            let x2 = x0 - 1.0 + 2.0 * G2;
-            let y2 = y0 - 1.0 + 2.0 * G2;
-            let ii = i & 255;
-            let jj = j & 255;
-            let gi0 = perm[ii + perm[jj]] % 12;
-            let gi1 = perm[ii + i1 + perm[jj + j1]] % 12;
-            let gi2 = perm[ii + 1 + perm[jj + 1]] % 12;
-
-            let t0 = 0.5 - x0*x0 - y0*y0;
-            if (t0 < 0) n0 = 0.0; else { t0 *= t0; n0 = t0 * t0 * dot(grad3[gi0], x0, y0); }
-            let t1 = 0.5 - x1*x1 - y1*y1;
-            if (t1 < 0) n1 = 0.0; else { t1 *= t1; n1 = t1 * t1 * dot(grad3[gi1], x1, y1); }
-            let t2 = 0.5 - x2*x2 - y2*y2;
-            if (t2 < 0) n2 = 0.0; else { t2 *= t2; n2 = t2 * t2 * dot(grad3[gi2], x2, y2); }
-            return 70.0 * (n0 + n1 + n2);
-        }
-
-        const grad3 = [
-            [1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
-            [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
-            [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
-        ];
-        function dot(g, x, y) { return g[0]*x + g[1]*y; }
-
-        // --- Three.js Logic ---
+        // --- THREE.JS BACKGROUND: THE GOLDEN THREAD ---
         const initThree = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            // Subtle fog for depth
-            scene.fog = new THREE.FogExp2(0x08090b, 0.003);
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 50;
+            // Camera setup
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 100;
+            camera.position.y = 0;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            // Subtle tone mapping
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
 
-            // Create Particle Flow Field
-            const particleCount = 2000;
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(particleCount * 3);
-            const opacity = new Float32Array(particleCount);
-            const sizes = new Float32Array(particleCount);
+            // Lighting for the Metallic Thread
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(ambientLight);
 
-            // Random initial positions
-            for(let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 150;     // x
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 100; // y
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 50;  // z
+            // Hemisphere light for better base illumination
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x443311, 2);
+            scene.add(hemiLight);
 
-                opacity[i] = Math.random();
-                sizes[i] = Math.random() * 0.5 + 0.1;
+            const pointLight = new THREE.PointLight(0xfff0dd, 5, 200); // Warm highlight
+            pointLight.position.set(50, 50, 50);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0xd4af37, 5, 200); // Gold fill
+            pointLight2.position.set(-50, -50, 20);
+            scene.add(pointLight2);
+
+            // Create The Thread (TubeGeometry along a path)
+            // We'll create a complex curve
+            const isMobile = window.innerWidth < 768;
+            const spreadX = isMobile ? 40 : 80;
+            const spreadY = isMobile ? 100 : 150;
+            const tubeRadius = isMobile ? 0.15 : 0.2;
+
+            const curvePoints = [];
+            for (let i = 0; i < 12; i++) {
+                curvePoints.push(new THREE.Vector3(
+                    (Math.random() - 0.5) * spreadX,
+                    (Math.random() - 0.5) * spreadY,
+                    (Math.random() - 0.5) * 40
+                ));
             }
+            // Ensure smooth loop or continuous path
+            const curve = new THREE.CatmullRomCurve3(curvePoints);
+            curve.closed = true;
+            curve.tension = 0.4; // Smoother curves
 
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('alpha', new THREE.BufferAttribute(opacity, 1));
-            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            // Geometry - High Resolution for Silk effect
+            const geometry = new THREE.TubeGeometry(curve, 600, tubeRadius, 32, true);
 
-            // Custom Shader Material for "Golden Dust"
-            // We use a simple texture or circle for points
-            const material = new THREE.PointsMaterial({
-                color: 0xd4af37,
-                size: 0.4, // Increased size
+            // Material: Gold/Silk
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0xeebb44, // Lighter Gold
+                emissive: 0x443311, // Slight glow
+                roughness: 0.15,
+                metalness: 0.9,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.05,
                 transparent: true,
-                opacity: 0.8, // Increased opacity
-                blending: THREE.AdditiveBlending,
-                sizeAttenuation: true
+                opacity: 0.95
             });
 
-            const particles = new THREE.Points(geometry, material);
+            const threadMesh = new THREE.Mesh(geometry, material);
+            scene.add(threadMesh);
+
+            // Add some floating "dust" particles for atmosphere (very few, very subtle)
+            const pGeo = new THREE.BufferGeometry();
+            const pCount = 100;
+            const pPos = new Float32Array(pCount * 3);
+            for(let i=0; i<pCount; i++) {
+                pPos[i*3] = (Math.random()-0.5)*200;
+                pPos[i*3+1] = (Math.random()-0.5)*200;
+                pPos[i*3+2] = (Math.random()-0.5)*100;
+            }
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+            const pMat = new THREE.PointsMaterial({
+                color: 0xd4af37,
+                size: 0.5,
+                transparent: true,
+                opacity: 0.4
+            });
+            const particles = new THREE.Points(pGeo, pMat);
             scene.add(particles);
 
-            // Interaction state
-            let mouseX = 0;
-            let mouseY = 0;
-            let scrollY = 0;
-
-            window.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-                mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
-            });
-
-            // Listen to scroll for speed boost
-            window.addEventListener('scroll', () => {
-                scrollY = window.scrollY;
-            });
+            // Animation Logic
+            // Instead of moving the mesh, we can rotate the whole group gently
+            // Or animate the curve parameters (harder).
+            // Let's just rotate gently for elegance.
 
             const clock = new THREE.Clock();
 
             const animate = () => {
-                const time = clock.getElapsedTime() * 0.2; // Slow base time
-                const positions = particles.geometry.attributes.position.array;
-                const count = particles.geometry.attributes.position.count;
+                const time = clock.getElapsedTime() * 0.2; // Slow
 
-                // Animate particles based on Noise
-                for (let i = 0; i < count; i++) {
-                    let x = positions[i * 3];
-                    let y = positions[i * 3 + 1];
-                    let z = positions[i * 3 + 2];
+                // Gentle rotation
+                threadMesh.rotation.x = Math.sin(time * 0.5) * 0.2;
+                threadMesh.rotation.y = time * 0.3;
 
-                    // Noise input scaling
-                    const scale = 0.05;
+                // Float particles
+                particles.rotation.y = -time * 0.1;
 
-                    // Get noise value (angle)
-                    // We add time to z/y to make it flow
-                    const angle = noise(x * scale, y * scale + time) * Math.PI * 4;
+                // Respond to Scroll (Camera movement)
+                // We move camera Y down as we scroll
+                const scrollY = window.scrollY;
+                const maxScroll = document.body.scrollHeight - window.innerHeight;
+                const scrollProgress = scrollY / (maxScroll || 1);
 
-                    // Flow vector
-                    const vx = Math.cos(angle) * 0.05;
-                    const vy = Math.sin(angle) * 0.05;
-
-                    // Apply movement
-                    x += vx;
-                    y += vy;
-
-                    // Mouse Influence (Attraction/Repulsion)
-                    // Very subtle influence to feel "organic"
-                    // const dx = (mouseX * 50) - x;
-                    // const dy = (mouseY * 40) - y;
-                    // const dist = Math.sqrt(dx*dx + dy*dy);
-                    // if (dist < 20) {
-                    //    x += dx * 0.001;
-                    //    y += dy * 0.001;
-                    // }
-
-                    // Reset if out of bounds
-                    if (x > 80 || x < -80 || y > 60 || y < -60) {
-                        x = (Math.random() - 0.5) * 150;
-                        y = (Math.random() - 0.5) * 100;
-                    }
-
-                    positions[i * 3] = x;
-                    positions[i * 3 + 1] = y;
-                    positions[i * 3 + 2] = z; // Keep Z mostly static for now, or drift slowly
-                }
-
-                particles.geometry.attributes.position.needsUpdate = true;
-
-                // Rotate entire system slowly
-                particles.rotation.z = time * 0.05;
-                particles.rotation.y = mouseX * 0.1;
-                particles.rotation.x = mouseY * 0.1;
+                // Parallax camera
+                camera.position.y = -scrollProgress * 50; // Move down
+                camera.position.x = Math.sin(scrollProgress * Math.PI) * 10; // Sway
+                camera.lookAt(0, -scrollProgress * 50, 0);
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
@@ -926,6 +677,7 @@
 
             animate();
 
+            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -933,7 +685,10 @@
             });
         };
 
+        // Initialize Three.js after fonts loaded (optional delay) or immediate
         initThree();
+        document.body.classList.add('loaded');
+
     </script>
 </body>
 </html>
