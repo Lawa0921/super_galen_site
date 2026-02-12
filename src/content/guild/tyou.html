@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>秋桑 Tyou | 物理系跑咖筆記</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Kurenaido&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            --color-bg: #E0DCC8;   /* Oatmeal */
+            --color-text: #333333; /* Dark Grey */
+            --color-accent: #556B2F; /* Olive Green */
+            --color-light: #FDFBF7;
+            --font-main: 'Noto Serif TC', serif;
+            --font-display: 'Playfair Display', serif;
+            --font-hand: 'Zen Kurenaido', cursive;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            line-height: 1.8;
+        }
+
+        /* --- Canvas Layers --- */
+        #canvas-three {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -2;
+            opacity: 0; /* Fade in */
+            transition: opacity 2s ease;
+        }
+
+        #canvas-p5 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.6;
+            mix-blend-mode: multiply;
+        }
+
+        /* --- Layout --- */
+        .section {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .content-wrapper {
+            max-width: 900px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        h1, h2, h3 {
+            font-family: var(--font-display);
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .handwritten {
+            font-family: var(--font-hand);
+            color: var(--color-accent);
+        }
+
+        /* --- Hero --- */
+        .hero-avatar {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 3px solid var(--color-accent);
+            padding: 5px;
+            margin: 0 auto 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            text-align: center;
+            font-family: var(--font-main);
+            opacity: 0.8;
+            letter-spacing: 0.1em;
+        }
+
+        /* --- Text Sections --- */
+        .text-block {
+            background: rgba(224, 220, 200, 0.85); /* Semi-transparent oatmeal */
+            backdrop-filter: blur(5px);
+            padding: 3rem;
+            border-left: 5px solid var(--color-accent);
+            margin-bottom: 4rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .section-label {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--color-accent);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* --- Timeline --- */
+        .timeline-container {
+            position: relative;
+            padding-left: 2rem;
+            border-left: 2px solid var(--color-accent);
+        }
+
+        .timeline-item {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.6rem;
+            top: 0.5rem;
+            width: 1rem;
+            height: 1rem;
+            background: var(--color-bg);
+            border: 2px solid var(--color-accent);
+            border-radius: 50%;
+        }
+
+        .timeline-role {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .timeline-desc {
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+
+        /* --- Philosophy --- */
+        .quote-box {
+            font-size: 2rem;
+            font-family: var(--font-main);
+            text-align: center;
+            font-weight: 300;
+            line-height: 1.6;
+            margin: 4rem 0;
+            position: relative;
+        }
+
+        .quote-box::before {
+            content: '"';
+            font-family: var(--font-display);
+            font-size: 6rem;
+            color: var(--color-accent);
+            opacity: 0.2;
+            position: absolute;
+            top: -3rem;
+            left: -1rem;
+        }
+
+        /* --- Gallery --- */
+        .gallery-frame {
+            position: relative;
+            width: 100%;
+            height: 60vh;
+            overflow: hidden;
+            margin: 4rem 0;
+            border: 10px solid #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
+
+        .gallery-img {
+            width: 100%;
+            height: 120%; /* For parallax */
+            object-fit: cover;
+            position: absolute;
+            top: -10%;
+        }
+
+        /* --- Social --- */
+        .social-grid {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: var(--color-text);
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--color-accent);
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: var(--color-accent);
+            color: #fff;
+            transform: translateY(-3px);
+        }
+
+        /* --- Utilities --- */
+        .highlight {
+            position: relative;
+            z-index: 1;
+        }
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0.4em;
+            background: rgba(85, 107, 47, 0.2); /* Low opacity olive */
+            z-index: -1;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .section { padding: 4rem 1.5rem; }
+        }
+    </style>
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="canvas-three"></div>
+    <div id="canvas-p5"></div>
+
+    <!-- Hero -->
+    <section class="section">
+        <div class="content-wrapper gs-reveal">
+            <div class="hero-avatar">
+                <img src="/assets/img/guild/tyou/avatar.webp" alt="Tyou">
+            </div>
+            <h1 class="hero-title">秋桑 <span style="font-weight: 300;">Tyou</span></h1>
+            <div class="hero-subtitle">
+                The Coffee Physicist <span style="color: var(--color-accent);">//</span> INTP Explorer
+            </div>
+            <div style="text-align: center; margin-top: 1rem; font-family: var(--font-hand); font-size: 1.5rem; color: var(--color-accent);">
+                不為打卡，只為一杯好咖啡
+            </div>
+        </div>
+    </section>
+
+    <!-- Intro -->
+    <section class="section">
+        <div class="content-wrapper">
+            <span class="section-label">01. The Habit</span>
+            <div class="text-block gs-reveal">
+                <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
+                    我是住在日本的秋桑，跑咖是一種<span class="highlight">生活習慣</span>。不是為了打卡，也不是追流行，而是單純喜歡找一個可以坐下來、慢慢喝完一杯咖啡的地方。
+                </p>
+                <p>
+                    起初是因為太多朋友問：「哪個地區有推薦的店？」但常常去過就忘。於是，我決定把這些記憶寫成一本可以隨時翻閱的筆記。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Logic (Physics) -->
+    <section class="section">
+        <div class="content-wrapper">
+            <span class="section-label">02. The Logic</span>
+            <div class="text-block gs-reveal">
+                <h2 style="margin-bottom: 1.5rem;">Physics & Coffee</h2>
+                <p>
+                    大學、研究所都是物理系，完全的 <span class="highlight">INTP 教科書</span>。
+                </p>
+                <p style="margin-top: 1rem;">
+                    我在意的不是「好不好喝」或「好不好拍」，而是這家店<span class="highlight">適不適合某一個人</span>。雖然有多年咖啡實務背景，但我不想賣弄專業。比起技術名詞，我更在意一杯咖啡能不能讓人放鬆。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Career -->
+    <section class="section">
+        <div class="content-wrapper">
+            <span class="section-label">03. The Grind</span>
+            <div class="text-block gs-reveal">
+                <div class="timeline-container">
+                    <div class="timeline-item">
+                        <div class="timeline-role">Physics Major</div>
+                        <div class="timeline-desc">大學 & 研究所 | The Logical Foundation</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-role">Graphic Design</div>
+                        <div class="timeline-desc">畢業後的第一份工作</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-role">Barista (5 Years)</div>
+                        <div class="timeline-desc">從個人小店到連鎖體系，摸索咖啡的溫度</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-role">Japan Life (30歲~)</div>
+                        <div class="timeline-desc">咖啡食品業界 -> 觀光推廣寫手 -> 觀光業界</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-role">Toy Store Manager</div>
+                        <div class="timeline-desc">現在是玩具店店長 😂 喜歡的事情太多，結果什麼都做了</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Philosophy -->
+    <section class="section">
+        <div class="content-wrapper">
+            <div class="quote-box gs-reveal">
+                <span class="handwritten">只要有人喜歡，就是好咖啡。</span><br>
+                <span style="font-size: 1.2rem; opacity: 0.7; display: block; margin-top: 1rem;">
+                    我的帳號不是攻略，也不是評分。<br>
+                    更像是一本陪你跑日本咖啡廳的導覽手冊。
+                </span>
+            </div>
+
+            <div class="gallery-frame gs-reveal">
+                <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot" class="gallery-img">
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <section class="section" style="background: rgba(85, 107, 47, 0.1);">
+        <div class="content-wrapper">
+            <h2 style="text-align: center; margin-bottom: 3rem;">Connect with Tyou</h2>
+            <div class="social-grid gs-reveal">
+                <a href="https://www.threads.com/@japan.coffee__tyou.tw" target="_blank" class="social-link">
+                    <i class="fa-brands fa-threads"></i> Threads
+                </a>
+                <a href="https://www.instagram.com/japan.coffee__tyou.tw/" target="_blank" class="social-link">
+                    <i class="fa-brands fa-instagram"></i> Instagram
+                </a>
+                <a href="https://vocus.cc/user/@japan-coffee-tyou" target="_blank" class="social-link">
+                    <i class="fa-solid fa-pen-nib"></i> Vocus
+                </a>
+                <a href="https://www.youtube.com/@japan.coffee_tyouSAN" target="_blank" class="social-link">
+                    <i class="fa-brands fa-youtube"></i> YouTube
+                </a>
+                <a href="https://linkgoods.com/japancoffeebytyou" target="_blank" class="social-link">
+                    <i class="fa-solid fa-link"></i> LinkGoods
+                </a>
+            </div>
+            <div style="text-align: center; margin-top: 4rem; opacity: 0.6; font-size: 0.9rem;">
+                <a href="/guild/" style="text-decoration: none; color: inherit;">Back to Guild</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scripts -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // --- GSAP Setup ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Reveal Animations
+        gsap.utils.toArray('.gs-reveal').forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1.2,
+                ease: "power3.out"
+            });
+        });
+
+        // Parallax for Gallery
+        gsap.to('.gallery-img', {
+            scrollTrigger: {
+                trigger: '.gallery-frame',
+                start: "top bottom",
+                end: "bottom top",
+                scrub: true
+            },
+            y: "20%",
+            ease: "none"
+        });
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-three');
+        const scene = new THREE.Scene();
+        // Oatmeal Fog
+        scene.fog = new THREE.FogExp2(0xE0DCC8, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 20;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 10, 10);
+        scene.add(dirLight);
+
+        // Group for rotation
+        const group = new THREE.Group();
+        scene.add(group);
+
+        // Objects
+        const geometries = [];
+
+        // 1. Coffee Beans (Ellipsoids)
+        const beanGeo = new THREE.SphereGeometry(1, 16, 16);
+        beanGeo.scale(1, 0.6, 0.4); // Bean shape
+        const beanMat = new THREE.MeshStandardMaterial({
+            color: 0x4B3621, // Coffee Brown
+            roughness: 0.8,
+            metalness: 0.1
+        });
+
+        for(let i=0; i<30; i++) {
+            const bean = new THREE.Mesh(beanGeo, beanMat);
+            bean.position.set(
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 40
+            );
+            bean.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            bean.userData = {
+                rotSpeed: {
+                    x: (Math.random()-0.5) * 0.01,
+                    y: (Math.random()-0.5) * 0.01
+                }
+            };
+            group.add(bean);
+        }
+
+        // 2. Physics Shapes (Icosahedrons - Wireframe)
+        const shapeGeo = new THREE.IcosahedronGeometry(2, 0);
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0x556B2F, // Olive
+            transparent: true,
+            opacity: 0.4
+        });
+
+        for(let i=0; i<15; i++) {
+            const wireframe = new THREE.WireframeGeometry(shapeGeo);
+            const line = new THREE.LineSegments(wireframe, lineMat);
+            line.position.set(
+                (Math.random() - 0.5) * 80,
+                (Math.random() - 0.5) * 80,
+                (Math.random() - 0.5) * 50
+            );
+            line.scale.setScalar(Math.random() * 2 + 0.5);
+            line.userData = {
+                rotSpeed: {
+                    x: (Math.random()-0.5) * 0.005,
+                    y: (Math.random()-0.5) * 0.005
+                }
+            };
+            group.add(line);
+        }
+
+        // Reveal Scene
+        setTimeout(() => container.style.opacity = 1, 100);
+
+        // Animation Loop
+        let scrollY = 0;
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate group based on scroll + time
+            group.rotation.y = scrollY * 0.0005 + performance.now() * 0.0001;
+            group.rotation.x = scrollY * 0.0002;
+
+            // Animate individual objects
+            group.children.forEach(child => {
+                if (child.userData.rotSpeed) {
+                    child.rotation.x += child.userData.rotSpeed.x;
+                    child.rotation.y += child.userData.rotSpeed.y;
+                }
+            });
+
+            // Camera drift
+            camera.position.y = -scrollY * 0.01;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+
+    <!-- p5.js Sketch -->
+    <script>
+        function setup() {
+            const canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('canvas-p5');
+            noFill();
+            stroke(85, 107, 47, 40); // Olive with low opacity
+            strokeWeight(1);
+        }
+
+        function draw() {
+            clear();
+
+            // Draw Perlin Noise "Isolines"
+            // mimicking steam or physics fields
+            let t = millis() * 0.0005;
+
+            beginShape();
+            for (let x = 0; x < width; x += 20) {
+                let y = height * 0.8 + map(noise(x * 0.005, t), 0, 1, -100, 100);
+
+                // Mouse interaction distorts lines
+                let d = dist(x, y, mouseX, mouseY);
+                if (d < 200) {
+                    y += (200 - d) * 0.5;
+                }
+
+                curveVertex(x, y);
+            }
+            endShape();
+
+            beginShape();
+            for (let x = 0; x < width; x += 20) {
+                let y = height * 0.2 + map(noise(x * 0.005 + 100, t * 0.5), 0, 1, -100, 100);
+                 // Mouse interaction
+                let d = dist(x, y, mouseX, mouseY);
+                if (d < 200) {
+                    y -= (200 - d) * 0.5;
+                }
+                curveVertex(x, y);
+            }
+            endShape();
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>
