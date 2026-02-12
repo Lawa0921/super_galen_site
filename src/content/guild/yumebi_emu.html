@@ -28,13 +28,13 @@
     <style>
         :root {
             --bg-deep: #1a0b1f; /* Lighter Deep Purple */
-            --text-primary: #fff0f5;
+            --text-primary: #fff;
             --accent-pink: #ff69b4; /* Hot Pink */
             --accent-purple: #9370db; /* Medium Purple */
             --accent-gold: #ffd700; /* Gold for Magic */
             --accent-cyan: #00ffff; /* Cyan for Digital */
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-bg: rgba(0, 0, 0, 0.4); /* Much darker for contrast */
+            --glass-border: rgba(255, 105, 180, 0.3); /* Pinkish border */
             --neon-glow: 0 0 15px var(--accent-pink), 0 0 30px var(--accent-purple);
         }
 
@@ -67,7 +67,7 @@
             width: 100%; height: 100%;
             z-index: -2;
             pointer-events: none;
-            opacity: 0.4;
+            opacity: 0.3;
             mix-blend-mode: screen;
         }
 
@@ -78,7 +78,7 @@
             font-weight: 900;
             border: 2px solid var(--accent-pink);
             padding: 0.5rem 1.5rem;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.8);
             backdrop-filter: blur(5px);
             border-radius: 20px;
             transition: 0.3s;
@@ -118,7 +118,7 @@
             -webkit-text-fill-color: transparent;
             text-align: center;
             line-height: 1;
-            filter: drop-shadow(0 0 20px rgba(255, 105, 180, 0.6));
+            filter: drop-shadow(0 0 20px rgba(255, 105, 180, 0.8));
             margin-bottom: 2rem;
             font-family: 'Cinzel', serif;
             letter-spacing: 0.05em;
@@ -129,21 +129,26 @@
             color: var(--accent-gold);
             letter-spacing: 0.5em;
             text-align: center;
-            text-shadow: 0 0 10px var(--accent-gold);
+            text-shadow: 0 0 15px var(--accent-gold);
             font-weight: 700;
             margin-bottom: 1rem;
         }
 
         /* --- Components --- */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(15px);
             padding: 4rem;
             border-radius: 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(255, 105, 180, 0.1);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 30px rgba(255, 105, 180, 0.05);
             position: relative;
             overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .glass-panel:hover {
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9), inset 0 0 40px rgba(255, 105, 180, 0.1);
         }
 
         /* --- Sensory Focus: Dream Bubbles --- */
@@ -349,7 +354,7 @@
             <div class="container" style="text-align: center;">
                 <h2 class="hero-subtitle gs-reveal">LUCID DREAMER</h2>
                 <h1 class="hero-title gs-reveal" data-text="YUMEBI EMU">YUMEBI EMU</h1>
-                <p style="font-size: 1.5rem; margin-top: 1rem; color: #eee; font-style: italic;" class="gs-reveal">
+                <p style="font-size: 1.5rem; margin-top: 1rem; color: #fff; font-style: italic; text-shadow: 0 2px 5px #000;" class="gs-reveal">
                     "Eternal 20-year-old Idol"
                 </p>
             </div>
@@ -369,17 +374,17 @@
                     <div class="sparkle" style="top: 10%; right: 10%; animation-delay: 2s;"></div>
                 </div>
 
-                <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-primary);">夢寐愛姆</h2>
+                <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-primary); text-shadow: 0 2px 10px rgba(0,0,0,0.5);">夢寐愛姆</h2>
 
-                <p style="font-size: 1.2rem; line-height: 2; margin-bottom: 2rem; color: #ddd;">
+                <p style="font-size: 1.2rem; line-height: 2; margin-bottom: 2rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
                     我是一位 ASMR 創作者，永遠 20 歲的偶像！<br>
                     喜歡在直播中和大家一起閒聊彼此的日常。<br>
                     透過擅長的 <span class="glow-text">夢境魔法 (ASMR)</span>，把失眠的人通通哄睡，<br>
                     陪伴所有孤獨的人度過漫漫長夜。
                 </p>
 
-                <div style="background: rgba(255,105,180,0.1); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem;">
-                    <p style="color: #fff; font-style: italic;">
+                <div style="background: rgba(255,105,180,0.2); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid rgba(255,105,180,0.3);">
+                    <p style="color: #fff; font-style: italic; text-shadow: 0 1px 5px rgba(0,0,0,0.5);">
                         "想成為像照亮冬天的太陽般溫暖親切的人。"
                     </p>
                 </div>
@@ -427,12 +432,12 @@
                 <div class="glass-panel gs-card" style="flex: 1; min-width: 320px; text-align: center;">
                     <i class="fa-solid fa-heart" style="font-size: 3rem; color: var(--accent-pink); margin-bottom: 1.5rem;"></i>
                     <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">WARMTH</h3>
-                    <p>努力經營個人 IP，常駐在 YouTube 直播。</p>
+                    <p style="color: #eee;">努力經營個人 IP，常駐在 YouTube 直播。</p>
                 </div>
                 <div class="glass-panel gs-card" style="flex: 1; min-width: 320px; text-align: center;">
                     <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 3rem; color: var(--accent-gold); margin-bottom: 1.5rem;"></i>
                     <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">MAGIC</h3>
-                    <p>塔羅占卜 · 烹飪料理 · 哄睡魔法</p>
+                    <p style="color: #eee;">塔羅占卜 · 烹飪料理 · 哄睡魔法</p>
                 </div>
             </div>
         </section>
@@ -451,7 +456,7 @@
             </div>
 
             <!-- Final Overlay Content (Hidden until crystalized) -->
-            <div class="gallery-content container glass-panel" id="final-card" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 500px; text-align: center; background: rgba(0,0,0,0.4);">
+            <div class="gallery-content container glass-panel" id="final-card" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 500px; text-align: center; background: rgba(0,0,0,0.6);">
                 <p style="font-size: 1.8rem; color: var(--accent-pink); margin-bottom: 1rem;">Sweet Dreams...</p>
                 <div style="margin-top: 2rem;">
                     <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan); font-size: 1.2rem;">DIGITAL CARD</a>
@@ -608,6 +613,65 @@
         magicPlane.position.z = -5;
         scene.add(magicPlane);
 
+        // Second Magic Ring (Counter-rotating)
+        const magicRingCanvas = document.createElement('canvas');
+        magicRingCanvas.width = 1024; magicRingCanvas.height = 1024;
+        const rCtx = magicRingCanvas.getContext('2d');
+        rCtx.strokeStyle = '#00ffff'; // Cyan
+        rCtx.lineWidth = 2;
+        rCtx.shadowColor = '#00ffff';
+        rCtx.shadowBlur = 10;
+
+        // Complex geometric pattern
+        rCtx.translate(512, 512);
+        for(let i=0; i<12; i++) {
+             rCtx.rotate(Math.PI / 6);
+             rCtx.strokeRect(-300, -300, 600, 600);
+        }
+
+        const ringTex = new THREE.CanvasTexture(magicRingCanvas);
+        const ringPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(30, 30),
+            new THREE.MeshBasicMaterial({
+                map: ringTex,
+                transparent: true,
+                opacity: 0.4,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        ringPlane.position.z = -4; // Slightly in front
+        scene.add(ringPlane);
+
+        // --- NEBULA / FOG ---
+        const cloudCanvas = document.createElement('canvas');
+        cloudCanvas.width = 128; cloudCanvas.height = 128;
+        const cCtx = cloudCanvas.getContext('2d');
+        const grd = cCtx.createRadialGradient(64,64,0, 64,64,64);
+        grd.addColorStop(0, 'rgba(147, 112, 219, 0.2)'); // Purple
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        cCtx.fillStyle = grd;
+        cCtx.fillRect(0,0,128,128);
+
+        const cloudTex = new THREE.CanvasTexture(cloudCanvas);
+        const cloudMat = new THREE.SpriteMaterial({
+            map: cloudTex,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const clouds = [];
+        for(let i=0; i<10; i++) {
+            const cloud = new THREE.Sprite(cloudMat);
+            cloud.position.set((Math.random()-0.5)*60, (Math.random()-0.5)*60, -20 + Math.random()*10);
+            cloud.scale.set(30, 30, 1);
+            cloud.userData = { speed: (Math.random()*0.01) + 0.005 };
+            scene.add(cloud);
+            clouds.push(cloud);
+        }
 
         // --- GEM HEART ---
         const heartGroup = new THREE.Group();
@@ -643,18 +707,10 @@
         heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
         heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
 
-        // 2. Extrude Options
-        const extrudeSettings = {
-            steps: 2,
-            depth: 1, // Thick Gem
-            bevelEnabled: true,
-            bevelThickness: 0.5,
-            bevelSize: 0.5,
-            bevelSegments: 2
-        };
+        // 2. Extrude Options (Not used directly, but reference)
 
         // 3. Voronoi/Shattering simulation via manually placed triangles/shapes
-        const baseGeo = new THREE.ShapeGeometry(heartShape, 4); // Low tesselation for distinct shards
+        const baseGeo = new THREE.ShapeGeometry(heartShape, 12); // High tesselation (12) for MORE SHARDS
         baseGeo.center();
         baseGeo.scale(1, -1, 1); // Flip
         baseGeo.scale(0.8, 0.8, 1);
@@ -712,10 +768,10 @@
 
             // Extrude this shard
             const shardGeo = new THREE.ExtrudeGeometry(triangleShape, {
-                depth: 1 + Math.random(), // Varying thickness
+                depth: 0.5 + Math.random(), // Thinner, sharper
                 bevelEnabled: true,
-                bevelSize: 0.1,
-                bevelThickness: 0.1
+                bevelSize: 0.05,
+                bevelThickness: 0.05
             });
 
             // UV Mapping for the Picture: Map based on position relative to heart bounds
@@ -733,7 +789,6 @@
             shardGeo.translate(-center.x, -center.y, -center.z);
 
             // Mesh with 2 materials (Face=pic, Sides=gem)
-            // ExtrudeGeometry: Index 0 = Faces, Index 1 = Sides
             const mesh = new THREE.Mesh(shardGeo, [picMat, gemMat]);
 
             mesh.position.copy(center);
@@ -741,13 +796,16 @@
             // Animation Data
             mesh.userData = {
                 homePos: center.clone(),
-                // Breathing/Orbit state
-                orbitOffset: center.clone().multiplyScalar(0.5).add(new THREE.Vector3(0,0, (Math.random()-0.5)*5)),
-                rotSpeed: (Math.random()-0.5) * 0.02
+                // Breathing/Orbit state (Increased range for "Void" feel)
+                orbitOffset: center.clone().multiplyScalar(Math.random() * 2 + 0.5).add(new THREE.Vector3((Math.random()-0.5)*15, (Math.random()-0.5)*15, (Math.random()-0.5)*20)),
+                rotSpeed: (Math.random()-0.5) * 0.05,
+                driftPhase: Math.random() * Math.PI * 2
             };
 
             // Start expanded
             mesh.position.add(mesh.userData.orbitOffset);
+            mesh.rotation.x = Math.random() * Math.PI;
+            mesh.rotation.y = Math.random() * Math.PI;
 
             heartGroup.add(mesh);
             shards.push(mesh);
@@ -771,14 +829,14 @@
 
         const sparkleTex = new THREE.CanvasTexture(sparkleCanvas);
         const partGeo = new THREE.BufferGeometry();
-        const pCnt = 300;
+        const pCnt = 500; // Increased count
         const pPos = new Float32Array(pCnt * 3);
         const pSizes = new Float32Array(pCnt);
         for(let i=0; i<pCnt*3; i+=3) {
-            pPos[i] = (Math.random()-0.5)*50;
-            pPos[i+1] = (Math.random()-0.5)*50;
-            pPos[i+2] = (Math.random()-0.5)*30;
-            pSizes[i/3] = Math.random();
+            pPos[i] = (Math.random()-0.5)*80; // Wider area
+            pPos[i+1] = (Math.random()-0.5)*80;
+            pPos[i+2] = (Math.random()-0.5)*50;
+            pSizes[i/3] = Math.random() * 1.5;
         }
         partGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
         partGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
@@ -815,12 +873,6 @@
             onUpdate: (self) => {
                 scrollProgress = self.progress;
                 camera.position.z = 30 - (scrollProgress * 20); // Move closer
-
-                // Fade out hero magic
-                if(scrollProgress > 0.1) {
-                    // Reduce magic circle opacity as we get closer or keep it?
-                    // Let's keep it spinning
-                }
 
                 // Rotate heart
                 if(!isCrystalized) {
@@ -868,6 +920,7 @@
             } else {
                 // SHATTER (EXPLODE)
                 shards.forEach(m => {
+                    // Randomize new orbit offset for variety? No, keep consistant for now
                     gsap.to(m.position, {
                         x: m.userData.homePos.x + m.userData.orbitOffset.x,
                         y: m.userData.homePos.y + m.userData.orbitOffset.y,
@@ -875,14 +928,18 @@
                         duration: 1.5,
                         ease: "power2.inOut"
                     });
+
+                    // Spin violently
+                    gsap.to(m.rotation, {
+                        x: Math.random() * Math.PI * 2,
+                        y: Math.random() * Math.PI * 2,
+                        duration: 1.5
+                    });
                 });
 
                 // Material Changes
                 gsap.to(picMat, {opacity: 0.5, duration: 1});
                 gsap.to(gemMat, {transmission: 0.6, duration: 1});
-
-                // Important: Allow rotation to be controlled by scroll again
-                // Note: We don't animate heartGroup.rotation here, it snaps back to scroll control in the loop
 
                 // UI Updates
                 hintAssemble.style.opacity = 1;
@@ -896,9 +953,11 @@
             const t = Date.now() * 0.001;
 
             if(!isCrystalized) {
-                // Breathing
+                // Breathing + Drifting
                 shards.forEach(m => {
-                    m.rotation.z = Math.sin(t + m.position.x) * 0.1;
+                    m.rotation.z += m.userData.rotSpeed;
+                    // Gentle float in place
+                    m.position.y += Math.sin(t + m.userData.driftPhase) * 0.01;
                 });
 
                 // Texture Cycle based on Heart Rotation
@@ -917,6 +976,14 @@
 
             // Magic Circle Animation
             magicPlane.rotation.z -= 0.005;
+            ringPlane.rotation.z += 0.003; // Counter rotate
+
+            // Nebula
+            clouds.forEach(c => {
+                c.rotation += c.userData.speed;
+                // Pulse size
+                c.scale.setScalar(30 + Math.sin(t * c.userData.speed * 10)*5);
+            });
 
             // Particles
             particles.rotation.y += 0.002;
