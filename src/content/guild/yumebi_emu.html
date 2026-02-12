@@ -665,7 +665,8 @@
 
         const clouds = [];
         for(let i=0; i<10; i++) {
-            const cloud = new THREE.Sprite(cloudMat);
+            const m = cloudMat.clone();
+            const cloud = new THREE.Sprite(m);
             cloud.position.set((Math.random()-0.5)*60, (Math.random()-0.5)*60, -20 + Math.random()*10);
             cloud.scale.set(30, 30, 1);
             cloud.userData = { speed: (Math.random()*0.01) + 0.005 };
@@ -980,7 +981,7 @@
 
             // Nebula
             clouds.forEach(c => {
-                c.rotation += c.userData.speed;
+                c.material.rotation += c.userData.speed;
                 // Pulse size
                 c.scale.setScalar(30 + Math.sin(t * c.userData.speed * 10)*5);
             });
