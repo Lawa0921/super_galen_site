@@ -53,7 +53,7 @@
         /* Layout */
         .scroller { position: relative; z-index: 10; padding-bottom: 10vh; }
         .section {
-            min-height: 100vh;
+            min-height: 150vh; /* Increased height to slow down scroll */
             display: flex; align-items: center; justify-content: center;
             padding: 4rem 5%;
             pointer-events: none;
@@ -765,7 +765,7 @@
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1.5 // Smooth scrub
+                scrub: 2 // Smoother, slower scrub feel
             }
         });
 
@@ -791,19 +791,34 @@
 
         // GSAP Entry Animations & Dynamic Lighting
         gsap.utils.toArray('.tech-card').forEach((card, i) => {
-            // Entry
-            gsap.from(card, {
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
+            // "Magnetic Plasma" Entry
+            const isLeft = i % 2 === 0;
+            const xOffset = isLeft ? -400 : 400; // Alternating sides
+
+            gsap.fromTo(card,
+                {
+                    x: xOffset,
+                    opacity: 0,
+                    scale: 0.1, // Materialize from small point
+                    filter: "blur(20px)", // Plasma blur
+                    borderColor: "#FFFFFF" // Flash white start
                 },
-                y: 100,
-                opacity: 0,
-                scale: 0.9,
-                duration: 0.8,
-                ease: "power3.out"
-            });
+                {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    },
+                    x: 0,
+                    opacity: 1,
+                    scale: 1,
+                    filter: "blur(0px)",
+                    borderColor: "#333", // Return to normal industrial border
+                    duration: 1.2,
+                    ease: "elastic.out(1, 0.6)", // Magnetic snap
+                    clearProps: "filter" // Performance cleanup
+                }
+            );
 
             // "Plasma Illumination" Effect when card is center screen
             gsap.to(card, {
