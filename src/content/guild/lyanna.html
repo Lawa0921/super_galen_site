@@ -105,7 +105,6 @@
             height: 100vh;
             z-index: -1;
             pointer-events: none;
-            /* Optional: Grain overlay */
             filter: contrast(1.05) brightness(1.02);
         }
 
@@ -137,7 +136,7 @@
             letter-spacing: 5px;
         }
 
-        /* --- Sections (High Margin Editorial) --- */
+        /* --- Sections --- */
         section {
             position: relative;
             width: 100%;
@@ -146,21 +145,20 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 4rem; /* Wide gutters */
+            padding: 0 4rem;
             position: relative;
             z-index: 2;
         }
 
         .editorial-col {
-            max-width: 680px; /* Reading width */
+            max-width: 680px;
             margin: 0 auto;
         }
 
-        /* Glass Panel for Readability */
         .glass-panel {
-            background: rgba(252, 251, 249, 0.7); /* Lighter touch */
+            background: rgba(252, 251, 249, 0.7);
             backdrop-filter: blur(12px);
-            padding: 4rem; /* Increased padding */
+            padding: 4rem;
             border-radius: 2px;
             box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.4);
@@ -168,7 +166,7 @@
         }
 
         .glass-panel:hover {
-            transform: translateY(-5px) rotateX(2deg); /* Subtle 3D tilt */
+            transform: translateY(-5px) rotateX(2deg);
             box-shadow: 0 15px 50px -10px rgba(0, 0, 0, 0.08);
         }
 
@@ -182,8 +180,8 @@
 
         p {
             font-size: 1.1rem;
-            line-height: 1.8; /* Slightly tighter for better readability on expanding text */
-            color: #1a1a1a; /* Darker for better contrast */
+            line-height: 1.8;
+            color: #1a1a1a;
             margin-bottom: 1.5rem;
             letter-spacing: 0.02em;
             font-weight: 400;
@@ -208,7 +206,7 @@
         .highlight {
             position: relative;
             display: inline-block;
-            color: var(--text-primary); /* Keep dark */
+            color: var(--text-primary);
         }
 
         .highlight::after {
@@ -218,7 +216,7 @@
             left: 0;
             width: 100%;
             height: 8px;
-            background: var(--accent-dim); /* Highlighter effect */
+            background: var(--accent-dim);
             z-index: -1;
             transform: scaleX(0);
             transform-origin: left;
@@ -235,7 +233,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center; /* Center everything */
+            align-items: center;
             text-align: center;
             padding: 0;
         }
@@ -248,10 +246,10 @@
 
         /* --- Bio Scroll --- */
         .bio-section {
-            min-height: 50vh; /* Reduced height as image moved */
+            min-height: 50vh;
             display: flex;
             align-items: center;
-            justify-content: center; /* Center text */
+            justify-content: center;
             padding: 10vh 0;
             text-align: center;
         }
@@ -261,76 +259,21 @@
             margin: 0 auto;
         }
 
-        /* --- CARD DECK SECTION (New) --- */
+        /* --- CARD DECK SECTION (Responsive) --- */
         .deck-section {
-            height: 450vh; /* Increased for 6 cards */
             position: relative;
         }
 
-        .deck-sticky-wrapper {
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .deck-container {
-            width: 100%;
-            max-width: 1200px;
-            padding: 0 2rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .deck-text-area {
-            position: relative;
-            display: grid;
-            grid-template-areas: "stack";
-            align-items: center; /* Center vertically if needed, or start */
-            min-height: 400px; /* Minimum height */
-        }
-
-        .deck-text-item {
-            grid-area: stack;
-            width: 100%;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-            pointer-events: none;
-        }
-
-        .deck-text-item.active {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-            position: relative; /* Ensure it takes up space in flow if needed, though grid handles it */
-            z-index: 2;
-        }
-
-        .deck-visual-area {
-            position: relative;
-            height: 600px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            perspective: 1000px;
-        }
-
-        .card-stack {
-            position: relative;
-            width: var(--card-width);
-            height: var(--card-height);
+        .step-num {
+            font-size: 3rem;
+            color: var(--accent);
+            opacity: 0.3;
+            margin-bottom: 1rem;
+            font-family: var(--font-display);
         }
 
         .card-item {
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: relative;
             width: 100%;
             height: 100%;
             border-radius: 8px;
@@ -352,6 +295,149 @@
             object-fit: cover;
         }
 
+        /* Desktop Layout (Sticky Deck) */
+        @media (min-width: 768px) {
+            .deck-section {
+                height: 450vh; /* Scroll space */
+            }
+            .deck-sticky-wrapper {
+                position: sticky;
+                top: 0;
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .deck-container {
+                width: 100%;
+                max-width: 1200px;
+                padding: 0 2rem;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4rem;
+                height: 100%;
+                align-items: center;
+                position: relative;
+            }
+
+            /* Visual Group Stacking */
+            .deck-item {
+                display: contents; /* Children participate in parent grid */
+            }
+
+            .deck-text-content {
+                grid-column: 1;
+                grid-row: 1;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: opacity 0.5s ease, transform 0.5s ease;
+                z-index: 10;
+            }
+
+            .deck-text-content.active {
+                opacity: 1;
+                transform: translateY(0);
+                z-index: 11;
+            }
+
+            .deck-visual-content {
+                grid-column: 2;
+                grid-row: 1;
+                width: var(--card-width);
+                height: var(--card-height);
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%); /* Center in right column space */
+                /* Actually let's use flex/grid alignment for the stack center */
+                margin: auto;
+            }
+
+            /* We need a wrapper for the stack to center it in the right column?
+               Since we used display:contents, .deck-visual-content is a direct child of grid.
+               But all of them will overlap in grid-column 2.
+            */
+            .deck-visual-content {
+                grid-column: 2;
+                grid-row: 1;
+                justify-self: center;
+                align-self: center;
+                width: var(--card-width);
+                height: var(--card-height);
+                /* Position absolute relative to the grid cell? No, grid places them.
+                   They will stack by default if in same cell. */
+                z-index: 1;
+            }
+
+            /* Card rotations will be handled by GSAP */
+        }
+
+        /* Mobile Layout (Vertical Flow) */
+        @media (max-width: 767px) {
+            :root {
+                --card-width: 100%;
+                --card-height: auto;
+            }
+            .container { padding: 0 1.5rem; }
+            .nav-fixed { top: 1.5rem; left: 1.5rem; }
+
+            .bio-section { padding: 4rem 0; }
+
+            .deck-section {
+                height: auto;
+                padding-bottom: 4rem;
+            }
+            .deck-sticky-wrapper {
+                position: relative;
+                height: auto;
+                display: block;
+            }
+            .deck-container {
+                display: flex;
+                flex-direction: column;
+                gap: 6rem;
+                padding: 2rem 1.5rem;
+            }
+
+            .deck-item {
+                display: flex;
+                flex-direction: column;
+                gap: 2rem;
+                opacity: 0; /* For scroll reveal */
+                transform: translateY(30px);
+            }
+
+            .deck-visual-content {
+                width: 100%;
+                max-width: 320px;
+                margin: 0 auto;
+                aspect-ratio: 2/3; /* Maintain card ratio */
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .card-item {
+                width: 100%;
+                height: 100%;
+                box-shadow: none; /* Reset desktop shadow */
+            }
+
+            .deck-text-content {
+                opacity: 1; /* Always visible inside the item */
+                transform: none;
+                background: rgba(252, 251, 249, 0.85); /* Slightly more opaque for mobile read */
+                backdrop-filter: blur(10px);
+                padding: 2rem;
+                border: 1px solid rgba(255,255,255,0.5);
+                border-radius: 4px;
+            }
+
+            .display-text { font-size: 2.5rem; }
+            .glass-panel { padding: 2.5rem; }
+        }
+
         /* --- Philosophy Quote --- */
         .philosophy-section {
             height: 80vh;
@@ -369,7 +455,7 @@
             border-top: 1px solid rgba(0,0,0,0.05);
             font-size: 0.85rem;
             color: #888;
-            background: var(--bg-color); /* Solid bg for footer */
+            background: var(--bg-color);
             position: relative;
             z-index: 10;
         }
@@ -403,32 +489,6 @@
         .social-link:hover {
             border-bottom: 1px solid var(--accent);
             color: var(--accent);
-        }
-
-        /* --- Mobile --- */
-        @media (max-width: 768px) {
-            :root {
-                --card-width: 260px;
-                --card-height: 380px;
-            }
-            .container { padding: 0 1.5rem; }
-            .nav-fixed { top: 1.5rem; left: 1.5rem; }
-
-            .bio-section { min-height: auto; padding: 4rem 0; }
-
-            .deck-container {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-            .deck-text-area {
-                min-height: auto; /* Allow growth */
-                order: -1;
-                margin-bottom: 2rem;
-            }
-
-            .glass-panel { padding: 2.5rem; }
-
-            .display-text { font-size: 2.5rem; }
         }
     </style>
 </head>
@@ -475,75 +535,86 @@
     <section class="deck-section">
         <div class="deck-sticky-wrapper">
             <div class="deck-container">
-                <!-- Text Description -->
-                <div class="deck-text-area glass-panel">
-                    <!-- Card 0: Who I Am -->
-                    <div class="deck-text-item active" data-index="0">
-                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">00</div>
+
+                <!-- Card 0: Who I Am -->
+                <div class="deck-item" data-index="0">
+                    <div class="deck-text-content active glass-panel">
+                        <div class="step-num">00</div>
                         <h3>Who I Am</h3>
                         <p>我是允曦 Lyanna，華語教師培訓課程創辦者，也是 MMT 個人天賦與人際關係諮詢師。目前任教於美國 UTA。<br><br>
                         我長期投入海內外華語教學、師資培訓與職涯引導，致力於將「華語教學」變成一條穩定、清楚、走得出去的路。</p>
                     </div>
-                    <!-- Card 1: What I Do -->
-                    <div class="deck-text-item" data-index="1">
-                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">01</div>
+                    <div class="deck-visual-content" style="z-index: 6;">
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/avatar.webp" class="card-img" style="object-position: top;"></div>
+                    </div>
+                </div>
+
+                <!-- Card 1: What I Do -->
+                <div class="deck-item" data-index="1">
+                    <div class="deck-text-content glass-panel">
+                        <div class="step-num">01</div>
                         <h3>What I Do</h3>
                         <p>我專注於陪伴對華語教學有熱情的人，從「不知道是否適合這條路」，到「具備資格、清楚方向」。<br>
                         提供教育部華語教師證照系統化培訓、海外教學職涯規劃，以及轉職探索與人生方向引導。</p>
                     </div>
-                    <!-- Card 2: Teaching Style -->
-                    <div class="deck-text-item" data-index="2">
-                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">02</div>
+                    <div class="deck-visual-content" style="z-index: 5;">
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_1.webp" class="card-img"></div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Teaching Style -->
+                <div class="deck-item" data-index="2">
+                    <div class="deck-text-content glass-panel">
+                        <div class="step-num">02</div>
                         <h3>Teaching Style</h3>
                         <p><strong>專業結構清楚：</strong>將龐雜的證照考試拆解成可執行的學習系統。<br>
                         <strong>陪伴式引導：</strong>不只教內容，而是陪你釐清方向與節奏。<br>
                         <strong>跨領域視角：</strong>結合教學、職涯、關係與海外生活經驗。</p>
                     </div>
-                    <!-- Card 3: Why I Do It -->
-                    <div class="deck-text-item" data-index="3">
-                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">03</div>
+                    <div class="deck-visual-content" style="z-index: 4;">
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_2.webp" class="card-img"></div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Why I Do It -->
+                <div class="deck-item" data-index="3">
+                    <div class="deck-text-content glass-panel">
+                        <div class="step-num">03</div>
                         <h3>Why I Do It</h3>
                         <p>多數人卡住的，從來不只是考試，而是「我適合嗎？」、「我能走多遠？」。<br>
                         因此，我將華語教學專業結合 MMT 天賦分析，讓學習不只停在證照，而是回到人生整體的選擇。</p>
                     </div>
-                    <!-- Card 4: The Path Together -->
-                    <div class="deck-text-item" data-index="4">
-                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">04</div>
+                    <div class="deck-visual-content" style="z-index: 3;">
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_3.webp" class="card-img"></div>
+                    </div>
+                </div>
+
+                <!-- Card 4: The Path Together -->
+                <div class="deck-item" data-index="4">
+                    <div class="deck-text-content glass-panel">
+                        <div class="step-num">04</div>
                         <h3>The Path Together</h3>
                         <p>如果你正在思考是否要投入華語教學、是否適合走向海外，或正在轉職的路口。<br>
                         我希望能用我走過的經驗，陪你把「華語」變成一條穩定、清楚、走得出去的路。</p>
                     </div>
-                    <!-- Card 5: Core Pillars -->
-                    <div class="deck-text-item" data-index="5">
-                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">05</div>
+                    <div class="deck-visual-content" style="z-index: 2;">
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_4.webp" class="card-img"></div>
+                    </div>
+                </div>
+
+                <!-- Card 5: Core Pillars -->
+                <div class="deck-item" data-index="5">
+                    <div class="deck-text-content glass-panel">
+                        <div class="step-num">05</div>
                         <h3>Core Pillars</h3>
                         <p>課程四大核心：系統化教材、精華影片、陪跑解題、職涯輔導。<br>
                         真正能走得遠的，不只是會考試的人，而是對自己有理解、對選擇有準備的人。</p>
                     </div>
-                </div>
-
-                <!-- Visual Cards -->
-                <div class="deck-visual-area">
-                    <div class="card-stack">
-                        <!-- Reverse order for initial stack visualization, but handled by GSAP -->
-                        <!-- Actually, order in DOM is order of appearance if we manipulate them -->
-                        <!-- Let's put Card 0 (Avatar) first in DOM, but visually they might stack. -->
-                        <!-- To have them fan out nicely, standard order is fine. -->
-
-                        <!-- Card 0: Avatar -->
-                        <div class="card-item" style="z-index: 6;"><img src="/assets/img/guild/lyanna/avatar.webp" class="card-img" style="object-position: top;"></div>
-                        <!-- Card 1 -->
-                        <div class="card-item" style="z-index: 5;"><img src="/assets/img/guild/lyanna/slide_1.webp" class="card-img"></div>
-                        <!-- Card 2 -->
-                        <div class="card-item" style="z-index: 4;"><img src="/assets/img/guild/lyanna/slide_2.webp" class="card-img"></div>
-                        <!-- Card 3 -->
-                        <div class="card-item" style="z-index: 3;"><img src="/assets/img/guild/lyanna/slide_3.webp" class="card-img"></div>
-                        <!-- Card 4 -->
-                        <div class="card-item" style="z-index: 2;"><img src="/assets/img/guild/lyanna/slide_4.webp" class="card-img"></div>
-                        <!-- Card 5 -->
-                        <div class="card-item" style="z-index: 1;"><img src="/assets/img/guild/lyanna/slide_5.webp" class="card-img"></div>
+                    <div class="deck-visual-content" style="z-index: 1;">
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_5.webp" class="card-img"></div>
                     </div>
                 </div>
+
             </div>
         </div>
     </section>
@@ -658,63 +729,86 @@
             });
         });
 
-        // --- CARD DECK ANIMATION ---
-        const cards = gsap.utils.toArray('.card-item');
-        const texts = gsap.utils.toArray('.deck-text-item');
-        const totalCards = cards.length;
+        // --- RESPONSIVE CARD DECK ANIMATION ---
+        ScrollTrigger.matchMedia({
 
-        // Initial setup for Fan
-        gsap.set(cards, {
-            rotation: (i) => (i - (totalCards-1)/2) * 5, // Slight fan
-            y: (i) => i * 4, // Slight vertical offset
-            x: 0,
-            opacity: 1
-        });
+            // DESKTOP: Sticky Deck Animation
+            "(min-width: 768px)": function() {
+                const visualWrappers = gsap.utils.toArray('.deck-visual-content'); // These stack in right col
+                const texts = gsap.utils.toArray('.deck-text-content'); // These stack in left col
+                const totalCards = visualWrappers.length;
 
-        // Timeline
-        const deckTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: '.deck-section',
-                start: 'top top',
-                end: 'bottom bottom',
-                scrub: 1,
-                pin: '.deck-sticky-wrapper',
-                anticipatePin: 1
-            }
-        });
+                // Initial setup for Fan (Visuals)
+                gsap.set(visualWrappers, {
+                    rotation: (i) => (i - (totalCards-1)/2) * 5, // Slight fan
+                    y: (i) => i * 4, // Slight vertical offset
+                    x: 0,
+                    opacity: 1
+                });
 
-        // Add a small pause at the beginning so the first card is readable
-        deckTl.to({}, { duration: 0.5 });
+                // Timeline
+                const deckTl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: '.deck-section',
+                        start: 'top top',
+                        end: 'bottom bottom',
+                        scrub: 1,
+                        pin: '.deck-sticky-wrapper',
+                        anticipatePin: 1
+                    }
+                });
 
-        // Animate each card (except last one which stays)
-        cards.forEach((card, i) => {
-            if (i === totalCards - 1) return; // Last card stays put
+                // Pause at start
+                deckTl.to({}, { duration: 0.5 });
 
-            const startTime = 0.5 + (i * 1.5);
+                visualWrappers.forEach((wrapper, i) => {
+                    if (i === totalCards - 1) return; // Last stays
 
-            deckTl.to(card, {
-                xPercent: 120, // Slide right off screen
-                rotation: 20, // Rotate out
-                opacity: 0,
-                duration: 1,
-                ease: 'power2.inOut'
-            }, startTime);
+                    const startTime = 0.5 + (i * 1.5);
 
-            // Text Switching
-            // Hide current text
-            deckTl.to(texts[i], {
-                opacity: 0,
-                y: -20,
-                duration: 0.5
-            }, startTime);
+                    // Animate Visual Wrapper out
+                    deckTl.to(wrapper, {
+                        xPercent: 120,
+                        rotation: 20,
+                        opacity: 0,
+                        duration: 1,
+                        ease: 'power2.inOut'
+                    }, startTime);
 
-            // Show next text
-            if (texts[i+1]) {
-                deckTl.to(texts[i+1], {
-                    opacity: 1,
-                    y: 0,
-                    duration: 0.5
-                }, startTime + 0.5); // Overlap slightly
+                    // Switch Text
+                    deckTl.to(texts[i], {
+                        opacity: 0,
+                        y: -20,
+                        duration: 0.5
+                    }, startTime);
+
+                    if (texts[i+1]) {
+                        deckTl.to(texts[i+1], {
+                            opacity: 1,
+                            y: 0,
+                            duration: 0.5
+                        }, startTime + 0.5);
+                    }
+                });
+            },
+
+            // MOBILE: Simple Scroll Reveal
+            "(max-width: 767px)": function() {
+                const items = gsap.utils.toArray('.deck-item');
+
+                items.forEach((item, i) => {
+                    gsap.to(item, {
+                        scrollTrigger: {
+                            trigger: item,
+                            start: 'top 85%',
+                            toggleActions: 'play none none reverse'
+                        },
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.8,
+                        ease: 'power2.out'
+                    });
+                });
             }
         });
 
