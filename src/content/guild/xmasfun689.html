@@ -51,12 +51,14 @@
         }
 
         /* Layout */
-        .scroller { position: relative; z-index: 10; padding-bottom: 10vh; }
+        .scroller { position: relative; z-index: 10; height: 500vh; }
         .section {
-            min-height: 250vh; /* Increased height significantly to slow down scroll */
+            min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 4rem 5%;
             pointer-events: none;
+            /* Space out sections manually with margins since height is fixed */
+            margin-bottom: 50vh;
         }
 
         /* Tech Card (Industrial Overhaul) */
@@ -181,7 +183,7 @@
         }
 
         .back-btn {
-            position: fixed; bottom: 20px; right: 20px; z-index: 100;
+            position: fixed; top: 20px; left: 20px; z-index: 100;
             background: rgba(0,0,0,0.8); border: 1px solid var(--c-plasma);
             color: var(--c-plasma); padding: 10px 20px; text-decoration: none;
             font-family: var(--f-tech); text-transform: uppercase;
@@ -696,15 +698,15 @@
         }
 
         // 2. Foreground Smoke (Visible at Start Z=50)
-        for (let i = 0; i < 20; i++) {
+        // Moved closer to camera start position (Z=50) for immediate visibility
+        for (let i = 0; i < 40; i++) {
             const smoke = new THREE.Sprite(smokeMat);
             smoke.position.set(
+                (Math.random() - 0.5) * 60,
                 (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 20,
-                15 + Math.random() * 20 // Placed at Z=15 to 35
+                35 + Math.random() * 20 // Placed at Z=35 to 55 (Around camera)
             );
-            smoke.scale.set(10, 10, 1);
-            smoke.material.opacity = 0.4; // Slightly clearer
+            smoke.scale.set(20, 20, 1); // Larger scale
             smoke.userData = {
                 velocity: new THREE.Vector3((Math.random() - 0.5) * 0.01, Math.random() * 0.01, 0),
                 rotationSpeed: (Math.random() - 0.5) * 0.005
@@ -794,7 +796,7 @@
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 3 // Even smoother interaction
+                scrub: 1 // Faster scrub response because distance is huge
             }
         });
 
