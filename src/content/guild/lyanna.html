@@ -120,6 +120,16 @@
             margin: 0 auto;
         }
 
+        /* Glass Panel for Readability */
+        .glass-panel {
+            background: rgba(252, 251, 249, 0.85); /* Matches bg-color but translucent */
+            backdrop-filter: blur(8px);
+            padding: 3rem;
+            border-radius: 2px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
         /* --- Typography --- */
         h1, h2, h3 {
             font-family: var(--font-display);
@@ -189,7 +199,8 @@
         .hero-title-wrapper {
             position: relative;
             z-index: 5;
-            mix-blend-mode: multiply; /* Ink effect */
+            /* No blend mode here, use simple stacking for cleanliness */
+            padding: 2rem;
         }
 
         /* The "Golden Thread" path visualization placeholder (optional) */
@@ -213,6 +224,7 @@
             aspect-ratio: 4/5;
             position: relative;
             overflow: hidden;
+            border-radius: 2px;
             /* Simple elegant frame */
         }
 
@@ -222,7 +234,7 @@
             object-fit: cover;
             object-position: top;
             transform: translateY(-10%); /* Start slightly up */
-            filter: sepia(0.2) contrast(0.95); /* Soft vintage */
+            filter: sepia(0.1) contrast(0.95); /* Soft vintage */
         }
 
         /* --- Curriculum (The Steps) --- */
@@ -245,7 +257,7 @@
 
         .step-item:nth-child(even) .step-text {
             direction: ltr; /* Reset text direction */
-            text-align: right;
+            text-align: right; /* Maintain standard alignment inside, visual RTL structure */
         }
 
         .step-img-mask {
@@ -253,6 +265,7 @@
             aspect-ratio: 16/10;
             overflow: hidden;
             position: relative;
+            border-radius: 2px;
         }
 
         .step-img {
@@ -265,12 +278,11 @@
 
         .step-num {
             font-family: var(--font-display);
-            font-size: 5rem;
-            color: rgba(0,0,0,0.05); /* Very subtle watermark */
-            position: absolute;
-            top: -2rem;
-            left: -2rem;
-            z-index: -1;
+            font-size: 4rem;
+            color: var(--accent);
+            opacity: 0.3;
+            margin-bottom: 1rem;
+            display: block;
         }
 
         /* --- Philosophy Quote --- */
@@ -280,7 +292,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: #f4f2ee; /* Slightly darker cream */
+            /* Translucent background handled by glass-panel */
         }
 
         /* --- Footer --- */
@@ -290,6 +302,9 @@
             border-top: 1px solid rgba(0,0,0,0.05);
             font-size: 0.85rem;
             color: #888;
+            background: var(--bg-color); /* Solid bg for footer */
+            position: relative;
+            z-index: 10;
         }
 
         .simple-footer a {
@@ -343,6 +358,8 @@
                 text-align: left;
             }
 
+            .glass-panel { padding: 1.5rem; }
+
             .display-text { font-size: 2.5rem; }
         }
     </style>
@@ -359,7 +376,7 @@
 
     <!-- Hero -->
     <section class="hero-section">
-        <div class="hero-title-wrapper">
+        <div class="hero-title-wrapper glass-panel">
             <span class="sub-display reveal-text">The Language Architect</span>
             <h1 class="display-text reveal-text">LYANNA</h1>
             <p class="reveal-text" style="max-width: 500px; margin: 0 auto;">
@@ -373,7 +390,7 @@
     <section class="bio-section">
         <div class="container">
             <div class="bio-grid">
-                <div class="bio-text editorial-col">
+                <div class="bio-text glass-panel">
                     <span class="sub-display">Who I Am</span>
                     <h2 style="font-size: 2rem; margin-bottom: 2rem;">允曦 Lyanna</h2>
                     <p class="text-reveal">
@@ -404,7 +421,7 @@
 
             <!-- Step 1 -->
             <div class="step-item">
-                <div class="step-text">
+                <div class="step-text glass-panel">
                     <div class="step-num">01</div>
                     <h3>Structure & Clarity</h3>
                     <p>專業結構清楚。將教育部華語教師證照拆解成可執行的學習系統。讓龐大的知識體系變得清晰、可觸及。</p>
@@ -416,7 +433,7 @@
 
             <!-- Step 2 -->
             <div class="step-item">
-                <div class="step-text">
+                <div class="step-text glass-panel">
                     <div class="step-num">02</div>
                     <h3>Guidance & Pace</h3>
                     <p>陪伴式引導。不只教內容，而是陪你釐清方向與節奏。多數人卡住的從來不只是考試，而是對未來的迷惘。</p>
@@ -428,7 +445,7 @@
 
             <!-- Step 3 -->
             <div class="step-item">
-                <div class="step-text">
+                <div class="step-text glass-panel">
                     <div class="step-num">03</div>
                     <h3>Global Vision</h3>
                     <p>跨領域視角。結合教學、職涯、關係與海外生活經驗。讓學習不只停在證照，而是回到人生整體的選擇。</p>
@@ -440,7 +457,7 @@
 
              <!-- Step 4 (MMT) -->
              <div class="step-item">
-                <div class="step-text">
+                <div class="step-text glass-panel">
                     <div class="step-num">04</div>
                     <h3>Inner Understanding</h3>
                     <p>MMT 天賦分析。結合天賦分析與人際關係諮詢，解決的不只是教學問題，更是人生課題。</p>
@@ -455,7 +472,7 @@
 
     <!-- Philosophy -->
     <section class="philosophy-section">
-        <div class="container editorial-col">
+        <div class="container editorial-col glass-panel">
             <p class="display-text" style="font-size: clamp(1.5rem, 3vw, 2.2rem); line-height: 1.6; color: var(--text-primary);">
                 "真正能走得遠的，<br>不只是會考試的人，<br>
                 而是對<span class="highlight">自己有理解</span>、<br>
@@ -556,120 +573,118 @@
         const initThree = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
+            // Add Fog for depth fade
+            scene.fog = new THREE.Fog(0xfcfbf9, 60, 150);
 
             // Camera setup
             const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.z = 100;
+            camera.position.z = 120; // Move back slightly
             camera.position.y = 0;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            // Subtle tone mapping
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
 
-            // Lighting for the Metallic Thread
-            const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
             scene.add(ambientLight);
 
-            // Hemisphere light for better base illumination
             const hemiLight = new THREE.HemisphereLight(0xffffff, 0x443311, 2);
             scene.add(hemiLight);
 
-            const pointLight = new THREE.PointLight(0xfff0dd, 5, 200); // Warm highlight
+            const pointLight = new THREE.PointLight(0xfff0dd, 5, 200);
             pointLight.position.set(50, 50, 50);
             scene.add(pointLight);
 
-            const pointLight2 = new THREE.PointLight(0xd4af37, 5, 200); // Gold fill
+            const pointLight2 = new THREE.PointLight(0xd4af37, 5, 200);
             pointLight2.position.set(-50, -50, 20);
             scene.add(pointLight2);
 
-            // Create The Thread (TubeGeometry along a path)
-            // We'll create a complex curve
+            // Create The Thread
             const isMobile = window.innerWidth < 768;
-            const spreadX = isMobile ? 40 : 80;
-            const spreadY = isMobile ? 100 : 150;
-            const tubeRadius = isMobile ? 0.15 : 0.2;
+            // Increased spread to push thread to edges
+            const spreadX = isMobile ? 50 : 120;
+            const spreadY = isMobile ? 120 : 200;
+            // Thinner thread for elegance
+            const tubeRadius = isMobile ? 0.12 : 0.15;
 
             const curvePoints = [];
-            for (let i = 0; i < 12; i++) {
-                curvePoints.push(new THREE.Vector3(
-                    (Math.random() - 0.5) * spreadX,
-                    (Math.random() - 0.5) * spreadY,
-                    (Math.random() - 0.5) * 40
-                ));
+            // Create a wider, more open loop
+            for (let i = 0; i < 15; i++) {
+                const angle = (i / 15) * Math.PI * 2;
+                // Spiral shape
+                const r = spreadX * (0.8 + Math.random() * 0.4);
+                const x = Math.cos(angle * 3) * r;
+                const y = (Math.random() - 0.5) * spreadY;
+                const z = (Math.random() - 0.5) * 60; // Keep Z variation moderate
+
+                curvePoints.push(new THREE.Vector3(x, y, z));
             }
-            // Ensure smooth loop or continuous path
             const curve = new THREE.CatmullRomCurve3(curvePoints);
             curve.closed = true;
-            curve.tension = 0.4; // Smoother curves
+            curve.tension = 0.3; // Very smooth
 
-            // Geometry - High Resolution for Silk effect
-            const geometry = new THREE.TubeGeometry(curve, 600, tubeRadius, 32, true);
+            const geometry = new THREE.TubeGeometry(curve, 600, tubeRadius, 24, true);
 
-            // Material: Gold/Silk
+            // Material: Lighter, more translucent Gold
             const material = new THREE.MeshPhysicalMaterial({
-                color: 0xeebb44, // Lighter Gold
-                emissive: 0x443311, // Slight glow
-                roughness: 0.15,
-                metalness: 0.9,
+                color: 0xeebb44,
+                emissive: 0x443311,
+                emissiveIntensity: 0.2, // Reduced glow
+                roughness: 0.2,
+                metalness: 0.8,
                 clearcoat: 1.0,
-                clearcoatRoughness: 0.05,
+                clearcoatRoughness: 0.1,
                 transparent: true,
-                opacity: 0.95
+                opacity: 0.85 // Reduced opacity
             });
 
             const threadMesh = new THREE.Mesh(geometry, material);
             scene.add(threadMesh);
 
-            // Add some floating "dust" particles for atmosphere (very few, very subtle)
+            // Particles - fewer, more subtle
             const pGeo = new THREE.BufferGeometry();
-            const pCount = 100;
+            const pCount = 80;
             const pPos = new Float32Array(pCount * 3);
             for(let i=0; i<pCount; i++) {
-                pPos[i*3] = (Math.random()-0.5)*200;
-                pPos[i*3+1] = (Math.random()-0.5)*200;
+                pPos[i*3] = (Math.random()-0.5)*250;
+                pPos[i*3+1] = (Math.random()-0.5)*250;
                 pPos[i*3+2] = (Math.random()-0.5)*100;
             }
             pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
             const pMat = new THREE.PointsMaterial({
                 color: 0xd4af37,
-                size: 0.5,
+                size: 0.4,
                 transparent: true,
-                opacity: 0.4
+                opacity: 0.3
             });
             const particles = new THREE.Points(pGeo, pMat);
             scene.add(particles);
 
-            // Animation Logic
-            // Instead of moving the mesh, we can rotate the whole group gently
-            // Or animate the curve parameters (harder).
-            // Let's just rotate gently for elegance.
-
             const clock = new THREE.Clock();
 
             const animate = () => {
-                const time = clock.getElapsedTime() * 0.2; // Slow
+                const time = clock.getElapsedTime() * 0.15; // Slower
 
                 // Gentle rotation
-                threadMesh.rotation.x = Math.sin(time * 0.5) * 0.2;
-                threadMesh.rotation.y = time * 0.3;
+                threadMesh.rotation.x = Math.sin(time * 0.5) * 0.15;
+                threadMesh.rotation.y = time * 0.2;
 
-                // Float particles
-                particles.rotation.y = -time * 0.1;
+                particles.rotation.y = -time * 0.05;
 
-                // Respond to Scroll (Camera movement)
-                // We move camera Y down as we scroll
+                // Parallax camera
                 const scrollY = window.scrollY;
                 const maxScroll = document.body.scrollHeight - window.innerHeight;
                 const scrollProgress = scrollY / (maxScroll || 1);
 
-                // Parallax camera
-                camera.position.y = -scrollProgress * 50; // Move down
-                camera.position.x = Math.sin(scrollProgress * Math.PI) * 10; // Sway
-                camera.lookAt(0, -scrollProgress * 50, 0);
+                // Move camera down and slightly back
+                camera.position.y = -scrollProgress * 40;
+                // Sway slightly to reveal different thread angles
+                camera.position.x = Math.sin(scrollProgress * Math.PI) * 15;
+                camera.lookAt(0, -scrollProgress * 40, 0);
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
@@ -685,7 +700,6 @@
             });
         };
 
-        // Initialize Three.js after fonts loaded (optional delay) or immediate
         initThree();
         document.body.classList.add('loaded');
 
