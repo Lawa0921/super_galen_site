@@ -32,8 +32,8 @@
             --accent-purple: #9370db; /* Medium Purple */
             --accent-gold: #ffd700; /* Gold for Magic */
             --accent-cyan: #00ffff; /* Cyan for Digital */
-            --glass-bg: rgba(0, 0, 0, 0.4); /* Much darker for contrast */
-            --glass-border: rgba(255, 105, 180, 0.3); /* Pinkish border */
+            --glass-bg: rgba(20, 10, 30, 0.6); /* Darker, tinted */
+            --glass-border: rgba(255, 105, 180, 0.2);
             --neon-glow: 0 0 15px var(--accent-pink), 0 0 30px var(--accent-purple);
         }
 
@@ -123,21 +123,57 @@
             margin-bottom: 1rem;
         }
 
-        /* --- Components --- */
+        /* --- Components: Smoky/Magical Panels --- */
         .glass-panel {
             background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(15px);
+            /* border: 1px solid var(--glass-border); Removed for smoke effect */
+            backdrop-filter: blur(20px); /* Stronger blur */
             padding: 4rem;
             border-radius: 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8), inset 0 0 30px rgba(255, 105, 180, 0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             position: relative;
-            overflow: hidden;
+            /* overflow: hidden; Removed to allow smoke spread */
             transition: transform 0.3s, box-shadow 0.3s;
         }
 
+        /* Magical Smoke Border */
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 42px;
+            background: linear-gradient(45deg, transparent, var(--accent-pink), transparent, var(--accent-purple), transparent);
+            background-size: 200% 200%;
+            z-index: -1;
+            animation: smoke-border 6s linear infinite;
+            filter: blur(10px);
+            opacity: 0.7;
+        }
+
+        /* Inner Smoke Fog */
+        .glass-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255,105,180,0.05), transparent 70%);
+            border-radius: 40px;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        @keyframes smoke-border {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         .glass-panel:hover {
-            box-shadow: 0 15px 50px rgba(0,0,0,0.9), inset 0 0 40px rgba(255, 105, 180, 0.1);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        }
+        .glass-panel:hover::before {
+            opacity: 1;
+            filter: blur(15px);
         }
 
         /* --- Sensory Focus: Dream Bubbles --- */
@@ -497,10 +533,12 @@
         magicCanvas.width = 1024; magicCanvas.height = 1024;
         const ctx = magicCanvas.getContext('2d');
 
+        // --- SIMPLIFIED COLORS: Purple/White/Pink monochrome ---
+
         // Outer Glow Ring
-        ctx.shadowColor = '#FF69B4';
+        ctx.shadowColor = '#fff'; // White Glow
         ctx.shadowBlur = 20;
-        ctx.strokeStyle = '#FF69B4';
+        ctx.strokeStyle = '#9370db'; // Purple
         ctx.lineWidth = 8;
         ctx.beginPath();
         ctx.arc(512, 512, 400, 0, Math.PI * 2);
@@ -509,15 +547,15 @@
         // Middle Ring
         ctx.shadowBlur = 0;
         ctx.lineWidth = 4;
-        ctx.strokeStyle = '#9370db'; // Purple
+        ctx.strokeStyle = '#fff'; // White
         ctx.beginPath();
         ctx.arc(512, 512, 360, 0, Math.PI * 2);
         ctx.stroke();
 
         // Pentagram
-        ctx.shadowColor = '#FFD700';
+        ctx.shadowColor = '#FF69B4'; // Pink Glow
         ctx.shadowBlur = 15;
-        ctx.strokeStyle = '#FFD700'; // Gold
+        ctx.strokeStyle = '#9370db'; // Purple
         ctx.lineWidth = 5;
         ctx.beginPath();
         for(let i=0; i<5; i++) {
@@ -532,7 +570,7 @@
 
         // Runes
         ctx.font = 'bold 60px "Cinzel", serif';
-        ctx.fillStyle = '#FFD700';
+        ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowBlur = 10;
@@ -556,7 +594,7 @@
             new THREE.MeshBasicMaterial({
                 map: magicTex,
                 transparent: true,
-                opacity: 0.8, // Brighter
+                opacity: 0.6, // Slightly reduced opacity
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
@@ -569,9 +607,9 @@
         const magicRingCanvas = document.createElement('canvas');
         magicRingCanvas.width = 512; magicRingCanvas.height = 512; // Lower res
         const rCtx = magicRingCanvas.getContext('2d');
-        rCtx.strokeStyle = '#00ffff'; // Cyan
+        rCtx.strokeStyle = '#fff'; // White
         rCtx.lineWidth = 2;
-        rCtx.shadowColor = '#00ffff';
+        rCtx.shadowColor = '#FF69B4'; // Pink
         rCtx.shadowBlur = 10;
 
         // Complex geometric pattern
@@ -587,7 +625,7 @@
             new THREE.MeshBasicMaterial({
                 map: ringTex,
                 transparent: true,
-                opacity: 0.4,
+                opacity: 0.3,
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
@@ -829,10 +867,9 @@
                 camera.position.z = 30 - (scrollProgress * 20); // Move closer
 
                 // Rotate heart
-                if(!isCrystalized) {
-                    heartGroup.rotation.y = scrollProgress * Math.PI * 4;
-                    magicPlane.rotation.z = -scrollProgress * Math.PI * 2;
-                }
+                // ALWAYS rotate, even if assembled, for texture switching
+                heartGroup.rotation.y = scrollProgress * Math.PI * 4;
+                magicPlane.rotation.z = -scrollProgress * Math.PI * 2;
             }
         });
 
@@ -870,8 +907,7 @@
                 });
                 gsap.to(bloomPass, {strength: 0.3, duration: 1}); // Dim bloom
 
-                // Important: Reset rotation to face camera properly
-                gsap.to(heartGroup.rotation, {y: 0, duration: 1.5, ease: "power2.out"});
+                // Note: We NO LONGER lock rotation here, it's controlled by ScrollTrigger for texture switching
 
                 // UI Updates
                 hintAssemble.style.opacity = 0;
@@ -920,50 +956,51 @@
             const t = Date.now() * 0.001;
 
             if(!isCrystalized) {
-                // Breathing + Drifting
+                // Breathing + Drifting in Shattered State
                 shards.forEach(m => {
                     m.rotation.z += m.userData.rotSpeed;
                     // Gentle float in place
                     m.position.y += Math.sin(t + m.userData.driftPhase) * 0.01;
                 });
-
-                // Texture Cycle based on Heart Rotation
-                let angle = Math.abs(heartGroup.rotation.y % (Math.PI*2));
-                let idx = Math.floor(angle / (Math.PI/3));
-                if(idx !== currentTexIdx) {
-                    currentTexIdx = idx;
-                    const t = textures[idx % textures.length];
-                    picMat.map = t;
-                    picMat.needsUpdate = true;
-
-                    // TRANSITION EFFECT: Glitch/Flash on switch
-                    // 1. Flash Color
-                    const flashColor = {r: 10, g: 10, b: 10};
-                    gsap.to(picMat.color, {
-                        r: flashColor.r, g: flashColor.g, b: flashColor.b,
-                        duration: 0.1,
-                        yoyo: true,
-                        repeat: 1,
-                        onComplete: () => {
-                            picMat.color.setHex(0xffffff);
-                        }
-                    });
-
-                    // 2. Shake Shards slightly
-                    shards.forEach(m => {
-                        gsap.to(m.position, {
-                            x: m.position.x + (Math.random()-0.5)*2,
-                            y: m.position.y + (Math.random()-0.5)*2,
-                            z: m.position.z + (Math.random()-0.5)*2,
-                            duration: 0.05,
-                            yoyo: true,
-                            repeat: 1
-                        });
-                    });
-                }
             } else {
                  // Gently float when assembled
                  heartGroup.position.y = Math.sin(t) * 0.5;
+            }
+
+            // TEXTURE CYCLE: Running ALWAYS now
+            let angle = Math.abs(heartGroup.rotation.y % (Math.PI*2));
+            let idx = Math.floor(angle / (Math.PI/3));
+            if(idx !== currentTexIdx) {
+                currentTexIdx = idx;
+                const t = textures[idx % textures.length];
+                picMat.map = t;
+                picMat.needsUpdate = true;
+
+                // TRANSITION EFFECT: Glitch/Flash on switch
+                // 1. Flash Color
+                const flashColor = {r: 10, g: 10, b: 10};
+                gsap.to(picMat.color, {
+                    r: flashColor.r, g: flashColor.g, b: flashColor.b,
+                    duration: 0.1,
+                    yoyo: true,
+                    repeat: 1,
+                    onComplete: () => {
+                        picMat.color.setHex(0xffffff);
+                    }
+                });
+
+                // 2. Shake Shards slightly (Only if not crystalized, or maybe VERY slightly if crystalized)
+                const shakeIntensity = isCrystalized ? 0.2 : 2;
+                shards.forEach(m => {
+                    gsap.to(m.position, {
+                        x: m.position.x + (Math.random()-0.5)*shakeIntensity,
+                        y: m.position.y + (Math.random()-0.5)*shakeIntensity,
+                        z: m.position.z + (Math.random()-0.5)*shakeIntensity,
+                        duration: 0.05,
+                        yoyo: true,
+                        repeat: 1
+                    });
+                });
             }
 
             // Magic Circle Animation
