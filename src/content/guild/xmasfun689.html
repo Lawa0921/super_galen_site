@@ -59,37 +59,53 @@
             pointer-events: none;
         }
 
-        /* Tech Card */
+        /* Tech Card (Industrial Overhaul) */
         .tech-card {
             pointer-events: auto;
             width: 100%; max-width: 600px;
-            background: rgba(5, 10, 20, 0.85);
-            border: 1px solid var(--c-plasma);
+            /* Metallic Gradient Background */
+            background: linear-gradient(135deg, rgba(20, 25, 30, 0.95), rgba(5, 10, 15, 0.98));
+            border: 2px solid #333;
+            border-left: 4px solid var(--c-plasma);
             padding: 2.5rem;
             position: relative;
             backdrop-filter: blur(10px);
-            /* Tech Corners */
             clip-path: polygon(
                 20px 0, 100% 0,
                 100% calc(100% - 20px), calc(100% - 20px) 100%,
                 0 100%, 0 20px
             );
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15), inset 0 0 30px rgba(0, 243, 255, 0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 50px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
         .tech-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 243, 255, 0.3), inset 0 0 50px rgba(0, 243, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 20px var(--c-plasma);
+            border-color: var(--c-plasma);
         }
 
-        .tech-card::before { /* Top Left Accent */
-            content: ''; position: absolute; top: 0; left: 0; width: 40px; height: 4px;
-            background: var(--c-plasma); box-shadow: 0 0 10px var(--c-plasma);
+        /* Industrial Bolts */
+        .tech-card::before {
+            content: ''; position: absolute; top: 10px; right: 10px; width: 8px; height: 8px;
+            background: #555; border-radius: 50%; box-shadow: inset 1px 1px 2px black;
         }
-        .tech-card::after { /* Bottom Right Accent */
-            content: ''; position: absolute; bottom: 0; right: 0; width: 40px; height: 4px;
-            background: var(--c-plasma); box-shadow: 0 0 10px var(--c-plasma);
+        .tech-card::after {
+            content: ''; position: absolute; bottom: 10px; left: 10px; width: 8px; height: 8px;
+            background: #555; border-radius: 50%; box-shadow: inset 1px 1px 2px black;
+        }
+
+        /* Hazard Stripes */
+        .hazard-strip {
+            position: absolute; top: 0; left: 20px; right: 0; height: 5px;
+            background: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 10px,
+                var(--c-gold) 10px,
+                var(--c-gold) 20px
+            );
+            opacity: 0.8;
         }
 
         /* Theme Variants */
@@ -178,6 +194,7 @@
         <!-- 1. Hero -->
         <section class="section">
             <div class="tech-card">
+                <div class="hazard-strip"></div>
                 <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; flex-wrap: wrap;">
                     <div style="position:relative;">
                         <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:120px; height:120px; object-fit:cover; border:2px solid var(--c-plasma); box-shadow: 0 0 20px var(--c-plasma); clip-path: circle(50%);">
@@ -211,6 +228,7 @@
         <!-- 2. Machines -->
         <section class="section">
             <div class="tech-card card-gold">
+                <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-gold) 10px, var(--c-gold) 20px);"></div>
                 <span class="code-line">Module: HEAVY_MACHINERY</span>
                 <h2 style="color: var(--c-gold);"><i class="fa-solid fa-truck-monster"></i> Iron Legion</h2>
 
@@ -238,6 +256,7 @@
         <!-- 3. Skills (Circuits) -->
         <section class="section">
             <div class="tech-card">
+                <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-plasma) 10px, var(--c-plasma) 20px);"></div>
                 <span class="code-line">System: ELEMENTAL_MATRIX</span>
                 <h2><i class="fa-solid fa-bolt"></i> Circuit Mage</h2>
 
@@ -267,6 +286,7 @@
         <!-- 4. Personal -->
         <section class="section">
             <div class="tech-card card-alert">
+                <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-alert) 10px, var(--c-alert) 20px);"></div>
                 <span class="code-line" style="color: var(--c-alert);">File: INNER_SANCTUM</span>
                 <h2 style="color: var(--c-alert); text-shadow: 0 0 10px var(--c-alert);"><i class="fa-solid fa-heart"></i> Soft Core</h2>
 
@@ -594,22 +614,22 @@
             return gear;
         }
 
-        // Generate Wall of Gears
-        for (let i = 0; i < 40; i++) {
-            const radius = 3 + Math.random() * 8; // Larger gears
+        // Generate Wall of Gears (Increased Density)
+        for (let i = 0; i < 80; i++) {
+            const radius = 2 + Math.random() * 8; // Varied sizes
             const teeth = Math.floor(8 + radius * 2);
-            const x = (Math.random() - 0.5) * 50; // Tighter cluster
-            const y = (Math.random() - 0.5) * 30;
-            const z = -2 - Math.random() * 15; // Closer depth range
+            const x = (Math.random() - 0.5) * 70; // Wider spread
+            const y = (Math.random() - 0.5) * 50;
+            const z = -2 - Math.random() * 25; // Deeper field
 
-            // Industrial colors
-            const colors = [0x555555, 0x333333, 0x888888, 0x666600];
+            // Industrial colors (Darker, rusted)
+            const colors = [0x444444, 0x222222, 0x555555, 0x443300];
             const color = colors[Math.floor(Math.random() * colors.length)];
 
             createGear(radius, teeth, color, x, y, z);
         }
 
-        // 6. Smoke System
+        // 6. Gunpowder Smoke System
         const smokeParticles = [];
         const smokeGroup = new THREE.Group();
         scene.add(smokeGroup);
@@ -619,7 +639,7 @@
         canvas.width = 128; canvas.height = 128;
         const ctx = canvas.getContext('2d');
         const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
-        grad.addColorStop(0, 'rgba(200,200,200,0.1)');
+        grad.addColorStop(0, 'rgba(100,100,100,0.5)'); // Darker core
         grad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = grad;
         ctx.fillRect(0,0,128,128);
@@ -627,21 +647,31 @@
 
         const smokeMat = new THREE.SpriteMaterial({
             map: smokeTex,
-            color: 0x00F3FF, /* Cyan Tint */
+            color: 0x333333, /* Dark Grey (Gunpowder) */
             transparent: true,
-            opacity: 0.6, // More visible smoke
+            opacity: 0.8,
             depthWrite: false,
-            blending: THREE.AdditiveBlending
+            blending: THREE.NormalBlending // Opaque smoke, not additive
         });
 
-        for (let i = 0; i < 30; i++) {
+        // Add Embers
+        const emberGeo = new THREE.BufferGeometry();
+        const emberCount = 200;
+        const emberPos = new Float32Array(emberCount * 3);
+        for(let i=0; i<emberCount*3; i++) emberPos[i] = (Math.random()-0.5)*50;
+        emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
+        const emberMat = new THREE.PointsMaterial({ color: 0xFF5500, size: 0.1, transparent: true, opacity: 0.8 });
+        const embers = new THREE.Points(emberGeo, emberMat);
+        scene.add(embers);
+
+        for (let i = 0; i < 50; i++) {
             const smoke = new THREE.Sprite(smokeMat);
             smoke.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 20 - 5,
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 30 - 5,
                 (Math.random() - 0.5) * 20 - 5
             );
-            smoke.scale.set(10, 10, 1);
+            smoke.scale.set(15, 15, 1);
             smoke.userData = {
                 velocity: new THREE.Vector3(
                     (Math.random() - 0.5) * 0.01,
@@ -686,11 +716,19 @@
             smokeParticles.forEach(smoke => {
                 smoke.position.add(smoke.userData.velocity);
                 smoke.material.rotation += smoke.userData.rotationSpeed;
-                if(smoke.position.y > 15) {
-                    smoke.position.y = -10;
-                    smoke.position.x = (Math.random() - 0.5) * 40;
+                if(smoke.position.y > 20) {
+                    smoke.position.y = -15;
+                    smoke.position.x = (Math.random() - 0.5) * 50;
                 }
             });
+
+            // Embers Float
+            const ep = embers.geometry.attributes.position.array;
+            for(let i=1; i<ep.length; i+=3) {
+                ep[i] += 0.02; // Upward
+                if(ep[i] > 20) ep[i] = -20;
+            }
+            embers.geometry.attributes.position.needsUpdate = true;
 
             // Grid Wave
             gridHelper.position.z = (t * 2) % 2;
@@ -737,6 +775,13 @@
             ease: "power1.inOut" // Smooth curve
         });
 
+        // Increase Core Light Intensity on Scroll
+        camTl.to(pointLight, {
+            intensity: 10,
+            distance: 100,
+            ease: "power2.in"
+        }, "<");
+
         // Background Elements React to Scroll
         camTl.to(gearGroup.position, {
             z: -30, // Move gears away at the end
@@ -744,8 +789,9 @@
             duration: 0.3 // Only at the very end
         }, ">0.7"); // Start at 70% scroll progress
 
-        // GSAP Entry Animations
+        // GSAP Entry Animations & Dynamic Lighting
         gsap.utils.toArray('.tech-card').forEach((card, i) => {
+            // Entry
             gsap.from(card, {
                 scrollTrigger: {
                     trigger: card,
@@ -757,6 +803,21 @@
                 scale: 0.9,
                 duration: 0.8,
                 ease: "power3.out"
+            });
+
+            // "Plasma Illumination" Effect when card is center screen
+            gsap.to(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top center+=100",
+                    end: "bottom center-=100",
+                    toggleActions: "play reverse play reverse",
+                    scrub: 0.5
+                },
+                boxShadow: "0 0 50px rgba(0, 243, 255, 0.6), inset 0 0 20px rgba(0, 243, 255, 0.2)",
+                borderColor: "#00F3FF",
+                backgroundColor: "rgba(10, 20, 30, 0.98)", // Lighter when lit
+                duration: 0.5
             });
         });
 
