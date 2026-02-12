@@ -19,7 +19,7 @@
             --color-text: #2F3632;    /* Dark Charcoal / Green-Black */
             --color-accent: #6B7F36;  /* Olive Green */
             --color-warm: #C5A880;    /* Latte Gold */
-            --color-paper: rgba(255, 255, 255, 0.9);
+            --color-paper: rgba(255, 252, 245, 0.95); /* High opacity paper */
 
             --font-main: 'Noto Serif TC', serif;
             --font-hand: 'La Belle Aurore', cursive;
@@ -39,6 +39,8 @@
             font-family: var(--font-main);
             overflow-x: hidden;
             line-height: 1.8;
+            /* Texture overlay for paper feel */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjRjBFRkU5Ii8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNDNUE4ODAiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==');
         }
 
         /* --- Canvas Layers --- */
@@ -62,8 +64,34 @@
             height: 100vh;
             z-index: 0; /* Behind content, above Three.js */
             pointer-events: none;
-            opacity: 0.6;
+            opacity: 0.4; /* Reduced opacity for readability */
             mix-blend-mode: multiply;
+        }
+
+        /* Stamp Container (Above everything) */
+        #stamp-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5; /* Below content but above background */
+            overflow: hidden;
+        }
+
+        .coffee-stamp {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.5) rotate(-10deg);
+            pointer-events: none;
+            mix-blend-mode: multiply;
+            /* Coffee Ring SVG */
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M100 10 C50 10 10 50 10 100 C10 150 50 190 100 190 C150 190 190 150 190 100 C190 50 150 10 100 10 Z M100 20 C145 20 180 55 180 100 C180 145 145 180 100 180 C55 180 20 145 20 100 C20 55 55 20 100 20 Z" fill="%238B5A2B" opacity="0.4"/><path d="M100 5 C45 5 5 45 5 100 C5 155 45 195 100 195 C155 195 195 155 195 100 C195 45 155 5 100 5 Z M100 15 C148 15 185 52 185 100 C185 148 148 185 100 185 C52 185 15 148 15 100 C15 52 52 15 100 15 Z" fill="%238B5A2B" opacity="0.2"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
         }
 
         /* --- Custom Cursor --- */
@@ -88,6 +116,22 @@
             height: 50px;
             background: var(--color-warm);
             opacity: 0.5;
+        }
+
+        /* Cursor Text */
+        #cursor-text {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%); /* Centered on cursor */
+            font-family: var(--font-hand);
+            font-size: 0.9rem;
+            color: var(--color-text);
+            pointer-events: none;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
         }
 
         /* --- Layout --- */
@@ -134,17 +178,19 @@
             border-radius: 20px;
             display: inline-block;
             margin-bottom: 1rem;
-            background: var(--color-bg);
+            background: #fff; /* Solid background for tags */
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
         }
 
         /* --- Components --- */
         .paper-card {
             background: var(--color-paper);
             padding: 3rem;
-            box-shadow: 10px 10px 30px rgba(47, 54, 50, 0.1); /* Soft shadow */
+            box-shadow: 10px 10px 30px rgba(47, 54, 50, 0.15); /* Stronger shadow */
             border: 1px solid rgba(107, 127, 54, 0.2);
             position: relative;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px); /* Blur background behind card */
+            border-radius: 2px;
         }
 
         /* "Tape" effect */
@@ -167,13 +213,18 @@
             margin-bottom: 1rem;
             position: relative;
             line-height: 1.1;
+            /* Text shadow to lift from background */
+            text-shadow: 2px 2px 0px rgba(240, 239, 233, 0.8);
         }
 
         .hero-subtitle {
             font-size: 1.2rem;
-            color: #555;
+            color: #444; /* Darker for readability */
             max-width: 600px;
             margin: 0 auto;
+            background: rgba(240, 239, 233, 0.6); /* Subtle highlight */
+            padding: 0.5rem;
+            border-radius: 4px;
         }
 
         .avatar-container {
@@ -190,7 +241,8 @@
             border-radius: 50%;
             /* Sepia tone for "Wenqing" look */
             filter: sepia(0.2) contrast(0.9);
-            border: 1px solid var(--color-text);
+            border: 3px solid #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         /* --- Timeline (Grid) --- */
@@ -224,6 +276,8 @@
             font-weight: 700;
             text-align: right;
             padding-top: 0.3rem;
+            background: var(--color-bg); /* Mask line behind text */
+            z-index: 1;
         }
 
         .timeline-content h3 {
@@ -283,7 +337,7 @@
             padding: 0.8rem 1.5rem;
             border-radius: 4px;
             transition: 0.3s;
-            background: transparent;
+            background: rgba(255,255,255,0.8);
         }
 
         .social-btn:hover {
@@ -313,15 +367,18 @@
 <body>
 
     <div id="cursor"></div>
+    <div id="cursor-text">Click to Stamp</div>
     <div id="canvas-three"></div>
     <div id="canvas-p5"></div>
+    <div id="stamp-container"></div>
+
     <!-- Force load FontAwesome for Canvas -->
     <div style="font-family: 'Font Awesome 6 Free'; font-weight: 900; opacity: 0; position: absolute; pointer-events: none;">.</div>
 
     <!-- Hero Section -->
     <section class="section">
         <div class="content-wrapper" style="text-align: center;">
-            <div class="avatar-container gs-reveal">
+            <div class="avatar-container gs-reveal interactive-el">
                 <img src="/assets/img/guild/tyou/avatar.webp" alt="Tyou" class="avatar-img">
             </div>
 
@@ -377,29 +434,31 @@
         <div class="content-wrapper">
             <span class="data-tag gs-reveal">Chapter 02: The Path</span>
 
-            <div class="timeline-grid">
-                <div class="timeline-item gs-reveal">
-                    <div class="timeline-year">Phase 1</div>
-                </div>
-                <div class="timeline-item timeline-content gs-reveal">
-                    <h3>Academia (Physics)</h3>
-                    <p>Rigorous training in logic. Understanding the universe through equations.</p>
-                </div>
+            <div class="paper-card gs-reveal" style="padding-bottom: 0;">
+                <div class="timeline-grid">
+                    <div class="timeline-item">
+                        <div class="timeline-year">Phase 1</div>
+                    </div>
+                    <div class="timeline-item timeline-content">
+                        <h3>Academia (Physics)</h3>
+                        <p>Rigorous training in logic. Understanding the universe through equations.</p>
+                    </div>
 
-                <div class="timeline-item gs-reveal">
-                    <div class="timeline-year">Phase 2</div>
-                </div>
-                <div class="timeline-item timeline-content gs-reveal">
-                    <h3>Design & Coffee</h3>
-                    <p>畢業後轉身投入平面設計，隨後在咖啡產業耕耘五年。<br>從個人小店到連鎖體系，學會的不只是沖煮，而是「服務」的本質。</p>
-                </div>
+                    <div class="timeline-item">
+                        <div class="timeline-year">Phase 2</div>
+                    </div>
+                    <div class="timeline-item timeline-content">
+                        <h3>Design & Coffee</h3>
+                        <p>畢業後轉身投入平面設計，隨後在咖啡產業耕耘五年。<br>從個人小店到連鎖體系，學會的不只是沖煮，而是「服務」的本質。</p>
+                    </div>
 
-                <div class="timeline-item gs-reveal">
-                    <div class="timeline-year">Current</div>
-                </div>
-                <div class="timeline-item timeline-content gs-reveal">
-                    <h3>Japan (The Explorer)</h3>
-                    <p>30歲移居日本。觀光推廣寫手、玩具店店長。<br>喜歡的事情太多，結果就什麼都做了。</p>
+                    <div class="timeline-item">
+                        <div class="timeline-year">Current</div>
+                    </div>
+                    <div class="timeline-item timeline-content">
+                        <h3>Japan (The Explorer)</h3>
+                        <p>30歲移居日本。觀光推廣寫手、玩具店店長。<br>喜歡的事情太多，結果就什麼都做了。</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -451,7 +510,56 @@
         </div>
     </section>
 
-    <!-- Three.js: Floating Icons (Canvas Texture) -->
+    <!-- Interactive: Coffee Stamp -->
+    <script>
+        const stampContainer = document.getElementById('stamp-container');
+        const cursorText = document.getElementById('cursor-text');
+
+        // Show "Click to Stamp" text on hover over empty space
+        document.addEventListener('mousemove', (e) => {
+             // Simple logic: if not hovering interactive element, show text
+             // But we only want to do this logic occasionally to avoid perf hit
+        });
+
+        // Stamp Logic
+        document.addEventListener('click', (e) => {
+            // Check if clicking a link or interactive element (don't stamp if clicking a link)
+            if (e.target.closest('a') || e.target.closest('.interactive-el')) return;
+
+            const stamp = document.createElement('div');
+            stamp.classList.add('coffee-stamp');
+
+            // Randomize position slightly around click
+            const x = e.clientX;
+            const y = e.clientY;
+
+            stamp.style.left = x + 'px';
+            stamp.style.top = y + 'px';
+
+            // Randomize rotation and scale
+            const rot = Math.random() * 360;
+            const scale = 0.8 + Math.random() * 0.5;
+
+            stampContainer.appendChild(stamp);
+
+            // Animate In
+            gsap.to(stamp, {
+                opacity: 0.6,
+                scale: scale,
+                rotation: rot,
+                duration: 0.4,
+                ease: "back.out(1.7)"
+            });
+
+            // Fade out eventually to keep DOM clean? Or keep them as "Log"
+            // Let's keep a max limit
+            if(stampContainer.children.length > 10) {
+                stampContainer.removeChild(stampContainer.firstChild);
+            }
+        });
+    </script>
+
+    <!-- Three.js: Floating Icons (Physics Enhanced) -->
     <script type="module">
         import * as THREE from 'three';
 
@@ -468,18 +576,16 @@
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // High quality
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization
         container.appendChild(renderer.domElement);
 
         // --- Helper: Generate Icon Texture ---
-        // Async to wait for fonts
         async function createIconTexture(unicode, color) {
             const canvas = document.createElement('canvas');
             canvas.width = 128;
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
 
-            // Ensure font is ready
             await document.fonts.ready;
 
             ctx.font = '900 80px "Font Awesome 6 Free"';
@@ -493,12 +599,6 @@
             return texture;
         }
 
-        // Icon Definitions (Unicode)
-        // Coffee: \uf0f4 (mug-hot), \uf4e2 (mug-saucer)
-        // Physics: \uf5d2 (atom), \uf543 (microscope)
-        // Travel: \uf072 (plane), \uf3c5 (map-marker-alt), \uf5a0 (map-marked-alt)
-        // Creative: \uf303 (pen-nib), \uf030 (camera)
-
         const icons = [
             { code: '\uf0f4', color: '#6B7F36' }, // Mug (Olive)
             { code: '\uf5d2', color: '#C5A880' }, // Atom (Gold)
@@ -510,17 +610,16 @@
         ];
 
         // --- Create Sprites ---
-        const particleCount = 40;
+        const particleCount = 45;
         const particles = [];
 
-        // Wrap initialization in async IIFE
         (async () => {
             const materials = await Promise.all(icons.map(async icon => {
                 const texture = await createIconTexture(icon.code, icon.color);
                 return new THREE.SpriteMaterial({
                     map: texture,
                     transparent: true,
-                    opacity: 0.8
+                    opacity: 0.6 // Slightly more transparent for readability
                 });
             }));
 
@@ -529,43 +628,45 @@
                 const sprite = new THREE.Sprite(material);
 
                 // Random Pos
-                sprite.position.x = (Math.random() - 0.5) * 50;
-                sprite.position.y = (Math.random() - 0.5) * 50;
-                sprite.position.z = (Math.random() - 0.5) * 20; // Some depth
+                sprite.position.x = (Math.random() - 0.5) * 60;
+                sprite.position.y = (Math.random() - 0.5) * 60;
+                sprite.position.z = (Math.random() - 0.5) * 30;
 
-                // Scale
-                const scale = Math.random() * 1.5 + 1; // 1 to 2.5
+                const scale = Math.random() * 1.5 + 1;
                 sprite.scale.set(scale, scale, 1);
 
-                // Add custom data for animation
                 sprite.userData = {
                     vx: (Math.random() - 0.5) * 0.02,
                     vy: (Math.random() - 0.5) * 0.02,
                     origScale: scale,
                     floatOffset: Math.random() * Math.PI * 2,
-                    floatSpeed: Math.random() * 0.5 + 0.5
+                    floatSpeed: Math.random() * 0.5 + 0.5,
+                    turbulence: 0
                 };
 
                 scene.add(sprite);
                 particles.push(sprite);
             }
 
-            animate(); // Start animation after loading
+            animate();
         })();
 
-        // Mouse Interaction
+        // Mouse & Scroll Interaction
         let mouseX = 0;
         let mouseY = 0;
-        // Raycaster for "Hover" effect
-        const raycaster = new THREE.Raycaster();
-        const mouseVector = new THREE.Vector2();
+        let lastScrollY = window.scrollY;
+        let scrollSpeed = 0;
 
         window.addEventListener('mousemove', (e) => {
             mouseX = (e.clientX / window.innerWidth) * 2 - 1;
             mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
 
-            mouseVector.x = mouseX;
-            mouseVector.y = mouseY;
+        window.addEventListener('scroll', () => {
+            const newScrollY = window.scrollY;
+            const delta = newScrollY - lastScrollY;
+            scrollSpeed = delta * 0.01; // Sensitivity
+            lastScrollY = newScrollY;
         });
 
         // --- Animation Loop ---
@@ -575,45 +676,54 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Raycast check
-            raycaster.setFromCamera(mouseVector, camera);
-            const intersects = raycaster.intersectObjects(particles);
+            // Dampen scroll speed
+            scrollSpeed *= 0.95;
 
-            // Reset scales first
             particles.forEach(p => {
-                // Base float animation
+                // Base float
                 p.position.y += Math.sin(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.005;
                 p.position.x += Math.cos(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.002;
 
-                // Drift
-                p.position.x += p.userData.vx;
-                p.position.y += p.userData.vy;
+                // Scroll Turbulence (Stirring effect)
+                // Particles move faster and swirl when scrolling
+                p.userData.turbulence += (Math.abs(scrollSpeed) * 2 - p.userData.turbulence) * 0.1;
 
-                // Wrap around
-                if(p.position.x > 30) p.position.x = -30;
-                if(p.position.x < -30) p.position.x = 30;
-                if(p.position.y > 30) p.position.y = -30;
-                if(p.position.y < -30) p.position.y = 30;
+                // Add vertical movement based on scroll direction (Parallax)
+                p.position.y += scrollSpeed * 2;
 
-                // Return to original scale
-                p.scale.lerp(new THREE.Vector3(p.userData.origScale, p.userData.origScale, 1), 0.1);
+                // Brownian Drift
+                p.position.x += p.userData.vx * (1 + p.userData.turbulence * 5);
+                p.position.y += p.userData.vy * (1 + p.userData.turbulence * 5);
 
-                // Slight rotation (2D)
-                p.material.rotation = Math.sin(time + p.userData.floatOffset) * 0.1;
+                // Mouse Attraction (Magnetic)
+                // Project mouse to world Z roughly
+                const distX = (mouseX * 25) - p.position.x;
+                const distY = (mouseY * 25) - p.position.y;
+                const dist = Math.sqrt(distX*distX + distY*distY);
+
+                if (dist < 10) {
+                    // Gentle pull
+                    p.position.x += distX * 0.005;
+                    p.position.y += distY * 0.005;
+                    // Slightly larger
+                    p.scale.lerp(new THREE.Vector3(p.userData.origScale * 1.2, p.userData.origScale * 1.2, 1), 0.1);
+                } else {
+                    p.scale.lerp(new THREE.Vector3(p.userData.origScale, p.userData.origScale, 1), 0.1);
+                }
+
+                // Wrap
+                if(p.position.x > 35) p.position.x = -35;
+                if(p.position.x < -35) p.position.x = 35;
+                if(p.position.y > 35) p.position.y = -35;
+                if(p.position.y < -35) p.position.y = 35;
+
+                // Rotation
+                p.material.rotation = Math.sin(time + p.userData.floatOffset) * 0.1 + (scrollSpeed * 0.5);
             });
 
-            // Handle hovers (Excited Icons)
-            if (intersects.length > 0) {
-                const hovered = intersects[0].object;
-                // Scale up
-                hovered.scale.lerp(new THREE.Vector3(hovered.userData.origScale * 1.5, hovered.userData.origScale * 1.5, 1), 0.2);
-                // Spin faster
-                hovered.material.rotation += 0.1;
-            }
-
-            // Gentle Camera Sway
-            camera.position.x += (mouseX * 2 - camera.position.x) * 0.02;
-            camera.position.y += (mouseY * 2 - camera.position.y) * 0.02;
+            // Camera Sway
+            camera.position.x += (mouseX * 1 - camera.position.x) * 0.02;
+            camera.position.y += (mouseY * 1 - camera.position.y) * 0.02;
             camera.lookAt(0,0,0);
 
             renderer.render(scene, camera);
@@ -645,11 +755,17 @@
         if (window.matchMedia("(min-width: 768px)").matches) {
             window.addEventListener('mousemove', (e) => {
                 gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
-            });
+                gsap.to(cursorText, { x: e.clientX, y: e.clientY - 30, duration: 0.2 });
 
-            document.querySelectorAll('.interactive-el, a').forEach(el => {
-                el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
-                el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+                // Check if hovering interactive
+                const hovered = document.elementFromPoint(e.clientX, e.clientY)?.closest('a, .interactive-el');
+                if(hovered) {
+                    cursor.classList.add('hovered');
+                    cursorText.style.opacity = 0;
+                } else {
+                    cursor.classList.remove('hovered');
+                    cursorText.style.opacity = 1;
+                }
             });
         }
     </script>
@@ -662,16 +778,14 @@
             const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('canvas-p5');
             noFill();
-            stroke(85, 107, 47, 40); // Olive Green, lower opacity (40)
+            stroke(85, 107, 47, 30); // Olive Green, very low opacity
         }
 
         function draw() {
             clear();
 
-            // Draw Perlin noise topographic lines
             strokeWeight(1);
 
-            // Reduced to 5 lines for cleaner look
             for(let i = 0; i < 5; i++) {
                 let yBase = height * ((i + 1) / 6);
 
@@ -680,8 +794,8 @@
                 curveVertex(0, yBase);
 
                 for(let x = 0; x <= width + 50; x += 50) {
-                    let n = noise(x * 0.001, i * 0.5, t * 0.1); // Slower noise
-                    let yOffset = map(n, 0, 1, -50, 50); // Smaller amplitude
+                    let n = noise(x * 0.001, i * 0.5, t * 0.1);
+                    let yOffset = map(n, 0, 1, -50, 50);
 
                     curveVertex(x, yBase + yOffset);
                 }
@@ -691,7 +805,7 @@
                 endShape();
             }
 
-            t += 0.002; // Slower time
+            t += 0.002;
         }
 
         function windowResized() {
