@@ -248,40 +248,22 @@
 
         /* --- Bio Scroll --- */
         .bio-section {
-            min-height: 100vh;
+            min-height: 50vh; /* Reduced height as image moved */
             display: flex;
             align-items: center;
+            justify-content: center; /* Center text */
             padding: 10vh 0;
+            text-align: center;
         }
 
-        .bio-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6rem;
-            align-items: center;
-        }
-
-        .bio-image-wrapper {
-            width: 100%;
-            aspect-ratio: 4/5;
-            position: relative;
-            overflow: hidden;
-            border-radius: 2px;
-            /* Simple elegant frame */
-        }
-
-        .bio-img {
-            width: 100%;
-            height: 120%; /* Parallax overflow */
-            object-fit: cover;
-            object-position: top;
-            transform: translateY(-10%); /* Start slightly up */
-            filter: sepia(0.1) contrast(0.95); /* Soft vintage */
+        .bio-text {
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         /* --- CARD DECK SECTION (New) --- */
         .deck-section {
-            height: 400vh; /* Long scroll area */
+            height: 450vh; /* Increased for 6 cards */
             position: relative;
         }
 
@@ -307,7 +289,7 @@
 
         .deck-text-area {
             position: relative;
-            height: 300px; /* Fixed height for text transition */
+            height: 350px; /* Slightly taller for bio text */
         }
 
         .deck-text-item {
@@ -429,18 +411,14 @@
             .container { padding: 0 1.5rem; }
             .nav-fixed { top: 1.5rem; left: 1.5rem; }
 
-            .bio-grid {
-                grid-template-columns: 1fr;
-                gap: 3rem;
-            }
+            .bio-section { min-height: auto; padding: 4rem 0; }
 
             .deck-container {
                 grid-template-columns: 1fr;
                 gap: 2rem;
             }
             .deck-text-area {
-                height: 200px;
-                order: 2; /* Visual below cards? Or above? Let's keep above */
+                height: 250px;
                 order: -1;
                 margin-bottom: 2rem;
             }
@@ -477,27 +455,15 @@
         </div>
     </section>
 
-    <!-- Bio / Intro -->
+    <!-- Bio / Intro (Text Only) -->
     <section class="bio-section">
         <div class="container">
-            <div class="bio-grid">
-                <div class="bio-text glass-panel">
-                    <span class="sub-display">Who I Am</span>
-                    <h2 style="font-size: 2rem; margin-bottom: 2rem;">允曦 Lyanna</h2>
-                    <p class="text-reveal">
-                        華語教師培訓課程創辦者。<br>
-                        教育部華語教師證照培訓講師。<br>
-                        MMT 個人天賦與人際關係諮詢師。
-                    </p>
-                    <p class="text-reveal">
-                        目前任教於美國 UTA，長期投入海內外華語教學、師資培訓與職涯引導。
-                        我專注於陪伴對華語教學有熱情的人，從<span class="highlight">「不知道是否適合這條路」</span>，
-                        到<span class="highlight">「具備資格、清楚方向」</span>。
-                    </p>
-                </div>
-                <div class="bio-image-wrapper parallax-mask">
-                    <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna Portrait" class="bio-img">
-                </div>
+            <div class="bio-text glass-panel">
+                <span class="sub-display">Introduction</span>
+                <p class="text-reveal">
+                    我專注於陪伴對華語教學有熱情的人，從<span class="highlight">「不知道是否適合這條路」</span>，
+                    到<span class="highlight">「具備資格、清楚方向」</span>，真正走出去。
+                </p>
             </div>
         </div>
     </section>
@@ -508,27 +474,38 @@
             <div class="deck-container">
                 <!-- Text Description -->
                 <div class="deck-text-area glass-panel">
+                    <!-- Card 0: Who I Am -->
                     <div class="deck-text-item active" data-index="0">
+                        <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">00</div>
+                        <h3>Who I Am</h3>
+                        <p>允曦 Lyanna | 華語教師培訓課程創辦者、教育部華語教師證照培訓講師、MMT 個人天賦與人際關係諮詢師。</p>
+                    </div>
+                    <!-- Card 1 -->
+                    <div class="deck-text-item" data-index="1">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">01</div>
                         <h3>Structure & Clarity</h3>
                         <p>專業結構清楚。將教育部華語教師證照拆解成可執行的學習系統。讓龐大的知識體系變得清晰、可觸及。</p>
                     </div>
-                    <div class="deck-text-item" data-index="1">
+                    <!-- Card 2 -->
+                    <div class="deck-text-item" data-index="2">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">02</div>
                         <h3>Guidance & Pace</h3>
                         <p>陪伴式引導。不只教內容，而是陪你釐清方向與節奏。多數人卡住的從來不只是考試，而是對未來的迷惘。</p>
                     </div>
-                    <div class="deck-text-item" data-index="2">
+                    <!-- Card 3 -->
+                    <div class="deck-text-item" data-index="3">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">03</div>
                         <h3>Global Vision</h3>
                         <p>跨領域視角。結合教學、職涯、關係與海外生活經驗。讓學習不只停在證照，而是回到人生整體的選擇。</p>
                     </div>
-                     <div class="deck-text-item" data-index="3">
+                    <!-- Card 4 -->
+                    <div class="deck-text-item" data-index="4">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">04</div>
                         <h3>Career Planning</h3>
                         <p>職涯規劃引導。海外教學實戰經驗分享，協助你從零開始建立個人品牌，找到屬於你的教學定位。</p>
                     </div>
-                    <div class="deck-text-item" data-index="4">
+                    <!-- Card 5 -->
+                    <div class="deck-text-item" data-index="5">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">05</div>
                         <h3>Inner Understanding</h3>
                         <p>MMT 天賦分析。結合天賦分析與人際關係諮詢，解決的不只是教學問題，更是人生課題。</p>
@@ -538,12 +515,22 @@
                 <!-- Visual Cards -->
                 <div class="deck-visual-area">
                     <div class="card-stack">
-                        <!-- Reverse order for z-index stacking in HTML, but we animate them specifically -->
-                        <!-- Actually, standard order is fine if we use Z-index in CSS or GSAP -->
+                        <!-- Reverse order for initial stack visualization, but handled by GSAP -->
+                        <!-- Actually, order in DOM is order of appearance if we manipulate them -->
+                        <!-- Let's put Card 0 (Avatar) first in DOM, but visually they might stack. -->
+                        <!-- To have them fan out nicely, standard order is fine. -->
+
+                        <!-- Card 0: Avatar -->
+                        <div class="card-item" style="z-index: 6;"><img src="/assets/img/guild/lyanna/avatar.webp" class="card-img" style="object-position: top;"></div>
+                        <!-- Card 1 -->
                         <div class="card-item" style="z-index: 5;"><img src="/assets/img/guild/lyanna/slide_1.webp" class="card-img"></div>
+                        <!-- Card 2 -->
                         <div class="card-item" style="z-index: 4;"><img src="/assets/img/guild/lyanna/slide_2.webp" class="card-img"></div>
+                        <!-- Card 3 -->
                         <div class="card-item" style="z-index: 3;"><img src="/assets/img/guild/lyanna/slide_3.webp" class="card-img"></div>
+                        <!-- Card 4 -->
                         <div class="card-item" style="z-index: 2;"><img src="/assets/img/guild/lyanna/slide_4.webp" class="card-img"></div>
+                        <!-- Card 5 -->
                         <div class="card-item" style="z-index: 1;"><img src="/assets/img/guild/lyanna/slide_5.webp" class="card-img"></div>
                     </div>
                 </div>
@@ -620,12 +607,12 @@
             // Smooth follower
             cursorX += (mouseX - cursorX) * 0.1;
             cursorY += (mouseY - cursorY) * 0.1;
-            cursor.style.transform = `translate(\${cursorX}px, \${cursorY}px) translate(-50%, -50%)`;
+            cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%, -50%)`;
 
             // Fast dot
             dotX += (mouseX - dotX) * 0.5;
             dotY += (mouseY - dotY) * 0.5;
-            dot.style.transform = `translate(\${dotX}px, \${dotY}px) translate(-50%, -50%)`;
+            dot.style.transform = `translate(${dotX}px, ${dotY}px) translate(-50%, -50%)`;
 
             requestAnimationFrame(animateCursor);
         }
@@ -643,20 +630,6 @@
             stagger: 0.2,
             ease: 'power3.out',
             delay: 0.5
-        });
-
-        // Parallax Images
-        document.querySelectorAll('.parallax-mask').forEach(mask => {
-            const img = mask.querySelector('img');
-            gsap.to(img, {
-                y: '10%', // Move down slightly as we scroll down
-                scrollTrigger: {
-                    trigger: mask,
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: true
-                }
-            });
         });
 
         // Text Reveals
