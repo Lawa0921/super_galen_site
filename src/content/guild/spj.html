@@ -1,42 +1,33 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPJ | Materialization Alchemist</title>
+    <title>SPJ - The Materialization Alchemist</title>
+    <meta name="description" content="Sepajuan Adventure Guild - The Materialization Alchemist">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@300;400;600&family=Noto+Serif+TC:wght@300;600;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Orbitron:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 
-    <!-- Libraries -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+    <!-- SplitType for Text Effects -->
+    <script src="https://unpkg.com/split-type"></script>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #050510;
-            --text-color: #e0e0e0;
-            --accent-cyan: #00f3ff;
-            --accent-gold: #ffd700;
-            --accent-purple: #bd00ff;
-            --glass-bg: rgba(10, 10, 20, 0.7);
-            --border-color: rgba(255, 255, 255, 0.1);
-
-            --font-fantasy: 'Cinzel', serif;
-            --font-cyber: 'Orbitron', sans-serif;
-            --font-code: 'Source Code Pro', monospace;
-            --font-main: 'Noto Serif TC', serif;
+            --primary: #FFD700; /* Gold */
+            --secondary: #00FFFF; /* Mana Cyan */
+            --accent: #FF0055; /* Glitch Red */
+            --bg-dark: #020202;
+            --text-light: #F0F0F0;
+            --glass: rgba(10, 15, 20, 0.6);
+            --border: rgba(0, 255, 255, 0.2);
         }
 
         * {
@@ -47,705 +38,899 @@
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--font-main);
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Cormorant Garamond', serif;
             overflow-x: hidden;
-            overscroll-behavior: none;
+            opacity: 0;
         }
 
-        /* --- Custom Cursor --- */
+        /* Custom Cursor */
         #cursor {
-            position: fixed;
-            top: 0;
-            left: 0;
             width: 20px;
             height: 20px;
-            border: 1px solid var(--accent-cyan);
+            border: 1px solid var(--secondary);
             border-radius: 50%;
+            position: fixed;
             pointer-events: none;
-            z-index: 10000;
+            z-index: 9999;
             transform: translate(-50%, -50%);
-            mix-blend-mode: exclusion;
-            transition: width 0.3s, height 0.3s, background-color 0.3s;
+            transition: width 0.3s, height 0.3s, background 0.3s;
+            mix-blend-mode: difference;
         }
-
         #cursor.hovered {
             width: 50px;
             height: 50px;
-            background-color: rgba(0, 243, 255, 0.1);
-            border-color: var(--accent-gold);
+            background: rgba(0, 255, 255, 0.1);
+            border-color: var(--primary);
         }
 
-        /* --- Canvas --- */
-        #webgl-container {
+        /* Preloader */
+        #loader {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100vh;
-            z-index: -1;
-        }
-
-        /* --- Navigation --- */
-        .nav-back {
-            position: fixed;
-            top: 2rem;
-            left: 2rem;
-            z-index: 100;
-            color: var(--accent-cyan);
-            text-decoration: none;
-            font-family: var(--font-code);
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--accent-cyan);
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
-        }
-
-        .nav-back:hover {
-            background: var(--accent-cyan);
-            color: #000;
-            box-shadow: 0 0 15px var(--accent-cyan);
-        }
-
-        /* --- Layout --- */
-        section {
-            min-height: 100vh;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: 4rem 2rem;
-            position: relative;
+            align-items: center;
+            flex-direction: column;
         }
 
-        .container {
-            max-width: 1200px;
-            width: 100%;
-            position: relative;
-            z-index: 10;
+        .loader-text {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--secondary);
+            letter-spacing: 5px;
+            margin-top: 1rem;
+            text-transform: uppercase;
+            font-size: 0.8rem;
         }
 
-        /* --- Components --- */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            padding: 3rem;
-            border-radius: 4px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: #222;
+            margin-top: 10px;
             position: relative;
             overflow: hidden;
         }
 
-        .glass-panel::before {
-            content: '';
+        .loader-progress {
             position: absolute;
             top: 0;
             left: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            transition: width 0.2s;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            height: 100%;
+            z-index: -1;
         }
 
-        h1, h2, h3 {
-            font-family: var(--font-fantasy);
-            text-transform: uppercase;
+        nav {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
         }
 
-        h1 {
-            font-size: clamp(3rem, 8vw, 6rem);
-            color: var(--accent-gold);
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-            margin-bottom: 1rem;
-        }
-
-        .subtitle {
-            font-family: var(--font-code);
-            color: var(--accent-cyan);
-            font-size: 1.2rem;
+        .back-btn {
+            color: var(--primary);
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            border: 1px solid var(--primary);
+            padding: 0.8rem 1.5rem;
+            background: rgba(0,0,0,0.8);
             letter-spacing: 2px;
-            margin-bottom: 2rem;
+            text-transform: uppercase;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            transition: all 0.3s ease;
         }
+
+        .back-btn:hover {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 20px var(--primary);
+        }
+
+        /* Sections */
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center horizontally */
+            position: relative;
+            padding: 4rem 2rem;
+            pointer-events: none; /* Let clicks pass through to 3D unless on content */
+        }
+
+        .content-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: flex-end; /* Align right by default for variety */
+        }
+
+        .content-box {
+            pointer-events: auto;
+            background: var(--glass);
+            border-left: 2px solid var(--secondary);
+            padding: 3rem;
+            max-width: 600px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            transform: translateY(50px);
+            opacity: 0;
+            position: relative;
+            clip-path: polygon(0 0, 100% 0, 100% 95%, 95% 100%, 0 100%);
+        }
+
+        .content-box.left {
+            margin-right: auto;
+            border-left: none;
+            border-right: 2px solid var(--primary);
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 5% 100%, 0 95%);
+        }
+
+        h1, h2 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        h1 { font-size: 5rem; line-height: 1; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+        h2 { font-size: 2.5rem; color: var(--secondary); text-shadow: 0 0 10px var(--secondary); }
 
         p {
             font-size: 1.1rem;
             line-height: 1.8;
             margin-bottom: 1.5rem;
-            color: #ccc;
+            color: #ddd;
         }
 
-        /* --- Hero --- */
-        .hero-content {
+        .highlight {
+            color: var(--primary);
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: var(--primary);
+            box-shadow: 0 0 5px var(--primary);
+        }
+
+        /* Hero Section */
+        #hero {
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
 
-        .avatar-frame {
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 2rem;
-            position: relative;
-            border-radius: 50%;
-            padding: 5px;
-            background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple));
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+        #hero .title-container {
+            pointer-events: auto;
+            mix-blend-mode: screen;
         }
 
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-            filter: grayscale(0.5) contrast(1.2);
-            transition: filter 0.5s;
+        .subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: var(--secondary);
+            letter-spacing: 6px;
+            margin-top: 1rem;
+            text-transform: uppercase;
         }
 
-        .avatar-frame:hover .avatar-img {
-            filter: grayscale(0) contrast(1);
-        }
-
-        /* --- Text Town --- */
-        .concept-grid {
+        /* Bounty Board */
+        .bounty-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
-        }
-
-        .code-block {
-            font-family: var(--font-code);
-            font-size: 0.9rem;
-            color: #aaddff;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 1.5rem;
-            border-left: 3px solid var(--accent-purple);
-            position: relative;
-        }
-
-        .code-block::after {
-            content: '_';
-            animation: blink 1s infinite;
-        }
-
-        @keyframes blink { 50% { opacity: 0; } }
-
-        /* --- Guild Board & Tavern --- */
-        #guild {
-            /* Warm Tavern Light Radial Gradient */
-            background: radial-gradient(circle at center, rgba(139, 69, 19, 0.2) 0%, rgba(5, 5, 16, 0.95) 80%);
-            border-top: 1px solid rgba(255, 215, 0, 0.2);
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-        }
-
-        .bounty-board-container {
-            background: #2c1810;
-            background-image: repeating-linear-gradient(
-                90deg,
-                rgba(255,255,255, 0.03) 0px,
-                rgba(255,255,255, 0.03) 1px,
-                transparent 1px,
-                transparent 30px
-            ), repeating-linear-gradient(
-                0deg,
-                rgba(0,0,0, 0.2) 0px,
-                rgba(0,0,0, 0.2) 1px,
-                transparent 1px,
-                transparent 30px
-            ); /* Wood Texture Feel */
-            border: 8px solid #4a2c20;
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
-        }
-
-        .bounty-board-container::before {
-            content: "GUILD BOARD";
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #4a2c20;
-            color: #d4af37;
-            padding: 5px 20px;
-            font-family: var(--font-fantasy);
-            border: 2px solid #d4af37;
-            border-radius: 4px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-
-        .bounty-board {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
             margin-top: 2rem;
-            perspective: 1000px;
         }
 
-        .quest-card {
-            background: #f4e4bc; /* Parchment */
-            color: #2b1b17; /* Ink */
-            padding: 1.5rem;
+        .bounty-card {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #333;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform-origin: top center;
-            font-family: var(--font-main);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        .quest-card::after {
+        .bounty-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-bottom: 1px solid var(--primary);
+            filter: grayscale(80%) contrast(1.2);
+            transition: filter 0.3s ease;
+        }
+
+        .bounty-content {
+            padding: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .bounty-card:hover .bounty-image {
+            filter: grayscale(0%) contrast(1);
+        }
+
+        .bounty-card::before {
             content: '';
             position: absolute;
-            top: -10px;
-            left: 50%;
-            width: 12px;
-            height: 12px;
-            background: #c0392b; /* Red Pin */
-            border-radius: 50%;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-            transform: translateX(-50%);
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
+        }
+
+        .bounty-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--secondary);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.15);
+        }
+
+        .bounty-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .bounty-rank {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 2px 6px;
+            border-radius: 2px;
+            background: rgba(0,0,0,0.8);
             z-index: 5;
         }
 
-        /* Random Rotations */
-        .quest-card:nth-child(1) { transform: rotate(-2deg); }
-        .quest-card:nth-child(2) { transform: rotate(1.5deg); }
-        .quest-card:nth-child(3) { transform: rotate(-1deg); }
-
-        .quest-card:hover {
-            transform: scale(1.05) rotate(0deg) !important;
-            z-index: 10;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
-        }
-
-        .quest-rank {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-family: var(--font-fantasy);
-            font-weight: 900;
+        .bounty-title {
+            font-family: 'Cinzel', serif;
             font-size: 1.5rem;
-            color: #8e44ad; /* Magic Rank Color */
-            opacity: 0.8;
-            border: 2px solid #8e44ad;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transform: rotate(15deg);
-        }
-
-        .quest-title {
-            color: #2c3e50;
-            font-family: var(--font-fantasy);
-            font-size: 1.3rem;
+            color: var(--text-light);
             margin-bottom: 0.5rem;
-            margin-top: 1rem;
-            border-bottom: 2px solid rgba(0,0,0,0.1);
-            padding-bottom: 5px;
         }
 
-        .quest-desc {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: #444;
+        .bounty-desc {
+            font-size: 0.9rem;
+            color: #aaa;
+            font-family: 'Cormorant Garamond', serif;
         }
 
-        .quest-icon {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            font-size: 2rem;
-            opacity: 0.2;
-            color: #000;
-        }
-
-        /* Tavern Sign */
-        .tavern-sign {
-            text-align: center;
-            margin-bottom: 3rem;
-            position: relative;
-        }
-
-        .neon-sign {
-            font-family: var(--font-cyber);
-            font-size: 2.5rem;
-            color: #fff;
-            text-shadow:
-                0 0 5px #fff,
-                0 0 10px #ff00de,
-                0 0 20px #ff00de,
-                0 0 40px #ff00de;
-            animation: flicker 2s infinite alternate;
-        }
-
-        @keyframes flicker {
-            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-                opacity: 1;
-            }
-            20%, 24%, 55% {
-                opacity: 0.4;
-            }
-        }
-
-        /* --- Footer --- */
-        footer {
-            text-align: center;
-            padding: 4rem 2rem;
-            border-top: 1px solid var(--border-color);
-            background: rgba(0,0,0,0.8);
-        }
-
+        /* Socials */
         .social-links {
             display: flex;
-            justify-content: center;
             gap: 2rem;
             margin-top: 2rem;
+            justify-content: center;
         }
 
-        .social-btn {
+        .social-link {
             width: 50px;
             height: 50px;
-            border: 1px solid var(--accent-cyan);
-            border-radius: 50%;
+            border: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--accent-cyan);
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 1.2rem;
+            color: var(--secondary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .social-btn:hover {
-            background: var(--accent-cyan);
+        .social-link::after {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            background: var(--secondary);
+            top: 100%;
+            transition: top 0.3s ease;
+            z-index: -1;
+        }
+
+        .social-link:hover {
             color: #000;
-            box-shadow: 0 0 20px var(--accent-cyan);
+            border-color: var(--secondary);
         }
 
-        /* --- Responsive --- */
-        @media (max-width: 768px) {
-            .concept-grid { grid-template-columns: 1fr; }
-            h1 { font-size: 3rem; }
-            .glass-panel { padding: 1.5rem; }
+        .social-link:hover::after {
+            top: 0;
         }
+
+        footer {
+            padding: 2rem;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            color: #444;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+        }
+
+        /* Glitch Effect Class */
+        .glitch {
+            position: relative;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.8;
+        }
+        .glitch::before {
+            color: #ff00c1;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translate(-2px, -2px);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+            display: none;
+        }
+        .glitch:hover::before { display: block; }
+
+        @keyframes glitch-anim-1 {
+            0% { clip-path: polygon(0 20%, 100% 20%, 100% 30%, 0 30%); }
+            20% { clip-path: polygon(0 60%, 100% 60%, 100% 70%, 0 70%); }
+            40% { clip-path: polygon(0 40%, 100% 40%, 100% 50%, 0 50%); }
+            60% { clip-path: polygon(0 80%, 100% 80%, 100% 90%, 0 90%); }
+            80% { clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%); }
+            100% { clip-path: polygon(0 50%, 100% 50%, 100% 60%, 0 60%); }
+        }
+
+        /* HUD Styles */
+        #hud {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
+            opacity: 0; /* Animate in */
+            pointer-events: none;
+        }
+
+        .hud-content {
+            display: flex;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+        }
+
+        .char-avatar {
+            width: 50px;
+            height: 50px;
+            border: 1px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .char-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .char-name {
+            color: var(--primary);
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .char-class {
+            font-size: 0.7rem;
+            color: #aaa;
+        }
+
+        .stat-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-top: 4px;
+            width: 150px;
+        }
+
+        .stat-bar {
+            height: 6px;
+            background: #222;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-bar .bar-fill {
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-shadow: 0 0 5px currentColor;
+        }
+
+        .stat-bar.hp .bar-fill { background: #ff3333; color: #ff3333; }
+        .stat-bar.mp .bar-fill { background: var(--secondary); color: var(--secondary); }
+
+        .bar-label {
+            position: absolute;
+            right: 2px;
+            top: 0;
+            font-size: 5px;
+            line-height: 6px;
+            color: #fff;
+            mix-blend-mode: difference;
+        }
+
+        .guild-badge {
+            font-size: 0.7rem;
+            color: var(--secondary);
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--secondary);
+            border-top: 1px solid var(--border);
+            padding-top: 4px;
+            width: 100%;
+            text-align: right;
+        }
+
     </style>
 </head>
 <body>
 
+    <!-- Preloader -->
+    <div id="loader">
+        <div class="loader-bar"><div class="loader-progress"></div></div>
+        <div class="loader-text">Initializing Book of Heavens...</div>
+    </div>
+
+    <!-- 3D Background -->
+    <div id="canvas-container"></div>
+    <!-- p5.js Overlay -->
+    <div id="p5-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none;"></div>
+
     <div id="cursor"></div>
-    <div id="webgl-container"></div>
-    <a href="/guild/" class="nav-back">← GUILD</a>
 
-    <!-- Hero -->
-    <section id="hero">
-        <div class="container hero-content">
-            <div class="avatar-frame gs-reveal">
-                <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ" class="avatar-img">
+    <!-- Adventure Guild HUD -->
+    <div id="hud">
+        <div class="hud-content">
+            <div class="char-avatar">
+                <!-- Replace with actual profile image -->
+                <img src="https://placehold.co/150x150/FFD700/000000?text=SPJ" alt="SPJ Avatar" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
-            <h1 class="gs-reveal">SPJ</h1>
-            <div class="subtitle gs-typewriter">MATERIALIZATION ALCHEMIST</div>
-            <p class="gs-reveal" style="max-width: 600px; margin: 0 auto;">
-                "I turn code into reality, and stories into warmth."
-            </p>
-        </div>
-    </section>
-
-    <!-- Origin: Text Town -->
-    <section id="origin">
-        <div class="container">
-            <div class="glass-panel gs-reveal">
-                <div class="concept-grid">
-                    <div>
-                        <h2 style="color: var(--accent-cyan)">Origin: Text Town</h2>
-                        <h3 style="font-family: var(--font-main); font-size: 1.5rem; margin-bottom: 1rem;">文字小鎮</h3>
-                        <p>
-                            我是一個曾經做過很多 Side Project 的軟體工程師。
-                            最近的夢想是將「文字小鎮」具現化——一個如同天書系統般的遊戲世界。
-                        </p>
-                        <p>
-                            在這裡，創意不再只是空想，而是可以被編譯、執行、實體化的魔法。
-                        </p>
+            <div class="char-details">
+                <div class="char-name">SPJ</div>
+                <div class="char-class">Lvl. 99 Materialization Alchemist</div>
+                <div class="stat-bars">
+                    <div class="stat-bar hp">
+                        <div class="bar-fill" style="width: 85%;"></div>
+                        <span class="bar-label">COFFEE</span>
                     </div>
-                    <div class="code-block">
-                        <span style="color: #bd00ff">class</span> <span style="color: var(--accent-gold)">WorldBuilder</span> {<br>
-                        &nbsp;&nbsp;<span style="color: var(--accent-cyan)">materialize</span>(idea) {<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #666">// Turning text into reality</span><br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;<span style="color: var(--accent-purple)">return</span> <span style="color: var(--accent-gold)">new</span> Reality(idea);<br>
-                        &nbsp;&nbsp;}<br>
-                        }
+                    <div class="stat-bar mp">
+                        <div class="bar-fill" style="width: 92%;"></div>
+                        <span class="bar-label">MANA</span>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+        <div class="guild-badge">
+            <span>SEPAJUAN GUILD</span>
+        </div>
+    </div>
 
-    <!-- Guild: Adventure & Tavern -->
-    <section id="guild">
-        <div class="container">
-            <!-- Tavern Sign -->
-            <div class="tavern-sign gs-reveal">
-                <div class="neon-sign">SPJ'S TAVERN</div>
-                <p style="color: var(--accent-gold); margin-top: 0.5rem; font-family: var(--font-fantasy);">EST. 2024</p>
+    <nav>
+        <a href="/guild/" class="back-btn" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">← Guild Hall</a>
+    </nav>
+
+    <main>
+        <section id="hero">
+            <div class="title-container" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                <h1 class="glitch" data-text="Book of Heavens">Book of Heavens</h1>
+                <div class="subtitle">Materialization Alchemist</div>
             </div>
+        </section>
 
-            <p style="text-align: center; max-width: 700px; margin: 0 auto 3rem; text-shadow: 0 0 10px #000;" class="gs-reveal">
-                我的另一個夢想，是成立一個「塞趴卷冒險公會」。<br>
-                就像異世界轉生番那樣，現實世界的冒險者們可以在這裡交流、組隊、接任務。
-            </p>
+        <section id="intro">
+            <div class="content-wrapper">
+                <div class="content-box">
+                    <h2>The Alchemist's Log</h2>
+                    <p>I am a <span class="highlight">Software Engineer</span> who has forged many Side Projects in the fires of curiosity. Recently, I've been transmuting the concept of <span class="highlight">"Text Town"</span> into a playable reality—a game that feels like a "Book of Heavens" system, where every spark of my creativity can be materialized.</p>
+                </div>
+            </div>
+        </section>
 
-            <div class="bounty-board-container gs-reveal">
-                <div class="bounty-board">
-                    <div class="quest-card">
-                        <div class="quest-rank">S</div>
-                        <div class="quest-title">Team Up</div>
-                        <p class="quest-desc">尋找志同道合的冒險者，一起攻克名為「現實」的副本。</p>
-                        <i class="fa-solid fa-users quest-icon"></i>
+        <section id="dream">
+            <div class="content-wrapper" style="justify-content: flex-start;">
+                <div class="content-box left">
+                    <h2>Sepajuan Guild</h2>
+                    <p>I dream of raising the <span class="highlight">Adventure Guild</span>.</p>
+                    <p>Imagine an anime-style Isekai guild, but for real-world adventurers. A place where creators gather, form parties, accept quests, and conquer dungeons together.</p>
+                    <p>My goal is to be a <span class="highlight">Materialization Alchemist</span>: one who takes the ethereal mana of ideas and weaves it into tangible reality.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects">
+            <div class="content-wrapper" style="justify-content: center;">
+                <div class="content-box" style="width: 100%; max-width: 1000px; border-left: 2px solid var(--primary);">
+                    <h2 style="text-align: center; margin-bottom: 2rem;">Bounty Board</h2>
+                    <div class="bounty-grid">
+                        <div class="bounty-card" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                            <span class="bounty-rank">Rank S</span>
+                            <img src="https://placehold.co/600x400/000000/00FFFF?text=Text+Town" alt="Text Town" class="bounty-image">
+                            <div class="bounty-content">
+                                <div class="bounty-title">Text Town</div>
+                                <div class="bounty-desc">A materialized game world governed by the "Book of Heavens" system. Infinite creativity via text.</div>
+                            </div>
+                        </div>
+                        <div class="bounty-card" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                            <span class="bounty-rank">Rank A</span>
+                            <img src="https://placehold.co/600x400/000000/FFD700?text=Sepajuan+Guild" alt="Sepajuan Guild" class="bounty-image">
+                            <div class="bounty-content">
+                                <div class="bounty-title">Sepajuan Guild</div>
+                                <div class="bounty-desc">A real-world adventurer's guild for creators to party up and grind quests.</div>
+                            </div>
+                        </div>
+                        <div class="bounty-card" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                            <span class="bounty-rank">Rank B</span>
+                            <img src="https://placehold.co/600x400/000000/FF0055?text=The+Chronicle" alt="The Chronicle" class="bounty-image">
+                            <div class="bounty-content">
+                                <div class="bounty-title">The Chronicle</div>
+                                <div class="bounty-desc">Recording the warm stories of development, not just the cold results.</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="quest-card">
-                        <div class="quest-rank">A</div>
-                        <div class="quest-title">Resource Share</div>
-                        <p class="quest-desc">聚集資源，讓每個人的創意都能獲得支持與養分。</p>
-                        <i class="fa-solid fa-gem quest-icon"></i>
-                    </div>
-
-                    <div class="quest-card">
-                        <div class="quest-rank">B</div>
-                        <div class="quest-title">Tavern Talk</div>
-                        <p class="quest-desc">在酒館裡分享彼此的故事，交流技術與情報。</p>
-                        <i class="fa-solid fa-beer-mug-empty quest-icon"></i>
+                    <div class="social-links">
+                        <a href="https://www.threads.com/@spj.story" target="_blank" class="social-link" title="Threads" onmouseenter="expandCursor()" onmouseleave="shrinkCursor()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
+                        </a>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
-    <!-- Process: Warmth -->
-    <section id="process">
-        <div class="container" style="text-align: center;">
-            <div class="glass-panel gs-reveal" style="max-width: 800px; margin: 0 auto;">
-                <i class="fa-solid fa-feather-pointed" style="font-size: 3rem; color: var(--accent-purple); margin-bottom: 1.5rem;"></i>
-                <h2 style="color: #fff">The Warm Process</h2>
-                <p>
-                    我喜歡紀錄跟寫作。把這些過程的故事分享出來，讓事情不是只有死板板的結果，而是有溫度的過程。
-                </p>
-                <p>
-                    每一行程式碼背後，都是一個關於創造與探索的故事。
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
     <footer>
-        <div class="container">
-            <h3>Connect with SPJ</h3>
-            <div class="social-links">
-                <a href="https://www.threads.com/@spj.story" target="_blank" class="social-btn">
-                    <i class="fa-brands fa-threads"></i>
-                </a>
-                <a href="#" class="social-btn">
-                    <i class="fa-brands fa-github"></i>
-                </a>
-                <a href="#" class="social-btn">
-                    <i class="fa-solid fa-envelope"></i>
-                </a>
-            </div>
-            <p style="margin-top: 2rem; font-size: 0.8rem; color: #666;">
-                &copy; 2024 SPJ Adventure Guild. All rights reserved.
-            </p>
-        </div>
+        <p>© 2024 SPJ - The Materialization Alchemist. Guild ID: #SPJ-001</p>
     </footer>
 
-    <!-- Three.js Logic -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
     <script type="module">
         import * as THREE from 'three';
-        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Setup ---
-        const container = document.getElementById('webgl-container');
+        // --- Init Scene ---
+        const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050510, 0.02);
+        scene.fog = new THREE.FogExp2(0x020202, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        camera.position.z = 10;
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false }); // Antialias off for post-processing perf
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ReinhardToneMapping;
         container.appendChild(renderer.domElement);
 
+        // --- Post Processing (Explosive Bloom) ---
+        const renderScene = new RenderPass(scene, camera);
+
+        // Bloom: Resolution, Strength, Radius, Threshold
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
         // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0x00f3ff, 2, 100);
-        pointLight.position.set(10, 10, 10);
-        scene.add(pointLight);
+        const blueLight = new THREE.PointLight(0x00FFFF, 2, 50);
+        blueLight.position.set(5, 5, 5);
+        scene.add(blueLight);
 
-        const goldLight = new THREE.PointLight(0xffd700, 2, 100);
-        goldLight.position.set(-10, -10, 10);
+        const goldLight = new THREE.PointLight(0xFFD700, 2, 50);
+        goldLight.position.set(-5, -5, 5);
         scene.add(goldLight);
 
-        // --- Particles (Runes) ---
-        const particleCount = 200;
-        const group = new THREE.Group();
-        scene.add(group);
+        // --- Objects ---
 
-        const characters = ['{ }', '</>', '0', '1', '★', '⚡', '✦', 'text', 'town'];
-        const colors = [0x00f3ff, 0xffd700, 0xbd00ff];
+        // 1. Particle System (The Mana Stream)
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const randomArray = new Float32Array(particlesCount);
 
-        // Create canvas textures for characters
-        function createCharTexture(char, color) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.font = 'bold 60px "Source Code Pro", monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = color;
-            ctx.fillText(char, 64, 64);
-            return new THREE.CanvasTexture(canvas);
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 60; // Wide spread
+        }
+        for(let i = 0; i < particlesCount; i++) {
+            randomArray[i] = Math.random();
         }
 
-        for (let i = 0; i < particleCount; i++) {
-            const char = characters[Math.floor(Math.random() * characters.length)];
-            const color = colors[Math.floor(Math.random() * colors.length)];
+        const starGeo = new THREE.BufferGeometry();
+        starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        starGeo.setAttribute('aRandom', new THREE.BufferAttribute(randomArray, 1));
 
-            // Convert hex to CSS color string for canvas
-            const cssColor = '#' + new THREE.Color(color).getHexString();
-            const texture = createCharTexture(char, cssColor);
+        const starMat = new THREE.PointsMaterial({
+            size: 0.1,
+            color: 0x00FFFF,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
 
-            const material = new THREE.SpriteMaterial({
-                map: texture,
-                transparent: true,
-                opacity: 0.8,
-                color: 0xffffff // Texture has color
-            });
+        const particles = new THREE.Points(starGeo, starMat);
+        scene.add(particles);
 
-            const sprite = new THREE.Sprite(material);
+        // 2. The Crystal (Source of Power)
+        const crystalGeo = new THREE.OctahedronGeometry(2, 0);
+        const crystalMat = new THREE.MeshPhysicalMaterial({
+            color: 0x00FFFF,
+            metalness: 0.1,
+            roughness: 0,
+            transmission: 0.6,
+            thickness: 1,
+            emissive: 0x002244,
+            emissiveIntensity: 0.8
+        });
+        const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+        scene.add(crystal);
 
-            // Spiral distribution
-            const angle = i * 0.1;
-            const radius = 10 + Math.random() * 20;
+        // 3. Rune Rings
+        const ringGeo = new THREE.TorusGeometry(3.5, 0.05, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xFFD700, transparent: true, opacity: 0.6 });
+        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+        const ring2 = new THREE.Mesh(ringGeo, ringMat);
+        const ring3 = new THREE.Mesh(ringGeo, ringMat);
 
-            sprite.position.set(
-                Math.cos(angle) * radius,
-                (Math.random() - 0.5) * 50, // Height spread
-                Math.sin(angle) * radius
-            );
+        ring1.rotation.x = Math.PI / 2;
+        ring2.rotation.x = Math.PI / 2; ring2.rotation.y = Math.PI / 3;
+        ring3.rotation.x = Math.PI / 2; ring3.rotation.y = -Math.PI / 3;
 
-            sprite.scale.set(2, 2, 1);
+        const runesGroup = new THREE.Group();
+        runesGroup.add(ring1, ring2, ring3);
+        scene.add(runesGroup);
 
-            sprite.userData = {
-                speed: (Math.random() - 0.5) * 0.05,
-                floatSpeed: Math.random() * 0.02
-            };
+        // 4. The Book (High-End Tome)
+        const bookGroup = new THREE.Group();
 
-            group.add(sprite);
+        // Materials
+        const leatherMat = new THREE.MeshStandardMaterial({ color: 0x4A0404, roughness: 0.6, metalness: 0.2 }); // Deep Red
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.2, metalness: 0.8, emissive: 0x443300, emissiveIntensity: 0.2 });
+        const pagesMat = new THREE.MeshStandardMaterial({ color: 0xFFF8DC, roughness: 0.9 });
+
+        // Main Cover (Back + Spine + Front) - simplified as a thick block with details
+        const mainBlockGeo = new THREE.BoxGeometry(3.5, 5, 0.8);
+        const mainBlock = new THREE.Mesh(mainBlockGeo, [
+            pagesMat, // right (pages)
+            leatherMat, // left (spine)
+            leatherMat, // top
+            leatherMat, // bottom
+            leatherMat, // front (cover)
+            leatherMat  // back
+        ]);
+
+        // Decorative Gold Corners
+        const cornerGeo = new THREE.BoxGeometry(0.5, 0.5, 0.9);
+        const c1 = new THREE.Mesh(cornerGeo, goldMat); c1.position.set(1.5, 2.25, 0);
+        const c2 = new THREE.Mesh(cornerGeo, goldMat); c2.position.set(1.5, -2.25, 0);
+        const c3 = new THREE.Mesh(cornerGeo, goldMat); c3.position.set(-1.5, 2.25, 0); // Spine side
+        const c4 = new THREE.Mesh(cornerGeo, goldMat); c4.position.set(-1.5, -2.25, 0); // Spine side
+
+        // Central Gem/Emblem
+        const emblemGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.9, 6);
+        const emblem = new THREE.Mesh(emblemGeo, goldMat);
+        emblem.rotation.x = Math.PI / 2;
+        emblem.position.set(0, 0, 0);
+
+        const gemGeo = new THREE.OctahedronGeometry(0.4, 0);
+        const gemMat = new THREE.MeshPhysicalMaterial({ color: 0x00FFFF, transmission: 0.9, thickness: 1, emissive: 0x00FFFF, emissiveIntensity: 2 });
+        const gem = new THREE.Mesh(gemGeo, gemMat);
+        gem.position.set(0, 0, 0.5);
+
+        bookGroup.add(mainBlock, c1, c2, c3, c4, emblem, gem);
+
+        bookGroup.position.set(0, 0, -20);
+        scene.add(bookGroup);
+
+        // 5. Tavern Construction (Materializing Environment)
+        const tavernGroup = new THREE.Group();
+
+        // Simple procedural floor (planks)
+        const plankGeo = new THREE.BoxGeometry(2, 0.2, 8);
+        const plankMat = new THREE.MeshStandardMaterial({ color: 0x5C4033, roughness: 0.9 });
+
+        for (let i = -5; i <= 5; i++) {
+            const plank = new THREE.Mesh(plankGeo, plankMat);
+            plank.position.set(i * 2.1, -5, 0);
+            // Randomize slightly for "old tavern" look
+            plank.rotation.y = (Math.random() - 0.5) * 0.1;
+            tavernGroup.add(plank);
         }
 
-        // --- Magic Circle (Rings) ---
-        const ringGeo = new THREE.TorusGeometry(15, 0.1, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.3, wireframe: true });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.x = Math.PI / 2;
-        group.add(ring);
+        // Vertical Beams
+        const beamGeo = new THREE.BoxGeometry(1, 10, 1);
+        const beam1 = new THREE.Mesh(beamGeo, plankMat); beam1.position.set(-8, 0, -5);
+        const beam2 = new THREE.Mesh(beamGeo, plankMat); beam2.position.set(8, 0, -5);
+        const beam3 = new THREE.Mesh(beamGeo, plankMat); beam3.position.set(-8, 0, 5);
+        const beam4 = new THREE.Mesh(beamGeo, plankMat); beam4.position.set(8, 0, 5);
+        tavernGroup.add(beam1, beam2, beam3, beam4);
 
-        const ring2Geo = new THREE.TorusGeometry(20, 0.1, 16, 100);
-        const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.2, wireframe: true });
-        const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
-        ring2.rotation.x = Math.PI / 2;
-        ring2.rotation.y = 0.5;
-        group.add(ring2);
+        // Lanterns
+        const lanternGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const lanternMat = new THREE.MeshStandardMaterial({
+            color: 0xFFAA00, emissive: 0xFFAA00, emissiveIntensity: 2, toneMapped: false
+        });
 
+        const l1 = new THREE.Mesh(lanternGeo, lanternMat); l1.position.set(-7, 2, -4);
+        const l2 = new THREE.Mesh(lanternGeo, lanternMat); l2.position.set(7, 2, -4);
 
-        // --- Animation ---
+        // Point lights for lanterns
+        const l1Light = new THREE.PointLight(0xFFAA00, 2, 10); l1.add(l1Light);
+        const l2Light = new THREE.PointLight(0xFFAA00, 2, 10); l2.add(l2Light);
+
+        tavernGroup.add(l1, l2);
+
+        tavernGroup.position.set(0, -50, 25); // Start hidden far below
+        scene.add(tavernGroup);
+
+        // --- Interaction State ---
         let mouseX = 0;
         let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
 
         document.addEventListener('mousemove', (e) => {
             mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
             mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
 
-            // Custom Cursor
+            // Update custom cursor
             const cursor = document.getElementById('cursor');
-            gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
         });
 
+        // Global functions for cursor hover
+        window.expandCursor = () => document.getElementById('cursor').classList.add('hovered');
+        window.shrinkCursor = () => document.getElementById('cursor').classList.remove('hovered');
+
+        // --- Animation Loop ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-
             const time = clock.getElapsedTime();
 
-            // Rotate group
-            group.rotation.y += 0.002;
+            targetX = mouseX * 2;
+            targetY = mouseY * 2;
 
-            // Float particles
-            group.children.forEach(child => {
-                if (child.isSprite) {
-                    child.position.y += Math.sin(time + child.id) * child.userData.floatSpeed;
-                    child.rotation.z += child.userData.speed;
-                }
-            });
+            // Smooth camera parallax
+            camera.rotation.y += 0.05 * (targetX - camera.rotation.y);
+            camera.rotation.x += 0.05 * (targetY - camera.rotation.x);
 
-            // Rings
-            ring.rotation.z -= 0.005;
-            ring2.rotation.z += 0.003;
+            // Rotate Crystal & Runes
+            crystal.rotation.y = time * 0.2;
+            crystal.rotation.z = time * 0.1;
 
-            // Mouse interaction
-            scene.rotation.y += (mouseX - scene.rotation.y) * 0.05;
-            scene.rotation.x += (mouseY - scene.rotation.x) * 0.05;
+            runesGroup.rotation.z = -time * 0.1;
+            runesGroup.rotation.x = Math.sin(time * 0.5) * 0.2;
 
-            renderer.render(scene, camera);
+            // Pulse Crystal
+            crystal.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
+
+            // Particles Flow
+            particles.rotation.y = time * 0.05;
+
+            // Composer Render
+            composer.render();
         }
-
         animate();
 
         // --- GSAP Scroll ---
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+        gsap.registerPlugin(ScrollTrigger);
 
-        // Hero Typewriter
-        gsap.to(".gs-typewriter", {
-            text: "MATERIALIZATION ALCHEMIST",
-            duration: 2,
-            ease: "none",
-            delay: 0.5
-        });
+        // Initial Reveal
+        const tlIntro = gsap.timeline();
+        tlIntro.to(".loader-progress", { width: "100%", duration: 1.5, ease: "power2.inOut" })
+               .to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").style.display = "none" })
+               .to("body", { opacity: 1, duration: 0.5 })
+               .to("#hud", { opacity: 1, duration: 1, ease: "power2.out" }, "-=0.5");
 
-        // Reveals
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
-            gsap.from(elem, {
-                y: 50,
-                opacity: 0,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: elem,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
-                }
-            });
-        });
-
-        // Camera Scroll
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                // Move camera closer on scroll
-                camera.position.z = 30 - self.progress * 20; // 30 -> 10
-                camera.position.y = self.progress * 10;
-                camera.lookAt(0, 0, 0);
+        // Scroll Timeline
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
             }
+        });
+
+        // 1. Hero -> Intro (Crystal Focus)
+        // Book flies in, then crystal takes over
+        bookGroup.position.set(4, 0, 5); // Start position (Right side)
+        bookGroup.rotation.y = -0.5;
+        bookGroup.rotation.z = 0.1;
+
+        tl.to(bookGroup.position, { z: 15, x: -10, y: 5, duration: 2 }, "p1") // Book flies past
+          .to(bookGroup.rotation, { y: 2, duration: 2 }, "p1")
+          .to(camera.position, { z: 15, duration: 2 }, "p1")
+          .to(runesGroup.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 2 }, "p1");
+
+        // 2. Intro -> Dream (Blueprint / Deconstruction)
+        // Crystal explodes/expands
+        tl.to(crystal.scale, { x: 0.1, y: 0.1, z: 0.1, duration: 2 }, "p2") // Implode
+          .to(runesGroup.rotation, { x: Math.PI, duration: 2 }, "p2")
+          .to(particles.material, { size: 0.2, opacity: 0.4, duration: 2 }, "p2");
+
+        // 3. Dream -> Projects (Bounty Board)
+        // Camera moves to a clear space
+        tl.to(camera.position, { y: 0, z: 35, duration: 2 }, "p3")
+          .to(scene.fog, { density: 0.01, duration: 2 }, "p3")
+          // Materialize Tavern
+          .to(tavernGroup.position, { y: -4, z: 25, duration: 2, ease: "back.out(1)" }, "p3");
+
+        // Content Entrances
+        gsap.utils.toArray('.content-box').forEach(box => {
+            gsap.to(box, {
+                scrollTrigger: {
+                    trigger: box,
+                    start: "top 85%",
+                    end: "top 60%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 0,
+                opacity: 1,
+                duration: 1,
+                ease: "power3.out"
+            });
         });
 
         // Resize
@@ -753,7 +938,72 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
+
+    </script>
+
+    <!-- p5.js Sketch for Techno Overlay -->
+    <script>
+        const overlaySketch = (p) => {
+            p.setup = () => {
+                const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
+                canvas.parent('p5-overlay');
+                p.clear();
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Cyber-target around mouse (only if mouse is in window)
+                if (p.mouseX > 0 && p.mouseX < p.width && p.mouseY > 0 && p.mouseY < p.height) {
+                    p.noFill();
+
+                    // Rotating outer ring
+                    p.stroke(0, 255, 255, 150); // Cyan
+                    p.strokeWeight(1);
+                    p.push();
+                    p.translate(p.mouseX, p.mouseY);
+                    p.rotate(p.frameCount * 0.05);
+                    p.arc(0, 0, 60, 60, 0, p.PI * 1.5);
+                    p.pop();
+
+                    // Counter-rotating inner ring
+                    p.stroke(255, 215, 0, 150); // Gold
+                    p.strokeWeight(1);
+                    p.push();
+                    p.translate(p.mouseX, p.mouseY);
+                    p.rotate(-p.frameCount * 0.1);
+                    p.arc(0, 0, 40, 40, 0, p.PI);
+                    p.pop();
+
+                    // Crosshairs
+                    p.stroke(255, 255, 255, 100);
+                    p.line(p.mouseX - 10, p.mouseY, p.mouseX + 10, p.mouseY);
+                    p.line(p.mouseX, p.mouseY - 10, p.mouseX, p.mouseY + 10);
+                }
+
+                // Random Techno Glitch Lines (Background Noise)
+                if (p.random() < 0.03) { // Low probability
+                    const y = p.random(p.height);
+                    const h = p.random(1, 5);
+                    p.noStroke();
+                    p.fill(0, 255, 255, 30);
+                    p.rect(0, y, p.width, h);
+                }
+
+                // Occasional "Scanline"
+                const scanY = (p.frameCount * 5) % p.height;
+                p.stroke(0, 255, 255, 10);
+                p.line(0, scanY, p.width, scanY);
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(window.innerWidth, window.innerHeight);
+            };
+        };
+
+        new p5(overlaySketch);
     </script>
 </body>
 </html>
