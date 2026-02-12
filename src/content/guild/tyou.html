@@ -315,6 +315,8 @@
     <div id="cursor"></div>
     <div id="canvas-three"></div>
     <div id="canvas-p5"></div>
+    <!-- Force load FontAwesome for Canvas -->
+    <div style="font-family: 'Font Awesome 6 Free'; font-weight: 900; opacity: 0; position: absolute; pointer-events: none;">.</div>
 
     <!-- Hero Section -->
     <section class="section">
@@ -449,7 +451,7 @@
         </div>
     </section>
 
-    <!-- Three.js: Geometric Zen Garden -->
+    <!-- Three.js: Floating Icons (Canvas Texture) -->
     <script type="module">
         import * as THREE from 'three';
 
@@ -458,116 +460,164 @@
         const scene = new THREE.Scene();
 
         // Soft ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
 
-        // Directional light for shadows/depth
-        const dirLight = new THREE.DirectionalLight(0xfff0dd, 1);
-        dirLight.position.set(10, 20, 10);
-        scene.add(dirLight);
-
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 25;
+        camera.position.z = 30;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // High quality
         container.appendChild(renderer.domElement);
 
-        // --- Particles: InstancedMesh (Paper Shards / Leaves) ---
-        const particleCount = 200;
-        // Geometry: Simple Plane for "Paper" look or Tetrahedron for "Geometric"
-        const geometry = new THREE.TetrahedronGeometry(0.5, 0);
+        // --- Helper: Generate Icon Texture ---
+        // Async to wait for fonts
+        async function createIconTexture(unicode, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
 
-        // Material: Olive/Gold Matte
-        const material = new THREE.MeshToonMaterial({
-            color: 0x6B7F36, // Olive
-            transparent: true,
-            opacity: 0.6,
-        });
+            // Ensure font is ready
+            await document.fonts.ready;
 
-        const mesh = new THREE.InstancedMesh(geometry, material, particleCount);
-        scene.add(mesh);
+            ctx.font = '900 80px "Font Awesome 6 Free"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(unicode, 64, 64);
 
-        // Data for each particle
-        const dummy = new THREE.Object3D();
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        // Icon Definitions (Unicode)
+        // Coffee: \uf0f4 (mug-hot), \uf4e2 (mug-saucer)
+        // Physics: \uf5d2 (atom), \uf543 (microscope)
+        // Travel: \uf072 (plane), \uf3c5 (map-marker-alt), \uf5a0 (map-marked-alt)
+        // Creative: \uf303 (pen-nib), \uf030 (camera)
+
+        const icons = [
+            { code: '\uf0f4', color: '#6B7F36' }, // Mug (Olive)
+            { code: '\uf5d2', color: '#C5A880' }, // Atom (Gold)
+            { code: '\uf072', color: '#2F3632' }, // Plane (Dark)
+            { code: '\uf3c5', color: '#6B7F36' }, // Map Marker (Olive)
+            { code: '\uf030', color: '#2F3632' }, // Camera (Dark)
+            { code: '\uf303', color: '#C5A880' }, // Pen (Gold)
+            { code: '\uf4e2', color: '#6B7F36' }, // Mug Saucer
+        ];
+
+        // --- Create Sprites ---
+        const particleCount = 40;
         const particles = [];
 
-        for(let i=0; i<particleCount; i++) {
-            particles.push({
-                x: (Math.random() - 0.5) * 40,
-                y: (Math.random() - 0.5) * 40,
-                z: (Math.random() - 0.5) * 20,
-                vx: (Math.random() - 0.5) * 0.02,
-                vy: (Math.random() - 0.5) * 0.02,
-                rotX: Math.random() * 0.02,
-                rotY: Math.random() * 0.02,
-                scale: Math.random() * 0.5 + 0.5
-            });
-        }
+        // Wrap initialization in async IIFE
+        (async () => {
+            const materials = await Promise.all(icons.map(async icon => {
+                const texture = await createIconTexture(icon.code, icon.color);
+                return new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.8
+                });
+            }));
+
+            for(let i=0; i<particleCount; i++) {
+                const material = materials[Math.floor(Math.random() * materials.length)];
+                const sprite = new THREE.Sprite(material);
+
+                // Random Pos
+                sprite.position.x = (Math.random() - 0.5) * 50;
+                sprite.position.y = (Math.random() - 0.5) * 50;
+                sprite.position.z = (Math.random() - 0.5) * 20; // Some depth
+
+                // Scale
+                const scale = Math.random() * 1.5 + 1; // 1 to 2.5
+                sprite.scale.set(scale, scale, 1);
+
+                // Add custom data for animation
+                sprite.userData = {
+                    vx: (Math.random() - 0.5) * 0.02,
+                    vy: (Math.random() - 0.5) * 0.02,
+                    origScale: scale,
+                    floatOffset: Math.random() * Math.PI * 2,
+                    floatSpeed: Math.random() * 0.5 + 0.5
+                };
+
+                scene.add(sprite);
+                particles.push(sprite);
+            }
+
+            animate(); // Start animation after loading
+        })();
 
         // Mouse Interaction
         let mouseX = 0;
         let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
+        // Raycaster for "Hover" effect
+        const raycaster = new THREE.Raycaster();
+        const mouseVector = new THREE.Vector2();
 
         window.addEventListener('mousemove', (e) => {
             mouseX = (e.clientX / window.innerWidth) * 2 - 1;
             mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            mouseVector.x = mouseX;
+            mouseVector.y = mouseY;
         });
 
         // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
         function animate() {
             requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
 
-            // Smooth mouse follow
-            targetX += (mouseX - targetX) * 0.05;
-            targetY += (mouseY - targetY) * 0.05;
+            // Raycast check
+            raycaster.setFromCamera(mouseVector, camera);
+            const intersects = raycaster.intersectObjects(particles);
 
-            // Update Particles
-            for(let i=0; i<particleCount; i++) {
-                const p = particles[i];
+            // Reset scales first
+            particles.forEach(p => {
+                // Base float animation
+                p.position.y += Math.sin(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.005;
+                p.position.x += Math.cos(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.002;
 
-                // Basic Drift
-                p.x += p.vx;
-                p.y += p.vy;
-
-                // Repel from mouse
-                const dx = p.x - targetX * 15; // approximate world scale
-                const dy = p.y - targetY * 15;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-
-                if(dist < 5) {
-                    const force = (5 - dist) * 0.05;
-                    p.x += dx * force;
-                    p.y += dy * force;
-                }
+                // Drift
+                p.position.x += p.userData.vx;
+                p.position.y += p.userData.vy;
 
                 // Wrap around
-                if(p.x > 25) p.x = -25;
-                if(p.x < -25) p.x = 25;
-                if(p.y > 25) p.y = -25;
-                if(p.y < -25) p.y = 25;
+                if(p.position.x > 30) p.position.x = -30;
+                if(p.position.x < -30) p.position.x = 30;
+                if(p.position.y > 30) p.position.y = -30;
+                if(p.position.y < -30) p.position.y = 30;
 
-                dummy.position.set(p.x, p.y, p.z);
-                dummy.rotation.x += p.rotX;
-                dummy.rotation.y += p.rotY;
-                dummy.scale.set(p.scale, p.scale, p.scale);
+                // Return to original scale
+                p.scale.lerp(new THREE.Vector3(p.userData.origScale, p.userData.origScale, 1), 0.1);
 
-                dummy.updateMatrix();
-                mesh.setMatrixAt(i, dummy.matrix);
+                // Slight rotation (2D)
+                p.material.rotation = Math.sin(time + p.userData.floatOffset) * 0.1;
+            });
+
+            // Handle hovers (Excited Icons)
+            if (intersects.length > 0) {
+                const hovered = intersects[0].object;
+                // Scale up
+                hovered.scale.lerp(new THREE.Vector3(hovered.userData.origScale * 1.5, hovered.userData.origScale * 1.5, 1), 0.2);
+                // Spin faster
+                hovered.material.rotation += 0.1;
             }
-            mesh.instanceMatrix.needsUpdate = true;
 
             // Gentle Camera Sway
-            camera.position.x += (mouseX * 5 - camera.position.x) * 0.02;
-            camera.position.y += (mouseY * 5 - camera.position.y) * 0.02;
+            camera.position.x += (mouseX * 2 - camera.position.x) * 0.02;
+            camera.position.y += (mouseY * 2 - camera.position.y) * 0.02;
             camera.lookAt(0,0,0);
 
             renderer.render(scene, camera);
         }
-        animate();
 
         // Resize
         window.addEventListener('resize', () => {
@@ -604,7 +654,7 @@
         }
     </script>
 
-    <!-- p5.js: Organic Map Lines -->
+    <!-- p5.js: Organic Map Lines (Subtle) -->
     <script>
         let t = 0;
 
@@ -612,7 +662,7 @@
             const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('canvas-p5');
             noFill();
-            stroke(85, 107, 47, 80); // Olive Green
+            stroke(85, 107, 47, 40); // Olive Green, lower opacity (40)
         }
 
         function draw() {
@@ -621,39 +671,27 @@
             // Draw Perlin noise topographic lines
             strokeWeight(1);
 
-            // We draw 8 horizontal "iso-lines" that wave organically
-            for(let i = 0; i < 8; i++) {
-                let yBase = height * ((i + 1) / 10);
+            // Reduced to 5 lines for cleaner look
+            for(let i = 0; i < 5; i++) {
+                let yBase = height * ((i + 1) / 6);
 
                 beginShape();
-                // Add start vertex for curve stability
                 curveVertex(0, yBase);
                 curveVertex(0, yBase);
 
                 for(let x = 0; x <= width + 50; x += 50) {
-                    // Noise factors: x-pos, line-index, time
-                    let n = noise(x * 0.002, i * 0.5, t * 0.2);
-                    let yOffset = map(n, 0, 1, -80, 80);
-
-                    // Interaction: Mouse distorts lines gently
-                    let d = dist(x, yBase + yOffset, mouseX, mouseY);
-                    if (d < 200) {
-                        // Push lines away from mouse
-                        let push = (200 - d) * 0.3;
-                        if(mouseY > yBase) yOffset -= push;
-                        else yOffset += push;
-                    }
+                    let n = noise(x * 0.001, i * 0.5, t * 0.1); // Slower noise
+                    let yOffset = map(n, 0, 1, -50, 50); // Smaller amplitude
 
                     curveVertex(x, yBase + yOffset);
                 }
 
-                // End vertex
                 curveVertex(width, yBase);
                 curveVertex(width, yBase);
                 endShape();
             }
 
-            t += 0.005;
+            t += 0.002; // Slower time
         }
 
         function windowResized() {
