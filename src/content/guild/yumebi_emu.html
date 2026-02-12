@@ -23,7 +23,6 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
@@ -59,16 +58,6 @@
             z-index: -1;
             opacity: 0;
             transition: opacity 2s ease;
-        }
-
-        #p5-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -2;
-            pointer-events: none;
-            opacity: 0.3;
-            mix-blend-mode: screen;
         }
 
         .nav-back {
@@ -346,7 +335,6 @@
 <body>
     <a href="/guild/" class="nav-back">GUILD</a>
     <div id="three-container"></div>
-    <div id="p5-container"></div>
 
     <main>
         <!-- Hero -->
@@ -469,43 +457,6 @@
 
     </main>
 
-    <!-- P5.js Background -->
-    <script>
-        // Simple Hypnotic Background
-        const p5Sketch = (p) => {
-            p.setup = () => {
-                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-container');
-                p.noFill();
-            };
-
-            p.draw = () => {
-                p.clear();
-                p.translate(p.width/2, p.height/2);
-                let t = p.frameCount * 0.005;
-
-                // Hypnotic Rings
-                for(let i=0; i<5; i++) {
-                    p.stroke(255, 105, 180, 50 - i*10); // Fading Pink
-                    p.strokeWeight(2);
-                    p.rotate(t * (i%2==0 ? 1 : -1));
-
-                    p.beginShape();
-                    for(let a=0; a<p.TWO_PI; a+=0.1) {
-                        let r = 300 + i*50 + p.sin(a*5 + t*5)*20;
-                        p.vertex(r*p.cos(a), r*p.sin(a));
-                    }
-                    p.endShape(p.CLOSE);
-                }
-            };
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-            };
-        };
-        new p5(p5Sketch);
-    </script>
-
     <!-- Three.js Gem Heart Script -->
     <script type="module">
         import * as THREE from 'three';
@@ -524,7 +475,8 @@
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // PERFORMANCE: Limit pixel ratio
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
         setTimeout(() => { container.style.opacity = 1; }, 500);
@@ -597,7 +549,7 @@
         }
 
         const magicTex = new THREE.CanvasTexture(magicCanvas);
-        magicTex.anisotropy = 16;
+        magicTex.anisotropy = 8; // Reduce Anisotropy
 
         const magicPlane = new THREE.Mesh(
             new THREE.PlaneGeometry(40, 40),
@@ -615,7 +567,7 @@
 
         // Second Magic Ring (Counter-rotating)
         const magicRingCanvas = document.createElement('canvas');
-        magicRingCanvas.width = 1024; magicRingCanvas.height = 1024;
+        magicRingCanvas.width = 512; magicRingCanvas.height = 512; // Lower res
         const rCtx = magicRingCanvas.getContext('2d');
         rCtx.strokeStyle = '#00ffff'; // Cyan
         rCtx.lineWidth = 2;
@@ -623,10 +575,10 @@
         rCtx.shadowBlur = 10;
 
         // Complex geometric pattern
-        rCtx.translate(512, 512);
-        for(let i=0; i<12; i++) {
-             rCtx.rotate(Math.PI / 6);
-             rCtx.strokeRect(-300, -300, 600, 600);
+        rCtx.translate(256, 256);
+        for(let i=0; i<8; i++) { // Fewer shapes
+             rCtx.rotate(Math.PI / 4);
+             rCtx.strokeRect(-150, -150, 300, 300);
         }
 
         const ringTex = new THREE.CanvasTexture(magicRingCanvas);
@@ -664,7 +616,7 @@
         });
 
         const clouds = [];
-        for(let i=0; i<10; i++) {
+        for(let i=0; i<8; i++) { // Reduce count
             const m = cloudMat.clone();
             const cloud = new THREE.Sprite(m);
             cloud.position.set((Math.random()-0.5)*60, (Math.random()-0.5)*60, -20 + Math.random()*10);
@@ -711,7 +663,7 @@
         // 2. Extrude Options (Not used directly, but reference)
 
         // 3. Voronoi/Shattering simulation via manually placed triangles/shapes
-        const baseGeo = new THREE.ShapeGeometry(heartShape, 12); // High tesselation (12) for MORE SHARDS
+        const baseGeo = new THREE.ShapeGeometry(heartShape, 6); // PERFORMANCE: Reduced tessellation (was 12)
         baseGeo.center();
         baseGeo.scale(1, -1, 1); // Flip
         baseGeo.scale(0.8, 0.8, 1);
@@ -727,7 +679,7 @@
             metalness: 0.1,
             roughness: 0.1,
             transmission: 0.6, // Glassy
-            thickness: 2,
+            thickness: 1, // Reduced thickness
             clearcoat: 1,
             transparent: true,
             opacity: 0.8,
@@ -769,10 +721,11 @@
 
             // Extrude this shard
             const shardGeo = new THREE.ExtrudeGeometry(triangleShape, {
-                depth: 0.5 + Math.random(), // Thinner, sharper
+                depth: 0.1, // PERFORMANCE: Reduced depth
                 bevelEnabled: true,
                 bevelSize: 0.05,
-                bevelThickness: 0.05
+                bevelThickness: 0.05,
+                bevelSegments: 1 // PERFORMANCE: Reduced bevel segments
             });
 
             // UV Mapping for the Picture: Map based on position relative to heart bounds
@@ -830,7 +783,7 @@
 
         const sparkleTex = new THREE.CanvasTexture(sparkleCanvas);
         const partGeo = new THREE.BufferGeometry();
-        const pCnt = 500; // Increased count
+        const pCnt = 150; // PERFORMANCE: Reduced count
         const pPos = new Float32Array(pCnt * 3);
         const pSizes = new Float32Array(pCnt);
         for(let i=0; i<pCnt*3; i+=3) {
@@ -969,6 +922,31 @@
                     const t = textures[idx % textures.length];
                     picMat.map = t;
                     picMat.needsUpdate = true;
+
+                    // TRANSITION EFFECT: Glitch/Flash on switch
+                    // 1. Flash Color
+                    const flashColor = {r: 10, g: 10, b: 10};
+                    gsap.to(picMat.color, {
+                        r: flashColor.r, g: flashColor.g, b: flashColor.b,
+                        duration: 0.1,
+                        yoyo: true,
+                        repeat: 1,
+                        onComplete: () => {
+                            picMat.color.setHex(0xffffff);
+                        }
+                    });
+
+                    // 2. Shake Shards slightly
+                    shards.forEach(m => {
+                        gsap.to(m.position, {
+                            x: m.position.x + (Math.random()-0.5)*2,
+                            y: m.position.y + (Math.random()-0.5)*2,
+                            z: m.position.z + (Math.random()-0.5)*2,
+                            duration: 0.05,
+                            yoyo: true,
+                            repeat: 1
+                        });
+                    });
                 }
             } else {
                  // Gently float when assembled
