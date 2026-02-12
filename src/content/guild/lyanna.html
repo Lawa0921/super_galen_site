@@ -14,7 +14,6 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
 
     <style>
         :root {
@@ -176,17 +175,18 @@
         /* --- Typography --- */
         h1, h2, h3 {
             font-family: var(--font-display);
-            font-weight: 400;
+            font-weight: 500;
             line-height: 1.2;
             color: var(--text-primary);
         }
 
         p {
             font-size: 1.1rem;
-            line-height: 2.2; /* Breathable */
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
+            line-height: 1.8; /* Slightly tighter for better readability on expanding text */
+            color: #1a1a1a; /* Darker for better contrast */
+            margin-bottom: 1.5rem;
             letter-spacing: 0.02em;
+            font-weight: 400;
         }
 
         .display-text {
@@ -289,13 +289,14 @@
 
         .deck-text-area {
             position: relative;
-            height: 400px; /* Increased height for content */
+            display: grid;
+            grid-template-areas: "stack";
+            align-items: center; /* Center vertically if needed, or start */
+            min-height: 400px; /* Minimum height */
         }
 
         .deck-text-item {
-            position: absolute;
-            top: 0;
-            left: 0;
+            grid-area: stack;
             width: 100%;
             opacity: 0;
             transform: translateY(20px);
@@ -307,6 +308,8 @@
             opacity: 1;
             transform: translateY(0);
             pointer-events: auto;
+            position: relative; /* Ensure it takes up space in flow if needed, though grid handles it */
+            z-index: 2;
         }
 
         .deck-visual-area {
@@ -418,7 +421,7 @@
                 gap: 2rem;
             }
             .deck-text-area {
-                height: 250px;
+                min-height: auto; /* Allow growth */
                 order: -1;
                 margin-bottom: 2rem;
             }
@@ -478,38 +481,44 @@
                     <div class="deck-text-item active" data-index="0">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">00</div>
                         <h3>Who I Am</h3>
-                        <p>允曦 Lyanna | 華語教師培訓課程創辦者、教育部華語教師證照培訓講師。<br>
-                        我將華語教學專業結合 MMT 天賦分析，讓學習不只停在證照，而是回到人生整體的選擇。</p>
+                        <p>我是允曦 Lyanna，華語教師培訓課程創辦者，也是 MMT 個人天賦與人際關係諮詢師。目前任教於美國 UTA。<br><br>
+                        我長期投入海內外華語教學、師資培訓與職涯引導，致力於將「華語教學」變成一條穩定、清楚、走得出去的路。</p>
                     </div>
-                    <!-- Card 1: Systematic Materials -->
+                    <!-- Card 1: What I Do -->
                     <div class="deck-text-item" data-index="1">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">01</div>
-                        <h3>Systematic Materials</h3>
-                        <p>系統化教材。收錄近六年題庫，完整拆解解題思路。透過每月模擬大會考，協助你強化答題速度與正確率，讓備考不再盲目。</p>
+                        <h3>What I Do</h3>
+                        <p>我專注於陪伴對華語教學有熱情的人，從「不知道是否適合這條路」，到「具備資格、清楚方向」。<br>
+                        提供教育部華語教師證照系統化培訓、海外教學職涯規劃，以及轉職探索與人生方向引導。</p>
                     </div>
-                    <!-- Card 2: Essence Videos -->
+                    <!-- Card 2: Teaching Style -->
                     <div class="deck-text-item" data-index="2">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">02</div>
-                        <h3>Essence Videos</h3>
-                        <p>精華影片複習。針對筆試與口試，每科提供 10 部精華短片。系統化掌握選擇、問答與作文題型，隨時隨地皆可複習，高效利用時間。</p>
+                        <h3>Teaching Style</h3>
+                        <p><strong>專業結構清楚：</strong>將龐雜的證照考試拆解成可執行的學習系統。<br>
+                        <strong>陪伴式引導：</strong>不只教內容，而是陪你釐清方向與節奏。<br>
+                        <strong>跨領域視角：</strong>結合教學、職涯、關係與海外生活經驗。</p>
                     </div>
-                    <!-- Card 3: Brand Spirit (Logo) -->
+                    <!-- Card 3: Why I Do It -->
                     <div class="deck-text-item" data-index="3">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">03</div>
-                        <h3>Brand Spirit</h3>
-                        <p>FUN 2 CHINESE。不只是考試，更是一場有趣的旅程。我們致力於打造充滿支持與活力的社群，陪你在華語教學的路上快樂前行。</p>
+                        <h3>Why I Do It</h3>
+                        <p>多數人卡住的，從來不只是考試，而是「我適合嗎？」、「我能走多遠？」。<br>
+                        因此，我將華語教學專業結合 MMT 天賦分析，讓學習不只停在證照，而是回到人生整體的選擇。</p>
                     </div>
-                    <!-- Card 4: Career Guidance -->
+                    <!-- Card 4: The Path Together -->
                     <div class="deck-text-item" data-index="4">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">04</div>
-                        <h3>Practice & Career</h3>
-                        <p>實務與職涯輔導。每月教學實務分享、教案設計輔導與試教演練。從 0 到 1 的陪伴，結合 MMT 天賦分析，為你規劃最適合的職涯路徑。</p>
+                        <h3>The Path Together</h3>
+                        <p>如果你正在思考是否要投入華語教學、是否適合走向海外，或正在轉職的路口。<br>
+                        我希望能用我走過的經驗，陪你把「華語」變成一條穩定、清楚、走得出去的路。</p>
                     </div>
                     <!-- Card 5: Core Pillars -->
                     <div class="deck-text-item" data-index="5">
                         <div class="step-num" style="font-size: 3rem; color: var(--accent); opacity: 0.3;">05</div>
                         <h3>Core Pillars</h3>
-                        <p>課程四大核心。系統化教材、精華影片、陪跑解題、職涯輔導。全方位的學習系統，協助你具備資格、清楚方向，真正走出去。</p>
+                        <p>課程四大核心：系統化教材、精華影片、陪跑解題、職涯輔導。<br>
+                        真正能走得遠的，不只是會考試的人，而是對自己有理解、對選擇有準備的人。</p>
                     </div>
                 </div>
 
@@ -674,9 +683,14 @@
             }
         });
 
+        // Add a small pause at the beginning so the first card is readable
+        deckTl.to({}, { duration: 0.5 });
+
         // Animate each card (except last one which stays)
         cards.forEach((card, i) => {
             if (i === totalCards - 1) return; // Last card stays put
+
+            const startTime = 0.5 + (i * 1.5);
 
             deckTl.to(card, {
                 xPercent: 120, // Slide right off screen
@@ -684,7 +698,7 @@
                 opacity: 0,
                 duration: 1,
                 ease: 'power2.inOut'
-            }, i * 1.5); // Stagger timing
+            }, startTime);
 
             // Text Switching
             // Hide current text
@@ -692,7 +706,7 @@
                 opacity: 0,
                 y: -20,
                 duration: 0.5
-            }, i * 1.5);
+            }, startTime);
 
             // Show next text
             if (texts[i+1]) {
@@ -700,7 +714,7 @@
                     opacity: 1,
                     y: 0,
                     duration: 0.5
-                }, i * 1.5 + 0.5); // Overlap slightly
+                }, startTime + 0.5); // Overlap slightly
             }
         });
 
@@ -756,7 +770,7 @@
             curve.closed = true;
             curve.tension = 0.3;
 
-            const geometry = new THREE.TubeGeometry(curve, 600, tubeRadius, 24, true);
+            const geometry = new THREE.TubeGeometry(curve, 300, tubeRadius, 12, true);
 
             const material = new THREE.MeshPhysicalMaterial({
                 color: 0xeebb44,
