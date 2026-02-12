@@ -731,7 +731,7 @@
 
         // --- ROBUST PRELOADER ---
         const waitForImages = () => {
-            const images = document.querySelectorAll('img');
+            const images = document.querySelectorAll('img:not([loading="lazy"])');
             const promises = Array.from(images).map(img => {
                 if (img.complete) return Promise.resolve();
                 return new Promise(resolve => {
@@ -749,6 +749,7 @@
         const minTime = new Promise(resolve => setTimeout(resolve, 1500)); // Min 1.5s loading
 
         Promise.all([waitForImages(), waitForFonts(), minTime]).then(() => {
+            ScrollTrigger.refresh();
             const loader = document.getElementById('loader');
             gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.remove() });
             gsap.from('h1', { scale: 1.2, duration: 1.5, ease: "power2.out" });
