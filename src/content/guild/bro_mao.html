@@ -590,6 +590,11 @@
             createSymbolTexture('!', colors.red),
             createSymbolTexture('{ }', colors.white),
             createSymbolTexture('>', colors.green),
+            createSymbolTexture('@', colors.green),
+            createSymbolTexture('#', colors.gold),
+            createSymbolTexture('&', colors.red),
+            createSymbolTexture('?', colors.white),
+            createSymbolTexture('*', colors.green),
         ];
 
         const particleGroup = new THREE.Group();
@@ -628,7 +633,7 @@
         });
 
         // --- Animation ---
-        let targetSpeed = 0.005;
+        let targetSpeed = 0.05;
         let mouseX = 0, mouseY = 0;
 
         window.addEventListener('mousemove', (e) => {
