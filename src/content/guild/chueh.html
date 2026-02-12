@@ -407,7 +407,7 @@
                 <a href="https://www.instagram.com/handpan_chueh/" target="_blank" class="social-circle magnetic-btn"><i class="fa-brands fa-instagram"></i></a>
             </div>
 
-            <p style="margin-top: 5rem; color: #666; font-size: 0.9rem; font-weight: 300;">
+            <p style="margin-top: 5rem; color: #666; font-size: 0.9rem; font-weight: 300; text-align: center;">
                 Made with <i class="fa-solid fa-bolt" style="color: var(--c-primary);"></i> by <a href="/guild/" style="color: var(--c-text); text-decoration: none; border-bottom: 1px solid var(--c-primary);">SuperGalen's Dungeon</a>
             </p>
         </div>
@@ -526,12 +526,18 @@
 
         // Animation Loop
         const clock = new THREE.Clock();
+        // Optimize: throttle/limit fps if needed, but for smooth animation we keep RAF.
+        // Check if tab is active could be added, but browser handles RAF throttling.
+
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
             // Ring Animation with Mouse Influence
-            rings.forEach((ring, i) => {
+            // Optimization: Iterate using standard loop for speed
+            const ringLen = rings.length;
+            for(let i = 0; i < ringLen; i++) {
+                const ring = rings[i];
                 ring.rotation.x += ring.userData.baseSpeedX;
                 ring.rotation.y += ring.userData.baseSpeedY;
 
@@ -545,7 +551,7 @@
                 // Breathing
                 const scale = 1 + Math.sin(time * 0.5 + i * 0.3) * 0.05;
                 ring.scale.set(scale, scale, scale);
-            });
+            }
 
             // Whole group drift
             group.rotation.z = time * 0.05;
@@ -619,10 +625,11 @@
         }
 
         // 4. Standard Reveals
+        // Use batch for better performance if many elements, but for this amount forEach is fine.
         gsap.utils.toArray('.gs-reveal').forEach(el => {
             gsap.from(el, {
                 y: 50, opacity: 0, duration: 1, ease: "power3.out",
-                scrollTrigger: { trigger: el, start: "top 85%" }
+                scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none reverse" }
             });
         });
 
