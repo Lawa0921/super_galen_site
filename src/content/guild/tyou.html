@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>秋桑 Tyou | The Analytical Wanderer</title>
+    <meta name="description" content="秋桑 Tyou - 住在日本的物理系跑咖人。不追流行，只找安放靈魂的角落。">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -30,7 +31,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            /* Removed custom cursor */
         }
 
         body {
@@ -336,7 +336,7 @@
             border: 1px solid var(--color-text);
             padding: 0.8rem 1.5rem;
             border-radius: 4px;
-            transition: 0.3s;
+            transition: background 0.2s, color 0.2s; /* Optimized transition */
             background: rgba(255,255,255,0.8);
         }
 
@@ -432,11 +432,11 @@
 
             <!-- Avatar Interaction Wrapper -->
             <div class="avatar-wrapper gs-reveal">
-                <img src="/assets/img/guild/tyou/pot.webp" alt="Tyou" class="avatar-img" id="hero-avatar">
+                <img src="/assets/img/guild/tyou/pot.webp" alt="Tyou" class="avatar-img" id="hero-avatar" loading="eager" decoding="async">
 
                 <!-- The Hidden Note (Slides out on click) -->
                 <div class="hidden-note" id="hidden-note">
-                    <img src="/assets/img/guild/tyou/illustration_color.webp" alt="Moment">
+                    <img src="/assets/img/guild/tyou/illustration_color.webp" alt="Moment" loading="lazy">
                     <div class="note-caption">Collected!</div>
                 </div>
 
@@ -467,7 +467,7 @@
             <div class="paper-card gs-reveal">
                 <!-- BW Illustration (Background) -->
                 <div id="bw-illustration">
-                    <img src="/assets/img/guild/tyou/illustration_bw.webp" alt="Tyou Sketch">
+                    <img src="/assets/img/guild/tyou/illustration_bw.webp" alt="Tyou Sketch" loading="lazy">
                 </div>
 
                 <span class="data-tag">Chapter 01: The Logic</span>
@@ -556,7 +556,7 @@
 
                 <div class="polaroid-container">
                     <div class="polaroid interactive-el">
-                        <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot">
+                        <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot" loading="lazy">
                         <div class="polaroid-caption">Find your space.</div>
                     </div>
                 </div>
@@ -666,6 +666,8 @@
         // --- Create Sprites ---
         const particleCount = 45;
         const particles = [];
+        const tempVector = new THREE.Vector3(); // Optimization: Reuse vector
+        const targetScale = new THREE.Vector3(); // Optimization: Reuse vector
 
         (async () => {
             const materials = await Promise.all(icons.map(async icon => {
@@ -678,7 +680,9 @@
             }));
 
             for(let i=0; i<particleCount; i++) {
-                const material = materials[Math.floor(Math.random() * materials.length)];
+                // Optimization: Clone material to allow independent rotation
+                const baseMaterial = materials[Math.floor(Math.random() * materials.length)];
+                const material = baseMaterial.clone();
                 const sprite = new THREE.Sprite(material);
 
                 // Random Pos
@@ -756,9 +760,11 @@
                 if (dist < 10) {
                     p.position.x += distX * 0.005;
                     p.position.y += distY * 0.005;
-                    p.scale.lerp(new THREE.Vector3(p.userData.origScale * 1.2, p.userData.origScale * 1.2, 1), 0.1);
+                    targetScale.set(p.userData.origScale * 1.2, p.userData.origScale * 1.2, 1);
+                    p.scale.lerp(targetScale, 0.1);
                 } else {
-                    p.scale.lerp(new THREE.Vector3(p.userData.origScale, p.userData.origScale, 1), 0.1);
+                    targetScale.set(p.userData.origScale, p.userData.origScale, 1);
+                    p.scale.lerp(targetScale, 0.1);
                 }
 
                 // Wrap
@@ -801,7 +807,7 @@
         });
     </script>
 
-    <!-- p5.js: Organic Map Lines (Restored Visibility) -->
+    <!-- p5.js: Organic Map Lines (Optimized) -->
     <script>
         let t = 0;
 
@@ -809,7 +815,8 @@
             const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('canvas-p5');
             noFill();
-            stroke(85, 107, 47, 30); // Restored opacity
+            stroke(85, 107, 47, 30);
+            frameRate(30); // Optimization: Reduced framerate
         }
 
         function draw() {
