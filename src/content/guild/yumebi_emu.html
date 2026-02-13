@@ -45,7 +45,31 @@
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
-            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="%23FF69B4"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>') 12 12, auto;
+            cursor: none; /* Custom cursor handling */
+        }
+
+        /* Custom Cursor */
+        #cursor-follower {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid var(--accent-pink);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s;
+            box-shadow: 0 0 10px var(--accent-pink);
+        }
+        #cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 4px; height: 4px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
         }
 
         h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -72,6 +96,7 @@
             border-radius: 20px;
             transition: 0.3s;
             box-shadow: 0 0 15px rgba(255,105,180,0.3);
+            cursor: pointer;
         }
         .nav-back:hover {
             background: var(--accent-pink);
@@ -145,7 +170,7 @@
             z-index: -1;
             animation: smoke-border 6s linear infinite;
             filter: blur(10px);
-            opacity: 0.7;
+            opacity: 0.5; /* Reduced for less noise */
         }
 
         /* Inner Smoke Fog */
@@ -170,7 +195,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.9);
         }
         .glass-panel:hover::before {
-            opacity: 1;
+            opacity: 0.8;
             filter: blur(15px);
         }
 
@@ -293,6 +318,7 @@
             text-decoration: none;
             transition: 0.3s;
             backdrop-filter: blur(5px);
+            cursor: pointer;
         }
         .social-link:hover {
             background: var(--accent-pink);
@@ -368,6 +394,22 @@
             text-shadow: 0 0 10px var(--accent-pink);
         }
 
+        /* Floating Runes Background */
+        .floating-rune {
+            position: fixed;
+            color: rgba(255, 105, 180, 0.1);
+            font-family: 'Cinzel';
+            font-size: 2rem;
+            pointer-events: none;
+            z-index: -1;
+            animation: float-rune 10s infinite linear;
+        }
+        @keyframes float-rune {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            50% { opacity: 0.2; }
+            100% { transform: translateY(-100px) rotate(45deg); opacity: 0; }
+        }
+
         /* Mobile Adjustments */
         @media(max-width: 768px) {
             .hero-title { font-size: 3rem; }
@@ -378,6 +420,8 @@
     </style>
 </head>
 <body>
+    <div id="cursor-follower"></div>
+    <div id="cursor-dot"></div>
     <a href="/guild/" class="nav-back">GUILD</a>
     <div id="three-container"></div>
 
@@ -413,27 +457,28 @@
                         <p style="color: var(--accent-gold); letter-spacing: 0.2em; font-size: 0.9rem;">YUMEBI EMU</p>
                     </div>
 
-                    <!-- Right: Lore & Bio -->
+                    <!-- Right: Lore & Bio (UPDATED based on Self-Intro) -->
                     <div>
-                        <h3 class="cinzel-font" style="font-size: 2rem; color: var(--accent-pink); margin-bottom: 1.5rem;">The Dream Weaver</h3>
+                        <h3 class="cinzel-font" style="font-size: 2rem; color: var(--accent-pink); margin-bottom: 1.5rem;">Grimoire of Emu</h3>
                         <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-                            在夢境與現實的夾縫中，時間是靜止的——這也是我永遠 20 歲的秘密。
-                            作為一名穿梭於潛意識的魔女，我擅長捕捉那些飄散的思緒，將它們編織成溫柔的網。
+                            施展 <span style="color: var(--accent-gold);">[Time Freeze]</span> 魔法，讓我成為了永遠 20 歲的偶像。
+                            很謝謝你注意到我，可以叫我愛姆！
                         </p>
                         <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-                            失眠是靈魂的乾渴。透過我的 <span class="glow-text">ASMR 夢境魔法</span>，我為每一個孤獨的靈魂在漫漫長夜中點亮一盞燈。
-                            我的聲音是引路人，帶領你穿越焦慮的迷霧，抵達安詳的彼岸。
+                            雖然觀眾常說我有 <span class="glow-text">"天然呆" (Natural Airhead)</span> 屬性，
+                            但我堅信這是高深魔法的副作用——其實我很聰明的！(真的！)
+                            透過 <span class="glow-text">ASMR 夢境魔法</span>，我將失眠者通通哄睡，陪伴所有孤獨的靈魂度過漫漫長夜。
                         </p>
 
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
                             <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
-                                <i class="fa-solid fa-moon"></i> Dream Magic
+                                <i class="fa-solid fa-moon"></i> ASMR Magic
                             </span>
                             <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
-                                <i class="fa-solid fa-wand-sparkles"></i> Tarot
+                                <i class="fa-solid fa-wand-sparkles"></i> Tarot Reading
                             </span>
                             <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
-                                <i class="fa-solid fa-utensils"></i> Alchemy (Cooking)
+                                <i class="fa-solid fa-utensils"></i> Cooking
                             </span>
                         </div>
                     </div>
@@ -480,18 +525,18 @@
         <section id="manifesto">
             <div class="container gs-reveal" style="max-width: 800px; text-align: center;">
                 <div style="margin-bottom: 2rem;">
-                    <i class="fa-regular fa-snowflake" style="font-size: 3rem; color: #add8e6; opacity: 0.8; animation: float-sparkle 4s infinite;"></i>
+                    <i class="fa-regular fa-sun" style="font-size: 3rem; color: #ffd700; opacity: 0.8; animation: float-sparkle 4s infinite; filter: drop-shadow(0 0 10px #ffd700);"></i>
                 </div>
                 <h2 style="font-size: 2.5rem; margin-bottom: 2rem; color: var(--text-primary);">WINTER SUN</h2>
                 <div class="glass-panel" style="padding: 3rem;">
                     <p style="font-size: 1.2rem; line-height: 2; font-style: italic; color: #fff;">
-                        "雖然我是居住在黑夜的小惡魔，但我渴望成為那個在最寒冷的冬天裡，依然能照亮你心房的太陽。"
+                        "想成為像照亮冬天的太陽般溫暖親切的人。"
                     </p>
                     <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 2rem 0;">
                     <p style="font-size: 1.1rem; color: #ddd;">
-                        天然呆也許是我的偽裝，但我對每一個觀眾的心意都是魔法般真實的。<br>
-                        無論是直播中的閒聊，還是私下的塔羅指引，<br>
-                        我都希望能成為你疲憊時的歸宿。
+                        常駐於 YouTube 直播，努力經營個人 IP。<br>
+                        無論是閒聊日常，還是分享塔羅與料理，<br>
+                        我都希望能用這份溫暖，融化你心中的冰雪。
                     </p>
                 </div>
             </div>
@@ -530,6 +575,44 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // Custom Cursor Logic
+        const cursor = document.getElementById('cursor-follower');
+        const dot = document.getElementById('cursor-dot');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            dot.style.left = e.clientX + 'px';
+            dot.style.top = e.clientY + 'px';
+
+            // Add sparkle trail
+            if(Math.random() > 0.8) {
+                createTrailSparkle(e.clientX, e.clientY);
+            }
+        });
+
+        function createTrailSparkle(x, y) {
+            const el = document.createElement('div');
+            el.innerHTML = '★';
+            el.style.position = 'fixed';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.color = Math.random() > 0.5 ? '#FF69B4' : '#00FFFF';
+            el.style.fontSize = (Math.random() * 10 + 5) + 'px';
+            el.style.pointerEvents = 'none';
+            el.style.zIndex = '9998';
+            el.style.opacity = '1';
+            el.style.transition = 'opacity 1s, transform 1s';
+            document.body.appendChild(el);
+
+            requestAnimationFrame(() => {
+                el.style.opacity = '0';
+                el.style.transform = `translate(${(Math.random()-0.5)*30}px, ${10+Math.random()*20}px)`;
+            });
+
+            setTimeout(() => { el.remove(); }, 1000);
+        }
 
         // Setup
         const container = document.getElementById('three-container');
@@ -625,7 +708,7 @@
             new THREE.MeshBasicMaterial({
                 map: magicTex,
                 transparent: true,
-                opacity: 0.6, // Slightly reduced opacity
+                opacity: 0.3, // REDUCED OPACITY
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
@@ -656,7 +739,7 @@
             new THREE.MeshBasicMaterial({
                 map: ringTex,
                 transparent: true,
-                opacity: 0.3,
+                opacity: 0.15, // REDUCED OPACITY
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
@@ -1055,6 +1138,22 @@
 
             composer.render();
         });
+
+        // Floating Runes Generation
+        function createFloatingRunes() {
+            const symbols = ['★', '☾', '☀', '✦', '✧', '⚝'];
+            for(let i=0; i<15; i++) {
+                const rune = document.createElement('div');
+                rune.className = 'floating-rune';
+                rune.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+                rune.style.left = Math.random() * 100 + 'vw';
+                rune.style.top = Math.random() * 100 + 'vh';
+                rune.style.animationDelay = Math.random() * 10 + 's';
+                rune.style.fontSize = (Math.random() * 2 + 1) + 'rem';
+                document.body.appendChild(rune);
+            }
+        }
+        createFloatingRunes();
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
