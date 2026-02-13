@@ -40,15 +40,16 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
+        html, body {
             background-color: var(--bg-deep);
             color: var(--text-primary);
             font-family: 'Zen Maru Gothic', sans-serif;
-            overflow-x: hidden;
             width: 100vw;
             cursor: none; /* Custom cursor handling */
-            /* Initially hidden for Dream Gate */
-            overflow: hidden;
+            /* Force hidden x-overflow */
+            overflow-x: hidden;
+            /* Initially hidden y-overflow for Dream Gate */
+            overflow-y: hidden;
         }
 
         /* Custom Cursor */
@@ -688,7 +689,7 @@
         <section id="gallery">
             <!-- Hint: Touch Circle -->
             <div class="hint-touch" id="hint-touch">
-                <div class="hint-text">TOUCH THE CIRCLE</div>
+                <div class="hint-text">TOUCH THE SOUL GEM</div>
                 <i class="fa-solid fa-hand-point-down hint-icon"></i>
             </div>
 
@@ -754,8 +755,8 @@
                 // Show Nav
                 gsap.to(navBack, {opacity: 1, y: 0, duration: 0.5, delay: 1});
 
-                // Unlock Scroll
-                document.body.style.overflow = 'auto';
+                // Unlock Scroll (Y)
+                document.body.style.overflowY = 'auto';
 
                 // Trigger initial GSAP reveals
                 gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
@@ -950,6 +951,23 @@
         );
         ringPlane.position.z = -4; // Slightly in front
         scene.add(ringPlane);
+
+        // --- SOUL GEM (INTERACTIVE CENTER) ---
+        const gemGeo = new THREE.IcosahedronGeometry(2, 0);
+        const gemMatCore = new THREE.MeshPhysicalMaterial({
+            color: 0xff1493, // Deep Pink
+            emissive: 0xff1493,
+            emissiveIntensity: 0.5,
+            metalness: 0.8,
+            roughness: 0.2,
+            transmission: 0.8, // Glassy
+            thickness: 1,
+            clearcoat: 1
+        });
+
+        const soulGem = new THREE.Mesh(gemGeo, gemMatCore);
+        soulGem.position.z = -2; // In front of magic circle
+        scene.add(soulGem);
 
         // --- NEBULA / FOG ---
         const cloudCanvas = document.createElement('canvas');
@@ -1184,8 +1202,10 @@
                 // Show Hint only at very bottom
                 if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
                     hintTouch.style.opacity = 1;
+                    soulGem.visible = true;
                 } else {
                     hintTouch.style.opacity = 0;
+                    if(!isCrystalized && !isSummoning) soulGem.visible = false;
                 }
 
                 // Magic Circle Brightness Ramp (Only if not already summoned/crystalized)
@@ -1209,14 +1229,22 @@
             // Ignore if clicking a link or interactive element
             if (e.target.closest('a') || e.target.closest('.bubble-card')) return;
 
+            // GLOBAL TOGGLE (Middle of page)
+            // If not at bottom, toggle crystal without summoning
+            if(scrollProgress <= 0.9 && !isSummoning) {
+                toggleCrystal(!isCrystalized);
+                return;
+            }
+
+            // BOTTOM INTERACTION (Raycaster)
             // Update Raycaster
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(magicPlane);
+            const intersects = raycaster.intersectObjects([soulGem, magicPlane]);
 
             console.log(`Click at ${mouse.x.toFixed(2)}, ${mouse.y.toFixed(2)} | Intersects: ${intersects.length} | Scroll: ${scrollProgress.toFixed(2)} | Summoning: ${isSummoning} | Crystalized: ${isCrystalized}`);
 
             if(intersects.length > 0) {
-                // Clicked Magic Circle
+                // Clicked Soul Gem or Circle
                 // RESTRICTION: Only at bottom (> 0.9)
                 if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
                     startSummonSequence();
@@ -1254,7 +1282,8 @@
                     magicPlane.material.opacity = circleAnim.opacity;
                     ringPlane.rotation.z += circleAnim.speed;
                     ringPlane.material.opacity = circleAnim.opacity * 0.5;
-                    // bloomPass.strength = 1.0 + (circleAnim.speed * 20); // Massive bloom - Disabled for stability
+                    // soulGem pulse
+                    soulGem.scale.setScalar(1 + Math.sin(Date.now() * 0.01) * 0.2);
                 },
                 onComplete: () => {
                     console.log("SUMMON COMPLETE");
@@ -1264,7 +1293,6 @@
                     // 4. RESET BRIGHTNESS & BLOOM
                     gsap.to(magicPlane.material, {opacity: 0.2, duration: 1}); // Dim circle
                     gsap.to(ringPlane.material, {opacity: 0.1, duration: 1});
-                    gsap.to(bloomPass, {strength: 0.3, duration: 1.5});
 
                     isSummoning = false;
                 }
@@ -1276,8 +1304,10 @@
 
             if(assemble) {
                 // ASSEMBLE
-                // Flash Effect
-                gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
+                // Flash Effect if summoning
+                if(isSummoning) {
+                     gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
+                }
 
                 shards.forEach(m => {
                     gsap.to(m.position, {
@@ -1301,6 +1331,7 @@
 
                 // UI Updates
                 finalCard.classList.add('active');
+                soulGem.visible = false; // Hide gem when assembled
 
             } else {
                 // SHATTER (EXPLODE)
@@ -1328,17 +1359,14 @@
                     roughness: 0.1,
                     duration: 1
                 });
-                gsap.to(bloomPass, {strength: 1.0, duration: 1});
-
-                // Reset Opacity Logic for Scroll
-                // We don't force opacity here because scroll loop handles it if !isCrystalized
 
                 // UI Updates
                 finalCard.classList.remove('active');
 
-                // Only show hint again if we are at bottom
+                // Only show hint/gem again if we are at bottom
                 if(scrollProgress > 0.9) {
                      gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
+                     soulGem.visible = true;
                 }
             }
         }
@@ -1400,16 +1428,25 @@
                  ringPlane.rotation.z += 0.003;
             }
 
-            // HOVER EFFECT ON MAGIC CIRCLE
+            // Soul Gem Animation
+            soulGem.rotation.y += 0.02;
+            soulGem.rotation.x += 0.01;
+            soulGem.position.y = Math.sin(t * 2) * 0.5;
+
+            // HOVER EFFECT ON MAGIC CIRCLE / GEM
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(magicPlane);
+            const intersects = raycaster.intersectObjects([soulGem, magicPlane]);
             if(intersects.length > 0 && !isCrystalized && !isSummoning && scrollProgress > 0.9) {
                 // Hover state - ONLY AT BOTTOM
                 document.body.style.cursor = 'pointer';
-                magicPlane.scale.setScalar(1.05); // Subtle pulse
+                magicPlane.scale.setScalar(1.05);
+                soulGem.scale.setScalar(1.2);
             } else {
                 document.body.style.cursor = 'none'; // Restore custom cursor
-                if(!isSummoning) magicPlane.scale.setScalar(1.0);
+                if(!isSummoning) {
+                    magicPlane.scale.setScalar(1.0);
+                    soulGem.scale.setScalar(1.0);
+                }
             }
 
             // Nebula
@@ -1453,7 +1490,6 @@
             // composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // GSAP Reveal - Initially hidden, triggered by Enter Dream
     </script>
 </body>
 </html>
