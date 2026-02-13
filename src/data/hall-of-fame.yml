@@ -825,3 +825,15 @@ members:
         label: "爵士鼓"
       - id: "musician"
         label: "音樂人"
+
+  - id: "allen"
+    name: "少帥 Allen"
+    avatar: "/assets/img/guild/allen/avatar.webp"
+    page: "/guild/allen.html"
+    tags:
+      - id: "printing"
+        label: "桌遊印刷"
+      - id: "resilience"
+        label: "浴火重生"
+      - id: "board_game"
+        label: "桌遊顧問"
