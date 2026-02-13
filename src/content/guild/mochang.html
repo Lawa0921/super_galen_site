@@ -452,171 +452,178 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- SETUP ---
-        const container = document.getElementById('webgl-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a1a);
-        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // --- ASSETS ---
-        function createGlyphTexture(char, font="64px 'Ma Shan Zheng'") {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 128, 128);
-            ctx.font = font;
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(char, 64, 64);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        const glyphChars = ['墨', '唱', 'Code', 'Lua', 'GAME', '♪', '♫', '宮', '商', '角', '徵', '羽'];
-        const glyphTextures = glyphChars.map(c => createGlyphTexture(c, c.length > 1 ? "bold 32px 'Noto Serif TC'" : "64px 'Ma Shan Zheng'"));
-
-        function createInkTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
-            grad.addColorStop(0, 'rgba(255,255,255,0.8)');
-            grad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
-            grad.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0,0,128,128);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        // --- PARTICLES (INK) ---
-        const inkCount = 800;
-        const inkGeom = new THREE.BufferGeometry();
-        const inkPos = new Float32Array(inkCount * 3);
-        const inkSizes = new Float32Array(inkCount);
-
-        for(let i=0; i<inkCount; i++) {
-            inkPos[i*3] = (Math.random() - 0.5) * 40;
-            inkPos[i*3+1] = (Math.random() - 0.5) * 40;
-            inkPos[i*3+2] = (Math.random() - 0.5) * 20 - 5;
-            inkSizes[i] = Math.random() * 3;
-        }
-
-        inkGeom.setAttribute('position', new THREE.BufferAttribute(inkPos, 3));
-        inkGeom.setAttribute('size', new THREE.BufferAttribute(inkSizes, 1));
-
-        const inkMat = new THREE.PointsMaterial({
-            size: 0.5,
-            map: createInkTexture(),
-            transparent: true, opacity: 0.4,
-            depthWrite: false, blending: THREE.AdditiveBlending,
-            color: 0xcccccc
-        });
-
-        const inkSystem = new THREE.Points(inkGeom, inkMat);
-        scene.add(inkSystem);
-
-        // --- FLOATING GLYPHS ---
-        const glyphGroup = new THREE.Group();
-        for (let i = 0; i < 40; i++) {
-             const texIndex = Math.floor(Math.random() * glyphTextures.length);
-             const mat = new THREE.SpriteMaterial({
-                map: glyphTextures[texIndex],
-                transparent: true,
-                opacity: 0.1 + Math.random() * 0.4,
-                color: 0xaaaaaa
-            });
-            const sprite = new THREE.Sprite(mat);
-            sprite.position.set(
-                (Math.random()-0.5) * 30,
-                (Math.random()-0.5) * 60,
-                (Math.random()-0.5) * 15 - 5
-            );
-            sprite.scale.set(3, 3, 1);
-            sprite.userData = {
-                phase: Math.random() * Math.PI * 2
-            };
-            glyphGroup.add(sprite);
-        }
-        scene.add(glyphGroup);
-
-        // --- TRAIL (Candle Flame) ---
-        // Low key but flickering (simulating candle movement)
-        const trailMax = 30;
-        const trailGeom = new THREE.BufferGeometry();
-        const trailPositions = new Float32Array(trailMax * 3).fill(9999);
-        trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-
-        const trailPhases = new Float32Array(trailMax);
-        for(let i=0; i<trailMax; i++) trailPhases[i] = Math.random() * Math.PI * 2;
-
-        const trailMaterial = new THREE.PointsMaterial({
-            color: 0xffaa33, // Warm candle flame
-            size: 0.6,
-            transparent: true,
-            opacity: 0.3, // Slightly more visible but small
-            map: createInkTexture(),
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        const trailPoints = new THREE.Points(trailGeom, trailMaterial);
-        scene.add(trailPoints);
-
+        // --- GLOBAL VARIABLES (Deferred Init) ---
+        let scene, camera, renderer;
+        let inkSystem, glyphGroup, trailPoints;
+        let inkMat; // Need this for ScrollTrigger color change
+        const globalUniforms = { scrollSpeed: 0 };
         const raycaster = new THREE.Raycaster();
         const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
         const mouseVec = new THREE.Vector2();
         let trailIndex = 0;
+        const trailMax = 30;
+        let trailPhases;
 
-        document.addEventListener('mousemove', (e) => {
-            const cd = document.getElementById('cursor-dot');
-            if(cd) {
-                gsap.to(cd, { x: e.clientX, y: e.clientY, duration: 0.05 });
+        // --- DEFERRED INITIALIZATION ---
+        // This function runs ONLY after fonts and images are ready.
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // --- ASSETS (Inside initScene to use loaded fonts) ---
+            function createGlyphTexture(char, font="64px 'Ma Shan Zheng'") {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 128, 128);
+                // Ensure fonts are loaded before this
+                ctx.font = font;
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(char, 64, 64);
+                return new THREE.CanvasTexture(canvas);
             }
-            mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
 
-        // --- ANIMATION LOOP ---
-        const clock = new THREE.Clock();
-        const globalUniforms = { scrollSpeed: 0 };
+            const glyphChars = ['墨', '唱', 'Code', 'Lua', 'GAME', '♪', '♫', '宮', '商', '角', '徵', '羽'];
+            const glyphTextures = glyphChars.map(c => createGlyphTexture(c, c.length > 1 ? "bold 32px 'Noto Serif TC'" : "64px 'Ma Shan Zheng'"));
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            function createInkTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
+                grad.addColorStop(0, 'rgba(255,255,255,0.8)');
+                grad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0,0,128,128);
+                return new THREE.CanvasTexture(canvas);
+            }
 
-            // Ink
-            const positions = inkSystem.geometry.attributes.position.array;
-            const turbulence = 1 + globalUniforms.scrollSpeed * 20;
+            // --- PARTICLES (INK) ---
+            const inkCount = 800;
+            const inkGeom = new THREE.BufferGeometry();
+            const inkPos = new Float32Array(inkCount * 3);
+            const inkSizes = new Float32Array(inkCount);
 
             for(let i=0; i<inkCount; i++) {
-                const x = positions[i*3];
-                const y = positions[i*3+1];
-                positions[i*3] += Math.sin(y * 0.1 + time * 0.3) * 0.005 * turbulence;
-                positions[i*3+1] += Math.cos(x * 0.1 + time * 0.3) * 0.005 * turbulence;
-                if(Math.abs(positions[i*3]) > 25) positions[i*3] *= -0.9;
-                if(Math.abs(positions[i*3+1]) > 25) positions[i*3+1] *= -0.9;
+                inkPos[i*3] = (Math.random() - 0.5) * 40;
+                inkPos[i*3+1] = (Math.random() - 0.5) * 40;
+                inkPos[i*3+2] = (Math.random() - 0.5) * 20 - 5;
+                inkSizes[i] = Math.random() * 3;
             }
-            inkSystem.geometry.attributes.position.needsUpdate = true;
+
+            inkGeom.setAttribute('position', new THREE.BufferAttribute(inkPos, 3));
+            inkGeom.setAttribute('size', new THREE.BufferAttribute(inkSizes, 1));
+
+            inkMat = new THREE.PointsMaterial({
+                size: 0.5,
+                map: createInkTexture(),
+                transparent: true, opacity: 0.4,
+                depthWrite: false, blending: THREE.AdditiveBlending,
+                color: 0xcccccc
+            });
+
+            inkSystem = new THREE.Points(inkGeom, inkMat);
+            scene.add(inkSystem);
+
+            // --- FLOATING GLYPHS ---
+            glyphGroup = new THREE.Group();
+            for (let i = 0; i < 40; i++) {
+                const texIndex = Math.floor(Math.random() * glyphTextures.length);
+                const mat = new THREE.SpriteMaterial({
+                    map: glyphTextures[texIndex],
+                    transparent: true,
+                    opacity: 0.1 + Math.random() * 0.4,
+                    color: 0xaaaaaa
+                });
+                const sprite = new THREE.Sprite(mat);
+                sprite.position.set(
+                    (Math.random()-0.5) * 30,
+                    (Math.random()-0.5) * 60,
+                    (Math.random()-0.5) * 15 - 5
+                );
+                sprite.scale.set(3, 3, 1);
+                sprite.userData = {
+                    phase: Math.random() * Math.PI * 2
+                };
+                glyphGroup.add(sprite);
+            }
+            scene.add(glyphGroup);
+
+            // --- TRAIL (Candle Flame) ---
+            const trailGeom = new THREE.BufferGeometry();
+            const trailPositions = new Float32Array(trailMax * 3).fill(9999);
+            trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+
+            trailPhases = new Float32Array(trailMax);
+            for(let i=0; i<trailMax; i++) trailPhases[i] = Math.random() * Math.PI * 2;
+
+            const trailMaterial = new THREE.PointsMaterial({
+                color: 0xffaa33, // Warm candle flame
+                size: 0.6,
+                transparent: true,
+                opacity: 0.3, // Slightly more visible but small
+                map: createInkTexture(),
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            trailPoints = new THREE.Points(trailGeom, trailMaterial);
+            scene.add(trailPoints);
+
+            // --- FORCE COMPILE ---
+            // Render once to upload all textures (now using correct fonts) to GPU
+            renderer.render(scene, camera);
+        }
+
+        // --- ANIMATION LOOP (Deferred) ---
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!renderer || !scene || !camera) return;
+
+            const time = performance.now() * 0.001; // Use perf.now for smoother consistency
+
+            // Ink
+            if (inkSystem) {
+                const positions = inkSystem.geometry.attributes.position.array;
+                const turbulence = 1 + globalUniforms.scrollSpeed * 20;
+
+                for(let i=0; i<positions.length/3; i++) {
+                    const x = positions[i*3];
+                    const y = positions[i*3+1];
+                    positions[i*3] += Math.sin(y * 0.1 + time * 0.3) * 0.005 * turbulence;
+                    positions[i*3+1] += Math.cos(x * 0.1 + time * 0.3) * 0.005 * turbulence;
+                    if(Math.abs(positions[i*3]) > 25) positions[i*3] *= -0.9;
+                    if(Math.abs(positions[i*3+1]) > 25) positions[i*3+1] *= -0.9;
+                }
+                inkSystem.geometry.attributes.position.needsUpdate = true;
+            }
 
             // Glyphs
-            glyphGroup.children.forEach(sprite => {
-                sprite.position.y += Math.sin(time + sprite.userData.phase) * 0.005;
-                sprite.material.rotation = Math.sin(time * 0.5 + sprite.userData.phase) * 0.1;
-            });
+            if (glyphGroup) {
+                glyphGroup.children.forEach(sprite => {
+                    sprite.position.y += Math.sin(time + sprite.userData.phase) * 0.005;
+                    sprite.material.rotation = Math.sin(time * 0.5 + sprite.userData.phase) * 0.1;
+                });
+            }
 
             // Candle Flame Logic
             raycaster.setFromCamera(mouseVec, camera);
             const target = new THREE.Vector3();
             raycaster.ray.intersectPlane(plane, target);
 
-            if(target) {
+            if(target && trailPoints) {
                 const arr = trailPoints.geometry.attributes.position.array;
                 // Emit at mouse pos
                 arr[trailIndex * 3] = target.x;
@@ -628,119 +635,104 @@
             }
 
             // Candle Physics
-            const tArr = trailPoints.geometry.attributes.position.array;
+            if (trailPoints) {
+                const tArr = trailPoints.geometry.attributes.position.array;
+                for(let i=0; i<trailMax; i++) {
+                     if(i !== trailIndex && tArr[i*3+1] < 50) {
+                         // Float up (Heat rises)
+                         tArr[i*3+1] += 0.03 + Math.random() * 0.01;
 
-            for(let i=0; i<trailMax; i++) {
-                 if(i !== trailIndex && tArr[i*3+1] < 50) {
-                     // Float up (Heat rises)
-                     tArr[i*3+1] += 0.03 + Math.random() * 0.01;
+                         // Sway (Wind/Heat turbulence)
+                         const sway = Math.sin(time * 5 + trailPhases[i] + tArr[i*3+1]) * 0.02; // Faster flicker
+                         tArr[i*3] += sway;
 
-                     // Sway (Wind/Heat turbulence)
-                     const sway = Math.sin(time * 5 + trailPhases[i] + tArr[i*3+1]) * 0.02; // Faster flicker
-                     tArr[i*3] += sway;
-
-                     // Short life: disappear quickly
-                     if(tArr[i*3+1] > target.y + 2.0) tArr[i*3+1] = 9999;
-                 }
+                         // Short life: disappear quickly
+                         if(tArr[i*3+1] > target.y + 2.0) tArr[i*3+1] = 9999;
+                     }
+                }
+                trailPoints.geometry.attributes.position.needsUpdate = true;
             }
-            trailPoints.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
-        // NOTE: animate() is NOT called here anymore. It's called by initPage.
 
-        // --- ENHANCED SCROLL ---
-        gsap.registerPlugin(ScrollTrigger);
+        // --- SCROLL ANIMATIONS (Deferred) ---
+        function initScroll() {
+            gsap.registerPlugin(ScrollTrigger);
 
-        gsap.to(camera.position, {
-            z: 2, scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 }
-        });
-
-        gsap.to(camera.rotation, {
-            z: 0.2, scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 }
-        });
-
-        gsap.utils.toArray('[data-speed]').forEach(el => {
-            gsap.to(el, {
-                y: (i, target) => -ScrollTrigger.maxScroll(window) * target.dataset.speed * 0.1,
-                ease: "none",
-                scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 0 }
+            gsap.to(camera.position, {
+                z: 2, scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 }
             });
+
+            gsap.to(camera.rotation, {
+                z: 0.2, scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 }
+            });
+
+            gsap.utils.toArray('[data-speed]').forEach(el => {
+                gsap.to(el, {
+                    y: (i, target) => -ScrollTrigger.maxScroll(window) * target.dataset.speed * 0.1,
+                    ease: "none",
+                    scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 0 }
+                });
+            });
+
+            ScrollTrigger.create({
+                onUpdate: self => {
+                    const vel = Math.abs(self.getVelocity());
+                    gsap.to(globalUniforms, { scrollSpeed: vel / 5000, duration: 0.5, overwrite: true });
+                }
+            });
+
+            gsap.utils.toArray('.gs-reveal').forEach(elem => {
+                gsap.from(elem, {
+                    y: 50, opacity: 0, duration: 1,
+                    scrollTrigger: { trigger: elem, start: "top 85%", toggleActions: "play none none reverse" }
+                });
+            });
+
+            gsap.utils.toArray('.quest-grid').forEach(grid => {
+                gsap.from(grid.children, {
+                    y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
+                    scrollTrigger: { trigger: grid, start: "top 90%" }
+                });
+            });
+
+            const sections = [
+                { id: '#hero', color: 0xcccccc },
+                { id: '#origin', color: 0x00ff00 },
+                { id: '#wandering', color: 0xff4d4d },
+                { id: '#resonance', color: 0xbd4dff }
+            ];
+
+            sections.forEach(sec => {
+                ScrollTrigger.create({
+                    trigger: sec.id, start: "top center", end: "bottom center",
+                    onEnter: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 }),
+                    onEnterBack: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 })
+                });
+            });
+        }
+
+        // --- MOUSE LISTENERS ---
+        document.addEventListener('mousemove', (e) => {
+            const cd = document.getElementById('cursor-dot');
+            if(cd) {
+                gsap.to(cd, { x: e.clientX, y: e.clientY, duration: 0.05 });
+            }
+            mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        ScrollTrigger.create({
-            onUpdate: self => {
-                const vel = Math.abs(self.getVelocity());
-                gsap.to(globalUniforms, { scrollSpeed: vel / 5000, duration: 0.5, overwrite: true });
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                ScrollTrigger.refresh();
             }
         });
 
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
-            gsap.from(elem, {
-                y: 50, opacity: 0, duration: 1,
-                scrollTrigger: { trigger: elem, start: "top 85%", toggleActions: "play none none reverse" }
-            });
-        });
-
-        gsap.utils.toArray('.quest-grid').forEach(grid => {
-            gsap.from(grid.children, {
-                y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
-                scrollTrigger: { trigger: grid, start: "top 90%" }
-            });
-        });
-
-        const sections = [
-            { id: '#hero', color: 0xcccccc },
-            { id: '#origin', color: 0x00ff00 },
-            { id: '#wandering', color: 0xff4d4d },
-            { id: '#resonance', color: 0xbd4dff }
-        ];
-
-        sections.forEach(sec => {
-            ScrollTrigger.create({
-                trigger: sec.id, start: "top center", end: "bottom center",
-                onEnter: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 }),
-                onEnterBack: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 })
-            });
-        });
-
-        // --- ROBUST LOADER ---
-        const initPage = () => {
-            const loader = document.getElementById('loader');
-
-            // 1. Force a GPU warm-up (compile shaders)
-            // Even if we don't use renderer.compile (added in later versions),
-            // a single render call forces material compilation.
-            renderer.render(scene, camera);
-
-            // 2. Start the Animation Loop
-            animate();
-
-            // 3. Wait for layout/paint
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    // 4. Recalculate ScrollTrigger now that we are running
-                    ScrollTrigger.refresh();
-
-                    // 5. Reveal
-                    gsap.to(loader, {
-                        opacity: 0,
-                        duration: 0.8,
-                        ease: "power2.inOut",
-                        onComplete: () => {
-                            loader.remove();
-                            // Trigger entry animations after loader is gone
-                            gsap.from('h1', { scale: 1.1, duration: 1.2, ease: "power2.out" });
-                        }
-                    });
-
-                    // Fade in WebGL and Content
-                    gsap.to('#webgl-container', { opacity: 1, duration: 1 });
-                    gsap.to('section', { opacity: 1, duration: 1 });
-                });
-            });
-        };
-
+        // --- MAIN ENTRY POINT (STRICT SEQUENCE) ---
         const checkResources = () => {
             // 1. Check Fonts
             const fontsReady = document.fonts.ready;
@@ -755,25 +747,46 @@
                 });
             }));
 
-            // Wait for both
+            // 3. Wait for Everything
             Promise.all([fontsReady, imagesReady]).then(() => {
-                initPage();
+
+                // 4. Initialize Three.js (Now fonts are DEFINITELY loaded)
+                initScene();
+
+                // 5. Initialize GSAP (Now objects exist)
+                initScroll();
+
+                // 6. Start Loop
+                animate();
+
+                // 7. Wait for Paint & Reveal
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        ScrollTrigger.refresh();
+
+                        const loader = document.getElementById('loader');
+                        gsap.to(loader, {
+                            opacity: 0,
+                            duration: 0.8,
+                            ease: "power2.inOut",
+                            onComplete: () => {
+                                loader.remove();
+                                gsap.from('h1', { scale: 1.1, duration: 1.2, ease: "power2.out" });
+                            }
+                        });
+
+                        gsap.to('#webgl-container', { opacity: 1, duration: 1 });
+                        gsap.to('section', { opacity: 1, duration: 1 });
+                    });
+                });
             });
         };
 
-        // Start checking
         if (document.readyState === 'complete') {
             checkResources();
         } else {
             window.addEventListener('load', checkResources);
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            ScrollTrigger.refresh();
-        });
 
     </script>
 </body>
