@@ -126,13 +126,11 @@
         /* --- Components: Smoky/Magical Panels --- */
         .glass-panel {
             background: var(--glass-bg);
-            /* border: 1px solid var(--glass-border); Removed for smoke effect */
-            backdrop-filter: blur(20px); /* Stronger blur */
+            backdrop-filter: blur(20px);
             padding: 4rem;
             border-radius: 40px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             position: relative;
-            /* overflow: hidden; Removed to allow smoke spread */
             transition: transform 0.3s, box-shadow 0.3s;
         }
 
@@ -302,6 +300,17 @@
             box-shadow: 0 0 20px var(--accent-pink);
         }
 
+        /* --- Content Layout --- */
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        @media(max-width: 900px) {
+            .two-col-grid { grid-template-columns: 1fr; gap: 2rem; }
+        }
+
         /* --- Gallery Finale --- */
         #gallery {
             min-height: 150vh;
@@ -388,29 +397,46 @@
             </div>
         </section>
 
-        <!-- Identity -->
+        <!-- Identity / Grimoire -->
         <section id="identity">
-            <div class="glass-panel container gs-reveal" style="max-width: 900px; text-align: center;">
-                <div class="profile-wrapper">
-                    <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Yumebi Emu" class="profile-img">
-                    <div class="sparkle" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-                    <div class="sparkle" style="top: 80%; right: 20%; animation-delay: 1s;"></div>
-                    <div class="sparkle" style="top: 10%; right: 10%; animation-delay: 2s;"></div>
-                </div>
+            <div class="glass-panel container gs-reveal" style="max-width: 1000px;">
+                <div class="two-col-grid">
+                    <!-- Left: Avatar -->
+                    <div style="text-align: center;">
+                        <div class="profile-wrapper">
+                            <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Yumebi Emu" class="profile-img">
+                            <div class="sparkle" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
+                            <div class="sparkle" style="top: 80%; right: 20%; animation-delay: 1s;"></div>
+                            <div class="sparkle" style="top: 10%; right: 10%; animation-delay: 2s;"></div>
+                        </div>
+                        <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-primary); text-shadow: 0 2px 10px rgba(0,0,0,0.5);">夢寐愛姆</h2>
+                        <p style="color: var(--accent-gold); letter-spacing: 0.2em; font-size: 0.9rem;">YUMEBI EMU</p>
+                    </div>
 
-                <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-primary); text-shadow: 0 2px 10px rgba(0,0,0,0.5);">夢寐愛姆</h2>
+                    <!-- Right: Lore & Bio -->
+                    <div>
+                        <h3 class="cinzel-font" style="font-size: 2rem; color: var(--accent-pink); margin-bottom: 1.5rem;">The Dream Weaver</h3>
+                        <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+                            在夢境與現實的夾縫中，時間是靜止的——這也是我永遠 20 歲的秘密。
+                            作為一名穿梭於潛意識的魔女，我擅長捕捉那些飄散的思緒，將它們編織成溫柔的網。
+                        </p>
+                        <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+                            失眠是靈魂的乾渴。透過我的 <span class="glow-text">ASMR 夢境魔法</span>，我為每一個孤獨的靈魂在漫漫長夜中點亮一盞燈。
+                            我的聲音是引路人，帶領你穿越焦慮的迷霧，抵達安詳的彼岸。
+                        </p>
 
-                <p style="font-size: 1.2rem; line-height: 2; margin-bottom: 2rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-                    我是一位 ASMR 創作者，永遠 20 歲的偶像！<br>
-                    喜歡在直播中和大家一起閒聊彼此的日常。<br>
-                    透過擅長的 <span class="glow-text">夢境魔法 (ASMR)</span>，把失眠的人通通哄睡，<br>
-                    陪伴所有孤獨的人度過漫漫長夜。
-                </p>
-
-                <div style="background: rgba(255,105,180,0.2); padding: 1.5rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid rgba(255,105,180,0.3);">
-                    <p style="color: #fff; font-style: italic; text-shadow: 0 1px 5px rgba(0,0,0,0.5);">
-                        "想成為像照亮冬天的太陽般溫暖親切的人。"
-                    </p>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
+                                <i class="fa-solid fa-moon"></i> Dream Magic
+                            </span>
+                            <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
+                                <i class="fa-solid fa-wand-sparkles"></i> Tarot
+                            </span>
+                            <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
+                                <i class="fa-solid fa-utensils"></i> Alchemy (Cooking)
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="social-container">
@@ -450,18 +476,23 @@
             </div>
         </section>
 
-        <!-- Traits -->
-        <section id="traits">
-            <div class="container" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem;">
-                <div class="glass-panel gs-card" style="flex: 1; min-width: 320px; text-align: center;">
-                    <i class="fa-solid fa-heart" style="font-size: 3rem; color: var(--accent-pink); margin-bottom: 1.5rem;"></i>
-                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">WARMTH</h3>
-                    <p style="color: #eee;">努力經營個人 IP，常駐在 YouTube 直播。</p>
+        <!-- Manifesto / Philosophy -->
+        <section id="manifesto">
+            <div class="container gs-reveal" style="max-width: 800px; text-align: center;">
+                <div style="margin-bottom: 2rem;">
+                    <i class="fa-regular fa-snowflake" style="font-size: 3rem; color: #add8e6; opacity: 0.8; animation: float-sparkle 4s infinite;"></i>
                 </div>
-                <div class="glass-panel gs-card" style="flex: 1; min-width: 320px; text-align: center;">
-                    <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 3rem; color: var(--accent-gold); margin-bottom: 1.5rem;"></i>
-                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">MAGIC</h3>
-                    <p style="color: #eee;">塔羅占卜 · 烹飪料理 · 哄睡魔法</p>
+                <h2 style="font-size: 2.5rem; margin-bottom: 2rem; color: var(--text-primary);">WINTER SUN</h2>
+                <div class="glass-panel" style="padding: 3rem;">
+                    <p style="font-size: 1.2rem; line-height: 2; font-style: italic; color: #fff;">
+                        "雖然我是居住在黑夜的小惡魔，但我渴望成為那個在最寒冷的冬天裡，依然能照亮你心房的太陽。"
+                    </p>
+                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 2rem 0;">
+                    <p style="font-size: 1.1rem; color: #ddd;">
+                        天然呆也許是我的偽裝，但我對每一個觀眾的心意都是魔法般真實的。<br>
+                        無論是直播中的閒聊，還是私下的塔羅指引，<br>
+                        我都希望能成為你疲憊時的歸宿。
+                    </p>
                 </div>
             </div>
         </section>
