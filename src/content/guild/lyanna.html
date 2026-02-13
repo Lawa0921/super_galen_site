@@ -291,6 +291,70 @@
             transform: scale(1.03);
         }
 
+        /* Avatar Specifics */
+        .avatar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Override box-shadow on parent for cleaner look */
+            box-shadow: none !important;
+            background: none !important;
+            min-height: auto;
+            padding: 2rem;
+        }
+
+        .avatar-frame {
+            position: relative;
+            max-width: 320px;
+            width: 100%;
+            aspect-ratio: 3/4;
+            border-radius: 4px; /* Slightly rounded */
+            overflow: visible;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+            /* Double border effect using pseudo-element */
+        }
+
+        .avatar-frame::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--accent);
+            opacity: 0.6;
+            z-index: -1;
+            transition: transform 0.5s ease;
+        }
+
+        .avatar-frame::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            right: -15px;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--accent);
+            opacity: 0.3;
+            z-index: -1;
+            transition: transform 0.5s ease 0.1s;
+        }
+
+        .avatar-frame:hover::before {
+            transform: translate(5px, 5px);
+        }
+        .avatar-frame:hover::after {
+            transform: translate(-5px, -5px);
+        }
+
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 2px;
+            display: block;
+        }
+
         .problem-statement {
             border-left: 2px solid var(--accent);
             padding-left: 2rem;
@@ -564,8 +628,10 @@
                 <p>我是允曦 Lyanna，華語教師培訓課程創辦者，也是 MMT 個人天賦與人際關係諮詢師。目前任教於美國 UTA。</p>
                 <p>我長期投入海內外華語教學、師資培訓與職涯引導，致力於將「華語教學」變成一條<span class="highlight">穩定、清楚、走得出去</span>的路。</p>
             </div>
-            <div class="narrative-visual">
-                <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna Avatar" class="text-reveal">
+            <div class="narrative-visual avatar-container">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna Avatar" class="text-reveal">
+                </div>
             </div>
         </div>
 
@@ -702,9 +768,6 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import Lenis from 'https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/+esm';
 
         // --- LENIS SMOOTH SCROLL ---
@@ -997,7 +1060,6 @@
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                composer.setSize(window.innerWidth, window.innerHeight);
             });
         };
 
