@@ -544,7 +544,7 @@
         scene.fog = new THREE.FogExp2(0x020205, 0.008);
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 50); // Start position for scroll animation
+        camera.position.set(0, 0, 25); // Start position for scroll animation (Reduced for slower zoom)
 
         // Expose camera to window for debug/verification
         window.camera = camera;
@@ -835,13 +835,13 @@
         animate();
 
         // Unified Scroll Interaction (Immediate Control)
-        // Camera moves from Z=50 (Start) -> Z=3 (Finale) based on scroll
+        // Camera moves from Z=25 (Start) -> Z=3 (Finale) based on scroll
         const camTl = gsap.timeline({
             scrollTrigger: {
                 trigger: ".scroller",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 2 // Heavy/Slow feel without fake height
+                scrub: 1 // Tighter scrub for better sync with scroll bottom
             }
         });
 
