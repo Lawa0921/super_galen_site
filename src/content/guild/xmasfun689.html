@@ -52,9 +52,9 @@
         }
 
         /* Layout */
-        .scroller { position: relative; z-index: 10; height: auto; /* Let content define height */ }
+        .scroller { position: relative; z-index: 10; height: 15000px; /* Massive physical height */ }
         .section {
-            min-height: 80vh;
+            min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 4rem 5%;
             pointer-events: none;
@@ -77,15 +77,14 @@
             box-shadow: 0 0 20px var(--c-plasma);
         }
 
-        /* Tech Card (Industrial Overhaul) */
+        /* Tech Card (Industrial Overhaul - Side by Side) */
         .tech-card {
             pointer-events: auto;
-            width: 100%; max-width: 1000px; /* Wider Cards */
-            /* Metallic Gradient Background */
+            width: 100%; max-width: 1000px;
             background: linear-gradient(135deg, rgba(20, 25, 30, 0.95), rgba(5, 10, 15, 0.98));
             border: 2px solid #333;
             border-left: 4px solid var(--c-plasma);
-            padding: 2.5rem;
+            padding: 3rem;
             position: relative;
             backdrop-filter: blur(10px);
             clip-path: polygon(
@@ -95,7 +94,22 @@
             );
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 50px rgba(0,0,0,0.5);
             transition: all 0.3s ease;
+
+            /* Flex Layout for Side-by-Side */
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 3rem;
         }
+
+        .tech-card.reverse {
+            flex-direction: row-reverse;
+            border-left: 2px solid #333;
+            border-right: 4px solid var(--c-plasma);
+        }
+
+        .card-content { flex: 1; }
+        .card-visual { flex: 0 0 40%; max-width: 400px; }
 
         .tech-card:hover {
             transform: translateY(-5px);
@@ -170,6 +184,15 @@
             border: 1px solid var(--c-plasma);
         }
 
+        @media (max-width: 900px) {
+            .tech-card, .tech-card.reverse {
+                flex-direction: column;
+                padding: 2rem;
+                gap: 2rem;
+            }
+            .card-visual { flex: 0 0 auto; width: 100%; max-width: 100%; }
+        }
+
         /* Footer */
         .footer {
             height: 40vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -226,62 +249,71 @@
         <section class="section">
             <div class="tech-card">
                 <div class="hazard-strip"></div>
-                <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; flex-wrap: wrap;">
-                    <div style="position:relative;">
+
+                <div class="card-visual" style="text-align: center;">
+                    <div style="position:relative; display: inline-block;">
                         <!-- Using correct avatar asset (Bald guy) -->
-                        <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:120px; height:120px; object-fit:cover; border:2px solid var(--c-plasma); box-shadow: 0 0 20px var(--c-plasma); clip-path: circle(50%);">
-                        <div style="position:absolute; bottom:-5px; right:-10px; background:#000; border:1px solid var(--c-plasma); padding:2px 8px; font-size:0.7rem; font-family:var(--f-tech); color:var(--c-plasma);">LV.8</div>
-                    </div>
-                    <div>
-                        <span class="code-line">// ID: XMASFUN689</span>
-                        <h1>PLASMA<br>ENGINEER</h1>
+                        <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:120px; height:120px; object-fit:cover; border:2px solid var(--c-plasma); box-shadow: 0 0 20px var(--c-plasma); border-radius: 12px;">
+                        <div style="position:absolute; bottom:-10px; right:-10px; background:#000; border:1px solid var(--c-plasma); padding:4px 12px; font-size:0.9rem; font-family:var(--f-tech); color:var(--c-plasma);">LV.8</div>
                     </div>
                 </div>
 
-                <p>
-                    「擁有 <span class="gold">戰士的體格</span>，卻守護著 <span class="highlight">召喚師的靈魂</span>。」
-                </p>
-                <p>
-                    在這個鋼鐵與電漿交織的矩陣中，我是引導能量的工程師。
-                    八年的工地煉金術，將汗水與意志熔鑄成城市的基石。
-                    我手握雷電 (Power) 與流水 (Cooling)，駕馭著大地的鋼鐵巨獸。
-                </p>
+                <div class="card-content">
+                    <div>
+                        <span class="code-line">// ID: XMASFUN689</span>
+                        <h1 style="font-size: 3rem;">PLASMA<br>ENGINEER</h1>
+                    </div>
 
-                <!-- Circuit Stats -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2rem;">
-                    <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">STR: S+</div>
-                    <div style="border: 1px solid var(--c-plasma); padding: 5px 10px; color: var(--c-plasma); font-family: var(--f-tech);">INT: A</div>
-                    <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">DEF: S</div>
-                    <div style="border: 1px solid var(--c-core); padding: 5px 10px; color: var(--c-core); font-family: var(--f-tech);">MANA: HIGH</div>
+                    <p style="margin-top: 1.5rem;">
+                        「擁有 <span class="gold">戰士的體格</span>，卻守護著 <span class="highlight">召喚師的靈魂</span>。」
+                    </p>
+                    <p>
+                        在這個鋼鐵與電漿交織的矩陣中，我是引導能量的工程師。
+                        八年的工地煉金術，將汗水與意志熔鑄成城市的基石。
+                        我手握雷電 (Power) 與流水 (Cooling)，駕馭著大地的鋼鐵巨獸。
+                    </p>
+
+                    <!-- Circuit Stats -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2rem;">
+                        <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">STR: S+</div>
+                        <div style="border: 1px solid var(--c-plasma); padding: 5px 10px; color: var(--c-plasma); font-family: var(--f-tech);">INT: A</div>
+                        <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">DEF: S</div>
+                        <div style="border: 1px solid var(--c-core); padding: 5px 10px; color: var(--c-core); font-family: var(--f-tech);">MANA: HIGH</div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- 2. Machines -->
         <section class="section">
-            <div class="tech-card card-gold">
+            <div class="tech-card card-gold reverse">
                 <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-gold) 10px, var(--c-gold) 20px);"></div>
-                <span class="code-line">Module: HEAVY_MACHINERY</span>
-                <h2 style="color: var(--c-gold);"><i class="fa-solid fa-truck-monster"></i> Iron Legion</h2>
 
-                <div class="holo-frame" style="border-color: var(--c-gold);">
-                    <img src="/assets/img/guild/xmasfun689/excavator.webp" class="holo-img">
-                    <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">EXCAVATOR_UNIT</div>
+                <div class="card-visual">
+                    <div class="holo-frame" style="border-color: var(--c-gold);">
+                        <img src="/assets/img/guild/xmasfun689/excavator.webp" class="holo-img">
+                        <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">EXCAVATOR_UNIT</div>
+                    </div>
+                    <div class="holo-frame" style="border-color: var(--c-gold); margin-top: 1rem;">
+                        <img src="/assets/img/guild/xmasfun689/roller.webp" class="holo-img">
+                        <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">ROLLER_UNIT</div>
+                    </div>
                 </div>
-                <p>
-                    <b>大地魔像 (Excavator)</b><br>
-                    我的首席召喚獸。這隻鋼鐵手臂能輕易撕裂大地，重塑地形。
-                    雖然與執照擦肩而過（嘆），但這份操作手感早已刻入靈魂。
-                </p>
 
-                <div class="holo-frame" style="border-color: var(--c-gold);">
-                    <img src="/assets/img/guild/xmasfun689/roller.webp" class="holo-img">
-                    <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">ROLLER_UNIT</div>
+                <div class="card-content">
+                    <span class="code-line">Module: HEAVY_MACHINERY</span>
+                    <h2 style="color: var(--c-gold);"><i class="fa-solid fa-truck-monster"></i> Iron Legion</h2>
+
+                    <p>
+                        <b>大地魔像 (Excavator)</b><br>
+                        我的首席召喚獸。這隻鋼鐵手臂能輕易撕裂大地，重塑地形。
+                        雖然與執照擦肩而過（嘆），但這份操作手感早已刻入靈魂。
+                    </p>
+                    <p>
+                        <b>鎮壓巨獸 (Roller)</b><br>
+                        秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
+                    </p>
                 </div>
-                <p>
-                    <b>鎮壓巨獸 (Roller)</b><br>
-                    秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
-                </p>
             </div>
         </section>
 
@@ -289,52 +321,60 @@
         <section class="section">
             <div class="tech-card">
                 <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-plasma) 10px, var(--c-plasma) 20px);"></div>
-                <span class="code-line">System: ELEMENTAL_MATRIX</span>
-                <h2><i class="fa-solid fa-bolt"></i> Circuit Mage</h2>
 
-                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
-                    <div style="flex: 1; border: 1px solid var(--c-core); padding: 1rem; background: rgba(0, 102, 255, 0.1);">
-                        <i class="fa-solid fa-droplet" style="font-size: 2rem; color: var(--c-core); margin-bottom: 0.5rem;"></i>
-                        <h4 style="margin: 0; color: var(--c-core); font-family: var(--f-head);">WATER</h4>
-                        <div style="font-size: 0.7rem; color: #aaa;">COOLING SYS</div>
-                    </div>
-                    <div style="flex: 1; border: 1px solid var(--c-plasma); padding: 1rem; background: rgba(0, 243, 255, 0.1);">
-                        <i class="fa-solid fa-bolt" style="font-size: 2rem; color: var(--c-plasma); margin-bottom: 0.5rem;"></i>
-                        <h4 style="margin: 0; color: var(--c-plasma); font-family: var(--f-head);">THUNDER</h4>
-                        <div style="font-size: 0.7rem; color: #aaa;">POWER GRID</div>
+                <div class="card-visual">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                        <div style="border: 1px solid var(--c-core); padding: 1rem; background: rgba(0, 102, 255, 0.1);">
+                            <i class="fa-solid fa-droplet" style="font-size: 3rem; color: var(--c-core); margin-bottom: 0.5rem;"></i>
+                            <h4 style="margin: 0; color: var(--c-core); font-family: var(--f-head);">WATER</h4>
+                        </div>
+                        <div style="border: 1px solid var(--c-plasma); padding: 1rem; background: rgba(0, 243, 255, 0.1);">
+                            <i class="fa-solid fa-bolt" style="font-size: 3rem; color: var(--c-plasma); margin-bottom: 0.5rem;"></i>
+                            <h4 style="margin: 0; color: var(--c-plasma); font-family: var(--f-head);">THUNDER</h4>
+                        </div>
                     </div>
                 </div>
 
-                <p>
-                    <b>水之脈絡</b> - 建築物如同巨大的生物，而管道是它的血管。我通曉流體力學，確保生命之源在其中順暢流動。<br><br>
-                    <b>雷之神經</b> - 編織能量的網。在看不見的牆壁中，佈設著傳遞意志的神經網路。
-                </p>
-                <div style="background: rgba(0, 243, 255, 0.1); border-left: 3px solid var(--c-plasma); padding: 10px;">
-                    <p style="margin:0; font-style:italic; color:white;">「朋友都叫我水電土三系混合大法師。」</p>
+                <div class="card-content">
+                    <span class="code-line">System: ELEMENTAL_MATRIX</span>
+                    <h2><i class="fa-solid fa-bolt"></i> Circuit Mage</h2>
+
+                    <p>
+                        <b>水之脈絡</b> - 建築物如同巨大的生物，而管道是它的血管。我通曉流體力學，確保生命之源在其中順暢流動。<br><br>
+                        <b>雷之神經</b> - 編織能量的網。在看不見的牆壁中，佈設著傳遞意志的神經網路。
+                    </p>
+                    <div style="background: rgba(0, 243, 255, 0.1); border-left: 3px solid var(--c-plasma); padding: 10px;">
+                        <p style="margin:0; font-style:italic; color:white;">「朋友都叫我水電土三系混合大法師。」</p>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- 4. Personal -->
         <section class="section">
-            <div class="tech-card card-alert">
+            <div class="tech-card card-alert reverse">
                 <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-alert) 10px, var(--c-alert) 20px);"></div>
-                <span class="code-line" style="color: var(--c-alert);">File: INNER_SANCTUM</span>
-                <h2 style="color: var(--c-alert); text-shadow: 0 0 10px var(--c-alert);"><i class="fa-solid fa-heart"></i> Soft Core</h2>
 
-                <div class="holo-frame" style="border-color: var(--c-alert);">
-                    <img src="/assets/img/guild/xmasfun689/plushies.webp" class="holo-img">
-                    <div class="holo-tag" style="border-color: var(--c-alert); color: var(--c-alert);">MORALE_BOOSTER</div>
+                <div class="card-visual">
+                    <div class="holo-frame" style="border-color: var(--c-alert);">
+                        <img src="/assets/img/guild/xmasfun689/plushies.webp" class="holo-img">
+                        <div class="holo-tag" style="border-color: var(--c-alert); color: var(--c-alert);">MORALE_BOOSTER</div>
+                    </div>
                 </div>
 
-                <p>
-                    <b>戰士的柔情</b><br>
-                    卸下重甲，戰士亦有溫柔的一面。
-                    習慣了單人副本的孤獨，<b>猴子布偶</b> 與 <b>Kururu 曹長</b> (Keroro Gunso) 是我最忠實的使魔。
-                </p>
-                <p>
-                    平常玩遊戲有召喚類選召喚，因為都自己一個人玩比較多... 但在這冷硬的工業世界裡，它們守護著我未曾磨滅的初心。
-                </p>
+                <div class="card-content">
+                    <span class="code-line" style="color: var(--c-alert);">File: INNER_SANCTUM</span>
+                    <h2 style="color: var(--c-alert); text-shadow: 0 0 10px var(--c-alert);"><i class="fa-solid fa-heart"></i> Soft Core</h2>
+
+                    <p>
+                        <b>戰士的柔情</b><br>
+                        卸下重甲，戰士亦有溫柔的一面。
+                        習慣了單人副本的孤獨，<b>猴子布偶</b> 與 <b>Kururu 曹長</b> (Keroro Gunso) 是我最忠實的使魔。
+                    </p>
+                    <p>
+                        平常玩遊戲有召喚類選召喚，因為都自己一個人玩比較多... 但在這冷硬的工業世界裡，它們守護著我未曾磨滅的初心。
+                    </p>
+                </div>
             </div>
         </section>
 
@@ -698,43 +738,29 @@
         const embers = new THREE.Points(emberGeo, emberMat);
         scene.add(embers);
 
-        // 1. Core Smoke (Background)
-        for (let i = 0; i < 50; i++) {
-            const smoke = new THREE.Sprite(smokeMat);
-            smoke.position.set(
-                (Math.random() - 0.5) * 50,
-                (Math.random() - 0.5) * 30 - 5,
-                (Math.random() - 0.5) * 20 - 5
-            );
-            smoke.scale.set(15, 15, 1);
-            smoke.userData = {
-                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.01, Math.random() * 0.02, 0),
-                rotationSpeed: (Math.random() - 0.5) * 0.005
-            };
-            smokeGroup.add(smoke);
-            smokeParticles.push(smoke);
-        }
-
-        // 2. Foreground Smoke (Visible at Start Z=50)
-        // Brighter material for foreground to ensure visibility against dark background
+        // Volumetric Smoke Tunnel (Z=60 to Z=0)
         const lightSmokeMat = smokeMat.clone();
         lightSmokeMat.color.setHex(0xaaaaaa); // Light Grey
-        lightSmokeMat.opacity = 0.5;
+        lightSmokeMat.opacity = 0.4;
 
-        for (let i = 0; i < 60; i++) {
-            const smoke = new THREE.Sprite(lightSmokeMat);
-            smoke.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 20,
-                40 + Math.random() * 15 // Placed directly at Z=40-55 (Camera is at 50)
-            );
-            smoke.scale.set(15, 15, 1);
-            smoke.userData = {
-                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.005, Math.random() * 0.005, 0),
-                rotationSpeed: (Math.random() - 0.5) * 0.002
-            };
-            smokeGroup.add(smoke);
-            smokeParticles.push(smoke);
+        // Generate smoke along the entire path
+        for (let z = 60; z > 0; z -= 2) {
+            // Create a ring/cloud at this Z depth
+            for(let k=0; k<3; k++) {
+                const smoke = new THREE.Sprite(z > 30 ? lightSmokeMat : smokeMat); // Light near cam, dark near core
+                smoke.position.set(
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 20,
+                    z + (Math.random() - 0.5) * 2
+                );
+                smoke.scale.set(15, 15, 1);
+                smoke.userData = {
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.005, Math.random() * 0.005, 0),
+                    rotationSpeed: (Math.random() - 0.5) * 0.002
+                };
+                smokeGroup.add(smoke);
+                smokeParticles.push(smoke);
+            }
         }
 
         // Animation
@@ -817,8 +843,8 @@
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
-                end: "bottom bottom",
-                scrub: 2 // Heavier scrub for smoother feel
+                end: "+=20000", // FORCE MASSIVE SCROLL DISTANCE (20k pixels)
+                scrub: 1
             }
         });
 
