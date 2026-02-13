@@ -52,20 +52,35 @@
         }
 
         /* Layout */
-        .scroller { position: relative; z-index: 10; height: 3000vh; /* Ultra Extreme Height */ }
+        .scroller { position: relative; z-index: 10; height: auto; /* Let content define height */ }
         .section {
-            min-height: 100vh;
+            min-height: 80vh;
             display: flex; align-items: center; justify-content: center;
             padding: 4rem 5%;
             pointer-events: none;
-            /* Space out sections manually with margins since height is fixed */
-            margin-bottom: 150vh;
+            margin-bottom: 30vh; /* Balanced spacing */
+            position: relative;
+        }
+
+        /* Data Cable Connection */
+        .scroller::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--c-plasma) 20%, var(--c-core) 80%, transparent);
+            transform: translateX(-50%);
+            z-index: -1;
+            opacity: 0.5;
+            box-shadow: 0 0 20px var(--c-plasma);
         }
 
         /* Tech Card (Industrial Overhaul) */
         .tech-card {
             pointer-events: auto;
-            width: 100%; max-width: 600px;
+            width: 100%; max-width: 1000px; /* Wider Cards */
             /* Metallic Gradient Background */
             background: linear-gradient(135deg, rgba(20, 25, 30, 0.95), rgba(5, 10, 15, 0.98));
             border: 2px solid #333;
@@ -159,6 +174,7 @@
         .footer {
             height: 40vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
             position: relative; z-index: 20; background: linear-gradient(to top, #000, transparent);
+            margin-top: 20vh; /* Ensure separation from last card */
         }
         .social-bar { display: flex; gap: 2rem; margin-bottom: 2rem; }
         .social-btn {
@@ -802,7 +818,7 @@
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1 // Faster scrub response because distance is huge
+                scrub: 2 // Heavier scrub for smoother feel
             }
         });
 
