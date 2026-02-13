@@ -770,24 +770,24 @@
                 // 4. Initialize Three.js
                 initScene();
 
-                // 5. Initialize GSAP
-                initScroll();
-
-                // 6. Start Loop
+                // 5. Start Loop
                 animate();
 
-                // 7. Wait for Paint & Reveal
+                // 6. Wait for Paint & Reveal
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         // Force a reflow
                         document.body.offsetHeight;
+
+                        // Unlock scrolling FIRST
+                        document.body.style.overflowY = "auto";
+                        document.body.style.overflowX = "hidden";
+
+                        // NOW Initialize GSAP/ScrollTrigger (when body is scrollable)
+                        initScroll();
                         ScrollTrigger.refresh();
 
                         const loader = document.getElementById('loader');
-
-                        // Unlock scrolling
-                        document.body.style.overflowY = "auto";
-                        document.body.style.overflowX = "hidden";
 
                         gsap.to(loader, {
                             opacity: 0,
