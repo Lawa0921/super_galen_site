@@ -41,7 +41,7 @@
             background-color: var(--c-bg);
             color: var(--c-text);
             font-family: var(--f-serif);
-            overflow-x: hidden;
+            overflow: hidden; /* Lock scroll during load */
             cursor: none; /* Custom cursor used */
         }
 
@@ -63,29 +63,27 @@
 
         /* --- Custom Cursor --- */
         #cursor {
-            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
-            border: 2px solid rgba(255,255,255,0.5);
-            border-radius: 50%; pointer-events: none; z-index: 10000;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: exclusion;
-            transition: transform 0.1s, width 0.3s, height 0.3s, border-color 0.3s;
+            display: none; /* No ring, purely subtle */
         }
         #cursor-dot {
             position: fixed; top: 0; left: 0; width: 4px; height: 4px;
-            background: var(--c-gold);
+            background: rgba(255, 160, 60, 0.8); /* Warm candle orange */
             border-radius: 50%; pointer-events: none; z-index: 10001;
             transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(255, 100, 0, 0.5);
+            filter: blur(1px);
+            transition: width 0.1s, height 0.1s;
         }
-        .hovered {
-            width: 50px !important; height: 50px !important;
-            background: rgba(212, 175, 55, 0.1);
-            border-color: var(--c-gold) !important;
+        .hovered #cursor-dot {
+            background: rgba(255, 200, 100, 1);
+            box-shadow: 0 0 15px rgba(255, 150, 50, 0.8);
         }
 
         /* --- Canvas --- */
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             z-index: -1; pointer-events: none;
+            /* Opacity handled by #main-content or JS */
         }
 
         /* --- Navigation --- */
@@ -111,62 +109,69 @@
 
         /* --- Layout --- */
         section {
-            min-height: 100vh;
+            /* Balanced spacing: enough to breathe, not too far apart */
             display: flex; align-items: center; justify-content: center;
-            position: relative; padding: 4rem 2rem; box-sizing: border-box;
+            position: relative; padding: 4rem 1rem; box-sizing: border-box;
+            /* Opacity handled by main content wrapper to avoid conflict with GSAP */
         }
+        /* Reduce first section padding to bring content up */
+        #hero { padding-top: 6rem; padding-bottom: 2rem; }
+
         .container {
-            max-width: 1000px; width: 100%; position: relative; z-index: 10;
+            max-width: 900px; width: 100%; position: relative; z-index: 10;
         }
 
         /* --- Typography --- */
         h1 {
-            font-family: var(--f-cali); font-size: clamp(4rem, 15vw, 10rem);
-            line-height: 0.8; margin: 0; color: #fff;
+            font-family: var(--f-cali); font-size: clamp(3.5rem, 10vw, 6rem);
+            line-height: 0.9; margin: 0; color: #fff;
             text-shadow: 0 0 30px rgba(255,255,255,0.1);
             mix-blend-mode: overlay;
-            letter-spacing: -5px;
+            letter-spacing: -2px;
         }
         h2 {
-            font-family: var(--f-cali); font-size: clamp(2.5rem, 6vw, 4rem);
-            margin-bottom: 1.5rem; color: var(--c-gold);
+            font-family: var(--f-cali); font-size: clamp(1.8rem, 4vw, 3rem);
+            margin: 0 0 0.5rem 0; color: var(--c-gold); /* Reduced bottom margin */
             position: relative; display: inline-block;
+            line-height: 1.2;
         }
         h2::after {
-            content: ''; position: absolute; left: 0; bottom: -10px; width: 50px; height: 3px;
+            content: ''; position: absolute; left: 0; bottom: -2px; width: 40px; height: 2px;
             background: var(--c-accent);
         }
 
         .tag {
-            font-family: var(--f-serif); font-size: 0.8rem; letter-spacing: 3px;
-            color: #888; text-transform: uppercase; display: block; margin-bottom: 0.5rem;
+            font-family: var(--f-serif); font-size: 0.7rem; letter-spacing: 2px;
+            color: #888; text-transform: uppercase; display: block; margin-bottom: 0.2rem;
         }
 
         p {
-            font-size: 1.1rem; line-height: 1.8; color: #ccc;
-            max-width: 650px; margin-bottom: 1.5rem;
+            font-size: 0.95rem; line-height: 1.5; color: #ccc;
+            max-width: 650px; margin-bottom: 0.8rem; /* Reduced bottom margin */
             text-align: justify;
             font-weight: 300;
         }
+        p:last-child { margin-bottom: 0; }
 
         .quote {
-            font-style: italic; border-left: 3px solid var(--c-gold);
-            padding-left: 1rem; margin: 2rem 0; color: #eee;
+            font-style: italic; border-left: 2px solid var(--c-gold);
+            padding-left: 0.8rem; margin: 0.8rem 0; color: #eee;
             background: linear-gradient(90deg, rgba(212,175,55,0.1), transparent);
+            font-size: 0.9rem;
         }
 
         /* --- Hero Section --- */
         .hero-grid {
-            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 4rem; align-items: center;
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem; align-items: center;
         }
         .avatar-container {
             position: relative; width: 100%; aspect-ratio: 3/4;
             overflow: hidden; border-radius: 4px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            transform: rotate(2deg);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            transform: rotate(1deg);
             transition: transform 0.5s ease;
         }
-        .avatar-container:hover { transform: rotate(0deg) scale(1.02); }
+        .avatar-container:hover { transform: rotate(0deg) scale(1.01); }
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
             filter: sepia(0.2) contrast(1.1) grayscale(0.2);
@@ -176,55 +181,57 @@
 
         /* --- Content Modules --- */
         .content-block {
-            background: rgba(10, 10, 10, 0.7);
+            background: rgba(10, 10, 10, 0.6);
             backdrop-filter: blur(8px);
-            padding: 3rem;
+            padding: 1.2rem 1.5rem; /* Compact internal padding */
             border: 1px solid rgba(255,255,255,0.05);
-            border-top: 2px solid var(--c-gold);
+            border-top: 1px solid var(--c-gold);
             position: relative; overflow: visible;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border-radius: 2px;
         }
 
         /* Decorative Corners */
         .content-block::after {
-            content: ''; position: absolute; bottom: 0; right: 0; width: 20px; height: 20px;
-            border-bottom: 2px solid var(--c-gold); border-right: 2px solid var(--c-gold);
+            content: ''; position: absolute; bottom: 0; right: 0; width: 15px; height: 15px;
+            border-bottom: 1px solid var(--c-gold); border-right: 1px solid var(--c-gold);
         }
 
         .chibi-box {
-            position: absolute; right: -60px; top: -40px; width: 140px;
-            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.6));
+            position: absolute; right: -50px; top: -30px; width: 120px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
             transform: rotate(5deg);
             transition: 0.3s;
             z-index: 20;
         }
-        .content-block:hover .chibi-box { transform: rotate(0deg) scale(1.1); }
+        .content-block:hover .chibi-box { transform: rotate(0deg) scale(1.05); }
 
         /* --- Quest Log (Skills) --- */
         .quest-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem; margin-top: 2rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 0.6rem; margin-top: 1.2rem;
         }
         .quest-item {
-            background: rgba(255,255,255,0.03); border: 1px solid #333;
-            padding: 1rem; text-align: center; border-radius: 4px;
+            background: rgba(255,255,255,0.02); border: 1px solid #333;
+            padding: 0.6rem; text-align: center; border-radius: 3px;
             transition: 0.3s; cursor: default;
         }
         .quest-item:hover {
-            background: rgba(212, 175, 55, 0.1); border-color: var(--c-gold);
-            transform: translateY(-5px);
+            background: rgba(212, 175, 55, 0.08); border-color: var(--c-gold);
+            transform: translateY(-3px);
         }
-        .quest-icon { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--c-gold); }
-        .quest-label { font-size: 0.9rem; color: #ccc; }
-        .quest-sub { font-size: 0.7rem; color: #666; display: block; margin-top: 0.3rem; }
+        .quest-icon { font-size: 1.2rem; margin-bottom: 0.3rem; color: var(--c-gold); }
+        .quest-label { font-size: 0.8rem; color: #ccc; }
+        .quest-sub { font-size: 0.65rem; color: #666; display: block; margin-top: 0.2rem; }
 
         /* --- Keywords --- */
         .keywords {
-            display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem;
+            display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.2rem;
         }
         .keyword {
-            border: 1px solid #444; padding: 0.5rem 1.5rem; border-radius: 50px;
-            font-size: 0.9rem; transition: 0.3s; cursor: pointer; color: #aaa;
+            border: 1px solid #444; padding: 0.3rem 1rem; border-radius: 50px;
+            font-size: 0.8rem; transition: 0.3s; cursor: pointer; color: #aaa;
+            background: rgba(0,0,0,0.2);
         }
         .keyword:hover {
             border-color: var(--c-gold); color: var(--c-gold); background: rgba(212, 175, 55, 0.1);
@@ -232,49 +239,49 @@
 
         /* --- Footer --- */
         footer {
-            padding: 4rem 2rem; text-align: center;
+            padding: 3rem 1rem; text-align: center;
             border-top: 1px solid #222;
             background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; justify-content: center; align-items: center;
         }
         footer .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;
         }
         .social-link {
-            font-size: 2rem; color: #fff; text-decoration: none;
+            font-size: 1.5rem; color: #fff; text-decoration: none;
             transition: 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px; height: 60px;
+            display: flex; align-items: center; justify-content: center;
+            width: 50px; height: 50px;
             border-radius: 50%;
             background: rgba(255,255,255,0.05);
         }
         .social-link:hover {
             color: var(--c-gold); transform: scale(1.1);
-            text-shadow: 0 0 20px var(--c-gold);
-            border-color: var(--c-gold);
+            text-shadow: 0 0 15px var(--c-gold); border-color: var(--c-gold);
         }
         .social-icons {
-             display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;
+             display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem;
         }
 
         /* --- Mobile --- */
         @media (max-width: 768px) {
-            .hero-grid { grid-template-columns: 1fr; gap: 2rem; text-align: center; }
-            h1 { font-size: 4rem; }
-            .avatar-container { margin: 0 auto; width: 70%; transform: none; }
-            .content-block { padding: 1.5rem; }
-            .chibi-box { width: 100px; right: -10px; top: -30px; }
-            #cursor, #cursor-dot { display: none; }
+            .hero-grid { grid-template-columns: 1fr; gap: 1.5rem; text-align: center; }
+            h1 { font-size: 3.5rem; }
+            .avatar-container { margin: 0 auto; width: 80%; transform: none; }
+            .content-block { padding: 1.2rem; }
+            .chibi-box { width: 90px; right: -10px; top: -25px; }
+            #cursor-dot { display: none; }
             body { cursor: auto; }
             .quest-grid { grid-template-columns: 1fr 1fr; }
+            section { padding: 3rem 1rem; }
+        }
+
+        /* Initial Hidden Wrapper */
+        #main-content {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
+            width: 100%;
         }
     </style>
 </head>
@@ -283,483 +290,529 @@
     <!-- LOADING -->
     <div id="loader">
         <div class="ink-drop"></div>
-        <p style="margin-top: 2rem; font-family: var(--f-serif); letter-spacing: 2px;">LOADING THE INK...</p>
+        <p style="margin-top: 2rem; font-family: var(--f-serif); letter-spacing: 2px; font-size: 0.8rem; opacity: 0.7;">LOADING INK...</p>
     </div>
 
     <!-- CURSOR -->
-    <div id="cursor"></div>
     <div id="cursor-dot"></div>
 
     <a href="/guild/" class="nav-back">← GUILD</a>
-    <div id="webgl-container"></div>
 
-    <!-- 1. HERO -->
-    <section id="hero">
-        <div class="container">
-            <div class="hero-grid">
-                <div class="gs-reveal">
-                    <span class="tag">INK & SOUND ALCHEMIST</span>
-                    <h1>墨唱</h1>
-                    <h2 style="font-family: var(--f-serif); font-size: 1.2rem; letter-spacing: 5px; color: #fff; opacity: 0.6; margin-top: -1rem; display: block; border: none;">
-                        MO CHANG
-                    </h2>
-                    <p class="quote">
-                        "在代碼與邏輯的迷宮中探索了十年，如今在音符與水墨間尋找歸途。"
+    <!-- MAIN CONTENT WRAPPER -->
+    <div id="main-content">
+        <div id="webgl-container"></div>
+
+        <!-- 1. HERO -->
+        <section id="hero">
+            <div class="container">
+                <div class="hero-grid">
+                    <div class="gs-reveal">
+                        <span class="tag">INK & SOUND ALCHEMIST</span>
+                        <h1>墨唱</h1>
+                        <h2 style="font-family: var(--f-serif); font-size: 1.1rem; letter-spacing: 4px; color: #fff; opacity: 0.6; margin-top: -0.5rem; display: block; border: none; margin-bottom: 1rem;">
+                            MO CHANG
+                        </h2>
+                        <p class="quote">
+                            "在代碼與邏輯的迷宮中探索了十年，如今在音符與水墨間尋找歸途。"
+                        </p>
+                        <div class="keywords" style="justify-content: flex-start;">
+                            <span class="keyword">Game Dev</span>
+                            <span class="keyword">Musician</span>
+                            <span class="keyword">Writer</span>
+                        </div>
+                    </div>
+                    <div class="gs-reveal avatar-container">
+                        <img src="/assets/img/guild/mochang/avatar.webp" alt="Mo Chang" class="avatar-img">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. ORIGIN -->
+        <section id="origin">
+            <div class="container">
+                <div class="content-block gs-reveal" data-speed="0.8">
+                    <span class="tag" style="color: var(--c-gold)">THE ORIGIN</span>
+                    <h2>Game & MUD</h2>
+                    <p>
+                        故事始於 2000 年的校園。當許多人沉迷於圖形化的網路遊戲時，我卻一腳踏入了 <strong>MUD (Multi-User Dungeon)</strong> 的純文字世界。
+                        在那裡，一行行文字構築出恢弘的江湖，每一個指令都是對世界的探索。
                     </p>
-                    <div class="keywords" style="justify-content: flex-start;">
-                        <span class="keyword">Game Dev</span>
-                        <span class="keyword">Musician</span>
-                        <span class="keyword">Writer</span>
-                    </div>
-                </div>
-                <div class="gs-reveal avatar-container">
-                    <img src="/assets/img/guild/mochang/avatar.webp" alt="Mo Chang" class="avatar-img" decoding="async">
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 2. ORIGIN -->
-    <section id="origin">
-        <div class="container">
-            <div class="content-block gs-reveal" data-speed="0.8">
-                <span class="tag" style="color: var(--c-gold)">THE ORIGIN</span>
-                <h2>Game & MUD</h2>
-                <p>
-                    故事始於 2000 年的校園。當許多人沉迷於圖形化的網路遊戲時，我卻一腳踏入了 <strong>MUD (Multi-User Dungeon)</strong> 的純文字世界。
-                    在那裡，一行行文字構築出恢弘的江湖，每一個指令都是對世界的探索。
-                </p>
-                <p>
-                    2005年，帶著這份熱愛，我正式踏入台灣遊戲業界。從企劃轉職到開發，歷經十年的浮沉與打磨。
-                    看過無數專案的起落，最終帶著一絲心灰意冷，我選擇了轉身離開這個曾經夢想的舞台。
-                </p>
-                <div class="quest-grid">
-                    <div class="quest-item">
-                        <i class="fa-solid fa-terminal quest-icon"></i>
-                        <div class="quest-label">MUD Dev</div>
-                        <span class="quest-sub">2000 Era</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-code quest-icon"></i>
-                        <div class="quest-label">Game Scripting</div>
-                        <span class="quest-sub">Lua / Python</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-ghost quest-icon"></i>
-                        <div class="quest-label">Departure</div>
-                        <span class="quest-sub">10 Years Later</span>
+                    <p>
+                        2005年，帶著這份熱愛，我正式踏入台灣遊戲業界。從企劃轉職到開發，歷經十年的浮沉與打磨。
+                        看過無數專案的起落，最終帶著一絲心灰意冷，我選擇了轉身離開這個曾經夢想的舞台。
+                    </p>
+                    <div class="quest-grid">
+                        <div class="quest-item">
+                            <i class="fa-solid fa-terminal quest-icon"></i>
+                            <div class="quest-label">MUD Dev</div>
+                            <span class="quest-sub">2000 Era</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-code quest-icon"></i>
+                            <div class="quest-label">Game Scripting</div>
+                            <span class="quest-sub">Lua / Python</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-ghost quest-icon"></i>
+                            <div class="quest-label">Departure</div>
+                            <span class="quest-sub">10 Years Later</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 3. WANDERING -->
-    <section id="wandering">
-        <div class="container" style="display: flex; justify-content: flex-end;">
-            <div class="content-block gs-reveal" data-speed="1.2" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right; max-width: 700px;">
-                <span class="tag" style="color: var(--c-accent)">THE DRIFT</span>
-                <h2>The Lost Decade</h2>
-                <p style="margin-left: auto;">
-                    離開遊戲業後，我本想拿起菜刀，成為一名廚師，卻命運般地誤打誤撞進入資訊業，變成了一個稍微有點悠閒的 <strong>"MIS"</strong>。
-                </p>
-                <p style="margin-left: auto;">
-                    在這段看似平靜的漫長歲月裡，我不甘於單調，於是開啟了無數個"副本"：
-                    兼職過外送員感受城市脈動，當過街頭藝人體驗冷暖，也曾作為詞作人為旋律填上靈魂。
-                    這些零碎的經歷，如同墨跡般暈染了我的人生畫卷。
-                </p>
+        <!-- 3. WANDERING -->
+        <section id="wandering">
+            <div class="container" style="display: flex; justify-content: flex-end;">
+                <div class="content-block gs-reveal" data-speed="1.2" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right; max-width: 700px;">
+                    <span class="tag" style="color: var(--c-accent)">THE DRIFT</span>
+                    <h2>The Lost Decade</h2>
+                    <p style="margin-left: auto;">
+                        離開遊戲業後，我本想拿起菜刀，成為一名廚師，卻命運般地誤打誤撞進入資訊業，變成了一個稍微有點悠閒的 <strong>"MIS"</strong>。
+                    </p>
+                    <p style="margin-left: auto;">
+                        在這段看似平靜的漫長歲月裡，我不甘於單調，於是開啟了無數個"副本"：
+                        兼職過外送員感受城市脈動，當過街頭藝人體驗冷暖，也曾作為詞作人為旋律填上靈魂。
+                        這些零碎的經歷，如同墨跡般暈染了我的人生畫卷。
+                    </p>
 
-                <div class="quest-grid" style="direction: rtl;">
-                    <div class="quest-item">
-                        <i class="fa-solid fa-server quest-icon"></i>
-                        <div class="quest-label">MIS</div>
-                        <span class="quest-sub">Current Class</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-utensils quest-icon"></i>
-                        <div class="quest-label">Chef</div>
-                        <span class="quest-sub">Almost Class</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-motorcycle quest-icon"></i>
-                        <div class="quest-label">Delivery</div>
-                        <span class="quest-sub">Side Quest</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-guitar quest-icon"></i>
-                        <div class="quest-label">Street Art</div>
-                        <span class="quest-sub">宜蘭不上街頭</span>
+                    <div class="quest-grid" style="direction: rtl;">
+                        <div class="quest-item">
+                            <i class="fa-solid fa-server quest-icon"></i>
+                            <div class="quest-label">MIS</div>
+                            <span class="quest-sub">Current Class</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-utensils quest-icon"></i>
+                            <div class="quest-label">Chef</div>
+                            <span class="quest-sub">Almost Class</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-motorcycle quest-icon"></i>
+                            <div class="quest-label">Delivery</div>
+                            <span class="quest-sub">Side Quest</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-guitar quest-icon"></i>
+                            <div class="quest-label">Street Art</div>
+                            <span class="quest-sub">宜蘭不上街頭</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 4. RESONANCE -->
-    <section id="resonance">
-        <div class="container">
-            <div class="content-block gs-reveal" data-speed="0.9">
-                    <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi" loading="lazy" decoding="async">
-                <span class="tag" style="color: #bd4dff">HARMONICS</span>
-                <h2>Ink & Strings</h2>
-                <p>
-                    如今，年近不惑，我有了一位妻子和一個孩子。在陪伴家人的縫隙中，我重拾了兒時對音樂的憧憬。
-                    那些曾經玩不起的樂器，現在成了我靈魂的出口。
-                </p>
-                <p>
-                    從去年五月開始，我嘗試自己寫詞、寫歌，參與共同創作。
-                    目前正自學 <strong>編曲與 DAW</strong>，期望能將古風的水墨意境與現代音樂結合，達到全獨立創作的目標。
-                </p>
-                <p class="quote">
-                    "宜蘭不上街頭的街頭藝人，正在尋找下一個音符。"
-                </p>
+        <!-- 4. RESONANCE -->
+        <section id="resonance">
+            <div class="container">
+                <div class="content-block gs-reveal" data-speed="0.9">
+                        <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi">
+                    <span class="tag" style="color: #bd4dff">HARMONICS</span>
+                    <h2>Ink & Strings</h2>
+                    <p>
+                        如今，年近不惑，我有了一位妻子和一個孩子。在陪伴家人的縫隙中，我重拾了兒時對音樂的憧憬。
+                        那些曾經玩不起的樂器，現在成了我靈魂的出口。
+                    </p>
+                    <p>
+                        從去年五月開始，我嘗試自己寫詞、寫歌，參與共同創作。
+                        目前正自學 <strong>編曲與 DAW</strong>，期望能將古風的水墨意境與現代音樂結合，達到全獨立創作的目標。
+                    </p>
+                    <p class="quote">
+                        "宜蘭不上街頭的街頭藝人，正在尋找下一個音符。"
+                    </p>
 
-                <div class="keywords">
-                    <span class="keyword"><i class="fa-solid fa-music"></i> Pipa (琵琶)</span>
-                    <span class="keyword"><i class="fa-solid fa-circle-notch"></i> Ethereal Drum (空靈鼓)</span>
-                    <span class="keyword"><i class="fa-solid fa-pen-fancy"></i> Songwriting</span>
-                    <span class="keyword"><i class="fa-solid fa-headphones"></i> DAW Learning</span>
+                    <div class="keywords">
+                        <span class="keyword"><i class="fa-solid fa-music"></i> Pipa (琵琶)</span>
+                        <span class="keyword"><i class="fa-solid fa-circle-notch"></i> Ethereal Drum (空靈鼓)</span>
+                        <span class="keyword"><i class="fa-solid fa-pen-fancy"></i> Songwriting</span>
+                        <span class="keyword"><i class="fa-solid fa-headphones"></i> DAW Learning</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 5. GALLERY -->
-    <section id="gallery" style="flex-direction: column;">
-        <div class="container" style="text-align: center; margin-bottom: 4rem;">
-            <span class="tag">THE ARCHIVE</span>
-            <h2 class="gs-reveal">Echoes of Creation</h2>
-            <p style="margin: 0 auto; margin-bottom: 2rem;">
-                點擊下方連結，聆聽我的音樂作品與生活隨筆。
-            </p>
-        </div>
-    </section>
-
-    <!-- FOOTER (Moved outside section) -->
-    <footer>
-        <div class="container">
-            <div class="social-icons">
-                <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
+        <!-- 5. GALLERY -->
+        <section id="gallery" style="flex-direction: column; padding-bottom: 4rem;">
+            <div class="container" style="text-align: center;">
+                <span class="tag">THE ARCHIVE</span>
+                <h2 class="gs-reveal">Echoes of Creation</h2>
+                <p style="margin: 0 auto; margin-bottom: 2rem;">
+                    點擊下方連結，聆聽我的音樂作品與生活隨筆。
+                </p>
             </div>
-            <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
-                Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
-            </p>
-        </div>
-    </footer>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="container">
+                <div class="social-icons">
+                    <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+                <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
+                    Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
+                </p>
+            </div>
+        </footer>
+    </div>
 
     <script type="module">
         import * as THREE from 'three';
 
-        // --- SETUP ---
-        const container = document.getElementById('webgl-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a1a);
-        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05); // Add Fog for depth
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // --- ASSETS ---
-        function createGlyphTexture(char, font="64px 'Ma Shan Zheng'") {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 128, 128);
-            ctx.font = font;
-            ctx.fillStyle = "white";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(char, 64, 64);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        const glyphChars = ['墨', '唱', 'Code', 'Lua', 'GAME', '♪', '♫', '宮', '商', '角', '徵', '羽'];
-        const glyphTextures = glyphChars.map(c => createGlyphTexture(c, c.length > 1 ? "bold 32px 'Noto Serif TC'" : "64px 'Ma Shan Zheng'"));
-
-        function createInkTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
-            grad.addColorStop(0, 'rgba(255,255,255,0.8)');
-            grad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
-            grad.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0,0,128,128);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        // --- PARTICLES (INK) ---
-        const inkCount = 800; // Increased count
-        const inkGeom = new THREE.BufferGeometry();
-        const inkPos = new Float32Array(inkCount * 3);
-        const inkSizes = new Float32Array(inkCount);
-        const inkSpeeds = new Float32Array(inkCount); // Individual speeds
-
-        for(let i=0; i<inkCount; i++) {
-            inkPos[i*3] = (Math.random() - 0.5) * 40;
-            inkPos[i*3+1] = (Math.random() - 0.5) * 40;
-            inkPos[i*3+2] = (Math.random() - 0.5) * 20 - 5;
-            inkSizes[i] = Math.random() * 3;
-            inkSpeeds[i] = 0.5 + Math.random();
-        }
-
-        inkGeom.setAttribute('position', new THREE.BufferAttribute(inkPos, 3));
-        inkGeom.setAttribute('size', new THREE.BufferAttribute(inkSizes, 1));
-
-        const inkMat = new THREE.PointsMaterial({
-            size: 0.5,
-            map: createInkTexture(),
-            transparent: true,
-            opacity: 0.4,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            color: 0xcccccc
-        });
-
-        const inkSystem = new THREE.Points(inkGeom, inkMat);
-        scene.add(inkSystem);
-
-        // --- FLOATING GLYPHS ---
-        const glyphGroup = new THREE.Group();
-        for (let i = 0; i < 40; i++) { // Increased count
-             const texIndex = Math.floor(Math.random() * glyphTextures.length);
-             const mat = new THREE.SpriteMaterial({
-                map: glyphTextures[texIndex],
-                transparent: true,
-                opacity: 0.1 + Math.random() * 0.4, // Higher opacity
-                color: 0xaaaaaa
-            });
-            const sprite = new THREE.Sprite(mat);
-            sprite.position.set(
-                (Math.random()-0.5) * 30,
-                (Math.random()-0.5) * 60, // Spread vertically for scroll
-                (Math.random()-0.5) * 15 - 5
-            );
-            sprite.scale.set(3, 3, 1);
-            sprite.userData = {
-                speedY: Math.random() * 0.02 + 0.005,
-                originalY: sprite.position.y,
-                phase: Math.random() * Math.PI * 2
-            };
-            glyphGroup.add(sprite);
-        }
-        scene.add(glyphGroup);
-
-        // --- TRAIL ---
-        const trailMax = 50;
-        const trailGeom = new THREE.BufferGeometry();
-        const trailPositions = new Float32Array(trailMax * 3).fill(9999);
-        trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
-        const trailMaterial = new THREE.PointsMaterial({
-            color: 0xd4af37,
-            size: 0.5,
-            transparent: true, opacity: 0.8,
-            map: createInkTexture(), blending: THREE.AdditiveBlending
-        });
-        const trailPoints = new THREE.Points(trailGeom, trailMaterial);
-        scene.add(trailPoints);
-
+        // --- GLOBAL VARIABLES (Deferred Init) ---
+        let scene, camera, renderer;
+        let inkSystem, glyphGroup, trailPoints;
+        let inkMat; // Need this for ScrollTrigger color change
+        const globalUniforms = { scrollSpeed: 0 };
         const raycaster = new THREE.Raycaster();
         const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
         const mouseVec = new THREE.Vector2();
         let trailIndex = 0;
+        const trailMax = 30;
+        let trailPhases;
 
+        // --- DEFERRED INITIALIZATION ---
+        // This function runs ONLY after fonts and images are ready.
+        function initScene() {
+            const container = document.getElementById('webgl-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // --- ASSETS (Inside initScene to use loaded fonts) ---
+            function createGlyphTexture(char, font="64px 'Ma Shan Zheng'") {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 128, 128);
+                // Ensure fonts are loaded before this
+                ctx.font = font;
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(char, 64, 64);
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            const glyphChars = ['墨', '唱', 'Code', 'Lua', 'GAME', '♪', '♫', '宮', '商', '角', '徵', '羽'];
+            const glyphTextures = glyphChars.map(c => createGlyphTexture(c, c.length > 1 ? "bold 32px 'Noto Serif TC'" : "64px 'Ma Shan Zheng'"));
+
+            function createInkTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
+                grad.addColorStop(0, 'rgba(255,255,255,0.8)');
+                grad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0,0,128,128);
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            // --- PARTICLES (INK) ---
+            const inkCount = 800;
+            const inkGeom = new THREE.BufferGeometry();
+            const inkPos = new Float32Array(inkCount * 3);
+            const inkSizes = new Float32Array(inkCount);
+
+            for(let i=0; i<inkCount; i++) {
+                inkPos[i*3] = (Math.random() - 0.5) * 40;
+                inkPos[i*3+1] = (Math.random() - 0.5) * 40;
+                inkPos[i*3+2] = (Math.random() - 0.5) * 20 - 5;
+                inkSizes[i] = Math.random() * 3;
+            }
+
+            inkGeom.setAttribute('position', new THREE.BufferAttribute(inkPos, 3));
+            inkGeom.setAttribute('size', new THREE.BufferAttribute(inkSizes, 1));
+
+            inkMat = new THREE.PointsMaterial({
+                size: 0.5,
+                map: createInkTexture(),
+                transparent: true, opacity: 0.4,
+                depthWrite: false, blending: THREE.AdditiveBlending,
+                color: 0xcccccc
+            });
+
+            inkSystem = new THREE.Points(inkGeom, inkMat);
+            scene.add(inkSystem);
+
+            // --- FLOATING GLYPHS ---
+            glyphGroup = new THREE.Group();
+            for (let i = 0; i < 40; i++) {
+                const texIndex = Math.floor(Math.random() * glyphTextures.length);
+                const mat = new THREE.SpriteMaterial({
+                    map: glyphTextures[texIndex],
+                    transparent: true,
+                    opacity: 0.1 + Math.random() * 0.4,
+                    color: 0xaaaaaa
+                });
+                const sprite = new THREE.Sprite(mat);
+                sprite.position.set(
+                    (Math.random()-0.5) * 30,
+                    (Math.random()-0.5) * 60,
+                    (Math.random()-0.5) * 15 - 5
+                );
+                sprite.scale.set(3, 3, 1);
+                sprite.userData = {
+                    phase: Math.random() * Math.PI * 2
+                };
+                glyphGroup.add(sprite);
+            }
+            scene.add(glyphGroup);
+
+            // --- TRAIL (Candle Flame) ---
+            const trailGeom = new THREE.BufferGeometry();
+            const trailPositions = new Float32Array(trailMax * 3).fill(9999);
+            trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+
+            trailPhases = new Float32Array(trailMax);
+            for(let i=0; i<trailMax; i++) trailPhases[i] = Math.random() * Math.PI * 2;
+
+            const trailMaterial = new THREE.PointsMaterial({
+                color: 0xffaa33, // Warm candle flame
+                size: 0.6,
+                transparent: true,
+                opacity: 0.3, // Slightly more visible but small
+                map: createInkTexture(),
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            trailPoints = new THREE.Points(trailGeom, trailMaterial);
+            scene.add(trailPoints);
+
+            // --- FORCE COMPILE ---
+            // Render once to upload all textures (now using correct fonts) to GPU
+            renderer.render(scene, camera);
+        }
+
+        // --- ANIMATION LOOP (Deferred) ---
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!renderer || !scene || !camera) return;
+
+            const time = performance.now() * 0.001; // Use perf.now for smoother consistency
+
+            // Ink
+            if (inkSystem) {
+                const positions = inkSystem.geometry.attributes.position.array;
+                const turbulence = 1 + globalUniforms.scrollSpeed * 20;
+
+                for(let i=0; i<positions.length/3; i++) {
+                    const x = positions[i*3];
+                    const y = positions[i*3+1];
+                    positions[i*3] += Math.sin(y * 0.1 + time * 0.3) * 0.005 * turbulence;
+                    positions[i*3+1] += Math.cos(x * 0.1 + time * 0.3) * 0.005 * turbulence;
+                    if(Math.abs(positions[i*3]) > 25) positions[i*3] *= -0.9;
+                    if(Math.abs(positions[i*3+1]) > 25) positions[i*3+1] *= -0.9;
+                }
+                inkSystem.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // Glyphs
+            if (glyphGroup) {
+                glyphGroup.children.forEach(sprite => {
+                    sprite.position.y += Math.sin(time + sprite.userData.phase) * 0.005;
+                    sprite.material.rotation = Math.sin(time * 0.5 + sprite.userData.phase) * 0.1;
+                });
+            }
+
+            // Candle Flame Logic
+            raycaster.setFromCamera(mouseVec, camera);
+            const target = new THREE.Vector3();
+            raycaster.ray.intersectPlane(plane, target);
+
+            if(target && trailPoints) {
+                const arr = trailPoints.geometry.attributes.position.array;
+                // Emit at mouse pos
+                arr[trailIndex * 3] = target.x;
+                arr[trailIndex * 3 + 1] = target.y;
+                arr[trailIndex * 3 + 2] = 0;
+
+                trailIndex = (trailIndex + 1) % trailMax;
+                trailPoints.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // Candle Physics
+            if (trailPoints) {
+                const tArr = trailPoints.geometry.attributes.position.array;
+                for(let i=0; i<trailMax; i++) {
+                     if(i !== trailIndex && tArr[i*3+1] < 50) {
+                         // Float up (Heat rises)
+                         tArr[i*3+1] += 0.03 + Math.random() * 0.01;
+
+                         // Sway (Wind/Heat turbulence)
+                         const sway = Math.sin(time * 5 + trailPhases[i] + tArr[i*3+1]) * 0.02; // Faster flicker
+                         tArr[i*3] += sway;
+
+                         // Short life: disappear quickly
+                         if(tArr[i*3+1] > target.y + 2.0) tArr[i*3+1] = 9999;
+                     }
+                }
+                trailPoints.geometry.attributes.position.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- SCROLL ANIMATIONS (Deferred) ---
+        function initScroll() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            gsap.to(camera.position, {
+                z: 2, scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 }
+            });
+
+            gsap.to(camera.rotation, {
+                z: 0.2, scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 }
+            });
+
+            gsap.utils.toArray('[data-speed]').forEach(el => {
+                gsap.to(el, {
+                    y: (i, target) => -ScrollTrigger.maxScroll(window) * target.dataset.speed * 0.1,
+                    ease: "none",
+                    scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 0 }
+                });
+            });
+
+            ScrollTrigger.create({
+                onUpdate: self => {
+                    const vel = Math.abs(self.getVelocity());
+                    gsap.to(globalUniforms, { scrollSpeed: vel / 5000, duration: 0.5, overwrite: true });
+                }
+            });
+
+            gsap.utils.toArray('.gs-reveal').forEach(elem => {
+                gsap.from(elem, {
+                    y: 50, opacity: 0, duration: 1,
+                    scrollTrigger: { trigger: elem, start: "top 85%", toggleActions: "play none none reverse" }
+                });
+            });
+
+            gsap.utils.toArray('.quest-grid').forEach(grid => {
+                gsap.from(grid.children, {
+                    y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
+                    scrollTrigger: { trigger: grid, start: "top 90%" }
+                });
+            });
+
+            const sections = [
+                { id: '#hero', color: 0xcccccc },
+                { id: '#origin', color: 0x00ff00 },
+                { id: '#wandering', color: 0xff4d4d },
+                { id: '#resonance', color: 0xbd4dff }
+            ];
+
+            sections.forEach(sec => {
+                ScrollTrigger.create({
+                    trigger: sec.id, start: "top center", end: "bottom center",
+                    onEnter: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 }),
+                    onEnterBack: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 })
+                });
+            });
+        }
+
+        // --- MOUSE LISTENERS ---
         document.addEventListener('mousemove', (e) => {
-            const c = document.getElementById('cursor');
             const cd = document.getElementById('cursor-dot');
-            if(c && cd) {
-                gsap.to(c, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            if(cd) {
                 gsap.to(cd, { x: e.clientX, y: e.clientY, duration: 0.05 });
             }
             mouseVec.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouseVec.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // --- ANIMATION LOOP ---
-        const clock = new THREE.Clock();
-        const globalUniforms = {
-            scrollSpeed: 0
-        };
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-
-            // Dynamic Ink
-            const positions = inkSystem.geometry.attributes.position.array;
-            const turbulence = 1 + globalUniforms.scrollSpeed * 20; // Reduced scroll speed effect
-
-            for(let i=0; i<inkCount; i++) {
-                const x = positions[i*3];
-                const y = positions[i*3+1];
-
-                // Reduced base speed (0.01 -> 0.005)
-                positions[i*3] += Math.sin(y * 0.1 + time * 0.3) * 0.005 * turbulence;
-                positions[i*3+1] += Math.cos(x * 0.1 + time * 0.3) * 0.005 * turbulence;
-
-                // Reset bounds
-                if(Math.abs(positions[i*3]) > 25) positions[i*3] *= -0.9;
-                if(Math.abs(positions[i*3+1]) > 25) positions[i*3+1] *= -0.9;
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                ScrollTrigger.refresh();
             }
-            inkSystem.geometry.attributes.position.needsUpdate = true;
+        });
 
-            // Glyphs Float
-            glyphGroup.children.forEach(sprite => {
-                sprite.position.y += Math.sin(time + sprite.userData.phase) * 0.005;
-                sprite.material.rotation = Math.sin(time * 0.5 + sprite.userData.phase) * 0.1;
+        // --- MAIN ENTRY POINT (STRICT SEQUENCE) ---
+        const checkResources = () => {
+            // 1. Explicitly load the fonts used for glyphs
+            const font1 = new FontFace("Ma Shan Zheng", "url(https://fonts.gstatic.com/s/mashanzheng/v12/TwMO-IAHTmcz28-r7-U_y1z863E.woff2)");
+            const font2 = new FontFace("Noto Serif TC", "url(https://fonts.gstatic.com/s/notoseriftc/v12/RyP_Z3PNoa6hO9t2tN2f0T2E_w.woff2)");
+            // Note: We are waiting for the browser to report them loaded via the API,
+            // but relying on document.fonts.load is simpler for Google Fonts CSS.
+
+            const fontsReady = document.fonts.load("64px 'Ma Shan Zheng'").then(() => {
+                return document.fonts.load("32px 'Noto Serif TC'");
             });
 
-            // Trail Logic
-            raycaster.setFromCamera(mouseVec, camera);
-            const target = new THREE.Vector3();
-            raycaster.ray.intersectPlane(plane, target);
-            if(target) {
-                const arr = trailPoints.geometry.attributes.position.array;
-                arr[trailIndex * 3] = target.x;
-                arr[trailIndex * 3 + 1] = target.y;
-                arr[trailIndex * 3 + 2] = 0;
-                trailIndex = (trailIndex + 1) % trailMax;
-                trailPoints.geometry.attributes.position.needsUpdate = true;
-            }
-            const tArr = trailPoints.geometry.attributes.position.array;
-            for(let i=0; i<trailMax; i++) {
-                 if(i !== trailIndex) {
-                     tArr[i*3+1] += 0.02; // Float up
-                     tArr[i*3] += (Math.random()-0.5) * 0.02; // Jitter
-                     if(tArr[i*3+1] > 10) tArr[i*3+1] = 9999;
-                 }
-            }
-            trailPoints.geometry.attributes.position.needsUpdate = true;
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // --- ENHANCED SCROLL INTERACTIONS ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // 1. Camera Movement (Deep Dive)
-        gsap.to(camera.position, {
-            z: 2, // Move closer
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        gsap.to(camera.rotation, {
-            z: 0.2, // Slight tilt
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // 2. Parallax Content
-        gsap.utils.toArray('[data-speed]').forEach(el => {
-            gsap.to(el, {
-                y: (i, target) => -ScrollTrigger.maxScroll(window) * target.dataset.speed * 0.1,
-                ease: "none",
-                scrollTrigger: {
-                    trigger: "body",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 0
-                }
-            });
-        });
-
-        // 3. Scroll Velocity for Particles
-        ScrollTrigger.create({
-            onUpdate: self => {
-                const vel = Math.abs(self.getVelocity());
-                // Smoothly decay velocity effect
-                gsap.to(globalUniforms, {
-                    scrollSpeed: vel / 5000,
-                    duration: 0.5,
-                    overwrite: true
-                });
-            }
-        });
-
-        // Standard Reveals
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
-            gsap.from(elem, {
-                y: 50, opacity: 0, duration: 1,
-                scrollTrigger: {
-                    trigger: elem, start: "top 85%", toggleActions: "play none none reverse"
-                }
-            });
-        });
-
-        gsap.utils.toArray('.quest-grid').forEach(grid => {
-            gsap.from(grid.children, {
-                y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
-                scrollTrigger: { trigger: grid, start: "top 90%" }
-            });
-        });
-
-        // Color Logic
-        const sections = [
-            { id: '#hero', color: 0xcccccc },
-            { id: '#origin', color: 0x00ff00 },
-            { id: '#wandering', color: 0xff4d4d },
-            { id: '#resonance', color: 0xbd4dff }
-        ];
-
-        sections.forEach(sec => {
-            ScrollTrigger.create({
-                trigger: sec.id,
-                start: "top center",
-                end: "bottom center",
-                onEnter: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 }),
-                onEnterBack: () => gsap.to(inkMat.color, { r: new THREE.Color(sec.color).r, g: new THREE.Color(sec.color).g, b: new THREE.Color(sec.color).b, duration: 1 })
-            });
-        });
-
-        // --- ROBUST PRELOADER ---
-        const waitForImages = () => {
-            const images = document.querySelectorAll('img:not([loading="lazy"])');
-            const promises = Array.from(images).map(img => {
+            // 2. Check Images
+            const images = Array.from(document.images);
+            const imagesReady = Promise.all(images.map(img => {
                 if (img.complete) return Promise.resolve();
                 return new Promise(resolve => {
                     img.onload = resolve;
-                    img.onerror = resolve; // Continue even if error
+                    img.onerror = resolve; // Resolve anyway to avoid hanging
+                });
+            }));
+
+            // 3. Wait for Everything
+            Promise.all([fontsReady, imagesReady]).then(() => {
+
+                // 4. Initialize Three.js
+                initScene();
+
+                // 5. Start Loop
+                animate();
+
+                // 6. Wait for Paint & Reveal
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        // Force a reflow
+                        document.body.offsetHeight;
+
+                        // Unlock scrolling FIRST
+                        document.body.style.overflowY = "auto";
+                        document.body.style.overflowX = "hidden";
+
+                        // NOW Initialize GSAP/ScrollTrigger (when body is scrollable)
+                        initScroll();
+                        ScrollTrigger.refresh();
+
+                        const loader = document.getElementById('loader');
+
+                        gsap.to(loader, {
+                            opacity: 0,
+                            duration: 0.8,
+                            ease: "power2.inOut",
+                            onComplete: () => {
+                                loader.remove();
+                                gsap.from('h1', { scale: 1.1, duration: 1.2, ease: "power2.out" });
+                            }
+                        });
+
+                        // Reveal main content wrapper
+                        const mainContent = document.getElementById('main-content');
+                        mainContent.style.pointerEvents = "auto";
+                        gsap.to(mainContent, { opacity: 1, duration: 1 });
+                    });
                 });
             });
-            return Promise.all(promises);
         };
 
-        const waitForFonts = () => {
-             return document.fonts.ready;
-        };
-
-        const minTime = new Promise(resolve => setTimeout(resolve, 1500)); // Min 1.5s loading
-
-        Promise.all([waitForImages(), waitForFonts(), minTime]).then(() => {
-            ScrollTrigger.refresh();
-            const loader = document.getElementById('loader');
-            gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.remove() });
-            gsap.from('h1', { scale: 1.2, duration: 1.5, ease: "power2.out" });
-        });
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        if (document.readyState === 'complete') {
+            checkResources();
+        } else {
+            window.addEventListener('load', checkResources);
+        }
 
     </script>
 </body>
