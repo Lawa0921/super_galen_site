@@ -630,7 +630,7 @@
             </div>
             <div class="narrative-visual avatar-container">
                 <div class="avatar-frame">
-                    <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna Avatar" class="text-reveal">
+                    <img src="/assets/img/guild/lyanna/avatar.webp" alt="Lyanna Avatar" class="text-reveal" loading="lazy">
                 </div>
             </div>
         </div>
@@ -690,7 +690,7 @@
                         <p>系統化教材。收錄近六年題庫，完整拆解解題思路。透過每月模擬大會考，協助你強化答題速度與正確率，讓備考不再盲目。</p>
                     </div>
                     <div class="deck-visual-content" style="z-index: 5;">
-                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_1.webp" class="card-img"></div>
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_1.webp" class="card-img" loading="lazy"></div>
                     </div>
                 </div>
 
@@ -702,7 +702,7 @@
                         <p>精華影片複習。針對筆試與口試，每科提供 10 部精華短片。系統化掌握選擇、問答與作文題型，隨時隨地皆可複習，高效利用時間。</p>
                     </div>
                     <div class="deck-visual-content" style="z-index: 4;">
-                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_2.webp" class="card-img"></div>
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_2.webp" class="card-img" loading="lazy"></div>
                     </div>
                 </div>
 
@@ -714,7 +714,7 @@
                         <p>FUN 2 CHINESE。不只是考試，更是一場有趣的旅程。我們致力於打造充滿支持與活力的社群，陪你在華語教學的路上快樂前行。</p>
                     </div>
                     <div class="deck-visual-content" style="z-index: 3;">
-                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_3.webp" class="card-img"></div>
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_3.webp" class="card-img" loading="lazy"></div>
                     </div>
                 </div>
 
@@ -726,7 +726,7 @@
                         <p>實務與職涯輔導。每月教學實務分享、教案設計輔導與試教演練。從 0 到 1 的陪伴，結合 MMT 天賦分析，為你規劃最適合的職涯路徑。</p>
                     </div>
                     <div class="deck-visual-content" style="z-index: 2;">
-                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_4.webp" class="card-img"></div>
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_4.webp" class="card-img" loading="lazy"></div>
                     </div>
                 </div>
 
@@ -738,7 +738,7 @@
                         <p>課程四大核心。系統化教材、精華影片、陪跑解題、職涯輔導。全方位的學習系統，協助你具備資格、清楚方向，真正走出去。</p>
                     </div>
                     <div class="deck-visual-content" style="z-index: 1;">
-                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_5.webp" class="card-img"></div>
+                        <div class="card-item"><img src="/assets/img/guild/lyanna/slide_5.webp" class="card-img" loading="lazy"></div>
                     </div>
                 </div>
 
@@ -953,7 +953,7 @@
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
@@ -1015,7 +1015,7 @@
                 curve.closed = true;
                 curve.tension = 0.2;
 
-                const geometry = new THREE.TubeGeometry(curve, 400, tubeRadius, 16, true);
+                const geometry = new THREE.TubeGeometry(curve, 64, tubeRadius, 5, true);
                 const threadMesh = new THREE.Mesh(geometry, material);
                 threadGroup.add(threadMesh);
             }
@@ -1046,8 +1046,6 @@
 
                 threadGroup.rotation.x = Math.sin(time * 0.5) * 0.15;
                 threadGroup.rotation.y = time * 0.2;
-
-                // Individual thread subtle movement? (Optional, kept simple for perf)
 
                 particles.rotation.y = -time * 0.05;
                 particles.rotation.x = time * 0.02;
