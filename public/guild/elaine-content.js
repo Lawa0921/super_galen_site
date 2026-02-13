@@ -44,6 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Trigger entrance animations
         animateHero();
+
+        // ScrollTrigger positions were calculated while sections had display:none.
+        // Refresh after browser reflows to get correct trigger positions.
+        if (typeof ScrollTrigger !== 'undefined') {
+            requestAnimationFrame(() => {
+                ScrollTrigger.refresh();
+            });
+        }
     }
 
     // Mode Toggle Button
