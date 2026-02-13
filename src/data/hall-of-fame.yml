@@ -801,3 +801,15 @@ members:
         label: "跑咖筆記"
       - id: "intp"
         label: "INTP"
+
+  - id: "chueh"
+    name: "闕 Chueh"
+    avatar: "/assets/img/guild/chueh/avatar.webp"
+    page: "/guild/chueh.html"
+    tags:
+      - id: "handpan"
+        label: "手碟"
+      - id: "drummer"
+        label: "爵士鼓"
+      - id: "musician"
+        label: "音樂人"
