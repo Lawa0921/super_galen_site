@@ -8,583 +8,444 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@400;600;900&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
 
     <style>
         :root {
-            --wood-dark: #2c1e14;
-            --wood-light: #5d4037;
-            --parchment: #f3e5cd;
-            --ink: #2f2f2f;
-            --gold: #d4af37;
-            --red: #8b0000;
-            --paper-shadow: rgba(0,0,0,0.4);
+            --bg-dark: #050302;
+            --panel-bg: rgba(20, 15, 10, 0.95);
+            --gold-dim: #8a6e4b;
+            --gold-bright: #ffdb8b;
+            --text-main: #e0d0b0;
+            --accent-red: #8b0000;
+            --magic-glow: 0 0 15px rgba(255, 219, 139, 0.3);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #1a120b;
-            color: var(--ink);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
-            background-image: repeating-linear-gradient(90deg, #3e2723 0px, #2c1e14 40px, #332219 80px); /* Wood grain fallback */
         }
 
-        /* --- 1. Background Atmosphere --- */
+        /* --- Backgrounds --- */
         #bg-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; pointer-events: none;
-            /* Overlay gradient to simulate dark tavern interior */
-            background: radial-gradient(circle at 50% 30%, transparent 20%, #1a120b 90%);
         }
 
-        /* Lantern Light Overlay (Follows Mouse) */
-        #lantern-glow {
+        /* Vignette / Torch Light */
+        #torch-light {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; pointer-events: none;
-            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 170, 0, 0.15) 0%, transparent 60%);
+            z-index: 0; pointer-events: none;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 160, 50, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 50% 50%, transparent 20%, #000 100%);
             mix-blend-mode: screen;
-            transition: opacity 0.5s;
         }
 
-        /* --- 2. The Quest Board (Main Container) --- */
-        #quest-board {
-            width: 100%;
-            max-width: 1000px;
-            margin: 4rem auto;
-            position: relative;
-            /* Improved Wood Texture */
-            background-color: #3e2723;
-            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
-            box-shadow:
-                0 0 50px rgba(0,0,0,0.8),
-                inset 0 0 100px rgba(0,0,0,0.9);
-            border: 20px solid #25160c;
-            border-radius: 8px;
-            padding: 4rem 2rem;
-        }
-
-        /* Nails on the board corners */
-        #quest-board::after {
-            content: ''; position: absolute; top: 20px; left: 20px; width: 15px; height: 15px;
-            background: #111; border-radius: 50%;
-            box-shadow:
-                calc(100% - 40px) 0 0 #111,
-                0 calc(100% - 40px) 0 #111,
-                calc(100% - 40px) calc(100% - 40px) 0 #111; /* 4 corners */
-        }
-
-        /* --- 3. Header Sign --- */
-        .guild-header {
-            text-align: center;
-            margin-bottom: 5rem;
+        /* --- Main Layout --- */
+        main {
             position: relative;
             z-index: 10;
+            padding-bottom: 5rem;
+        }
+
+        /* Return Nav */
+        .nav-return {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            display: flex; align-items: center; gap: 0.5rem;
+            text-decoration: none;
+            color: var(--gold-dim);
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            transition: all 0.3s;
+            mix-blend-mode: difference;
+        }
+        .nav-return:hover { color: var(--gold-bright); transform: translateX(5px); }
+
+        /* --- Header / Hero --- */
+        #hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             perspective: 1000px;
         }
 
-        .header-plaque {
-            background: #4e342e;
-            display: inline-block;
-            padding: 1.5rem 4rem;
-            border: 4px solid #3e2723;
-            border-radius: 8px; /* Slightly rounded */
-            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
-            transform-origin: top center;
-            animation: swing-header 6s ease-in-out infinite alternate;
-        }
-
-        @keyframes swing-header {
-            0% { transform: rotate(-1deg); }
-            100% { transform: rotate(1deg); }
-        }
-
-        /* Chains holding the sign */
-        .header-plaque::before, .header-plaque::after {
-            content: ''; position: absolute; top: -100px; width: 6px; height: 100px;
-            background: repeating-linear-gradient(to bottom, #333 0, #333 6px, transparent 6px, transparent 10px);
-            left: 20%;
-        }
-        .header-plaque::after { left: auto; right: 20%; }
-
-        .header-plaque h1 {
-            color: var(--gold);
-            font-family: 'Cinzel', serif;
-            font-size: 3rem;
-            text-shadow: 2px 2px 0 #000, 0 0 15px rgba(255, 215, 0, 0.4);
-            letter-spacing: 2px;
-            margin: 0;
-        }
-
-        .header-plaque .subtitle {
-            color: #d7ccc8;
-            font-size: 1rem;
-            letter-spacing: 5px;
-            margin-top: 8px;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-
-        /* --- 4. Content Styles (Pinned Papers) --- */
-        .paper-note {
-            background: var(--parchment);
-            color: var(--ink);
+        .hero-card {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            border: 2px solid var(--gold-dim);
             padding: 3rem;
-            margin-bottom: 4rem;
-            box-shadow: 5px 10px 20px var(--paper-shadow);
             position: relative;
-            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E");
-            transform-origin: center top;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        /* Hover effect: Slight lift */
-        .paper-note:hover {
-            z-index: 20;
-            box-shadow: 10px 20px 40px rgba(0,0,0,0.5);
-            /* Rotation is handled by GSAP interaction or random init */
-        }
-
-        /* Pin Visual */
-        .pin {
-            position: absolute;
-            top: -12px; left: 50%;
-            transform: translateX(-50%);
-            width: 20px; height: 20px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #cfd8dc, #455a64);
-            box-shadow: 2px 4px 6px rgba(0,0,0,0.5);
-            z-index: 5;
-        }
-
-        .section-title {
-            font-family: 'Noto Serif TC', serif;
-            font-weight: 900;
-            font-size: 2rem;
-            border-bottom: 3px double var(--ink);
-            padding-bottom: 0.8rem;
-            margin-bottom: 1.5rem;
             display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            color: #3e2723;
-        }
-
-        .section-date {
-            font-size: 0.9rem;
-            color: #795548;
-            font-weight: normal;
-            font-family: 'IM Fell English', serif;
-            font-style: italic;
-        }
-
-        p {
-            font-size: 1.15rem;
-            line-height: 1.9;
-            margin-bottom: 1.2rem;
-            color: #3e2723;
-            font-weight: 500;
-        }
-
-        .highlight {
-            background: linear-gradient(120deg, rgba(255, 215, 0, 0.4) 0%, rgba(255, 215, 0, 0.1) 100%);
-            padding: 0 4px;
-            font-weight: 900;
-            color: #b71c1c; /* Dark Red emphasis */
-            border-bottom: 2px solid rgba(183, 28, 28, 0.3);
-        }
-
-        /* --- 5. Specific Sections --- */
-
-        /* Hero: Registration Form */
-        #registration-form {
-            max-width: 850px;
-            margin: 0 auto 5rem auto;
-            transform: rotate(1deg);
-            display: flex;
-            gap: 2.5rem;
-            background: #fff8e1; /* Lighter form paper */
-            border: 1px solid #d7ccc8;
-        }
-
-        .profile-photo-container {
-            flex: 0 0 280px;
-            background: #fff;
-            padding: 12px 12px 40px 12px; /* Polaroid style bottom padding */
-            transform: rotate(-2deg);
-            box-shadow: 2px 4px 15px rgba(0,0,0,0.2);
-            align-self: flex-start;
-        }
-
-        .profile-photo {
-            width: 100%;
-            height: 320px;
-            object-fit: cover;
-            filter: sepia(0.3) contrast(1.1);
-            border: 1px solid #ccc;
-        }
-
-        .form-details {
-            flex: 1;
-            padding-top: 1rem;
-        }
-
-        .form-field {
-            margin-bottom: 1.2rem;
-            border-bottom: 1px dashed #a1887f;
-            padding-bottom: 8px;
-            display: flex;
-            align-items: baseline;
-        }
-
-        .label {
-            font-weight: 900;
-            margin-right: 15px;
-            color: #5d4037;
-            font-size: 1rem;
-            text-transform: uppercase;
-            font-family: 'Cinzel', serif;
-            min-width: 100px;
-        }
-
-        .value {
-            font-family: 'Noto Serif TC', serif;
-            font-size: 1.3rem;
-            color: var(--ink);
-            font-weight: 600;
-        }
-
-        .guild-stamp {
-            border: 4px double var(--red);
-            color: var(--red);
-            padding: 0.5rem 1.5rem;
-            display: inline-block;
-            font-weight: 900;
-            transform: rotate(-12deg);
-            margin-top: 2rem;
-            font-size: 1.5rem;
-            opacity: 0.85;
-            text-transform: uppercase;
-            font-family: 'Cinzel', serif;
-            mask-image: url("data:image/svg+xml;utf8,<svg width='200' height='60' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.1' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.8'/></svg>"); /* Rough stamp edge attempt */
-            border-radius: 4px;
-        }
-
-        /* Intro & Dream: Side-by-side Notices */
-        .notices-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
             gap: 3rem;
-            margin-bottom: 5rem;
-            width: 95%;
-            margin-left: auto;
-            margin-right: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            /* Ornate Corner Decorations (CSS) */
+            background-image:
+                linear-gradient(45deg, var(--gold-dim) 5px, transparent 5px),
+                linear-gradient(-45deg, var(--gold-dim) 5px, transparent 5px),
+                linear-gradient(135deg, var(--gold-dim) 5px, transparent 5px),
+                linear-gradient(-135deg, var(--gold-dim) 5px, transparent 5px);
+            background-position: top left, top right, bottom left, bottom right;
+            background-size: 20px 20px;
+            background-repeat: no-repeat;
         }
 
-        @media (max-width: 850px) {
-            .notices-grid { grid-template-columns: 1fr; }
-            #registration-form { flex-direction: column; align-items: center; text-align: center; }
-            .profile-photo-container { width: 100%; max-width: 300px; margin-bottom: 2rem; }
-            .form-field { flex-direction: column; align-items: flex-start; }
-            .label { margin-bottom: 5px; }
+        .hero-card::after { /* Inner gold border */
+            content: ''; position: absolute; inset: 10px;
+            border: 1px solid rgba(138, 110, 75, 0.3);
+            pointer-events: none;
         }
 
-        /* Projects: Wanted Posters Grid */
-        #bounty-board {
-            background: transparent;
-            box-shadow: none;
-            padding: 0;
-            margin-top: 6rem;
-        }
-
-        .poster-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2.5rem;
-            perspective: 1000px;
-        }
-
-        .wanted-poster {
-            background: #efebe9;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
+        .hero-avatar-frame {
+            flex: 0 0 300px;
+            height: 400px;
+            border: 4px double var(--gold-dim);
             position: relative;
-            transform-origin: top center;
-            transition: transform 0.3s ease;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
         }
 
-        .wanted-poster::before { /* Nail */
-            content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-            width: 10px; height: 10px; background: #222; border-radius: 50%;
-            box-shadow: 1px 2px 3px rgba(0,0,0,0.5);
-            z-index: 10;
-        }
-
-        .poster-img {
-            width: 100%;
-            height: 180px;
-            background: #333;
-            margin: 1.5rem 0 1rem 0;
-            border: 3px solid #3e2723;
+        .hero-avatar {
+            width: 100%; height: 100%;
             object-fit: cover;
-            filter: grayscale(0.2) sepia(0.4) contrast(1.1);
+            filter: sepia(0.2) contrast(1.1) brightness(0.9);
+            transition: transform 0.5s;
         }
+        .hero-card:hover .hero-avatar { transform: scale(1.05); }
 
-        .poster-title {
-            font-family: 'Cinzel', serif;
-            font-weight: 900;
-            font-size: 1.6rem;
-            margin-bottom: 0.5rem;
-            color: #3e2723;
-            text-transform: uppercase;
-        }
-
-        .poster-desc {
-            font-size: 0.95rem;
-            line-height: 1.4;
-            color: #5d4037;
-            margin-bottom: 1rem;
-            font-family: 'Noto Serif TC', serif;
-        }
-
-        .reward-tag {
-            background: var(--red);
-            color: #fff;
-            display: inline-block;
-            padding: 6px 16px;
-            font-size: 1rem;
-            font-weight: bold;
-            margin-top: 1rem;
-            border-radius: 2px;
-            font-family: 'Cinzel', serif;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-        }
-
-        /* Footer - Standardized */
-        footer {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: #8d6e63;
-            font-family: 'Cinzel', serif;
-            position: relative;
-            z-index: 10;
-            background: linear-gradient(to top, #1a120b 0%, transparent 100%);
-        }
-
-        .footer-content {
+        .hero-stats {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
             justify-content: center;
         }
 
-        .social-link {
-            width: 48px; height: 48px;
-            background: rgba(93, 64, 55, 0.8);
-            color: #d7ccc8;
+        .class-label {
+            font-family: 'Cinzel', serif;
+            color: var(--gold-dim);
+            font-size: 0.9rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .char-name {
+            font-family: 'Cinzel', serif;
+            color: var(--gold-bright);
+            font-size: 3.5rem;
+            line-height: 1;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 20px rgba(255, 219, 139, 0.2);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px dashed rgba(138, 110, 75, 0.3);
+            padding-bottom: 0.5rem;
+        }
+
+        .stat-label { font-weight: bold; color: #a89f91; font-size: 1rem; }
+        .stat-value { font-family: 'Cinzel', serif; color: var(--gold-bright); font-size: 1.2rem; }
+
+        .hp-bar-container {
+            width: 100%; height: 6px; background: #222; margin-top: 5px;
+            position: relative;
+        }
+        .hp-bar-fill {
+            height: 100%; background: linear-gradient(90deg, #8b0000, #ff3333);
+            box-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+        }
+
+        .mp-bar-fill {
+            height: 100%; background: linear-gradient(90deg, #004d40, #00bfa5);
+            box-shadow: 0 0 10px rgba(0, 191, 165, 0.5);
+        }
+
+        /* --- Log Section --- */
+        .log-section {
+            max-width: 800px;
+            margin: 0 auto 8rem auto;
+            text-align: center;
+            position: relative;
+        }
+
+        .log-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: var(--gold-dim);
+            margin-bottom: 2rem;
+            display: flex; align-items: center; justify-content: center; gap: 1rem;
+        }
+        .log-title::before, .log-title::after {
+            content: ''; width: 50px; height: 1px; background: var(--gold-dim);
+        }
+
+        .log-content {
+            font-size: 1.2rem;
+            line-height: 2;
+            color: #ccc;
+        }
+
+        .highlight { color: var(--gold-bright); font-weight: 600; text-shadow: var(--magic-glow); }
+
+        /* --- Quest Board (Projects) --- */
+        #quest-board-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        .section-header h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 3rem;
+            color: var(--gold-bright);
+            text-shadow: 0 0 30px rgba(255, 219, 139, 0.2);
+        }
+
+        .quests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .quest-card {
+            background: linear-gradient(180deg, #1a1510 0%, #0f0b08 100%);
+            border: 1px solid var(--gold-dim);
+            padding: 2px; /* For double border effect inner */
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .quest-inner {
+            border: 1px solid rgba(138, 110, 75, 0.3);
+            padding: 2rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .quest-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(255, 219, 139, 0.1);
+            border-color: var(--gold-bright);
+        }
+        .quest-card:hover .quest-rank { background: var(--gold-bright); color: #000; }
+
+        .quest-rank {
+            position: absolute; top: -15px;
+            background: #222; border: 1px solid var(--gold-dim);
+            color: var(--gold-dim);
+            font-family: 'Cinzel', serif;
+            padding: 5px 15px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .quest-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.8rem;
+            color: #eee;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .quest-desc {
+            font-size: 0.95rem;
+            color: #999;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .quest-reward {
+            margin-top: auto;
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--accent-red);
+            font-weight: bold;
+            border-top: 1px solid #333;
+            width: 100%;
+            padding-top: 1rem;
+        }
+
+        /* --- Footer --- */
+        footer {
+            margin-top: 8rem;
+            text-align: center;
+            padding: 3rem;
+            border-top: 1px solid #333;
+            background: #080504;
+        }
+
+        .social-row {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .social-icon {
+            width: 40px; height: 40px;
+            border: 1px solid #444;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 2px solid #8d6e63;
-        }
-        .social-link:hover {
-            background: var(--gold);
-            color: #3e2723;
-            transform: scale(1.1) rotate(10deg);
-            border-color: var(--gold);
-            box-shadow: 0 0 15px var(--gold);
-        }
-
-        .footer-text {
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .footer-text a {
-            color: var(--gold);
-            text-decoration: none;
-            border-bottom: 1px dashed var(--gold);
-            transition: all 0.2s;
-        }
-        .footer-text a:hover {
-            color: #fff;
-            border-bottom-style: solid;
-        }
-
-        /* Return Button */
-        .return-btn {
-            position: fixed;
-            top: 2rem; left: 2rem;
-            background: rgba(62, 39, 35, 0.9);
-            color: #d7ccc8;
-            padding: 0.8rem 1.5rem;
-            text-decoration: none;
-            border: 1px solid #8d6e63;
-            border-radius: 4px;
-            font-family: 'Noto Serif TC', serif;
-            font-weight: 600;
-            z-index: 100;
+            color: #888;
             transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .return-btn:hover {
-            background: var(--gold);
-            color: #3e2723;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3);
+        .social-icon:hover { border-color: var(--gold-bright); color: var(--gold-bright); box-shadow: 0 0 10px var(--gold-dim); }
+
+        .footer-credit {
+            font-family: 'Cinzel', serif;
+            color: #555;
+            font-size: 0.8rem;
+        }
+        .footer-credit a { color: #777; text-decoration: none; }
+        .footer-credit a:hover { color: var(--gold-dim); }
+
+        @media (max-width: 768px) {
+            .hero-card { flex-direction: column; padding: 2rem; }
+            .hero-avatar-frame { flex: 0 0 auto; height: 300px; width: 100%; }
+            .quests-grid { grid-template-columns: 1fr; }
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Lantern Glow Overlay -->
-    <div id="lantern-glow"></div>
-
-    <!-- Return Link -->
-    <a href="/guild/" class="return-btn">← 返回公會大廳</a>
-
-    <!-- 3D Atmosphere Background -->
+    <!-- 3D Background -->
     <div id="bg-canvas"></div>
+    <!-- Interactive Torch Light -->
+    <div id="torch-light"></div>
 
-    <!-- Main Content Board -->
-    <div id="quest-board">
+    <a href="/guild/" class="nav-return">
+        <span>❮</span> GUILD HALL
+    </a>
 
-        <!-- Header -->
-        <div class="guild-header">
-            <div class="header-plaque">
-                <h1>塞趴卷冒險公會</h1>
-                <div class="subtitle">Sepajuan Adventure Guild</div>
-            </div>
-        </div>
-
-        <!-- 1. Hero: Registration Form -->
-        <div id="registration-form" class="paper-note">
-            <div class="pin"></div>
-            <div class="profile-photo-container">
-                <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ Avatar" class="profile-photo">
-            </div>
-            <div class="form-details">
-                <div class="section-title">公會成員註冊單<span class="section-date">No. SPJ-001</span></div>
-
-                <div class="form-field">
-                    <span class="label">姓名 Name</span>
-                    <span class="value">塞趴卷 SPJ</span>
+    <main>
+        <!-- Hero Section -->
+        <section id="hero">
+            <div class="hero-card">
+                <div class="hero-avatar-frame">
+                    <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ" class="hero-avatar">
                 </div>
+                <div class="hero-stats">
+                    <div class="class-label">Materialization Alchemist</div>
+                    <div class="char-name">塞趴卷 SPJ</div>
 
-                <div class="form-field">
-                    <span class="label">職業 Class</span>
-                    <span class="value">具現化系鍊金術師</span>
-                </div>
+                    <div class="stat-row">
+                        <span class="stat-label">HP (Coffee Level)</span>
+                        <div style="flex:1; margin-left: 1rem;">
+                            <div class="stat-value" style="font-size:0.8rem; text-align:right;">85%</div>
+                            <div class="hp-bar-container"><div class="hp-bar-fill" style="width: 85%"></div></div>
+                        </div>
+                    </div>
 
-                <div class="form-field">
-                    <span class="label">等級 Level</span>
-                    <span class="value">99 (MAX)</span>
-                </div>
+                    <div class="stat-row">
+                        <span class="stat-label">MP (Creative Mana)</span>
+                        <div style="flex:1; margin-left: 1rem;">
+                            <div class="stat-value" style="font-size:0.8rem; text-align:right;">MAX</div>
+                            <div class="hp-bar-container"><div class="mp-bar-fill" style="width: 100%"></div></div>
+                        </div>
+                    </div>
 
-                <div class="form-field">
-                    <span class="label">技能 Skills</span>
-                    <span class="value" style="font-size: 1.1rem;">代碼合成 (Synthesis)、文字具現化 (Materialization)</span>
-                </div>
-
-                <div class="form-field">
-                    <span class="label">狀態 Status</span>
-                    <span class="value" style="font-size: 1.1rem; color: #43a047;">正在將咖啡轉化為魔力 (Brewing...)</span>
-                </div>
-
-                <div class="guild-stamp">審核通過 APPROVED</div>
-            </div>
-        </div>
-
-        <!-- 2. Notices Grid -->
-        <div class="notices-grid">
-
-            <!-- Notice 1: Intro -->
-            <div id="intro-note" class="paper-note" style="transform: rotate(-1.5deg);">
-                <div class="pin" style="background: radial-gradient(circle at 30% 30%, #ff8a65, #bf360c);"></div>
-                <div class="section-title">鍊金術師日誌</div>
-                <p>你好，我是 SPJ。一個在深夜裡將創意冶煉成現實的<span class="highlight">軟體工程師</span>。</p>
-                <p>對我來說，Side Project 不只是程式碼的堆疊，而是一場場探索未知的冒險。我最近正致力於將<span class="highlight">「文字小鎮」</span>具現化——一個透過天書系統運作的遊戲世界。</p>
-                <p>在那裡，每一行文字都是咒語，每一個靈感都能成為實體。我將無數的夜晚與咖啡投入其中，只為了看到想像落地的瞬間。</p>
-            </div>
-
-            <!-- Notice 2: Dream -->
-            <div id="dream-note" class="paper-note" style="transform: rotate(1.2deg);">
-                <div class="pin" style="background: radial-gradient(circle at 30% 30%, #ffd54f, #ff6f00);"></div>
-                <div class="section-title">公會願景公告</div>
-                <p>我還有一個更宏大的夢想——成立<span class="highlight">塞趴卷冒險公會</span>。</p>
-                <p>這是一個專為現實世界的創造者打造的庇護所。就像動漫裡的異世界公會，疲憊的冒險者（開發者、創作者）可以在此交流情報、組隊攻略副本、或是單純喝一杯分享故事。</p>
-                <p>我相信過程比結果更動人。所以我致力於紀錄這一切，將冰冷的技術轉化為<span class="highlight">有溫度的故事</span>，讓每一個奮鬥的靈魂都能被看見。</p>
-            </div>
-        </div>
-
-        <!-- 3. Projects: Bounty Board -->
-        <div id="bounty-board">
-            <h2 style="font-family: 'Cinzel'; color: #d7ccc8; text-align: center; margin-bottom: 3rem; font-size: 2.5rem; text-shadow: 2px 2px 4px #000; letter-spacing: 2px;">—— 懸賞佈告欄 (BOUNTIES) ——</h2>
-
-            <div class="poster-grid">
-                <!-- Poster 1 -->
-                <div class="wanted-poster" style="transform: rotate(-2deg);">
-                    <img src="https://placehold.co/600x400/3e2723/d4af37?text=文字小鎮" alt="文字小鎮" class="poster-img">
-                    <div class="poster-title">文字小鎮</div>
-                    <div class="poster-desc">透過天書系統，實現無限創意的遊戲世界。尋找能夠編織故事的冒險者。</div>
-                    <div class="reward-tag">Rank S</div>
-                </div>
-
-                <!-- Poster 2 -->
-                <div class="wanted-poster" style="transform: rotate(1deg);">
-                    <img src="https://placehold.co/600x400/3e2723/d4af37?text=冒險公會" alt="冒險公會" class="poster-img">
-                    <div class="poster-title">塞趴卷公會</div>
-                    <div class="poster-desc">現實世界的冒險者集散地。組隊、交流、資源共享。這裡永遠為你敞開大門。</div>
-                    <div class="reward-tag">Rank A</div>
-                </div>
-
-                <!-- Poster 3 -->
-                <div class="wanted-poster" style="transform: rotate(-1.5deg);">
-                    <img src="https://placehold.co/600x400/3e2723/d4af37?text=紀錄傳說" alt="紀錄傳說" class="poster-img">
-                    <div class="poster-title">紀錄與寫作</div>
-                    <div class="poster-desc">分享有溫度的過程故事。因為每一個成功的背後，都有無數個值得銘記的夜晚。</div>
-                    <div class="reward-tag">Rank B</div>
+                    <div class="stat-row">
+                        <span class="stat-label">Equipped Item</span>
+                        <span class="stat-value">Mechanical Keyboard</span>
+                    </div>
+                    <div class="stat-row" style="border:none;">
+                        <span class="stat-label">Specialization</span>
+                        <span class="stat-value">Code Synthesis</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Narrative Section -->
+        <section class="log-section">
+            <div class="log-title">THE ARCHIVES</div>
+            <div class="log-content">
+                <p>我是 SPJ，一名<span class="highlight">軟體工程師</span>，也是潛藏於現代社會的具現化系鍊金術師。</p>
+                <p>我擅長使用程式碼作為煉成陣，將腦海中的幻想轉化為實體。目前，我正在進行一項名為<span class="highlight">「文字小鎮」</span>的偉大實驗，試圖構建一個僅憑文字就能運作的遊戲世界。</p>
+                <br>
+                <p>但我的野心不止於此。我夢想建立<span class="highlight">「塞趴卷冒險公會」</span>——一個屬於創造者的庇護所。在這裡，我們不再是孤獨的碼農或創作者，而是並肩作戰的冒險者，共同在現實與虛擬的邊界開拓疆土。</p>
+            </div>
+        </section>
+
+        <!-- Quest Board -->
+        <section id="quest-board-section">
+            <div class="section-header">
+                <h2>ACTIVE BOUNTIES</h2>
+                <div style="color: #666; font-family: 'Cinzel'; letter-spacing: 2px;">SELECT A QUEST TO VIEW DETAILS</div>
+            </div>
+
+            <div class="quests-grid">
+                <!-- Quest 1 -->
+                <div class="quest-card">
+                    <span class="quest-rank">RANK S</span>
+                    <div class="quest-inner">
+                        <div class="quest-title">文字小鎮</div>
+                        <div class="quest-desc">構建一個由「天書系統」驅動的世界。所有規則、場景、互動皆由文字具現化。</div>
+                        <div class="quest-reward">REWARD: ETERNAL GLORY</div>
+                    </div>
+                </div>
+
+                <!-- Quest 2 -->
+                <div class="quest-card">
+                    <span class="quest-rank">RANK A</span>
+                    <div class="quest-inner">
+                        <div class="quest-title">冒險公會</div>
+                        <div class="quest-desc">建立現實世界的冒險者集散地。招募各路豪傑，組建隊伍，攻略現實副本。</div>
+                        <div class="quest-reward">REWARD: ALLIES & RESOURCES</div>
+                    </div>
+                </div>
+
+                <!-- Quest 3 -->
+                <div class="quest-card">
+                    <span class="quest-rank">RANK B</span>
+                    <div class="quest-inner">
+                        <div class="quest-title">傳說紀錄</div>
+                        <div class="quest-desc">紀錄開發過程中的血淚與歡笑。將冰冷的技術成果轉化為有溫度的吟遊詩篇。</div>
+                        <div class="quest-reward">REWARD: WISDOM</div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Footer -->
         <footer>
-            <div class="footer-content">
-                <div class="social-links">
-                    <a href="https://www.threads.net/@spj.story" target="_blank" class="social-link" title="Threads">
-                        <!-- Threads Icon (Simplified) -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
-                    </a>
-                    <!-- Placeholder generic guild link if user has other socials -->
-                    <a href="/guild/" class="social-link" title="Guild Hall">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 10a2 2 0 1 1-4 0v11"/><path d="M15 10a2 2 0 1 1 4 0v11"/></svg>
-                    </a>
-                </div>
-                <div class="footer-text">
-                    Made with 🍺 by <a href="/guild/">SuperGalen's Dungeon</a>
-                </div>
+            <div class="social-row">
+                <a href="https://www.threads.net/@spj.story" target="_blank" class="social-icon" title="Threads">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
+                </a>
+                <a href="/guild/" class="social-icon" title="Guild Hall">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 10a2 2 0 1 1-4 0v11"/><path d="M15 10a2 2 0 1 1 4 0v11"/></svg>
+                </a>
+            </div>
+            <div class="footer-credit">
+                Made with 🍺 by <a href="/guild/">SuperGalen's Dungeon</a>
             </div>
         </footer>
+    </main>
 
-    </div>
-
-    <!-- Scripts -->
+    <!-- Logic -->
     <script type="importmap">
         {
             "imports": {
@@ -596,81 +457,57 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- GSAP Interactions ---
+        // --- 1. GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // 1. Entrance Animations (Staggered Pinning)
-        // We simulate papers being pinned onto the board one by one
-
-        // Registration Form
-        gsap.from("#registration-form", {
-            y: -100,
-            opacity: 0,
-            rotation: -5,
-            duration: 1.2,
-            ease: "elastic.out(1, 0.6)",
-            delay: 0.5
-        });
-
-        // Notices
-        gsap.from(".paper-note:not(#registration-form)", {
+        // Entrance: Hero Card
+        gsap.from(".hero-card", {
             y: 50,
             opacity: 0,
-            scale: 0.9,
-            duration: 0.8,
-            stagger: 0.3,
-            ease: "back.out(1.7)",
+            duration: 1.5,
+            ease: "power3.out"
+        });
+
+        // Entrance: Log
+        gsap.from(".log-content", {
+            y: 30,
+            opacity: 0,
+            duration: 1,
             scrollTrigger: {
-                trigger: ".notices-grid",
+                trigger: ".log-section",
                 start: "top 80%"
             }
         });
 
-        // Bounty Board Posters (Swing in)
-        gsap.from(".wanted-poster", {
-            transformOrigin: "top center",
-            rotation: "random(-10, 10)",
+        // Entrance: Quests (Staggered)
+        gsap.from(".quest-card", {
+            y: 50,
             opacity: 0,
-            y: 20,
-            duration: 1,
             stagger: 0.2,
-            ease: "power2.out",
+            duration: 1,
+            ease: "back.out(1.7)",
             scrollTrigger: {
-                trigger: "#bounty-board",
-                start: "top 70%"
+                trigger: ".quests-grid",
+                start: "top 85%"
             }
         });
 
-        // 2. Interactive Swinging on Hover
-        // Add physics-like swing to posters
-        const posters = document.querySelectorAll('.wanted-poster');
-        posters.forEach(poster => {
-            poster.addEventListener('mouseenter', () => {
-                gsap.to(poster, {
-                    rotation: "random(-2, 2)",
-                    duration: 0.2,
-                    ease: "power1.out",
-                    yoyo: true,
-                    repeat: 1
-                });
-            });
-        });
-
-        // 3. Lantern Light Follow
+        // Mouse Torch Effect
         document.addEventListener('mousemove', (e) => {
             const x = e.clientX;
             const y = e.clientY;
-
-            // Move CSS Gradient center
-            const glow = document.getElementById('lantern-glow');
-            glow.style.setProperty('--x', x + 'px');
-            glow.style.setProperty('--y', y + 'px');
+            const torch = document.getElementById('torch-light');
+            torch.style.setProperty('--x', x + 'px');
+            torch.style.setProperty('--y', y + 'px');
         });
 
 
-        // --- Three.js Atmosphere (Floating Embers/Dust) ---
+        // --- 2. Three.js Background (Magical Dust) ---
         const container = document.getElementById('bg-canvas');
         const scene = new THREE.Scene();
+        // Subtle fog for depth
+        scene.fog = new THREE.FogExp2(0x050302, 0.002);
+
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 5;
 
@@ -679,51 +516,64 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // Warm Embers
-        const particlesCnt = 400;
+        // Particles
+        const particlesCnt = 300;
         const posArray = new Float32Array(particlesCnt * 3);
-        const speedArray = new Float32Array(particlesCnt);
+        const randomArray = new Float32Array(particlesCnt);
 
         for(let i = 0; i < particlesCnt * 3; i++) {
             posArray[i] = (Math.random() - 0.5) * 20;
         }
         for(let i = 0; i < particlesCnt; i++) {
-            speedArray[i] = Math.random() * 0.02 + 0.005;
+            randomArray[i] = Math.random();
         }
-
-        const material = new THREE.PointsMaterial({
-            size: 0.04,
-            color: 0xffa000, // Orange/Gold embers
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending
-        });
 
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        geometry.setAttribute('aRandom', new THREE.BufferAttribute(randomArray, 1));
+
+        // Create a soft glow texture via canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(16,16,0, 16,16,16);
+        grad.addColorStop(0, 'rgba(255, 215, 0, 1)');
+        grad.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,32,32);
+        const texture = new THREE.CanvasTexture(canvas);
+
+        const material = new THREE.PointsMaterial({
+            size: 0.1,
+            map: texture,
+            transparent: true,
+            opacity: 0.6,
+            color: 0xffd700,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
         const particlesMesh = new THREE.Points(geometry, material);
         scene.add(particlesMesh);
 
-        // Animation Loop
+        // Animation
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Particles Drift Upwards (Heat)
+            // Float upwards slowly
             const positions = particlesMesh.geometry.attributes.position.array;
             for(let i = 1; i < particlesCnt * 3; i += 3) {
-                positions[i] += speedArray[(i-1)/3];
-                // Reset if too high
-                if (positions[i] > 10) {
-                    positions[i] = -10;
-                }
+                // Individual speed based on random attribute? simplified here
+                positions[i] += 0.005;
+                if (positions[i] > 10) positions[i] = -10;
             }
             particlesMesh.geometry.attributes.position.needsUpdate = true;
 
-            // Gentle Sway
-            particlesMesh.rotation.y = Math.sin(time * 0.1) * 0.1;
+            // Rotate entire cloud
+            particlesMesh.rotation.y = time * 0.02;
 
             renderer.render(scene, camera);
         }
