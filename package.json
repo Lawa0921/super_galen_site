@@ -55,7 +55,6 @@
     "ethers": "^6.15.0",
     "js-yaml": "^4.1.1",
     "sass": "^1.97.3",
-    "sharp": "^0.34.5",
     "three": "^0.182.0"
   },
   "devDependencies": {

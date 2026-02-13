@@ -192,7 +192,6 @@
             border-radius: 2px;
         }
 
-        /* "Tape" effect restored */
         .paper-card::before {
             content: '';
             position: absolute;
@@ -230,6 +229,12 @@
             height: 200px;
             margin: 0 auto 2rem;
             position: relative;
+            cursor: pointer; /* Suggest interaction */
+            transition: transform 0.3s;
+        }
+
+        .avatar-container:hover {
+            transform: scale(1.05);
         }
 
         .avatar-img {
@@ -240,6 +245,24 @@
             filter: sepia(0.2) contrast(0.9);
             border: 3px solid #fff;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Hint for easter egg */
+        .avatar-hint {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--font-hand);
+            font-size: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            color: var(--color-accent);
+            white-space: nowrap;
+        }
+
+        .avatar-container:hover .avatar-hint {
+            opacity: 1;
         }
 
         /* --- Timeline (Grid) --- */
@@ -343,11 +366,130 @@
             border-color: var(--color-accent);
         }
 
+        /* --- New Elements --- */
+
+        /* Easter Egg Overlay */
+        #illustration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(47, 54, 50, 0.8);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            backdrop-filter: blur(10px);
+        }
+
+        #illustration-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .overlay-content {
+            transform: scale(0.8);
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            max-width: 90%;
+        }
+
+        #illustration-overlay.active .overlay-content {
+            transform: scale(1);
+        }
+
+        .overlay-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            border: 8px solid #fff;
+        }
+
+        #close-overlay {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background: #fff;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        #close-overlay:hover {
+            transform: scale(1.1);
+        }
+
+        /* BW Illustration Background */
+        #bw-illustration {
+            position: absolute;
+            bottom: 0;
+            right: -100px;
+            width: 500px;
+            opacity: 0.12;
+            z-index: 0;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+
+        #bw-illustration img {
+            width: 100%;
+            mask-image: linear-gradient(to top, black, transparent);
+            -webkit-mask-image: linear-gradient(to top, black, transparent);
+        }
+
+        /* Region Badges */
+        .region-badges {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            justify-content: start;
+        }
+
+        .region-badge {
+            font-family: var(--font-data);
+            border: 2px solid var(--color-accent);
+            color: var(--color-accent);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.5);
+            transform: rotate(-2deg);
+            transition: transform 0.3s;
+        }
+
+        .region-badge:nth-child(even) {
+            transform: rotate(2deg);
+            border-color: var(--color-warm);
+            color: #8B5A2B;
+        }
+
+        .region-badge:hover {
+            transform: rotate(0) scale(1.1);
+            background: #fff;
+            z-index: 2;
+        }
+
         @media (max-width: 768px) {
             .hero-title { font-size: 2.5rem; }
             .timeline-grid { grid-template-columns: 60px 1fr; gap: 1rem; }
             .timeline-grid::before { left: 29px; }
             .paper-card { padding: 1.5rem; }
+            #bw-illustration { width: 300px; right: -50px; opacity: 0.08; }
         }
     </style>
 
@@ -369,14 +511,23 @@
     <div id="canvas-p5"></div>
     <div id="stamp-container"></div>
 
+    <!-- Easter Egg Overlay -->
+    <div id="illustration-overlay">
+        <div class="overlay-content interactive-el">
+            <img src="/assets/img/guild/tyou/illustration_color.webp" alt="Hidden Moment" class="overlay-img">
+            <button id="close-overlay">×</button>
+        </div>
+    </div>
+
     <!-- Force load FontAwesome for Canvas -->
     <div style="font-family: 'Font Awesome 6 Free'; font-weight: 900; opacity: 0; position: absolute; pointer-events: none;">.</div>
 
     <!-- Hero Section -->
     <section class="section">
         <div class="content-wrapper" style="text-align: center;">
-            <div class="avatar-container gs-reveal interactive-el">
-                <img src="/assets/img/guild/tyou/avatar.webp" alt="Tyou" class="avatar-img">
+            <div class="avatar-container gs-reveal interactive-el" id="hero-avatar">
+                <img src="/assets/img/guild/tyou/pot.webp" alt="Tyou" class="avatar-img">
+                <div class="avatar-hint">Click me</div>
             </div>
 
             <span class="data-tag gs-reveal">INTP / Physicist / Barista</span>
@@ -401,11 +552,16 @@
     <section class="section">
         <div class="content-wrapper">
             <div class="paper-card gs-reveal">
+                <!-- BW Illustration (Background) -->
+                <div id="bw-illustration">
+                    <img src="/assets/img/guild/tyou/illustration_bw.webp" alt="Tyou Sketch">
+                </div>
+
                 <span class="data-tag">Chapter 01: The Logic</span>
                 <h2>Physics & The INTP Mind</h2>
 
                 <div style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 2rem;">
-                    <div style="flex: 1; min-width: 300px;">
+                    <div style="flex: 1; min-width: 300px; z-index: 1;">
                         <p style="margin-bottom: 1rem;">
                             大學、研究所皆主修物理。這賦予了我一種近乎強迫症的邏輯思維。<br>
                             雖然是教科書級的 <span style="font-family: var(--font-data); color: var(--color-accent);">INTP</span>，但我並不想用冰冷的數據來定義生活。
@@ -415,7 +571,7 @@
                             但用旅人的心，去感受那杯咖啡的溫度。
                         </p>
                     </div>
-                    <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: center; z-index: 1;">
                         <div style="width: 100%; height: 1px; background: var(--color-text); position: relative;">
                             <span class="handwritten" style="position: absolute; top: -30px; left: 0;">Variables</span>
                             <span class="handwritten" style="position: absolute; bottom: -30px; right: 0;">Atmosphere</span>
@@ -455,6 +611,17 @@
                     <div class="timeline-item timeline-content">
                         <h3>Japan (The Explorer)</h3>
                         <p>30歲移居日本。觀光推廣寫手、玩具店店長。<br>喜歡的事情太多，結果就什麼都做了。</p>
+
+                        <!-- Region Badges -->
+                        <div style="margin-top: 1rem; border-top: 1px dashed #ccc; padding-top: 1rem;">
+                            <span style="font-family: var(--font-hand); font-size: 0.9rem; color: #666; display: block; margin-bottom: 0.5rem;">Explored Regions:</span>
+                            <div class="region-badges">
+                                <span class="region-badge interactive-el">Hokkaido</span>
+                                <span class="region-badge interactive-el">Kanto</span>
+                                <span class="region-badge interactive-el">Kansai</span>
+                                <span class="region-badge interactive-el">Kyushu</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -494,7 +661,7 @@
             <h2 class="gs-reveal" style="font-family: var(--font-hand); font-size: 3rem; margin-bottom: 2rem;">Let's get lost together.</h2>
 
             <div class="social-links gs-reveal">
-                <a href="https://www.threads.com/@japan.coffee__tyou.tw" target="_blank" class="social-btn interactive-el">Threads</a>
+                <a href="https://www.threads.net/@japan.coffee__tyou.tw" target="_blank" class="social-btn interactive-el">Threads</a>
                 <a href="https://www.instagram.com/japan.coffee__tyou.tw/" target="_blank" class="social-btn interactive-el">Instagram</a>
                 <a href="https://vocus.cc/user/@japan-coffee-tyou" target="_blank" class="social-btn interactive-el">Vocus</a>
                 <a href="https://www.youtube.com/@japan.coffee_tyouSAN" target="_blank" class="social-btn interactive-el">YouTube</a>
@@ -507,14 +674,36 @@
         </div>
     </section>
 
-    <!-- Interactive: Coffee Stamp -->
+    <!-- Interactive: Coffee Stamp & Overlay -->
     <script>
         const stampContainer = document.getElementById('stamp-container');
         const cursorText = document.getElementById('cursor-text');
 
+        // Easter Egg Logic
+        const avatar = document.getElementById('hero-avatar');
+        const overlay = document.getElementById('illustration-overlay');
+        const closeBtn = document.getElementById('close-overlay');
+
+        avatar.addEventListener('click', (e) => {
+            e.stopPropagation(); // prevent stamp
+            overlay.classList.add('active');
+        });
+
+        closeBtn.addEventListener('click', (e) => {
+             e.stopPropagation();
+             overlay.classList.remove('active');
+        });
+
+        overlay.addEventListener('click', (e) => {
+            // Click outside content to close
+            if(e.target === overlay) {
+                overlay.classList.remove('active');
+            }
+        });
+
         // Stamp Logic
         document.addEventListener('click', (e) => {
-            if (e.target.closest('a') || e.target.closest('.interactive-el')) return;
+            if (e.target.closest('a') || e.target.closest('.interactive-el') || e.target.closest('#illustration-overlay.active')) return;
 
             const stamp = document.createElement('div');
             stamp.classList.add('coffee-stamp');
@@ -544,7 +733,7 @@
         });
     </script>
 
-    <!-- Three.js: Floating Icons (Physics Enhanced - Restored) -->
+    <!-- Three.js: Floating Icons (Physics Enhanced) -->
     <script type="module">
         import * as THREE from 'three';
 
@@ -595,7 +784,7 @@
         ];
 
         // --- Create Sprites ---
-        const particleCount = 45; // Restored count
+        const particleCount = 45;
         const particles = [];
 
         (async () => {
@@ -604,7 +793,7 @@
                 return new THREE.SpriteMaterial({
                     map: texture,
                     transparent: true,
-                    opacity: 0.6 // Restored Opacity
+                    opacity: 0.6
                 });
             }));
 

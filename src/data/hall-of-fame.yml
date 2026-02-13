@@ -792,7 +792,7 @@ members:
 
   - id: "tyou"
     name: "秋桑 Tyou"
-    avatar: "/assets/img/guild/tyou/avatar.webp"
+    avatar: "/assets/img/guild/tyou/pot.webp"
     page: "/guild/tyou.html"
     tags:
       - id: "coffee_physicist"
