@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Quest Board)', () => {
+test.describe('SPJ Guild Page (Lively Tavern)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -12,35 +12,33 @@ test.describe('SPJ Guild Page (Quest Board)', () => {
     }
   });
 
-  test('should display Header Plaque', async ({ page }) => {
-    await expect(page.locator('.header-plaque h1')).toContainText('塞趴卷冒險公會');
+  test('should display Enhanced Content (Skills, Status)', async ({ page }) => {
+    // Check for new skill content
+    await expect(page.locator('.form-field').filter({ hasText: '技能 Skills' })).toContainText('代碼合成 (Synthesis)');
+    // Check for new status content
+    await expect(page.locator('.form-field').filter({ hasText: '狀態 Status' })).toContainText('正在將咖啡轉化為魔力');
   });
 
-  test('should display Registration Form (Hero)', async ({ page }) => {
-    await expect(page.locator('#registration-form')).toBeVisible();
-    await expect(page.locator('.profile-photo')).toHaveAttribute('src', '/assets/img/guild/spj/avatar.webp');
-    await expect(page.locator('.form-details')).toContainText('具現化系鍊金術師');
+  test('should display Expanded Narrative', async ({ page }) => {
+    // Intro
+    await expect(page.locator('#intro-note')).toContainText('深夜裡將創意冶煉成現實');
+    // Dream
+    await expect(page.locator('#dream-note')).toContainText('疲憊的冒險者（開發者、創作者）');
   });
 
-  test('should display Notices', async ({ page }) => {
-    const notices = page.locator('.paper-note');
-    // We expect Registration Form (1) + Intro (1) + Dream (1) = 3 paper notes
-    // Wait, the selector .paper-note is used for Notices.
-    // Intro and Dream use .paper-note.
-    // Registration form uses .paper-note.
-    await expect(notices).toHaveCount(3);
+  test('should display Correct Footer', async ({ page }) => {
+    const footer = page.locator('footer');
+    await expect(footer).toContainText("Made with 🍺 by SuperGalen's Dungeon");
+    // Should NOT contain copyright year (unless part of the standard template, but request said remove)
+    // The previous implementation had copyright year, this one removed it.
+    await expect(footer).not.toContainText('© 2024');
 
-    await expect(page.locator('#intro-note')).toContainText('鍊金術師日誌');
-    await expect(page.locator('#dream-note')).toContainText('公會願景公告');
+    // Check social link
+    const threadsLink = page.locator('a[href*="threads.net/@spj.story"]');
+    await expect(threadsLink).toBeVisible();
   });
 
-  test('should display Bounty Board', async ({ page }) => {
-    await expect(page.locator('#bounty-board h2')).toContainText('懸賞佈告欄');
-    const posters = page.locator('.wanted-poster');
-    await expect(posters).toHaveCount(3);
-  });
-
-  test('should have a Three.js canvas background', async ({ page }) => {
-    await expect(page.locator('#bg-canvas canvas')).toBeVisible();
+  test('should have Lantern Glow overlay', async ({ page }) => {
+    await expect(page.locator('#lantern-glow')).toBeVisible();
   });
 });

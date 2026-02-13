@@ -13,6 +13,7 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
 
     <style>
         :root {
@@ -32,13 +33,24 @@
             color: var(--ink);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
+            background-image: repeating-linear-gradient(90deg, #3e2723 0px, #2c1e14 40px, #332219 80px); /* Wood grain fallback */
         }
 
         /* --- 1. Background Atmosphere --- */
         #bg-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; pointer-events: none;
-            background: radial-gradient(circle at 50% 30%, #3e2723 0%, #1a120b 100%);
+            /* Overlay gradient to simulate dark tavern interior */
+            background: radial-gradient(circle at 50% 30%, transparent 20%, #1a120b 90%);
+        }
+
+        /* Lantern Light Overlay (Follows Mouse) */
+        #lantern-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; pointer-events: none;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 170, 0, 0.15) 0%, transparent 60%);
+            mix-blend-mode: screen;
+            transition: opacity 0.5s;
         }
 
         /* --- 2. The Quest Board (Main Container) --- */
@@ -47,87 +59,106 @@
             max-width: 1000px;
             margin: 4rem auto;
             position: relative;
-            background-image: repeating-linear-gradient(90deg, #3e2723 0px, #2c1e14 40px, #332219 80px);
+            /* Improved Wood Texture */
+            background-color: #3e2723;
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
             box-shadow:
                 0 0 50px rgba(0,0,0,0.8),
                 inset 0 0 100px rgba(0,0,0,0.9);
             border: 20px solid #25160c;
             border-radius: 8px;
             padding: 4rem 2rem;
-            /* Wood Grain Texture Overlay */
-            background-blend-mode: multiply;
         }
 
-        #quest-board::before {
-            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
-            pointer-events: none;
-            opacity: 0.4;
+        /* Nails on the board corners */
+        #quest-board::after {
+            content: ''; position: absolute; top: 20px; left: 20px; width: 15px; height: 15px;
+            background: #111; border-radius: 50%;
+            box-shadow:
+                calc(100% - 40px) 0 0 #111,
+                0 calc(100% - 40px) 0 #111,
+                calc(100% - 40px) calc(100% - 40px) 0 #111; /* 4 corners */
         }
 
         /* --- 3. Header Sign --- */
         .guild-header {
             text-align: center;
-            margin-bottom: 4rem;
+            margin-bottom: 5rem;
             position: relative;
             z-index: 10;
+            perspective: 1000px;
         }
 
         .header-plaque {
             background: #4e342e;
             display: inline-block;
-            padding: 1rem 3rem;
+            padding: 1.5rem 4rem;
             border: 4px solid #3e2723;
-            border-radius: 4px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            transform: rotate(-1deg);
+            border-radius: 8px; /* Slightly rounded */
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+            transform-origin: top center;
+            animation: swing-header 6s ease-in-out infinite alternate;
         }
+
+        @keyframes swing-header {
+            0% { transform: rotate(-1deg); }
+            100% { transform: rotate(1deg); }
+        }
+
+        /* Chains holding the sign */
+        .header-plaque::before, .header-plaque::after {
+            content: ''; position: absolute; top: -100px; width: 6px; height: 100px;
+            background: repeating-linear-gradient(to bottom, #333 0, #333 6px, transparent 6px, transparent 10px);
+            left: 20%;
+        }
+        .header-plaque::after { left: auto; right: 20%; }
 
         .header-plaque h1 {
             color: var(--gold);
             font-family: 'Cinzel', serif;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 0 #000;
+            font-size: 3rem;
+            text-shadow: 2px 2px 0 #000, 0 0 15px rgba(255, 215, 0, 0.4);
             letter-spacing: 2px;
             margin: 0;
         }
 
         .header-plaque .subtitle {
             color: #d7ccc8;
-            font-size: 0.9rem;
-            letter-spacing: 4px;
-            margin-top: 5px;
+            font-size: 1rem;
+            letter-spacing: 5px;
+            margin-top: 8px;
             text-transform: uppercase;
+            font-weight: bold;
         }
 
         /* --- 4. Content Styles (Pinned Papers) --- */
         .paper-note {
             background: var(--parchment);
             color: var(--ink);
-            padding: 2.5rem;
-            margin-bottom: 3rem;
+            padding: 3rem;
+            margin-bottom: 4rem;
             box-shadow: 5px 10px 20px var(--paper-shadow);
             position: relative;
-            /* Subtle paper texture */
             background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E");
             transform-origin: center top;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
+        /* Hover effect: Slight lift */
         .paper-note:hover {
-            transform: scale(1.02) rotate(0deg) !important;
             z-index: 20;
-            box-shadow: 10px 20px 40px rgba(0,0,0,0.4);
+            box-shadow: 10px 20px 40px rgba(0,0,0,0.5);
+            /* Rotation is handled by GSAP interaction or random init */
         }
 
         /* Pin Visual */
         .pin {
             position: absolute;
-            top: -10px; left: 50%;
+            top: -12px; left: 50%;
             transform: translateX(-50%);
-            width: 16px; height: 16px;
+            width: 20px; height: 20px;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #b0bec5, #546e7a);
+            background: radial-gradient(circle at 30% 30%, #cfd8dc, #455a64);
             box-shadow: 2px 4px 6px rgba(0,0,0,0.5);
             z-index: 5;
         }
@@ -135,114 +166,133 @@
         .section-title {
             font-family: 'Noto Serif TC', serif;
             font-weight: 900;
-            font-size: 1.8rem;
-            border-bottom: 2px solid var(--ink);
-            padding-bottom: 0.5rem;
+            font-size: 2rem;
+            border-bottom: 3px double var(--ink);
+            padding-bottom: 0.8rem;
             margin-bottom: 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
+            color: #3e2723;
         }
 
         .section-date {
             font-size: 0.9rem;
-            color: #666;
+            color: #795548;
             font-weight: normal;
+            font-family: 'IM Fell English', serif;
+            font-style: italic;
         }
 
         p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 1rem;
-            color: #333;
+            font-size: 1.15rem;
+            line-height: 1.9;
+            margin-bottom: 1.2rem;
+            color: #3e2723;
+            font-weight: 500;
         }
 
         .highlight {
-            background: rgba(255, 215, 0, 0.3);
+            background: linear-gradient(120deg, rgba(255, 215, 0, 0.4) 0%, rgba(255, 215, 0, 0.1) 100%);
             padding: 0 4px;
-            font-weight: bold;
-            color: #8b0000;
+            font-weight: 900;
+            color: #b71c1c; /* Dark Red emphasis */
+            border-bottom: 2px solid rgba(183, 28, 28, 0.3);
         }
 
         /* --- 5. Specific Sections --- */
 
         /* Hero: Registration Form */
         #registration-form {
-            max-width: 800px;
-            margin: 0 auto 4rem auto;
+            max-width: 850px;
+            margin: 0 auto 5rem auto;
             transform: rotate(1deg);
             display: flex;
-            gap: 2rem;
+            gap: 2.5rem;
             background: #fff8e1; /* Lighter form paper */
+            border: 1px solid #d7ccc8;
         }
 
         .profile-photo-container {
-            flex: 0 0 250px;
-            border: 1px solid #8d6e63;
-            padding: 10px;
+            flex: 0 0 280px;
             background: #fff;
+            padding: 12px 12px 40px 12px; /* Polaroid style bottom padding */
             transform: rotate(-2deg);
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 2px 4px 15px rgba(0,0,0,0.2);
+            align-self: flex-start;
         }
 
         .profile-photo {
             width: 100%;
-            height: 300px;
+            height: 320px;
             object-fit: cover;
-            filter: sepia(0.2);
+            filter: sepia(0.3) contrast(1.1);
+            border: 1px solid #ccc;
         }
 
         .form-details {
             flex: 1;
+            padding-top: 1rem;
         }
 
         .form-field {
-            margin-bottom: 1rem;
-            border-bottom: 1px dashed #aaa;
-            padding-bottom: 5px;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px dashed #a1887f;
+            padding-bottom: 8px;
             display: flex;
             align-items: baseline;
         }
 
         .label {
             font-weight: 900;
-            margin-right: 10px;
+            margin-right: 15px;
             color: #5d4037;
-            font-size: 0.9rem;
+            font-size: 1rem;
             text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            min-width: 100px;
         }
 
         .value {
-            font-family: 'IM Fell English', serif;
-            font-size: 1.4rem;
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.3rem;
             color: var(--ink);
+            font-weight: 600;
         }
 
         .guild-stamp {
-            border: 3px double var(--red);
+            border: 4px double var(--red);
             color: var(--red);
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.5rem;
             display: inline-block;
             font-weight: 900;
-            transform: rotate(-10deg);
-            margin-top: 1rem;
-            font-size: 1.2rem;
-            opacity: 0.8;
+            transform: rotate(-12deg);
+            margin-top: 2rem;
+            font-size: 1.5rem;
+            opacity: 0.85;
+            text-transform: uppercase;
+            font-family: 'Cinzel', serif;
+            mask-image: url("data:image/svg+xml;utf8,<svg width='200' height='60' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.1' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.8'/></svg>"); /* Rough stamp edge attempt */
+            border-radius: 4px;
         }
 
         /* Intro & Dream: Side-by-side Notices */
         .notices-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 4rem;
+            gap: 3rem;
+            margin-bottom: 5rem;
+            width: 95%;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 850px) {
             .notices-grid { grid-template-columns: 1fr; }
-            #registration-form { flex-direction: column; }
-            .profile-photo-container { width: 100%; height: auto; }
-            .profile-photo { height: auto; }
+            #registration-form { flex-direction: column; align-items: center; text-align: center; }
+            .profile-photo-container { width: 100%; max-width: 300px; margin-bottom: 2rem; }
+            .form-field { flex-direction: column; align-items: flex-start; }
+            .label { margin-bottom: 5px; }
         }
 
         /* Projects: Wanted Posters Grid */
@@ -250,13 +300,14 @@
             background: transparent;
             box-shadow: none;
             padding: 0;
-            transform: none;
+            margin-top: 6rem;
         }
 
         .poster-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
+            gap: 2.5rem;
+            perspective: 1000px;
         }
 
         .wanted-poster {
@@ -265,75 +316,114 @@
             text-align: center;
             box-shadow: 5px 10px 20px rgba(0,0,0,0.3);
             position: relative;
-            transition: all 0.3s ease;
+            transform-origin: top center;
+            transition: transform 0.3s ease;
         }
 
         .wanted-poster::before { /* Nail */
-            content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            width: 8px; height: 8px; background: #333; border-radius: 50%;
-            box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-
-        .wanted-poster:hover {
-            transform: translateY(-5px) scale(1.02);
+            content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            width: 10px; height: 10px; background: #222; border-radius: 50%;
+            box-shadow: 1px 2px 3px rgba(0,0,0,0.5);
             z-index: 10;
-            box-shadow: 10px 20px 40px rgba(0,0,0,0.5);
         }
 
         .poster-img {
             width: 100%;
             height: 180px;
             background: #333;
-            margin: 1rem 0;
-            border: 2px solid #3e2723;
+            margin: 1.5rem 0 1rem 0;
+            border: 3px solid #3e2723;
             object-fit: cover;
-            filter: grayscale(0.5) contrast(1.2);
+            filter: grayscale(0.2) sepia(0.4) contrast(1.1);
         }
 
         .poster-title {
             font-family: 'Cinzel', serif;
             font-weight: 900;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             margin-bottom: 0.5rem;
             color: #3e2723;
+            text-transform: uppercase;
+        }
+
+        .poster-desc {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #5d4037;
+            margin-bottom: 1rem;
+            font-family: 'Noto Serif TC', serif;
         }
 
         .reward-tag {
             background: var(--red);
             color: #fff;
             display: inline-block;
-            padding: 4px 12px;
-            font-size: 0.8rem;
+            padding: 6px 16px;
+            font-size: 1rem;
             font-weight: bold;
             margin-top: 1rem;
             border-radius: 2px;
+            font-family: 'Cinzel', serif;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
         }
 
-        /* Footer */
-        .footer-note {
+        /* Footer - Standardized */
+        footer {
             text-align: center;
-            color: #a1887f;
-            margin-top: 4rem;
-            font-size: 0.9rem;
-            font-style: italic;
+            padding: 4rem 2rem;
+            color: #8d6e63;
+            font-family: 'Cinzel', serif;
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(to top, #1a120b 0%, transparent 100%);
         }
 
-        .social-icons {
+        .footer-content {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
             gap: 1.5rem;
-            margin-top: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            justify-content: center;
         }
 
         .social-link {
-            width: 40px; height: 40px;
-            background: #5d4037;
+            width: 48px; height: 48px;
+            background: rgba(93, 64, 55, 0.8);
             color: #d7ccc8;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid #8d6e63;
         }
-        .social-link:hover { background: var(--gold); color: #3e2723; }
+        .social-link:hover {
+            background: var(--gold);
+            color: #3e2723;
+            transform: scale(1.1) rotate(10deg);
+            border-color: var(--gold);
+            box-shadow: 0 0 15px var(--gold);
+        }
+
+        .footer-text {
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .footer-text a {
+            color: var(--gold);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--gold);
+            transition: all 0.2s;
+        }
+        .footer-text a:hover {
+            color: #fff;
+            border-bottom-style: solid;
+        }
 
         /* Return Button */
         .return-btn {
@@ -349,15 +439,21 @@
             font-weight: 600;
             z-index: 100;
             transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         .return-btn:hover {
             background: var(--gold);
             color: #3e2723;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 215, 0, 0.3);
         }
 
     </style>
 </head>
 <body>
+
+    <!-- Lantern Glow Overlay -->
+    <div id="lantern-glow"></div>
 
     <!-- Return Link -->
     <a href="/guild/" class="return-btn">← 返回公會大廳</a>
@@ -386,23 +482,28 @@
                 <div class="section-title">公會成員註冊單<span class="section-date">No. SPJ-001</span></div>
 
                 <div class="form-field">
-                    <span class="label">姓名 Name:</span>
+                    <span class="label">姓名 Name</span>
                     <span class="value">塞趴卷 SPJ</span>
                 </div>
 
                 <div class="form-field">
-                    <span class="label">職業 Class:</span>
+                    <span class="label">職業 Class</span>
                     <span class="value">具現化系鍊金術師</span>
                 </div>
 
                 <div class="form-field">
-                    <span class="label">等級 Level:</span>
+                    <span class="label">等級 Level</span>
                     <span class="value">99 (MAX)</span>
                 </div>
 
                 <div class="form-field">
-                    <span class="label">技能 Skills:</span>
-                    <span class="value" style="font-size: 1rem;">Side Project 開發、文字具現化、公會營運</span>
+                    <span class="label">技能 Skills</span>
+                    <span class="value" style="font-size: 1.1rem;">代碼合成 (Synthesis)、文字具現化 (Materialization)</span>
+                </div>
+
+                <div class="form-field">
+                    <span class="label">狀態 Status</span>
+                    <span class="value" style="font-size: 1.1rem; color: #43a047;">正在將咖啡轉化為魔力 (Brewing...)</span>
                 </div>
 
                 <div class="guild-stamp">審核通過 APPROVED</div>
@@ -413,34 +514,34 @@
         <div class="notices-grid">
 
             <!-- Notice 1: Intro -->
-            <div id="intro-note" class="paper-note" style="transform: rotate(-1deg);">
+            <div id="intro-note" class="paper-note" style="transform: rotate(-1.5deg);">
                 <div class="pin" style="background: radial-gradient(circle at 30% 30%, #ff8a65, #bf360c);"></div>
                 <div class="section-title">鍊金術師日誌</div>
-                <p>我是一個曾經做過很多 Side Project 的<span class="highlight">軟體工程師</span>。</p>
-                <p>最近想把<span class="highlight">「文字小鎮」</span>這個概念做成一個遊戲，有種像是「天書系統」的感覺，讓我可以把我的創意都在裡面實現。</p>
-                <p>每一行代碼，都是通往新世界的咒語。</p>
+                <p>你好，我是 SPJ。一個在深夜裡將創意冶煉成現實的<span class="highlight">軟體工程師</span>。</p>
+                <p>對我來說，Side Project 不只是程式碼的堆疊，而是一場場探索未知的冒險。我最近正致力於將<span class="highlight">「文字小鎮」</span>具現化——一個透過天書系統運作的遊戲世界。</p>
+                <p>在那裡，每一行文字都是咒語，每一個靈感都能成為實體。我將無數的夜晚與咖啡投入其中，只為了看到想像落地的瞬間。</p>
             </div>
 
             <!-- Notice 2: Dream -->
-            <div id="dream-note" class="paper-note" style="transform: rotate(1.5deg);">
+            <div id="dream-note" class="paper-note" style="transform: rotate(1.2deg);">
                 <div class="pin" style="background: radial-gradient(circle at 30% 30%, #ffd54f, #ff6f00);"></div>
                 <div class="section-title">公會願景公告</div>
-                <p>我還有一個夢想，是成立一個<span class="highlight">塞趴卷冒險公會</span>。</p>
-                <p>就像動漫或異世界轉生番那樣，一群現實世界的冒險者會在公會交流、組隊、接任務、打副本，希望可以聚集更多資源。</p>
-                <p>同時我也喜歡紀錄跟寫作，可以把這些過程的故事分享出來，讓事情不是只有死板板的結果，而是有溫度的過程。</p>
+                <p>我還有一個更宏大的夢想——成立<span class="highlight">塞趴卷冒險公會</span>。</p>
+                <p>這是一個專為現實世界的創造者打造的庇護所。就像動漫裡的異世界公會，疲憊的冒險者（開發者、創作者）可以在此交流情報、組隊攻略副本、或是單純喝一杯分享故事。</p>
+                <p>我相信過程比結果更動人。所以我致力於紀錄這一切，將冰冷的技術轉化為<span class="highlight">有溫度的故事</span>，讓每一個奮鬥的靈魂都能被看見。</p>
             </div>
         </div>
 
         <!-- 3. Projects: Bounty Board -->
         <div id="bounty-board">
-            <h2 style="font-family: 'Cinzel'; color: #d7ccc8; text-align: center; margin-bottom: 2rem; font-size: 2rem; text-shadow: 2px 2px 4px #000;">懸賞佈告欄 (Projects)</h2>
+            <h2 style="font-family: 'Cinzel'; color: #d7ccc8; text-align: center; margin-bottom: 3rem; font-size: 2.5rem; text-shadow: 2px 2px 4px #000; letter-spacing: 2px;">—— 懸賞佈告欄 (BOUNTIES) ——</h2>
 
             <div class="poster-grid">
                 <!-- Poster 1 -->
                 <div class="wanted-poster" style="transform: rotate(-2deg);">
                     <img src="https://placehold.co/600x400/3e2723/d4af37?text=文字小鎮" alt="文字小鎮" class="poster-img">
                     <div class="poster-title">文字小鎮</div>
-                    <p style="font-size: 0.9rem;">透過天書系統，實現無限創意的遊戲世界。</p>
+                    <div class="poster-desc">透過天書系統，實現無限創意的遊戲世界。尋找能夠編織故事的冒險者。</div>
                     <div class="reward-tag">Rank S</div>
                 </div>
 
@@ -448,7 +549,7 @@
                 <div class="wanted-poster" style="transform: rotate(1deg);">
                     <img src="https://placehold.co/600x400/3e2723/d4af37?text=冒險公會" alt="冒險公會" class="poster-img">
                     <div class="poster-title">塞趴卷公會</div>
-                    <p style="font-size: 0.9rem;">現實世界的冒險者集散地。組隊、交流、資源共享。</p>
+                    <div class="poster-desc">現實世界的冒險者集散地。組隊、交流、資源共享。這裡永遠為你敞開大門。</div>
                     <div class="reward-tag">Rank A</div>
                 </div>
 
@@ -456,21 +557,30 @@
                 <div class="wanted-poster" style="transform: rotate(-1.5deg);">
                     <img src="https://placehold.co/600x400/3e2723/d4af37?text=紀錄傳說" alt="紀錄傳說" class="poster-img">
                     <div class="poster-title">紀錄與寫作</div>
-                    <p style="font-size: 0.9rem;">分享有溫度的過程故事，而不僅僅是冰冷的結果。</p>
+                    <div class="poster-desc">分享有溫度的過程故事。因為每一個成功的背後，都有無數個值得銘記的夜晚。</div>
                     <div class="reward-tag">Rank B</div>
                 </div>
             </div>
         </div>
 
         <!-- Footer -->
-        <div class="footer-note">
-            <p>© 2024 塞趴卷冒險公會 Guild ID: #SPJ-001</p>
-            <div class="social-icons">
-                <a href="https://www.threads.net/@spj.story" target="_blank" class="social-link" title="Threads">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
-                </a>
+        <footer>
+            <div class="footer-content">
+                <div class="social-links">
+                    <a href="https://www.threads.net/@spj.story" target="_blank" class="social-link" title="Threads">
+                        <!-- Threads Icon (Simplified) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/><path d="M12 19v-7"/><path d="M12 5v4"/></svg>
+                    </a>
+                    <!-- Placeholder generic guild link if user has other socials -->
+                    <a href="/guild/" class="social-link" title="Guild Hall">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 10a2 2 0 1 1-4 0v11"/><path d="M15 10a2 2 0 1 1 4 0v11"/></svg>
+                    </a>
+                </div>
+                <div class="footer-text">
+                    Made with 🍺 by <a href="/guild/">SuperGalen's Dungeon</a>
+                </div>
             </div>
-        </div>
+        </footer>
 
     </div>
 
@@ -489,54 +599,104 @@
         // --- GSAP Interactions ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Animate Papers on Scroll
-        gsap.utils.toArray('.paper-note, .wanted-poster').forEach(item => {
-            gsap.from(item, {
-                y: 50,
-                opacity: 0,
-                duration: 1,
-                ease: "power2.out",
-                scrollTrigger: {
-                    trigger: item,
-                    start: "top 85%"
-                }
-            });
+        // 1. Entrance Animations (Staggered Pinning)
+        // We simulate papers being pinned onto the board one by one
+
+        // Registration Form
+        gsap.from("#registration-form", {
+            y: -100,
+            opacity: 0,
+            rotation: -5,
+            duration: 1.2,
+            ease: "elastic.out(1, 0.6)",
+            delay: 0.5
         });
 
-        // Header Parallax
-        gsap.to(".header-plaque", {
-            y: 30,
-            rotation: 0,
+        // Notices
+        gsap.from(".paper-note:not(#registration-form)", {
+            y: 50,
+            opacity: 0,
+            scale: 0.9,
+            duration: 0.8,
+            stagger: 0.3,
+            ease: "back.out(1.7)",
             scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom top",
-                scrub: 1
+                trigger: ".notices-grid",
+                start: "top 80%"
             }
         });
 
-        // --- Three.js Ambient Dust ---
+        // Bounty Board Posters (Swing in)
+        gsap.from(".wanted-poster", {
+            transformOrigin: "top center",
+            rotation: "random(-10, 10)",
+            opacity: 0,
+            y: 20,
+            duration: 1,
+            stagger: 0.2,
+            ease: "power2.out",
+            scrollTrigger: {
+                trigger: "#bounty-board",
+                start: "top 70%"
+            }
+        });
+
+        // 2. Interactive Swinging on Hover
+        // Add physics-like swing to posters
+        const posters = document.querySelectorAll('.wanted-poster');
+        posters.forEach(poster => {
+            poster.addEventListener('mouseenter', () => {
+                gsap.to(poster, {
+                    rotation: "random(-2, 2)",
+                    duration: 0.2,
+                    ease: "power1.out",
+                    yoyo: true,
+                    repeat: 1
+                });
+            });
+        });
+
+        // 3. Lantern Light Follow
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+
+            // Move CSS Gradient center
+            const glow = document.getElementById('lantern-glow');
+            glow.style.setProperty('--x', x + 'px');
+            glow.style.setProperty('--y', y + 'px');
+        });
+
+
+        // --- Three.js Atmosphere (Floating Embers/Dust) ---
         const container = document.getElementById('bg-canvas');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false }); // Perf optimization
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // Dust Particles
-        const particlesCnt = 500;
+        // Warm Embers
+        const particlesCnt = 400;
         const posArray = new Float32Array(particlesCnt * 3);
+        const speedArray = new Float32Array(particlesCnt);
+
         for(let i = 0; i < particlesCnt * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 15;
+            posArray[i] = (Math.random() - 0.5) * 20;
+        }
+        for(let i = 0; i < particlesCnt; i++) {
+            speedArray[i] = Math.random() * 0.02 + 0.005;
         }
 
         const material = new THREE.PointsMaterial({
-            size: 0.03,
-            color: 0xffd700,
+            size: 0.04,
+            color: 0xffa000, // Orange/Gold embers
             transparent: true,
-            opacity: 0.4
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
         });
 
         const geometry = new THREE.BufferGeometry();
@@ -546,13 +706,24 @@
 
         // Animation Loop
         const clock = new THREE.Clock();
+
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Subtle drift
-            particlesMesh.rotation.y = time * 0.02;
-            particlesMesh.position.y = Math.sin(time * 0.1) * 0.2;
+            // Particles Drift Upwards (Heat)
+            const positions = particlesMesh.geometry.attributes.position.array;
+            for(let i = 1; i < particlesCnt * 3; i += 3) {
+                positions[i] += speedArray[(i-1)/3];
+                // Reset if too high
+                if (positions[i] > 10) {
+                    positions[i] = -10;
+                }
+            }
+            particlesMesh.geometry.attributes.position.needsUpdate = true;
+
+            // Gentle Sway
+            particlesMesh.rotation.y = Math.sin(time * 0.1) * 0.1;
 
             renderer.render(scene, camera);
         }
