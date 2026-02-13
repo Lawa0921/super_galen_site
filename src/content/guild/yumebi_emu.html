@@ -47,6 +47,8 @@
             overflow-x: hidden;
             width: 100vw;
             cursor: none; /* Custom cursor handling */
+            /* Initially hidden for Dream Gate */
+            overflow: hidden;
         }
 
         /* Custom Cursor */
@@ -81,6 +83,81 @@
             opacity: 0;
             pointer-events: none;
             z-index: 9998;
+        }
+
+        /* --- DREAM GATE OVERLAY --- */
+        #dream-gate {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0510; /* Very Dark Purple */
+            z-index: 20000; /* Highest */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease-out;
+            cursor: pointer;
+        }
+
+        .candle-container {
+            position: relative;
+            width: 60px; height: 150px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .candle-flame {
+            width: 20px; height: 40px;
+            background: radial-gradient(circle at 50% 80%, #fff, #ffd700 40%, #ff69b4 80%, transparent 100%);
+            border-radius: 50% 50% 20% 20%;
+            box-shadow: 0 0 20px #ff69b4, 0 0 40px #ffd700;
+            animation: flame-flicker 0.1s infinite alternate, flame-sway 2s ease-in-out infinite alternate;
+            transform-origin: bottom center;
+            opacity: 0.9;
+        }
+
+        .candle-wick {
+            width: 4px; height: 10px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: -5px;
+        }
+
+        .candle-body {
+            width: 40px; height: 100px;
+            background: linear-gradient(to bottom, #f0f0f0, #ddd);
+            border-radius: 5px;
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.1), 0 0 10px rgba(255, 105, 180, 0.2);
+        }
+
+        @keyframes flame-flicker {
+            0% { transform: scale(1) skewX(0deg); opacity: 0.9; }
+            50% { transform: scale(0.95, 1.05) skewX(1deg); opacity: 0.8; }
+            100% { transform: scale(1.05, 0.95) skewX(-1deg); opacity: 1; }
+        }
+
+        @keyframes flame-sway {
+            0% { transform: rotate(-2deg); }
+            100% { transform: rotate(2deg); }
+        }
+
+        .dream-text {
+            margin-top: 2rem;
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: var(--accent-gold);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0; /* Hidden until loaded */
+            transition: opacity 1s;
+            text-shadow: 0 0 10px var(--accent-gold);
+        }
+
+        .dream-sub {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transition: opacity 1s 0.5s;
         }
 
         h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -121,6 +198,8 @@
             transition: 0.3s;
             box-shadow: 0 0 15px rgba(255,105,180,0.3);
             cursor: pointer;
+            opacity: 0; /* Hidden until dream enter */
+            transform: translateY(-20px);
         }
         .nav-back:hover {
             background: var(--accent-pink);
@@ -368,7 +447,7 @@
             text-align: center;
             z-index: 20;
             pointer-events: none; /* Let clicks pass to 3D scene initially, or handle manually */
-            opacity: 1;
+            opacity: 0; /* Hidden by default, revealed by scroll */
             transition: opacity 0.5s;
         }
 
@@ -482,6 +561,16 @@
     </style>
 </head>
 <body>
+    <div id="dream-gate">
+        <div class="candle-container">
+            <div class="candle-flame"></div>
+            <div class="candle-wick"></div>
+            <div class="candle-body"></div>
+        </div>
+        <div class="dream-text">ENTER DREAM</div>
+        <div class="dream-sub">Waiting for Magic...</div>
+    </div>
+
     <div id="flash-overlay"></div>
     <div id="cursor-follower"></div>
     <div id="cursor-dot"></div>
@@ -642,6 +731,39 @@
         const dot = document.getElementById('cursor-dot');
         const flashOverlay = document.getElementById('flash-overlay');
 
+        // --- DREAM GATE LOGIC ---
+        const dreamGate = document.getElementById('dream-gate');
+        const dreamText = document.querySelector('.dream-text');
+        const dreamSub = document.querySelector('.dream-sub');
+        const threeContainer = document.getElementById('three-container');
+        const navBack = document.querySelector('.nav-back');
+
+        let isDreamEntered = false;
+
+        // Interaction for Gate
+        dreamGate.addEventListener('click', () => {
+            if(!isDreamEntered) {
+                isDreamEntered = true;
+
+                // Fade out Gate
+                gsap.to(dreamGate, {opacity: 0, duration: 1.5, pointerEvents: 'none'});
+
+                // Reveal Scene
+                gsap.to(threeContainer, {opacity: 1, duration: 2});
+
+                // Show Nav
+                gsap.to(navBack, {opacity: 1, y: 0, duration: 0.5, delay: 1});
+
+                // Unlock Scroll
+                document.body.style.overflow = 'auto';
+
+                // Trigger initial GSAP reveals
+                gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
+                    gsap.fromTo(elem, {opacity:0, y:30}, {opacity:1, y:0, duration:1, delay:1 + (i*0.1)});
+                });
+            }
+        });
+
         // Raycaster Setup
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -685,7 +807,6 @@
         }
 
         // Setup
-        const container = document.getElementById('three-container');
         const scene = new THREE.Scene();
         // Fog for depth
         scene.fog = new THREE.FogExp2(0x1a0b1f, 0.005);
@@ -697,19 +818,26 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         // PERFORMANCE: Strict Limit pixel ratio
         renderer.setPixelRatio(1);
-        container.appendChild(renderer.domElement);
+        threeContainer.appendChild(renderer.domElement);
 
-        setTimeout(() => { container.style.opacity = 1; }, 500);
+        // Loading Manager
+        const loadingManager = new THREE.LoadingManager();
+        loadingManager.onLoad = () => {
+            // Reveal text when assets ready
+            gsap.to(dreamText, {opacity: 1, duration: 1});
+            gsap.to(dreamSub, {opacity: 1, delay: 0.5, duration: 1});
+            dreamSub.innerText = "Click to Enter";
+        };
 
         // Bloom
-        const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
+        // const composer = new EffectComposer(renderer);
+        // composer.addPass(new RenderPass(scene, camera));
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.strength = 1.0; // Magical Glow
         bloomPass.radius = 0.6;
         bloomPass.threshold = 0.1;
-        composer.addPass(bloomPass);
+        // composer.addPass(bloomPass);
 
         // --- MAGIC CIRCLE ---
         // Create a custom texture for the magic circle
@@ -859,7 +987,7 @@
         heartGroup.position.z = -10;
         scene.add(heartGroup);
 
-        const loader = new THREE.TextureLoader();
+        const loader = new THREE.TextureLoader(loadingManager);
         const textureUrls = [
             '/assets/img/guild/yumebi_emu/avatar.webp',
             '/assets/img/guild/yumebi_emu/work1.webp',
@@ -1053,6 +1181,13 @@
                 scrollProgress = self.progress;
                 camera.position.z = 30 - (scrollProgress * 20); // Move closer
 
+                // Show Hint only at very bottom
+                if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
+                    hintTouch.style.opacity = 1;
+                } else {
+                    hintTouch.style.opacity = 0;
+                }
+
                 // Magic Circle Brightness Ramp (Only if not already summoned/crystalized)
                 // Start low (0.1) -> End High (0.4)
                 if(!isCrystalized && !isSummoning) {
@@ -1078,9 +1213,12 @@
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObject(magicPlane);
 
+            console.log(`Click at ${mouse.x.toFixed(2)}, ${mouse.y.toFixed(2)} | Intersects: ${intersects.length} | Scroll: ${scrollProgress.toFixed(2)} | Summoning: ${isSummoning} | Crystalized: ${isCrystalized}`);
+
             if(intersects.length > 0) {
                 // Clicked Magic Circle
-                if(!isCrystalized && !isSummoning) {
+                // RESTRICTION: Only at bottom (> 0.9)
+                if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
                     startSummonSequence();
                 } else if(isCrystalized) {
                     // Optional: Touching circle again could shatter it back?
@@ -1097,6 +1235,7 @@
         });
 
         function startSummonSequence() {
+            console.log("START SUMMON SEQUENCE");
             isSummoning = true;
             // 1. Hide Hint
             gsap.to(hintTouch, {opacity: 0, duration: 0.5});
@@ -1115,9 +1254,10 @@
                     magicPlane.material.opacity = circleAnim.opacity;
                     ringPlane.rotation.z += circleAnim.speed;
                     ringPlane.material.opacity = circleAnim.opacity * 0.5;
-                    bloomPass.strength = 1.0 + (circleAnim.speed * 20); // Massive bloom
+                    // bloomPass.strength = 1.0 + (circleAnim.speed * 20); // Massive bloom - Disabled for stability
                 },
                 onComplete: () => {
+                    console.log("SUMMON COMPLETE");
                     // 3. Trigger Crystalize (Assemble)
                     toggleCrystal(true);
 
@@ -1195,7 +1335,11 @@
 
                 // UI Updates
                 finalCard.classList.remove('active');
-                gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
+
+                // Only show hint again if we are at bottom
+                if(scrollProgress > 0.9) {
+                     gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
+                }
             }
         }
 
@@ -1259,8 +1403,8 @@
             // HOVER EFFECT ON MAGIC CIRCLE
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObject(magicPlane);
-            if(intersects.length > 0 && !isCrystalized && !isSummoning) {
-                // Hover state
+            if(intersects.length > 0 && !isCrystalized && !isSummoning && scrollProgress > 0.9) {
+                // Hover state - ONLY AT BOTTOM
                 document.body.style.cursor = 'pointer';
                 magicPlane.scale.setScalar(1.05); // Subtle pulse
             } else {
@@ -1283,7 +1427,7 @@
             }
             particles.geometry.attributes.position.needsUpdate = true;
 
-            composer.render();
+            renderer.render(scene, camera);
         });
 
         // Floating Runes Generation
@@ -1306,13 +1450,10 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
+            // composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // GSAP Reveal
-        gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
-            gsap.fromTo(elem, {opacity:0, y:30}, {opacity:1, y:0, duration:1, delay:i*0.1});
-        });
+        // GSAP Reveal - Initially hidden, triggered by Enter Dream
     </script>
 </body>
 </html>
