@@ -73,6 +73,16 @@
             transform: translate(-50%, -50%);
         }
 
+        /* Flash Overlay */
+        #flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
         h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: 0.05em; }
 
         /* --- WebGL Containers --- */
@@ -424,13 +434,33 @@
             text-align: center;
         }
 
+        /* Summoned Card Container */
         .gallery-content {
             opacity: 0;
-            transition: opacity 1s;
+            transition: opacity 1s, transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic Pop */
+            transform: translate(-50%, -50%) scale(0.5); /* Start small */
             pointer-events: none;
+
+            /* Fixed Aspect Ratio for stability */
+            width: 90%;
+            max-width: 600px;
+            aspect-ratio: 4/5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            position: absolute;
+            top: 50%; left: 50%;
+            text-align: center;
+            background: rgba(20, 10, 30, 0.8); /* Darker background */
+            border: 2px solid var(--accent-gold); /* Gold border for summoning */
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3), inset 0 0 50px rgba(255, 105, 180, 0.2);
         }
+
         .gallery-content.active {
             opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
             pointer-events: auto;
         }
 
@@ -465,11 +495,13 @@
             .hero-title { font-size: 3rem; }
             .bubble-card { width: 200px; height: 200px; }
             .glass-panel { padding: 2rem; }
+            .gallery-content { aspect-ratio: unset; height: auto; max-height: 80vh; padding: 2rem; }
         }
 
     </style>
 </head>
 <body>
+    <div id="flash-overlay"></div>
     <div id="cursor-follower"></div>
     <div id="cursor-dot"></div>
     <div id="fog-layer"></div>
@@ -603,7 +635,7 @@
             </div>
 
             <!-- Final Overlay Content (Hidden until crystalized) -->
-            <div class="gallery-content container glass-panel" id="final-card" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 600px; text-align: center; background: rgba(0,0,0,0.6); max-height: 80vh; overflow-y: auto;">
+            <div class="gallery-content container glass-panel" id="final-card">
                 <p style="font-size: 1.8rem; color: var(--accent-pink); margin-bottom: 1rem;">Sweet Dreams...</p>
 
                 <!-- MOVED SOCIAL LINKS HERE -->
@@ -639,6 +671,7 @@
         // Custom Cursor Logic
         const cursor = document.getElementById('cursor-follower');
         const dot = document.getElementById('cursor-dot');
+        const flashOverlay = document.getElementById('flash-overlay');
 
         document.addEventListener('mousemove', (e) => {
             cursor.style.left = e.clientX + 'px';
@@ -875,7 +908,7 @@
         // 2. Extrude Options (Not used directly, but reference)
 
         // 3. Voronoi/Shattering simulation via manually placed triangles/shapes
-        const baseGeo = new THREE.ShapeGeometry(heartShape, 6); // PERFORMANCE: Reduced tessellation (was 12)
+        const baseGeo = new THREE.ShapeGeometry(heartShape, 12); // HIGH Tesselation for shards
         baseGeo.center();
         baseGeo.scale(1, -1, 1); // Flip
         baseGeo.scale(0.8, 0.8, 1);
@@ -962,8 +995,8 @@
             // Animation Data
             mesh.userData = {
                 homePos: center.clone(),
-                // Breathing/Orbit state (Increased range for "Void" feel)
-                orbitOffset: center.clone().multiplyScalar(Math.random() * 2 + 0.5).add(new THREE.Vector3((Math.random()-0.5)*15, (Math.random()-0.5)*15, (Math.random()-0.5)*20)),
+                // Breathing/Orbit state (EXPANDED range for "Void" feel)
+                orbitOffset: center.clone().multiplyScalar(Math.random() * 2 + 0.5).add(new THREE.Vector3((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*30)),
                 rotSpeed: (Math.random()-0.5) * 0.05,
                 driftPhase: Math.random() * Math.PI * 2
             };
@@ -1079,6 +1112,9 @@
 
             if(isCrystalized) {
                 // ASSEMBLE
+                // Flash Effect
+                gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
+
                 shards.forEach(m => {
                     gsap.to(m.position, {
                         x: m.userData.homePos.x,
