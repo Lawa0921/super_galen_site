@@ -361,7 +361,7 @@
             .two-col-grid { grid-template-columns: 1fr; gap: 2rem; }
         }
 
-        /* --- Summon Button --- */
+        /* --- Summon Button (MOVED TO BOTTOM) --- */
         .summon-btn {
             background: transparent;
             border: 2px solid var(--accent-gold);
@@ -375,6 +375,8 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            pointer-events: auto;
+            z-index: 50;
         }
         .summon-btn:hover {
             background: var(--accent-gold);
@@ -385,56 +387,21 @@
 
         /* --- Gallery Finale --- */
         #gallery {
-            min-height: 150vh;
+            min-height: 120vh; /* Shorter to bring button into view */
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .gallery-hint {
+
+        /* Summon Container in Middle of Magic Circle */
+        .summon-container {
             position: absolute;
             top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center;
-            pointer-events: none;
             z-index: 20;
-            transition: opacity 0.5s;
-        }
-        .gallery-hint h3 {
-            font-size: 3rem;
-            color: var(--accent-pink);
-            text-shadow: 0 0 20px var(--accent-pink);
-            animation: pulse 1.5s infinite;
-        }
-        .gallery-hint p {
-            font-size: 1.2rem;
-            color: var(--accent-gold);
-            letter-spacing: 0.2em;
-            margin-top: 1rem;
         }
 
-        /* Hand Pointer for Hint */
-        .gallery-hint::after {
-            content: '👆';
-            font-size: 3rem;
-            display: block;
-            margin-top: 1rem;
-            animation: bounce-hand 1.5s infinite;
-        }
-
-        @keyframes bounce-hand {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(10px); }
-        }
-
-        .hint-shatter {
-            opacity: 0;
-            position: absolute;
-            top: 65%; left: 50%; transform: translate(-50%, -50%);
-            color: var(--accent-cyan);
-            font-family: 'Cinzel';
-            text-shadow: 0 0 10px var(--accent-cyan);
-            pointer-events: none;
-            transition: opacity 0.5s;
-            text-align: center;
-        }
-
-        /* Summoned Card Container */
         .gallery-content {
             opacity: 0;
             transition: opacity 1s, transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic Pop */
@@ -453,9 +420,14 @@
             position: absolute;
             top: 50%; left: 50%;
             text-align: center;
-            background: rgba(20, 10, 30, 0.8); /* Darker background */
+            /* BACKGROUND IMAGE ON FINAL CARD */
+            background: linear-gradient(rgba(20, 10, 30, 0.9), rgba(20, 10, 30, 0.8)), url('/assets/img/guild/yumebi_emu/avatar.webp');
+            background-size: cover;
+            background-position: center;
+
             border: 2px solid var(--accent-gold); /* Gold border for summoning */
             box-shadow: 0 0 50px rgba(255, 215, 0, 0.3), inset 0 0 50px rgba(255, 105, 180, 0.2);
+            border-radius: 20px;
         }
 
         .gallery-content.active {
@@ -593,13 +565,6 @@
             </div>
         </section>
 
-        <!-- Summoning Section (New) -->
-        <section style="min-height: 50vh;">
-            <button id="summon-btn" class="summon-btn gs-reveal">
-                SUMMON EMU
-            </button>
-        </section>
-
         <!-- Manifesto / Philosophy -->
         <section id="manifesto">
             <div class="container gs-reveal" style="max-width: 800px; text-align: center;">
@@ -623,15 +588,11 @@
 
         <!-- Gallery (3D Scene) -->
         <section id="gallery">
-            <div class="container">
-                <div class="gallery-hint" id="hint-assemble">
-                    <h3>CRYSTALIZE</h3>
-                    <p>TAP TO UNLOCK MEMORY</p>
-                </div>
-                <div class="hint-shatter" id="hint-shatter">
-                    <h3>SHATTER</h3>
-                    <p>TAP TO RELEASE MAGIC</p>
-                </div>
+            <!-- Summon Button at Bottom -->
+            <div class="summon-container" id="summon-wrapper">
+                <button id="summon-btn" class="summon-btn">
+                    SUMMON EMU
+                </button>
             </div>
 
             <!-- Final Overlay Content (Hidden until crystalized) -->
@@ -718,8 +679,8 @@
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // PERFORMANCE: Limit pixel ratio
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        // PERFORMANCE: Strict Limit pixel ratio
+        renderer.setPixelRatio(1);
         container.appendChild(renderer.domElement);
 
         setTimeout(() => { container.style.opacity = 1; }, 500);
@@ -737,8 +698,12 @@
         // --- MAGIC CIRCLE ---
         // Create a custom texture for the magic circle
         const magicCanvas = document.createElement('canvas');
-        magicCanvas.width = 1024; magicCanvas.height = 1024;
+        // PERFORMANCE: Reduced resolution
+        magicCanvas.width = 512; magicCanvas.height = 512;
         const ctx = magicCanvas.getContext('2d');
+
+        // Scale down context to match reduced resolution
+        ctx.scale(0.5, 0.5);
 
         // --- SIMPLIFIED COLORS: Purple/White/Pink monochrome ---
 
@@ -775,7 +740,7 @@
         ctx.closePath();
         ctx.stroke();
 
-        // Runes
+        // Runes (Simplified drawing for performance)
         ctx.font = 'bold 60px "Cinzel", serif';
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
@@ -794,7 +759,7 @@
         }
 
         const magicTex = new THREE.CanvasTexture(magicCanvas);
-        magicTex.anisotropy = 8; // Reduce Anisotropy
+        magicTex.anisotropy = 4; // Reduce Anisotropy
 
         const magicPlane = new THREE.Mesh(
             new THREE.PlaneGeometry(40, 40),
@@ -812,8 +777,9 @@
 
         // Second Magic Ring (Counter-rotating)
         const magicRingCanvas = document.createElement('canvas');
-        magicRingCanvas.width = 512; magicRingCanvas.height = 512; // Lower res
+        magicRingCanvas.width = 256; magicRingCanvas.height = 256; // PERFORMANCE: Lower res
         const rCtx = magicRingCanvas.getContext('2d');
+        rCtx.scale(0.5, 0.5); // Match resolution
         rCtx.strokeStyle = '#fff'; // White
         rCtx.lineWidth = 2;
         rCtx.shadowColor = '#FF69B4'; // Pink
@@ -843,13 +809,13 @@
 
         // --- NEBULA / FOG ---
         const cloudCanvas = document.createElement('canvas');
-        cloudCanvas.width = 128; cloudCanvas.height = 128;
+        cloudCanvas.width = 64; cloudCanvas.height = 64; // PERFORMANCE: Reduced
         const cCtx = cloudCanvas.getContext('2d');
-        const grd = cCtx.createRadialGradient(64,64,0, 64,64,64);
+        const grd = cCtx.createRadialGradient(32,32,0, 32,32,32);
         grd.addColorStop(0, 'rgba(147, 112, 219, 0.2)'); // Purple
         grd.addColorStop(1, 'rgba(0,0,0,0)');
         cCtx.fillStyle = grd;
-        cCtx.fillRect(0,0,128,128);
+        cCtx.fillRect(0,0,64,64);
 
         const cloudTex = new THREE.CanvasTexture(cloudCanvas);
         const cloudMat = new THREE.SpriteMaterial({
@@ -908,7 +874,7 @@
         // 2. Extrude Options (Not used directly, but reference)
 
         // 3. Voronoi/Shattering simulation via manually placed triangles/shapes
-        const baseGeo = new THREE.ShapeGeometry(heartShape, 12); // HIGH Tesselation for shards
+        const baseGeo = new THREE.ShapeGeometry(heartShape, 6); // PERFORMANCE: Low tessellation (6)
         baseGeo.center();
         baseGeo.scale(1, -1, 1); // Flip
         baseGeo.scale(0.8, 0.8, 1);
@@ -1028,7 +994,7 @@
 
         const sparkleTex = new THREE.CanvasTexture(sparkleCanvas);
         const partGeo = new THREE.BufferGeometry();
-        const pCnt = 150; // PERFORMANCE: Reduced count
+        const pCnt = 80; // PERFORMANCE: Reduced count significantly
         const pPos = new Float32Array(pCnt * 3);
         const pSizes = new Float32Array(pCnt);
         for(let i=0; i<pCnt*3; i+=3) {
@@ -1062,6 +1028,7 @@
         const hintShatter = document.getElementById('hint-shatter');
         const finalCard = document.getElementById('final-card');
         const summonBtn = document.getElementById('summon-btn');
+        const summonWrapper = document.getElementById('summon-wrapper');
 
         // Scroll
         gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
@@ -1077,8 +1044,10 @@
                 // Magic Circle Brightness Ramp
                 // Start low (0.1) -> End High (0.4)
                 const targetOpacity = 0.1 + (scrollProgress * 0.3);
-                magicPlane.material.opacity = targetOpacity;
-                ringPlane.material.opacity = targetOpacity * 0.5;
+                if(!isCrystalized) {
+                    magicPlane.material.opacity = targetOpacity;
+                    ringPlane.material.opacity = targetOpacity * 0.5;
+                }
 
                 // Rotate heart
                 // ALWAYS rotate, even if assembled, for texture switching
@@ -1090,12 +1059,31 @@
         // Summon Button
         summonBtn.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent immediate toggle
-            gsap.to(window, {
+
+            // 1. Hide Button
+            gsap.to(summonWrapper, {opacity: 0, scale: 0, duration: 0.5});
+
+            // 2. Summon Animation Sequence
+            // Accelerate Magic Circle
+            const circleAnim = { speed: 0.005, opacity: magicPlane.material.opacity };
+            gsap.to(circleAnim, {
+                speed: 0.1, // Super fast spin
+                opacity: 1, // Bright glow
                 duration: 2,
-                scrollTo: {y: "max", autoKill: false},
-                ease: "power2.inOut",
+                ease: "power2.in",
+                onUpdate: () => {
+                    magicPlane.rotation.z -= circleAnim.speed;
+                    magicPlane.material.opacity = circleAnim.opacity;
+                    ringPlane.rotation.z += circleAnim.speed;
+                    ringPlane.material.opacity = circleAnim.opacity * 0.5;
+                    bloomPass.strength = 1.0 + (circleAnim.speed * 20); // Massive bloom
+                },
                 onComplete: () => {
+                    // 3. Trigger Crystalize
                     if(!isCrystalized) toggleCrystal();
+
+                    // Reset bloom slowly
+                    gsap.to(bloomPass, {strength: 0.3, duration: 1.5});
                 }
             });
         });
@@ -1104,6 +1092,8 @@
         window.addEventListener('click', (e) => {
             // Ignore if clicking a link or interactive element
             if (e.target.closest('a') || e.target.closest('button')) return;
+            // Only allow background click to shatter (not assemble) if summoned?
+            // Actually, keep toggle for freedom
             toggleCrystal();
         });
 
@@ -1135,14 +1125,15 @@
                     roughness: 0.4, // Less shiny
                     duration: 1
                 });
-                gsap.to(bloomPass, {strength: 0.3, duration: 1}); // Dim bloom
-
-                // Note: We NO LONGER lock rotation here, it's controlled by ScrollTrigger for texture switching
+                // bloomPass strength handled by Summon sequence if button clicked, else here
+                // We'll set it just in case
+                // gsap.to(bloomPass, {strength: 0.3, duration: 1});
 
                 // UI Updates
                 hintAssemble.style.opacity = 0;
                 hintShatter.style.opacity = 1;
                 finalCard.classList.add('active');
+                summonWrapper.style.pointerEvents = 'none';
 
             } else {
                 // SHATTER (EXPLODE)
@@ -1178,6 +1169,10 @@
                 hintAssemble.style.opacity = 1;
                 hintShatter.style.opacity = 0;
                 finalCard.classList.remove('active');
+
+                // Show button again
+                gsap.to(summonWrapper, {opacity: 1, scale: 1, duration: 0.5});
+                summonWrapper.style.pointerEvents = 'auto';
             }
         }
 
@@ -1233,9 +1228,17 @@
                 });
             }
 
-            // Magic Circle Animation
-            magicPlane.rotation.z -= 0.005;
-            ringPlane.rotation.z += 0.003; // Counter rotate
+            // Magic Circle Animation (if not summoning)
+            // Note: During summon, GSAP overrides rotation. This simple += might conflict if we aren't careful.
+            // But GSAP onUpdate sets rotation absolutely, so it should override this.
+            // We just need to make sure we don't fight it.
+            // Let's rely on GSAP for summon, and this for idle.
+            // If summoning active?
+            // We can just let GSAP handle it.
+            if(!gsap.isTweening(magicPlane.rotation)) {
+                 magicPlane.rotation.z -= 0.005;
+                 ringPlane.rotation.z += 0.003;
+            }
 
             // Nebula
             clouds.forEach(c => {
