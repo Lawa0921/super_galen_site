@@ -23,6 +23,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
 
     <style>
         :root {
@@ -82,6 +83,19 @@
             z-index: -1;
             opacity: 0;
             transition: opacity 2s ease;
+        }
+
+        /* CSS Fog Layer */
+        #fog-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(147, 112, 219, 0.1), transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(255, 105, 180, 0.1), transparent 40%);
+            filter: blur(50px);
+            opacity: 0.6;
         }
 
         .nav-back {
@@ -337,6 +351,28 @@
             .two-col-grid { grid-template-columns: 1fr; gap: 2rem; }
         }
 
+        /* --- Summon Button --- */
+        .summon-btn {
+            background: transparent;
+            border: 2px solid var(--accent-gold);
+            color: var(--accent-gold);
+            padding: 1rem 3rem;
+            font-family: 'Cinzel';
+            font-size: 1.5rem;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        .summon-btn:hover {
+            background: var(--accent-gold);
+            color: #000;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+            transform: scale(1.05);
+        }
+
         /* --- Gallery Finale --- */
         #gallery {
             min-height: 150vh;
@@ -353,7 +389,7 @@
             font-size: 3rem;
             color: var(--accent-pink);
             text-shadow: 0 0 20px var(--accent-pink);
-            animation: pulse 2s infinite;
+            animation: pulse 1.5s infinite;
         }
         .gallery-hint p {
             font-size: 1.2rem;
@@ -362,10 +398,24 @@
             margin-top: 1rem;
         }
 
+        /* Hand Pointer for Hint */
+        .gallery-hint::after {
+            content: '👆';
+            font-size: 3rem;
+            display: block;
+            margin-top: 1rem;
+            animation: bounce-hand 1.5s infinite;
+        }
+
+        @keyframes bounce-hand {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(10px); }
+        }
+
         .hint-shatter {
             opacity: 0;
             position: absolute;
-            top: 60%; left: 50%; transform: translate(-50%, -50%);
+            top: 65%; left: 50%; transform: translate(-50%, -50%);
             color: var(--accent-cyan);
             font-family: 'Cinzel';
             text-shadow: 0 0 10px var(--accent-cyan);
@@ -385,8 +435,8 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
         }
 
         .glow-text {
@@ -422,6 +472,7 @@
 <body>
     <div id="cursor-follower"></div>
     <div id="cursor-dot"></div>
+    <div id="fog-layer"></div>
     <a href="/guild/" class="nav-back">GUILD</a>
     <div id="three-container"></div>
 
@@ -483,17 +534,6 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="social-container">
-                     <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank"><i class="fa-brands fa-youtube"></i></a>
-                     <a href="https://www.youtube.com/@eemumu0621" class="social-link" target="_blank"><i class="fa-solid fa-microphone-lines"></i></a>
-                     <a href="https://www.twitch.tv/yumebiemu" class="social-link" target="_blank"><i class="fa-brands fa-twitch"></i></a>
-                     <a href="https://www.threads.net/@yumebi_emu" class="social-link" target="_blank"><i class="fa-brands fa-threads"></i></a>
-                     <a href="https://www.instagram.com/yumebi_emu/" class="social-link" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-                     <a href="https://discord.com/invite/twEj2UkKWj" class="social-link" target="_blank"><i class="fa-brands fa-discord"></i></a>
-                     <a href="https://www.hivebee.com.tw/user1d611745829147/Subscribe" class="social-link" target="_blank"><i class="fa-solid fa-star"></i></a>
-                     <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/?ref=pages_you_manage" class="social-link" target="_blank"><i class="fa-brands fa-facebook"></i></a>
-                </div>
             </div>
         </section>
 
@@ -519,6 +559,13 @@
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- Summoning Section (New) -->
+        <section style="min-height: 50vh;">
+            <button id="summon-btn" class="summon-btn gs-reveal">
+                SUMMON EMU
+            </button>
         </section>
 
         <!-- Manifesto / Philosophy -->
@@ -556,8 +603,21 @@
             </div>
 
             <!-- Final Overlay Content (Hidden until crystalized) -->
-            <div class="gallery-content container glass-panel" id="final-card" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 500px; text-align: center; background: rgba(0,0,0,0.6);">
+            <div class="gallery-content container glass-panel" id="final-card" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 600px; text-align: center; background: rgba(0,0,0,0.6); max-height: 80vh; overflow-y: auto;">
                 <p style="font-size: 1.8rem; color: var(--accent-pink); margin-bottom: 1rem;">Sweet Dreams...</p>
+
+                <!-- MOVED SOCIAL LINKS HERE -->
+                <div class="social-container" style="margin: 2rem 0;">
+                     <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank"><i class="fa-brands fa-youtube"></i></a>
+                     <a href="https://www.youtube.com/@eemumu0621" class="social-link" target="_blank"><i class="fa-solid fa-microphone-lines"></i></a>
+                     <a href="https://www.twitch.tv/yumebiemu" class="social-link" target="_blank"><i class="fa-brands fa-twitch"></i></a>
+                     <a href="https://www.threads.net/@yumebi_emu" class="social-link" target="_blank"><i class="fa-brands fa-threads"></i></a>
+                     <a href="https://www.instagram.com/yumebi_emu/" class="social-link" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                     <a href="https://discord.com/invite/twEj2UkKWj" class="social-link" target="_blank"><i class="fa-brands fa-discord"></i></a>
+                     <a href="https://www.hivebee.com.tw/user1d611745829147/Subscribe" class="social-link" target="_blank"><i class="fa-solid fa-star"></i></a>
+                     <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/?ref=pages_you_manage" class="social-link" target="_blank"><i class="fa-brands fa-facebook"></i></a>
+                </div>
+
                 <div style="margin-top: 2rem;">
                     <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan); font-size: 1.2rem;">DIGITAL CARD</a>
                 </div>
@@ -708,7 +768,7 @@
             new THREE.MeshBasicMaterial({
                 map: magicTex,
                 transparent: true,
-                opacity: 0.3, // REDUCED OPACITY
+                opacity: 0.1, // Start LOW for readability
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
@@ -739,7 +799,7 @@
             new THREE.MeshBasicMaterial({
                 map: ringTex,
                 transparent: true,
-                opacity: 0.15, // REDUCED OPACITY
+                opacity: 0.05, // Start LOW
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
@@ -968,9 +1028,10 @@
         const hintAssemble = document.getElementById('hint-assemble');
         const hintShatter = document.getElementById('hint-shatter');
         const finalCard = document.getElementById('final-card');
+        const summonBtn = document.getElementById('summon-btn');
 
         // Scroll
-        gsap.registerPlugin(ScrollTrigger);
+        gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
@@ -980,11 +1041,30 @@
                 scrollProgress = self.progress;
                 camera.position.z = 30 - (scrollProgress * 20); // Move closer
 
+                // Magic Circle Brightness Ramp
+                // Start low (0.1) -> End High (0.4)
+                const targetOpacity = 0.1 + (scrollProgress * 0.3);
+                magicPlane.material.opacity = targetOpacity;
+                ringPlane.material.opacity = targetOpacity * 0.5;
+
                 // Rotate heart
                 // ALWAYS rotate, even if assembled, for texture switching
                 heartGroup.rotation.y = scrollProgress * Math.PI * 4;
                 magicPlane.rotation.z = -scrollProgress * Math.PI * 2;
             }
+        });
+
+        // Summon Button
+        summonBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent immediate toggle
+            gsap.to(window, {
+                duration: 2,
+                scrollTo: {y: "max", autoKill: false},
+                ease: "power2.inOut",
+                onComplete: () => {
+                    if(!isCrystalized) toggleCrystal();
+                }
+            });
         });
 
         // Click Logic
