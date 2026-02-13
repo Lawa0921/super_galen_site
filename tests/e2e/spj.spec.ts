@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Cinematic RPG)', () => {
+test.describe('SPJ Guild Page (Void Alchemist)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -12,25 +12,29 @@ test.describe('SPJ Guild Page (Cinematic RPG)', () => {
     }
   });
 
-  test('should display Hero Card with Stats', async ({ page }) => {
-    await expect(page.locator('.hero-card')).toBeVisible();
-    await expect(page.locator('.class-label')).toContainText('Materialization Alchemist');
-    await expect(page.locator('.stat-label').first()).toBeVisible();
+  test('should display Hero Section with Void Theme', async ({ page }) => {
+    // Check for new class names
+    await expect(page.locator('.hero-title')).toContainText('具現化系');
+    await expect(page.locator('.hero-title')).toContainText('鍊金術師');
+    // Check avatar
+    const avatar = page.locator('.avatar-img');
+    await expect(avatar).toBeVisible();
+    await expect(avatar).toHaveAttribute('src', '/assets/img/guild/spj/avatar.webp');
   });
 
-  test('should display Archive Log', async ({ page }) => {
-    await expect(page.locator('.log-title')).toContainText('THE ARCHIVES');
-    await expect(page.locator('.log-content')).toContainText('軟體工程師');
+  test('should display Narrative Content', async ({ page }) => {
+    await expect(page.locator('#intro h2')).toContainText('起源代碼 (ORIGIN)');
+    await expect(page.locator('#dream h2')).toContainText('公會協議 (PROTOCOL)');
   });
 
-  test('should display Quest Cards', async ({ page }) => {
-    const quests = page.locator('.quest-card');
-    await expect(quests).toHaveCount(3);
-    await expect(quests.first()).toContainText('文字小鎮');
-    await expect(quests.first().locator('.quest-rank')).toContainText('RANK S');
+  test('should display Project Cards (Grid)', async ({ page }) => {
+    const cards = page.locator('.project-card');
+    await expect(cards).toHaveCount(3);
+    await expect(cards.first()).toContainText('文字小鎮');
+    await expect(cards.first().locator('.project-rank')).toContainText('S-CLASS');
   });
 
-  test('should have Torch Light overlay', async ({ page }) => {
-    await expect(page.locator('#torch-light')).toBeVisible();
+  test('should have Three.js canvas', async ({ page }) => {
+    await expect(page.locator('#canvas-container canvas')).toBeVisible();
   });
 });
