@@ -778,6 +778,18 @@ members:
       - id: "vibe_coder"
         label: "Vibe Coder"
 
+  - id: "lyanna"
+    name: "允曦 Lyanna"
+    avatar: "/assets/img/guild/lyanna/avatar.webp"
+    page: "/guild/lyanna.html"
+    tags:
+      - id: "chinese_teacher"
+        label: "華語師資培訓"
+      - id: "mmt_consultant"
+        label: "MMT 諮詢師"
+      - id: "career_guide"
+        label: "職涯引導"
+
   - id: "mochang"
     name: "墨唱"
     avatar: "/assets/img/guild/mochang/avatar.webp"
