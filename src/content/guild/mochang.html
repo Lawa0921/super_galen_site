@@ -63,18 +63,20 @@
 
         /* --- Custom Cursor --- */
         #cursor {
-            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
-            border: 2px solid rgba(255,255,255,0.5);
+            position: fixed; top: 0; left: 0; width: 14px; height: 14px;
+            border: 1px solid rgba(255, 180, 100, 0.3);
             border-radius: 50%; pointer-events: none; z-index: 10000;
             transform: translate(-50%, -50%);
-            mix-blend-mode: exclusion;
+            /* mix-blend-mode: exclusion; REMOVED for low-key look */
             transition: transform 0.1s, width 0.3s, height 0.3s, border-color 0.3s;
+            box-shadow: 0 0 10px rgba(255, 100, 50, 0.1);
         }
         #cursor-dot {
-            position: fixed; top: 0; left: 0; width: 4px; height: 4px;
-            background: var(--c-gold);
+            position: fixed; top: 0; left: 0; width: 3px; height: 3px;
+            background: #ffcc66;
             border-radius: 50%; pointer-events: none; z-index: 10001;
             transform: translate(-50%, -50%);
+            box-shadow: 0 0 5px #ffaa33;
         }
         .hovered {
             width: 50px !important; height: 50px !important;
@@ -111,9 +113,9 @@
 
         /* --- Layout --- */
         section {
-            min-height: 100vh;
+            /* Removed min-height: 100vh to reduce gaps */
             display: flex; align-items: center; justify-content: center;
-            position: relative; padding: 4rem 2rem; box-sizing: border-box;
+            position: relative; padding: 4rem 1rem; box-sizing: border-box;
         }
         .container {
             max-width: 1000px; width: 100%; position: relative; z-index: 10;
@@ -129,11 +131,11 @@
         }
         h2 {
             font-family: var(--f-cali); font-size: clamp(2.5rem, 6vw, 4rem);
-            margin-bottom: 1.5rem; color: var(--c-gold);
+            margin-bottom: 1rem; color: var(--c-gold);
             position: relative; display: inline-block;
         }
         h2::after {
-            content: ''; position: absolute; left: 0; bottom: -10px; width: 50px; height: 3px;
+            content: ''; position: absolute; left: 0; bottom: -5px; width: 50px; height: 3px;
             background: var(--c-accent);
         }
 
@@ -144,20 +146,20 @@
 
         p {
             font-size: 1.1rem; line-height: 1.8; color: #ccc;
-            max-width: 650px; margin-bottom: 1.5rem;
+            max-width: 650px; margin-bottom: 1.2rem;
             text-align: justify;
             font-weight: 300;
         }
 
         .quote {
             font-style: italic; border-left: 3px solid var(--c-gold);
-            padding-left: 1rem; margin: 2rem 0; color: #eee;
+            padding-left: 1rem; margin: 1.5rem 0; color: #eee;
             background: linear-gradient(90deg, rgba(212,175,55,0.1), transparent);
         }
 
         /* --- Hero Section --- */
         .hero-grid {
-            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 4rem; align-items: center;
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; align-items: center;
         }
         .avatar-container {
             position: relative; width: 100%; aspect-ratio: 3/4;
@@ -178,7 +180,7 @@
         .content-block {
             background: rgba(10, 10, 10, 0.7);
             backdrop-filter: blur(8px);
-            padding: 3rem;
+            padding: 2.5rem 2rem;
             border: 1px solid rgba(255,255,255,0.05);
             border-top: 2px solid var(--c-gold);
             position: relative; overflow: visible;
@@ -232,7 +234,7 @@
 
         /* --- Footer --- */
         footer {
-            padding: 4rem 2rem; text-align: center;
+            padding: 2rem 1rem; text-align: center;
             border-top: 1px solid #222;
             background: #000;
             display: flex;
@@ -553,16 +555,23 @@
         }
         scene.add(glyphGroup);
 
-        // --- TRAIL ---
-        const trailMax = 50;
+        // --- TRAIL (Candle Flame) ---
+        const trailMax = 60;
         const trailGeom = new THREE.BufferGeometry();
         const trailPositions = new Float32Array(trailMax * 3).fill(9999);
         trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+
+        // Add random phase for each particle for independent sway
+        const trailPhases = new Float32Array(trailMax);
+        for(let i=0; i<trailMax; i++) trailPhases[i] = Math.random() * Math.PI * 2;
+
         const trailMaterial = new THREE.PointsMaterial({
-            color: 0xd4af37,
-            size: 0.5,
-            transparent: true, opacity: 0.8,
-            map: createInkTexture(), blending: THREE.AdditiveBlending
+            color: 0xffaa33, // Warm Candle Orange
+            size: 0.6,
+            transparent: true, opacity: 0.25, // Low key opacity
+            map: createInkTexture(),
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
         const trailPoints = new THREE.Points(trailGeom, trailMaterial);
         scene.add(trailPoints);
@@ -621,20 +630,33 @@
             raycaster.setFromCamera(mouseVec, camera);
             const target = new THREE.Vector3();
             raycaster.ray.intersectPlane(plane, target);
+
+            // Spawn new particle at mouse position
             if(target) {
                 const arr = trailPoints.geometry.attributes.position.array;
                 arr[trailIndex * 3] = target.x;
                 arr[trailIndex * 3 + 1] = target.y;
-                arr[trailIndex * 3 + 2] = 0;
+                arr[trailIndex * 3 + 2] = 0; // Start at z=0
+
                 trailIndex = (trailIndex + 1) % trailMax;
                 trailPoints.geometry.attributes.position.needsUpdate = true;
             }
+
+            // Update existing particles (Candle Physics)
             const tArr = trailPoints.geometry.attributes.position.array;
             for(let i=0; i<trailMax; i++) {
-                 if(i !== trailIndex) {
-                     tArr[i*3+1] += 0.02; // Float up
-                     tArr[i*3] += (Math.random()-0.5) * 0.02; // Jitter
-                     if(tArr[i*3+1] > 10) tArr[i*3+1] = 9999;
+                 // Check if particle is active (y < 9999) and not the one just spawned
+                 if(i !== trailIndex && tArr[i*3+1] < 50) {
+                     // Float up
+                     tArr[i*3+1] += 0.03;
+
+                     // Sway logic: Sinewave based on time + individual phase + height
+                     // As it goes higher, sway increases slightly
+                     const sway = Math.sin(time * 3 + trailPhases[i] + tArr[i*3+1]) * 0.01;
+                     tArr[i*3] += sway;
+
+                     // Reset if too high (fade out logic handled by texture gradient mostly, but we clip it)
+                     if(tArr[i*3+1] > target.y + 3) tArr[i*3+1] = 9999;
                  }
             }
             trailPoints.geometry.attributes.position.needsUpdate = true;
