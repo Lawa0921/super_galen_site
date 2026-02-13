@@ -41,7 +41,7 @@
             background-color: var(--c-bg);
             color: var(--c-text);
             font-family: var(--f-serif);
-            overflow-x: hidden;
+            overflow: hidden; /* Lock scroll during load */
             cursor: none; /* Custom cursor used */
         }
 
@@ -83,8 +83,7 @@
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             z-index: -1; pointer-events: none;
-            opacity: 0; /* Hidden initially */
-            transition: opacity 1s ease-in-out;
+            /* Opacity handled by #main-content or JS */
         }
 
         /* --- Navigation --- */
@@ -113,8 +112,7 @@
             /* Balanced spacing: enough to breathe, not too far apart */
             display: flex; align-items: center; justify-content: center;
             position: relative; padding: 4rem 1rem; box-sizing: border-box;
-            opacity: 0; /* Hidden initially */
-            transition: opacity 1s ease-in-out;
+            /* Opacity handled by main content wrapper to avoid conflict with GSAP */
         }
         /* Reduce first section padding to bring content up */
         #hero { padding-top: 6rem; padding-bottom: 2rem; }
@@ -277,6 +275,14 @@
             .quest-grid { grid-template-columns: 1fr 1fr; }
             section { padding: 3rem 1rem; }
         }
+
+        /* Initial Hidden Wrapper */
+        #main-content {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -291,163 +297,167 @@
     <div id="cursor-dot"></div>
 
     <a href="/guild/" class="nav-back">← GUILD</a>
-    <div id="webgl-container"></div>
 
-    <!-- 1. HERO -->
-    <section id="hero">
-        <div class="container">
-            <div class="hero-grid">
-                <div class="gs-reveal">
-                    <span class="tag">INK & SOUND ALCHEMIST</span>
-                    <h1>墨唱</h1>
-                    <h2 style="font-family: var(--f-serif); font-size: 1.1rem; letter-spacing: 4px; color: #fff; opacity: 0.6; margin-top: -0.5rem; display: block; border: none; margin-bottom: 1rem;">
-                        MO CHANG
-                    </h2>
-                    <p class="quote">
-                        "在代碼與邏輯的迷宮中探索了十年，如今在音符與水墨間尋找歸途。"
+    <!-- MAIN CONTENT WRAPPER -->
+    <div id="main-content">
+        <div id="webgl-container"></div>
+
+        <!-- 1. HERO -->
+        <section id="hero">
+            <div class="container">
+                <div class="hero-grid">
+                    <div class="gs-reveal">
+                        <span class="tag">INK & SOUND ALCHEMIST</span>
+                        <h1>墨唱</h1>
+                        <h2 style="font-family: var(--f-serif); font-size: 1.1rem; letter-spacing: 4px; color: #fff; opacity: 0.6; margin-top: -0.5rem; display: block; border: none; margin-bottom: 1rem;">
+                            MO CHANG
+                        </h2>
+                        <p class="quote">
+                            "在代碼與邏輯的迷宮中探索了十年，如今在音符與水墨間尋找歸途。"
+                        </p>
+                        <div class="keywords" style="justify-content: flex-start;">
+                            <span class="keyword">Game Dev</span>
+                            <span class="keyword">Musician</span>
+                            <span class="keyword">Writer</span>
+                        </div>
+                    </div>
+                    <div class="gs-reveal avatar-container">
+                        <img src="/assets/img/guild/mochang/avatar.webp" alt="Mo Chang" class="avatar-img">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. ORIGIN -->
+        <section id="origin">
+            <div class="container">
+                <div class="content-block gs-reveal" data-speed="0.8">
+                    <span class="tag" style="color: var(--c-gold)">THE ORIGIN</span>
+                    <h2>Game & MUD</h2>
+                    <p>
+                        故事始於 2000 年的校園。當許多人沉迷於圖形化的網路遊戲時，我卻一腳踏入了 <strong>MUD (Multi-User Dungeon)</strong> 的純文字世界。
+                        在那裡，一行行文字構築出恢弘的江湖，每一個指令都是對世界的探索。
                     </p>
-                    <div class="keywords" style="justify-content: flex-start;">
-                        <span class="keyword">Game Dev</span>
-                        <span class="keyword">Musician</span>
-                        <span class="keyword">Writer</span>
-                    </div>
-                </div>
-                <div class="gs-reveal avatar-container">
-                    <img src="/assets/img/guild/mochang/avatar.webp" alt="Mo Chang" class="avatar-img">
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 2. ORIGIN -->
-    <section id="origin">
-        <div class="container">
-            <div class="content-block gs-reveal" data-speed="0.8">
-                <span class="tag" style="color: var(--c-gold)">THE ORIGIN</span>
-                <h2>Game & MUD</h2>
-                <p>
-                    故事始於 2000 年的校園。當許多人沉迷於圖形化的網路遊戲時，我卻一腳踏入了 <strong>MUD (Multi-User Dungeon)</strong> 的純文字世界。
-                    在那裡，一行行文字構築出恢弘的江湖，每一個指令都是對世界的探索。
-                </p>
-                <p>
-                    2005年，帶著這份熱愛，我正式踏入台灣遊戲業界。從企劃轉職到開發，歷經十年的浮沉與打磨。
-                    看過無數專案的起落，最終帶著一絲心灰意冷，我選擇了轉身離開這個曾經夢想的舞台。
-                </p>
-                <div class="quest-grid">
-                    <div class="quest-item">
-                        <i class="fa-solid fa-terminal quest-icon"></i>
-                        <div class="quest-label">MUD Dev</div>
-                        <span class="quest-sub">2000 Era</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-code quest-icon"></i>
-                        <div class="quest-label">Game Scripting</div>
-                        <span class="quest-sub">Lua / Python</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-ghost quest-icon"></i>
-                        <div class="quest-label">Departure</div>
-                        <span class="quest-sub">10 Years Later</span>
+                    <p>
+                        2005年，帶著這份熱愛，我正式踏入台灣遊戲業界。從企劃轉職到開發，歷經十年的浮沉與打磨。
+                        看過無數專案的起落，最終帶著一絲心灰意冷，我選擇了轉身離開這個曾經夢想的舞台。
+                    </p>
+                    <div class="quest-grid">
+                        <div class="quest-item">
+                            <i class="fa-solid fa-terminal quest-icon"></i>
+                            <div class="quest-label">MUD Dev</div>
+                            <span class="quest-sub">2000 Era</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-code quest-icon"></i>
+                            <div class="quest-label">Game Scripting</div>
+                            <span class="quest-sub">Lua / Python</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-ghost quest-icon"></i>
+                            <div class="quest-label">Departure</div>
+                            <span class="quest-sub">10 Years Later</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 3. WANDERING -->
-    <section id="wandering">
-        <div class="container" style="display: flex; justify-content: flex-end;">
-            <div class="content-block gs-reveal" data-speed="1.2" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right; max-width: 700px;">
-                <span class="tag" style="color: var(--c-accent)">THE DRIFT</span>
-                <h2>The Lost Decade</h2>
-                <p style="margin-left: auto;">
-                    離開遊戲業後，我本想拿起菜刀，成為一名廚師，卻命運般地誤打誤撞進入資訊業，變成了一個稍微有點悠閒的 <strong>"MIS"</strong>。
-                </p>
-                <p style="margin-left: auto;">
-                    在這段看似平靜的漫長歲月裡，我不甘於單調，於是開啟了無數個"副本"：
-                    兼職過外送員感受城市脈動，當過街頭藝人體驗冷暖，也曾作為詞作人為旋律填上靈魂。
-                    這些零碎的經歷，如同墨跡般暈染了我的人生畫卷。
-                </p>
+        <!-- 3. WANDERING -->
+        <section id="wandering">
+            <div class="container" style="display: flex; justify-content: flex-end;">
+                <div class="content-block gs-reveal" data-speed="1.2" style="border-left: none; border-right: 2px solid var(--c-accent); text-align: right; max-width: 700px;">
+                    <span class="tag" style="color: var(--c-accent)">THE DRIFT</span>
+                    <h2>The Lost Decade</h2>
+                    <p style="margin-left: auto;">
+                        離開遊戲業後，我本想拿起菜刀，成為一名廚師，卻命運般地誤打誤撞進入資訊業，變成了一個稍微有點悠閒的 <strong>"MIS"</strong>。
+                    </p>
+                    <p style="margin-left: auto;">
+                        在這段看似平靜的漫長歲月裡，我不甘於單調，於是開啟了無數個"副本"：
+                        兼職過外送員感受城市脈動，當過街頭藝人體驗冷暖，也曾作為詞作人為旋律填上靈魂。
+                        這些零碎的經歷，如同墨跡般暈染了我的人生畫卷。
+                    </p>
 
-                <div class="quest-grid" style="direction: rtl;">
-                    <div class="quest-item">
-                        <i class="fa-solid fa-server quest-icon"></i>
-                        <div class="quest-label">MIS</div>
-                        <span class="quest-sub">Current Class</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-utensils quest-icon"></i>
-                        <div class="quest-label">Chef</div>
-                        <span class="quest-sub">Almost Class</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-motorcycle quest-icon"></i>
-                        <div class="quest-label">Delivery</div>
-                        <span class="quest-sub">Side Quest</span>
-                    </div>
-                    <div class="quest-item">
-                        <i class="fa-solid fa-guitar quest-icon"></i>
-                        <div class="quest-label">Street Art</div>
-                        <span class="quest-sub">宜蘭不上街頭</span>
+                    <div class="quest-grid" style="direction: rtl;">
+                        <div class="quest-item">
+                            <i class="fa-solid fa-server quest-icon"></i>
+                            <div class="quest-label">MIS</div>
+                            <span class="quest-sub">Current Class</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-utensils quest-icon"></i>
+                            <div class="quest-label">Chef</div>
+                            <span class="quest-sub">Almost Class</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-motorcycle quest-icon"></i>
+                            <div class="quest-label">Delivery</div>
+                            <span class="quest-sub">Side Quest</span>
+                        </div>
+                        <div class="quest-item">
+                            <i class="fa-solid fa-guitar quest-icon"></i>
+                            <div class="quest-label">Street Art</div>
+                            <span class="quest-sub">宜蘭不上街頭</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 4. RESONANCE -->
-    <section id="resonance">
-        <div class="container">
-            <div class="content-block gs-reveal" data-speed="0.9">
-                    <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi">
-                <span class="tag" style="color: #bd4dff">HARMONICS</span>
-                <h2>Ink & Strings</h2>
-                <p>
-                    如今，年近不惑，我有了一位妻子和一個孩子。在陪伴家人的縫隙中，我重拾了兒時對音樂的憧憬。
-                    那些曾經玩不起的樂器，現在成了我靈魂的出口。
-                </p>
-                <p>
-                    從去年五月開始，我嘗試自己寫詞、寫歌，參與共同創作。
-                    目前正自學 <strong>編曲與 DAW</strong>，期望能將古風的水墨意境與現代音樂結合，達到全獨立創作的目標。
-                </p>
-                <p class="quote">
-                    "宜蘭不上街頭的街頭藝人，正在尋找下一個音符。"
-                </p>
+        <!-- 4. RESONANCE -->
+        <section id="resonance">
+            <div class="container">
+                <div class="content-block gs-reveal" data-speed="0.9">
+                        <img src="/assets/img/guild/mochang/chibi.webp" class="chibi-box" alt="Chibi">
+                    <span class="tag" style="color: #bd4dff">HARMONICS</span>
+                    <h2>Ink & Strings</h2>
+                    <p>
+                        如今，年近不惑，我有了一位妻子和一個孩子。在陪伴家人的縫隙中，我重拾了兒時對音樂的憧憬。
+                        那些曾經玩不起的樂器，現在成了我靈魂的出口。
+                    </p>
+                    <p>
+                        從去年五月開始，我嘗試自己寫詞、寫歌，參與共同創作。
+                        目前正自學 <strong>編曲與 DAW</strong>，期望能將古風的水墨意境與現代音樂結合，達到全獨立創作的目標。
+                    </p>
+                    <p class="quote">
+                        "宜蘭不上街頭的街頭藝人，正在尋找下一個音符。"
+                    </p>
 
-                <div class="keywords">
-                    <span class="keyword"><i class="fa-solid fa-music"></i> Pipa (琵琶)</span>
-                    <span class="keyword"><i class="fa-solid fa-circle-notch"></i> Ethereal Drum (空靈鼓)</span>
-                    <span class="keyword"><i class="fa-solid fa-pen-fancy"></i> Songwriting</span>
-                    <span class="keyword"><i class="fa-solid fa-headphones"></i> DAW Learning</span>
+                    <div class="keywords">
+                        <span class="keyword"><i class="fa-solid fa-music"></i> Pipa (琵琶)</span>
+                        <span class="keyword"><i class="fa-solid fa-circle-notch"></i> Ethereal Drum (空靈鼓)</span>
+                        <span class="keyword"><i class="fa-solid fa-pen-fancy"></i> Songwriting</span>
+                        <span class="keyword"><i class="fa-solid fa-headphones"></i> DAW Learning</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 5. GALLERY -->
-    <section id="gallery" style="flex-direction: column; padding-bottom: 4rem;">
-        <div class="container" style="text-align: center;">
-            <span class="tag">THE ARCHIVE</span>
-            <h2 class="gs-reveal">Echoes of Creation</h2>
-            <p style="margin: 0 auto; margin-bottom: 2rem;">
-                點擊下方連結，聆聽我的音樂作品與生活隨筆。
-            </p>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="container">
-            <div class="social-icons">
-                <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
+        <!-- 5. GALLERY -->
+        <section id="gallery" style="flex-direction: column; padding-bottom: 4rem;">
+            <div class="container" style="text-align: center;">
+                <span class="tag">THE ARCHIVE</span>
+                <h2 class="gs-reveal">Echoes of Creation</h2>
+                <p style="margin: 0 auto; margin-bottom: 2rem;">
+                    點擊下方連結，聆聽我的音樂作品與生活隨筆。
+                </p>
             </div>
-            <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
-                Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
-            </p>
-        </div>
-    </footer>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="container">
+                <div class="social-icons">
+                    <a href="https://www.threads.com/@feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/feihailuo" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@flyzhicha" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+                <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
+                    Made with <i class="fa-solid fa-pen-nib"></i> & <i class="fa-solid fa-music"></i> by SuperGalen's Dungeon
+                </p>
+            </div>
+        </footer>
+    </div>
 
     <script type="module">
         import * as THREE from 'three';
@@ -734,8 +744,15 @@
 
         // --- MAIN ENTRY POINT (STRICT SEQUENCE) ---
         const checkResources = () => {
-            // 1. Check Fonts
-            const fontsReady = document.fonts.ready;
+            // 1. Explicitly load the fonts used for glyphs
+            const font1 = new FontFace("Ma Shan Zheng", "url(https://fonts.gstatic.com/s/mashanzheng/v12/TwMO-IAHTmcz28-r7-U_y1z863E.woff2)");
+            const font2 = new FontFace("Noto Serif TC", "url(https://fonts.gstatic.com/s/notoseriftc/v12/RyP_Z3PNoa6hO9t2tN2f0T2E_w.woff2)");
+            // Note: We are waiting for the browser to report them loaded via the API,
+            // but relying on document.fonts.load is simpler for Google Fonts CSS.
+
+            const fontsReady = document.fonts.load("64px 'Ma Shan Zheng'").then(() => {
+                return document.fonts.load("32px 'Noto Serif TC'");
+            });
 
             // 2. Check Images
             const images = Array.from(document.images);
@@ -750,10 +767,10 @@
             // 3. Wait for Everything
             Promise.all([fontsReady, imagesReady]).then(() => {
 
-                // 4. Initialize Three.js (Now fonts are DEFINITELY loaded)
+                // 4. Initialize Three.js
                 initScene();
 
-                // 5. Initialize GSAP (Now objects exist)
+                // 5. Initialize GSAP
                 initScroll();
 
                 // 6. Start Loop
@@ -762,9 +779,16 @@
                 // 7. Wait for Paint & Reveal
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
+                        // Force a reflow
+                        document.body.offsetHeight;
                         ScrollTrigger.refresh();
 
                         const loader = document.getElementById('loader');
+
+                        // Unlock scrolling
+                        document.body.style.overflowY = "auto";
+                        document.body.style.overflowX = "hidden";
+
                         gsap.to(loader, {
                             opacity: 0,
                             duration: 0.8,
@@ -775,8 +799,10 @@
                             }
                         });
 
-                        gsap.to('#webgl-container', { opacity: 1, duration: 1 });
-                        gsap.to('section', { opacity: 1, duration: 1 });
+                        // Reveal main content wrapper
+                        const mainContent = document.getElementById('main-content');
+                        mainContent.style.pointerEvents = "auto";
+                        gsap.to(mainContent, { opacity: 1, duration: 1 });
                     });
                 });
             });
