@@ -790,6 +790,18 @@ members:
       - id: "composer"
         label: "詞曲創作"
 
+  - id: "tyou"
+    name: "秋桑 Tyou"
+    avatar: "/assets/img/guild/tyou/pot.webp"
+    page: "/guild/tyou.html"
+    tags:
+      - id: "coffee_physicist"
+        label: "物理系咖啡師"
+      - id: "cafe_explorer"
+        label: "跑咖筆記"
+      - id: "intp"
+        label: "INTP"
+
   - id: "chueh"
     name: "闕 Chueh"
     avatar: "/assets/img/guild/chueh/avatar.webp"
