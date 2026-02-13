@@ -83,6 +83,8 @@
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
             z-index: -1; pointer-events: none;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 1s ease-in-out;
         }
 
         /* --- Navigation --- */
@@ -111,6 +113,8 @@
             /* Balanced spacing: enough to breathe, not too far apart */
             display: flex; align-items: center; justify-content: center;
             position: relative; padding: 4rem 1rem; box-sizing: border-box;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 1s ease-in-out;
         }
         /* Reduce first section padding to bring content up */
         #hero { padding-top: 6rem; padding-bottom: 2rem; }
@@ -625,9 +629,6 @@
 
             // Candle Physics
             const tArr = trailPoints.geometry.attributes.position.array;
-            // Flicker logic: random size change? No, opacity flicker via color maybe?
-            // Actually change opacity slightly in material isn't possible per-particle easily without shaders.
-            // Simulate flicker by jittering position slightly.
 
             for(let i=0; i<trailMax; i++) {
                  if(i !== trailIndex && tArr[i*3+1] < 50) {
@@ -646,7 +647,7 @@
 
             renderer.render(scene, camera);
         }
-        animate();
+        // NOTE: animate() is NOT called here anymore. It's called by initPage.
 
         // --- ENHANCED SCROLL ---
         gsap.registerPlugin(ScrollTrigger);
@@ -703,23 +704,40 @@
             });
         });
 
-        // --- ROBUST LOADER (NO SETTIMEOUT) ---
+        // --- ROBUST LOADER ---
         const initPage = () => {
             const loader = document.getElementById('loader');
 
-            // Refresh ScrollTrigger to account for loaded layout
-            ScrollTrigger.refresh();
+            // 1. Force a GPU warm-up (compile shaders)
+            // Even if we don't use renderer.compile (added in later versions),
+            // a single render call forces material compilation.
+            renderer.render(scene, camera);
 
-            // Animate Loader Out
-            gsap.to(loader, {
-                opacity: 0,
-                duration: 0.8,
-                ease: "power2.inOut",
-                onComplete: () => {
-                    loader.remove();
-                    // Trigger entry animations after loader is gone
-                    gsap.from('h1', { scale: 1.1, duration: 1.2, ease: "power2.out" });
-                }
+            // 2. Start the Animation Loop
+            animate();
+
+            // 3. Wait for layout/paint
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    // 4. Recalculate ScrollTrigger now that we are running
+                    ScrollTrigger.refresh();
+
+                    // 5. Reveal
+                    gsap.to(loader, {
+                        opacity: 0,
+                        duration: 0.8,
+                        ease: "power2.inOut",
+                        onComplete: () => {
+                            loader.remove();
+                            // Trigger entry animations after loader is gone
+                            gsap.from('h1', { scale: 1.1, duration: 1.2, ease: "power2.out" });
+                        }
+                    });
+
+                    // Fade in WebGL and Content
+                    gsap.to('#webgl-container', { opacity: 1, duration: 1 });
+                    gsap.to('section', { opacity: 1, duration: 1 });
+                });
             });
         };
 
@@ -739,12 +757,7 @@
 
             // Wait for both
             Promise.all([fontsReady, imagesReady]).then(() => {
-                // Double check layout stability?
-                // Sometimes fonts claim ready but layout hasn't reflowed.
-                // requestAnimationFrame helps ensure one paint frame has passed.
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(initPage);
-                });
+                initPage();
             });
         };
 
