@@ -944,6 +944,7 @@
         const initThree = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xfcfbf9); // Force Cream Background
             scene.fog = new THREE.Fog(0xfcfbf9, 60, 150);
 
             const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
@@ -972,47 +973,56 @@
             pointLight2.position.set(-50, -50, 20);
             scene.add(pointLight2);
 
-            // Create The Thread
+            // Create The Threads (Multi-line)
             const isMobile = window.innerWidth < 768;
             const spreadX = isMobile ? 50 : 120;
             const spreadY = isMobile ? 120 : 200;
-            const tubeRadius = isMobile ? 0.12 : 0.18;
+            const tubeRadius = isMobile ? 0.08 : 0.12;
+            const numThreads = 6; // Multi-line!
 
-            const curvePoints = [];
-            for (let i = 0; i < 40; i++) {
-                const angle = (i / 40) * Math.PI * 2;
-                const r = spreadX * (0.8 + Math.random() * 0.4);
-                // Knot logic
-                const x = Math.cos(angle * 3) * r;
-                const y = Math.sin(angle * 2) * spreadY * 0.8 + (Math.random() - 0.5) * 30;
-                const z = Math.sin(angle * 5) * 40;
-                curvePoints.push(new THREE.Vector3(x, y, z));
-            }
-            const curve = new THREE.CatmullRomCurve3(curvePoints);
-            curve.closed = true;
-            curve.tension = 0.2;
+            const threadGroup = new THREE.Group();
+            scene.add(threadGroup);
 
-            const geometry = new THREE.TubeGeometry(curve, 400, tubeRadius, 16, true);
-
-            // Adjusted Material for Light Background - Lower metalness for better visibility without EnvMap
+            // Adjusted Material for Cream Background
             const material = new THREE.MeshPhysicalMaterial({
-                color: 0xb8860b, // Darker Goldenrod
+                color: 0xb8860b,
                 emissive: 0xaa7700,
                 emissiveIntensity: 0.1,
-                roughness: 0.3,
-                metalness: 0.3, // Reduced to avoid looking black/washed out
+                roughness: 0.2,
+                metalness: 0.4,
                 clearcoat: 0.8,
-                clearcoatRoughness: 0.2,
+                clearcoatRoughness: 0.1,
                 transparent: true,
-                opacity: 0.95
+                opacity: 0.9
             });
 
-            const threadMesh = new THREE.Mesh(geometry, material);
-            scene.add(threadMesh);
+            for (let t = 0; t < numThreads; t++) {
+                const curvePoints = [];
+                const offsetPhase = (t / numThreads) * Math.PI * 2;
+
+                for (let i = 0; i < 50; i++) {
+                    const angle = (i / 50) * Math.PI * 2;
+                    const r = spreadX * (0.8 + Math.random() * 0.3);
+
+                    // Complex knot logic with phase offset
+                    const x = Math.cos(angle * 3 + offsetPhase) * r;
+                    const y = Math.sin(angle * 2 + offsetPhase) * spreadY * 0.8 + (Math.random() - 0.5) * 20;
+                    const z = Math.sin(angle * 5 + offsetPhase) * 40 + (Math.cos(angle * 2) * 20);
+
+                    curvePoints.push(new THREE.Vector3(x, y, z));
+                }
+                const curve = new THREE.CatmullRomCurve3(curvePoints);
+                curve.closed = true;
+                curve.tension = 0.2;
+
+                const geometry = new THREE.TubeGeometry(curve, 400, tubeRadius, 16, true);
+                const threadMesh = new THREE.Mesh(geometry, material);
+                threadGroup.add(threadMesh);
+            }
 
             // Particles - Darker Gold for Contrast
             const pGeo = new THREE.BufferGeometry();
-            const pCount = 150;
+            const pCount = 200;
             const pPos = new Float32Array(pCount * 3);
             for(let i=0; i<pCount; i++) {
                 pPos[i*3] = (Math.random()-0.5)*300;
@@ -1021,11 +1031,10 @@
             }
             pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
             const pMat = new THREE.PointsMaterial({
-                color: 0xb8860b, // Dark Goldenrod
-                size: 1.2,
+                color: 0xffd700, // Gold
+                size: 1.5,
                 transparent: true,
                 opacity: 0.6,
-                // No additive blending on light background usually, or careful use
             });
             const particles = new THREE.Points(pGeo, pMat);
             scene.add(particles);
@@ -1035,8 +1044,10 @@
             const animate = () => {
                 const time = clock.getElapsedTime() * 0.15;
 
-                threadMesh.rotation.x = Math.sin(time * 0.5) * 0.15;
-                threadMesh.rotation.y = time * 0.2;
+                threadGroup.rotation.x = Math.sin(time * 0.5) * 0.15;
+                threadGroup.rotation.y = time * 0.2;
+
+                // Individual thread subtle movement? (Optional, kept simple for perf)
 
                 particles.rotation.y = -time * 0.05;
                 particles.rotation.x = time * 0.02;
@@ -1057,9 +1068,13 @@
             animate();
 
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+
+                camera.aspect = width / height;
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                renderer.setSize(width, height);
             });
         };
 
