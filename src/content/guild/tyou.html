@@ -30,7 +30,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none; /* Custom cursor */
+            /* Removed custom cursor */
         }
 
         body {
@@ -66,71 +66,6 @@
             pointer-events: none;
             opacity: 0.4; /* Stronger visibility */
             mix-blend-mode: multiply;
-        }
-
-        #stamp-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 5;
-            overflow: hidden;
-        }
-
-        .coffee-stamp {
-            position: absolute;
-            width: 140px;
-            height: 140px;
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(1.5) rotate(-10deg);
-            pointer-events: none;
-            mix-blend-mode: multiply;
-            /* Less sepia, more contrast - like fresh ink */
-            filter: sepia(0.3) contrast(1.1);
-            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path d="M100 10 C50 10 10 50 10 100 C10 150 50 190 100 190 C150 190 190 150 190 100 C190 50 150 10 100 10 Z M100 20 C145 20 180 55 180 100 C180 145 145 180 100 180 C55 180 20 145 20 100 C20 55 55 20 100 20 Z" fill="%238B5A2B" opacity="0.5"/><path d="M100 5 C45 5 5 45 5 100 C5 155 45 195 100 195 C155 195 195 155 195 100 C195 45 155 5 100 5 Z M100 15 C148 15 185 52 185 100 C185 148 148 185 100 185 C52 185 15 148 15 100 C15 52 52 15 100 15 Z" fill="%238B5A2B" opacity="0.3"/></svg>');
-            background-size: contain;
-            background-repeat: no-repeat;
-        }
-
-        /* --- Custom Cursor --- */
-        #cursor {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 15px;
-            height: 15px;
-            background: var(--color-accent);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 1000;
-            mix-blend-mode: multiply;
-            transition: width 0.3s, height 0.3s, background-color 0.3s;
-            opacity: 0.8;
-        }
-
-        #cursor.hovered {
-            width: 50px;
-            height: 50px;
-            background: var(--color-warm);
-            opacity: 0.5;
-        }
-
-        #cursor-text {
-            position: fixed;
-            top: 0;
-            left: 0;
-            transform: translate(-50%, -50%);
-            font-family: var(--font-hand);
-            font-size: 0.9rem;
-            color: var(--color-text);
-            pointer-events: none;
-            z-index: 1001;
-            opacity: 0;
-            transition: opacity 0.3s;
-            white-space: nowrap;
         }
 
         /* --- Layout --- */
@@ -224,17 +159,12 @@
             border-radius: 4px;
         }
 
-        .avatar-container {
+        /* Avatar with Slide-Out Interaction */
+        .avatar-wrapper {
+            position: relative;
             width: 200px;
             height: 200px;
-            margin: 0 auto 2rem;
-            position: relative;
-            cursor: pointer; /* Suggest interaction */
-            transition: transform 0.3s;
-        }
-
-        .avatar-container:hover {
-            transform: scale(1.05);
+            margin: 0 auto 3rem; /* More margin for expansion */
         }
 
         .avatar-img {
@@ -245,9 +175,63 @@
             filter: sepia(0.2) contrast(0.9);
             border: 3px solid #fff;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: transform 0.3s;
         }
 
-        /* Hint for easter egg */
+        .avatar-img:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden-note {
+            position: absolute;
+            top: 10px;
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%) rotate(0deg) scale(0.8);
+            width: 220px; /* Slightly wider than avatar */
+            background: #fff;
+            padding: 0.5rem 0.5rem 2rem 0.5rem;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            z-index: 1; /* Behind avatar initially */
+            opacity: 0;
+            pointer-events: none;
+            border: 1px solid #ddd;
+            /* Ensure smooth transition */
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .hidden-note.active {
+            opacity: 1;
+            z-index: 3; /* Bring to front if clicked, or slide beside */
+            /* Mobile: Slide down. Desktop: Slide right */
+            transform: translateX(-50%) translateY(120%) rotate(-5deg) scale(1);
+            pointer-events: auto;
+        }
+
+        @media (min-width: 768px) {
+            .hidden-note.active {
+                /* Slide to the right on desktop */
+                transform: translateX(60%) translateY(10%) rotate(5deg) scale(1);
+            }
+        }
+
+        .hidden-note img {
+            width: 100%;
+            display: block;
+            border-bottom: 1px solid #eee;
+        }
+
+        .note-caption {
+            font-family: var(--font-hand);
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 1.2rem;
+            color: var(--color-accent);
+        }
+
+        /* Hint for interaction */
         .avatar-hint {
             position: absolute;
             bottom: -30px;
@@ -255,14 +239,10 @@
             transform: translateX(-50%);
             font-family: var(--font-hand);
             font-size: 1rem;
-            opacity: 0;
-            transition: opacity 0.3s;
+            opacity: 0.6;
             color: var(--color-accent);
             white-space: nowrap;
-        }
-
-        .avatar-container:hover .avatar-hint {
-            opacity: 1;
+            pointer-events: none;
         }
 
         /* --- Timeline (Grid) --- */
@@ -366,73 +346,6 @@
             border-color: var(--color-accent);
         }
 
-        /* --- New Elements --- */
-
-        /* Easter Egg Overlay */
-        #illustration-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(47, 54, 50, 0.8);
-            z-index: 2000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s;
-            backdrop-filter: blur(10px);
-        }
-
-        #illustration-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .overlay-content {
-            transform: scale(0.8);
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            max-width: 90%;
-        }
-
-        #illustration-overlay.active .overlay-content {
-            transform: scale(1);
-        }
-
-        .overlay-img {
-            max-width: 100%;
-            max-height: 80vh;
-            border-radius: 10px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            border: 8px solid #fff;
-        }
-
-        #close-overlay {
-            position: absolute;
-            top: -20px;
-            right: -20px;
-            background: #fff;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            font-size: 1.5rem;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            color: var(--color-text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s;
-        }
-
-        #close-overlay:hover {
-            transform: scale(1.1);
-        }
-
         /* BW Illustration Background */
         #bw-illustration {
             position: absolute;
@@ -490,6 +403,8 @@
             .timeline-grid::before { left: 29px; }
             .paper-card { padding: 1.5rem; }
             #bw-illustration { width: 300px; right: -50px; opacity: 0.08; }
+            /* Adjust hidden note for mobile if needed */
+            .hidden-note { width: 180px; }
         }
     </style>
 
@@ -505,19 +420,8 @@
 </head>
 <body>
 
-    <div id="cursor"></div>
-    <div id="cursor-text">Click to Stamp</div>
     <div id="canvas-three"></div>
     <div id="canvas-p5"></div>
-    <div id="stamp-container"></div>
-
-    <!-- Easter Egg Overlay -->
-    <div id="illustration-overlay">
-        <div class="overlay-content interactive-el">
-            <img src="/assets/img/guild/tyou/illustration_color.webp" alt="Hidden Moment" class="overlay-img">
-            <button id="close-overlay">×</button>
-        </div>
-    </div>
 
     <!-- Force load FontAwesome for Canvas -->
     <div style="font-family: 'Font Awesome 6 Free'; font-weight: 900; opacity: 0; position: absolute; pointer-events: none;">.</div>
@@ -525,9 +429,18 @@
     <!-- Hero Section -->
     <section class="section">
         <div class="content-wrapper" style="text-align: center;">
-            <div class="avatar-container gs-reveal interactive-el" id="hero-avatar">
-                <img src="/assets/img/guild/tyou/pot.webp" alt="Tyou" class="avatar-img">
-                <div class="avatar-hint">Click me</div>
+
+            <!-- Avatar Interaction Wrapper -->
+            <div class="avatar-wrapper gs-reveal">
+                <img src="/assets/img/guild/tyou/pot.webp" alt="Tyou" class="avatar-img" id="hero-avatar">
+
+                <!-- The Hidden Note (Slides out on click) -->
+                <div class="hidden-note" id="hidden-note">
+                    <img src="/assets/img/guild/tyou/illustration_color.webp" alt="Moment">
+                    <div class="note-caption">Collected!</div>
+                </div>
+
+                <div class="avatar-hint">Click for a note</div>
             </div>
 
             <span class="data-tag gs-reveal">INTP / Physicist / Barista</span>
@@ -594,7 +507,7 @@
                     </div>
                     <div class="timeline-item timeline-content">
                         <h3>Academia (Physics)</h3>
-                        <p>Rigorous training in logic. Understanding the universe through equations.</p>
+                        <p>嚴謹的邏輯訓練。透過方程式理解宇宙。</p>
                     </div>
 
                     <div class="timeline-item">
@@ -674,61 +587,28 @@
         </div>
     </section>
 
-    <!-- Interactive: Coffee Stamp & Overlay -->
+    <!-- Interaction Script: Slide Out Note -->
     <script>
-        const stampContainer = document.getElementById('stamp-container');
-        const cursorText = document.getElementById('cursor-text');
-
-        // Easter Egg Logic
         const avatar = document.getElementById('hero-avatar');
-        const overlay = document.getElementById('illustration-overlay');
-        const closeBtn = document.getElementById('close-overlay');
+        const hiddenNote = document.getElementById('hidden-note');
+        let isOpen = false;
 
         avatar.addEventListener('click', (e) => {
-            e.stopPropagation(); // prevent stamp
-            overlay.classList.add('active');
-        });
+            e.stopPropagation();
+            isOpen = !isOpen;
 
-        closeBtn.addEventListener('click', (e) => {
-             e.stopPropagation();
-             overlay.classList.remove('active');
-        });
-
-        overlay.addEventListener('click', (e) => {
-            // Click outside content to close
-            if(e.target === overlay) {
-                overlay.classList.remove('active');
+            if(isOpen) {
+                hiddenNote.classList.add('active');
+            } else {
+                hiddenNote.classList.remove('active');
             }
         });
 
-        // Stamp Logic
+        // Click outside to close note
         document.addEventListener('click', (e) => {
-            if (e.target.closest('a') || e.target.closest('.interactive-el') || e.target.closest('#illustration-overlay.active')) return;
-
-            const stamp = document.createElement('div');
-            stamp.classList.add('coffee-stamp');
-
-            const x = e.clientX;
-            const y = e.clientY;
-
-            stamp.style.left = x + 'px';
-            stamp.style.top = y + 'px';
-
-            const rot = Math.random() * 360;
-            const scale = 0.8 + Math.random() * 0.5;
-
-            stampContainer.appendChild(stamp);
-
-            gsap.to(stamp, {
-                opacity: 0.6, // Stronger opacity
-                scale: scale,
-                rotation: rot,
-                duration: 0.4,
-                ease: "back.out(1.7)"
-            });
-
-            if(stampContainer.children.length > 10) {
-                stampContainer.removeChild(stampContainer.firstChild);
+            if(isOpen && !e.target.closest('.avatar-wrapper')) {
+                isOpen = false;
+                hiddenNote.classList.remove('active');
             }
         });
     </script>
@@ -919,24 +799,6 @@
                 ease: "power2.out"
             });
         });
-
-        // Cursor Logic
-        const cursor = document.getElementById('cursor');
-        if (window.matchMedia("(min-width: 768px)").matches) {
-            window.addEventListener('mousemove', (e) => {
-                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
-                gsap.to(cursorText, { x: e.clientX, y: e.clientY - 30, duration: 0.2 });
-
-                const hovered = document.elementFromPoint(e.clientX, e.clientY)?.closest('a, .interactive-el');
-                if(hovered) {
-                    cursor.classList.add('hovered');
-                    cursorText.style.opacity = 0;
-                } else {
-                    cursor.classList.remove('hovered');
-                    cursorText.style.opacity = 1;
-                }
-            });
-        }
     </script>
 
     <!-- p5.js: Organic Map Lines (Restored Visibility) -->
