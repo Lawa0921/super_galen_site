@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>塞趴卷 - 具現化系鍊金術師</title>
+    <title>塞趴卷 - 公會大賢者</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@300;600;900&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -16,226 +16,326 @@
 
     <style>
         :root {
-            --bg-dark: #050302;
-            --text-gold: #e6c288;
-            --text-white: #f0f0f0;
-            --paper: #e3d5c0;
+            --bg-deep: #0c0e12;
+            --text-main: #d0d0d0;
+            --text-dim: #888;
+            --gold: #c5a059;
+            --gold-light: #ebd5a0;
+            --paper: #f5f5f0;
+            --accent: #722f37; /* Wine Red */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-white);
+            background-color: var(--bg-deep);
+            color: var(--text-main);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
+            line-height: 1.8;
         }
 
         /* --- 3D Background --- */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
+            /* Subtle texture overlay */
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
         }
 
         /* --- Navigation --- */
         .nav-return {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: var(--text-gold);
+            color: var(--gold);
             text-decoration: none;
             font-family: 'Cinzel', serif;
             letter-spacing: 2px;
-            mix-blend-mode: difference;
-            opacity: 0.8;
+            font-size: 0.9rem;
+            display: flex; align-items: center; gap: 10px;
             transition: 0.3s;
+            mix-blend-mode: difference;
         }
-        .nav-return:hover { opacity: 1; transform: scale(1.05); }
+        .nav-return:hover { transform: translateX(5px); opacity: 0.8; }
 
-        /* --- UI Overlay --- */
-        .scroll-content {
-            position: relative;
-            z-index: 10;
-            /* We will use scroll height to drive 3D, but content is fixed/sticky mostly */
-            height: 500vh; /* Long scroll */
-        }
-
-        .section-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none; /* Let scroll pass through mostly */
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        .visible {
-            pointer-events: auto;
-        }
-
-        /* Card Styles */
-        .glass-card {
-            background: rgba(10, 5, 2, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(230, 194, 136, 0.2);
-            padding: 3rem;
-            max-width: 600px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            position: relative;
-        }
-
-        .glass-card::before { /* Top Gold Line */
-            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 80px; height: 2px; background: var(--text-gold);
-        }
-
-        h1, h2 {
+        /* --- Typography & Layout --- */
+        h1, h2, h3 {
             font-family: 'Cinzel', serif;
-            color: var(--text-gold);
-            margin-bottom: 1.5rem;
+            color: var(--gold-light);
             text-transform: uppercase;
         }
 
-        h1 { font-size: 3rem; letter-spacing: 5px; }
-        h2 { font-size: 2rem; letter-spacing: 3px; }
+        h1 { font-size: 4rem; line-height: 1.1; margin-bottom: 1rem; font-weight: 400; }
+        h2 { font-size: 2.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--gold); display: inline-block; padding-bottom: 1rem; }
+        h3 { font-size: 1.5rem; color: var(--gold); margin-bottom: 1rem; }
 
-        p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-            color: #ccc;
+        p { margin-bottom: 1.5rem; font-size: 1.1rem; color: #ccc; font-weight: 300; }
+
+        .drop-cap {
+            float: left; font-size: 4rem; line-height: 0.8; margin-right: 1rem; margin-top: 0.2rem;
+            font-family: 'Cinzel', serif; color: var(--gold);
         }
 
-        .highlight { color: var(--text-gold); font-weight: bold; border-bottom: 1px solid rgba(230, 194, 136, 0.3); }
+        .highlight { color: var(--gold-light); font-weight: 600; border-bottom: 1px dotted var(--gold); }
 
-        /* --- Hero Specifics --- */
-        .hero-avatar {
-            width: 150px; height: 150px;
-            border-radius: 50%;
-            border: 2px solid var(--text-gold);
-            padding: 5px;
-            margin: 0 auto 2rem auto;
-            object-fit: cover;
-            background: rgba(0,0,0,0.5);
+        /* Container */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
         }
 
-        /* --- Project List --- */
-        .project-list {
-            display: flex; flex-direction: column; gap: 1.5rem;
+        /* --- Sections --- */
+        section {
+            min-height: 100vh;
+            padding: 6rem 0;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Hero */
+        #hero {
+            align-items: flex-start;
             text-align: left;
         }
 
-        .project-item {
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 1rem;
-            transition: 0.3s;
+        .hero-pre {
+            font-family: 'Cinzel', serif;
+            letter-spacing: 5px;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            opacity: 0; /* Animate in */
         }
-        .project-item:last-child { border-bottom: none; }
-        .project-item:hover { transform: translateX(10px); }
 
-        .project-title {
-            font-family: 'Cinzel', serif; color: var(--text-gold); font-size: 1.2rem;
-            display: flex; justify-content: space-between;
+        .hero-role {
+            font-size: 1.2rem;
+            color: #888;
+            font-style: italic;
+            margin-top: 1rem;
+            opacity: 0;
         }
-        .rank { font-size: 0.8rem; opacity: 0.7; border: 1px solid var(--text-gold); padding: 1px 5px; }
+
+        .hero-avatar-frame {
+            position: absolute;
+            right: 5%; top: 20%;
+            width: 350px; height: 450px;
+            border: 1px solid var(--gold);
+            padding: 10px;
+            opacity: 0;
+        }
+
+        .hero-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: sepia(0.4) contrast(1.1);
+            opacity: 0.8;
+        }
+
+        /* Chapters */
+        .chapter-num {
+            font-family: 'Cinzel', serif;
+            font-size: 10rem;
+            color: rgba(255,255,255,0.03);
+            position: absolute;
+            top: 0; left: -2rem;
+            z-index: -1;
+            line-height: 1;
+        }
+
+        .chapter-content {
+            background: linear-gradient(180deg, rgba(20,20,25,0.8) 0%, rgba(10,10,15,0.9) 100%);
+            border: 1px solid rgba(197, 160, 89, 0.2);
+            padding: 4rem;
+            position: relative;
+            backdrop-filter: blur(5px);
+        }
+
+        .chapter-content::before { /* Gold Corner */
+            content: ''; position: absolute; top: 0; left: 0; width: 40px; height: 40px;
+            border-top: 2px solid var(--gold); border-left: 2px solid var(--gold);
+        }
+        .chapter-content::after { /* Gold Corner */
+            content: ''; position: absolute; bottom: 0; right: 0; width: 40px; height: 40px;
+            border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 2rem;
+        }
+
+        .stat-item h4 {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-bar {
+            height: 4px; background: #333; position: relative;
+        }
+        .stat-fill {
+            height: 100%; background: var(--gold);
+        }
+
+        /* Project Cards */
+        .project-row {
+            display: flex;
+            gap: 3rem;
+            margin-bottom: 4rem;
+            align-items: center;
+        }
+
+        .project-row:nth-child(even) { flex-direction: row-reverse; }
+
+        .project-info { flex: 1; }
+        .project-visual {
+            flex: 1;
+            height: 250px;
+            border: 1px solid var(--gold);
+            background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel'; color: var(--gold); letter-spacing: 5px;
+            font-size: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .project-visual img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; transition: 0.5s; }
+        .project-row:hover .project-visual img { opacity: 0.8; transform: scale(1.05); }
 
         /* Footer */
-        .footer-fixed {
-            position: fixed; bottom: 2rem; width: 100%; text-align: center;
-            font-family: 'Cinzel', serif; font-size: 0.7rem; color: #666;
-            pointer-events: none;
-            z-index: 100;
-        }
-        .social-btn {
-            pointer-events: auto;
-            color: var(--text-gold);
-            text-decoration: none;
-            border-bottom: 1px dotted;
-            margin-left: 10px;
+        footer {
+            text-align: center;
+            padding: 4rem;
+            border-top: 1px solid rgba(197, 160, 89, 0.2);
+            color: #666;
+            font-size: 0.9rem;
+            font-family: 'Cinzel';
         }
 
-        /* --- Loading Screen --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #050302; z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-gold); font-family: 'Cinzel', serif;
+        .social-link { color: var(--gold); text-decoration: none; margin: 0 10px; border-bottom: 1px dotted; }
+
+        @media (max-width: 768px) {
+            .hero-avatar-frame { position: relative; width: 100%; height: 300px; margin-bottom: 2rem; right: auto; top: auto; }
+            h1 { font-size: 3rem; }
+            .project-row { flex-direction: column !important; }
+            .chapter-content { padding: 2rem; }
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">GATHERING REQUESTS...</div>
-
     <div id="canvas-container"></div>
 
-    <a href="/guild/" class="nav-return">← GUILD</a>
+    <a href="/guild/" class="nav-return"><span>✦</span> GUILD HALL</a>
 
-    <div class="scroll-content">
-        <!-- Content handled by GSAP pinning/revealing -->
-    </div>
-
-    <!-- Section 1: Hero -->
-    <div class="section-container" id="sec-hero">
-        <div class="glass-card">
-            <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ" class="hero-avatar">
-            <h1>塞趴卷 SPJ</h1>
-            <p style="letter-spacing: 2px; text-transform: uppercase; font-size: 0.9rem; opacity: 0.8;">Materialization Alchemist</p>
-            <p>在混亂的訊息風暴中，唯有具現化的意志能凝結成真理。</p>
-        </div>
-    </div>
-
-    <!-- Section 2: Intro -->
-    <div class="section-container" id="sec-intro">
-        <div class="glass-card">
-            <h2>鍊金術師日誌</h2>
-            <p>「想像力是虛無的，直到它被代碼賦予物理屬性。」</p>
-            <p>我是 SPJ，一名試圖將<span class="highlight">「文字小鎮」</span>具現化的軟體工程師。我將天書系統視為煉成陣，將創意轉化為可觸碰的現實。</p>
-        </div>
-    </div>
-
-    <!-- Section 3: Dream -->
-    <div class="section-container" id="sec-dream">
-        <div class="glass-card">
-            <h2>公會願景</h2>
-            <p>這漫天的飛紙，每一張都是一個未被實現的夢想。</p>
-            <p>我的目標是建立<span class="highlight">「塞趴卷冒險公會」</span>——一個讓現實世界的冒險者（創造者）能夠在此接取任務、組建隊伍的歸屬之地。</p>
-        </div>
-    </div>
-
-    <!-- Section 4: Projects -->
-    <div class="section-container" id="sec-projects">
-        <div class="glass-card">
-            <h2>懸賞佈告</h2>
-            <div class="project-list">
-                <div class="project-item">
-                    <div class="project-title">文字小鎮 <span class="rank">RANK S</span></div>
-                    <p style="margin: 0; font-size: 0.9rem;">以天書系統為核心，具現化無限創意的遊戲世界。</p>
+    <main>
+        <!-- Hero Section -->
+        <section id="hero">
+            <div class="container">
+                <div class="hero-pre">THE GRAND ARCHITECT</div>
+                <h1 class="hero-title">塞趴卷 SPJ</h1>
+                <div class="hero-role">"We do not just write code; we weave reality."</div>
+                <div style="margin-top: 2rem; opacity: 0;" class="hero-btn">
+                    <span style="border: 1px solid var(--gold); padding: 10px 20px; font-family: 'Cinzel'; color: var(--gold);">SCROLL TO READ</span>
                 </div>
-                <div class="project-item">
-                    <div class="project-title">冒險公會 <span class="rank">RANK A</span></div>
-                    <p style="margin: 0; font-size: 0.9rem;">現實世界的資源連結中樞與人才集散地。</p>
-                </div>
-                <div class="project-item">
-                    <div class="project-title">傳說紀錄 <span class="rank">RANK B</span></div>
-                    <p style="margin: 0; font-size: 0.9rem;">紀錄開發過程的血淚與溫度。</p>
+
+                <div class="hero-avatar-frame">
+                    <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ" class="hero-img">
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <div class="footer-fixed">
-        Made with 🍺 by SuperGalen's Dungeon <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn">THREADS</a>
-    </div>
+        <!-- Chapter I: The Solitary Alchemist -->
+        <section id="chapter-1">
+            <div class="container">
+                <div class="chapter-num">I</div>
+                <div class="chapter-content">
+                    <h2>孤獨的煉金術師</h2>
+                    <h3>THE SOLITARY ALCHEMIST</h3>
+                    <p><span class="drop-cap">在</span>數位荒原的邊境，我曾是一名獨行的軟體工程師。在那段時光裡，Side Project 是我唯一的伴侶，也是我對抗虛無的武器。</p>
+                    <p>我無數次在深夜裡敲擊鍵盤，試圖用邏輯的磚瓦堆砌出想像中的城堡。每一次的編譯成功，都像是一次微小的奇蹟；每一個解決的 Bug，都是對現實規則的一次解構與重組。</p>
+                    <p>但我逐漸意識到，單純的代碼是冰冷的。唯有注入靈魂——也就是<span class="highlight">「故事」</span>與<span class="highlight">「連結」</span>，這些數位的產物才能真正活過來。</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <h4>CODE SYNTHESIS</h4>
+                            <div class="stat-bar"><div class="stat-fill" style="width: 95%;"></div></div>
+                        </div>
+                        <div class="stat-item">
+                            <h4>MANA (COFFEE)</h4>
+                            <div class="stat-bar"><div class="stat-fill" style="width: 80%;"></div></div>
+                        </div>
+                        <div class="stat-item">
+                            <h4>SOLO GRINDING</h4>
+                            <div class="stat-bar"><div class="stat-fill" style="width: 100%;"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter II: The Revelation (Text Town) -->
+        <section id="chapter-2">
+            <div class="container">
+                <div class="chapter-num">II</div>
+                <div class="chapter-content">
+                    <h2>具現化：天書系統</h2>
+                    <h3>THE REVELATION: TEXT TOWN</h3>
+                    <p>這是我生涯中最具野心的煉成陣——<span class="highlight">「文字小鎮」</span>。</p>
+                    <p>這不僅僅是一個遊戲，而是一個基於「語言即現實」哲學的實驗場。在這裡，我試圖構建一個「天書系統」，讓所有的創意都能透過文字描述，直接轉化為遊戲內的物理實體與互動規則。</p>
+                    <p>想像一下，你不再需要學習複雜的建模軟體，只需寫下「一座漂浮的黃金酒館」，系統便能理解並具現化你的意志。這就是我所追求的，具現化系鍊金術的極致。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter III: The Sanctuary (Guild) -->
+        <section id="chapter-3">
+            <div class="container">
+                <div class="chapter-num">III</div>
+                <div class="chapter-content" style="padding-bottom: 0; background: none; border: none; backdrop-filter: none;">
+                    <div style="background: linear-gradient(180deg, rgba(20,20,25,0.9) 0%, rgba(10,10,15,0.95) 100%); border: 1px solid rgba(197, 160, 89, 0.2); padding: 4rem; position: relative;">
+                        <h2 style="width: 100%;">聖域：塞趴卷公會</h2>
+                        <h3>THE SANCTUARY</h3>
+                        <p>一個人的冒險是孤獨的，一群人的冒險則是史詩。</p>
+                        <p>我夢想建立<span class="highlight">「塞趴卷冒險公會」</span>，這是一個現實世界的 Nexus。它就像動漫裡的異世界公會，冒險者（開發者、創作者）可以在此集結。</p>
+                        <div class="project-row" style="margin-top: 3rem;">
+                            <div class="project-info">
+                                <h3>公會機能</h3>
+                                <p>• <strong>組隊系統：</strong> 尋找技能互補的夥伴，攻略大型專案副本。</p>
+                                <p>• <strong>情報交易所：</strong> 分享技術心得、資源與業界情報。</p>
+                                <p>• <strong>吟遊詩人：</strong> 紀錄並傳唱每一個專案背後的故事，讓過程留下溫度。</p>
+                            </div>
+                            <div class="project-visual">
+                                GUILD
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p>ARCHIVED IN SUPERGALEN'S DUNGEON // SYSTEM ID: SPJ-001</p>
+            <div style="margin-top: 1rem;">
+                <a href="https://www.threads.net/@spj.story" target="_blank" class="social-link">THREADS</a>
+            </div>
+        </footer>
+
+    </main>
 
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
@@ -243,176 +343,130 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- Init ---
+        // --- Init Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Fog to hide the start/end of the storm
-        scene.fog = new THREE.FogExp2(0x050302, 0.05);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 5;
+        camera.position.z = 10;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffaa55, 0.2);
-        scene.add(ambientLight);
+        // --- The Magical Quill (Visual Metaphor) ---
+        // A glowing trail that follows scroll
+        const trailCount = 50;
+        const trailGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(trailCount * 3);
+        trailGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-        const pointLight = new THREE.PointLight(0xffaa00, 2, 20);
-        pointLight.position.set(0, 2, 5);
-        scene.add(pointLight);
-
-        // --- The Storm (Instanced Mesh) ---
-        // Creating hundreds of floating papers
-        const paperCount = 400;
-        const paperGeo = new THREE.PlaneGeometry(0.5, 0.7); // A4 ratio
-        const paperMat = new THREE.MeshStandardMaterial({
-            color: 0xe3d5c0,
-            side: THREE.DoubleSide,
-            roughness: 0.8,
-            metalness: 0.1
+        const trailMat = new THREE.PointsMaterial({
+            color: 0xc5a059,
+            size: 0.2,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
         });
 
-        const mesh = new THREE.InstancedMesh(paperGeo, paperMat, paperCount);
-        scene.add(mesh);
+        const trail = new THREE.Points(trailGeo, trailMat);
+        scene.add(trail);
 
-        const dummy = new THREE.Object3D();
-        const positions = [];
-        const speeds = [];
-        const rotations = [];
-
-        // Initialize random positions in a "Tunnel"
-        for(let i=0; i<paperCount; i++) {
-            // Position: Random spread in X/Y, distributed along Z (-50 to 10)
-            const x = (Math.random() - 0.5) * 20;
-            const y = (Math.random() - 0.5) * 20;
-            const z = (Math.random() - 0.5) * 60 - 20;
-
-            dummy.position.set(x, y, z);
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-
-            // Random Scale slightly
-            const s = 0.5 + Math.random() * 0.5;
-            dummy.scale.set(s, s, s);
-
-            dummy.updateMatrix();
-            mesh.setMatrixAt(i, dummy.matrix);
-
-            // Store for animation
-            positions.push({x, y, z, originalX: x, originalY: y});
-            speeds.push((Math.random() * 0.05) + 0.01);
-            rotations.push({
-                x: Math.random() * 0.02,
-                y: Math.random() * 0.02
-            });
+        // Particles Background
+        const particlesCnt = 200;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(particlesCnt * 3);
+        for(let i=0; i<particlesCnt*3; i++) {
+            pPos[i] = (Math.random() - 0.5) * 40;
         }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({
+            color: 0x444444,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.3
+        });
+        const bgParticles = new THREE.Points(pGeo, pMat);
+        scene.add(bgParticles);
 
-        // --- Animation Loop ---
+        // --- Animation ---
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetY = 0;
+
+        // Track scroll
+        let scrollY = 0;
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        });
+
+        // Track mouse
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Animate Papers (Swirling Storm)
-            for(let i=0; i<paperCount; i++) {
-                // Retrieve current transform
-                mesh.getMatrixAt(i, dummy.matrix);
-                dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+            // Update Trail (Simulate writing)
+            // The head of the trail moves with scroll + noise
+            const headX = Math.sin(time * 0.5) * 5 + mouseX * 2;
+            const headY = Math.cos(time * 0.3) * 2 - (scrollY * 0.01) + 5; // Move down as we scroll down? No, opposite parallax
+            // Actually, let's make the trail dance in the center
 
-                // Spiral movement
-                const speed = speeds[i];
-                const angle = time * speed;
-                const radius = 5 + Math.sin(time * speed + i) * 2; // Varying radius
+            const currentPositions = trail.geometry.attributes.position.array;
 
-                // Orbit around Z axis logic? No, let's just do chaotic flow
-                // Flow towards camera (+Z)
-                dummy.position.z += speed * 5;
-                if (dummy.position.z > 5) {
-                    dummy.position.z = -50; // Reset to back
-                }
-
-                // Rotate
-                dummy.rotation.x += rotations[i].x;
-                dummy.rotation.y += rotations[i].y;
-
-                dummy.updateMatrix();
-                mesh.setMatrixAt(i, dummy.matrix);
+            // Shift all points down
+            for(let i = (trailCount - 1) * 3; i >= 3; i -= 3) {
+                currentPositions[i] = currentPositions[i-3];
+                currentPositions[i+1] = currentPositions[i-2];
+                currentPositions[i+2] = currentPositions[i-1];
             }
-            mesh.instanceMatrix.needsUpdate = true;
 
-            // Light flicker
-            pointLight.intensity = 2 + Math.sin(time * 10) * 0.5;
+            // New head position
+            currentPositions[0] = Math.sin(time) * 3; // X
+            currentPositions[1] = Math.cos(time * 1.5) * 2; // Y
+            currentPositions[2] = Math.sin(time * 2) * 2; // Z
+
+            trail.geometry.attributes.position.needsUpdate = true;
+
+            // Rotate bg particles
+            bgParticles.rotation.y = time * 0.05;
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP Scroll Interaction ---
+        // --- GSAP Text Reveals ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Timeline for Sections
-        const sections = ['#sec-hero', '#sec-intro', '#sec-dream', '#sec-projects'];
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: ".scroll-content",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 0.5
-            }
-        });
+        // Hero Reveal
+        const tlHero = gsap.timeline();
+        tlHero.to(".hero-pre", { opacity: 1, duration: 1, y: 0, ease: "power2.out" })
+              .from("h1", { opacity: 0, y: 20, duration: 1 }, "-=0.5")
+              .to(".hero-role", { opacity: 1, duration: 1 }, "-=0.5")
+              .to(".hero-avatar-frame", { opacity: 1, x: -20, duration: 1.5 }, "-=0.8")
+              .to(".hero-btn", { opacity: 1, duration: 1 }, "-=0.5");
 
-        // 1. Move Camera through the storm
-        tl.to(camera.position, { z: -30, ease: "none" }, 0);
-
-        // 2. Rotate the storm slightly for disorientation/dynamism
-        tl.to(mesh.rotation, { z: Math.PI / 4, ease: "none" }, 0);
-
-        // 3. Reveal Content Sections sequentially
-        // We calculate precise timings based on scroll percentage
-        sections.forEach((sec, index) => {
-            // Fade In
-            gsap.to(sec, {
-                opacity: 1,
-                y: 0,
-                duration: 0.5,
+        // Chapters Reveal
+        gsap.utils.toArray('.chapter-content').forEach(section => {
+            gsap.from(section, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
                 scrollTrigger: {
-                    trigger: ".scroll-content",
-                    start: `${index * 25}% top`,
-                    end: `${(index * 25) + 10}% top`,
-                    toggleActions: "play none none reverse",
-                    scrub: true
-                },
-                onStart: () => document.querySelector(sec).classList.add('visible'),
-                onReverseComplete: () => document.querySelector(sec).classList.remove('visible')
+                    trigger: section,
+                    start: "top 80%"
+                }
             });
-
-            // Fade Out (except last)
-            if (index < sections.length - 1) {
-                gsap.to(sec, {
-                    opacity: 0,
-                    y: -20,
-                    duration: 0.5,
-                    scrollTrigger: {
-                        trigger: ".scroll-content",
-                        start: `${(index + 1) * 25 - 5}% top`,
-                        end: `${(index + 1) * 25}% top`,
-                        scrub: true,
-                        toggleActions: "play none none reverse"
-                    },
-                    onComplete: () => document.querySelector(sec).classList.remove('visible')
-                });
-            }
         });
 
-        // Remove Loader
-        window.addEventListener('load', () => {
-            gsap.to("#loader", { opacity: 0, duration: 1, onComplete: () => document.getElementById("loader").remove() });
-        });
-
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
