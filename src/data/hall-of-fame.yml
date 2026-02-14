@@ -837,3 +837,15 @@ members:
         label: "爵士鼓"
       - id: "musician"
         label: "音樂人"
+
+  - id: "yumebi_emu"
+    name: "愛姆 Yumebi Emu"
+    avatar: "/assets/img/guild/yumebi_emu/avatar.webp"
+    page: "/guild/yumebi_emu.html"
+    tags:
+      - id: "asmr"
+        label: "ASMR 魔法"
+      - id: "dream_witch"
+        label: "夢境魔女"
+      - id: "forever_20"
+        label: "永遠 20 歲"
