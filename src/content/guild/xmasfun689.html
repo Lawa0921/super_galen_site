@@ -15,7 +15,6 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
     <style>
         :root {
@@ -42,6 +41,7 @@
         /* Layers */
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
         #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
+        #plasma-arcs { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; pointer-events: none; }
 
         /* CRT Scanline Overlay */
         .scanlines {
@@ -52,29 +52,14 @@
         }
 
         /* Layout */
-        .scroller { position: relative; z-index: 10; height: auto; padding-bottom: 20vh; }
+        .scroller { position: relative; z-index: 10; }
         .section {
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 4rem 5%;
             pointer-events: none;
-            margin-bottom: 30vh; /* Balanced spacing */
+            margin-bottom: 25vh;
             position: relative;
-        }
-
-        /* Data Cable Connection */
-        .scroller::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(to bottom, transparent, var(--c-plasma) 20%, var(--c-core) 80%, transparent);
-            transform: translateX(-50%);
-            z-index: -1;
-            opacity: 0.5;
-            box-shadow: 0 0 20px var(--c-plasma);
         }
 
         /* Tech Card (Industrial Overhaul - Side by Side) */
@@ -112,9 +97,17 @@
         .card-visual { flex: 0 0 40%; max-width: 400px; }
 
         .tech-card:hover {
-            transform: translateY(-5px);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 20px var(--c-plasma);
             border-color: var(--c-plasma);
+        }
+
+        /* Float animation after magnetic pull completes */
+        @keyframes card-float {
+            0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+            50% { transform: translateY(-10px) rotate(0.4deg); }
+        }
+        .tech-card.is-floating {
+            animation: card-float 3.5s ease-in-out infinite;
         }
 
         /* Industrial Bolts */
@@ -197,7 +190,7 @@
         .footer {
             height: 40vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
             position: relative; z-index: 20; background: linear-gradient(to top, #000, transparent);
-            margin-top: 20vh; /* Ensure separation from last card */
+            margin-top: 15vh;
         }
         .social-bar { display: flex; gap: 2rem; margin-bottom: 2rem; }
         .social-btn {
@@ -214,7 +207,6 @@
             box-shadow: 0 0 30px var(--c-plasma);
             transform: scale(1.1);
         }
-        .social-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
         @media (max-width: 768px) {
             .section { padding: 4rem 1rem; }
@@ -242,6 +234,7 @@
     <!-- Background Layers -->
     <div id="webgl-container"></div>
     <div id="p5-container"></div>
+    <canvas id="plasma-arcs"></canvas>
 
     <div class="scroller">
 
@@ -284,6 +277,7 @@
             </div>
         </section>
 
+
         <!-- 2. Machines -->
         <section class="section">
             <div class="tech-card card-gold reverse">
@@ -317,6 +311,7 @@
             </div>
         </section>
 
+
         <!-- 3. Skills (Circuits) -->
         <section class="section">
             <div class="tech-card">
@@ -349,6 +344,7 @@
                 </div>
             </div>
         </section>
+
 
         <!-- 4. Personal -->
         <section class="section">
@@ -390,144 +386,80 @@
         </footer>
     </div>
 
-    <!-- P5.js (PCB Overlay) -->
+    <!-- PCB Overlay (Vanilla Canvas2D) -->
     <script>
-        const sketch = (p) => {
-            let traces = [];
+        (function() {
+            const cvs = document.createElement('canvas');
+            document.getElementById('p5-container').appendChild(cvs);
+            const ctx = cvs.getContext('2d');
 
-            p.setup = () => {
-                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-container');
-                p.frameRate(30);
+            function resize() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
+            resize();
+            window.addEventListener('resize', resize);
 
-                // Create PCB Traces - Increased Density
-                for(let i=0; i<60; i++) {
-                    traces.push(new Trace(p));
-                }
-            };
+            function newTrace() {
+                const fromTop = Math.random() > 0.5;
+                return {
+                    path: [{ x: fromTop ? Math.random() * cvs.width : -10, y: fromTop ? -10 : Math.random() * cvs.height }],
+                    dir: fromTop ? { x: 0, y: 1 } : { x: 1, y: 0 },
+                    speed: 4 + Math.random() * 6,
+                    color: Math.random() > 0.8 ? '255,215,0' : '0,255,255'
+                };
+            }
 
-            p.draw = () => {
-                p.clear();
+            const traces = [];
+            for (let i = 0; i < 30; i++) traces.push(newTrace());
 
-                // Draw Traces
-                traces.forEach(t => {
-                    t.update();
-                    t.display();
+            function drawPath(t) {
+                if (t.path.length < 2) return;
+                ctx.beginPath();
+                ctx.moveTo(t.path[0].x, t.path[0].y);
+                for (let i = 1; i < t.path.length; i++) ctx.lineTo(t.path[i].x, t.path[i].y);
+            }
+
+            let last = 0;
+            function loop(ts) {
+                requestAnimationFrame(loop);
+                if (ts - last < 33) return;
+                last = ts;
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+                traces.forEach((t, idx) => {
+                    const tail = t.path[t.path.length - 1];
+                    if (Math.random() < 0.1) {
+                        t.dir = t.dir.x !== 0
+                            ? { x: 0, y: Math.random() > 0.5 ? 1 : -1 }
+                            : { x: Math.random() > 0.5 ? 1 : -1, y: 0 };
+                    }
+                    t.path.push({ x: tail.x + t.dir.x * t.speed, y: tail.y + t.dir.y * t.speed });
+                    const h = t.path[t.path.length - 1];
+                    if (t.path.length > 80 || h.x < 0 || h.y < 0 || h.x > cvs.width || h.y > cvs.height) {
+                        traces[idx] = newTrace();
+                        return;
+                    }
+                    ctx.strokeStyle = 'rgba(' + t.color + ',0.4)'; ctx.lineWidth = 8;
+                    drawPath(t); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+                    drawPath(t); ctx.stroke();
+                    ctx.fillStyle = 'rgba(' + t.color + ',0.4)';
+                    ctx.beginPath(); ctx.arc(h.x, h.y, 6, 0, 6.28); ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath(); ctx.arc(h.x, h.y, 3, 0, 6.28); ctx.fill();
                 });
 
-                // Plasma Current (From Center)
-                if (p.random() < 0.05) { // Frequent little sparks
-                    drawPlasmaSpark(p);
-                }
-            };
-
-            function drawPlasmaSpark(p) {
-                p.push();
-                p.stroke(0, 243, 255, 200); // Cyan
-                p.strokeWeight(p.random(1, 3));
-                p.noFill();
-
-                // Start from center
-                let cx = p.width / 2;
-                let cy = p.height / 2;
-
-                // Random Direction
-                let angle = p.random(p.TWO_PI);
-                let len = p.random(100, 400);
-
-                p.beginShape();
-                p.vertex(cx, cy);
-
-                let steps = 10;
-                for(let i=0; i<steps; i++) {
-                    let r = (len / steps) * (i+1);
-                    // Jitter
-                    let jx = cx + Math.cos(angle) * r + p.random(-20, 20);
-                    let jy = cy + Math.sin(angle) * r + p.random(-20, 20);
-                    p.vertex(jx, jy);
-                }
-                p.endShape();
-                p.pop();
-            }
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-            };
-
-            class Trace {
-                constructor(p) {
-                    this.p = p;
-                    this.reset();
-                }
-                reset() {
-                    // Start from random edge
-                    if(this.p.random() > 0.5) {
-                        this.x = this.p.random(this.p.width);
-                        this.y = -10;
-                        this.dir = {x:0, y:1};
-                    } else {
-                        this.x = -10;
-                        this.y = this.p.random(this.p.height);
-                        this.dir = {x:1, y:0};
+                if (Math.random() < 0.05) {
+                    const cx = cvs.width / 2, cy = cvs.height / 2, a = Math.random() * 6.28, len = 100 + Math.random() * 300;
+                    ctx.strokeStyle = 'rgba(0,243,255,0.8)'; ctx.lineWidth = 1 + Math.random() * 2;
+                    ctx.beginPath(); ctx.moveTo(cx, cy);
+                    for (let i = 1; i <= 10; i++) {
+                        const r = (len / 10) * i;
+                        ctx.lineTo(cx + Math.cos(a) * r + (Math.random() - 0.5) * 40, cy + Math.sin(a) * r + (Math.random() - 0.5) * 40);
                     }
-
-                    this.path = [{x: this.x, y: this.y}];
-                    this.maxLength = this.p.random(100, 300);
-                    this.speed = this.p.random(4, 10); // Even Faster
-                    this.color = this.p.random() > 0.8 ? [255, 215, 0] : [0, 255, 255]; // Pure Gold or Pure Cyan
-                    this.head = 0;
-                }
-                update() {
-                    this.head += this.speed;
-
-                    let last = this.path[this.path.length-1];
-                    let nextX = last.x + this.dir.x * this.speed;
-                    let nextY = last.y + this.dir.y * this.speed;
-
-                    // Random Turn - More erratic
-                    if(this.p.random() < 0.1) {
-                        if(this.dir.x !== 0) this.dir = {x:0, y: this.p.random() > 0.5 ? 1 : -1};
-                        else this.dir = {x: this.p.random() > 0.5 ? 1 : -1, y:0};
-                    }
-
-                    this.path.push({x: nextX, y: nextY});
-
-                    if(this.path.length > 80 || nextX > this.p.width || nextY > this.p.height || nextX < 0 || nextY < 0) {
-                        this.reset();
-                    }
-                }
-                display() {
-                    this.p.noFill();
-
-                    // Glow Effect (Layer 1 - Blur/Wide) - Stronger
-                    this.p.stroke(this.color[0], this.color[1], this.color[2], 100);
-                    this.p.strokeWeight(12);
-                    this.p.beginShape();
-                    for(let i=0; i<this.path.length; i++) this.p.vertex(this.path[i].x, this.path[i].y);
-                    this.p.endShape();
-
-                    // Core Line (Layer 2 - Sharp/Bright) - Ultra Visible
-                    this.p.stroke(255); // Pure White Core
-                    this.p.strokeWeight(4);
-                    this.p.beginShape();
-                    for(let i=0; i<this.path.length; i++) this.p.vertex(this.path[i].x, this.path[i].y);
-                    this.p.endShape();
-
-                    // Head Dot
-                    let last = this.path[this.path.length-1];
-                    this.p.noStroke();
-
-                    // Dot Glow
-                    this.p.fill(this.color[0], this.color[1], this.color[2], 100);
-                    this.p.ellipse(last.x, last.y, 12, 12);
-
-                    // Dot Core
-                    this.p.fill(255);
-                    this.p.ellipse(last.x, last.y, 6, 6);
+                    ctx.stroke();
                 }
             }
-        };
-        new p5(sketch);
+            requestAnimationFrame(loop);
+        })();
     </script>
 
     <!-- Three.js (Plasma Environment) -->
@@ -544,10 +476,7 @@
         scene.fog = new THREE.FogExp2(0x020205, 0.008);
 
         const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 25); // Start position for scroll animation (Reduced for slower zoom)
-
-        // Expose camera to window for debug/verification
-        window.camera = camera;
+        camera.position.set(-11.0, 2, 13.5); // Start left of center, orbit radius ~18
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -557,7 +486,7 @@
         // Bloom
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.1;
         bloomPass.strength = 2.0; // High Bloom for Plasma
         bloomPass.radius = 0.8;
@@ -580,13 +509,6 @@
         );
         core.add(coreInner);
 
-        // Secret Core (Icosahedron Geometry) - No FontLoader needed
-        const boxGeo = new THREE.IcosahedronGeometry(0.8, 0);
-        const boxMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true });
-        const secretCore = new THREE.Mesh(boxGeo, boxMat);
-        secretCore.scale.set(0,0,0); // Hidden initially
-        core.add(secretCore);
-
         // 3. Lightning Arcs
         const arcGroup = new THREE.Group();
         scene.add(arcGroup);
@@ -602,10 +524,7 @@
             const mat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
             const line = new THREE.Line(geo, mat);
             // Save base positions
-            line.userData = {
-                basePoints: points.map(p => p.clone()),
-                offset: Math.random() * 100
-            };
+            line.userData = { basePoints: points.map(p => p.clone()) };
             return line;
         }
 
@@ -624,7 +543,7 @@
         const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         const cubeMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF });
 
-        for(let i=0; i<50; i++) {
+        for(let i=0; i<20; i++) {
             const m = new THREE.Mesh(cubeGeo, cubeMat);
             m.position.set(
                 (Math.random()-0.5) * 30,
@@ -670,7 +589,7 @@
             holePath.absarc(0, 0, holeRadius, 0, Math.PI * 2, true);
             shape.holes.push(holePath);
 
-            const extrudeSettings = { depth: 0.5, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.1, bevelThickness: 0.1 };
+            const extrudeSettings = { depth: 0.5, bevelEnabled: false, steps: 1 };
             const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
             const material = new THREE.MeshStandardMaterial({
                 color: color,
@@ -687,7 +606,7 @@
         }
 
         // Generate Wall of Gears (Increased Density)
-        for (let i = 0; i < 80; i++) {
+        for (let i = 0; i < 35; i++) {
             const radius = 2 + Math.random() * 8; // Varied sizes
             const teeth = Math.floor(8 + radius * 2);
             const x = (Math.random() - 0.5) * 70; // Wider spread
@@ -728,7 +647,7 @@
 
         // Add Embers
         const emberGeo = new THREE.BufferGeometry();
-        const emberCount = 200;
+        const emberCount = 80;
         const emberPos = new Float32Array(emberCount * 3);
         for(let i=0; i<emberCount*3; i++) emberPos[i] = (Math.random()-0.5)*50;
         emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
@@ -736,21 +655,16 @@
         const embers = new THREE.Points(emberGeo, emberMat);
         scene.add(embers);
 
-        // Volumetric Smoke Tunnel (Massive Scale)
-        const lightSmokeMat = smokeMat.clone();
-        lightSmokeMat.color.setHex(0xcccccc); // Brighter Grey
-        lightSmokeMat.opacity = 0.5;
-
-        // Generate huge smoke clouds along the path
-        for (let z = 60; z > 0; z -= 5) {
-            for(let k=0; k<5; k++) {
-                const smoke = new THREE.Sprite(z > 25 ? lightSmokeMat : smokeMat);
+        // Smoke clouds (only in camera-visible range z=2..12)
+        for (let z = 12; z > 2; z -= 5) {
+            for(let k=0; k<3; k++) {
+                const smoke = new THREE.Sprite(smokeMat);
                 smoke.position.set(
-                    (Math.random() - 0.5) * 60, // Wider spread
                     (Math.random() - 0.5) * 40,
-                    z + (Math.random() - 0.5) * 5
+                    (Math.random() - 0.5) * 30,
+                    z + (Math.random() - 0.5) * 3
                 );
-                smoke.scale.set(30, 30, 1); // Huge Scale
+                smoke.scale.set(20, 20, 1);
                 smoke.userData = {
                     velocity: new THREE.Vector3((Math.random() - 0.5) * 0.01, Math.random() * 0.01, 0),
                     rotationSpeed: (Math.random() - 0.5) * 0.005
@@ -760,6 +674,11 @@
             }
         }
 
+        // Scroll-driven camera targets (updated by ScrollTrigger, smoothed in animate)
+        let targetX = -11.0;
+        let targetY = 2;
+        let targetZ = 13.5;
+
         // Animation
         const clock = new THREE.Clock();
 
@@ -767,21 +686,17 @@
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
+            // Smooth camera follow (orbit)
+            camera.position.x += (targetX - camera.position.x) * 0.12;
+            camera.position.y += (targetY - camera.position.y) * 0.12;
+            camera.position.z += (targetZ - camera.position.z) * 0.12;
+            camera.lookAt(0, 0, 0);
+
             // Core Pulse
             const s = 1 + Math.sin(t * 5) * 0.1;
             core.scale.set(s, s, s);
             core.rotation.y = t;
             core.rotation.z = t * 0.5;
-
-            // Secret Core Reveal based on Camera Z
-            if (camera.position.z < 6) {
-                const reveal = Math.max(0, (6 - camera.position.z) / 4); // 0 to 1
-                secretCore.scale.set(reveal, reveal, reveal);
-                secretCore.rotation.x -= 0.05;
-                secretCore.rotation.y -= 0.05;
-            } else {
-                secretCore.scale.set(0,0,0);
-            }
 
             // Gears Rotate
             gearGroup.children.forEach(gear => {
@@ -834,69 +749,59 @@
         }
         animate();
 
-        // Unified Scroll Interaction (Immediate Control)
-        // Camera moves from Z=25 (Start) -> Z=3 (Finale) based on scroll
-        const camTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: ".scroller",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1 // Tighter scrub for better sync with scroll bottom
+        // Camera orbit: horizontal arc sweep around the plasma core
+        // Sweeps from -38° to +38° at constant radius (~18 units)
+        // Like surveying an industrial facility from different angles
+        const ORBIT_RADIUS = 18;
+        const START_ANGLE = -Math.PI * 0.21; // ~-38°
+        const END_ANGLE = Math.PI * 0.21;    // ~+38°
+
+        ScrollTrigger.create({
+            trigger: ".scroller",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                const p = self.progress;
+                const angle = START_ANGLE + p * (END_ANGLE - START_ANGLE);
+                targetX = ORBIT_RADIUS * Math.sin(angle);
+                targetZ = ORBIT_RADIUS * Math.cos(angle);
+                targetY = 2 * (1 - p);
             }
         });
 
-        camTl.to(camera.position, {
-            z: 3, // Finale Position (Close to Core)
-            y: 0,
-            ease: "none" // Linear movement for direct 1:1 scroll control
-        });
+        // GSAP Entry — magnetic pull with tilt, then float
+        const cards = gsap.utils.toArray('.tech-card');
+        const tilts = [-2.5, 1.8, -1.5, 2.2]; // initial tilt per card
 
-        // Increase Core Light Intensity on Scroll
-        camTl.to(pointLight, {
-            intensity: 10,
-            distance: 100,
-            ease: "power2.in"
-        }, "<");
+        cards.forEach((card, i) => {
+            const tilt = tilts[i] || (i % 2 === 0 ? -2 : 2);
+            card.style.transform = `translateY(150px) rotate(${tilt}deg)`;
+            card.style.opacity = '0';
 
-        // Background Elements React to Scroll
-        camTl.to(gearGroup.position, {
-            z: -30, // Move gears away at the end
-            ease: "power1.in",
-            duration: 0.3 // Only at the very end
-        }, ">0.7"); // Start at 70% scroll progress
-
-        // GSAP Entry Animations & Dynamic Lighting
-        gsap.utils.toArray('.tech-card').forEach((card, i) => {
-            // "Magnetic Plasma" Entry
-            const isLeft = i % 2 === 0;
-            const xOffset = isLeft ? -400 : 400; // Alternating sides
-
-            gsap.fromTo(card,
-                {
-                    x: xOffset,
-                    opacity: 0,
-                    scale: 0.1, // Materialize from small point
-                    filter: "blur(20px)", // Plasma blur
-                    borderColor: "#FFFFFF" // Flash white start
-                },
-                {
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    },
-                    x: 0,
-                    opacity: 1,
-                    scale: 1,
-                    filter: "blur(0px)",
-                    borderColor: "#333", // Return to normal industrial border
-                    duration: 1.2,
-                    ease: "elastic.out(1, 0.6)", // Magnetic snap
-                    clearProps: "filter" // Performance cleanup
+            ScrollTrigger.create({
+                trigger: card,
+                start: "top 95%",
+                end: "top 55%",
+                onUpdate: (self) => {
+                    const p = self.progress;
+                    const eased = p * p;
+                    if (eased >= 0.98) {
+                        // Pull complete → hand off to CSS float
+                        card.style.transform = '';
+                        card.style.opacity = '';
+                        card.style.animationDelay = `${i * -0.9}s`;
+                        card.classList.add('is-floating');
+                    } else {
+                        card.classList.remove('is-floating');
+                        const pull = 150 * (1 - eased);
+                        const rot = tilt * (1 - eased);
+                        card.style.transform = `translateY(${pull}px) rotate(${rot}deg)`;
+                        card.style.opacity = String(Math.min(1, eased * 1.3));
+                    }
                 }
-            );
+            });
 
-            // "Plasma Illumination" Effect when card is center screen
+            // Plasma Illumination when card is center screen
             gsap.to(card, {
                 scrollTrigger: {
                     trigger: card,
@@ -907,10 +812,71 @@
                 },
                 boxShadow: "0 0 50px rgba(0, 243, 255, 0.6), inset 0 0 20px rgba(0, 243, 255, 0.2)",
                 borderColor: "#00F3FF",
-                backgroundColor: "rgba(10, 20, 30, 0.98)", // Lighter when lit
+                backgroundColor: "rgba(10, 20, 30, 0.98)",
                 duration: 0.5
             });
         });
+
+        // Plasma Arcs — simple connecting arcs between cards
+        const arcCvs = document.getElementById('plasma-arcs');
+        const arcCtx = arcCvs.getContext('2d');
+
+        function resizeArcs() { arcCvs.width = window.innerWidth; arcCvs.height = window.innerHeight; }
+        resizeArcs();
+
+        function drawArc(ctx, x1, y1, x2, y2, segs, jitter) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            for (let i = 1; i < segs; i++) {
+                const t = i / segs;
+                ctx.lineTo(x1 + (x2 - x1) * t + (Math.random() - 0.5) * jitter, y1 + (y2 - y1) * t);
+            }
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        let arcLast = 0;
+        function arcLoop(ts) {
+            requestAnimationFrame(arcLoop);
+            if (ts - arcLast < 66) return;
+            arcLast = ts;
+
+            arcCtx.clearRect(0, 0, arcCvs.width, arcCvs.height);
+            for (let i = 0; i < cards.length - 1; i++) {
+                const r1 = cards[i].getBoundingClientRect();
+                const r2 = cards[i + 1].getBoundingClientRect();
+                const top = r1.bottom;
+                const bot = r2.top;
+                const gap = bot - top;
+                if (top > arcCvs.height || bot < 0 || gap <= 0) continue;
+
+                const p = Math.max(0, Math.min(1, 1 - gap / (window.innerHeight * 1.5)));
+                if (p < 0.01) continue;
+
+                const left = Math.max(r1.left, r2.left);
+                const right = Math.min(r1.right, r2.right);
+                const cardW = right - left;
+                const midX = (left + right) / 2;
+
+                // 3 arcs: soft glow + sharp core
+                for (let a = 0; a < 3; a++) {
+                    const sx = left + cardW * 0.2 + Math.random() * cardW * 0.6;
+                    const ex = left + cardW * 0.2 + Math.random() * cardW * 0.6;
+                    arcCtx.strokeStyle = `rgba(0, 243, 255, ${p * 0.15})`;
+                    arcCtx.lineWidth = 6;
+                    drawArc(arcCtx, sx, top, ex, bot, 10, 35);
+                    arcCtx.strokeStyle = `rgba(0, 243, 255, ${p * 0.45})`;
+                    arcCtx.lineWidth = 1.5;
+                    drawArc(arcCtx, sx, top, ex, bot, 10, 25);
+                }
+
+                // Bright center arc
+                arcCtx.strokeStyle = `rgba(255, 255, 255, ${p * 0.6})`;
+                arcCtx.lineWidth = 1.5;
+                drawArc(arcCtx, midX, top, midX, bot, 8, 15);
+            }
+        }
+        requestAnimationFrame(arcLoop);
 
         // Resize
         window.addEventListener('resize', () => {
@@ -918,6 +884,7 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
+            resizeArcs();
         });
     </script>
 </body>
