@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房產小蜜 Ava | Speed & Warmth</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            --c-beige: #F5E6CA;
+            --c-gold: #FFD700;
+            --c-wine: #8B0000;
+            --c-dark: #1a1a1a;
+            --c-white: #ffffff;
+
+            --f-serif: 'Noto Serif TC', serif;
+            --f-tech: 'Orbitron', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--c-beige);
+            color: var(--c-dark);
+            font-family: var(--f-serif);
+            overflow-x: hidden;
+            cursor: none; /* Custom cursor */
+        }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--c-wine); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--c-gold);
+        }
+        .loader-text {
+            font-family: var(--f-tech); font-size: 1.5rem; letter-spacing: 2px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* --- Canvas Layers --- */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; }
+
+        /* --- Custom Cursor --- */
+        #cursor-follower {
+            position: fixed; top: 0; left: 0; width: 40px; height: 40px;
+            border: 2px solid var(--c-gold); border-radius: 50%;
+            pointer-events: none; z-index: 10001; transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, border-color 0.2s;
+            mix-blend-mode: difference;
+        }
+        #cursor-dot {
+            position: fixed; top: 0; left: 0; width: 6px; height: 6px;
+            background: var(--c-wine); border-radius: 50%;
+            pointer-events: none; z-index: 10002; transform: translate(-50%, -50%);
+        }
+
+        /* --- UI Elements --- */
+        .back-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 101;
+            color: var(--c-dark); text-decoration: none; font-family: var(--f-tech);
+            font-size: 0.9rem; border: 1px solid var(--c-dark); padding: 5px 15px;
+            background: rgba(245, 230, 202, 0.8); backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .back-btn:hover {
+            background: var(--c-wine); color: var(--c-gold); border-color: var(--c-wine);
+        }
+
+        /* --- Layout --- */
+        .scroller { position: relative; z-index: 10; }
+        section {
+            min-height: 100vh; padding: 4rem 2rem; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: center;
+            position: relative; pointer-events: none;
+        }
+        .content-box {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 3rem; border-radius: 2px;
+            max-width: 800px; width: 100%; margin: 0 auto;
+            border-left: 5px solid var(--c-wine);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            pointer-events: auto;
+            transform: translateY(50px); opacity: 0; /* Init state for GSAP */
+        }
+
+        h1 {
+            font-family: var(--f-serif); font-size: clamp(2.5rem, 5vw, 4rem);
+            color: var(--c-wine); margin: 0 0 1rem; line-height: 1.2;
+        }
+        h2 {
+            font-family: var(--f-tech); font-size: 1.5rem; color: #555;
+            margin: 0 0 2rem; letter-spacing: 2px;
+        }
+        h3 {
+            font-family: var(--f-serif); font-size: 1.8rem; color: var(--c-wine);
+            margin-bottom: 1rem; border-bottom: 2px solid var(--c-gold); display: inline-block;
+        }
+        p {
+            font-size: 1.1rem; line-height: 1.8; color: #333; margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .highlight { color: var(--c-wine); font-weight: bold; }
+        .tag-container { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+        .tag {
+            background: var(--c-dark); color: var(--c-gold); padding: 5px 15px;
+            font-family: var(--f-tech); font-size: 0.8rem; border-radius: 20px;
+        }
+
+        /* --- Hero Specific --- */
+        .hero-content {
+            text-align: center;
+            background: transparent; box-shadow: none; border: none; backdrop-filter: none;
+        }
+        .avatar-frame {
+            width: 200px; height: 200px; margin: 0 auto 2rem;
+            border-radius: 50%; border: 4px solid var(--c-wine); padding: 5px;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 30px rgba(139, 0, 0, 0.3);
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+            transition: transform 0.5s;
+        }
+        .avatar-frame:hover .avatar-img { transform: scale(1.1); }
+
+        /* --- Footer --- */
+        .footer {
+            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: linear-gradient(to top, var(--c-dark), transparent); color: var(--c-beige);
+            pointer-events: auto;
+        }
+        .social-icons { display: flex; gap: 2rem; margin-top: 2rem; }
+        .social-link {
+            font-size: 2rem; color: var(--c-gold); transition: 0.3s;
+        }
+        .social-link:hover { transform: scale(1.2); color: var(--c-wine); }
+
+        /* --- Photo Card Style --- */
+        .polaroid {
+            background: white; padding: 10px 10px 30px 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: rotate(-2deg); display: inline-block;
+            margin: 10px; transition: transform 0.3s;
+        }
+        .polaroid:hover { transform: rotate(0deg) scale(1.05); z-index: 10; }
+
+        @media (max-width: 768px) {
+            .content-box { padding: 2rem; margin: 0 1rem; }
+            h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-text">INITIALIZING ENGINE...</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div id="cursor-follower"></div>
+    <div id="cursor-dot"></div>
+
+    <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Guild Hall</a>
+
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <div class="scroller">
+
+        <!-- 1. Hero -->
+        <section id="hero">
+            <div class="content-box hero-content gs-reveal">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/ava/avatar.webp" alt="Ava" class="avatar-img">
+                </div>
+                <h1>房產小蜜 Ava</h1>
+                <h2>Real Estate Secretary & Visual Storyteller</h2>
+                <div class="tag-container" style="justify-content: center;">
+                    <span class="tag">#BikerSpirit</span>
+                    <span class="tag">#MomLife</span>
+                    <span class="tag">#DronePilot</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Origin (Biker) -->
+        <section id="origin">
+            <div class="content-box gs-reveal">
+                <h3><i class="fa-solid fa-motorcycle"></i> 從追風騎士到影音說書人</h3>
+                <p>
+                    大家好！我是彰化高鐵｜房產小蜜 👋<br>
+                    我的背景真的蠻混搭的（笑）。我有 7 年的行政資歷，現在是房產秘書，但以前我當過飲料店老闆、民宿管家，甚至開過 Uber！
+                </p>
+                <p>
+                    以前的我，是個熱血的 <span class="highlight">重機女騎士</span>，喜歡騎車到處跑，還會開團帶陌生人到處趴趴走。那時候我就很愛拍照、紀錄大家的快樂回憶。
+                    雖然現在身分不同了，但那份對速度與風景的熱愛，從未消失。
+                </p>
+            </div>
+        </section>
+
+        <!-- 3. Transition (Mom) -->
+        <section id="transition">
+            <div class="content-box gs-reveal" style="border-left-color: var(--c-gold);">
+                <h3><i class="fa-solid fa-child-reaching"></i> 換個速度看世界</h3>
+                <p>
+                    結婚生了兩個寶貝後，雖然不能像以前那樣騎重機追風，但我沒有放棄這份熱情！
+                    現在，我換了一種方式——<span class="highlight">「親子微旅行」</span>。
+                </p>
+                <p>
+                    我會幫孩子穿戴好全套裝備，戴上藍牙對講機。騎車穿梭在大街小巷時，孩子驚呼：「媽媽你看！」
+                    那些開車看不到的風景、路邊的小吃，現在都變成我們一家人最棒的探險。
+                    <br>
+                    <i>「以前我一個人騎車看風景；現在，我載著孩子，用他們的高度重新認識這片土地。」</i>
+                </p>
+            </div>
+        </section>
+
+        <!-- 4. Profession -->
+        <section id="profession">
+            <div class="content-box gs-reveal">
+                <h3><i class="fa-solid fa-camera-retro"></i> 專屬你的房地產小秘書</h3>
+                <p>
+                    目前我主要活躍於彰化田中一帶，專長是透過影片讓物件「說話」。
+                    雖然我有考到空拍證照，但我更想強調 <span class="highlight">「手機攝影」</span>。
+                </p>
+                <p>
+                    我不追求那種高大上的器材大片，我擅長的是用手機隨手紀錄當下的「溫度」。
+                    如果你有房地產想透過影片被更多人看見，找我就對了！
+                    也非常歡迎不同行業的朋友找我拍攝你的故事，讓我們一起用影音傳遞你的價值！✨
+                </p>
+                <div style="text-align: center; font-weight: bold; color: var(--c-wine); margin-top: 2rem;">
+                    「拍攝找小蜜，你委託我就拍」
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <h2>Let's Connect</h2>
+            <div class="social-icons">
+                <a href="https://www.threads.net/@ava332266" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/chhsr_bee" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p style="margin-top: 2rem; opacity: 0.6; font-size: 0.8rem;">
+                Made with <i class="fa-solid fa-heart" style="color:var(--c-wine)"></i> by SuperGalen's Dungeon
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- P5.js Overlay (Viewfinder) -->
+    <script>
+        const sketch = (p) => {
+            let cx, cy;
+            let shutterAlpha = 0;
+
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noCursor();
+            };
+
+            p.draw = () => {
+                p.clear();
+                cx = p.mouseX;
+                cy = p.mouseY;
+
+                // Viewfinder Brackets
+                p.stroke(255, 215, 0); // Gold
+                p.strokeWeight(2);
+                p.noFill();
+
+                const s = 40; // Size
+                const l = 10; // Length of corners
+
+                // Top Left
+                p.beginShape(); p.vertex(cx - s, cy - s + l); p.vertex(cx - s, cy - s); p.vertex(cx - s + l, cy - s); p.endShape();
+                // Top Right
+                p.beginShape(); p.vertex(cx + s - l, cy - s); p.vertex(cx + s, cy - s); p.vertex(cx + s, cy - s + l); p.endShape();
+                // Bottom Left
+                p.beginShape(); p.vertex(cx - s, cy + s - l); p.vertex(cx - s, cy + s); p.vertex(cx - s + l, cy + s); p.endShape();
+                // Bottom Right
+                p.beginShape(); p.vertex(cx + s - l, cy + s); p.vertex(cx + s, cy + s); p.vertex(cx + s, cy + s - l); p.endShape();
+
+                // Center Crosshair
+                p.stroke(139, 0, 0, 150); // Wine Red
+                p.line(cx - 5, cy, cx + 5, cy);
+                p.line(cx, cy - 5, cx, cy + 5);
+
+                // UI Text
+                p.noStroke();
+                p.fill(255, 215, 0);
+                p.textSize(10);
+                p.textFont('monospace');
+                p.text('REC [●]', cx + s + 5, cy - s);
+                p.text('ISO 800', cx - s, cy + s + 15);
+                p.text('1/125', cx + 10, cy + s + 15);
+
+                // Shutter Flash
+                if (shutterAlpha > 0) {
+                    p.fill(255, 255, 255, shutterAlpha);
+                    p.rect(0, 0, p.width, p.height);
+                    shutterAlpha -= 15;
+                }
+            };
+
+            p.mousePressed = () => {
+                shutterAlpha = 255;
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+        new p5(sketch);
+    </script>
+
+    <!-- Three.js Background -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xF5E6CA, 0.02); // Beige Fog
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Objects ---
+
+        // 1. The Road (Tube)
+        class CustomSinCurve extends THREE.Curve {
+            constructor(scale = 1) {
+                super();
+                this.scale = scale;
+            }
+            getPoint(t, optionalTarget = new THREE.Vector3()) {
+                const tx = t * 3 - 1.5;
+                const ty = Math.sin(2 * Math.PI * t);
+                const tz = 0;
+                return optionalTarget.set(tx, ty, tz).multiplyScalar(this.scale);
+            }
+        }
+
+        // Let's make a long path
+        const pathPoints = [];
+        for (let i = 0; i < 50; i++) {
+            pathPoints.push(new THREE.Vector3(
+                Math.sin(i * 0.5) * 10,
+                Math.cos(i * 0.3) * 5,
+                -i * 10
+            ));
+        }
+        const path = new THREE.CatmullRomCurve3(pathPoints);
+
+        const tubeGeo = new THREE.TubeGeometry(path, 100, 2, 8, false);
+        const tubeMat = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(tube);
+
+        // 2. Floating Particles (Memories)
+        const particlesCount = 300;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(particlesCount * 3);
+        const pSizes = new Float32Array(particlesCount);
+
+        for(let i=0; i<particlesCount; i++) {
+            pPos[i*3] = (Math.random() - 0.5) * 50;
+            pPos[i*3+1] = (Math.random() - 0.5) * 30;
+            pPos[i*3+2] = -Math.random() * 500; // Deep depth
+            pSizes[i] = Math.random();
+        }
+
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
+
+        const pMat = new THREE.PointsMaterial({
+            color: 0x8B0000,
+            size: 0.5,
+            transparent: true,
+            opacity: 0.6
+        });
+        const particles = new THREE.Points(pGeo, pMat);
+        scene.add(particles);
+
+        // 3. Floating Icons (Cubes representing photos/houses)
+        const cubesGroup = new THREE.Group();
+        scene.add(cubesGroup);
+
+        const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
+        const cubeMat = new THREE.MeshNormalMaterial({ wireframe: true }); // Placeholder aesthetic
+
+        for(let i=0; i<20; i++) {
+            const mesh = new THREE.Mesh(cubeGeo, cubeMat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 20,
+                -Math.random() * 400
+            );
+            mesh.rotation.set(Math.random(), Math.random(), 0);
+            cubesGroup.add(mesh);
+        }
+
+        // --- Animation ---
+
+        // Initial Camera Position
+        camera.position.z = 10;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Constant subtle movement
+            particles.rotation.z += 0.001;
+            cubesGroup.children.forEach(c => {
+                c.rotation.x += 0.01;
+                c.rotation.y += 0.01;
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Scroll Integration ---
+        // We move the camera along the path based on scroll
+
+        const totalPathLen = path.getLength();
+
+        // Use a proxy object to tween
+        const scrollProxy = { progress: 0 };
+
+        gsap.to(scrollProxy, {
+            progress: 1,
+            ease: "none",
+            scrollTrigger: {
+                trigger: ".scroller",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            },
+            onUpdate: () => {
+                // Get point on path
+                const point = path.getPointAt(scrollProxy.progress * 0.9); // Don't go to very end
+                const lookAtPoint = path.getPointAt(Math.min(scrollProxy.progress * 0.9 + 0.01, 1));
+
+                // Camera follows path
+                camera.position.copy(point);
+                camera.position.y += 2; // Lift camera slightly
+                camera.lookAt(lookAtPoint);
+
+                // Dynamic Fog Color Change (Beige -> Wine -> Gold)
+                if(scrollProxy.progress < 0.3) {
+                   scene.fog.color.setHex(0xF5E6CA); // Beige
+                   scene.background = new THREE.Color(0xF5E6CA);
+                } else if (scrollProxy.progress < 0.6) {
+                   scene.fog.color.lerp(new THREE.Color(0xFFD700), 0.05); // Gold
+                   scene.background.lerp(new THREE.Color(0xFFD700), 0.05);
+                } else {
+                   scene.fog.color.lerp(new THREE.Color(0xFFFFFF), 0.05); // White/Bright
+                   scene.background.lerp(new THREE.Color(0xFFFFFF), 0.05);
+                }
+            }
+        });
+
+        // Content Reveals
+        gsap.utils.toArray('.gs-reveal').forEach(elem => {
+            gsap.to(elem, {
+                y: 0,
+                opacity: 1,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: elem,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Loader
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            gsap.to(loader, {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => loader.remove()
+            });
+        });
+
+        // Custom Cursor Logic
+        const cursorFollower = document.getElementById('cursor-follower');
+        const cursorDot = document.getElementById('cursor-dot');
+
+        document.addEventListener('mousemove', (e) => {
+            gsap.to(cursorFollower, {
+                x: e.clientX,
+                y: e.clientY,
+                duration: 0.1
+            });
+            gsap.to(cursorDot, {
+                x: e.clientX,
+                y: e.clientY,
+                duration: 0
+            });
+        });
+
+        // Hover effects
+        document.querySelectorAll('a, .content-box').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                gsap.to(cursorFollower, { scale: 1.5, borderColor: '#8B0000' });
+            });
+            el.addEventListener('mouseleave', () => {
+                gsap.to(cursorFollower, { scale: 1, borderColor: '#FFD700' });
+            });
+        });
+
+    </script>
+</body>
+</html>
