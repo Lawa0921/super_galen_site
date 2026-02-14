@@ -949,28 +949,38 @@
         ringPlane.position.z = -4;
         scene.add(ringPlane);
 
-        // --- SOUL GEM (INTERACTIVE CENTER) ---
-        const gemGeo = new THREE.IcosahedronGeometry(2, 0);
-        // Use Basic material for guaranteed visibility (Glowing Core)
+        // --- SOUL GEM (EGG SHAPE, PULSATING) ---
+        const eggGeo = new THREE.SphereGeometry(1.8, 32, 32);
+        // Deform into egg: stretch top, compress bottom
+        const eggPos = eggGeo.attributes.position;
+        for (let i = 0; i < eggPos.count; i++) {
+            const y = eggPos.getY(i);
+            const normalizedY = y / 1.8;
+            const eggScale = 1 + normalizedY * 0.3;
+            eggPos.setY(i, y * eggScale);
+        }
+        eggGeo.computeVertexNormals();
+
         const gemMatCore = new THREE.MeshBasicMaterial({
-            color: 0xff1493, // Deep Pink
+            color: 0xff1493,
             transparent: true,
             opacity: 0.9
         });
 
-        const soulGem = new THREE.Mesh(gemGeo, gemMatCore);
+        const soulGem = new THREE.Mesh(eggGeo, gemMatCore);
         soulGem.position.z = -2;
         scene.add(soulGem);
 
-        // Add glowing outline to Soul Gem
-        const gemOutlineGeo = new THREE.IcosahedronGeometry(2.2, 0);
+        // Glowing egg outline
+        const eggOutlineGeo = eggGeo.clone();
+        eggOutlineGeo.scale(1.15, 1.15, 1.15);
         const gemOutlineMat = new THREE.MeshBasicMaterial({
-            color: 0xffd700, // Gold
+            color: 0xffd700,
             wireframe: true,
             transparent: true,
-            opacity: 0.5
+            opacity: 0.4
         });
-        const gemOutline = new THREE.Mesh(gemOutlineGeo, gemOutlineMat);
+        const gemOutline = new THREE.Mesh(eggOutlineGeo, gemOutlineMat);
         soulGem.add(gemOutline);
 
         // --- NEBULA / FOG ---
@@ -1158,8 +1168,9 @@
         const particles = new THREE.Points(partGeo, partMat);
         scene.add(particles);
 
-        // --- INTERACTION ---
+        // --- INTERACTION (SEPARATED: crystal toggle vs summon) ---
         let isCrystalized = false;
+        let isSummoned = false;
         let scrollProgress = 0;
         let currentTexIdx = 0;
         let isSummoning = false;
@@ -1177,15 +1188,15 @@
                 scrollProgress = self.progress;
                 camera.position.z = 30 - (scrollProgress * 20);
 
-                if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
+                if(scrollProgress > 0.9 && !isSummoned && !isSummoning) {
                     hintTouch.style.opacity = 1;
                     soulGem.visible = true;
-                } else {
+                } else if(!isSummoned && !isSummoning) {
                     hintTouch.style.opacity = 0;
-                    if(!isCrystalized && !isSummoning) soulGem.visible = false;
+                    soulGem.visible = false;
                 }
 
-                if(!isCrystalized && !isSummoning) {
+                if(!isSummoned && !isSummoning) {
                     const targetOpacity = 0.1 + (scrollProgress * 0.3);
                     magicPlane.material.opacity = targetOpacity;
                     ringPlane.material.opacity = targetOpacity * 0.5;
@@ -1198,30 +1209,34 @@
             }
         });
 
+        // --- CLICK HANDLER: separate targets ---
         window.addEventListener('click', (e) => {
             if (e.target.closest('a') || e.target.closest('.bubble-card')) return;
+            if (isSummoning) return;
 
-            if(scrollProgress <= 0.9 && !isSummoning) {
+            raycaster.setFromCamera(mouse, camera);
+
+            // 1) Soul Gem click → summon final card
+            const gemHit = raycaster.intersectObjects([soulGem]);
+            if (gemHit.length > 0 && soulGem.visible && !isSummoned) {
+                startSummonSequence();
+                return;
+            }
+
+            // 2) Heart shard click → toggle crystal assembly
+            const shardHit = raycaster.intersectObjects(shards);
+            if (shardHit.length > 0) {
                 toggleCrystal(!isCrystalized);
                 return;
             }
 
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects([soulGem, magicPlane]);
-
-            if(intersects.length > 0) {
-                if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
-                    startSummonSequence();
-                } else if(isCrystalized) {
-                    toggleCrystal(false);
-                }
-            } else {
-                if(isCrystalized) {
-                    toggleCrystal(false);
-                }
+            // 3) Click elsewhere → dismiss final card if showing
+            if (isSummoned && !e.target.closest('.gallery-content')) {
+                dismissSummon();
             }
         });
 
+        // --- SUMMON: soul gem → final card ---
         function startSummonSequence() {
             isSummoning = true;
             gsap.to(hintTouch, {opacity: 0, duration: 0.5});
@@ -1238,25 +1253,33 @@
                     magicPlane.material.opacity = circleAnim.opacity;
                     ringPlane.rotation.z += circleAnim.speed;
                     ringPlane.material.opacity = circleAnim.opacity * 0.5;
-                    soulGem.scale.setScalar(1 + Math.sin(Date.now() * 0.01) * 0.2);
                 },
                 onComplete: () => {
-                    toggleCrystal(true);
+                    gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
+                    finalCard.classList.add('active');
+                    soulGem.visible = false;
                     gsap.to(magicPlane.material, {opacity: 0.2, duration: 1});
                     gsap.to(ringPlane.material, {opacity: 0.1, duration: 1});
                     isSummoning = false;
+                    isSummoned = true;
                 }
             });
         }
 
+        function dismissSummon() {
+            isSummoned = false;
+            finalCard.classList.remove('active');
+            if(scrollProgress > 0.9) {
+                gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
+                soulGem.visible = true;
+            }
+        }
+
+        // --- CRYSTAL: shard assembly toggle (visual only, no card) ---
         function toggleCrystal(assemble) {
             isCrystalized = assemble;
 
             if(assemble) {
-                if(isSummoning) {
-                     gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
-                }
-
                 shards.forEach(m => {
                     gsap.to(m.position, {
                         x: m.userData.homePos.x,
@@ -1267,16 +1290,8 @@
                     });
                     gsap.to(m.rotation, {x:0, y:0, z:0, duration: 1});
                 });
-
                 gsap.to(picMat, {opacity: 1.0, duration: 1});
-                gsap.to(gemMat, {
-                    opacity: 0.9,
-                    duration: 1
-                });
-
-                finalCard.classList.add('active');
-                soulGem.visible = false;
-
+                gsap.to(gemMat, {opacity: 0.9, duration: 1});
             } else {
                 shards.forEach(m => {
                     gsap.to(m.position, {
@@ -1286,26 +1301,14 @@
                         duration: 1.5,
                         ease: "power2.inOut"
                     });
-
                     gsap.to(m.rotation, {
                         x: Math.random() * Math.PI * 2,
                         y: Math.random() * Math.PI * 2,
                         duration: 1.5
                     });
                 });
-
                 gsap.to(picMat, {opacity: 0.5, duration: 1});
-                gsap.to(gemMat, {
-                    opacity: 0.6,
-                    duration: 1
-                });
-
-                finalCard.classList.remove('active');
-
-                if(scrollProgress > 0.9) {
-                     gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
-                     soulGem.visible = true;
-                }
+                gsap.to(gemMat, {opacity: 0.6, duration: 1});
             }
         }
 
@@ -1358,21 +1361,28 @@
                  ringPlane.rotation.z += 0.003;
             }
 
-            soulGem.rotation.y += 0.02;
-            soulGem.rotation.x += 0.01;
-            soulGem.position.y = Math.sin(t * 2) * 0.5;
+            // Egg pulsation: gentle breathing scale + slow rotation
+            const pulse = 1 + Math.sin(t * 1.5) * 0.08;
+            const pulseY = 1 + Math.sin(t * 1.5) * 0.12;
+            soulGem.scale.set(pulse, pulseY, pulse);
+            soulGem.rotation.y += 0.008;
+            soulGem.position.y = Math.sin(t * 0.8) * 0.3;
+            // Outline glow intensity synced with pulse
+            gemOutlineMat.opacity = 0.2 + Math.sin(t * 1.5) * 0.2;
 
+            // Hover detection: soul gem vs shards
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects([soulGem, magicPlane]);
-            if(intersects.length > 0 && !isCrystalized && !isSummoning && scrollProgress > 0.9) {
+            const gemHover = raycaster.intersectObjects([soulGem]);
+            const shardHover = raycaster.intersectObjects(shards);
+            if(gemHover.length > 0 && soulGem.visible && !isSummoning) {
                 document.body.style.cursor = 'pointer';
                 magicPlane.scale.setScalar(1.05);
-                soulGem.scale.setScalar(1.2);
+            } else if(shardHover.length > 0) {
+                document.body.style.cursor = 'pointer';
             } else {
                 document.body.style.cursor = 'none';
                 if(!isSummoning) {
                     magicPlane.scale.setScalar(1.0);
-                    soulGem.scale.setScalar(1.0);
                 }
             }
 
