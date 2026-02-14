@@ -6,9 +6,12 @@
     <title>Yumebi Emu | Lucid Dream</title>
     <meta name="description" content="Yumebi Emu - ASMR Creator & Eternal 20-year-old Idol. Dream Magic, Tarot, and soothing whispers.">
 
-    <!-- Fonts -->
+    <!-- Resource Hints -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preload" as="image" href="/assets/img/guild/yumebi_emu/avatar.webp">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -34,8 +37,6 @@
             --accent-gold: #ffd700; /* Gold for Magic */
             --accent-cyan: #00ffff; /* Cyan for Digital */
             --glass-bg: rgba(20, 10, 30, 0.6); /* Darker, tinted */
-            --glass-border: rgba(255, 105, 180, 0.2);
-            --neon-glow: 0 0 15px var(--accent-pink), 0 0 30px var(--accent-purple);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,7 +45,7 @@
             background-color: var(--bg-deep);
             color: var(--text-primary);
             font-family: 'Zen Maru Gothic', sans-serif;
-            width: 100vw;
+            width: 100%;
             cursor: none; /* Custom cursor handling */
             /* Force hidden x-overflow */
             overflow-x: hidden;
@@ -61,8 +62,7 @@
             border-radius: 50%;
             pointer-events: none;
             z-index: 9999;
-            transform: translate(-50%, -50%);
-            transition: transform 0.1s;
+            will-change: transform;
             box-shadow: 0 0 10px var(--accent-pink);
         }
         #cursor-dot {
@@ -73,7 +73,7 @@
             border-radius: 50%;
             pointer-events: none;
             z-index: 10000;
-            transform: translate(-50%, -50%);
+            will-change: transform;
         }
 
         /* Flash Overlay */
@@ -185,6 +185,7 @@
                 radial-gradient(circle at 80% 20%, rgba(255, 105, 180, 0.1), transparent 40%);
             filter: blur(50px);
             opacity: 0.6;
+            contain: strict;
         }
 
         .nav-back {
@@ -600,6 +601,10 @@
             font-style: italic;
             text-shadow: 0 2px 5px #000;
         }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
         .hero-scroll-hint {
             position: absolute;
             bottom: 50px;
@@ -756,10 +761,44 @@
 
         /* Mobile Adjustments */
         @media(max-width: 768px) {
+            section { padding: 3rem 1rem; }
             .hero-title { font-size: 3rem; }
-            .bubble-card { width: 200px; height: 200px; }
-            .glass-panel { padding: 2rem; }
-            .gallery-content { aspect-ratio: unset; height: auto; max-height: 80vh; padding: 2rem; }
+            .hero-subtitle { letter-spacing: 0.2em; font-size: 1.2rem; }
+            .hero-quote { font-size: 1.2rem; }
+            .glass-panel { padding: 1.5rem; border-radius: 20px; }
+            .glass-panel::before { border-radius: 22px; }
+            .identity-panel { max-width: 100%; }
+            .identity-name { font-size: 1.8rem; }
+            .grimoire-title { font-size: 1.5rem; }
+            .lore-text { font-size: 1rem; }
+            .profile-wrapper { width: 200px; height: 200px; }
+            .sensory-grid { gap: 2rem; margin-top: 2rem; }
+            .bubble-card { width: 180px; height: 180px; }
+            .bubble-card--offset { margin-top: 0; }
+            .bubble-label { font-size: 1.2rem; bottom: -2.5rem; }
+            .section-heading { font-size: 2rem; }
+            .manifesto-container { max-width: 100%; }
+            .manifesto-title { font-size: 1.8rem; }
+            .manifesto-panel { padding: 1.5rem; }
+            .manifesto-quote { font-size: 1rem; }
+            .manifesto-body { font-size: 0.95rem; }
+            .gallery-content { aspect-ratio: unset; height: auto; max-height: 85vh; padding: 1.5rem; }
+            .final-card-title { font-size: 1.4rem; }
+            .social-link { width: 42px; height: 42px; font-size: 1.2rem; }
+            .social-container { gap: 1rem; }
+            .nav-back { top: 1rem; left: 1rem; font-size: 1rem; padding: 0.4rem 1rem; }
+            .tag-container { justify-content: center; }
+        }
+
+        @media(max-width: 400px) {
+            section { padding: 2rem 0.75rem; }
+            .hero-title { font-size: 2.2rem; }
+            .hero-subtitle { letter-spacing: 0.1em; font-size: 1rem; }
+            .glass-panel { padding: 1rem; }
+            .profile-wrapper { width: 160px; height: 160px; }
+            .bubble-card { width: 140px; height: 140px; }
+            .sensory-grid { gap: 1.5rem; }
+            .identity-name { font-size: 1.5rem; }
         }
 
     </style>
@@ -849,17 +888,17 @@
                 <h2 class="section-heading">DREAM FRAGMENTS</h2>
                 <div class="sensory-grid">
                     <div class="bubble-card gs-card">
-                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes"></div>
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes" loading="lazy"></div>
                         <div class="bubble-glow"></div>
                         <span class="bubble-label">GAZE</span>
                     </div>
                     <div class="bubble-card gs-card bubble-card--offset">
-                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Breath"></div>
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Breath" loading="lazy"></div>
                         <div class="bubble-glow"></div>
                         <span class="bubble-label">BREATH</span>
                     </div>
                     <div class="bubble-card gs-card">
-                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips"></div>
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips" loading="lazy"></div>
                         <div class="bubble-glow"></div>
                         <span class="bubble-label">WHISPER</span>
                     </div>
@@ -980,10 +1019,9 @@
         let lastSparkleTime = 0;
 
         document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-            dot.style.left = e.clientX + 'px';
-            dot.style.top = e.clientY + 'px';
+            const cx = e.clientX, cy = e.clientY;
+            cursor.style.transform = `translate(${cx - 10}px, ${cy - 10}px)`;
+            dot.style.transform = `translate(${cx - 2}px, ${cy - 2}px)`;
 
             // Normalize mouse for Raycaster
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -1188,7 +1226,6 @@
             '/assets/img/guild/yumebi_emu/work1.webp',
             '/assets/img/guild/yumebi_emu/work2.webp',
             '/assets/img/guild/yumebi_emu/work3.webp',
-            '/assets/img/guild/yumebi_emu/work4.webp',
             '/assets/img/guild/yumebi_emu/work5.webp'
         ];
 
@@ -1505,15 +1542,12 @@
                 });
 
                 const shakeIntensity = isCrystalized ? 0.2 : 2;
-                shards.forEach(m => {
-                    gsap.to(m.position, {
-                        x: m.position.x + (Math.random()-0.5)*shakeIntensity,
-                        y: m.position.y + (Math.random()-0.5)*shakeIntensity,
-                        z: m.position.z + (Math.random()-0.5)*shakeIntensity,
-                        duration: 0.05,
-                        yoyo: true,
-                        repeat: 1
-                    });
+                gsap.to(heartGroup.position, {
+                    x: heartGroup.position.x + (Math.random()-0.5)*shakeIntensity,
+                    y: heartGroup.position.y + (Math.random()-0.5)*shakeIntensity,
+                    duration: 0.05,
+                    yoyo: true,
+                    repeat: 1
                 });
             }
 
@@ -1561,7 +1595,7 @@
             for(let i=0; i<15; i++) {
                 const rune = document.createElement('div');
                 rune.className = 'floating-rune';
-                rune.innerHTML = symbols[Math.floor(Math.random() * symbols.length)];
+                rune.textContent = symbols[Math.floor(Math.random() * symbols.length)];
                 rune.style.left = Math.random() * 100 + 'vw';
                 rune.style.top = Math.random() * 100 + 'vh';
                 rune.style.animationDelay = Math.random() * 10 + 's';
