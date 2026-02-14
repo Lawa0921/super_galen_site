@@ -449,7 +449,15 @@
             text-align: center;
             z-index: 20;
             opacity: 0;
+            pointer-events: none;
             transition: opacity 0.5s;
+            cursor: pointer;
+            padding: 2rem;
+        }
+
+        .hint-touch.visible {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .hint-text {
@@ -474,22 +482,9 @@
             font-size: 5rem;
             color: var(--accent-pink);
             cursor: pointer;
-            pointer-events: auto;
             filter: drop-shadow(0 0 15px var(--accent-pink)) drop-shadow(0 0 30px rgba(148, 0, 60, 0.6));
-            animation: egg-pulse 2s ease-in-out infinite, egg-float 3s ease-in-out infinite;
+            animation: egg-breathe 2.5s ease-in-out infinite;
             transition: filter 0.3s, color 0.3s;
-        }
-
-        .devil-egg::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 120%; height: 120%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,105,180,0.15), transparent 70%);
-            animation: egg-aura 2s ease-in-out infinite alternate;
-            pointer-events: none;
         }
 
         .devil-egg .devil-horns {
@@ -502,32 +497,28 @@
             pointer-events: none;
         }
 
-        .devil-egg:hover {
+        .hint-touch:hover .devil-egg {
             color: #fff;
             filter: drop-shadow(0 0 25px var(--accent-pink)) drop-shadow(0 0 50px rgba(148, 0, 60, 0.8));
         }
 
-        .devil-egg.summoning {
+        .hint-touch.summoned .devil-egg {
             animation: none;
             opacity: 0;
-            transform: scale(1.5);
+            transform: scale(1.5) translateY(-8px);
             transition: opacity 0.5s, transform 0.5s;
-            pointer-events: none;
         }
 
-        @keyframes egg-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
+        .hint-touch.summoned .hint-text {
+            animation: none;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
-        @keyframes egg-float {
-            0%, 100% { margin-top: 0; }
-            50% { margin-top: -8px; }
-        }
-
-        @keyframes egg-aura {
-            0% { opacity: 0.3; width: 120%; height: 120%; }
-            100% { opacity: 0.6; width: 150%; height: 150%; }
+        /* Single combined animation: scale + float via transform only (no layout reflow) */
+        @keyframes egg-breathe {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.08) translateY(-8px); }
         }
 
         /* --- Gallery Finale --- */
@@ -1215,9 +1206,9 @@
 
                 // Show egg when gallery section is in view (~70%)
                 if(scrollProgress > 0.7 && !isSummoned && !isSummoning) {
-                    hintTouch.style.opacity = 1;
+                    hintTouch.classList.add('visible');
                 } else if(!isSummoned && !isSummoning) {
-                    hintTouch.style.opacity = 0;
+                    hintTouch.classList.remove('visible');
                 }
 
                 if(!isSummoned && !isSummoning) {
@@ -1241,8 +1232,8 @@
         );
         heartGroup.add(heartHitSphere);
 
-        // 1) Devil Egg click → summon final card
-        devilEgg.addEventListener('click', (e) => {
+        // 1) Hint area click → summon final card (whole area is clickable)
+        hintTouch.addEventListener('click', (e) => {
             e.stopPropagation();
             if (!isSummoning && !isSummoned) {
                 startSummonSequence();
@@ -1251,7 +1242,7 @@
 
         // 2) Background click → toggle crystal only
         window.addEventListener('click', (e) => {
-            if (e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.devil-egg') || e.target.closest('.gallery-content')) return;
+            if (e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.hint-touch') || e.target.closest('.gallery-content')) return;
             if (isSummoning) return;
 
             // Toggle crystal: hit invisible sphere around heart group
@@ -1266,7 +1257,7 @@
         function startSummonSequence() {
             isSummoning = true;
             // Hide egg via CSS class (no GSAP/CSS animation conflict)
-            devilEgg.classList.add('summoning');
+            hintTouch.classList.add('summoned');
 
             const circleAnim = { speed: 0.005, opacity: magicPlane.material.opacity };
 
@@ -1286,7 +1277,8 @@
                     finalCard.classList.add('active');
                     gsap.to(magicPlane.material, {opacity: 0.2, duration: 1});
                     gsap.to(ringPlane.material, {opacity: 0.1, duration: 1});
-                    hintTouch.style.opacity = 0;
+                    hintTouch.classList.remove('visible');
+                    hintTouch.style.pointerEvents = 'none';
                     isSummoning = false;
                     isSummoned = true;
                 }
