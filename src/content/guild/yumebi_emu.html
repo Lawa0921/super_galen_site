@@ -758,6 +758,9 @@
                 // Unlock Scroll (Y)
                 document.body.style.overflowY = 'auto';
 
+                // Refresh ScrollTrigger after unlocking body
+                ScrollTrigger.refresh();
+
                 // Trigger initial GSAP reveals
                 gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
                     gsap.fromTo(elem, {opacity:0, y:30}, {opacity:1, y:0, duration:1, delay:1 + (i*0.1)});
@@ -829,50 +832,44 @@
             gsap.to(dreamSub, {opacity: 1, delay: 0.5, duration: 1});
             dreamSub.innerText = "Click to Enter";
         };
+        loadingManager.onError = (url) => {
+            console.error('Error loading:', url);
+            dreamSub.innerText = "Dream Fragment Missing...";
+            gsap.to(dreamText, {opacity: 1, duration: 1});
+            gsap.to(dreamSub, {opacity: 1, delay: 0.5, duration: 1});
+        };
 
-        // Bloom
-        // const composer = new EffectComposer(renderer);
-        // composer.addPass(new RenderPass(scene, camera));
-
+        // Bloom - Disabled for performance
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.strength = 1.0; // Magical Glow
+        bloomPass.strength = 1.0;
         bloomPass.radius = 0.6;
         bloomPass.threshold = 0.1;
-        // composer.addPass(bloomPass);
 
         // --- MAGIC CIRCLE ---
-        // Create a custom texture for the magic circle
         const magicCanvas = document.createElement('canvas');
-        // PERFORMANCE: Reduced resolution
         magicCanvas.width = 512; magicCanvas.height = 512;
         const ctx = magicCanvas.getContext('2d');
-
-        // Scale down context to match reduced resolution
         ctx.scale(0.5, 0.5);
 
-        // --- SIMPLIFIED COLORS: Purple/White/Pink monochrome ---
-
-        // Outer Glow Ring
-        ctx.shadowColor = '#fff'; // White Glow
+        // --- SIMPLIFIED COLORS ---
+        ctx.shadowColor = '#fff';
         ctx.shadowBlur = 20;
-        ctx.strokeStyle = '#9370db'; // Purple
+        ctx.strokeStyle = '#9370db';
         ctx.lineWidth = 8;
         ctx.beginPath();
         ctx.arc(512, 512, 400, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Middle Ring
         ctx.shadowBlur = 0;
         ctx.lineWidth = 4;
-        ctx.strokeStyle = '#fff'; // White
+        ctx.strokeStyle = '#fff';
         ctx.beginPath();
         ctx.arc(512, 512, 360, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Pentagram
-        ctx.shadowColor = '#FF69B4'; // Pink Glow
+        ctx.shadowColor = '#FF69B4';
         ctx.shadowBlur = 15;
-        ctx.strokeStyle = '#9370db'; // Purple
+        ctx.strokeStyle = '#9370db';
         ctx.lineWidth = 5;
         ctx.beginPath();
         for(let i=0; i<5; i++) {
@@ -885,7 +882,6 @@
         ctx.closePath();
         ctx.stroke();
 
-        // Runes (Simplified drawing for performance)
         ctx.font = 'bold 60px "Cinzel", serif';
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
@@ -904,14 +900,14 @@
         }
 
         const magicTex = new THREE.CanvasTexture(magicCanvas);
-        magicTex.anisotropy = 4; // Reduce Anisotropy
+        magicTex.anisotropy = 4;
 
         const magicPlane = new THREE.Mesh(
             new THREE.PlaneGeometry(40, 40),
             new THREE.MeshBasicMaterial({
                 map: magicTex,
                 transparent: true,
-                opacity: 0.1, // Start LOW for readability
+                opacity: 0.1,
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
@@ -920,19 +916,18 @@
         magicPlane.position.z = -5;
         scene.add(magicPlane);
 
-        // Second Magic Ring (Counter-rotating)
+        // Ring
         const magicRingCanvas = document.createElement('canvas');
-        magicRingCanvas.width = 256; magicRingCanvas.height = 256; // PERFORMANCE: Lower res
+        magicRingCanvas.width = 256; magicRingCanvas.height = 256;
         const rCtx = magicRingCanvas.getContext('2d');
-        rCtx.scale(0.5, 0.5); // Match resolution
-        rCtx.strokeStyle = '#fff'; // White
+        rCtx.scale(0.5, 0.5);
+        rCtx.strokeStyle = '#fff';
         rCtx.lineWidth = 2;
-        rCtx.shadowColor = '#FF69B4'; // Pink
+        rCtx.shadowColor = '#FF69B4';
         rCtx.shadowBlur = 10;
 
-        // Complex geometric pattern
         rCtx.translate(256, 256);
-        for(let i=0; i<8; i++) { // Fewer shapes
+        for(let i=0; i<8; i++) {
              rCtx.rotate(Math.PI / 4);
              rCtx.strokeRect(-150, -150, 300, 300);
         }
@@ -943,38 +938,45 @@
             new THREE.MeshBasicMaterial({
                 map: ringTex,
                 transparent: true,
-                opacity: 0.05, // Start LOW
+                opacity: 0.05,
                 side: THREE.DoubleSide,
                 depthWrite: false,
                 blending: THREE.AdditiveBlending
             })
         );
-        ringPlane.position.z = -4; // Slightly in front
+        ringPlane.position.z = -4;
         scene.add(ringPlane);
 
         // --- SOUL GEM (INTERACTIVE CENTER) ---
         const gemGeo = new THREE.IcosahedronGeometry(2, 0);
-        const gemMatCore = new THREE.MeshPhysicalMaterial({
+        // CHANGED: Use Standard material for reliable rendering without env map
+        const gemMatCore = new THREE.MeshStandardMaterial({
             color: 0xff1493, // Deep Pink
             emissive: 0xff1493,
-            emissiveIntensity: 0.5,
-            metalness: 0.8,
+            emissiveIntensity: 0.8,
+            metalness: 0.5,
             roughness: 0.2,
-            transmission: 0.8, // Glassy
-            thickness: 1,
-            clearcoat: 1
+            transparent: true,
+            opacity: 0.9
         });
 
         const soulGem = new THREE.Mesh(gemGeo, gemMatCore);
-        soulGem.position.z = -2; // In front of magic circle
+        soulGem.position.z = -2;
         scene.add(soulGem);
+
+        // Add light for Standard Material
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xff69b4, 1, 100);
+        pointLight.position.set(0, 0, 10);
+        scene.add(pointLight);
 
         // --- NEBULA / FOG ---
         const cloudCanvas = document.createElement('canvas');
-        cloudCanvas.width = 64; cloudCanvas.height = 64; // PERFORMANCE: Reduced
+        cloudCanvas.width = 64; cloudCanvas.height = 64;
         const cCtx = cloudCanvas.getContext('2d');
         const grd = cCtx.createRadialGradient(32,32,0, 32,32,32);
-        grd.addColorStop(0, 'rgba(147, 112, 219, 0.2)'); // Purple
+        grd.addColorStop(0, 'rgba(147, 112, 219, 0.2)');
         grd.addColorStop(1, 'rgba(0,0,0,0)');
         cCtx.fillStyle = grd;
         cCtx.fillRect(0,0,64,64);
@@ -989,7 +991,7 @@
         });
 
         const clouds = [];
-        for(let i=0; i<8; i++) { // Reduce count
+        for(let i=0; i<8; i++) {
             const m = cloudMat.clone();
             const cloud = new THREE.Sprite(m);
             cloud.position.set((Math.random()-0.5)*60, (Math.random()-0.5)*60, -20 + Math.random()*10);
@@ -1001,7 +1003,6 @@
 
         // --- GEM HEART ---
         const heartGroup = new THREE.Group();
-        // Place deep in scene
         heartGroup.position.z = -10;
         scene.add(heartGroup);
 
@@ -1033,43 +1034,38 @@
         heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
         heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
 
-        // 3. Voronoi/Shattering simulation via manually placed triangles/shapes
-        const baseGeo = new THREE.ShapeGeometry(heartShape, 6); // PERFORMANCE: Low tessellation (6)
+        // 3. Voronoi/Shattering simulation
+        const baseGeo = new THREE.ShapeGeometry(heartShape, 6);
         baseGeo.center();
-        baseGeo.scale(1, -1, 1); // Flip
+        baseGeo.scale(1, -1, 1);
         baseGeo.scale(0.8, 0.8, 1);
 
         const pos = baseGeo.attributes.position;
         const index = baseGeo.index;
         const shards = [];
 
-        // Gem Material
-        // Use Physical Material for glass effect
-        const gemMat = new THREE.MeshPhysicalMaterial({
+        // Gem Material - CHANGED to Standard
+        const gemMat = new THREE.MeshStandardMaterial({
             color: 0xff1493, // Deep Pink
-            metalness: 0.1,
-            roughness: 0.1,
-            transmission: 0.6, // Glassy
-            thickness: 1, // Reduced thickness
-            clearcoat: 1,
+            metalness: 0.5,
+            roughness: 0.2,
             transparent: true,
             opacity: 0.8,
             emissive: 0x440022,
             side: THREE.DoubleSide
         });
 
-        // Image Material (for the front face)
+        // Image Material
         const picMat = new THREE.MeshBasicMaterial({
             color: 0xffffff,
             map: textures[0],
             transparent: true,
-            opacity: 0.5 // Holographic
+            opacity: 0.5
         });
 
         // Loop triangles
         const cnt = index ? index.count : pos.count;
         for(let i=0; i<cnt; i+=3) {
-            // Get vertices for this shard
             let a, b, c;
             if(index) {
                 a = index.getX(i); b = index.getX(i+1); c = index.getX(i+2);
@@ -1083,51 +1079,41 @@
 
             const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
 
-            // Create a Shape from these 3 points for extrusion
             const triangleShape = new THREE.Shape();
             triangleShape.moveTo(v1.x, v1.y);
             triangleShape.lineTo(v2.x, v2.y);
             triangleShape.lineTo(v3.x, v3.y);
             triangleShape.lineTo(v1.x, v1.y);
 
-            // Extrude this shard
             const shardGeo = new THREE.ExtrudeGeometry(triangleShape, {
-                depth: 0.1, // PERFORMANCE: Reduced depth
+                depth: 0.1,
                 bevelEnabled: true,
                 bevelSize: 0.05,
                 bevelThickness: 0.05,
-                bevelSegments: 1 // PERFORMANCE: Reduced bevel segments
+                bevelSegments: 1
             });
 
-            // UV Mapping for the Picture: Map based on position relative to heart bounds
-            // Approximate bounds: x: -10 to 10, y: -10 to 10
             const uvAttr = shardGeo.attributes.uv;
             const posAttr = shardGeo.attributes.position;
             for(let j=0; j<uvAttr.count; j++) {
                 const x = posAttr.getX(j);
                 const y = posAttr.getY(j);
-                // Map -10..10 to 0..1
                 uvAttr.setXY(j, (x/20) + 0.5, (y/20) + 0.5);
             }
 
-            // Center geometry locally
             shardGeo.translate(-center.x, -center.y, -center.z);
 
-            // Mesh with 2 materials (Face=pic, Sides=gem)
             const mesh = new THREE.Mesh(shardGeo, [picMat, gemMat]);
 
             mesh.position.copy(center);
 
-            // Animation Data
             mesh.userData = {
                 homePos: center.clone(),
-                // Breathing/Orbit state (EXPANDED range for "Void" feel)
                 orbitOffset: center.clone().multiplyScalar(Math.random() * 2 + 0.5).add(new THREE.Vector3((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*30)),
                 rotSpeed: (Math.random()-0.5) * 0.05,
                 driftPhase: Math.random() * Math.PI * 2
             };
 
-            // Start expanded
             mesh.position.add(mesh.userData.orbitOffset);
             mesh.rotation.x = Math.random() * Math.PI;
             mesh.rotation.y = Math.random() * Math.PI;
@@ -1136,29 +1122,14 @@
             shards.push(mesh);
         }
 
-        // --- PARTICLES (SPARKLES) ---
-        const sparkleCanvas = document.createElement('canvas');
-        sparkleCanvas.width = 64; sparkleCanvas.height = 64;
-        const sCtx = sparkleCanvas.getContext('2d');
-        sCtx.fillStyle = '#FFFFFF';
-        // Draw cross star
-        sCtx.beginPath();
-        sCtx.moveTo(32, 0); sCtx.lineTo(36, 28); sCtx.lineTo(64, 32); sCtx.lineTo(36, 36); sCtx.lineTo(32, 64);
-        sCtx.lineTo(28, 36); sCtx.lineTo(0, 32); sCtx.lineTo(28, 28); sCtx.closePath();
-        sCtx.fill();
-        // Blur center
-        sCtx.filter = 'blur(4px)';
-        sCtx.beginPath();
-        sCtx.arc(32, 32, 10, 0, Math.PI*2);
-        sCtx.fill();
-
+        // --- PARTICLES ---
         const sparkleTex = new THREE.CanvasTexture(sparkleCanvas);
         const partGeo = new THREE.BufferGeometry();
-        const pCnt = 80; // PERFORMANCE: Reduced count significantly
+        const pCnt = 80;
         const pPos = new Float32Array(pCnt * 3);
         const pSizes = new Float32Array(pCnt);
         for(let i=0; i<pCnt*3; i+=3) {
-            pPos[i] = (Math.random()-0.5)*80; // Wider area
+            pPos[i] = (Math.random()-0.5)*80;
             pPos[i+1] = (Math.random()-0.5)*80;
             pPos[i+2] = (Math.random()-0.5)*50;
             pSizes[i/3] = Math.random() * 1.5;
@@ -1184,11 +1155,9 @@
         let currentTexIdx = 0;
         let isSummoning = false;
 
-        // UI Elements
         const hintTouch = document.getElementById('hint-touch');
         const finalCard = document.getElementById('final-card');
 
-        // Scroll
         gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
         ScrollTrigger.create({
             trigger: "body",
@@ -1197,9 +1166,8 @@
             scrub: 1,
             onUpdate: (self) => {
                 scrollProgress = self.progress;
-                camera.position.z = 30 - (scrollProgress * 20); // Move closer
+                camera.position.z = 30 - (scrollProgress * 20);
 
-                // Show Hint only at very bottom
                 if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
                     hintTouch.style.opacity = 1;
                     soulGem.visible = true;
@@ -1208,15 +1176,12 @@
                     if(!isCrystalized && !isSummoning) soulGem.visible = false;
                 }
 
-                // Magic Circle Brightness Ramp (Only if not already summoned/crystalized)
-                // Start low (0.1) -> End High (0.4)
                 if(!isCrystalized && !isSummoning) {
                     const targetOpacity = 0.1 + (scrollProgress * 0.3);
                     magicPlane.material.opacity = targetOpacity;
                     ringPlane.material.opacity = targetOpacity * 0.5;
                 }
 
-                // Rotate heart (Always rotate)
                 heartGroup.rotation.y = scrollProgress * Math.PI * 4;
                 if(!isSummoning) {
                     magicPlane.rotation.z = -scrollProgress * Math.PI * 2;
@@ -1224,38 +1189,24 @@
             }
         });
 
-        // --- CLICK HANDLER (RAYCASTER) ---
         window.addEventListener('click', (e) => {
-            // Ignore if clicking a link or interactive element
             if (e.target.closest('a') || e.target.closest('.bubble-card')) return;
 
-            // GLOBAL TOGGLE (Middle of page)
-            // If not at bottom, toggle crystal without summoning
             if(scrollProgress <= 0.9 && !isSummoning) {
                 toggleCrystal(!isCrystalized);
                 return;
             }
 
-            // BOTTOM INTERACTION (Raycaster)
-            // Update Raycaster
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects([soulGem, magicPlane]);
 
-            console.log(`Click at ${mouse.x.toFixed(2)}, ${mouse.y.toFixed(2)} | Intersects: ${intersects.length} | Scroll: ${scrollProgress.toFixed(2)} | Summoning: ${isSummoning} | Crystalized: ${isCrystalized}`);
-
             if(intersects.length > 0) {
-                // Clicked Soul Gem or Circle
-                // RESTRICTION: Only at bottom (> 0.9)
                 if(scrollProgress > 0.9 && !isCrystalized && !isSummoning) {
                     startSummonSequence();
                 } else if(isCrystalized) {
-                    // Optional: Touching circle again could shatter it back?
-                    // Let's allow toggling for fun
-                    toggleCrystal(false); // Shatter
+                    toggleCrystal(false);
                 }
             } else {
-                // Clicked Background
-                // If Crystalized (assembled), clicking background shatters it
                 if(isCrystalized) {
                     toggleCrystal(false);
                 }
@@ -1263,18 +1214,14 @@
         });
 
         function startSummonSequence() {
-            console.log("START SUMMON SEQUENCE");
             isSummoning = true;
-            // 1. Hide Hint
             gsap.to(hintTouch, {opacity: 0, duration: 0.5});
 
-            // 2. Summon Animation Sequence
-            // Accelerate Magic Circle
             const circleAnim = { speed: 0.005, opacity: magicPlane.material.opacity };
 
             gsap.to(circleAnim, {
-                speed: 0.1, // Super fast spin
-                opacity: 1, // Bright glow
+                speed: 0.1,
+                opacity: 1,
                 duration: 2,
                 ease: "power2.in",
                 onUpdate: () => {
@@ -1282,18 +1229,12 @@
                     magicPlane.material.opacity = circleAnim.opacity;
                     ringPlane.rotation.z += circleAnim.speed;
                     ringPlane.material.opacity = circleAnim.opacity * 0.5;
-                    // soulGem pulse
                     soulGem.scale.setScalar(1 + Math.sin(Date.now() * 0.01) * 0.2);
                 },
                 onComplete: () => {
-                    console.log("SUMMON COMPLETE");
-                    // 3. Trigger Crystalize (Assemble)
                     toggleCrystal(true);
-
-                    // 4. RESET BRIGHTNESS & BLOOM
-                    gsap.to(magicPlane.material, {opacity: 0.2, duration: 1}); // Dim circle
+                    gsap.to(magicPlane.material, {opacity: 0.2, duration: 1});
                     gsap.to(ringPlane.material, {opacity: 0.1, duration: 1});
-
                     isSummoning = false;
                 }
             });
@@ -1303,8 +1244,6 @@
             isCrystalized = assemble;
 
             if(assemble) {
-                // ASSEMBLE
-                // Flash Effect if summoning
                 if(isSummoning) {
                      gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
                 }
@@ -1320,21 +1259,18 @@
                     gsap.to(m.rotation, {x:0, y:0, z:0, duration: 1});
                 });
 
-                // Material Changes
                 gsap.to(picMat, {opacity: 1.0, duration: 1});
+                // Standard material doesn't use transmission, so we control opacity
                 gsap.to(gemMat, {
-                    transmission: 0.1, // Almost opaque
                     opacity: 1.0,
                     roughness: 0.4,
                     duration: 1
                 });
 
-                // UI Updates
                 finalCard.classList.add('active');
-                soulGem.visible = false; // Hide gem when assembled
+                soulGem.visible = false;
 
             } else {
-                // SHATTER (EXPLODE)
                 shards.forEach(m => {
                     gsap.to(m.position, {
                         x: m.userData.homePos.x + m.userData.orbitOffset.x,
@@ -1351,19 +1287,15 @@
                     });
                 });
 
-                // Material Changes
                 gsap.to(picMat, {opacity: 0.5, duration: 1});
                 gsap.to(gemMat, {
-                    transmission: 0.6,
                     opacity: 0.8,
-                    roughness: 0.1,
+                    roughness: 0.2,
                     duration: 1
                 });
 
-                // UI Updates
                 finalCard.classList.remove('active');
 
-                // Only show hint/gem again if we are at bottom
                 if(scrollProgress > 0.9) {
                      gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
                      soulGem.visible = true;
@@ -1371,22 +1303,18 @@
             }
         }
 
-        // Loop
         gsap.ticker.add(() => {
             const t = Date.now() * 0.001;
 
             if(!isCrystalized) {
-                // Breathing + Drifting in Shattered State
                 shards.forEach(m => {
                     m.rotation.z += m.userData.rotSpeed;
                     m.position.y += Math.sin(t + m.userData.driftPhase) * 0.01;
                 });
             } else {
-                 // Gently float when assembled
                  heartGroup.position.y = Math.sin(t) * 0.5;
             }
 
-            // TEXTURE CYCLE: Running ALWAYS now
             let angle = Math.abs(heartGroup.rotation.y % (Math.PI*2));
             let idx = Math.floor(angle / (Math.PI/3));
             if(idx !== currentTexIdx) {
@@ -1395,8 +1323,6 @@
                 picMat.map = t;
                 picMat.needsUpdate = true;
 
-                // TRANSITION EFFECT: Glitch/Flash on switch
-                // 1. Flash Color
                 const flashColor = {r: 10, g: 10, b: 10};
                 gsap.to(picMat.color, {
                     r: flashColor.r, g: flashColor.g, b: flashColor.b,
@@ -1408,7 +1334,6 @@
                     }
                 });
 
-                // 2. Shake Shards slightly
                 const shakeIntensity = isCrystalized ? 0.2 : 2;
                 shards.forEach(m => {
                     gsap.to(m.position, {
@@ -1422,52 +1347,44 @@
                 });
             }
 
-            // Magic Circle Animation (if not summoning)
             if(!isSummoning) {
                  magicPlane.rotation.z -= 0.005;
                  ringPlane.rotation.z += 0.003;
             }
 
-            // Soul Gem Animation
             soulGem.rotation.y += 0.02;
             soulGem.rotation.x += 0.01;
             soulGem.position.y = Math.sin(t * 2) * 0.5;
 
-            // HOVER EFFECT ON MAGIC CIRCLE / GEM
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects([soulGem, magicPlane]);
             if(intersects.length > 0 && !isCrystalized && !isSummoning && scrollProgress > 0.9) {
-                // Hover state - ONLY AT BOTTOM
                 document.body.style.cursor = 'pointer';
                 magicPlane.scale.setScalar(1.05);
                 soulGem.scale.setScalar(1.2);
             } else {
-                document.body.style.cursor = 'none'; // Restore custom cursor
+                document.body.style.cursor = 'none';
                 if(!isSummoning) {
                     magicPlane.scale.setScalar(1.0);
                     soulGem.scale.setScalar(1.0);
                 }
             }
 
-            // Nebula
             clouds.forEach(c => {
                 c.material.rotation += c.userData.speed;
-                // Pulse size
                 c.scale.setScalar(30 + Math.sin(t * c.userData.speed * 10)*5);
             });
 
-            // Particles
             particles.rotation.y += 0.002;
             const positions = particles.geometry.attributes.position.array;
             for(let i=1; i<positions.length; i+=3) {
-                positions[i] += Math.sin(t + positions[i-1]) * 0.05; // Float Y
+                positions[i] += Math.sin(t + positions[i-1]) * 0.05;
             }
             particles.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         });
 
-        // Floating Runes Generation
         function createFloatingRunes() {
             const symbols = ['★', '☾', '☀', '✦', '✧', '⚝'];
             for(let i=0; i<15; i++) {
@@ -1487,7 +1404,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
