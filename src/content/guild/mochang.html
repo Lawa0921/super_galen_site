@@ -214,7 +214,7 @@
         .quest-item {
             background: rgba(255,255,255,0.02); border: 1px solid #333;
             padding: 0.6rem; text-align: center; border-radius: 3px;
-            transition: 0.3s; cursor: default;
+            transition: background 0.3s, border-color 0.3s; cursor: default;
         }
         .quest-item:hover {
             background: rgba(212, 175, 55, 0.08); border-color: var(--c-gold);
@@ -230,7 +230,7 @@
         }
         .keyword {
             border: 1px solid #444; padding: 0.3rem 1rem; border-radius: 50px;
-            font-size: 0.8rem; transition: 0.3s; cursor: pointer; color: #aaa;
+            font-size: 0.8rem; transition: background 0.3s, border-color 0.3s, color 0.3s; cursor: pointer; color: #aaa;
             background: rgba(0,0,0,0.2);
         }
         .keyword:hover {
@@ -276,11 +276,10 @@
             section { padding: 3rem 1rem; }
         }
 
-        /* Initial Hidden Wrapper */
+        /* Initial Hidden Wrapper — opacity controlled by GSAP */
         #main-content {
             opacity: 0;
             pointer-events: none;
-            transition: opacity 1s ease-in-out;
             width: 100%;
         }
     </style>
@@ -703,7 +702,8 @@
             gsap.utils.toArray('.quest-grid').forEach(grid => {
                 gsap.from(grid.children, {
                     y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
-                    scrollTrigger: { trigger: grid, start: "top 90%" }
+                    immediateRender: false,
+                    scrollTrigger: { trigger: grid, start: "top 90%", toggleActions: "play none none none" }
                 });
             });
 
