@@ -507,6 +507,14 @@
             filter: drop-shadow(0 0 25px var(--accent-pink)) drop-shadow(0 0 50px rgba(148, 0, 60, 0.8));
         }
 
+        .devil-egg.summoning {
+            animation: none;
+            opacity: 0;
+            transform: scale(1.5);
+            transition: opacity 0.5s, transform 0.5s;
+            pointer-events: none;
+        }
+
         @keyframes egg-pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.08); }
@@ -1225,6 +1233,13 @@
 
         // --- CLICK HANDLERS (separated) ---
 
+        // Invisible hit sphere around heart for easier shard clicking
+        const heartHitSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(12, 8, 8),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        heartGroup.add(heartHitSphere);
+
         // 1) Devil Egg click → summon final card
         devilEgg.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1233,21 +1248,21 @@
             }
         });
 
-        // 2) Shard click (raycaster) + dismiss summon
+        // 2) Background click → toggle crystal / dismiss summon
         window.addEventListener('click', (e) => {
-            if (e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.devil-egg')) return;
+            if (e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.devil-egg') || e.target.closest('.gallery-content')) return;
             if (isSummoning) return;
 
             // Dismiss final card if showing
-            if (isSummoned && !e.target.closest('.gallery-content')) {
+            if (isSummoned) {
                 dismissSummon();
                 return;
             }
 
-            // Toggle crystal assembly via raycaster on shards
+            // Toggle crystal: hit invisible sphere around heart group
             raycaster.setFromCamera(mouse, camera);
-            const shardHit = raycaster.intersectObjects(shards);
-            if (shardHit.length > 0) {
+            const hitArea = raycaster.intersectObjects([heartHitSphere]);
+            if (hitArea.length > 0) {
                 toggleCrystal(!isCrystalized);
             }
         });
@@ -1255,8 +1270,8 @@
         // --- SUMMON: soul gem → final card ---
         function startSummonSequence() {
             isSummoning = true;
-            // Hide egg during summon
-            gsap.to(devilEgg, {scale: 1.5, opacity: 0, duration: 0.5});
+            // Hide egg via CSS class (no GSAP/CSS animation conflict)
+            devilEgg.classList.add('summoning');
 
             const circleAnim = { speed: 0.005, opacity: magicPlane.material.opacity };
 
@@ -1286,9 +1301,9 @@
         function dismissSummon() {
             isSummoned = false;
             finalCard.classList.remove('active');
+            devilEgg.classList.remove('summoning');
             if(scrollProgress > 0.9) {
-                gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
-                gsap.to(devilEgg, {scale: 1, opacity: 1, duration: 0.5, delay: 0.5});
+                hintTouch.style.opacity = '1';
             }
         }
 
