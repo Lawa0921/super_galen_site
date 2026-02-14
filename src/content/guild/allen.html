@@ -86,6 +86,55 @@
             max-width: 1000px; width: 100%; position: relative;
         }
 
+        /* --- Ruins Overlay --- */
+        .ruins-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                repeating-linear-gradient(45deg, rgba(255,0,0,0.05) 0, rgba(255,0,0,0.05) 10px, transparent 10px, transparent 20px),
+                radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none; z-index: -1;
+            opacity: 1; transition: opacity 2s ease;
+        }
+        .ruins-active .ruins-overlay { opacity: 0; }
+
+        /* --- News Ticker (Destroyed State) --- */
+        .news-ticker-container {
+            position: absolute; bottom: 10%; width: 100%; overflow: hidden;
+            background: rgba(255, 0, 0, 0.1); border-top: 1px solid red; border-bottom: 1px solid red;
+            padding: 0.5rem 0; font-family: var(--f-mono); color: red;
+            display: flex; white-space: nowrap; pointer-events: none; opacity: 1; transition: opacity 1s;
+        }
+        .news-ticker-content {
+            display: inline-block; animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* --- Archives (News Cards) --- */
+        .archive-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem; margin-top: 3rem; opacity: 0; transform: translateY(20px); transition: 1s;
+        }
+        .archive-card {
+            background: rgba(0, 255, 255, 0.05); border: 1px solid var(--c-cyan);
+            padding: 1.5rem; position: relative; overflow: hidden;
+        }
+        .archive-card::before {
+            content: 'ARCHIVE'; position: absolute; top: 0.5rem; right: 0.5rem;
+            font-size: 0.6rem; color: var(--c-cyan); opacity: 0.5; font-family: var(--f-mono);
+        }
+        .archive-date {
+            color: var(--c-cyan); font-family: var(--f-mono); font-size: 0.8rem; display: block; margin-bottom: 0.5rem;
+        }
+        .archive-title {
+            color: #fff; font-family: var(--f-tech); font-size: 1.2rem; margin-bottom: 0.5rem;
+        }
+        .archive-desc {
+            color: #aaa; font-size: 0.9rem; line-height: 1.5;
+        }
+
         /* --- Hero --- */
         .hero-title {
             font-family: var(--f-tech); font-size: clamp(3rem, 8vw, 6rem);
@@ -300,6 +349,17 @@
 
         <!-- Reconstruction Interaction -->
         <section id="reconstruction" style="height: 100vh; position: relative; pointer-events: none;">
+            <div class="ruins-overlay"></div>
+
+            <div class="news-ticker-container" id="ruin-ticker">
+                <div class="news-ticker-content" style="padding-right: 50px;">
+                     ALERT: SEISMIC ACTIVITY DETECTED /// FACTORY INTEGRITY COMPROMISED /// PRODUCTION HALTED /// INITIATING EMERGENCY PROTOCOLS
+                </div>
+                <div class="news-ticker-content">
+                     ALERT: SEISMIC ACTIVITY DETECTED /// FACTORY INTEGRITY COMPROMISED /// PRODUCTION HALTED /// INITIATING EMERGENCY PROTOCOLS
+                </div>
+            </div>
+
             <div class="container" style="text-align: center; pointer-events: auto;">
                 <h2 class="gs-reveal" style="font-family: var(--f-tech); font-size: 3rem; color: #fff; margin-bottom: 1rem;">RECONSTRUCTION</h2>
                 <p class="gs-reveal" style="font-family: var(--f-mono); color: var(--c-yellow); margin-bottom: 2rem;">
@@ -310,6 +370,38 @@
                     padding: 1rem 3rem; font-family: var(--f-tech); font-size: 1.2rem; cursor: pointer;
                     transition: 0.3s; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
                 ">INITIATE REPAIR</button>
+
+                <!-- Post-Repair Content (Hidden Initially) -->
+                <div id="post-repair-content" style="display: none; opacity: 0; margin-top: 3rem;">
+                    <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" style="
+                        display: inline-block; background: var(--c-cyan); color: #000; text-decoration: none;
+                        padding: 1rem 3rem; font-family: var(--f-tech); font-weight: 700; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+                    ">SUPPORT THE REBOOT</a>
+
+                    <div class="archive-grid">
+                        <div class="archive-card">
+                            <span class="archive-date">2024.04.03</span>
+                            <div class="archive-title">TOTAL COLLAPSE</div>
+                            <div class="archive-desc">
+                                403地震重創廠房。所有機台位移，結構損毀。生產線全面停擺。損失難以估計。
+                            </div>
+                        </div>
+                        <div class="archive-card">
+                            <span class="archive-date">2024.04.04</span>
+                            <div class="archive-title">COMMUNITY RALLY</div>
+                            <div class="archive-desc">
+                                啟動緊急募資。桌遊圈好友與客戶紛紛響應。「墨帥不能倒」成為最強大的後盾。
+                            </div>
+                        </div>
+                        <div class="archive-card">
+                            <span class="archive-date">2024.04.10</span>
+                            <div class="archive-title">SYSTEM ONLINE</div>
+                            <div class="archive-desc">
+                                奇蹟般的一週重啟。新廠房定位，機台校正完成。負債雖重，但信念更強。
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -471,6 +563,9 @@
 
             // Link Button
             const btn = document.getElementById('btn-repair');
+            const postRepair = document.getElementById('post-repair-content');
+            const ruinTicker = document.getElementById('ruin-ticker');
+
             if(btn) {
                 btn.addEventListener('click', () => {
                     // Animate Reconstruction
@@ -505,9 +600,25 @@
                         delay: 1.5
                     });
 
+                    // Button UI Update
                     btn.innerHTML = "SYSTEM RESTORED";
                     btn.style.borderColor = "#00ff00";
                     btn.style.color = "#00ff00";
+                    btn.style.pointerEvents = "none"; // Prevent double click
+
+                    // Fade out ruins overlay
+                    const overlay = document.querySelector('.ruins-overlay');
+                    if(overlay) overlay.style.opacity = '0';
+
+                    // Hide Ticker
+                    if(ruinTicker) {
+                        gsap.to(ruinTicker, { opacity: 0, duration: 0.5 });
+                    }
+
+                    // Reveal Post-Repair Content
+                    postRepair.style.display = 'block';
+                    gsap.to(postRepair, { opacity: 1, duration: 1, delay: 1.5 });
+                    gsap.to('.archive-grid', { opacity: 1, y: 0, duration: 1, delay: 2, stagger: 0.2 });
                 });
             }
 
