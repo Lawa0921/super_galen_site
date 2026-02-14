@@ -950,13 +950,9 @@
 
         // --- SOUL GEM (INTERACTIVE CENTER) ---
         const gemGeo = new THREE.IcosahedronGeometry(2, 0);
-        // CHANGED: Use Standard material for reliable rendering without env map
-        const gemMatCore = new THREE.MeshStandardMaterial({
+        // Use Basic material for guaranteed visibility (Glowing Core)
+        const gemMatCore = new THREE.MeshBasicMaterial({
             color: 0xff1493, // Deep Pink
-            emissive: 0xff1493,
-            emissiveIntensity: 0.8,
-            metalness: 0.5,
-            roughness: 0.2,
             transparent: true,
             opacity: 0.9
         });
@@ -965,12 +961,16 @@
         soulGem.position.z = -2;
         scene.add(soulGem);
 
-        // Add light for Standard Material
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xff69b4, 1, 100);
-        pointLight.position.set(0, 0, 10);
-        scene.add(pointLight);
+        // Add glowing outline to Soul Gem
+        const gemOutlineGeo = new THREE.IcosahedronGeometry(2.2, 0);
+        const gemOutlineMat = new THREE.MeshBasicMaterial({
+            color: 0xffd700, // Gold
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5
+        });
+        const gemOutline = new THREE.Mesh(gemOutlineGeo, gemOutlineMat);
+        soulGem.add(gemOutline);
 
         // --- NEBULA / FOG ---
         const cloudCanvas = document.createElement('canvas');
@@ -1045,14 +1045,11 @@
         const index = baseGeo.index;
         const shards = [];
 
-        // Gem Material - CHANGED to Standard
-        const gemMat = new THREE.MeshStandardMaterial({
+        // Gem Material - Back to Basic for visibility
+        const gemMat = new THREE.MeshBasicMaterial({
             color: 0xff1493, // Deep Pink
-            metalness: 0.5,
-            roughness: 0.2,
             transparent: true,
-            opacity: 0.8,
-            emissive: 0x440022,
+            opacity: 0.6,
             side: THREE.DoubleSide
         });
 
@@ -1261,10 +1258,8 @@
                 });
 
                 gsap.to(picMat, {opacity: 1.0, duration: 1});
-                // Standard material doesn't use transmission, so we control opacity
                 gsap.to(gemMat, {
-                    opacity: 1.0,
-                    roughness: 0.4,
+                    opacity: 0.9,
                     duration: 1
                 });
 
@@ -1290,8 +1285,7 @@
 
                 gsap.to(picMat, {opacity: 0.5, duration: 1});
                 gsap.to(gemMat, {
-                    opacity: 0.8,
-                    roughness: 0.2,
+                    opacity: 0.6,
                     duration: 1
                 });
 
