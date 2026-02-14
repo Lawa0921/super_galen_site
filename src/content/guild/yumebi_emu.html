@@ -276,6 +276,7 @@
             animation: smoke-border 6s linear infinite;
             filter: blur(10px);
             opacity: 0.5; /* Reduced for less noise */
+            will-change: background-position;
         }
 
         /* Inner Smoke Fog */
@@ -531,8 +532,9 @@
             pointer-events: none; /* Let interactions fall through to canvas initially */
         }
 
-        /* Allow interaction on content */
-        #gallery > * { pointer-events: auto; }
+        /* Children inherit pointer-events: none from #gallery.
+           .hint-touch.visible and .gallery-content.active
+           explicitly set pointer-events: auto when needed. */
 
         .gallery-content {
             opacity: 0;
@@ -569,11 +571,6 @@
             pointer-events: auto;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.05); }
-        }
-
         .glow-text {
             color: var(--accent-pink);
             text-shadow: 0 0 10px var(--accent-pink);
@@ -593,6 +590,168 @@
             0% { transform: translateY(0) rotate(0deg); opacity: 0; }
             50% { opacity: 0.2; }
             100% { transform: translateY(-100px) rotate(45deg); opacity: 0; }
+        }
+
+        /* --- Hero --- */
+        .hero-quote {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            color: #fff;
+            font-style: italic;
+            text-shadow: 0 2px 5px #000;
+        }
+        .hero-scroll-hint {
+            position: absolute;
+            bottom: 50px;
+            animation: bounce 2s infinite;
+        }
+        .hero-scroll-hint i {
+            color: var(--accent-pink);
+            font-size: 2rem;
+            filter: drop-shadow(0 0 10px var(--accent-pink));
+        }
+
+        /* --- Identity --- */
+        .identity-panel {
+            max-width: 1000px;
+        }
+        .identity-avatar-col {
+            text-align: center;
+        }
+        .identity-name {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .identity-subtitle {
+            color: var(--accent-gold);
+            letter-spacing: 0.2em;
+            font-size: 0.9rem;
+        }
+        .grimoire-title {
+            font-size: 2rem;
+            color: var(--accent-pink);
+            margin-bottom: 1.5rem;
+        }
+        .lore-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #eee;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .lore-text--spaced {
+            margin-bottom: 2rem;
+        }
+        .magic-highlight {
+            color: var(--accent-gold);
+        }
+        .tag-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .skill-tag {
+            border: 1px solid var(--accent-purple);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .sparkle--1 { top: 20%; left: 10%; animation-delay: 0s; }
+        .sparkle--2 { top: 80%; right: 20%; animation-delay: 1s; }
+        .sparkle--3 { top: 10%; right: 10%; animation-delay: 2s; }
+
+        /* --- Sensory --- */
+        .section-heading {
+            text-align: center;
+            font-size: 3rem;
+            color: var(--accent-pink);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px var(--accent-pink);
+        }
+        .bubble-card--offset {
+            margin-top: 3rem;
+        }
+
+        /* --- Manifesto --- */
+        .manifesto-container {
+            max-width: 800px;
+            text-align: center;
+        }
+        .manifesto-icon-wrap {
+            margin-bottom: 2rem;
+        }
+        .manifesto-icon {
+            font-size: 3rem;
+            color: #ffd700;
+            opacity: 0.8;
+            animation: float-sparkle 4s infinite;
+            filter: drop-shadow(0 0 10px #ffd700);
+        }
+        .manifesto-title {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+        .manifesto-panel {
+            padding: 3rem;
+        }
+        .manifesto-quote {
+            font-size: 1.2rem;
+            line-height: 2;
+            font-style: italic;
+            color: #fff;
+        }
+        .manifesto-divider {
+            border: 0;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            margin: 2rem 0;
+        }
+        .manifesto-body {
+            font-size: 1.1rem;
+            color: #ddd;
+        }
+
+        /* --- Gallery / Final Card --- */
+        .final-card-title {
+            font-size: 1.8rem;
+            color: var(--accent-pink);
+            margin-bottom: 1rem;
+        }
+        .social-container--spaced {
+            margin: 2rem 0;
+        }
+        .digital-card-link-wrap {
+            margin-top: 2rem;
+        }
+        .digital-card-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--accent-cyan);
+            font-size: 1.2rem;
+        }
+        .final-footer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .heart-icon {
+            color: var(--accent-pink);
+        }
+        .footer-link {
+            color: #aaa;
+        }
+
+        /* --- Trail Sparkle (base; dynamic values set in JS) --- */
+        .trail-sparkle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 1;
+            transition: opacity 1s, transform 1s;
         }
 
         /* Mobile Adjustments */
@@ -626,56 +785,56 @@
     <main>
         <!-- Hero -->
         <section id="hero">
-            <div class="container" style="text-align: center;">
+            <div class="container identity-avatar-col">
                 <h2 class="hero-subtitle gs-reveal">LUCID DREAMER</h2>
                 <h1 class="hero-title gs-reveal" data-text="YUMEBI EMU">YUMEBI EMU</h1>
-                <p style="font-size: 1.5rem; margin-top: 1rem; color: #fff; font-style: italic; text-shadow: 0 2px 5px #000;" class="gs-reveal">
+                <p class="hero-quote gs-reveal">
                     "Eternal 20-year-old Idol"
                 </p>
             </div>
 
-            <div style="position: absolute; bottom: 50px; animation: bounce 2s infinite;">
-                <i class="fa-solid fa-gem" style="color: var(--accent-pink); font-size: 2rem; filter: drop-shadow(0 0 10px var(--accent-pink));"></i>
+            <div class="hero-scroll-hint">
+                <i class="fa-solid fa-gem"></i>
             </div>
         </section>
 
         <!-- Identity / Grimoire -->
         <section id="identity">
-            <div class="glass-panel container gs-reveal" style="max-width: 1000px;">
+            <div class="glass-panel container gs-reveal identity-panel">
                 <div class="two-col-grid">
                     <!-- Left: Avatar -->
-                    <div style="text-align: center;">
+                    <div class="identity-avatar-col">
                         <div class="profile-wrapper">
                             <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Yumebi Emu" class="profile-img">
-                            <div class="sparkle" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-                            <div class="sparkle" style="top: 80%; right: 20%; animation-delay: 1s;"></div>
-                            <div class="sparkle" style="top: 10%; right: 10%; animation-delay: 2s;"></div>
+                            <div class="sparkle sparkle--1"></div>
+                            <div class="sparkle sparkle--2"></div>
+                            <div class="sparkle sparkle--3"></div>
                         </div>
-                        <h2 style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--text-primary); text-shadow: 0 2px 10px rgba(0,0,0,0.5);">夢寐愛姆</h2>
-                        <p style="color: var(--accent-gold); letter-spacing: 0.2em; font-size: 0.9rem;">YUMEBI EMU</p>
+                        <h2 class="identity-name">夢寐愛姆</h2>
+                        <p class="identity-subtitle">YUMEBI EMU</p>
                     </div>
 
                     <!-- Right: Lore & Bio (UPDATED based on Self-Intro) -->
                     <div>
-                        <h3 class="cinzel-font" style="font-size: 2rem; color: var(--accent-pink); margin-bottom: 1.5rem;">Grimoire of Emu</h3>
-                        <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
-                            施展 <span style="color: var(--accent-gold);">[Time Freeze]</span> 魔法，讓我成為了永遠 20 歲的偶像。
+                        <h3 class="cinzel-font grimoire-title">Grimoire of Emu</h3>
+                        <p class="lore-text">
+                            施展 <span class="magic-highlight">[Time Freeze]</span> 魔法，讓我成為了永遠 20 歲的偶像。
                             很謝謝你注意到我，可以叫我愛姆！
                         </p>
-                        <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem; color: #eee; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+                        <p class="lore-text lore-text--spaced">
                             雖然觀眾常說我有 <span class="glow-text">"天然呆" (Natural Airhead)</span> 屬性，
                             但我堅信這是高深魔法的副作用——其實我很聰明的！(真的！)
                             透過 <span class="glow-text">ASMR 夢境魔法</span>，我將失眠者通通哄睡，陪伴所有孤獨的靈魂度過漫漫長夜。
                         </p>
 
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
-                            <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
+                        <div class="tag-container">
+                            <span class="skill-tag">
                                 <i class="fa-solid fa-moon"></i> ASMR Magic
                             </span>
-                            <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
+                            <span class="skill-tag">
                                 <i class="fa-solid fa-wand-sparkles"></i> Tarot Reading
                             </span>
-                            <span style="border: 1px solid var(--accent-purple); padding: 0.5rem 1rem; border-radius: 20px; color: #ddd; font-size: 0.9rem;">
+                            <span class="skill-tag">
                                 <i class="fa-solid fa-utensils"></i> Cooking
                             </span>
                         </div>
@@ -687,14 +846,14 @@
         <!-- Sensory Focus: Dream Bubbles -->
         <section id="sensory">
             <div class="container">
-                <h2 style="text-align: center; font-size: 3rem; color: var(--accent-pink); margin-bottom: 1rem; text-shadow: 0 0 20px var(--accent-pink);">DREAM FRAGMENTS</h2>
+                <h2 class="section-heading">DREAM FRAGMENTS</h2>
                 <div class="sensory-grid">
                     <div class="bubble-card gs-card">
                         <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes"></div>
                         <div class="bubble-glow"></div>
                         <span class="bubble-label">GAZE</span>
                     </div>
-                    <div class="bubble-card gs-card" style="margin-top: 3rem;">
+                    <div class="bubble-card gs-card bubble-card--offset">
                         <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Breath"></div>
                         <div class="bubble-glow"></div>
                         <span class="bubble-label">BREATH</span>
@@ -710,17 +869,17 @@
 
         <!-- Manifesto / Philosophy -->
         <section id="manifesto">
-            <div class="container gs-reveal" style="max-width: 800px; text-align: center;">
-                <div style="margin-bottom: 2rem;">
-                    <i class="fa-regular fa-sun" style="font-size: 3rem; color: #ffd700; opacity: 0.8; animation: float-sparkle 4s infinite; filter: drop-shadow(0 0 10px #ffd700);"></i>
+            <div class="container gs-reveal manifesto-container">
+                <div class="manifesto-icon-wrap">
+                    <i class="fa-regular fa-sun manifesto-icon"></i>
                 </div>
-                <h2 style="font-size: 2.5rem; margin-bottom: 2rem; color: var(--text-primary);">WINTER SUN</h2>
-                <div class="glass-panel" style="padding: 3rem;">
-                    <p style="font-size: 1.2rem; line-height: 2; font-style: italic; color: #fff;">
+                <h2 class="manifesto-title">WINTER SUN</h2>
+                <div class="glass-panel manifesto-panel">
+                    <p class="manifesto-quote">
                         "想成為像照亮冬天的太陽般溫暖親切的人。"
                     </p>
-                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 2rem 0;">
-                    <p style="font-size: 1.1rem; color: #ddd;">
+                    <hr class="manifesto-divider">
+                    <p class="manifesto-body">
                         常駐於 YouTube 直播，努力經營個人 IP。<br>
                         無論是閒聊日常，還是分享塔羅與料理，<br>
                         我都希望能用這份溫暖，融化你心中的冰雪。
@@ -742,10 +901,10 @@
 
             <!-- Final Overlay Content (Hidden until crystalized) -->
             <div class="gallery-content container glass-panel" id="final-card">
-                <p style="font-size: 1.8rem; color: var(--accent-pink); margin-bottom: 1rem;">Sweet Dreams...</p>
+                <p class="final-card-title">Sweet Dreams...</p>
 
                 <!-- MOVED SOCIAL LINKS HERE -->
-                <div class="social-container" style="margin: 2rem 0;">
+                <div class="social-container social-container--spaced">
                      <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank"><i class="fa-brands fa-youtube"></i></a>
                      <a href="https://www.youtube.com/@eemumu0621" class="social-link" target="_blank"><i class="fa-solid fa-microphone-lines"></i></a>
                      <a href="https://www.twitch.tv/yumebiemu" class="social-link" target="_blank"><i class="fa-brands fa-twitch"></i></a>
@@ -756,11 +915,11 @@
                      <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/?ref=pages_you_manage" class="social-link" target="_blank"><i class="fa-brands fa-facebook"></i></a>
                 </div>
 
-                <div style="margin-top: 2rem;">
-                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" target="_blank" style="color: var(--accent-cyan); text-decoration: none; border-bottom: 1px dashed var(--accent-cyan); font-size: 1.2rem;">DIGITAL CARD</a>
+                <div class="digital-card-link-wrap">
+                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" class="digital-card-link" target="_blank">DIGITAL CARD</a>
                 </div>
-                <footer style="margin-top: 3rem; font-size: 0.8rem; color: #888;">
-                    Made with <span style="color: var(--accent-pink);">♥</span> by <a href="/guild/" style="color: #aaa;">SuperGalen's Dungeon</a>
+                <footer class="final-footer">
+                    Made with <span class="heart-icon">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a>
                 </footer>
             </div>
         </section>
@@ -770,9 +929,6 @@
     <!-- Three.js Gem Heart Script -->
     <script type="module">
         import * as THREE from 'three';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
         // Custom Cursor Logic
         const cursor = document.getElementById('cursor-follower');
@@ -819,6 +975,9 @@
         // Raycaster Setup
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
+        let mouseMovedSinceLastCheck = false;
+        let lastCursorStyle = 'none';
+        let lastSparkleTime = 0;
 
         document.addEventListener('mousemove', (e) => {
             cursor.style.left = e.clientX + 'px';
@@ -829,25 +988,24 @@
             // Normalize mouse for Raycaster
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            mouseMovedSinceLastCheck = true;
 
-            // Add sparkle trail
-            if(Math.random() > 0.8) {
+            // Add sparkle trail (throttled: 80ms + 20% chance)
+            const now = performance.now();
+            if(now - lastSparkleTime > 80 && Math.random() > 0.8) {
+                lastSparkleTime = now;
                 createTrailSparkle(e.clientX, e.clientY);
             }
         });
 
         function createTrailSparkle(x, y) {
             const el = document.createElement('div');
-            el.innerHTML = '★';
-            el.style.position = 'fixed';
+            el.className = 'trail-sparkle';
+            el.textContent = '★';
             el.style.left = x + 'px';
             el.style.top = y + 'px';
             el.style.color = Math.random() > 0.5 ? '#FF69B4' : '#00FFFF';
             el.style.fontSize = (Math.random() * 10 + 5) + 'px';
-            el.style.pointerEvents = 'none';
-            el.style.zIndex = '9998';
-            el.style.opacity = '1';
-            el.style.transition = 'opacity 1s, transform 1s';
             document.body.appendChild(el);
 
             requestAnimationFrame(() => {
@@ -886,12 +1044,6 @@
             gsap.to(dreamText, {opacity: 1, duration: 1});
             gsap.to(dreamSub, {opacity: 1, delay: 0.5, duration: 1});
         };
-
-        // Bloom - Disabled for performance
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.strength = 1.0;
-        bloomPass.radius = 0.6;
-        bloomPass.threshold = 0.1;
 
         // --- MAGIC CIRCLE ---
         const magicCanvas = document.createElement('canvas');
@@ -994,9 +1146,6 @@
         );
         ringPlane.position.z = -4;
         scene.add(ringPlane);
-
-        // --- DEVIL EGG (2D HTML element, no 3D mesh) ---
-        const devilEgg = document.getElementById('devil-egg');
 
         // --- NEBULA / FOG ---
         const cloudCanvas = document.createElement('canvas');
@@ -1242,7 +1391,7 @@
 
         // 2) Background click → toggle crystal only
         window.addEventListener('click', (e) => {
-            if (e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.hint-touch') || e.target.closest('.gallery-content')) return;
+            if (e.target.closest('#dream-gate') || e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.hint-touch') || e.target.closest('.gallery-content')) return;
             if (isSummoning) return;
 
             // Toggle crystal: hit invisible sphere around heart group
@@ -1322,7 +1471,9 @@
             }
         }
 
+        let frameCount = 0;
         gsap.ticker.add(() => {
+            frameCount++;
             const t = Date.now() * 0.001;
 
             if(!isCrystalized) {
@@ -1372,14 +1523,21 @@
                  ringPlane.rotation.z = -magicBaseRotation + t * 0.2;
             }
 
-            // Hover detection: shards only (devil egg is CSS-based)
-            raycaster.setFromCamera(mouse, camera);
-            const shardHover = raycaster.intersectObjects(shards);
-            if(shardHover.length > 0) {
-                document.body.style.cursor = 'pointer';
-            } else {
-                document.body.style.cursor = 'none';
+            // Hover detection: only when mouse moved (skip raycaster when idle)
+            if(mouseMovedSinceLastCheck) {
+                mouseMovedSinceLastCheck = false;
+                raycaster.setFromCamera(mouse, camera);
+                const shardHover = raycaster.intersectObjects(shards);
+                const newCursor = shardHover.length > 0 ? 'pointer' : 'none';
+                if(newCursor !== lastCursorStyle) {
+                    lastCursorStyle = newCursor;
+                    document.body.style.cursor = newCursor;
+                }
             }
+
+            // Mouse parallax: tilt heartGroup based on cursor position
+            heartGroup.rotation.x += (mouse.y * 0.15 - heartGroup.rotation.x) * 0.05;
+            heartGroup.position.x += (mouse.x * 2 - heartGroup.position.x) * 0.05;
 
             clouds.forEach(c => {
                 c.material.rotation += c.userData.speed;
@@ -1387,11 +1545,13 @@
             });
 
             particles.rotation.y += 0.002;
-            const positions = particles.geometry.attributes.position.array;
-            for(let i=1; i<positions.length; i+=3) {
-                positions[i] += Math.sin(t + positions[i-1]) * 0.05;
+            if(frameCount % 3 === 0) {
+                const positions = particles.geometry.attributes.position.array;
+                for(let i=1; i<positions.length; i+=3) {
+                    positions[i] += Math.sin(t + positions[i-1]) * 0.15;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
             }
-            particles.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         });
