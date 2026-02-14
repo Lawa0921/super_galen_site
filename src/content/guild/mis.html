@@ -354,8 +354,8 @@
 
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Deep purple/black fog for atmosphere
-        scene.fog = new THREE.FogExp2(0x0a000f, 0.015);
+        // Deep teal-purple fog for "Necromancy/Swamp" atmosphere
+        scene.fog = new THREE.FogExp2(0x050a0a, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 20;
@@ -373,12 +373,12 @@
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.1;
-        bloomPass.strength = 0.8; // Soft dreamy glow
-        bloomPass.radius = 0.8;
+        bloomPass.strength = 1.0;
+        bloomPass.radius = 0.6;
         composer.addPass(bloomPass);
 
-        // --- 1. RISING SOULS (Particles) ---
-        const soulCount = 300;
+        // --- 1. NECROTIC SOULS (Particles) ---
+        const soulCount = 400;
         const soulGeo = new THREE.BufferGeometry();
         const soulPos = new Float32Array(soulCount * 3);
         const soulSpeed = new Float32Array(soulCount); // Vertical speed
@@ -388,7 +388,7 @@
             soulPos[i*3] = (Math.random() - 0.5) * 80; // x
             soulPos[i*3+1] = (Math.random() - 0.5) * 100 - 20; // y
             soulPos[i*3+2] = (Math.random() - 0.5) * 60; // z
-            soulSpeed[i] = Math.random() * 0.05 + 0.02;
+            soulSpeed[i] = Math.random() * 0.05 + 0.03;
             soulPhase[i] = Math.random() * Math.PI * 2;
         }
 
@@ -399,7 +399,7 @@
         const soulMat = new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: 0 },
-                color: { value: new THREE.Color(0x6a0dad) } // Purple souls
+                color: { value: new THREE.Color(0x00ffaa) } // Necrotic Teal
             },
             vertexShader: `
                 uniform float time;
@@ -408,30 +408,36 @@
                 varying float vAlpha;
                 void main() {
                     vec3 pos = position;
-                    // Rise
-                    pos.y += mod(time * speed * 20.0, 100.0);
+                    // Rise rapidly like spirits
+                    pos.y += mod(time * speed * 30.0, 100.0);
                     if(pos.y > 50.0) pos.y -= 100.0;
 
-                    // Sway
-                    pos.x += sin(time * 0.5 + phase) * 2.0;
+                    // Ghostly sway
+                    pos.x += sin(time * 0.8 + phase) * 3.0;
 
                     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                    gl_PointSize = (100.0 / -mvPosition.z);
+
+                    // Wisp shape: stretch Y based on view
+                    gl_PointSize = (150.0 / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
 
                     // Fade based on height
-                    vAlpha = 1.0 - smoothstep(20.0, 50.0, pos.y);
+                    vAlpha = 1.0 - smoothstep(10.0, 50.0, pos.y);
                 }
             `,
             fragmentShader: `
                 uniform vec3 color;
                 varying float vAlpha;
                 void main() {
-                    float r = distance(gl_PointCoord, vec2(0.5));
+                    // Elongated "wisp" shape
+                    vec2 center = gl_PointCoord - 0.5;
+                    center.y *= 2.0; // Stretch vertically
+                    float r = length(center);
                     if (r > 0.5) discard;
+
                     float glow = 1.0 - (r * 2.0);
-                    glow = pow(glow, 2.0); // Sharpen glow
-                    gl_FragColor = vec4(color, vAlpha * glow);
+                    glow = pow(glow, 3.0);
+                    gl_FragColor = vec4(color, vAlpha * glow * 0.8);
                 }
             `,
             transparent: true,
@@ -443,49 +449,71 @@
         scene.add(souls);
 
 
-        // --- 2. FALLING FEATHERS (InstancedMesh) ---
-        // Create a simple feather shape using ShapeGeometry
-        const shape = new THREE.Shape();
-        shape.moveTo(0, 0);
-        shape.bezierCurveTo(0.5, 0.5, 0.5, 1.5, 0, 2); // Right side
-        shape.bezierCurveTo(-0.5, 1.5, -0.5, 0.5, 0, 0); // Left side
+        // --- 2. PARADISE BIRDS / RAVENS (InstancedMesh) ---
+        // V-Shape geometry for abstract bird silhouette
+        const birdShape = new THREE.Shape();
+        birdShape.moveTo(0, 0);
+        birdShape.lineTo(0.5, 0.2); // Right wing tip
+        birdShape.lineTo(0, 0.5); // Body center
+        birdShape.lineTo(-0.5, 0.2); // Left wing tip
+        birdShape.lineTo(0, 0); // Close loop
 
-        const featherGeo = new THREE.ShapeGeometry(shape);
-        const featherMat = new THREE.MeshBasicMaterial({
-            color: 0x111111, // Dark feathers
+        const birdGeo = new THREE.ShapeGeometry(birdShape);
+        const birdMat = new THREE.MeshBasicMaterial({
+            color: 0x000000, // Silhouette
             side: THREE.DoubleSide,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.9
         });
 
-        const featherCount = 100;
-        const featherMesh = new THREE.InstancedMesh(featherGeo, featherMat, featherCount);
+        const birdCount = 150;
+        const birdMesh = new THREE.InstancedMesh(birdGeo, birdMat, birdCount);
 
         const dummy = new THREE.Object3D();
-        const featherData = []; // Store velocity/rot data
+        const birdData = [];
 
-        for(let i=0; i<featherCount; i++) {
+        for(let i=0; i<birdCount; i++) {
             dummy.position.set(
-                (Math.random() - 0.5) * 60,
-                Math.random() * 80 - 20,
-                (Math.random() - 0.5) * 40 + 10 // Keep closer to camera
+                (Math.random() - 0.5) * 70,
+                Math.random() * 80 - 30,
+                (Math.random() - 0.5) * 40 // Z
             );
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-            dummy.scale.setScalar(Math.random() * 0.5 + 0.2);
+            // Angle them as if flying
+            dummy.rotation.set(Math.PI/4, Math.random()*0.5 - 0.25, 0);
+            dummy.scale.setScalar(Math.random() * 0.8 + 0.4);
             dummy.updateMatrix();
-            featherMesh.setMatrixAt(i, dummy.matrix);
+            birdMesh.setMatrixAt(i, dummy.matrix);
 
-            featherData.push({
-                speed: Math.random() * 0.05 + 0.02,
-                rotSpeed: (Math.random() - 0.5) * 0.02,
-                swaySpeed: Math.random() * 0.02,
-                baseX: dummy.position.x
+            birdData.push({
+                speed: Math.random() * 0.1 + 0.05,
+                drift: (Math.random() - 0.5) * 0.02,
+                flapSpeed: Math.random() * 0.2 + 0.1,
+                baseY: dummy.position.y
             });
         }
-        scene.add(featherMesh);
+        scene.add(birdMesh);
 
 
-        // --- 3. VOID CORE (Procedural "Black Lily") ---
+        // --- 3. REAPER SCYTHE (Abstract Curve) ---
+        // Create a large crescent curve
+        const curve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(-10, -10, -5),
+            new THREE.Vector3(-5, 5, -2),
+            new THREE.Vector3(5, 15, 0),
+            new THREE.Vector3(15, 10, 2)
+        ]);
+
+        const scytheGeo = new THREE.TubeGeometry(curve, 64, 0.3, 8, false);
+        const scytheMat = new THREE.MeshBasicMaterial({
+            color: 0x333333,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.2
+        });
+        const scythe = new THREE.Mesh(scytheGeo, scytheMat);
+        scene.add(scythe);
+
+        // --- 4. VOID CORE (Procedural "Black Lily") ---
         // Using a sphere with custom shader for "writhing darkness"
         const coreGeo = new THREE.IcosahedronGeometry(4, 30);
         const coreMat = new THREE.ShaderMaterial({
@@ -583,28 +611,34 @@
             // 1. Souls
             soulMat.uniforms.time.value = t;
 
-            // 2. Feathers
-            for(let i=0; i<featherCount; i++) {
-                featherMesh.getMatrixAt(i, dummy.matrix);
+            // 2. Birds (Ravens/Paradise Birds)
+            for(let i=0; i<birdCount; i++) {
+                birdMesh.getMatrixAt(i, dummy.matrix);
                 dummy.position.setFromMatrixPosition(dummy.matrix);
 
-                // Fall
-                dummy.position.y -= featherData[i].speed;
-                if(dummy.position.y < -20) dummy.position.y = 60; // Reset height
+                // Fly across
+                dummy.position.x -= birdData[i].speed;
+                if(dummy.position.x < -60) dummy.position.x = 60; // Loop X
 
-                // Sway
-                dummy.position.x = featherData[i].baseX + Math.sin(t * 2.0 + i) * 2.0;
+                // Gentle bobbing
+                dummy.position.y = birdData[i].baseY + Math.sin(t * 2.0 + i) * 2.0;
 
-                // Rotate
-                dummy.rotation.x += featherData[i].rotSpeed;
-                dummy.rotation.y += featherData[i].rotSpeed;
+                // Flap Wings (simulate by scaling Y)
+                // dummy.scale.y = 1.0 + Math.sin(t * 10.0 + i) * 0.2;
+                // Since scale is hard with instance matrix update, just wobble rotation
+                dummy.rotation.z = Math.sin(t * birdData[i].flapSpeed * 10.0) * 0.2;
+                dummy.rotation.y = -Math.PI/2; // Face left
 
                 dummy.updateMatrix();
-                featherMesh.setMatrixAt(i, dummy.matrix);
+                birdMesh.setMatrixAt(i, dummy.matrix);
             }
-            featherMesh.instanceMatrix.needsUpdate = true;
+            birdMesh.instanceMatrix.needsUpdate = true;
 
-            // 3. Core
+            // 3. Scythe
+            scythe.rotation.z = Math.sin(t * 0.2) * 0.1; // Gentle sway
+            scythe.rotation.y = t * 0.05;
+
+            // 4. Core
             coreMat.uniforms.time.value = t;
             core.rotation.y = t * 0.1;
             core.rotation.z = t * 0.05;
