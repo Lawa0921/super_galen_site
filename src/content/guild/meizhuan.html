@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meizhuan - Cyber Rider</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            --c-void: #050505;
+            --c-red: #FF0033;
+            --c-cyan: #00F3FF;
+            --c-dark: #111111;
+            --c-metal: #333333;
+
+            --f-tech: 'Share Tech Mono', monospace;
+            --f-head: 'Orbitron', sans-serif;
+            --f-body: 'Noto Serif TC', serif;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--c-void);
+            color: white;
+            font-family: var(--f-body);
+            overflow-x: hidden;
+        }
+
+        /* Canvas Layers */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
+
+        /* HUD Scanlines */
+        .hud-overlay {
+            position: fixed; inset: 0; z-index: 99; pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.1),
+                rgba(0,0,0,0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+
+        .scroller { position: relative; z-index: 10; padding-bottom: 20vh; }
+        .section {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 4rem 5%;
+            pointer-events: none; /* Cards have auto */
+            perspective: 1000px;
+        }
+
+        /* Tech Card Styles */
+        .tech-card {
+            pointer-events: auto;
+            width: 100%; max-width: 900px;
+            background: rgba(10, 10, 12, 0.9);
+            border: 1px solid var(--c-metal);
+            border-top: 4px solid var(--c-red);
+            border-bottom: 4px solid var(--c-cyan);
+            padding: 2.5rem;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            transform-style: preserve-3d;
+            clip-path: polygon(
+                0 0, 100% 0,
+                100% calc(100% - 30px), calc(100% - 30px) 100%,
+                0 100%
+            );
+            display: flex; gap: 3rem; align-items: center;
+        }
+
+        .tech-card.reverse {
+            flex-direction: row-reverse;
+            clip-path: polygon(
+                30px 0, 100% 0,
+                100% 100%,
+                0 100%, 0 30px
+            );
+            border-top: 4px solid var(--c-cyan);
+            border-bottom: 4px solid var(--c-red);
+        }
+
+        .card-visual { flex: 0 0 35%; max-width: 300px; position: relative; }
+        .card-content { flex: 1; }
+
+        .avatar-frame {
+            position: relative;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--c-red), var(--c-dark));
+            clip-path: circle(50% at 50% 50%);
+        }
+        .avatar-img {
+            width: 100%; aspect-ratio: 1; object-fit: cover;
+            clip-path: circle(48% at 50% 50%);
+            filter: grayscale(0.5) contrast(1.2);
+            transition: 0.5s;
+        }
+        .tech-card:hover .avatar-img { filter: grayscale(0); }
+
+        /* Typography */
+        h1 {
+            font-family: var(--f-head); font-size: 3.5rem; line-height: 1;
+            text-transform: uppercase; margin: 0;
+            background: linear-gradient(90deg, #fff, var(--c-cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+        h2 {
+            font-family: var(--f-head); color: var(--c-red); margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 10px;
+            text-shadow: 0 0 10px rgba(255, 0, 51, 0.4);
+        }
+        .tagline {
+            font-family: var(--f-tech); color: var(--c-red); letter-spacing: 2px;
+            display: block; margin-bottom: 1rem;
+        }
+        p { color: #ccc; line-height: 1.8; font-size: 1.1rem; text-align: justify; }
+
+        .stat-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 2rem;
+        }
+        .stat-item {
+            border: 1px solid var(--c-metal); padding: 0.5rem 1rem;
+            font-family: var(--f-tech); font-size: 0.9rem;
+            background: rgba(0,0,0,0.5);
+            display: flex; justify-content: space-between;
+        }
+        .stat-val { color: var(--c-cyan); font-weight: bold; }
+
+        /* Footer */
+        .footer {
+            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: linear-gradient(to top, #000 20%, transparent);
+            position: relative; z-index: 20;
+        }
+        .social-links { display: flex; gap: 2rem; margin-top: 2rem; }
+        .social-btn {
+            font-size: 2rem; color: var(--c-red);
+            width: 60px; height: 60px; border: 1px solid var(--c-red);
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+        .social-btn:hover {
+            background: var(--c-red); color: #000; box-shadow: 0 0 20px var(--c-red);
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--c-cyan);
+            color: var(--c-cyan); padding: 10px 20px; text-decoration: none;
+            font-family: var(--f-tech); text-transform: uppercase;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: var(--c-cyan); color: black; }
+
+        @media (max-width: 900px) {
+            .tech-card, .tech-card.reverse { flex-direction: column; padding: 2rem; gap: 2rem; }
+            .card-visual { width: 100%; max-width: 100%; display: flex; justify-content: center; }
+            .avatar-img { width: 150px; }
+            h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Guild Hall</a>
+    <div class="hud-overlay"></div>
+
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <div class="scroller">
+
+        <!-- 1. Hero / Driver License -->
+        <section class="section">
+            <div class="tech-card">
+                <div class="card-visual">
+                    <div class="avatar-frame">
+                        <img src="/assets/img/guild/meizhuan/avatar.webp" class="avatar-img">
+                    </div>
+                    <div style="text-align:center; margin-top:1rem; font-family:var(--f-tech); color:var(--c-cyan);">
+                        ID: MEIZHUAN
+                    </div>
+                </div>
+                <div class="card-content">
+                    <span class="tagline">// CLASS: ENGINEER // SPEC: BIKER</span>
+                    <h1>石專豆頁</h1>
+                    <p style="margin-top: 1.5rem;">
+                        「我是<span style="color:var(--c-red); font-weight:bold;">石專豆頁</span>，一位在程式碼與引擎聲中尋找節奏的騎士。」
+                    </p>
+                    <p>
+                        電機工程系畢業，目前身處助理工程師的練功房，正朝著真正的工程師之路疾馳。<br>
+                        願望很簡單：給家人更好的生活，以及去日本騎一次重機。
+                    </p>
+
+                    <div class="stat-grid">
+                        <div class="stat-item"><span>PYTHON</span> <span class="stat-val">LEARNING</span></div>
+                        <div class="stat-item"><span>JAPANESE</span> <span class="stat-val">N5+</span></div>
+                        <div class="stat-item"><span>BIKE</span> <span class="stat-val">HEAVY</span></div>
+                        <div class="stat-item"><span>GAME DEV</span> <span class="stat-val">NOVICE</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. The Engineer (Specs) -->
+        <section class="section">
+            <div class="tech-card reverse">
+                <div class="card-visual" style="display:flex; justify-content:center; align-items:center;">
+                    <i class="fa-solid fa-microchip" style="font-size: 8rem; color: var(--c-cyan); filter: drop-shadow(0 0 10px var(--c-cyan));"></i>
+                </div>
+                <div class="card-content">
+                    <span class="tagline" style="color:var(--c-cyan);">// SYSTEM: UPGRADE_PATH</span>
+                    <h2 style="color:var(--c-cyan);"><i class="fa-solid fa-code"></i> Engineering Core</h2>
+                    <p>
+                        目前自學 <b>Python</b> 與 <b>日語</b> 中。<br>
+                        工程師的靈魂在於創造，我正嘗試製作一款屬於自己的小遊戲。<br>
+                        歡迎各路大神給予建議或方向，讓我們一起 Debug 人生。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. The Rider (Hobbies) -->
+        <section class="section">
+            <div class="tech-card">
+                <div class="card-visual" style="display:flex; justify-content:center; align-items:center;">
+                    <i class="fa-solid fa-motorcycle" style="font-size: 8rem; color: var(--c-red); filter: drop-shadow(0 0 10px var(--c-red));"></i>
+                </div>
+                <div class="card-content">
+                    <span class="tagline">// MODE: FULL_THROTTLE</span>
+                    <h2><i class="fa-solid fa-road"></i> The Ride</h2>
+                    <p>
+                        擁有重機駕照，雖然台灣的環境讓我暫時選擇租車體驗各種車款，但騎士的熱血從未冷卻。<br>
+                        <b>夢想</b>：去日本進行一次重機旅行，感受異國的風與自由。
+                    </p>
+                    <p>
+                        平時也是個宅宅，窩在家看動漫、打遊戲是充電的方式。<br>
+                        <i>"如果有朋友邀約，也會出門一起走走。"</i>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Life Logs -->
+        <section class="section">
+            <div class="tech-card reverse" style="border-color: #fff;">
+                <div class="card-visual" style="display:flex; justify-content:center; align-items:center;">
+                    <i class="fa-solid fa-utensils" style="font-size: 8rem; color: white; filter: drop-shadow(0 0 10px white);"></i>
+                </div>
+                <div class="card-content">
+                    <span class="tagline" style="color:white;">// STATUS: MAINTENANCE</span>
+                    <h2 style="color:white;"><i class="fa-solid fa-heart-pulse"></i> Life Metrics</h2>
+                    <p>
+                        喜好美食，但總是煩惱體重下不去 (Bug #001)。<br>
+                        目前正在執行 Patch 更新：<b>逼自己運動</b> 與 <b>戒菸</b>。<br>
+                        為了更長遠的旅程，身體這台機器的維護是必須的。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <h2 style="font-family: var(--f-head); color: var(--c-cyan);">ESTABLISH CONNECTION</h2>
+            <div class="social-links">
+                <a href="https://www.threads.com/@meizhuan" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/meizhuan/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p style="margin-top:2rem; font-size:0.8rem; opacity:0.6; font-family:var(--f-tech);">
+                MADE WITH <i class="fa-solid fa-bolt" style="color:var(--c-cyan);"></i> BY SUPERGALEN'S DUNGEON
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- p5.js HUD Overlay -->
+    <script>
+        const sketch = (p) => {
+            let speed = 0;
+
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Update speed based on scroll delta (simulated)
+                // Real implementation would link to ScrollTrigger velocity
+                // For now, just a visual element
+
+                drawHUD(p);
+            };
+
+            function drawHUD(p) {
+                p.push();
+
+                // Bottom Right: Speedometer
+                p.translate(p.width - 150, p.height - 150);
+
+                // Circle
+                p.noFill();
+                p.stroke(0, 243, 255, 100);
+                p.strokeWeight(2);
+                p.circle(0, 0, 200);
+
+                // Ticks
+                for(let i=0; i<30; i++) {
+                    let angle = p.map(i, 0, 30, p.PI * 0.8, p.PI * 2.2);
+                    let x1 = p.cos(angle) * 80;
+                    let y1 = p.sin(angle) * 80;
+                    let x2 = p.cos(angle) * 95;
+                    let y2 = p.sin(angle) * 95;
+                    p.stroke(i % 5 === 0 ? '#FF0033' : '#00F3FF');
+                    p.line(x1, y1, x2, y2);
+                }
+
+                // Label
+                p.fill('#00F3FF');
+                p.noStroke();
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(24);
+                p.text("KM/H", 0, 40);
+
+                // Dynamic Speed Text
+                // Using document scroll percentage as speed
+                let scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+                let displaySpeed = Math.floor(scrollPct * 299);
+                p.textSize(48);
+                p.fill('#FFF');
+                p.text(displaySpeed, 0, -10);
+
+                p.pop();
+
+                // Top Left: Decor
+                p.push();
+                p.translate(50, 50);
+                p.noFill();
+                p.stroke('#FF0033');
+                p.strokeWeight(1);
+                p.beginShape();
+                p.vertex(0, 0);
+                p.vertex(100, 0);
+                p.vertex(120, 20);
+                p.vertex(120, 50);
+                p.endShape();
+                p.fill('#FF0033');
+                p.textSize(12);
+                p.noStroke();
+                p.text("REC ●", 10, 20);
+                p.pop();
+            }
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+        new p5(sketch);
+    </script>
+
+    <!-- Three.js Background -->
+    <script type="module">
+        import * as THREE from 'https://esm.sh/three@0.160.0';
+        import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 10);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // Bloom
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        // 1. Infinite Road Grid
+        const gridHelper = new THREE.GridHelper(200, 100, 0x00F3FF, 0x111111);
+        gridHelper.position.y = -2;
+        scene.add(gridHelper);
+
+        // 2. Neon Side Lines
+        function createNeonLine(x) {
+            const points = [];
+            for(let i=0; i<50; i++) {
+                points.push(new THREE.Vector3(x, -2, -i * 5));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color: 0xFF0033 });
+            return new THREE.Line(geo, mat);
+        }
+        const leftLine = createNeonLine(-10);
+        const rightLine = createNeonLine(10);
+        scene.add(leftLine);
+        scene.add(rightLine);
+
+        // 3. Floating Data Blocks
+        const boxGeo = new THREE.BoxGeometry(0.5, 0.5, 2);
+        const boxMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF, wireframe: true });
+        const blocks = [];
+
+        for(let i=0; i<40; i++) {
+            const mesh = new THREE.Mesh(boxGeo, boxMat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 50,
+                Math.random() * 10 - 2,
+                -Math.random() * 100
+            );
+            scene.add(mesh);
+            blocks.push(mesh);
+        }
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // Simulate forward movement
+            const speed = 10;
+            const dist = (t * speed) % 2; // Grid cell size is 2 (200/100)
+
+            gridHelper.position.z = dist;
+
+            // Move Blocks
+            blocks.forEach(b => {
+                b.position.z += 0.2;
+                if(b.position.z > 10) b.position.z = -100;
+                b.rotation.z += 0.01;
+            });
+
+            composer.render();
+        }
+        animate();
+
+        // Scroll Interactions
+        // 1. Camera Zoom / Tilt
+        gsap.to(camera.rotation, {
+            x: -0.2, // Look down slightly
+            scrollTrigger: {
+                trigger: ".scroller",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // 2. Card Entries
+        gsap.utils.toArray('.tech-card').forEach((card, i) => {
+            const dir = i % 2 === 0 ? -100 : 100;
+            gsap.from(card, {
+                x: dir,
+                opacity: 0,
+                rotationY: dir > 0 ? -15 : 15,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
