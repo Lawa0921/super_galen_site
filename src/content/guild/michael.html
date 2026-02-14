@@ -3,40 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michael Lai - Data Artisan</title>
+    <title>Michael Lai | Data Architect</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
 
-    <!-- Three.js Import Map for module support -->
+    <!-- Three.js Import Map -->
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
     </script>
 
     <style>
         :root {
-            --c-main: #3B82A0; /* Greyish Blue */
-            --c-dark: #1E293B; /* Slate 800 */
-            --c-text: #0F172A; /* Slate 900 */
-            --c-bg: #F8FAFC;   /* Slate 50 */
-            --c-accent: #F97316; /* Orange */
-            --c-glass: rgba(255, 255, 255, 0.7);
-            --c-glass-border: rgba(255, 255, 255, 0.9);
+            --c-bg: #020617;     /* Deep Void */
+            --c-surface: rgba(15, 23, 42, 0.6);
+            --c-cyan: #22d3ee;   /* Cyber Cyan */
+            --c-blue: #3b82f6;   /* Electric Blue */
+            --c-orange: #f97316; /* Data Flare Orange */
+            --c-text: #e2e8f0;   /* Light Slate */
 
-            --f-sans: 'Inter', sans-serif;
-            --f-mono: 'JetBrains Mono', monospace;
+            --f-head: 'Orbitron', sans-serif;
+            --f-body: 'Rajdhani', sans-serif;
             --f-serif: 'Noto Serif TC', serif;
         }
 
@@ -45,370 +44,313 @@
             margin: 0;
             background: var(--c-bg);
             color: var(--c-text);
-            font-family: var(--f-sans);
+            font-family: var(--f-body);
             overflow-x: hidden;
             line-height: 1.6;
-            cursor: crosshair;
         }
 
-        /* Background Layers */
-        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: auto; }
-        #p5-grain-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; opacity: 0.15; mix-blend-mode: overlay; }
+        /* Fixed Backgrounds */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
 
-        /* Layout */
-        .scroller { position: relative; z-index: 10; padding-bottom: 10vh; pointer-events: none; }
+        /* Scanline Overlay */
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 999;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* HUD Overlay */
+        .hud-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            pointer-events: none;
+            padding: 2rem;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .hud-corner {
+            font-family: var(--f-head);
+            font-size: 0.8rem;
+            color: var(--c-cyan);
+            opacity: 0.7;
+            text-shadow: 0 0 10px var(--c-cyan);
+        }
+        .hud-top-left { border-top: 1px solid var(--c-cyan); border-left: 1px solid var(--c-cyan); width: 100px; height: 100px; position: absolute; top: 2rem; left: 2rem; }
+        .hud-bottom-right { border-bottom: 1px solid var(--c-cyan); border-right: 1px solid var(--c-cyan); width: 100px; height: 100px; position: absolute; bottom: 2rem; right: 2rem; }
+
+        /* Scroller Layout */
+        .scroller { position: relative; z-index: 20; }
         .section {
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
-            padding: 4rem 1rem;
+            padding: 2rem;
             position: relative;
-            pointer-events: none; /* Let clicks pass to background unless on card */
         }
 
-        /* Glass Card */
-        .glass-card {
-            pointer-events: auto;
-            background: var(--c-glass);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--c-glass-border);
-            border-radius: 24px;
+        /* Cyber Card */
+        .cyber-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 211, 238, 0.2);
             padding: 4rem;
-            max-width: 1000px;
+            max-width: 1100px;
             width: 100%;
-            box-shadow:
-                0 4px 6px -1px rgba(0, 0, 0, 0.05),
-                0 20px 40px -10px rgba(59, 130, 160, 0.15);
-            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease;
             position: relative;
-            overflow: hidden;
+            clip-path: polygon(
+                20px 0, 100% 0,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                0 100%, 0 20px
+            );
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: skewX(-25deg);
-            transition: 0.5s;
-            pointer-events: none;
+        .cyber-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--c-cyan);
+            box-shadow: 0 0 15px var(--c-cyan);
         }
 
-        .glass-card:hover::before {
-            left: 150%;
-            transition: 1s ease-in-out;
-        }
-
-        .glass-card:hover {
+        .cyber-card:hover {
             transform: translateY(-5px);
-            box-shadow:
-                0 15px 25px -3px rgba(0, 0, 0, 0.05),
-                0 40px 80px -10px rgba(59, 130, 160, 0.25);
-            border-color: #fff;
+            box-shadow: 0 0 50px rgba(34, 211, 238, 0.15);
+            border-color: rgba(34, 211, 238, 0.6);
         }
 
         /* Typography */
         h1 {
-            font-family: var(--f-serif);
-            font-size: 4rem;
-            margin: 0 0 1rem;
-            background: linear-gradient(135deg, var(--c-main) 0%, var(--c-dark) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
+            font-family: var(--f-head);
+            font-size: 5rem;
+            margin: 0;
+            line-height: 0.9;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 2px 2px 0px var(--c-cyan);
+            letter-spacing: -2px;
         }
 
         h2 {
-            font-family: var(--f-serif);
+            font-family: var(--f-head);
             font-size: 2.5rem;
-            color: var(--c-dark);
+            color: var(--c-cyan);
             margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+            text-transform: uppercase;
+            display: flex; align-items: center; gap: 1rem;
         }
 
-        .mono-tag {
-            font-family: var(--f-mono);
-            font-size: 0.9rem;
-            color: var(--c-main);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            display: block;
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
+        .highlight { color: var(--c-orange); font-weight: 700; text-shadow: 0 0 15px rgba(249, 115, 22, 0.6); }
+        .mono { font-family: monospace; color: var(--c-cyan); opacity: 0.8; }
 
         p {
-            font-size: 1.15rem;
-            color: #475569;
+            font-size: 1.25rem;
             margin-bottom: 1.5rem;
-            font-weight: 400;
+            color: #cbd5e1;
+            max-width: 60ch;
         }
 
-        .highlight {
-            color: var(--c-main);
-            font-weight: 700;
-            background: linear-gradient(120deg, transparent 0%, rgba(59, 130, 160, 0.1) 100%);
-            background-repeat: no-repeat;
-            background-size: 100% 40%;
-            background-position: 0 88%;
-            padding: 0 2px;
-        }
-
-        /* Avatar */
-        .avatar-container {
-            width: 240px; height: 240px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 4px solid white;
-            box-shadow: 0 0 0 4px rgba(59, 130, 160, 0.1), 0 20px 40px rgba(0,0,0,0.1);
-            margin: 0 auto 2rem;
+        /* Avatar Glitch Container */
+        .avatar-glitch {
+            width: 280px; height: 280px;
             position: relative;
-            transition: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            animation: pulse-border 4s infinite;
+            margin: 0 auto 2rem;
         }
-
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0px rgba(59, 130, 160, 0.2); }
-            50% { box-shadow: 0 0 0 15px rgba(59, 130, 160, 0); }
-            100% { box-shadow: 0 0 0 0px rgba(59, 130, 160, 0); }
-        }
-
         .avatar-img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.7s ease;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+            filter: grayscale(100%) contrast(1.2);
+            transition: 0.5s;
         }
-        .avatar-container:hover {
-            border-color: var(--c-accent);
-        }
-        .avatar-container:hover .avatar-img {
-            transform: scale(1.15) rotate(-2deg);
-        }
-
-        /* Grid Layouts */
-        .split-layout {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            gap: 5rem;
-            align-items: center;
+        .avatar-glitch:hover .avatar-img {
+            filter: grayscale(0%) contrast(1);
         }
 
+        /* Grid */
+        .grid-split {
+            display: grid; grid-template-columns: 1fr 1.5fr; gap: 4rem; align-items: center;
+        }
         .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            margin-top: 3rem;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem;
         }
 
-        .icon-box {
-            background: rgba(255, 255, 255, 0.4);
-            padding: 2.5rem 2rem;
-            border-radius: 20px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.6);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: default;
+        /* Tech Box */
+        .tech-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 2rem;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
         }
-        .icon-box:hover {
-            background: white;
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(59, 130, 160, 0.15);
-            border-color: var(--c-main);
+        .tech-box::after {
+            content: ''; position: absolute; bottom: 0; right: 0; width: 0; height: 2px;
+            background: var(--c-orange); transition: 0.4s;
         }
-        .icon-box i {
-            font-size: 3rem;
-            color: var(--c-main);
-            margin-bottom: 1.5rem;
-            transition: 0.4s;
-            display: inline-block;
+        .tech-box:hover {
+            border-color: var(--c-orange);
+            background: rgba(249, 115, 22, 0.05);
         }
-        .icon-box:hover i {
-            transform: scale(1.2) rotate(15deg);
-            color: var(--c-accent);
-            text-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
-        }
-        .icon-box h3 {
-            font-family: var(--f-serif);
-            margin: 0.5rem 0;
-            font-size: 1.4rem;
-            color: var(--c-dark);
-        }
+        .tech-box:hover::after { width: 100%; }
+
+        .tech-box i { font-size: 2.5rem; color: var(--c-cyan); margin-bottom: 1rem; display: block; }
+        .tech-box h3 { font-family: var(--f-head); color: #fff; margin: 0 0 0.5rem; }
 
         /* Navigation */
-        .back-btn {
+        .nav-btn {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            color: var(--c-main);
-            text-decoration: none;
-            font-family: var(--f-mono);
-            font-weight: 700;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            color: var(--c-cyan); text-decoration: none;
+            font-family: var(--f-head); font-weight: 700;
+            border: 1px solid var(--c-cyan);
+            padding: 0.8rem 2rem;
+            background: rgba(0,0,0,0.8);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
             transition: 0.3s;
-            display: flex; align-items: center; gap: 0.8rem;
-            border: 1px solid rgba(255,255,255,1);
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        .back-btn:hover {
-            background: var(--c-main);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 160, 0.3);
+        .nav-btn:hover {
+            background: var(--c-cyan); color: #000;
+            box-shadow: 0 0 20px var(--c-cyan);
         }
 
         /* Footer */
         .footer {
-            min-height: 50vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: linear-gradient(to top, rgba(255,255,255,0.8), transparent);
-            position: relative; z-index: 20;
-            margin-top: -20vh;
-            pointer-events: none;
+            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: linear-gradient(to top, #020617, transparent);
+            position: relative; margin-top: -20vh; z-index: 30;
         }
-        .footer > * { pointer-events: auto; }
-
-        .social-links { display: flex; gap: 2rem; margin-top: 2.5rem; }
         .social-btn {
-            width: 70px; height: 70px;
-            border-radius: 50%;
-            background: white;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--c-main);
-            font-size: 1.8rem;
-            text-decoration: none;
-            box-shadow: 0 10px 30px rgba(59, 130, 160, 0.15);
-            transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-            overflow: hidden;
+            font-size: 2rem; color: var(--c-cyan); margin: 0 1rem;
+            transition: 0.3s; display: inline-block;
         }
-        .social-btn::after {
-            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-            background: var(--c-accent);
-            border-radius: 50%;
-            transform: scale(0);
-            transition: 0.4s;
-            z-index: 0;
-        }
-        .social-btn i { position: relative; z-index: 1; transition: 0.4s; }
-        .social-btn:hover::after { transform: scale(1); }
-        .social-btn:hover {
-            transform: translateY(-8px) scale(1.1);
-            box-shadow: 0 20px 40px rgba(249, 115, 22, 0.3);
-        }
-        .social-btn:hover i { color: white; }
+        .social-btn:hover { color: var(--c-orange); transform: scale(1.2); text-shadow: 0 0 15px var(--c-orange); }
 
-        /* Viz Container */
-        #data-flow-viz {
-            width: 100%; height: 320px;
-            border-radius: 16px;
-            overflow: hidden;
-            position: relative;
-            background: #0F172A;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 20px 40px rgba(0,0,0,0.2);
-            border: 1px solid rgba(59, 130, 160, 0.3);
-        }
-
-        /* Responsive */
         @media (max-width: 1024px) {
-            .split-layout { grid-template-columns: 1fr; gap: 3rem; text-align: center; }
-            .grid-3 { grid-template-columns: 1fr; }
-            .glass-card { padding: 2.5rem; }
-            h1 { font-size: 3rem; }
-            .avatar-container { margin: 0 auto 2rem; }
+            .grid-split, .grid-3 { grid-template-columns: 1fr; }
+            h1 { font-size: 3.5rem; }
+            .cyber-card { padding: 2rem; }
         }
     </style>
 </head>
 <body>
 
-    <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
+    <a href="/guild" class="nav-btn">&lt; GUILD_NET</a>
+    <div class="scanlines"></div>
 
-    <!-- Visual Layers -->
+    <!-- HUD Decoration -->
+    <div class="hud-overlay">
+        <div class="hud-top-left"></div>
+        <div class="hud-corner" style="position:absolute; top: 2.5rem; left: 9rem;">SYS.STATUS: ONLINE</div>
+        <div class="hud-corner" style="position:absolute; bottom: 2.5rem; right: 9rem;">DATA_INTEGRITY: 100%</div>
+        <div class="hud-bottom-right"></div>
+    </div>
+
     <div id="webgl-container"></div>
-    <div id="p5-grain-container"></div>
 
     <div class="scroller">
 
-        <!-- 1. Hero -->
+        <!-- 1. Hero: Data Identity -->
         <section class="section">
-            <div class="glass-card split-layout">
+            <div class="cyber-card grid-split">
                 <div style="text-align: center;">
-                    <div class="avatar-container">
+                    <div class="avatar-glitch">
                         <img src="/assets/img/guild/michael/avatar.webp" class="avatar-img" alt="Michael Lai">
                     </div>
-                    <div class="mono-tag">Lv.1 Data Analyst</div>
-                    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
-                         <span class="mono-tag" style="padding: 0.4rem 0.8rem; background: rgba(59,130,160,0.1); border-radius: 8px;"><i class="fa-solid fa-code"></i> PYTHON</span>
-                        <span class="mono-tag" style="padding: 0.4rem 0.8rem; background: rgba(59,130,160,0.1); border-radius: 8px;"><i class="fa-solid fa-database"></i> SQL</span>
-                        <span class="mono-tag" style="padding: 0.4rem 0.8rem; background: rgba(59,130,160,0.1); border-radius: 8px;"><i class="fa-solid fa-robot"></i> AI</span>
-                    </div>
+                    <div class="mono" style="margin-top: 1rem;">ID: MICHAEL_LAI</div>
+                    <div class="mono" style="color: var(--c-orange);">CLASS: DATA_ARCHITECT</div>
                 </div>
-                <div style="text-align: left;">
-                    <span class="mono-tag" style="color: var(--c-accent);">// INTRO_SEQUENCE</span>
-                    <h1>Michael Lai</h1>
-                    <p class="highlight" style="display:inline-block; margin-bottom: 2rem; font-size: 1.2rem;">半路出家的數據分析師 <i class="fa-solid fa-arrow-right" style="font-size: 0.8em; margin: 0 0.5rem;"></i> 未來的數據專家</p>
-                    <p>
-                        嗨，我是 Michael。一個在數據洪流中尋找秩序的探索者。
-                        我喜歡用 <span class="highlight">原始碼</span> 將繁瑣的流程自動化，
-                        也享受與 <span class="highlight">AI</span> 協作生成未知的創意。
+                <div>
+                    <div class="mono" style="margin-bottom: 0.5rem;">// INITIALIZING SEQUENCE...</div>
+                    <h1 class="glitch-text">MICHAEL LAI</h1>
+                    <h3 style="color: var(--c-cyan); font-family: var(--f-head); font-size: 1.5rem; margin-top: 0.5rem;">
+                        DATA ANALYST <i class="fa-solid fa-arrow-right" style="font-size: 0.8em; color: var(--c-orange);"></i> FUTURE EXPERT
+                    </h3>
+                    <p style="margin-top: 2rem;">
+                        在混亂的數據洪流中建立秩序的建築師。
+                        我擅長運用 <span class="highlight">Python & SQL</span> 編織自動化邏輯，
+                        並與 <span class="highlight">Artificial Intelligence</span> 共生，生成未知的創意維度。
                     </p>
-                    <p style="font-size: 1rem; opacity: 0.8; font-family: var(--f-mono); margin-top: 2rem; border-left: 3px solid var(--c-accent); padding-left: 1rem;">
-                        "數據不僅是數字，它是通往真相的鑰匙。"
+                    <p class="mono" style="font-size: 0.9rem; border-left: 2px solid var(--c-cyan); padding-left: 1rem; opacity: 0.7;">
+                        "Data is not just numbers. It is the raw material of truth."
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- 2. Skills & Passion -->
+        <!-- 2. Core Modules: Skills -->
         <section class="section">
-            <div class="glass-card">
-                <span class="mono-tag" style="color: var(--c-accent);">// CORE_MODULES</span>
-                <h2><i class="fa-solid fa-microchip" style="color: var(--c-main);"></i> Automation & Synthesis</h2>
+            <div class="cyber-card">
+                <div class="mono" style="color: var(--c-orange);">// LOAD_MODULES: SKILLS</div>
+                <h2><i class="fa-solid fa-network-wired"></i> SYSTEM CAPABILITIES</h2>
 
-                <div class="split-layout" style="gap: 4rem; text-align: left;">
+                <div class="grid-split">
                     <div>
-                        <p>
-                            <strong style="color: var(--c-main); font-size: 1.3rem;">自動化的藝術</strong><br>
-                            對我來說，寫程式不僅是工作，更是一種將時間歸還給生活的魔法。
-                            看著繁瑣的任務被腳本一行行吞噬，有一種難以言喻的療癒感。
-                        </p>
-                        <p style="margin-top: 2rem;">
-                            <strong style="color: var(--c-main); font-size: 1.3rem;">AI 協作者</strong><br>
-                            我不害怕 AI 取代我，我擁抱它成為我的副駕駛。
-                            從生成圖像到優化代碼，我們共同創造出超出預期的成果。
-                        </p>
+                        <div class="tech-box" style="margin-bottom: 2rem;">
+                            <i class="fa-solid fa-robot"></i>
+                            <h3>Automation Synthesis</h3>
+                            <p style="font-size: 1rem;">
+                                將繁瑣的人力流程轉化為優雅的代碼。
+                                自動化不僅是效率的提升，更是將人類智能從重複勞動中解放的儀式。
+                            </p>
+                        </div>
+                        <div class="tech-box">
+                            <i class="fa-solid fa-brain"></i>
+                            <h3>AI Symbiosis</h3>
+                            <p style="font-size: 1rem;">
+                                我不畏懼矽基智慧。我將 AI 視為副駕駛，
+                                從圖像生成到算法優化，我們共同探索人類思維的邊界。
+                            </p>
+                        </div>
                     </div>
-                    <!-- Visual representation of data flow -->
-                    <div id="data-flow-viz"></div>
+
+                    <!-- Code Terminal Visualization -->
+                    <div style="background: #000; padding: 2rem; border-radius: 4px; font-family: monospace; color: #0f0; height: 100%; border: 1px solid #333; overflow: hidden; position: relative;">
+                        <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(rgba(0,255,0,0.1) 1px, transparent 1px); background-size: 100% 4px; pointer-events: none;"></div>
+                        <span style="color: #666;"># Connecting to Global Database...</span><br>
+                        <span style="color: var(--c-cyan);">def optimize_reality(data):</span><br>
+                        &nbsp;&nbsp; chaos = data.extract('noise')<br>
+                        &nbsp;&nbsp; pattern = model.predict(chaos)<br>
+                        &nbsp;&nbsp; <span style="color: var(--c-orange);">return structure(pattern)</span><br>
+                        <br>
+                        <span style="color: #666;"># Output: Efficiency + 300%</span><br>
+                        <span class="cursor-blink">_</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3. Interests -->
+        <!-- 3. Personality Traits -->
         <section class="section">
-            <div class="glass-card">
-                <span class="mono-tag" style="color: var(--c-accent);">// PERSONALITY_TRAITS</span>
-                <h2><i class="fa-solid fa-fingerprint" style="color: var(--c-main);"></i> Beyond the Code</h2>
-                <p>數據之外，我是一個充滿好奇心的觀察者。</p>
+            <div class="cyber-card">
+                <div class="mono" style="color: var(--c-orange);">// PERSONALITY_MATRIX</div>
+                <h2><i class="fa-solid fa-fingerprint"></i> BEYOND THE CODE</h2>
+                <p>除去數據專家的外殼，我是充滿好奇的觀察者。</p>
 
                 <div class="grid-3">
-                    <div class="icon-box">
-                        <i class="fa-solid fa-earth-asia"></i>
-                        <h3>Cultural Observer</h3>
-                        <p style="font-size: 0.95rem;">喜歡觀察各國文化，學習他人的長處，將多元視角融入分析。</p>
+                    <div class="tech-box">
+                        <i class="fa-solid fa-globe"></i>
+                        <h3>Global Observer</h3>
+                        <p style="font-size: 0.9rem;">
+                            解析各國文化的底層邏輯。
+                            學習他人的長處，將多元視角融入分析模型。
+                        </p>
                     </div>
-                    <div class="icon-box">
+                    <div class="tech-box">
                         <i class="fa-solid fa-cat"></i>
-                        <h3>Cat Lover</h3>
-                        <p style="font-size: 0.95rem;">貓咪是真愛。<br>牠們的優雅與獨立是我嚮往的生活態度。</p>
+                        <h3>Feline Ally</h3>
+                        <p style="font-size: 0.9rem;">
+                            貓是完美的混亂與優雅的結合體。
+                            牠們教會我獨立思考與保持靈活。
+                        </p>
                     </div>
-                    <div class="icon-box">
+                    <div class="tech-box">
                         <i class="fa-solid fa-basketball"></i>
-                        <h3>Basketball</h3>
-                        <p style="font-size: 0.95rem;">享受運動的汗水，尤其是籃球場上的團隊流動。</p>
+                        <h3>Kinetic Flow</h3>
+                        <p style="font-size: 0.9rem;">
+                            籃球場上的動態幾何。
+                            享受團隊協作與瞬間決策帶來的腎上腺素。
+                        </p>
                     </div>
                 </div>
             </div>
@@ -416,371 +358,151 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <div style="text-align: center;">
-                <h2 style="margin-bottom: 0.5rem; font-size: 3rem;">Let's Connect</h2>
-                <p>正在尋找數據分析相關機會</p>
-                <div class="social-links">
-                    <a href="https://www.threads.net/@michael_lwt" target="_blank" class="social-btn" title="Threads">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                    <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="social-btn" title="Instagram">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                </div>
-                <div style="margin-top: 4rem; font-family: var(--f-mono); font-size: 0.8rem; color: #64748b;">
-                    MADE WITH <i class="fa-solid fa-heart" style="color: var(--c-accent);"></i> BY SUPERGALEN'S DUNGEON
-                </div>
+            <h2 style="font-size: 4rem; text-shadow: 0 0 20px var(--c-cyan);">LINK_START</h2>
+            <p style="color: var(--c-cyan);">正在尋找數據分析相關機會</p>
+            <div style="margin-top: 2rem;">
+                <a href="https://www.threads.net/@michael_lwt" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <div class="mono" style="margin-top: 4rem; font-size: 0.8rem; color: #64748b;">
+                MADE WITH <i class="fa-solid fa-bolt" style="color: var(--c-orange);"></i> BY SUPERGALEN'S DUNGEON
             </div>
         </footer>
 
     </div>
 
-    <!-- p5.js Scripts -->
-    <script>
-        // 1. Fullscreen Grain Effect
-        const grainSketch = (p) => {
-            p.setup = () => {
-                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-grain-container');
-                p.noLoop();
-            };
-
-            p.draw = () => {
-                p.clear();
-                p.loadPixels();
-                // Add noise
-                for (let i = 0; i < p.width * p.height * 4; i += 4) {
-                    const noiseVal = p.random(200, 255);
-                    p.pixels[i] = noiseVal;
-                    p.pixels[i+1] = noiseVal;
-                    p.pixels[i+2] = noiseVal;
-                    p.pixels[i+3] = p.random(10, 30); // Low opacity
-                }
-                p.updatePixels();
-            };
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-                p.draw();
-            };
-        };
-        new p5(grainSketch);
-
-        // 2. Data Flow Visualization (Matrix-ish) - Enhanced
-        const dataSketch = (p) => {
-            let streams = [];
-            let symbolSize = 20; // Larger text
-
-            p.setup = () => {
-                const container = document.getElementById('data-flow-viz');
-                const canvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
-                canvas.parent('data-flow-viz');
-                p.background(0, 0);
-                p.textFont('JetBrains Mono');
-                p.textSize(symbolSize);
-                p.textAlign(p.CENTER);
-
-                let x = 0;
-                for (let i = 0; i <= p.width / symbolSize; i++) {
-                    let stream = new Stream();
-                    stream.generateSymbols(x, p.random(-1000, 0));
-                    streams.push(stream);
-                    x += symbolSize;
-                }
-            };
-
-            p.draw = () => {
-                p.background(15, 23, 42, 80); // More trail (lower alpha)
-                streams.forEach(stream => stream.render());
-            };
-
-            p.windowResized = () => {
-                const container = document.getElementById('data-flow-viz');
-                p.resizeCanvas(container.offsetWidth, container.offsetHeight);
-                // Reset streams on resize for simplicity
-                streams = [];
-                let x = 0;
-                for (let i = 0; i <= p.width / symbolSize; i++) {
-                    let stream = new Stream();
-                    stream.generateSymbols(x, p.random(-1000, 0));
-                    streams.push(stream);
-                    x += symbolSize;
-                }
-            };
-
-            class Symbol {
-                constructor(x, y, speed, first) {
-                    this.x = x;
-                    this.y = y;
-                    this.value = '';
-                    this.speed = speed;
-                    this.switchInterval = p.round(p.random(2, 20));
-                    this.first = first;
-                }
-
-                setToRandomSymbol() {
-                    if (p.frameCount % this.switchInterval == 0) {
-                        const charType = p.random(1);
-                        if (charType > 0.3) {
-                            // Binary + Special Chars
-                            const chars = "01<>{}[]/|";
-                            this.value = chars.charAt(p.floor(p.random(chars.length)));
-                        } else {
-                            // Numbers
-                            this.value = p.floor(p.random(0, 9));
-                        }
-                    }
-                }
-
-                rain() {
-                    this.y = (this.y >= p.height) ? 0 : this.y += this.speed;
-                }
-            }
-
-            class Stream {
-                constructor() {
-                    this.symbols = [];
-                    this.totalSymbols = p.round(p.random(8, 20));
-                    this.speed = p.random(3, 8); // Faster
-                }
-
-                generateSymbols(x, y) {
-                    let first = p.round(p.random(0, 4)) == 1;
-                    for (let i = 0; i <= this.totalSymbols; i++) {
-                        let symbol = new Symbol(x, y, this.speed, first);
-                        symbol.setToRandomSymbol();
-                        this.symbols.push(symbol);
-                        y -= symbolSize;
-                        first = false;
-                    }
-                }
-
-                render() {
-                    this.symbols.forEach(symbol => {
-                        if (symbol.first) {
-                            p.fill(255, 255, 255); // White Head
-                            p.drawingContext.shadowBlur = 15;
-                            p.drawingContext.shadowColor = 'rgba(255,255,255,0.8)';
-                        } else {
-                            // Gradient color based on position in stream? simpler:
-                            // Mix Cyan and Orange
-                            if (p.random() > 0.9) p.fill(249, 115, 22); // Orange Accent
-                            else p.fill(59, 130, 160, 200); // Blue Body
-
-                            p.drawingContext.shadowBlur = 0;
-                        }
-                        p.text(symbol.value, symbol.x, symbol.y);
-                        symbol.rain();
-                        symbol.setToRandomSymbol();
-                    });
-                }
-            }
-        };
-        new p5(dataSketch);
-    </script>
-
-    <!-- Three.js Data Constellation & Interactions -->
+    <!-- WebGL & Logic -->
     <script type="module">
         import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
-        gsap.registerPlugin(ScrollTrigger);
+        // Glitch Text Effect
+        const glitchTargets = document.querySelectorAll('.glitch-text');
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*';
 
-        // Scene Setup
+        glitchTargets.forEach(target => {
+            const originalText = target.innerText;
+            target.addEventListener('mouseenter', () => scramble(target, originalText));
+            // Initial scramble
+            scramble(target, originalText);
+        });
+
+        function scramble(element, finalVal) {
+            let iterations = 0;
+            const interval = setInterval(() => {
+                element.innerText = finalVal
+                    .split('')
+                    .map((letter, index) => {
+                        if(index < iterations) return finalVal[index];
+                        return chars[Math.floor(Math.random() * chars.length)];
+                    })
+                    .join('');
+
+                if(iterations >= finalVal.length) clearInterval(interval);
+                iterations += 1/3;
+            }, 30);
+        }
+
+        // --- THREE.JS SCENE ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Lighter fog for depth
-        scene.fog = new THREE.FogExp2(0xF8FAFC, 0.005);
+        scene.fog = new THREE.FogExp2(0x020617, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 40;
+        camera.position.z = 30;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Interaction State
-        const mouse = new THREE.Vector2(0, 0);
-        const raycaster = new THREE.Raycaster();
-        let targetRotation = { x: 0, y: 0 };
-        let shockwaveRadius = 0;
-        let isShockwaveActive = false;
+        // 1. Digital Core (Wireframe Sphere)
+        const coreGroup = new THREE.Group();
+        scene.add(coreGroup);
 
-        // 1. Interactive Particles - "Data Points"
-        const particleCount = 800;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const originalPositions = new Float32Array(particleCount * 3);
-        const sizes = new Float32Array(particleCount);
+        const geometry = new THREE.IcosahedronGeometry(10, 2);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x22d3ee,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15
+        });
+        const core = new THREE.Mesh(geometry, material);
+        coreGroup.add(core);
+
+        // Inner glowing core
+        const innerGeo = new THREE.IcosahedronGeometry(6, 1);
+        const innerMat = new THREE.MeshBasicMaterial({
+            color: 0x3b82f6,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const innerCore = new THREE.Mesh(innerGeo, innerMat);
+        coreGroup.add(innerCore);
+
+        // 2. Data Particles (Binary Cloud)
+        const particleCount = 1500;
+        const particleGeo = new THREE.BufferGeometry();
+        const posArray = new Float32Array(particleCount * 3);
+        const speedArray = new Float32Array(particleCount); // Fall speed
 
         for(let i=0; i<particleCount; i++) {
-            const x = (Math.random() - 0.5) * 120;
-            const y = (Math.random() - 0.5) * 120;
-            const z = (Math.random() - 0.5) * 80;
-
-            positions[i*3] = x;
-            positions[i*3+1] = y;
-            positions[i*3+2] = z;
-
-            originalPositions[i*3] = x;
-            originalPositions[i*3+1] = y;
-            originalPositions[i*3+2] = z;
-
-            sizes[i] = Math.random();
+            posArray[i*3] = (Math.random() - 0.5) * 100; // x
+            posArray[i*3+1] = (Math.random() - 0.5) * 100; // y
+            posArray[i*3+2] = (Math.random() - 0.5) * 60; // z
+            speedArray[i] = Math.random() * 0.2 + 0.05;
         }
 
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
-        // Use custom shader for glowing dots
-        const particleMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                color: { value: new THREE.Color(0x3B82A0) },
-                time: { value: 0 }
-            },
-            vertexShader: `
-                attribute float size;
-                uniform float time;
-                varying float vOpacity;
-                void main() {
-                    vec3 pos = position;
-                    // Float effect
-                    pos.y += sin(time * 0.5 + pos.x * 0.05) * 0.5;
-
-                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                    // Scale size by distance
-                    gl_PointSize = size * 10.0 * (40.0 / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-                    vOpacity = size;
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 color;
-                varying float vOpacity;
-                void main() {
-                    // Circular soft particle
-                    float r = distance(gl_PointCoord, vec2(0.5));
-                    if (r > 0.5) discard;
-
-                    // Glow center
-                    float glow = 1.0 - (r * 2.0);
-                    glow = pow(glow, 1.5);
-
-                    gl_FragColor = vec4(color, glow * vOpacity);
-                }
-            `,
+        // Custom shader for matrix rain dots
+        const particlesMat = new THREE.PointsMaterial({
+            size: 0.4,
+            color: 0x22d3ee,
             transparent: true,
-            depthWrite: false,
+            opacity: 0.8,
             blending: THREE.AdditiveBlending
         });
 
-        const particles = new THREE.Points(geometry, particleMaterial);
-        scene.add(particles);
+        const particleSystem = new THREE.Points(particleGeo, particlesMat);
+        scene.add(particleSystem);
 
-        // 2. Lines
-        const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x3B82A0,
-            transparent: true,
-            opacity: 0.15,
-            blending: THREE.AdditiveBlending
-        });
-        const lineGeometry = new THREE.BufferGeometry();
-        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-        scene.add(lines);
+        // 3. Floating Data Rings
+        const ringGroup = new THREE.Group();
+        scene.add(ringGroup);
 
-        // 3. Floating Glass Crystals
-        const shapeGroup = new THREE.Group();
-        scene.add(shapeGroup);
-        const crystalGeo = new THREE.IcosahedronGeometry(1, 0);
-        // Better glass material
-        const glassMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0,
-            roughness: 0,
-            transmission: 1.0,
-            thickness: 2,
-            ior: 1.5,
-            clearcoat: 1,
-            transparent: true,
-            opacity: 0.8
-        });
-
-        const crystals = [];
-        // Add more crystals
-        for(let i=0; i<15; i++) {
-            const mesh = new THREE.Mesh(crystalGeo, glassMat);
-            mesh.position.set(
-                (Math.random()-0.5) * 80,
-                (Math.random()-0.5) * 80,
-                (Math.random()-0.5) * 40
-            );
-            mesh.scale.setScalar(0.5 + Math.random() * 2);
-            mesh.userData = {
-                rotSpeed: new THREE.Vector3(
-                    (Math.random()-0.5) * 0.03,
-                    (Math.random()-0.5) * 0.03,
-                    (Math.random()-0.5) * 0.03
-                ),
-                originalPos: mesh.position.clone(),
-                floatSpeed: Math.random() * 0.02,
-                floatOffset: Math.random() * Math.PI * 2
-            };
-            shapeGroup.add(mesh);
-            crystals.push(mesh);
+        for(let i=0; i<5; i++) {
+            const ringGeo = new THREE.TorusGeometry(15 + i*8, 0.1, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.3 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.rotation.y = Math.random() * Math.PI;
+            ring.userData = { rotSpeed: (Math.random()-0.5) * 0.01 };
+            ringGroup.add(ring);
         }
 
-        // Lighting
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambLight);
-
-        const blueLight = new THREE.PointLight(0x3B82A0, 2, 60);
-        blueLight.position.set(-20, 10, 10);
-        scene.add(blueLight);
-
-        const orangeLight = new THREE.PointLight(0xF97316, 2, 60); // Orange accent
-        orangeLight.position.set(20, -10, 10);
-        scene.add(orangeLight);
-
-        // Interaction Logic
+        // Mouse Interaction
+        const mouse = new THREE.Vector2();
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            // Parallax
-            targetRotation.x = mouse.y * 0.1;
-            targetRotation.y = mouse.x * 0.1;
         });
 
-        // EXPLOSIVE CLICK
+        // Click Interaction: Pulse
         window.addEventListener('click', () => {
-            // Trigger shockwave
-            isShockwaveActive = true;
-            shockwaveRadius = 0;
+            gsap.to(core.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.2, yoyo: true, repeat: 1 });
+            gsap.to(innerCore.scale, { x: 0.1, y: 0.1, z: 0.1, duration: 0.2, yoyo: true, repeat: 1 });
 
-            // Camera Shake
+            // Camera shake
             gsap.to(camera.position, {
-                x: camera.position.x + (Math.random()-0.5)*2,
-                y: camera.position.y + (Math.random()-0.5)*2,
-                duration: 0.1,
+                x: camera.position.x + 1,
+                duration: 0.05,
                 yoyo: true,
-                repeat: 3,
-                onComplete: () => {
-                   camera.position.x = 0;
-                   camera.position.y = 0;
-                }
-            });
-
-            // Crystals scatter
-            crystals.forEach(c => {
-                gsap.to(c.position, {
-                    x: c.position.x + (Math.random()-0.5)*10,
-                    y: c.position.y + (Math.random()-0.5)*10,
-                    z: c.position.z + (Math.random()-0.5)*10,
-                    duration: 0.3,
-                    ease: "back.out(2)",
-                    yoyo: true,
-                    repeat: 1
-                });
+                repeat: 5,
+                onComplete: () => { camera.position.x = 0; }
             });
         });
 
@@ -791,114 +513,39 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Rotation
-            scene.rotation.x += (targetRotation.x - scene.rotation.x) * 0.05;
-            scene.rotation.y += (targetRotation.y - scene.rotation.y) * 0.05;
+            // Rotate Core
+            core.rotation.y += 0.005;
+            core.rotation.z += 0.002;
+            innerCore.rotation.y -= 0.01;
 
-            // Uniforms
-            particleMaterial.uniforms.time.value = time;
-
-            // Shockwave logic
-            if (isShockwaveActive) {
-                shockwaveRadius += 1.5; // Expand speed
-                if(shockwaveRadius > 100) isShockwaveActive = false;
-            }
-
-            // Particle Physics
-            const posAttr = particles.geometry.attributes.position;
-            const linePositions = [];
-
-            // We'll update first N particles for physics/lines
-            const activeCount = 100;
-
-            for(let i=0; i<particleCount; i++) {
-                // Read current
-                let ix = posAttr.getX(i);
-                let iy = posAttr.getY(i);
-                let iz = posAttr.getZ(i);
-
-                // Original base
-                const ox = originalPositions[i*3];
-                const oy = originalPositions[i*3+1];
-                const oz = originalPositions[i*3+2];
-
-                // 1. Mouse Repel (Local disturbance)
-                // Project mouse to world Z=0 plane approximation
-                const mx = mouse.x * 40;
-                const my = mouse.y * 40;
-                const d = Math.sqrt((ix-mx)**2 + (iy-my)**2);
-
-                let forceX = 0, forceY = 0, forceZ = 0;
-
-                if (d < 15) {
-                    const angle = Math.atan2(iy - my, ix - mx);
-                    const force = (15 - d) * 0.1;
-                    forceX += Math.cos(angle) * force;
-                    forceY += Math.sin(angle) * force;
-                }
-
-                // 2. Shockwave (Explosion)
-                if (isShockwaveActive) {
-                    const distFromCenter = Math.sqrt(ix*ix + iy*iy + iz*iz);
-                    const waveDist = Math.abs(distFromCenter - shockwaveRadius);
-                    if (waveDist < 5) {
-                         // Push out
-                         const normX = ix / distFromCenter;
-                         const normY = iy / distFromCenter;
-                         const normZ = iz / distFromCenter;
-                         forceX += normX * 2;
-                         forceY += normY * 2;
-                         forceZ += normZ * 2;
-                    }
-                }
-
-                // Apply forces to position
-                ix += forceX;
-                iy += forceY;
-                iz += forceZ;
-
-                // Return to original (Elasticity)
-                ix += (ox - ix) * 0.05;
-                iy += (oy - iy) * 0.05;
-                iz += (oz - iz) * 0.05;
-
-                posAttr.setXYZ(i, ix, iy, iz);
-
-                // Line connections (only for first subset to save perf)
-                if (i < activeCount) {
-                    for(let j=i+1; j<activeCount; j++) {
-                        const jx = posAttr.getX(j);
-                        const jy = posAttr.getY(j);
-                        const jz = posAttr.getZ(j);
-                        const dist = Math.sqrt((ix-jx)**2 + (iy-jy)**2 + (iz-jz)**2);
-                        if(dist < 12) {
-                            linePositions.push(ix, iy, iz, jx, jy, jz);
-                        }
-                    }
-                }
-            }
-
-            lines.geometry.dispose();
-            lines.geometry = new THREE.BufferGeometry();
-            lines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
-
-            // Crystals Animation
-            crystals.forEach((mesh) => {
-                mesh.rotation.x += mesh.userData.rotSpeed.x;
-                mesh.rotation.y += mesh.userData.rotSpeed.y;
-                mesh.position.y += Math.sin(time * 2 + mesh.userData.floatOffset) * 0.02;
+            // Rotate Rings
+            ringGroup.children.forEach(ring => {
+                ring.rotation.z += ring.userData.rotSpeed;
+                ring.rotation.x += Math.sin(time * 0.5) * 0.001;
             });
 
-            // Lights follow mouse slightly
-            blueLight.position.x = -20 + mouse.x * 10;
-            orangeLight.position.x = 20 + mouse.x * 10;
+            // Parallax
+            coreGroup.rotation.x = mouse.y * 0.2;
+            coreGroup.rotation.y = mouse.x * 0.2;
 
-            posAttr.needsUpdate = true;
+            // Rain Effect
+            const positions = particleSystem.geometry.attributes.position.array;
+            for(let i=0; i<particleCount; i++) {
+                positions[i*3+1] -= speedArray[i]; // Fall down
+                if (positions[i*3+1] < -50) {
+                    positions[i*3+1] = 50; // Reset to top
+                }
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+
             renderer.render(scene, camera);
         }
         animate();
 
-        // Scroll Interactions
+        // GSAP ScrollTrigger
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Camera Zoom Sequence
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: ".scroller",
@@ -908,17 +555,16 @@
             }
         });
 
-        // Move camera into the data cloud
+        // Zoom into the core
         tl.to(camera.position, { z: 5, ease: "none" });
-        tl.to(scene.rotation, { z: 0.5, ease: "none" }, "<");
+        tl.to(coreGroup.rotation, { z: 2, ease: "none" }, "<");
 
-        // Element Entry
-        gsap.from("h1", { y: 50, opacity: 0, duration: 1.5, ease: "power4.out", delay: 0.2 });
-        gsap.from(".avatar-container", { scale: 0, rotation: -180, duration: 1, ease: "back.out(1.7)", delay: 0.5 });
+        // Fade out core as we pass it
+        tl.to(coreGroup.scale, { x: 3, y: 3, z: 3, ease: "power1.in" }, "<");
+        tl.to(core.material, { opacity: 0 }, "< 80%");
 
-        // Stagger glass cards
-        gsap.utils.toArray('.glass-card').forEach((card, i) => {
-            if(i === 0) return;
+        // Elements Reveal
+        gsap.utils.toArray('.cyber-card').forEach((card, i) => {
             gsap.from(card, {
                 scrollTrigger: {
                     trigger: card,
@@ -927,8 +573,9 @@
                 },
                 y: 100,
                 opacity: 0,
-                duration: 1,
-                ease: "power3.out"
+                scale: 0.9,
+                duration: 0.8,
+                ease: "back.out(1.2)"
             });
         });
 
