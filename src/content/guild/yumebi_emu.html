@@ -755,8 +755,9 @@
                 // Show Nav
                 gsap.to(navBack, {opacity: 1, y: 0, duration: 0.5, delay: 1});
 
-                // Unlock Scroll (Y)
+                // Unlock Scroll (Y) - Unlock both body and html to ensure compatibility
                 document.body.style.overflowY = 'auto';
+                document.documentElement.style.overflowY = 'auto';
 
                 // Refresh ScrollTrigger after unlocking body
                 ScrollTrigger.refresh();
