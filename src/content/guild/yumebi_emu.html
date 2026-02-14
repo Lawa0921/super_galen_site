@@ -448,18 +448,17 @@
             top: 50%; left: 50%; transform: translate(-50%, -50%);
             text-align: center;
             z-index: 20;
-            pointer-events: none; /* Let clicks pass to 3D scene initially, or handle manually */
-            opacity: 0; /* Hidden by default, revealed by scroll */
+            opacity: 0;
             transition: opacity 0.5s;
         }
 
         .hint-text {
             color: var(--accent-gold);
             font-family: 'Cinzel';
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             text-shadow: 0 0 10px var(--accent-gold);
             letter-spacing: 0.2em;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             animation: pulse-text 2s infinite;
         }
 
@@ -468,14 +467,59 @@
             50% { opacity: 1; text-shadow: 0 0 20px var(--accent-gold); }
         }
 
-        .hint-icon {
-            font-size: 2rem;
-            color: #fff;
-            animation: bounce-hand 1.5s infinite;
+        /* --- Devil Egg Summon Button --- */
+        .devil-egg {
+            position: relative;
+            display: inline-block;
+            font-size: 5rem;
+            color: var(--accent-pink);
+            cursor: pointer;
+            pointer-events: auto;
+            filter: drop-shadow(0 0 15px var(--accent-pink)) drop-shadow(0 0 30px rgba(148, 0, 60, 0.6));
+            animation: egg-pulse 2s ease-in-out infinite, egg-float 3s ease-in-out infinite;
+            transition: filter 0.3s, color 0.3s;
         }
-        @keyframes bounce-hand {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(10px); }
+
+        .devil-egg::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 120%; height: 120%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,105,180,0.15), transparent 70%);
+            animation: egg-aura 2s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        .devil-egg .devil-horns {
+            position: absolute;
+            top: -0.4em; left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.5em;
+            color: var(--accent-gold);
+            filter: drop-shadow(0 0 5px var(--accent-gold));
+            pointer-events: none;
+        }
+
+        .devil-egg:hover {
+            color: #fff;
+            filter: drop-shadow(0 0 25px var(--accent-pink)) drop-shadow(0 0 50px rgba(148, 0, 60, 0.8));
+        }
+
+        @keyframes egg-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        @keyframes egg-float {
+            0%, 100% { margin-top: 0; }
+            50% { margin-top: -8px; }
+        }
+
+        @keyframes egg-aura {
+            0% { opacity: 0.3; width: 120%; height: 120%; }
+            100% { opacity: 0.6; width: 150%; height: 150%; }
         }
 
         /* --- Gallery Finale --- */
@@ -688,10 +732,13 @@
 
         <!-- Gallery (3D Scene) -->
         <section id="gallery">
-            <!-- Hint: Touch Circle -->
+            <!-- Devil Egg Summon -->
             <div class="hint-touch" id="hint-touch">
-                <div class="hint-text">TOUCH THE SOUL GEM</div>
-                <i class="fa-solid fa-hand-point-down hint-icon"></i>
+                <div class="hint-text">TOUCH THE EGG</div>
+                <div class="devil-egg" id="devil-egg">
+                    <span class="devil-horns"><i class="fa-solid fa-fire"></i></span>
+                    <i class="fa-solid fa-egg"></i>
+                </div>
             </div>
 
             <!-- Final Overlay Content (Hidden until crystalized) -->
@@ -949,39 +996,8 @@
         ringPlane.position.z = -4;
         scene.add(ringPlane);
 
-        // --- SOUL GEM (EGG SHAPE, PULSATING) ---
-        const eggGeo = new THREE.SphereGeometry(1.8, 32, 32);
-        // Deform into egg: stretch top, compress bottom
-        const eggPos = eggGeo.attributes.position;
-        for (let i = 0; i < eggPos.count; i++) {
-            const y = eggPos.getY(i);
-            const normalizedY = y / 1.8;
-            const eggScale = 1 + normalizedY * 0.3;
-            eggPos.setY(i, y * eggScale);
-        }
-        eggGeo.computeVertexNormals();
-
-        const gemMatCore = new THREE.MeshBasicMaterial({
-            color: 0xff1493,
-            transparent: true,
-            opacity: 0.9
-        });
-
-        const soulGem = new THREE.Mesh(eggGeo, gemMatCore);
-        soulGem.position.z = -2;
-        scene.add(soulGem);
-
-        // Glowing egg outline
-        const eggOutlineGeo = eggGeo.clone();
-        eggOutlineGeo.scale(1.15, 1.15, 1.15);
-        const gemOutlineMat = new THREE.MeshBasicMaterial({
-            color: 0xffd700,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.4
-        });
-        const gemOutline = new THREE.Mesh(eggOutlineGeo, gemOutlineMat);
-        soulGem.add(gemOutline);
+        // --- DEVIL EGG (2D HTML element, no 3D mesh) ---
+        const devilEgg = document.getElementById('devil-egg');
 
         // --- NEBULA / FOG ---
         const cloudCanvas = document.createElement('canvas');
@@ -1190,10 +1206,8 @@
 
                 if(scrollProgress > 0.9 && !isSummoned && !isSummoning) {
                     hintTouch.style.opacity = 1;
-                    soulGem.visible = true;
                 } else if(!isSummoned && !isSummoning) {
                     hintTouch.style.opacity = 0;
-                    soulGem.visible = false;
                 }
 
                 if(!isSummoned && !isSummoning) {
@@ -1209,37 +1223,40 @@
             }
         });
 
-        // --- CLICK HANDLER: separate targets ---
+        // --- CLICK HANDLERS (separated) ---
+
+        // 1) Devil Egg click → summon final card
+        devilEgg.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!isSummoning && !isSummoned) {
+                startSummonSequence();
+            }
+        });
+
+        // 2) Shard click (raycaster) + dismiss summon
         window.addEventListener('click', (e) => {
-            if (e.target.closest('a') || e.target.closest('.bubble-card')) return;
+            if (e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.devil-egg')) return;
             if (isSummoning) return;
 
-            raycaster.setFromCamera(mouse, camera);
-
-            // 1) Soul Gem click → summon final card
-            const gemHit = raycaster.intersectObjects([soulGem]);
-            if (gemHit.length > 0 && soulGem.visible && !isSummoned) {
-                startSummonSequence();
+            // Dismiss final card if showing
+            if (isSummoned && !e.target.closest('.gallery-content')) {
+                dismissSummon();
                 return;
             }
 
-            // 2) Heart shard click → toggle crystal assembly
+            // Toggle crystal assembly via raycaster on shards
+            raycaster.setFromCamera(mouse, camera);
             const shardHit = raycaster.intersectObjects(shards);
             if (shardHit.length > 0) {
                 toggleCrystal(!isCrystalized);
-                return;
-            }
-
-            // 3) Click elsewhere → dismiss final card if showing
-            if (isSummoned && !e.target.closest('.gallery-content')) {
-                dismissSummon();
             }
         });
 
         // --- SUMMON: soul gem → final card ---
         function startSummonSequence() {
             isSummoning = true;
-            gsap.to(hintTouch, {opacity: 0, duration: 0.5});
+            // Hide egg during summon
+            gsap.to(devilEgg, {scale: 1.5, opacity: 0, duration: 0.5});
 
             const circleAnim = { speed: 0.005, opacity: magicPlane.material.opacity };
 
@@ -1257,9 +1274,9 @@
                 onComplete: () => {
                     gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
                     finalCard.classList.add('active');
-                    soulGem.visible = false;
                     gsap.to(magicPlane.material, {opacity: 0.2, duration: 1});
                     gsap.to(ringPlane.material, {opacity: 0.1, duration: 1});
+                    hintTouch.style.opacity = 0;
                     isSummoning = false;
                     isSummoned = true;
                 }
@@ -1271,7 +1288,7 @@
             finalCard.classList.remove('active');
             if(scrollProgress > 0.9) {
                 gsap.to(hintTouch, {opacity: 1, delay: 0.5, duration: 0.5});
-                soulGem.visible = true;
+                gsap.to(devilEgg, {scale: 1, opacity: 1, duration: 0.5, delay: 0.5});
             }
         }
 
@@ -1361,29 +1378,13 @@
                  ringPlane.rotation.z += 0.003;
             }
 
-            // Egg pulsation: gentle breathing scale + slow rotation
-            const pulse = 1 + Math.sin(t * 1.5) * 0.08;
-            const pulseY = 1 + Math.sin(t * 1.5) * 0.12;
-            soulGem.scale.set(pulse, pulseY, pulse);
-            soulGem.rotation.y += 0.008;
-            soulGem.position.y = Math.sin(t * 0.8) * 0.3;
-            // Outline glow intensity synced with pulse
-            gemOutlineMat.opacity = 0.2 + Math.sin(t * 1.5) * 0.2;
-
-            // Hover detection: soul gem vs shards
+            // Hover detection: shards only (devil egg is CSS-based)
             raycaster.setFromCamera(mouse, camera);
-            const gemHover = raycaster.intersectObjects([soulGem]);
             const shardHover = raycaster.intersectObjects(shards);
-            if(gemHover.length > 0 && soulGem.visible && !isSummoning) {
-                document.body.style.cursor = 'pointer';
-                magicPlane.scale.setScalar(1.05);
-            } else if(shardHover.length > 0) {
+            if(shardHover.length > 0) {
                 document.body.style.cursor = 'pointer';
             } else {
                 document.body.style.cursor = 'none';
-                if(!isSummoning) {
-                    magicPlane.scale.setScalar(1.0);
-                }
             }
 
             clouds.forEach(c => {
