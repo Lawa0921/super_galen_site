@@ -258,40 +258,58 @@
         <!-- Story -->
         <section id="story">
             <div class="container">
-                <div class="gs-reveal" style="margin-bottom: 2rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SYSTEM REBOOT</h2>
-                    <div style="height: 2px; width: 100px; background: var(--c-cyan); margin-top: 0.5rem;"></div>
+                <div class="gs-reveal" style="margin-bottom: 2rem; text-align: center;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SYSTEM LOGS</h2>
+                    <div style="height: 2px; width: 100px; background: var(--c-cyan); margin: 0.5rem auto;"></div>
                 </div>
 
                 <div class="story-block gs-reveal">
-                    <span class="story-year">2024.04.03</span>
-                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">CRITICAL FAILURE detected.</h3>
+                    <span class="story-year">EVENT: THE FALL</span>
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">2024.04.03 - SEISMIC COLLAPSE</h3>
                     <p style="color: #ccc; line-height: 1.8;">
-                        前年403地震，我的工廠瞬間倒塌。<br>
-                        那座專門製作桌遊的夢工廠，在幾秒鐘內化為烏有。<br>
-                        但我沒有時間悲傷。當天就啟動了募資，號召各方好友支援。
+                        那一刻，大地發出怒吼。<br>
+                        前年403地震，我的工廠瞬間倒塌。那座專門製作桌遊的夢工廠，在幾秒鐘內化為瓦礫堆。<br>
+                        所有的機台、紙張、夢想，彷彿都被埋葬在塵土之下。<br>
+                        但我沒有時間悲傷。這不是結束，這只是系統強制重啟的信號。
                     </p>
                 </div>
 
                 <div class="story-block gs-reveal" style="border-left-color: var(--c-yellow); margin-left: 2rem;">
-                    <span class="story-year" style="color: var(--c-yellow)">T+7 DAYS</span>
-                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">SYSTEM ONLINE.</h3>
+                    <span class="story-year" style="color: var(--c-yellow)">PHASE: REBOOT</span>
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">T+7 DAYS - ONLINE</h3>
                     <p style="color: #ccc; line-height: 1.8;">
+                        當天我就啟動了緊急募資，號召各方好友支援。<br>
                         我花了不到一週的時間重新開機。<br>
-                        雖然目前負債金額龐大，但我每天不是在印桌遊，就是在開印的路上。<br>
-                        這就是少帥的韌性。
+                        目前負債金額超過一千（萬），這股龐大的「虛空壓力」反而成為最強的燃料。<br>
+                        每天不是在印桌遊，就是在開印的路上。這就是少帥的韌性。
                     </p>
                 </div>
 
                 <div class="story-block gs-reveal" style="border-left-color: var(--c-cyan); margin-left: 4rem;">
-                    <span class="story-year" style="color: var(--c-cyan)">STATUS: ACTIVE</span>
-                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">THE FATHER.</h3>
+                    <span class="story-year" style="color: var(--c-cyan)">CORE: STABILITY</span>
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">THE THREE PILLARS</h3>
                     <p style="color: #ccc; line-height: 1.8;">
-                        我是三個女兒的爸爸。<br>
-                        工廠裡還有二三十位同仁。<br>
-                        為了守護這些，我必須比任何人都更強大。
+                        我是三個女兒的爸爸。她們是我系統中最核心的穩定錨點。<br>
+                        工廠裡還有二三十位同仁，這些都是我必須守護的連接點。<br>
+                        為了讓這座巨大的機械繼續運轉，我必須比任何人都更強大、更精準。<br>
+                        這不僅是印刷，這是生命的重新編碼。
                     </p>
                 </div>
+            </div>
+        </section>
+
+        <!-- Reconstruction Interaction -->
+        <section id="reconstruction" style="height: 100vh; position: relative; pointer-events: none;">
+            <div class="container" style="text-align: center; pointer-events: auto;">
+                <h2 class="gs-reveal" style="font-family: var(--f-tech); font-size: 3rem; color: #fff; margin-bottom: 1rem;">RECONSTRUCTION</h2>
+                <p class="gs-reveal" style="font-family: var(--f-mono); color: var(--c-yellow); margin-bottom: 2rem;">
+                    CLICK TO REPAIR THE STRUCTURE
+                </p>
+                <button id="btn-repair" class="gs-reveal" style="
+                    background: transparent; border: 2px solid var(--c-cyan); color: var(--c-cyan);
+                    padding: 1rem 3rem; font-family: var(--f-tech); font-size: 1.2rem; cursor: pointer;
+                    transition: 0.3s; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+                ">INITIATE REPAIR</button>
             </div>
         </section>
 
@@ -394,6 +412,132 @@
                 plates.push({ mesh, speed: Math.random() * 0.01 + 0.005 });
             }
 
+            // --- RECONSTRUCTION INTERACTION ---
+            const houseGroup = new THREE.Group();
+            scene.add(houseGroup);
+            houseGroup.position.set(0, -50, 0); // Position it lower, near the reconstruction section
+
+            const voxels = [];
+            const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+
+            // Build House Shape (Simple)
+            function createHouse() {
+                // Base
+                for(let x=-2; x<=2; x++) {
+                    for(let z=-2; z<=2; z++) {
+                        for(let y=0; y<3; y++) {
+                             if(Math.random() > 0.8) continue; // Some holes
+                             addVoxel(x, y, z);
+                        }
+                    }
+                }
+                // Roof
+                for(let x=-2; x<=2; x++) {
+                    addVoxel(x, 3, 0);
+                    addVoxel(x, 3, 1);
+                    addVoxel(x, 3, -1);
+                    addVoxel(x, 4, 0);
+                }
+            }
+
+            function addVoxel(tx, ty, tz) {
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0x333333,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.5
+                });
+                const mesh = new THREE.Mesh(boxGeo, material);
+
+                // Exploded State (Random)
+                const ex = (Math.random() - 0.5) * 30;
+                const ey = (Math.random() - 0.5) * 30;
+                const ez = (Math.random() - 0.5) * 30;
+
+                mesh.position.set(ex, ey, ez);
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+
+                houseGroup.add(mesh);
+
+                voxels.push({
+                    mesh,
+                    target: new THREE.Vector3(tx, ty, tz),
+                    baseColor: 0x333333,
+                    activeColor: colors[Math.floor(Math.random() * 3)] // CMY
+                });
+            }
+
+            createHouse();
+
+            // Link Button
+            const btn = document.getElementById('btn-repair');
+            if(btn) {
+                btn.addEventListener('click', () => {
+                    // Animate Reconstruction
+                    voxels.forEach((v, i) => {
+                        gsap.to(v.mesh.position, {
+                            x: v.target.x,
+                            y: v.target.y,
+                            z: v.target.z,
+                            duration: 1.5,
+                            ease: "power2.inOut",
+                            delay: Math.random() * 0.5
+                        });
+                        gsap.to(v.mesh.rotation, {
+                            x: 0, y: 0, z: 0,
+                            duration: 1.5,
+                            ease: "power2.inOut"
+                        });
+
+                        // Color Shift
+                        setTimeout(() => {
+                            v.mesh.material.color.setHex(v.activeColor);
+                            v.mesh.material.wireframe = false;
+                            v.mesh.material.opacity = 0.9;
+                        }, 1200 + Math.random() * 300);
+                    });
+
+                    gsap.to(houseGroup.rotation, {
+                        y: Math.PI * 2,
+                        duration: 10,
+                        repeat: -1,
+                        ease: "none",
+                        delay: 1.5
+                    });
+
+                    btn.innerHTML = "SYSTEM RESTORED";
+                    btn.style.borderColor = "#00ff00";
+                    btn.style.color = "#00ff00";
+                });
+            }
+
+            // ScrollTrigger to move the House Group into view
+            // When we scroll to #reconstruction, move houseGroup to Z=5 (in front of camera)
+            // Wait, camera moves. Let's position houseGroup at fixed world coords that align with scroll.
+            // Actually, let's just keep it at (0,0,0) relative to camera or world.
+            // Since camera moves from Z=20 to Z=5, if we put houseGroup at Z=0, it will be close at the end.
+
+            // Let's refine house position based on camera movement.
+            // The camera ends at Z=5. If house is at Z=0, it's 5 units away. Perfect.
+            // We just need to make sure it's not visible initially or looks like debris in background.
+            // It is added to scene, so it's visible.
+            // Let's set its Y position based on scroll to "rise" up or stay fixed.
+
+            // To make sure it appears in the specific section, we can use a separate scrollTrigger for the group position.
+            gsap.fromTo(houseGroup.position,
+                { y: -30 },
+                {
+                    y: 0,
+                    scrollTrigger: {
+                        trigger: "#reconstruction",
+                        start: "top center",
+                        end: "center center",
+                        scrub: 1
+                    }
+                }
+            );
+
+
             // Animation Loop
             function animate() {
                 requestAnimationFrame(animate);
@@ -404,8 +548,11 @@
                     p.mesh.position.y += Math.sin(Date.now() * 0.001 * p.speed * 100) * 0.02;
                 });
 
-                // Mouse Parallax (using global mouse vars if available, or just idle)
-                // camera.position.y += Math.sin(Date.now() * 0.0005) * 0.01;
+                // Slowly rotate house if waiting
+                if(!btn || btn.innerText !== "SYSTEM RESTORED") {
+                    houseGroup.rotation.y += 0.002;
+                    houseGroup.rotation.z = Math.sin(Date.now()*0.001) * 0.05;
+                }
 
                 renderer.render(scene, camera);
             }
