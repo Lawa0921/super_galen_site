@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>房產小蜜 Ava | Speed & Warmth</title>
+    <title>房產小蜜 Ava | The Visual Storyteller</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -29,20 +29,21 @@
 
     <style>
         :root {
-            --c-beige: #F5E6CA;
-            --c-gold: #FFD700;
-            --c-wine: #8B0000;
-            --c-dark: #1a1a1a;
-            --c-white: #ffffff;
+            --c-bg: #1a1a1a;
+            --c-text: #e0e0e0;
+            --c-accent: #FFD700; /* Gold */
+            --c-highlight: #8B0000; /* Wine Red */
+            --c-warm: #F5E6CA; /* Beige */
 
             --f-serif: 'Noto Serif TC', serif;
             --f-tech: 'Orbitron', sans-serif;
+            --f-hand: 'Caveat', cursive;
         }
 
         body {
             margin: 0;
-            background-color: var(--c-beige);
-            color: var(--c-dark);
+            background-color: var(--c-bg);
+            color: var(--c-text);
             font-family: var(--f-serif);
             overflow-x: hidden;
             cursor: none; /* Custom cursor */
@@ -51,9 +52,9 @@
         /* --- Loader --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: var(--c-wine); z-index: 9999;
+            background: var(--c-bg); z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--c-gold);
+            color: var(--c-accent);
         }
         .loader-text {
             font-family: var(--f-tech); font-size: 1.5rem; letter-spacing: 2px;
@@ -63,170 +64,128 @@
 
         /* --- Canvas Layers --- */
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
-        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; mix-blend-mode: overlay; }
 
         /* --- Custom Cursor --- */
         #cursor-follower {
-            position: fixed; top: 0; left: 0; width: 40px; height: 40px;
-            border: 2px solid var(--c-gold); border-radius: 50%;
+            position: fixed; top: 0; left: 0; width: 60px; height: 60px;
+            border: 2px solid var(--c-accent); border-radius: 50%;
             pointer-events: none; z-index: 10001; transform: translate(-50%, -50%);
             transition: width 0.2s, height 0.2s, border-color 0.2s;
             mix-blend-mode: difference;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #cursor-follower::after {
+            content: ''; width: 100%; height: 1px; background: var(--c-accent); position: absolute;
+        }
+        #cursor-follower::before {
+            content: ''; height: 100%; width: 1px; background: var(--c-accent); position: absolute;
         }
         #cursor-dot {
             position: fixed; top: 0; left: 0; width: 6px; height: 6px;
-            background: var(--c-wine); border-radius: 50%;
+            background: var(--c-highlight); border-radius: 50%;
             pointer-events: none; z-index: 10002; transform: translate(-50%, -50%);
         }
 
         /* --- UI Elements --- */
         .back-btn {
             position: fixed; top: 20px; left: 20px; z-index: 101;
-            color: var(--c-dark); text-decoration: none; font-family: var(--f-tech);
-            font-size: 0.9rem; border: 1px solid var(--c-dark); padding: 5px 15px;
-            background: rgba(245, 230, 202, 0.8); backdrop-filter: blur(5px);
+            color: var(--c-text); text-decoration: none; font-family: var(--f-tech);
+            font-size: 0.9rem; border: 1px solid var(--c-text); padding: 5px 15px;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px);
             transition: 0.3s;
         }
         .back-btn:hover {
-            background: var(--c-wine); color: var(--c-gold); border-color: var(--c-wine);
+            background: var(--c-highlight); color: var(--c-accent); border-color: var(--c-highlight);
         }
 
         /* --- Layout --- */
-        .scroller { position: relative; z-index: 10; }
-        section {
-            min-height: 100vh; padding: 4rem 2rem; box-sizing: border-box;
-            display: flex; flex-direction: column; justify-content: center;
-            position: relative; pointer-events: none;
+        .scroller { position: relative; z-index: 10; height: 800vh; /* Long scroll for story */ }
+
+        /* Sections are fixed/sticky overlays that fade in/out */
+        .story-section {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: none; opacity: 0;
+            padding: 2rem; box-sizing: border-box;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
         }
-        .content-box {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 3rem; border-radius: 2px;
-            max-width: 800px; width: 100%; margin: 0 auto;
-            border-left: 5px solid var(--c-wine);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            pointer-events: auto;
-            transform: translateY(50px); opacity: 0; /* Init state for GSAP */
+
+        .story-content {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            padding: 2rem;
+            border: 1px solid var(--c-accent);
+            max-width: 600px;
+            text-align: center;
+            transform: translateY(30px);
+            pointer-events: auto; /* Allow interaction with links/text */
         }
 
         h1 {
-            font-family: var(--f-serif); font-size: clamp(2.5rem, 5vw, 4rem);
-            color: var(--c-wine); margin: 0 0 1rem; line-height: 1.2;
+            font-family: var(--f-serif); font-size: clamp(3rem, 6vw, 5rem);
+            color: var(--c-accent); margin: 0 0 1rem; line-height: 1.1;
         }
         h2 {
-            font-family: var(--f-tech); font-size: 1.5rem; color: #555;
-            margin: 0 0 2rem; letter-spacing: 2px;
+            font-family: var(--f-tech); font-size: 1.2rem; color: var(--c-warm);
+            margin: 0 0 2rem; letter-spacing: 3px; text-transform: uppercase;
         }
         h3 {
-            font-family: var(--f-serif); font-size: 1.8rem; color: var(--c-wine);
-            margin-bottom: 1rem; border-bottom: 2px solid var(--c-gold); display: inline-block;
+            font-family: var(--f-serif); font-size: 2rem; color: var(--c-highlight);
+            margin-bottom: 1rem;
         }
         p {
-            font-size: 1.1rem; line-height: 1.8; color: #333; margin-bottom: 1.5rem;
+            font-size: 1.1rem; line-height: 1.8; color: #ddd; margin-bottom: 1.5rem;
             text-align: justify;
         }
 
-        .highlight { color: var(--c-wine); font-weight: bold; }
-        .tag-container { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
-        .tag {
-            background: var(--c-dark); color: var(--c-gold); padding: 5px 15px;
-            font-family: var(--f-tech); font-size: 0.8rem; border-radius: 20px;
-        }
+        .highlight { color: var(--c-accent); font-weight: bold; }
 
-        /* --- Hero Specific --- */
-        .hero-content {
-            text-align: center;
-            background: transparent; box-shadow: none; border: none; backdrop-filter: none;
-        }
-        .avatar-frame {
-            width: 200px; height: 200px; margin: 0 auto 2rem;
-            border-radius: 50%; border: 4px solid var(--c-wine); padding: 5px;
-            position: relative; overflow: hidden;
-            box-shadow: 0 0 30px rgba(139, 0, 0, 0.3);
-        }
-        .avatar-img {
-            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
-            transition: transform 0.5s;
-        }
-        .avatar-frame:hover .avatar-img { transform: scale(1.1); }
+        /* Section Specific Styles */
+        .hero-title { font-size: clamp(4rem, 8vw, 6rem); mix-blend-mode: overlay; opacity: 0.8; }
 
-        /* --- License Wall --- */
-        .license-container {
-            display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
-            margin-top: 2rem;
-        }
-        .license-card {
-            background: #fff; padding: 1.5rem; width: 140px; text-align: center;
-            border: 1px solid #ddd; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s; cursor: default;
-            position: relative;
-        }
-        .license-card:hover { transform: translateY(-10px) rotate(2deg); z-index: 10; border-color: var(--c-gold); }
-        .license-card i { font-size: 2rem; color: var(--c-wine); margin-bottom: 1rem; }
-        .license-card h4 { margin: 0; font-size: 0.9rem; color: #555; }
-        .license-old { opacity: 0.6; transform: scale(0.9); border: 1px dashed #ccc; }
-        .license-new { border: 2px solid var(--c-wine); transform: scale(1.05); }
-
-        /* --- Workflow --- */
-        .workflow-steps {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-top: 3rem; flex-wrap: wrap; gap: 2rem;
-        }
-        .step { text-align: center; flex: 1; min-width: 120px; position: relative; }
-        .step-icon {
-            width: 60px; height: 60px; background: var(--c-wine); color: var(--c-gold);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; margin: 0 auto 1rem;
-            box-shadow: 0 0 15px rgba(139, 0, 0, 0.3);
-            transition: transform 0.3s;
-        }
-        .step:hover .step-icon { transform: rotate(360deg); }
-        .step h4 { margin: 0; color: var(--c-dark); }
-        .step p { font-size: 0.8rem; margin: 0.5rem 0 0; text-align: center; }
-
-        /* --- Footer --- */
-        .footer {
-            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: linear-gradient(to top, var(--c-dark), transparent); color: var(--c-beige);
-            pointer-events: auto;
-        }
-        .social-icons { display: flex; gap: 2rem; margin-top: 2rem; }
-        .social-link {
-            font-size: 2rem; color: var(--c-gold); transition: 0.3s;
-        }
-        .social-link:hover { transform: scale(1.2); color: var(--c-wine); }
-
-        /* --- Photo Card Style --- */
-        .polaroid-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem; margin-top: 2rem;
+        .polaroid-stack {
+            display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;
         }
         .polaroid {
-            background: white; padding: 10px 10px 30px 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transform: rotate(-2deg);
-            transition: transform 0.3s;
-            text-align: center; font-family: 'Caveat', cursive; color: #555;
+            background: white; padding: 10px 10px 40px 10px;
+            color: #333; font-family: var(--f-hand); font-size: 1.2rem;
+            transform: rotate(-5deg); transition: transform 0.3s;
+            width: 150px;
         }
-        .polaroid:nth-child(even) { transform: rotate(3deg); }
-        .polaroid:hover { transform: rotate(0deg) scale(1.05); z-index: 10; }
-        .polaroid-placeholder {
-            width: 100%; height: 120px; background: #eee;
-            display: flex; align-items: center; justify-content: center;
-            color: #ccc; font-size: 2rem;
-        }
+        .polaroid:hover { transform: scale(1.1) rotate(0deg); z-index: 10; }
+        .polaroid-img { width: 100%; height: 150px; background: #eee; object-fit: cover; }
 
-        @media (max-width: 768px) {
-            .content-box { padding: 2rem; margin: 0 1rem; }
-            h1 { font-size: 2rem; }
-            .workflow-steps { flex-direction: column; }
+        .gear-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem; margin-top: 2rem; width: 100%;
         }
+        .gear-item {
+            border: 1px solid var(--c-text); padding: 1rem; text-align: center;
+            transition: 0.3s;
+        }
+        .gear-item:hover { background: var(--c-highlight); border-color: var(--c-highlight); }
+        .gear-icon { font-size: 2rem; margin-bottom: 0.5rem; color: var(--c-accent); }
+
+        /* Blur Text Effect Class */
+        .blur-in { filter: blur(10px); opacity: 0; transition: filter 1s, opacity 1s; }
+        .blur-in.active { filter: blur(0); opacity: 1; }
+
+        .footer-links {
+            display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;
+        }
+        .footer-link {
+            font-size: 2rem; color: var(--c-accent); transition: 0.3s;
+        }
+        .footer-link:hover { transform: scale(1.2); color: var(--c-highlight); }
+
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loader-text">INITIALIZING ENGINE...</div>
+        <div class="loader-text">LOADING LENS...</div>
     </div>
 
     <!-- Custom Cursor -->
@@ -238,252 +197,175 @@
     <div id="webgl-container"></div>
     <div id="p5-container"></div>
 
-    <div class="scroller">
+    <!-- Scroll Container -->
+    <div class="scroller"></div>
 
-        <!-- 1. Hero -->
-        <section id="hero">
-            <div class="content-box hero-content gs-reveal">
-                <div class="avatar-frame">
-                    <img src="/assets/img/guild/ava/avatar.webp" alt="Ava" class="avatar-img">
-                </div>
-                <h1>房產小蜜 Ava</h1>
-                <h2>Real Estate Secretary & Visual Storyteller</h2>
-                <div class="tag-container" style="justify-content: center;">
-                    <span class="tag">#BikerSpirit</span>
-                    <span class="tag">#MomLife</span>
-                    <span class="tag">#DronePilot</span>
-                </div>
-            </div>
-        </section>
+    <!-- Fixed Sections (Revealed by Scroll Progress) -->
 
-        <!-- 2. Origin (Biker) -->
-        <section id="origin">
-            <div class="content-box gs-reveal">
-                <h3><i class="fa-solid fa-motorcycle"></i> 從追風騎士到影音說書人</h3>
-                <p>
-                    大家好！我是彰化高鐵｜房產小蜜 👋<br>
-                    我的背景真的蠻混搭的（笑）。我有 7 年的行政資歷，現在是房產秘書，但以前我當過飲料店老闆、民宿管家，甚至開過 Uber！
-                </p>
-                <p>
-                    以前的我，是個熱血的 <span class="highlight">重機女騎士</span>，喜歡騎車到處跑，還會開團帶陌生人到處趴趴走。那時候我就很愛拍照、紀錄大家的快樂回憶。
-                    雖然現在身分不同了，但那份對速度與風景的熱愛，從未消失。
-                </p>
-            </div>
-        </section>
+    <!-- 1. Hero -->
+    <section class="story-section" id="sec-hero">
+        <div class="story-content" style="background: transparent; border: none; backdrop-filter: none;">
+            <h1 class="hero-title blur-in">AVA</h1>
+            <h2 class="blur-in" style="transition-delay: 0.2s">The Storyteller's Lens</h2>
+            <p class="blur-in" style="transition-delay: 0.4s; text-align: center;">"Capturing the Soul of Space"</p>
+        </div>
+    </section>
 
-        <!-- 2.5 License Stack -->
-        <section id="licenses">
-            <div class="content-box gs-reveal" style="border-left-color: var(--c-dark);">
-                <h3><i class="fa-solid fa-certificate"></i> 那些年考過的證照</h3>
-                <p>這代表我真的是一個很愛「做中學」的人，什麼都想試試看！</p>
-
-                <div class="license-container">
-                    <!-- Old Licenses -->
-                    <div class="license-card license-old" title="Used to be a chef!">
-                        <i class="fa-solid fa-utensils"></i>
-                        <h4>中/西餐烹調</h4>
-                    </div>
-                    <div class="license-card license-old" title="Beauty Expert">
-                        <i class="fa-solid fa-scissors"></i>
-                        <h4>美容/美髮</h4>
-                    </div>
-                    <!-- New Licenses -->
-                    <div class="license-card license-new">
-                        <i class="fa-solid fa-building-user"></i>
-                        <h4>不動產營業員</h4>
-                    </div>
-                    <div class="license-card license-new">
-                        <i class="fa-solid fa-house-chimney-user"></i>
-                        <h4>租賃管理人員</h4>
-                    </div>
-                    <div class="license-card license-new">
-                        <i class="fa-solid fa-plane-up"></i>
-                        <h4>無人機操作證</h4>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. Transition (Mom) -->
-        <section id="transition">
-            <div class="content-box gs-reveal" style="border-left-color: var(--c-gold);">
-                <h3><i class="fa-solid fa-child-reaching"></i> 換個速度看世界</h3>
-                <p>
-                    結婚生了兩個寶貝後，雖然不能像以前那樣騎重機追風，但我沒有放棄這份熱情！
-                    現在，我換了一種方式——<span class="highlight">「親子微旅行」</span>。
-                </p>
-                <p>
-                    我會幫孩子穿戴好全套裝備，戴上藍牙對講機。騎車穿梭在大街小巷時，孩子驚呼：「媽媽你看！」
-                    那些開車看不到的風景、路邊的小吃，現在都變成我們一家人最棒的探險。
-                </p>
-                <div class="polaroid-grid">
-                    <div class="polaroid">
-                        <div class="polaroid-placeholder"><i class="fa-solid fa-helmet-safety"></i></div>
-                        <div>Little Rider</div>
-                    </div>
-                    <div class="polaroid">
-                        <div class="polaroid-placeholder"><i class="fa-solid fa-road"></i></div>
-                        <div>On The Road</div>
-                    </div>
-                    <div class="polaroid">
-                        <div class="polaroid-placeholder"><i class="fa-solid fa-ice-cream"></i></div>
-                        <div>Sweet Stop</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. Profession -->
-        <section id="profession">
-            <div class="content-box gs-reveal">
-                <h3><i class="fa-solid fa-camera-retro"></i> 專屬你的房地產小秘書</h3>
-                <p>
-                    目前我主要活躍於彰化田中一帶，專長是透過影片讓物件「說話」。
-                    雖然我有考到空拍證照，但我更想強調 <span class="highlight">「手機攝影」</span>。
-                </p>
-                <p>
-                    我不追求那種高大上的器材大片，我擅長的是用手機隨手紀錄當下的「溫度」。
-                    如果你有房地產想透過影片被更多人看見，找我就對了！
-                </p>
-
-                <div class="workflow-steps">
-                    <div class="step">
-                        <div class="step-icon"><i class="fa-regular fa-comments"></i></div>
-                        <h4>溝通需求</h4>
-                        <p>聊聊你的故事</p>
-                    </div>
-                    <div class="step">
-                        <div class="step-icon"><i class="fa-solid fa-map-location-dot"></i></div>
-                        <h4>實地勘景</h4>
-                        <p>發掘隱藏亮點</p>
-                    </div>
-                    <div class="step">
-                        <div class="step-icon"><i class="fa-solid fa-video"></i></div>
-                        <h4>專業拍攝</h4>
-                        <p>手機/空拍多視角</p>
-                    </div>
-                    <div class="step">
-                        <div class="step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                        <h4>影音敘事</h4>
-                        <p>傳遞核心價值</p>
-                    </div>
-                </div>
-
-                <div style="text-align: center; font-weight: bold; color: var(--c-wine); margin-top: 3rem; font-size: 1.2rem;">
-                    「拍攝找小蜜，你委託我就拍」
-                </div>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <h2>Let's Connect</h2>
-            <div class="social-icons">
-                <a href="https://www.threads.net/@ava332266" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/chhsr_bee" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <p style="margin-top: 2rem; opacity: 0.6; font-size: 0.8rem;">
-                Made with <i class="fa-solid fa-heart" style="color:var(--c-wine)"></i> by SuperGalen's Dungeon
+    <!-- 2. The Past (Biker) -->
+    <section class="story-section" id="sec-biker">
+        <div class="story-content blur-in">
+            <h3><i class="fa-solid fa-motorcycle"></i> Chasing Horizons</h3>
+            <p>
+                7 years of administrative precision, but a lifetime of adventure.
+                I used to be a <span class="highlight">Heavy Bike Rider</span>, leading groups into the unknown at 100km/h.
             </p>
-        </footer>
+            <p>
+                From running a beverage shop to managing a B&B, I've lived many lives.
+                Back then, I saw the world in a blur of speed and freedom.
+            </p>
+        </div>
+    </section>
 
-    </div>
+    <!-- 3. The Pivot (Micro-Travel) -->
+    <section class="story-section" id="sec-travel">
+        <div class="story-content blur-in">
+            <h3><i class="fa-solid fa-map-location-dot"></i> Micro-Travels</h3>
+            <p>
+                Motherhood changed my speed, not my spirit. Now, I explore with my "crew" (my two kids).
+                We wear Bluetooth headsets, riding through Tanaka's alleys.
+            </p>
+            <p>
+                "Mom, look!" — Their perspective became my new map. We find the stories others miss in the slow lane.
+            </p>
+            <div class="polaroid-stack">
+                <div class="polaroid">
+                    <img src="/assets/img/guild/ava/avatar.webp" class="polaroid-img" style="filter: sepia(0.5);">
+                    <div>Little Crew</div>
+                </div>
+                <div class="polaroid">
+                    <div class="polaroid-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#ccc;"><i class="fa-solid fa-ice-cream"></i></div>
+                    <div>Sweet Stops</div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    <!-- P5.js Overlay (Viewfinder & Speedometer) -->
+    <!-- 4. The Profession (Real Estate) -->
+    <section class="story-section" id="sec-work">
+        <div class="story-content blur-in">
+            <h3><i class="fa-solid fa-camera-retro"></i> Framing Value</h3>
+            <p>
+                I don't just list properties; I tell their stories.
+                Specializing in <span class="highlight">Tanaka & High Speed Rail Zone</span>, I use video to let the property speak.
+            </p>
+            <p>
+                It's not about big production; it's about <span class="highlight">Temperature</span>.
+                A warm corner, a sunlit window — I capture the feeling of "Home".
+            </p>
+        </div>
+    </section>
+
+    <!-- 5. The Toolkit & Contact -->
+    <section class="story-section" id="sec-contact">
+        <div class="story-content blur-in">
+            <h3>My Toolkit</h3>
+            <div class="gear-grid">
+                <div class="gear-item">
+                    <div class="gear-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+                    <div>Mobile Video</div>
+                    <div style="font-size:0.8rem; opacity:0.7">Authentic Feel</div>
+                </div>
+                <div class="gear-item">
+                    <div class="gear-icon"><i class="fa-solid fa-plane-up"></i></div>
+                    <div>Aerial Drone</div>
+                    <div style="font-size:0.8rem; opacity:0.7">God's Eye View</div>
+                </div>
+                <div class="gear-item">
+                    <div class="gear-icon"><i class="fa-regular fa-file-lines"></i></div>
+                    <div>Admin Magic</div>
+                    <div style="font-size:0.8rem; opacity:0.7">Precision</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 3rem;">
+                <h2>Let's Frame It</h2>
+                <div class="footer-links">
+                    <a href="https://www.threads.net/@ava332266" target="_blank" class="footer-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/chhsr_bee" target="_blank" class="footer-link"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <p style="margin-top: 1rem; opacity: 0.5; font-size: 0.8rem;">Made by SuperGalen's Dungeon</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- P5.js Overlay (Focus Peaking & Grain) -->
     <script>
         const sketch = (p) => {
-            let cx, cy;
-            let shutterAlpha = 0;
-            let lastScrollY = 0;
-            let scrollSpeed = 0;
+            let noiseScale = 0.02;
+
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noCursor();
+            };
 
             p.draw = () => {
                 p.clear();
-                cx = p.mouseX;
-                cy = p.mouseY;
 
-                // Calculate Scroll Speed
-                const currentScrollY = window.scrollY;
-                const delta = Math.abs(currentScrollY - lastScrollY);
-                scrollSpeed = p.lerp(scrollSpeed, delta, 0.1); // Smooth it
-                lastScrollY = currentScrollY;
+                // Subtle Film Grain
+                p.loadPixels();
+                // Optimization: Don't update every pixel every frame, maybe just a static noise overlay or update regions?
+                // For performance in this environment, let's just do a simple random scattering of dots instead of full pixel array manipulation
 
-                // --- Viewfinder Brackets ---
-                p.stroke(255, 215, 0); // Gold
-                p.strokeWeight(2);
-                p.noFill();
-
-                const s = 40; // Size
-                const l = 10; // Length of corners
-
-                // Corners
-                p.beginShape(); p.vertex(cx - s, cy - s + l); p.vertex(cx - s, cy - s); p.vertex(cx - s + l, cy - s); p.endShape();
-                p.beginShape(); p.vertex(cx + s - l, cy - s); p.vertex(cx + s, cy - s); p.vertex(cx + s, cy - s + l); p.endShape();
-                p.beginShape(); p.vertex(cx - s, cy + s - l); p.vertex(cx - s, cy + s); p.vertex(cx - s + l, cy + s); p.endShape();
-                p.beginShape(); p.vertex(cx + s - l, cy + s); p.vertex(cx + s, cy + s); p.vertex(cx + s, cy + s - l); p.endShape();
-
-                // Center Crosshair
-                p.stroke(139, 0, 0, 150); // Wine Red
-                p.line(cx - 5, cy, cx + 5, cy);
-                p.line(cx, cy - 5, cx, cy + 5);
-
-                // UI Text
                 p.noStroke();
-                p.fill(255, 215, 0);
-                p.textSize(10);
-                p.textFont('monospace');
-                p.text('REC [●]', cx + s + 5, cy - s);
-                p.text('ISO ' + (800 + Math.floor(scrollSpeed * 10)), cx - s, cy + s + 15);
-                p.text('1/125', cx + 10, cy + s + 15);
-
-                // --- Speedometer (Bottom Right) ---
-                const gx = p.width - 80;
-                const gy = p.height - 80;
-                const r = 50;
-
-                // Gauge Background
-                p.noFill();
-                p.stroke(255, 255, 255, 50);
-                p.strokeWeight(5);
-                p.arc(gx, gy, r*2, r*2, p.PI, 0); // Semi-circle
-
-                // Needle
-                // Map speed (0-100) to angle (PI to 0)
-                const speedClamped = p.constrain(scrollSpeed * 2, 0, 100);
-                const angle = p.map(speedClamped, 0, 100, p.PI, 0);
-
-                p.push();
-                p.translate(gx, gy);
-                p.rotate(angle);
-                p.stroke(139, 0, 0); // Wine Red
-                p.strokeWeight(3);
-                p.line(0, 0, r - 5, 0); // Needle points right (0) initially, so rotation works
-                p.pop();
-
-                // Speed Text
-                p.textAlign(p.CENTER);
-                p.fill(255, 215, 0);
-                p.noStroke();
-                p.text(Math.floor(speedClamped) + " km/h", gx, gy + 20);
-
-
-                // Shutter Flash
-                if (shutterAlpha > 0) {
-                    p.fill(255, 255, 255, shutterAlpha);
-                    p.rect(0, 0, p.width, p.height);
-                    shutterAlpha -= 15;
+                p.fill(255, 255, 255, 30);
+                for (let i = 0; i < 100; i++) {
+                    let x = p.random(p.width);
+                    let y = p.random(p.height);
+                    p.circle(x, y, p.random(1, 3));
                 }
+
+                // Focus Peaking Effect (Red outline around mouse)
+                // Simulates camera focus peaking
+                p.noFill();
+                p.stroke(255, 0, 0, 150); // Red
+                p.strokeWeight(1);
+
+                // Draw a "Focus Zone" around cursor
+                const mx = p.mouseX;
+                const my = p.mouseY;
+                const s = 80;
+
+                // Animated broken brackets
+                const t = p.millis() * 0.002;
+                const offset = p.map(p.sin(t), -1, 1, 0, 10);
+
+                p.arc(mx, my, s, s, -p.PI/4 + offset*0.01, p.PI/4 - offset*0.01);
+                p.arc(mx, my, s, s, p.PI*3/4 + offset*0.01, p.PI*5/4 - offset*0.01);
+
+                // Center point
+                p.fill(255, 0, 0);
+                p.circle(mx, my, 2);
             };
 
-            // Global click listener for flash effect (since container has pointer-events: none)
+            // Global click listener for flash effect
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
                 p.noCursor();
 
-                // Add global listener here
                 window.addEventListener('click', () => {
-                    shutterAlpha = 255;
+                    // Flash effect could be implemented here or via CSS
+                    const flash = document.createElement('div');
+                    flash.style.position = 'fixed';
+                    flash.style.top = '0'; flash.style.left = '0';
+                    flash.style.width = '100vw'; flash.style.height = '100vh';
+                    flash.style.background = 'white';
+                    flash.style.zIndex = '99999';
+                    flash.style.pointerEvents = 'none';
+                    document.body.appendChild(flash);
+
+                    gsap.to(flash, { opacity: 0, duration: 0.3, onComplete: () => flash.remove() });
                 });
             };
 
@@ -501,7 +383,7 @@
         // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0xF5E6CA, 0.02); // Beige Fog
+        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05); // Dark Fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -510,113 +392,129 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
+        // --- Helper: Create Text Texture ---
+        function createTextTexture(text, bgColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Border (Film Frame)
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 40;
+            ctx.strokeRect(0, 0, 512, 512);
+
+            // Text
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 80px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Word Wrap simple
+            const words = text.split(' ');
+            let line = '';
+            let y = 256;
+            if (words.length > 1) {
+                ctx.fillText(words[0], 256, 200);
+                ctx.fillText(words[1], 256, 312);
+            } else {
+                ctx.fillText(text, 256, 256);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
         // --- Objects ---
 
-        // 1. The Road (Tube)
-        class CustomSinCurve extends THREE.Curve {
-            constructor(scale = 1) {
-                super();
-                this.scale = scale;
-            }
-            getPoint(t, optionalTarget = new THREE.Vector3()) {
-                const tx = t * 3 - 1.5;
-                const ty = Math.sin(2 * Math.PI * t);
-                const tz = 0;
-                return optionalTarget.set(tx, ty, tz).multiplyScalar(this.scale);
-            }
-        }
+        // 1. The Film Ribbon (CatmullRomCurve)
+        const curvePoints = [];
+        // Create a spiral/rollercoaster path
+        for (let i = 0; i < 50; i++) {
+            const angle = i * 0.5;
+            const radius = 5 + Math.sin(i * 0.3) * 3;
+            const height = -i * 2; // Going down/forward
 
-        // Let's make a long path
-        const pathPoints = [];
-        for (let i = 0; i < 80; i++) { // Longer path
-            pathPoints.push(new THREE.Vector3(
-                Math.sin(i * 0.5) * 10,
-                Math.cos(i * 0.3) * 5,
-                -i * 10
+            curvePoints.push(new THREE.Vector3(
+                Math.cos(angle) * radius,
+                Math.sin(angle) * radius, // Twist vertical
+                -i * 5 // Move forward/deep
             ));
         }
-        const path = new THREE.CatmullRomCurve3(pathPoints);
+        const curve = new THREE.CatmullRomCurve3(curvePoints);
 
-        const tubeGeo = new THREE.TubeGeometry(path, 200, 2, 8, false);
+        // Tube Geometry for the ribbon
+        const tubeGeo = new THREE.TubeGeometry(curve, 200, 1.5, 4, false); // 4 segments = flat ribbon-ish
         const tubeMat = new THREE.MeshBasicMaterial({
-            color: 0xFFFFFF,
+            color: 0x333333,
             wireframe: true,
             transparent: true,
-            opacity: 0.3
+            opacity: 0.2
         });
-        const tube = new THREE.Mesh(tubeGeo, tubeMat);
-        scene.add(tube);
+        const ribbon = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(ribbon);
 
-        // 2. Floating Particles (Memories)
-        const particlesCount = 400;
+        // 2. Film Frames (Planes along the curve)
+        const framesGroup = new THREE.Group();
+        scene.add(framesGroup);
+
+        const frameData = [
+            { t: 0.1, text: "BIKER", color: "#8B0000" },
+            { t: 0.3, text: "SPEED", color: "#555" },
+            { t: 0.5, text: "FAMILY", color: "#F5E6CA" },
+            { t: 0.7, text: "TRAVEL", color: "#FFD700" },
+            { t: 0.9, text: "HOME", color: "#444" }
+        ];
+
+        frameData.forEach(data => {
+            const geo = new THREE.PlaneGeometry(3, 3);
+            const tex = createTextTexture(data.text, data.color);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geo, mat);
+
+            // Position on curve
+            const pos = curve.getPoint(data.t);
+            const tangent = curve.getTangent(data.t);
+
+            mesh.position.copy(pos);
+            mesh.lookAt(pos.clone().add(tangent)); // Face along path
+            mesh.rotateY(Math.PI / 2); // Rotate to face side of path (like film strip)
+
+            framesGroup.add(mesh);
+        });
+
+        // 3. Floating Particles (Dust/Light)
+        const particlesCount = 500;
         const pGeo = new THREE.BufferGeometry();
         const pPos = new Float32Array(particlesCount * 3);
-        const pSizes = new Float32Array(particlesCount);
 
         for(let i=0; i<particlesCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 60;
-            pPos[i*3+1] = (Math.random() - 0.5) * 40;
-            pPos[i*3+2] = -Math.random() * 800; // Deep depth
-            pSizes[i] = Math.random();
+            pPos[i*3] = (Math.random() - 0.5) * 50;
+            pPos[i*3+1] = (Math.random() - 0.5) * 50;
+            pPos[i*3+2] = -Math.random() * 200;
         }
-
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        pGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
-
-        const pMat = new THREE.PointsMaterial({
-            color: 0x8B0000,
-            size: 0.5,
-            transparent: true,
-            opacity: 0.6
-        });
+        const pMat = new THREE.PointsMaterial({ color: 0xFFD700, size: 0.1, transparent: true, opacity: 0.5 });
         const particles = new THREE.Points(pGeo, pMat);
         scene.add(particles);
 
-        // 3. Floating Icons (Cubes representing photos/houses)
-        const cubesGroup = new THREE.Group();
-        scene.add(cubesGroup);
-
-        const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-        const cubeMat = new THREE.MeshNormalMaterial({ wireframe: true }); // Placeholder aesthetic
-
-        for(let i=0; i<30; i++) {
-            const mesh = new THREE.Mesh(cubeGeo, cubeMat);
-            mesh.position.set(
-                (Math.random() - 0.5) * 30,
-                (Math.random() - 0.5) * 30,
-                -Math.random() * 600
-            );
-            mesh.rotation.set(Math.random(), Math.random(), 0);
-            cubesGroup.add(mesh);
-        }
-
         // --- Animation ---
-
-        // Initial Camera Position
-        camera.position.z = 10;
 
         function animate() {
             requestAnimationFrame(animate);
-
-            // Constant subtle movement
-            particles.rotation.z += 0.001;
-            cubesGroup.children.forEach(c => {
-                c.rotation.x += 0.01;
-                c.rotation.y += 0.01;
-            });
-
+            particles.rotation.z += 0.0005;
             renderer.render(scene, camera);
         }
         animate();
 
         // --- Scroll Integration ---
-        // We move the camera along the path based on scroll
-
-        const totalPathLen = path.getLength();
-
-        // Use a proxy object to tween
         const scrollProxy = { progress: 0 };
 
+        // Master Timeline linked to scroll
         gsap.to(scrollProxy, {
             progress: 1,
             ease: "none",
@@ -624,86 +522,68 @@
                 trigger: ".scroller",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1
+                scrub: 0.5
             },
             onUpdate: () => {
-                // Get point on path
-                const point = path.getPointAt(scrollProxy.progress * 0.95); // Don't go to very end
-                const lookAtPoint = path.getPointAt(Math.min(scrollProxy.progress * 0.95 + 0.01, 1));
+                // Move Camera along curve
+                // We map progress (0-1) to curve t (0-1)
+                const t = scrollProxy.progress * 0.95;
+                const pos = curve.getPoint(t);
+                const lookAtPos = curve.getPoint(Math.min(t + 0.05, 1));
 
-                // Base Camera Movement (Follow Road)
-                let camLift = 2;
+                camera.position.copy(pos);
+                // Offset camera slightly to "ride" the ribbon
+                camera.position.y += 1;
+                camera.lookAt(lookAtPos);
 
-                // Drone Lift Effect (Simulate taking off in the Real Estate section)
-                if (scrollProxy.progress > 0.65) {
-                    // Smoothly lift up
-                    const factor = (scrollProxy.progress - 0.65) / 0.35; // 0 to 1
-                    camLift += factor * 80; // Lift up to 80 units
-                }
-
-                camera.position.copy(point);
-                camera.position.y += camLift;
-
-                // Look at the road ahead
-                // As we go higher, we might want to look slightly "behind" or "down" more directly
-                // But looking at lookAtPoint (ahead on curve) works well for a "follow cam"
-                camera.lookAt(lookAtPoint);
-
-                // Dynamic Fog Color Change (Beige -> Wine -> Gold)
-                if(scrollProxy.progress < 0.3) {
-                   scene.fog.color.setHex(0xF5E6CA); // Beige
-                   scene.background = new THREE.Color(0xF5E6CA);
-                } else if (scrollProxy.progress < 0.6) {
-                   scene.fog.color.lerp(new THREE.Color(0xFFD700), 0.05); // Gold
-                   scene.background.lerp(new THREE.Color(0xFFD700), 0.05);
-                } else {
-                   scene.fog.color.lerp(new THREE.Color(0xFFFFFF), 0.05); // White/Bright
-                   scene.background.lerp(new THREE.Color(0xFFFFFF), 0.05);
-                }
+                // Roll camera slightly based on curve tangent for "Banked turn" effect
+                // Simple implementation: rotate Z based on X movement
+                // camera.rotation.z = (lookAtPos.x - pos.x) * 0.2;
             }
         });
 
-        // Content Reveals
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
-            gsap.to(elem, {
-                y: 0,
-                opacity: 1,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: elem,
-                    start: "top 80%",
-                    toggleActions: "play none none reverse"
+        // Section Reveals (Fade In/Blur Out based on scroll position)
+        // Since we have a long scroller, we can map sections to scroll triggers
+
+        const sections = [
+            { id: "#sec-hero", start: 0, end: 0.15 },
+            { id: "#sec-biker", start: 0.2, end: 0.35 },
+            { id: "#sec-travel", start: 0.4, end: 0.55 },
+            { id: "#sec-work", start: 0.6, end: 0.75 },
+            { id: "#sec-contact", start: 0.8, end: 1.0 }
+        ];
+
+        sections.forEach(sec => {
+            const el = document.querySelector(sec.id);
+            const content = el.querySelector('.story-content');
+
+            // Fade In
+            ScrollTrigger.create({
+                trigger: ".scroller",
+                start: `${sec.start * 100}% top`,
+                end: `${(sec.start + 0.05) * 100}% top`,
+                scrub: true,
+                onUpdate: (self) => {
+                    el.style.opacity = self.progress;
+                    // Blur effect
+                    if (self.progress > 0.8) {
+                        el.querySelectorAll('.blur-in').forEach(b => b.classList.add('active'));
+                    } else {
+                        el.querySelectorAll('.blur-in').forEach(b => b.classList.remove('active'));
+                    }
                 }
             });
-        });
 
-        // License Cards Stagger
-        gsap.from('.license-card', {
-            y: 50,
-            opacity: 0,
-            rotation: -10,
-            duration: 0.8,
-            stagger: 0.1,
-            ease: "back.out(1.7)",
-            scrollTrigger: {
-                trigger: '.license-container',
-                start: "top 85%"
-            }
-        });
-
-        // Polaroid Stagger
-        gsap.from('.polaroid', {
-            y: 100,
-            opacity: 0,
-            scale: 0.5,
-            duration: 1,
-            stagger: 0.2,
-            rotation: (i) => i % 2 === 0 ? -10 : 10,
-            ease: "elastic.out(1, 0.5)",
-            scrollTrigger: {
-                trigger: '.polaroid-grid',
-                start: "top 85%"
-            }
+            // Fade Out
+            ScrollTrigger.create({
+                trigger: ".scroller",
+                start: `${(sec.end - 0.05) * 100}% top`,
+                end: `${sec.end * 100}% top`,
+                scrub: true,
+                onUpdate: (self) => {
+                    el.style.opacity = 1 - self.progress;
+                }
+            });
         });
 
         // Resize
@@ -723,7 +603,7 @@
             });
         });
 
-        // Custom Cursor Logic
+        // Cursor Logic
         const cursorFollower = document.getElementById('cursor-follower');
         const cursorDot = document.getElementById('cursor-dot');
 
@@ -731,22 +611,12 @@
             gsap.to(cursorFollower, {
                 x: e.clientX,
                 y: e.clientY,
-                duration: 0.1
+                duration: 0.2
             });
             gsap.to(cursorDot, {
                 x: e.clientX,
                 y: e.clientY,
                 duration: 0
-            });
-        });
-
-        // Hover effects
-        document.querySelectorAll('a, .content-box, .license-card').forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                gsap.to(cursorFollower, { scale: 1.5, borderColor: '#8B0000' });
-            });
-            el.addEventListener('mouseleave', () => {
-                gsap.to(cursorFollower, { scale: 1, borderColor: '#FFD700' });
             });
         });
 
