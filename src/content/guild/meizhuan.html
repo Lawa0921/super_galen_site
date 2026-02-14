@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meizhuan | Guild Hall</title>
+    <!-- GSAP Global -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- p5.js Global -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Three.js Import Map for Module Loading -->
     <script type="importmap">
         {
             "imports": {
@@ -11,10 +19,7 @@
             }
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&display=swap');
 
@@ -34,7 +39,7 @@
             background-color: var(--dark-bg);
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Hide horizontal scroll only */
         }
 
         /* Canvas Layers */
@@ -45,7 +50,7 @@
             width: 100%;
             height: 100%;
             z-index: 0;
-            pointer-events: none;
+            pointer-events: none; /* Let clicks pass through */
         }
 
         #p5-container {
@@ -88,25 +93,26 @@
             position: relative;
             z-index: 20;
             width: 100%;
-            height: 400vh; /* Sufficient height for scrolling through chapters */
+            height: 600vh; /* Increased for more sections */
         }
 
         /* Sections */
         .section {
             position: absolute;
             width: 100%;
-            height: 100vh; /* One viewport height per section */
+            height: 100vh; /* One viewport height per section (base unit) */
             display: flex;
             justify-content: center;
             align-items: center;
             pointer-events: none;
         }
 
-        /* Section Positioning based on scroll progress (approximate) */
+        /* Positioning based on scroll timeline */
         #section-hero { top: 0; }
         #section-career { top: 100vh; }
-        #section-life { top: 200vh; }
-        #section-dream { top: 300vh; }
+        #section-status { top: 200vh; }
+        #section-garage { top: 300vh; }
+        #section-dream { top: 450vh; } /* Give extra space before finale */
 
         .card {
             pointer-events: auto;
@@ -174,6 +180,13 @@
             text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
 
+        h3 {
+            color: var(--neon-cyan);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+
         .subtitle {
             color: var(--neon-cyan);
             font-size: 0.9rem;
@@ -214,7 +227,7 @@
         }
 
         .stat-value {
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-family: 'Orbitron', sans-serif;
             color: #fff;
         }
@@ -243,6 +256,8 @@
                 padding: 1.5rem;
             }
             h1 { font-size: 1.8rem; }
+            .content-scroll { height: 700vh; } /* Taller on mobile for better spacing */
+            #section-dream { top: 500vh; }
         }
 
         /* Glitch Animation */
@@ -299,23 +314,23 @@
         <!-- Section 2: Career & Skills -->
         <div class="section" id="section-career" style="justify-content: flex-start; padding-left: 10%;">
             <div class="card">
-                <h3><i class="fas fa-microchip"></i> SYSTEM UPGRADE</h3>
+                <h3><i class="fas fa-terminal"></i> DEV_LOG.sys</h3>
                 <div class="stat-grid">
                     <div class="stat-item">
                         <span class="stat-label">Main Skill</span>
-                        <span class="stat-value">Python</span>
+                        <span class="stat-value">Python / Electronics</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Secondary Skill</span>
-                        <span class="stat-value">Japanese (N5+)</span>
+                        <span class="stat-label">Language</span>
+                        <span class="stat-value">Japanese (Loading...)</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Current Quest</span>
-                        <span class="stat-value">Game Dev</span>
+                        <span class="stat-label">Project</span>
+                        <span class="stat-value">"Untitled RPG"</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Status</span>
-                        <span class="stat-value">Learning...</span>
+                        <span class="stat-label">Target</span>
+                        <span class="stat-value">Full Stack Eng.</span>
                     </div>
                 </div>
                 <p style="margin-top: 1.5rem;">
@@ -326,41 +341,67 @@
             </div>
         </div>
 
-        <!-- Section 3: Life & Maintenance -->
-        <div class="section" id="section-life" style="justify-content: flex-end; padding-right: 10%;">
+        <!-- Section 3: Status Monitor (Health) -->
+        <div class="section" id="section-status" style="justify-content: flex-end; padding-right: 10%;">
             <div class="card">
-                <h3><i class="fas fa-heart-pulse"></i> MAINTENANCE LOG</h3>
+                <h3><i class="fas fa-heart-pulse"></i> STATUS MONITOR</h3>
                 <p>
-                    <span class="highlight">ENERGY SOURCE:</span> 美食 (Food).<br>
-                    <span class="highlight">WARNING:</span> 體重 Critical High.<br>
-                    <span class="highlight">ACTION:</span> 強制執行運動協議，戒菸程序啟動中 (Quitting Smoking).
+                    <span class="highlight">HULL INTEGRITY:</span> WARNING (Overweight).<br>
+                    <span class="highlight">OPTIMIZATION:</span> 執行運動協議 (Exercise Protocol Active).<br>
+                    <span class="highlight">PURGE:</span> 戒菸程序啟動中 (Nicotine Detox: In Progress).
                 </p>
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
                 <p>
-                    <span class="highlight">BASE MODE:</span> 宅 (Otaku).<br>
-                    平時窩在家看動漫、打遊戲是標準充電方式。但若有隊友邀約，也會切換至 Outdoor 模式出門走走。
+                    <span class="highlight">FUEL SOURCE:</span> 美食 (Gourmet Data).<br>
+                    平時窩在家看動漫、打遊戲是標準充電方式。但若有隊友邀約，也會切換至 <span class="highlight">Outdoor Mode</span> 出門走走。
                     希望能給家人更好的生活，這是驅動引擎的最大動力。
                 </p>
             </div>
         </div>
 
-        <!-- Section 4: Dream -->
-        <div class="section" id="section-dream">
-            <div class="card" style="text-align: center;">
-                <i class="fas fa-motorcycle" style="font-size: 3rem; color: var(--neon-pink); margin-bottom: 1rem;"></i>
-                <h1>THE HORIZON</h1>
+        <!-- Section 4: The Garage (Motorcycle) -->
+        <div class="section" id="section-garage" style="justify-content: flex-start; padding-left: 15%;">
+             <div class="card">
+                <h3><i class="fas fa-motorcycle"></i> GARAGE ACCESS</h3>
                 <p>
                     擁有重機駕照，雖然台灣的環境讓我暫時選擇租車體驗各種車款，
                     但騎士的熱血從未冷卻。
                 </p>
-                <p class="highlight" style="font-size: 1.2rem; margin: 1.5rem 0;">
-                    // DREAM QUEST: JAPAN TOUR
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">License</span>
+                        <span class="stat-value">Heavy Motorcycle</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Strategy</span>
+                        <span class="stat-value">Rental Mercenary</span>
+                    </div>
+                    <div class="stat-item" style="grid-column: span 2;">
+                        <span class="stat-label">Mission</span>
+                        <span class="stat-value">Ride All Models</span>
+                    </div>
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: #888;">
+                    // LOG: Yamaha R1, Honda CB650R, Kawasaki Ninja... (Analyzing Data)
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 5: Dream (Finale) -->
+        <div class="section" id="section-dream">
+            <div class="card" style="text-align: center; border-color: var(--neon-pink); box-shadow: 0 0 30px rgba(255,0,85,0.2);">
+                <i class="fas fa-torii-gate" style="font-size: 3rem; color: var(--neon-pink); margin-bottom: 1rem;"></i>
+                <h1 style="color: var(--neon-pink); text-shadow: 0 0 20px var(--neon-pink);">TARGET LOCKED</h1>
+                <p class="highlight" style="font-size: 1.5rem; margin: 1rem 0;">
+                    JAPAN TOUR
                 </p>
                 <p>
                     終極目標：去日本進行一次重機旅行，感受異國的風與自由。
-                    體驗每一種車款的靈魂，直到找到屬於我的那台坐騎。
+                    在櫻花與霓虹燈下，體驗每一種車款的靈魂，直到找到屬於我的那台坐騎。
                 </p>
-
+                <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">
+                    // CONNECTION ESTABLISHED
+                </p>
                 <div class="social-links">
                     <a href="https://www.threads.com/@meizhuan" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/meizhuan/" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
@@ -380,51 +421,72 @@
         // --- Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Add fog for "infinite" illusion
-        scene.fog = new THREE.FogExp2(0x050505, 0.03);
+        // Reduced fog density to make the destination clearer
+        scene.fog = new THREE.FogExp2(0x050505, 0.006);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimize perf
         container.appendChild(renderer.domElement);
+
+        // --- Helper: Glow Texture ---
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gradient.addColorStop(0, 'rgba(255, 60, 0, 1)');
+            gradient.addColorStop(0.3, 'rgba(255, 30, 0, 0.5)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            return tex;
+        }
 
         // --- Tunnel Geometry ---
         // Create a path (CatmullRomCurve3)
         const curvePoints = [];
-        for (let i = 0; i < 50; i++) {
-            const x = Math.sin(i * 0.5) * 10;
-            const y = Math.cos(i * 0.3) * 10;
+        // Increase length to 60 points to ensure it reaches the destination comfortably
+        for (let i = 0; i < 60; i++) {
+            const x = Math.sin(i * 0.5) * 12;
+            const y = Math.cos(i * 0.3) * 8;
             const z = i * -10; // Move forward in Z
             curvePoints.push(new THREE.Vector3(x, y, z));
         }
+        // Ensure the last point is straight for the finale
+        const lastPoint = curvePoints[curvePoints.length - 1];
+        curvePoints.push(new THREE.Vector3(0, 0, lastPoint.z - 50)); // Straight line to destination
+
         const path = new THREE.CatmullRomCurve3(curvePoints);
 
         // Tube
-        const tubeGeometry = new THREE.TubeGeometry(path, 100, 3, 8, false);
+        const tubeGeometry = new THREE.TubeGeometry(path, 150, 4, 8, false);
         const tubeMaterial = new THREE.MeshBasicMaterial({
             color: 0x00f3ff,
             wireframe: true,
             transparent: true,
-            opacity: 0.3
+            opacity: 0.15
         });
         const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
         scene.add(tube);
 
         // Particles ("Data Stream")
-        const particlesCount = 2000;
+        const particlesCount = 2500;
         const posArray = new Float32Array(particlesCount * 3);
         const colorsArray = new Float32Array(particlesCount * 3);
 
         for(let i = 0; i < particlesCount; i++) {
-            // Distribute particles inside/around the tunnel
             const t = Math.random();
             const point = path.getPointAt(t);
             // Add some randomness around the path
             const offset = new THREE.Vector3(
-                (Math.random() - 0.5) * 15,
-                (Math.random() - 0.5) * 15,
-                (Math.random() - 0.5) * 5
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 10
             );
             point.add(offset);
 
@@ -446,33 +508,111 @@
             size: 0.15,
             vertexColors: true,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
         });
         const particleSystem = new THREE.Points(particlesGeo, particlesMat);
         scene.add(particleSystem);
 
+        // --- Destination: The Torii Gate ---
+        function createTorii(pos) {
+            const group = new THREE.Group();
+            group.position.copy(pos);
+            group.position.y -= 10;
+
+            // Scale up slightly
+            const scale = 1.5;
+            group.scale.set(scale, scale, scale);
+
+            const mat = new THREE.MeshBasicMaterial({
+                color: 0xff0055,
+                transparent: true,
+                opacity: 1.0,
+                fog: false
+            });
+
+            // Pillars
+            const pillarGeo = new THREE.BoxGeometry(3, 50, 3);
+            const leftPillar = new THREE.Mesh(pillarGeo, mat);
+            leftPillar.position.set(-20, 25, 0);
+            const rightPillar = new THREE.Mesh(pillarGeo, mat);
+            rightPillar.position.set(20, 25, 0);
+
+            // Crossbars
+            const topBarGeo = new THREE.BoxGeometry(60, 4, 4);
+            const topBar = new THREE.Mesh(topBarGeo, mat);
+            topBar.position.set(0, 45, 0);
+
+            const subBarGeo = new THREE.BoxGeometry(50, 3, 3);
+            const subBar = new THREE.Mesh(subBarGeo, mat);
+            subBar.position.set(0, 35, 0);
+
+            group.add(leftPillar, rightPillar, topBar, subBar);
+
+            // The Sun (Bright Red/Orange, Larger, Closer)
+            const sunGeo = new THREE.SphereGeometry(50, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xff3300, fog: false });
+            const sun = new THREE.Mesh(sunGeo, sunMat);
+            sun.position.set(0, 25, -40); // Move closer (was -60)
+            group.add(sun);
+
+            // Sun Glow Sprite
+            const glowTex = createGlowTexture();
+            const glowMat = new THREE.SpriteMaterial({
+                map: glowTex,
+                color: 0xff3300,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                fog: false
+            });
+            const glowSprite = new THREE.Sprite(glowMat);
+            glowSprite.scale.set(200, 200, 1);
+            glowSprite.position.set(0, 25, -45); // Between sun and gate pillars
+            group.add(glowSprite);
+
+            // Glow Ring
+            const ringGeo = new THREE.RingGeometry(55, 56, 64);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, side: THREE.DoubleSide, transparent: true, opacity: 0.8, fog: false });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.set(0, 25, -35);
+            group.add(ring);
+
+            return group;
+        }
+
+        // Calculate end position based on path
+        const endPoint = path.getPointAt(1);
+        const destination = createTorii(endPoint);
+        scene.add(destination);
+
+
         // --- Animation Logic ---
         const params = {
             progress: 0, // 0 to 1 along the path
-            velocity: 0
+            velocity: 0,
+            lookTarget: new THREE.Vector3(0, 0, -10) // Init look target
         };
+
+        // Expose for debugging
+        window.debugParams = params;
 
         // Expose velocity for p5.js
         window.scrollVelocity = 0;
 
         // GSAP ScrollTrigger
         gsap.to(params, {
-            progress: 0.85,
+            progress: 0.98,
             ease: "none",
             scrollTrigger: {
                 trigger: ".content-scroll",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1,
+                scrub: 1.5, // Smoother scrubbing
                 onUpdate: (self) => {
                     const v = Math.abs(self.getVelocity());
                     gsap.to(params, { velocity: v, duration: 0.5 });
-                    window.scrollVelocity = v; // Update global
+                    window.scrollVelocity = v;
                 }
             }
         });
@@ -510,14 +650,43 @@
             // Move Camera along path
             const p = params.progress;
             const currentPoint = path.getPointAt(p);
-            const lookPoint = path.getPointAt(Math.min(p + 0.05, 0.99));
 
             camera.position.copy(currentPoint);
-            camera.lookAt(lookPoint);
+
+            // Determine Target LookAt
+            let targetPoint;
+            if (p > 0.9 && destination) {
+                // Look at Destination
+                targetPoint = destination.position.clone();
+                targetPoint.y += 20; // Look slightly up at the gate
+            } else {
+                // Look ahead on path
+                const lookAtP = Math.min(p + 0.02, 0.999);
+                targetPoint = path.getPointAt(lookAtP);
+            }
+
+            // Smooth LookAt (Lerp)
+            // We use a simple vector lerp on the lookTarget property
+            params.lookTarget.lerp(targetPoint, 0.05); // Smooth factor
+            camera.lookAt(params.lookTarget);
 
             // Rotate tunnel
             tube.rotation.z += 0.001 + (params.velocity * 0.00005);
             particleSystem.rotation.z -= 0.002;
+
+            // Pulse destination
+            if (destination) {
+                // The sun is child index 4, glow sprite index 5
+                const sun = destination.children[4];
+                if(sun) {
+                     const s = 1 + Math.sin(Date.now() * 0.002) * 0.05;
+                     sun.scale.set(s, s, s);
+                }
+                const glow = destination.children[5];
+                if(glow) {
+                     glow.material.opacity = 0.6 + Math.sin(Date.now() * 0.005) * 0.2;
+                }
+            }
 
             renderer.render(scene, camera);
         }
@@ -599,7 +768,7 @@
             if (!window.scrollVelocity) v = 0;
 
             // Scale velocity for display (arbitrary factor)
-            let speed = map(v, 0, 4000, 0, 100); // 4000 is a guess for max scroll velocity
+            let speed = map(v, 0, 4000, 0, 100);
             speed = constrain(speed, 0, 100);
 
             // Background Arc
