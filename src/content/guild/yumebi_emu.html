@@ -1198,6 +1198,7 @@
         let scrollProgress = 0;
         let currentTexIdx = 0;
         let isSummoning = false;
+        let magicBaseRotation = 0; // Scroll-driven base, render loop adds spin on top
 
         const hintTouch = document.getElementById('hint-touch');
         const finalCard = document.getElementById('final-card');
@@ -1212,7 +1213,8 @@
                 scrollProgress = self.progress;
                 camera.position.z = 30 - (scrollProgress * 20);
 
-                if(scrollProgress > 0.9 && !isSummoned && !isSummoning) {
+                // Show egg when gallery section is in view (~70%)
+                if(scrollProgress > 0.7 && !isSummoned && !isSummoning) {
                     hintTouch.style.opacity = 1;
                 } else if(!isSummoned && !isSummoning) {
                     hintTouch.style.opacity = 0;
@@ -1225,9 +1227,8 @@
                 }
 
                 heartGroup.rotation.y = scrollProgress * Math.PI * 4;
-                if(!isSummoning) {
-                    magicPlane.rotation.z = -scrollProgress * Math.PI * 2;
-                }
+                // Store base rotation from scroll; render loop adds continuous spin
+                magicBaseRotation = -scrollProgress * Math.PI * 2;
             }
         });
 
@@ -1248,16 +1249,10 @@
             }
         });
 
-        // 2) Background click → toggle crystal / dismiss summon
+        // 2) Background click → toggle crystal only
         window.addEventListener('click', (e) => {
             if (e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.devil-egg') || e.target.closest('.gallery-content')) return;
             if (isSummoning) return;
-
-            // Dismiss final card if showing
-            if (isSummoned) {
-                dismissSummon();
-                return;
-            }
 
             // Toggle crystal: hit invisible sphere around heart group
             raycaster.setFromCamera(mouse, camera);
@@ -1296,15 +1291,6 @@
                     isSummoned = true;
                 }
             });
-        }
-
-        function dismissSummon() {
-            isSummoned = false;
-            finalCard.classList.remove('active');
-            devilEgg.classList.remove('summoning');
-            if(scrollProgress > 0.9) {
-                hintTouch.style.opacity = '1';
-            }
         }
 
         // --- CRYSTAL: shard assembly toggle (visual only, no card) ---
@@ -1388,9 +1374,10 @@
                 });
             }
 
+            // Magic circle: scroll base + continuous spin (no conflict)
             if(!isSummoning) {
-                 magicPlane.rotation.z -= 0.005;
-                 ringPlane.rotation.z += 0.003;
+                 magicPlane.rotation.z = magicBaseRotation - t * 0.3;
+                 ringPlane.rotation.z = -magicBaseRotation + t * 0.2;
             }
 
             // Hover detection: shards only (devil egg is CSS-based)
