@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis - The Glitch Angel</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Share+Tech+Mono&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #050505;
+            --c-text: #ffffff;
+            --c-accent: #ff003c; /* Glitch Red */
+            --c-accent-2: #00f3ff; /* Glitch Cyan */
+            --c-purple: #9d00ff;
+
+            --f-header: 'Cinzel', serif;
+            --f-tech: 'Share Tech Mono', monospace;
+            --f-body: 'Noto Serif TC', serif;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-body);
+            overflow-x: hidden;
+        }
+
+        /* Canvases */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; mix-blend-mode: overlay; }
+
+        /* Scroller */
+        .scroller { position: relative; z-index: 10; padding-bottom: 20vh; }
+
+        .section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 4rem 10%;
+            position: relative;
+        }
+
+        /* Typography */
+        h1, h2, h3 { font-family: var(--f-header); text-transform: uppercase; margin: 0; }
+
+        h1 {
+            font-size: 5rem; line-height: 1;
+            letter-spacing: 0.2em;
+            text-shadow: 2px 2px 0 var(--c-accent), -2px -2px 0 var(--c-accent-2);
+            position: relative;
+        }
+
+        .glitch-text { position: relative; display: inline-block; }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg);
+        }
+        .glitch-text::before {
+            left: 2px; text-shadow: -1px 0 var(--c-accent); clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px; text-shadow: -1px 0 var(--c-accent-2); clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 30px, 0); transform: skew(0.5deg); }
+            5% { clip: rect(50px, 9999px, 20px, 0); transform: skew(0.5deg); }
+            10% { clip: rect(90px, 9999px, 80px, 0); transform: skew(-1deg); }
+            100% { clip: rect(20px, 9999px, 70px, 0); transform: skew(0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(60px, 9999px, 10px, 0); transform: skew(1deg); }
+            5% { clip: rect(20px, 9999px, 50px, 0); transform: skew(-0.5deg); }
+            10% { clip: rect(80px, 9999px, 90px, 0); transform: skew(0.5deg); }
+            100% { clip: rect(10px, 9999px, 40px, 0); transform: skew(0); }
+        }
+
+        .subtitle {
+            font-family: var(--f-tech); color: var(--c-accent-2);
+            font-size: 1.2rem; letter-spacing: 0.3em;
+            margin-top: 1rem; opacity: 0.8;
+        }
+
+        p {
+            font-size: 1.1rem; line-height: 1.8; max-width: 600px;
+            text-align: justify; margin-bottom: 2rem;
+            background: rgba(0,0,0,0.6); padding: 2rem;
+            border-left: 2px solid var(--c-text);
+            backdrop-filter: blur(5px);
+        }
+
+        .card {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid #333;
+            padding: 3rem;
+            max-width: 800px; width: 100%;
+            position: relative;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+            transition: 0.3s;
+        }
+        .card:hover { border-color: var(--c-text); box-shadow: 0 0 30px rgba(255, 255, 255, 0.1); }
+
+        .card-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 2rem; border-bottom: 1px solid #333; padding-bottom: 1rem;
+        }
+
+        .avatar-frame {
+            width: 200px; height: 200px;
+            position: relative; margin: 0 auto 2rem;
+            border: 2px solid var(--c-text);
+            padding: 5px;
+        }
+        .avatar-frame img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%); transition: 0.5s; }
+        .avatar-frame:hover img { filter: grayscale(0%); }
+
+        /* Glitch Button */
+        .btn {
+            display: inline-block; padding: 1rem 2rem;
+            border: 1px solid var(--c-text); color: var(--c-text);
+            text-decoration: none; font-family: var(--f-tech);
+            position: relative; overflow: hidden; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 2px;
+            background: black;
+        }
+        .btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: var(--c-text); mix-blend-mode: exclusion; transition: 0.3s;
+        }
+        .btn:hover::before { left: 0; }
+
+        /* Footer */
+        .footer {
+            height: 50vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: linear-gradient(to top, #000 20%, transparent);
+        }
+        .socials { display: flex; gap: 2rem; margin-top: 2rem; }
+        .social-link {
+            font-size: 2rem; color: var(--c-text); transition: 0.3s; opacity: 0.7;
+        }
+        .social-link:hover { color: var(--c-accent-2); opacity: 1; transform: scale(1.2); text-shadow: 0 0 10px var(--c-accent-2); }
+
+        .back-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            color: var(--c-text); text-decoration: none;
+            font-family: var(--f-tech); font-size: 0.9rem;
+            opacity: 0.7; transition: 0.3s;
+            mix-blend-mode: difference;
+        }
+        .back-btn:hover { opacity: 1; letter-spacing: 2px; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .section { padding: 4rem 5%; }
+            .card { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/guild" class="back-btn">&lt; GUILD_DATABASE</a>
+
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <div class="scroller">
+        <!-- Hero -->
+        <section class="section">
+            <div class="subtitle">SYSTEM_ERROR_DETECTED // ENTITY: MIS</div>
+            <h1 class="glitch-text" data-text="MIS">MIS</h1>
+            <div class="subtitle" style="color: var(--c-text);">THE GLITCH ANGEL</div>
+        </section>
+
+        <!-- Profile -->
+        <section class="section">
+            <div class="card">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/mis/avatar.webp" alt="Mis">
+                </div>
+                <div class="card-header">
+                    <h2 style="font-size: 2rem;">WHO AM I?</h2>
+                    <span style="font-family: var(--f-tech); color: var(--c-accent);">ERR_CODE_404</span>
+                </div>
+                <p>
+                    我是小米絲 (Mis)。<br>
+                    一個天使人妻系的 VTuber，特色是百合跟黑禮服。<br><br>
+                    原因是因為我是一名 <span style="color: var(--c-accent-2);">天堂鳥</span>（引渡亡魂到天堂的那種，因此也有人稱呼我為死神）。
+                    作為天使我應該不會有太多個人感情與意識，但我是偶而出現的 <span style="color: var(--c-accent);">錯誤 BUG</span>。
+                </p>
+                <p>
+                    幾千年的時間裡我對人性感到好奇，也因為我的個人意識太強烈，最後鄰近崩壞之時，跟神請求希望能了解人類的感情，因此作為人類重生了。
+                </p>
+            </div>
+        </section>
+
+        <!-- Personality -->
+        <section class="section">
+            <div class="card" style="border-color: var(--c-text); background: rgba(255,255,255,0.05);">
+                <div class="card-header">
+                    <h2>BLACK & WHITE</h2>
+                    <span style="font-family: var(--f-tech);">DUALITY</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h3 style="color: var(--c-accent);">VOID</h3>
+                        <p style="background: transparent; border: none; padding: 0;">
+                            我亦黑亦白。<br>
+                            名為天使卻穿著黑色的禮服。<br>
+                            實際上還會帶著瘟疫醫生的面具。
+                        </p>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--c-accent-2);">LIGHT</h3>
+                        <p style="background: transparent; border: none; padding: 0;">
+                            最近才漸漸拾回天使的記憶。<br>
+                            Mis 有著錯誤的意思...<br>
+                            但也是神給我的名字。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gaming & Interests -->
+        <section class="section">
+            <div class="subtitle">INTERESTS_LOADED</div>
+            <h2 class="glitch-text" data-text="PLAYGROUND" style="font-size: 3rem; margin: 1rem 0;">PLAYGROUND</h2>
+
+            <div style="display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center;">
+                <div style="border: 1px solid var(--c-accent-2); padding: 1rem 2rem; font-family: var(--f-tech);">
+                    <i class="fa-solid fa-gamepad"></i> VALORANT
+                </div>
+                <div style="border: 1px solid var(--c-text); padding: 1rem 2rem; font-family: var(--f-tech);">
+                    <i class="fa-solid fa-users"></i> MULTIPLAYER_GAMES
+                </div>
+                <div style="border: 1px solid var(--c-accent); padding: 1rem 2rem; font-family: var(--f-tech);">
+                    <i class="fa-solid fa-paw"></i> 3 LITTLE TREASURES
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="subtitle">CONNECT_TO_SOUL</div>
+            <div class="socials">
+                <a href="https://www.threads.net/@misgirlnotoperating" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/misgirlnotoperating/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://linkgoods.com/misutopia" target="_blank" class="social-link"><i class="fa-solid fa-link"></i></a>
+            </div>
+            <div style="margin-top: 2rem; font-family: var(--f-tech); font-size: 0.8rem; color: #666;">
+                MADE WITH <i class="fa-solid fa-heart" style="color: var(--c-accent);"></i> BY SUPERGALEN'S DUNGEON
+            </div>
+        </footer>
+    </div>
+
+    <!-- P5.js Overlay -->
+    <script>
+        const sketch = (p) => {
+            p.setup = () => {
+                let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+                cnv.parent('p5-container');
+                p.noStroke();
+            };
+
+            p.draw = () => {
+                p.clear();
+                // Static Noise
+                if (p.frameCount % 3 === 0) {
+                    p.fill(255, p.random(10));
+                    p.rect(0, 0, p.width, p.height);
+                }
+
+                // Random Glitch Lines
+                if (p.random() < 0.1) {
+                    let h = p.random(1, 5);
+                    let y = p.random(p.height);
+                    p.fill(255, 255, 255, p.random(50, 100));
+                    p.rect(0, y, p.width, h);
+                }
+
+                // Cyan/Red shift blocks
+                if(p.random() < 0.05) {
+                    let w = p.random(50, 200);
+                    let h = p.random(2, 20);
+                    let x = p.random(p.width);
+                    let y = p.random(p.height);
+                    p.fill(0, 243, 255, 100);
+                    p.rect(x, y, w, h);
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+        new p5(sketch);
+    </script>
+
+    <!-- Three.js Background -->
+    <script type="module">
+        import * as THREE from 'https://esm.sh/three@0.160.0';
+        import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/ShaderPass.js';
+        import { RGBShiftShader } from 'https://esm.sh/three@0.160.0/examples/jsm/shaders/RGBShiftShader.js';
+
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 10;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Post Processing
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        const rgbShift = new ShaderPass(RGBShiftShader);
+        rgbShift.uniforms['amount'].value = 0.0015;
+        composer.addPass(rgbShift);
+
+        // Particles - "Feathers" / "Ash"
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const randomArray = new Float32Array(particlesCount); // For phase offset
+
+        for(let i = 0; i < particlesCount * 3; i+=3) {
+            posArray[i] = (Math.random() - 0.5) * 50;
+            posArray[i+1] = (Math.random() - 0.5) * 50;
+            posArray[i+2] = (Math.random() - 0.5) * 50;
+            randomArray[i/3] = Math.random();
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('aRandom', new THREE.BufferAttribute(randomArray, 1));
+
+        // Custom Shader Material for "Breathing" Particles
+        const particlesMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                color: { value: new THREE.Color(0xffffff) }
+            },
+            vertexShader: `
+                uniform float time;
+                attribute float aRandom;
+                varying float vAlpha;
+                void main() {
+                    vec3 pos = position;
+                    pos.y += sin(time * 0.5 + aRandom * 10.0) * 0.5;
+                    pos.x += cos(time * 0.3 + aRandom * 10.0) * 0.5;
+
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    gl_PointSize = (4.0 * aRandom + 2.0) * (10.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+
+                    vAlpha = 0.5 + 0.5 * sin(time + aRandom * 10.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                varying float vAlpha;
+                void main() {
+                    float r = distance(gl_PointCoord, vec2(0.5));
+                    if (r > 0.5) discard;
+                    gl_FragColor = vec4(color, vAlpha * 0.8);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // Abstract Black Lily / Scythe Form
+        const tubeGeometry = new THREE.TorusKnotGeometry(3, 1, 100, 16);
+        const tubeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
+        });
+        const form = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        scene.add(form);
+
+        // Add some glowing lines around the form
+        const lineGeo = new THREE.EdgesGeometry(tubeGeometry);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x9d00ff, transparent: true, opacity: 0.3 });
+        const lines = new THREE.LineSegments(lineGeo, lineMat);
+        scene.add(lines);
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            particlesMaterial.uniforms.time.value = t;
+
+            form.rotation.x = t * 0.1;
+            form.rotation.y = t * 0.15;
+            lines.rotation.copy(form.rotation);
+
+            // Subtle Camera movement
+            camera.position.y = Math.sin(t * 0.2) * 0.5;
+
+            composer.render();
+        }
+        animate();
+
+        // Scroll Interactions
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = scrollY / maxScroll;
+
+            // Rotate form based on scroll
+            form.rotation.z = progress * Math.PI * 2;
+            lines.rotation.z = form.rotation.z;
+
+            // Increase Glitch on scroll
+            rgbShift.uniforms['amount'].value = 0.0015 + (Math.sin(scrollY * 0.01) * 0.002);
+
+            // Move Particles
+            particlesMesh.rotation.y = progress * 0.5;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.card').forEach(card => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 100,
+                opacity: 0,
+                duration: 1,
+                ease: "power3.out"
+            });
+        });
+
+        // Glitch Text Reveal
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        document.querySelectorAll('h1, h2').forEach(target => {
+            target.onmouseover = event => {
+                let iteration = 0;
+                const originalText = target.innerText;
+                clearInterval(target.interval);
+
+                target.interval = setInterval(() => {
+                    target.innerText = target.innerText
+                        .split("")
+                        .map((letter, index) => {
+                            if(index < iteration) {
+                                return originalText[index];
+                            }
+                            return letters[Math.floor(Math.random() * 26)];
+                        })
+                        .join("");
+
+                    if(iteration >= originalText.length){
+                        clearInterval(target.interval);
+                    }
+
+                    iteration += 1/3;
+                }, 30);
+            }
+        });
+    </script>
+</body>
+</html>
