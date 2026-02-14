@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Void Alchemist)', () => {
+test.describe('SPJ Guild Page (Astral Nexus)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -12,26 +12,28 @@ test.describe('SPJ Guild Page (Void Alchemist)', () => {
     }
   });
 
-  test('should display Hero Section with Void Theme', async ({ page }) => {
-    // Check for new class names
-    await expect(page.locator('.hero-title')).toContainText('具現化系');
-    await expect(page.locator('.hero-title')).toContainText('鍊金術師');
-    // Check avatar
-    const avatar = page.locator('.avatar-img');
-    await expect(avatar).toBeVisible();
-    await expect(avatar).toHaveAttribute('src', '/assets/img/guild/spj/avatar.webp');
+  test('should display Hero Section with Architect Role', async ({ page }) => {
+    await expect(page.locator('.role-badge')).toContainText('GUILD ARCHITECT');
+    await expect(page.locator('h1')).toContainText('塞趴卷 SPJ');
+    await expect(page.locator('p').first()).toContainText('連結者 · 架構師 · 夢想家');
   });
 
-  test('should display Narrative Content', async ({ page }) => {
-    await expect(page.locator('#intro h2')).toContainText('起源代碼 (ORIGIN)');
-    await expect(page.locator('#dream h2')).toContainText('公會協議 (PROTOCOL)');
+  test('should display Expanded Protocol Content', async ({ page }) => {
+    // Check for "Creation Protocol"
+    await expect(page.locator('#protocol h2')).toContainText('創世協議');
+    // Check for specific expanded text
+    await expect(page.locator('#protocol')).toContainText('語言是構築現實的最小單位');
   });
 
-  test('should display Project Cards (Grid)', async ({ page }) => {
-    const cards = page.locator('.project-card');
-    await expect(cards).toHaveCount(3);
-    await expect(cards.first()).toContainText('文字小鎮');
-    await expect(cards.first().locator('.project-rank')).toContainText('S-CLASS');
+  test('should display Network/Guild Content', async ({ page }) => {
+    await expect(page.locator('#network h2')).toContainText('靈魂網絡');
+    await expect(page.locator('#network')).toContainText('連結中樞 (Nexus)');
+  });
+
+  test('should display Archive Node List', async ({ page }) => {
+    const nodes = page.locator('.node-item');
+    await expect(nodes).toHaveCount(3);
+    await expect(nodes.first()).toContainText('文字小鎮 (Text Town)');
   });
 
   test('should have Three.js canvas', async ({ page }) => {
