@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>秋桑 Tyou | The Analytical Wanderer</title>
+    <meta name="description" content="秋桑 Tyou - 住在日本的物理系跑咖人。不追流行，只找安放靈魂的角落。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            /* Palette: Oatmeal, Olive Green, Dark Grey */
+            --color-bg: #F0EFE9;
+            --color-text: #2F3632;
+            --color-accent: #6B7F36;
+            --color-warm: #C5A880;
+            --color-paper: rgba(255, 252, 245, 0.95);
+
+            --font-main: 'Noto Serif TC', serif;
+            --font-hand: 'La Belle Aurore', cursive;
+            --font-data: 'Space Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            line-height: 1.8;
+            /* Texture overlay for paper feel */
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjRjBFRkU5Ii8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNDNUE4ODAiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==');
+        }
+
+        /* --- Canvas Layers --- */
+        #canvas-three {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            /* No blur - we want clear icons */
+            filter: blur(0px);
+            transition: filter 0.5s;
+        }
+
+        #canvas-p5 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.4; /* Stronger visibility */
+            mix-blend-mode: multiply;
+        }
+
+        /* --- Layout --- */
+        .section {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 6rem 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .content-wrapper {
+            max-width: 900px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--color-text);
+        }
+
+        .handwritten {
+            font-family: var(--font-hand);
+            color: var(--color-accent);
+            font-size: 1.5rem;
+            transform: rotate(-2deg);
+            display: inline-block;
+        }
+
+        .data-tag {
+            font-family: var(--font-data);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 1px solid var(--color-text);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            background: #fff;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        /* --- Components --- */
+        .paper-card {
+            background: var(--color-paper);
+            padding: 3rem;
+            box-shadow: 10px 10px 30px rgba(47, 54, 50, 0.15);
+            border: 1px solid rgba(107, 127, 54, 0.2);
+            position: relative;
+            backdrop-filter: blur(8px);
+            border-radius: 2px;
+        }
+
+        .paper-card::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* --- Hero --- */
+        .hero-title {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            position: relative;
+            line-height: 1.1;
+            text-shadow: 2px 2px 0px rgba(240, 239, 233, 0.8);
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: #444;
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(240, 239, 233, 0.6);
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        /* Avatar with Slide-Out Interaction */
+        .avatar-wrapper {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 3rem; /* More margin for expansion */
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            filter: sepia(0.2) contrast(0.9);
+            border: 3px solid #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .avatar-img:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden-note {
+            position: absolute;
+            top: 10px;
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%) rotate(0deg) scale(0.8);
+            width: 220px; /* Slightly wider than avatar */
+            background: #fff;
+            padding: 0.5rem 0.5rem 2rem 0.5rem;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            z-index: 1; /* Behind avatar initially */
+            opacity: 0;
+            pointer-events: none;
+            border: 1px solid #ddd;
+            /* Ensure smooth transition */
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .hidden-note.active {
+            opacity: 1;
+            z-index: 3; /* Bring to front if clicked, or slide beside */
+            /* Mobile: Slide down. Desktop: Slide right */
+            transform: translateX(-50%) translateY(120%) rotate(-5deg) scale(1);
+            pointer-events: auto;
+        }
+
+        @media (min-width: 768px) {
+            .hidden-note.active {
+                /* Slide to the right on desktop */
+                transform: translateX(60%) translateY(10%) rotate(5deg) scale(1);
+            }
+        }
+
+        .hidden-note img {
+            width: 100%;
+            display: block;
+            border-bottom: 1px solid #eee;
+        }
+
+        .note-caption {
+            font-family: var(--font-hand);
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 1.2rem;
+            color: var(--color-accent);
+        }
+
+        /* Hint for interaction */
+        .avatar-hint {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--font-hand);
+            font-size: 1rem;
+            opacity: 0.6;
+            color: var(--color-accent);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* --- Timeline (Grid) --- */
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 2rem;
+            margin-top: 3rem;
+            position: relative;
+        }
+
+        .timeline-grid::before {
+            content: '';
+            position: absolute;
+            left: 49px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--color-text);
+            opacity: 0.3;
+        }
+
+        .timeline-item {
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .timeline-year {
+            font-family: var(--font-data);
+            font-weight: 700;
+            text-align: right;
+            padding-top: 0.3rem;
+            background: var(--color-bg);
+            z-index: 1;
+        }
+
+        .timeline-content h3 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: var(--color-accent);
+        }
+
+        /* --- Interactive Polaroid --- */
+        .polaroid-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+            perspective: 1000px;
+        }
+
+        .polaroid {
+            background: #fff;
+            padding: 1rem 1rem 3rem 1rem;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            transform: rotate(3deg);
+            transition: transform 0.3s;
+            max-width: 300px;
+        }
+
+        .polaroid:hover {
+            transform: rotate(0deg) scale(1.05);
+            z-index: 20;
+        }
+
+        .polaroid img {
+            width: 100%;
+            filter: grayscale(20%);
+        }
+
+        .polaroid-caption {
+            font-family: var(--font-hand);
+            text-align: center;
+            margin-top: 1rem;
+            color: #555;
+            font-size: 1.2rem;
+        }
+
+        /* --- Social Footer --- */
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .social-btn {
+            font-family: var(--font-data);
+            text-decoration: none;
+            color: var(--color-text);
+            border: 1px solid var(--color-text);
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            transition: background 0.2s, color 0.2s; /* Optimized transition */
+            background: rgba(255,255,255,0.8);
+        }
+
+        .social-btn:hover {
+            background: var(--color-accent);
+            color: #fff;
+            border-color: var(--color-accent);
+        }
+
+        /* BW Illustration Background */
+        #bw-illustration {
+            position: absolute;
+            bottom: 0;
+            right: -100px;
+            width: 500px;
+            opacity: 0.12;
+            z-index: 0;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+
+        #bw-illustration img {
+            width: 100%;
+            mask-image: linear-gradient(to top, black, transparent);
+            -webkit-mask-image: linear-gradient(to top, black, transparent);
+        }
+
+        /* Region Badges */
+        .region-badges {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            justify-content: start;
+        }
+
+        .region-badge {
+            font-family: var(--font-data);
+            border: 2px solid var(--color-accent);
+            color: var(--color-accent);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.5);
+            transform: rotate(-2deg);
+            transition: transform 0.3s;
+        }
+
+        .region-badge:nth-child(even) {
+            transform: rotate(2deg);
+            border-color: var(--color-warm);
+            color: #8B5A2B;
+        }
+
+        .region-badge:hover {
+            transform: rotate(0) scale(1.1);
+            background: #fff;
+            z-index: 2;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .timeline-grid { grid-template-columns: 60px 1fr; gap: 1rem; }
+            .timeline-grid::before { left: 29px; }
+            .paper-card { padding: 1.5rem; }
+            #bw-illustration { width: 300px; right: -50px; opacity: 0.08; }
+            /* Adjust hidden note for mobile if needed */
+            .hidden-note { width: 180px; }
+        }
+    </style>
+
+    <!-- Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="canvas-three"></div>
+    <div id="canvas-p5"></div>
+
+    <!-- Force load FontAwesome for Canvas -->
+    <div style="font-family: 'Font Awesome 6 Free'; font-weight: 900; opacity: 0; position: absolute; pointer-events: none;">.</div>
+
+    <!-- Hero Section -->
+    <section class="section">
+        <div class="content-wrapper" style="text-align: center;">
+
+            <!-- Avatar Interaction Wrapper -->
+            <div class="avatar-wrapper gs-reveal">
+                <img src="/assets/img/guild/tyou/pot.webp" alt="Tyou" class="avatar-img" id="hero-avatar" loading="eager" decoding="async">
+
+                <!-- The Hidden Note (Slides out on click) -->
+                <div class="hidden-note" id="hidden-note">
+                    <img src="/assets/img/guild/tyou/illustration_color.webp" alt="Moment" loading="lazy">
+                    <div class="note-caption">Collected!</div>
+                </div>
+
+                <div class="avatar-hint">Click for a note</div>
+            </div>
+
+            <span class="data-tag gs-reveal">INTP / Physicist / Barista</span>
+
+            <h1 class="hero-title gs-reveal">
+                The Analytical<br>
+                <span style="color: var(--color-accent); font-style: italic;">Wanderer</span>
+            </h1>
+
+            <p class="hero-subtitle gs-reveal">
+                我是住在日本的秋桑。<br>
+                跑咖是一種生活習慣，不是為了打卡，而是尋找一個可以安放靈魂的角落。
+            </p>
+
+            <div style="margin-top: 2rem;" class="gs-reveal">
+                <span class="handwritten">Coffee. Travel. Life.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 01. Origin (Physics) -->
+    <section class="section">
+        <div class="content-wrapper">
+            <div class="paper-card gs-reveal">
+                <!-- BW Illustration (Background) -->
+                <div id="bw-illustration">
+                    <img src="/assets/img/guild/tyou/illustration_bw.webp" alt="Tyou Sketch" loading="lazy">
+                </div>
+
+                <span class="data-tag">Chapter 01: The Logic</span>
+                <h2>Physics & The INTP Mind</h2>
+
+                <div style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 2rem;">
+                    <div style="flex: 1; min-width: 300px; z-index: 1;">
+                        <p style="margin-bottom: 1rem;">
+                            大學、研究所皆主修物理。這賦予了我一種近乎強迫症的邏輯思維。<br>
+                            雖然是教科書級的 <span style="font-family: var(--font-data); color: var(--color-accent);">INTP</span>，但我並不想用冰冷的數據來定義生活。
+                        </p>
+                        <p>
+                            我用物理學家的眼光觀察空間結構、光線折射、聲音傳遞。<br>
+                            但用旅人的心，去感受那杯咖啡的溫度。
+                        </p>
+                    </div>
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: center; z-index: 1;">
+                        <div style="width: 100%; height: 1px; background: var(--color-text); position: relative;">
+                            <span class="handwritten" style="position: absolute; top: -30px; left: 0;">Variables</span>
+                            <span class="handwritten" style="position: absolute; bottom: -30px; right: 0;">Atmosphere</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 02. Timeline -->
+    <section class="section">
+        <div class="content-wrapper">
+            <span class="data-tag gs-reveal">Chapter 02: The Path</span>
+
+            <div class="paper-card gs-reveal" style="padding-bottom: 0;">
+                <div class="timeline-grid">
+                    <div class="timeline-item">
+                        <div class="timeline-year">Phase 1</div>
+                    </div>
+                    <div class="timeline-item timeline-content">
+                        <h3>Academia (Physics)</h3>
+                        <p>嚴謹的邏輯訓練。透過方程式理解宇宙。</p>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-year">Phase 2</div>
+                    </div>
+                    <div class="timeline-item timeline-content">
+                        <h3>Design & Coffee</h3>
+                        <p>畢業後轉身投入平面設計，隨後在咖啡產業耕耘五年。<br>從個人小店到連鎖體系，學會的不只是沖煮，而是「服務」的本質。</p>
+                    </div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-year">Current</div>
+                    </div>
+                    <div class="timeline-item timeline-content">
+                        <h3>Japan (The Explorer)</h3>
+                        <p>30歲移居日本。觀光推廣寫手、玩具店店長。<br>喜歡的事情太多，結果就什麼都做了。</p>
+
+                        <!-- Region Badges -->
+                        <div style="margin-top: 1rem; border-top: 1px dashed #ccc; padding-top: 1rem;">
+                            <span style="font-family: var(--font-hand); font-size: 0.9rem; color: #666; display: block; margin-bottom: 0.5rem;">Explored Regions:</span>
+                            <div class="region-badges">
+                                <span class="region-badge interactive-el">Hokkaido</span>
+                                <span class="region-badge interactive-el">Kanto</span>
+                                <span class="region-badge interactive-el">Kansai</span>
+                                <span class="region-badge interactive-el">Kyushu</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 03. Philosophy -->
+    <section class="section">
+        <div class="content-wrapper">
+            <div class="paper-card gs-reveal" style="background: #fff;">
+                <span class="data-tag">Chapter 03: The Guide</span>
+
+                <h2 style="font-size: 2.5rem; margin: 1rem 0;">Not a Review.<br><span style="color: var(--color-accent);">A Companion.</span></h2>
+
+                <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+                    我的帳號不是攻略，也不是評分表。<br>
+                    它更像是一本陪你一起跑日本咖啡廳的<span class="handwritten">手寫筆記</span>。
+                </p>
+
+                <div class="polaroid-container">
+                    <div class="polaroid interactive-el">
+                        <img src="/assets/img/guild/tyou/pot.webp" alt="Coffee Pot" loading="lazy">
+                        <div class="polaroid-caption">Find your space.</div>
+                    </div>
+                </div>
+
+                <p style="margin-top: 2rem; text-align: center; color: #777;">
+                    「只要有人喜歡，就是好咖啡。」
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <section class="section">
+        <div class="content-wrapper" style="text-align: center;">
+            <h2 class="gs-reveal" style="font-family: var(--font-hand); font-size: 3rem; margin-bottom: 2rem;">Let's get lost together.</h2>
+
+            <div class="social-links gs-reveal">
+                <a href="https://www.threads.net/@japan.coffee__tyou.tw" target="_blank" class="social-btn interactive-el">Threads</a>
+                <a href="https://www.instagram.com/japan.coffee__tyou.tw/" target="_blank" class="social-btn interactive-el">Instagram</a>
+                <a href="https://vocus.cc/user/@japan-coffee-tyou" target="_blank" class="social-btn interactive-el">Vocus</a>
+                <a href="https://www.youtube.com/@japan.coffee_tyouSAN" target="_blank" class="social-btn interactive-el">YouTube</a>
+                <a href="https://linkgoods.com/japancoffeebytyou" target="_blank" class="social-btn interactive-el">LinkGoods</a>
+            </div>
+
+            <div style="margin-top: 4rem; opacity: 0.5; font-family: var(--font-data); font-size: 0.8rem;">
+                <a href="/guild/" style="color: inherit; text-decoration: none;" class="interactive-el">← RETURN TO GUILD</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interaction Script: Slide Out Note -->
+    <script>
+        const avatar = document.getElementById('hero-avatar');
+        const hiddenNote = document.getElementById('hidden-note');
+        let isOpen = false;
+
+        avatar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isOpen = !isOpen;
+
+            if(isOpen) {
+                hiddenNote.classList.add('active');
+            } else {
+                hiddenNote.classList.remove('active');
+            }
+        });
+
+        // Click outside to close note
+        document.addEventListener('click', (e) => {
+            if(isOpen && !e.target.closest('.avatar-wrapper')) {
+                isOpen = false;
+                hiddenNote.classList.remove('active');
+            }
+        });
+    </script>
+
+    <!-- Three.js: Floating Icons (Physics Enhanced) -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('canvas-three');
+        const scene = new THREE.Scene();
+
+        // Soft ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+        scene.add(ambientLight);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // --- Helper: Generate Icon Texture ---
+        async function createIconTexture(unicode, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            await document.fonts.ready;
+
+            ctx.font = '900 80px "Font Awesome 6 Free"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(unicode, 64, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        const icons = [
+            { code: '\uf0f4', color: '#6B7F36' }, // Mug (Olive)
+            { code: '\uf5d2', color: '#C5A880' }, // Atom (Gold)
+            { code: '\uf072', color: '#2F3632' }, // Plane (Dark)
+            { code: '\uf3c5', color: '#6B7F36' }, // Map Marker (Olive)
+            { code: '\uf030', color: '#2F3632' }, // Camera (Dark)
+            { code: '\uf303', color: '#C5A880' }, // Pen (Gold)
+            { code: '\uf4e2', color: '#6B7F36' }, // Mug Saucer
+        ];
+
+        // --- Create Sprites ---
+        const particleCount = 45;
+        const particles = [];
+        const tempVector = new THREE.Vector3(); // Optimization: Reuse vector
+        const targetScale = new THREE.Vector3(); // Optimization: Reuse vector
+
+        (async () => {
+            const materials = await Promise.all(icons.map(async icon => {
+                const texture = await createIconTexture(icon.code, icon.color);
+                return new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.6
+                });
+            }));
+
+            for(let i=0; i<particleCount; i++) {
+                // Optimization: Clone material to allow independent rotation
+                const baseMaterial = materials[Math.floor(Math.random() * materials.length)];
+                const material = baseMaterial.clone();
+                const sprite = new THREE.Sprite(material);
+
+                // Random Pos
+                sprite.position.x = (Math.random() - 0.5) * 60;
+                sprite.position.y = (Math.random() - 0.5) * 60;
+                sprite.position.z = (Math.random() - 0.5) * 30;
+
+                const scale = Math.random() * 1.5 + 1;
+                sprite.scale.set(scale, scale, 1);
+
+                sprite.userData = {
+                    vx: (Math.random() - 0.5) * 0.02,
+                    vy: (Math.random() - 0.5) * 0.02,
+                    origScale: scale,
+                    floatOffset: Math.random() * Math.PI * 2,
+                    floatSpeed: Math.random() * 0.5 + 0.5,
+                    turbulence: 0
+                };
+
+                scene.add(sprite);
+                particles.push(sprite);
+            }
+
+            animate();
+        })();
+
+        // Mouse & Scroll Interaction
+        let mouseX = 0;
+        let mouseY = 0;
+        let lastScrollY = window.scrollY;
+        let scrollSpeed = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('scroll', () => {
+            const newScrollY = window.scrollY;
+            const delta = newScrollY - lastScrollY;
+            scrollSpeed = delta * 0.01; // Sensitivity
+            lastScrollY = newScrollY;
+        });
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Dampen scroll speed
+            scrollSpeed *= 0.95;
+
+            particles.forEach(p => {
+                // Base float
+                p.position.y += Math.sin(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.005;
+                p.position.x += Math.cos(time * p.userData.floatSpeed + p.userData.floatOffset) * 0.002;
+
+                // Scroll Turbulence (Stirring effect)
+                p.userData.turbulence += (Math.abs(scrollSpeed) * 2 - p.userData.turbulence) * 0.1;
+
+                // Add vertical movement based on scroll direction (Parallax)
+                p.position.y += scrollSpeed * 2;
+
+                // Brownian Drift
+                p.position.x += p.userData.vx * (1 + p.userData.turbulence * 5);
+                p.position.y += p.userData.vy * (1 + p.userData.turbulence * 5);
+
+                // Mouse Attraction (Magnetic)
+                const distX = (mouseX * 25) - p.position.x;
+                const distY = (mouseY * 25) - p.position.y;
+                const dist = Math.sqrt(distX*distX + distY*distY);
+
+                if (dist < 10) {
+                    p.position.x += distX * 0.005;
+                    p.position.y += distY * 0.005;
+                    targetScale.set(p.userData.origScale * 1.2, p.userData.origScale * 1.2, 1);
+                    p.scale.lerp(targetScale, 0.1);
+                } else {
+                    targetScale.set(p.userData.origScale, p.userData.origScale, 1);
+                    p.scale.lerp(targetScale, 0.1);
+                }
+
+                // Wrap
+                if(p.position.x > 35) p.position.x = -35;
+                if(p.position.x < -35) p.position.x = 35;
+                if(p.position.y > 35) p.position.y = -35;
+                if(p.position.y < -35) p.position.y = 35;
+
+                // Rotation
+                p.material.rotation = Math.sin(time + p.userData.floatOffset) * 0.1 + (scrollSpeed * 0.5);
+            });
+
+            // Camera Sway
+            camera.position.x += (mouseX * 1 - camera.position.x) * 0.02;
+            camera.position.y += (mouseY * 1 - camera.position.y) * 0.02;
+            camera.lookAt(0,0,0);
+
+            renderer.render(scene, camera);
+        }
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- GSAP Reveals ---
+        gsap.utils.toArray('.gs-reveal').forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%",
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+        });
+    </script>
+
+    <!-- p5.js: Organic Map Lines (Optimized) -->
+    <script>
+        let t = 0;
+
+        function setup() {
+            const canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('canvas-p5');
+            noFill();
+            stroke(85, 107, 47, 30);
+            frameRate(30); // Optimization: Reduced framerate
+        }
+
+        function draw() {
+            clear();
+
+            strokeWeight(1);
+
+            for(let i = 0; i < 5; i++) {
+                let yBase = height * ((i + 1) / 6);
+
+                beginShape();
+                curveVertex(0, yBase);
+                curveVertex(0, yBase);
+
+                for(let x = 0; x <= width + 50; x += 50) {
+                    let n = noise(x * 0.001, i * 0.5, t * 0.1);
+                    let yOffset = map(n, 0, 1, -50, 50);
+
+                    curveVertex(x, yBase + yOffset);
+                }
+
+                curveVertex(width, yBase);
+                curveVertex(width, yBase);
+                endShape();
+            }
+
+            t += 0.002;
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>

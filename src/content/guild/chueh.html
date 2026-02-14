@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chueh | The Resonance Seeker</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/split-type"></script>
+
+    <style>
+        :root {
+            --c-bg: #0a0a0a;
+            --c-primary: #d4af37; /* Metallic Gold */
+            --c-secondary: #20b2aa; /* Light Sea Green (Healing) */
+            --c-accent: #9370db; /* Medium Purple (Mystery/Vibe) */
+            --c-text: #f0f0f0;
+            --c-muted: #888;
+            --f-display: 'Cormorant Garamond', serif;
+            --f-body: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-body);
+            overflow-x: hidden;
+            line-height: 1.8;
+            cursor: none; /* Custom cursor */
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
+            border: 1px solid var(--c-primary); border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background 0.3s;
+            mix-blend-mode: difference;
+        }
+        #cursor.hovered {
+            width: 50px; height: 50px; background: rgba(212, 175, 55, 0.2);
+        }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .loader-icon {
+            font-size: 3rem; color: var(--c-primary);
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 20px var(--c-primary); }
+        }
+
+        /* --- Backgrounds --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: -2; pointer-events: none;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+        }
+        .grain-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none; opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            color: rgba(255,255,255,0.9); text-decoration: none;
+            font-family: var(--f-body); font-weight: 500;
+            padding: 0.6rem 1.4rem;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 30px;
+            background: rgba(10,10,10,0.6);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 { font-family: var(--f-display); font-weight: 400; margin: 0; }
+
+        h1 {
+            font-size: clamp(3.5rem, 9vw, 7rem);
+            line-height: 0.9;
+            color: var(--c-text);
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            color: var(--c-primary);
+            margin-bottom: 2rem;
+            display: flex; align-items: center; gap: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem; color: var(--c-secondary);
+            margin-top: 1rem; letter-spacing: 0.2em; text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        p {
+            font-size: 1.15rem; max-width: 650px; color: #ccc;
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+        }
+
+        .char { display: inline-block; } /* For SplitText */
+
+        /* --- Layout --- */
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 6rem 2rem; box-sizing: border-box;
+            position: relative;
+        }
+        .container {
+            max-width: 1200px; width: 100%; margin: 0 auto; position: relative; z-index: 10;
+        }
+
+        /* --- Hero --- */
+        .hero-grid {
+            display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 4rem; align-items: center;
+        }
+        .avatar-frame {
+            position: relative; width: 100%; aspect-ratio: 1/1;
+            border-radius: 50%; overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 0 60px rgba(0,0,0,0.5);
+            transform: translateZ(0); /* Force GPU */
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 1.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .avatar-frame:hover .avatar-img { transform: scale(1.1) rotate(2deg); }
+
+        .hero-social {
+            margin-top: 3rem; display: flex; gap: 2rem; flex-wrap: wrap;
+        }
+        .tag {
+            padding: 0.5rem 1rem; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; font-size: 0.9rem; color: #aaa;
+            display: flex; align-items: center; gap: 0.5rem;
+            backdrop-filter: blur(5px);
+        }
+        .tag i { color: var(--c-primary); }
+
+        /* --- Timeline (The Journey) --- */
+        .timeline {
+            position: relative; padding-left: 2rem; border-left: 1px solid rgba(255,255,255,0.1);
+            margin-left: 1rem;
+        }
+        .timeline-item {
+            position: relative; padding-left: 3rem; padding-bottom: 4rem;
+        }
+        .timeline-marker {
+            position: absolute; left: -2.55rem; top: 0;
+            width: 1rem; height: 1rem;
+            background: var(--c-bg); border: 2px solid var(--c-primary);
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+        .timeline-item:hover .timeline-marker { background: var(--c-primary); box-shadow: 0 0 15px var(--c-primary); }
+
+        .timeline-year {
+            font-family: var(--f-display); font-size: 2rem; color: var(--c-muted);
+            line-height: 1; margin-bottom: 0.5rem;
+        }
+        .timeline-content {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            padding: 2rem; border-radius: 8px; backdrop-filter: blur(10px);
+            transition: transform 0.3s;
+        }
+        .timeline-item:hover .timeline-content {
+            transform: translateX(10px); border-color: rgba(212, 175, 55, 0.3);
+        }
+
+        /* --- Life & Echoes (Vibe Grid) --- */
+        .echo-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem; margin-top: 3rem;
+        }
+        .echo-card {
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; overflow: hidden;
+            display: flex; flex-direction: column;
+            transition: 0.3s;
+        }
+        .echo-card:hover { transform: translateY(-5px); border-color: var(--c-accent); }
+        .echo-img-box {
+            height: 200px; overflow: hidden; position: relative;
+        }
+        .echo-img {
+            width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;
+        }
+        .echo-card:hover .echo-img { transform: scale(1.1); }
+        .echo-text { padding: 1.5rem; }
+        .echo-tag {
+            color: var(--c-accent); font-size: 0.8rem; letter-spacing: 0.1em;
+            text-transform: uppercase; font-weight: 700; margin-bottom: 0.5rem; display: block;
+        }
+
+        /* --- Footer --- */
+        .footer-cta {
+            font-size: clamp(2rem, 5vw, 4rem); font-family: var(--f-display);
+            margin-bottom: 2rem; color: #fff;
+        }
+        .social-circle {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: #fff; text-decoration: none;
+            transition: 0.3s;
+        }
+        .social-circle:hover { background: var(--c-primary); color: #000; border-color: var(--c-primary); }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .hero-grid { grid-template-columns: 1fr; text-align: center; }
+            .hero-social { justify-content: center; }
+            .avatar-frame { width: 70%; margin: 0 auto 2rem auto; }
+            .timeline { padding-left: 0; border-left: none; margin-left: 0; }
+            .timeline-item { padding-left: 0; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 2rem; margin-left: 1rem;}
+            .timeline-marker { left: -0.55rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cursor"></div>
+
+    <div id="loader">
+        <i class="fa-solid fa-compact-disc loader-icon"></i>
+        <div style="margin-top: 1rem; letter-spacing: 0.2em; font-size: 0.9rem; color: #666;">LOADING FREQUENCY</div>
+    </div>
+
+    <div class="grain-overlay"></div>
+    <div id="webgl-container"></div>
+
+    <a href="/guild/" class="nav-back magnetic-btn"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
+
+    <!-- HERO -->
+    <section id="hero">
+        <div class="container">
+            <div class="hero-grid">
+                <div>
+                    <div class="subtitle split-text"><i class="fa-solid fa-wave-square"></i> Sound Artist & Educator</div>
+                    <h1 class="split-text-lg">CHUEH</h1>
+                    <p class="gs-reveal" style="font-size: 1.25rem; color: #ccc; margin-top: 1.5rem;">
+                        "從激昂的鼓聲中甦醒，<br>在手碟的共鳴裡安放靈魂。"
+                    </p>
+                    <div class="gs-reveal hero-social">
+                        <div class="tag magnetic-btn">
+                            <i class="fa-solid fa-drum"></i> 10+ Years Percussion
+                        </div>
+                        <div class="tag magnetic-btn">
+                            <i class="fa-solid fa-compact-disc"></i> Handpan Specialist
+                        </div>
+                        <div class="tag magnetic-btn">
+                            <i class="fa-solid fa-chalkboard-user"></i> Educator
+                        </div>
+                    </div>
+                </div>
+                <div class="avatar-frame gs-reveal magnetic-btn">
+                    <img src="/assets/img/guild/chueh/avatar.webp" alt="Chueh Portrait" class="avatar-img" decoding="async">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TIMELINE (Evolution) -->
+    <section id="timeline-sec">
+        <div class="container">
+            <h2 class="gs-reveal">The Evolution</h2>
+            <div class="timeline">
+
+                <div class="timeline-item gs-reveal">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">Student Era</div>
+                        <h3 style="color: #fff; margin-bottom: 0.5rem;">The Rhythm Foundation</h3>
+                        <p style="margin-bottom: 0;">
+                            學生時期開始學習爵士鼓，那是我與節奏對話的起點。
+                            在強烈的鼓點與律動中，我學會了如何掌控聲音的張力，
+                            這段經歷成為了我音樂靈魂的基石。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item gs-reveal">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">5 Years Ago</div>
+                        <h3 style="color: var(--c-secondary); margin-bottom: 0.5rem;">The Encounter</h3>
+                        <p style="margin-bottom: 0;">
+                            與手碟相遇，是一場意外的驚喜。
+                            它空靈、療癒的音色，讓我看見了節奏之外的另一種可能。
+                            "既能療癒心靈，又保有強烈的節奏靈魂"，這份獨特的二元性深深吸引了我。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="timeline-item gs-reveal">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-year">Present</div>
+                        <h3 style="color: var(--c-primary); margin-bottom: 0.5rem;">Resonance & Teaching</h3>
+                        <p style="margin-bottom: 0;">
+                            十多年的探索，從鼓手蛻變為手碟推廣者。
+                            我創立品牌並投入教學，不只是教導技巧，
+                            更希望帶領大家在敲擊中找到屬於自己的快樂與平靜。
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- LIFE & ECHOES (Fun/Meme Vibe) -->
+    <section id="echoes-sec">
+        <div class="container">
+            <h2 class="gs-reveal" style="color: var(--c-accent);"><i class="fa-solid fa-bolt"></i> Life's Echoes</h2>
+            <p class="gs-reveal">這裡不只有嚴肅的音樂，還有生活的頻率。</p>
+
+            <div class="echo-grid">
+                <!-- Music -->
+                <div class="echo-card gs-reveal">
+                    <div class="echo-img-box">
+                        <img src="/assets/img/guild/chueh/performance.webp" alt="Handpan Performance" class="echo-img" loading="lazy" decoding="async">
+                    </div>
+                    <div class="echo-text">
+                        <span class="echo-tag">Sound</span>
+                        <h3 style="color:#fff; font-size:1.2rem;">Melodic Diaries</h3>
+                        <p style="font-size:0.9rem; margin-bottom:0;">紀錄我敲出的每一個聲音，練習時的片段，都是靈魂的碎片。</p>
+                    </div>
+                </div>
+
+                <!-- Memes -->
+                <div class="echo-card gs-reveal">
+                     <div class="echo-img-box">
+                        <!-- Placeholder for meme/fun vibe -->
+                        <div style="width:100%; height:100%; background: linear-gradient(45deg, #200, #400); display:flex; align-items:center; justify-content:center;">
+                            <i class="fa-solid fa-face-grin-squint-tears" style="font-size:3rem; color: #ff6b6b; opacity:0.8;"></i>
+                        </div>
+                    </div>
+                    <div class="echo-text">
+                        <span class="echo-tag" style="color: #ff6b6b;">Fun</span>
+                        <h3 style="color:#fff; font-size:1.2rem;">Daily Memes</h3>
+                        <p style="font-size:0.9rem; margin-bottom:0;">生活裡冒出來的迷因！音樂人也是要吃飯睡覺講幹話的。</p>
+                    </div>
+                </div>
+
+                 <!-- Exploration -->
+                 <div class="echo-card gs-reveal">
+                    <div class="echo-img-box">
+                       <div style="width:100%; height:100%; background: linear-gradient(45deg, #002, #004); display:flex; align-items:center; justify-content:center;">
+                           <i class="fa-solid fa-rocket" style="font-size:3rem; color: var(--c-accent); opacity:0.5;"></i>
+                       </div>
+                   </div>
+                   <div class="echo-text">
+                       <span class="echo-tag">Future</span>
+                       <h3 style="color:#fff; font-size:1.2rem;">The Unknown</h3>
+                       <p style="font-size:0.9rem; margin-bottom:0;">持續探索飛碟樂器的無限可能。如果你也好奇，歡迎一起來玩。</p>
+                   </div>
+               </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <section style="min-height: 70vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <div class="container" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+            <h2 class="footer-cta gs-reveal">Find Your Resonance</h2>
+            <p class="gs-reveal" style="margin: 0 auto 3rem auto; font-size: 1.2rem; max-width: 600px;">
+                希望這個地方，會讓你覺得手碟是一個很親切的存在。<br>
+                慢慢認識之後，能帶給你一些快樂和溫暖。
+            </p>
+
+            <div class="social-links gs-reveal" style="display: flex; justify-content: center; gap: 2rem; width: 100%;">
+                <a href="https://www.threads.net/@handpan_chueh" target="_blank" class="social-circle magnetic-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/handpan_chueh/" target="_blank" class="social-circle magnetic-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+
+            <p style="margin-top: 5rem; color: #666; font-size: 0.9rem; font-weight: 300; width: 100%; text-align: center;">
+                Made with <i class="fa-solid fa-bolt" style="color: var(--c-primary);"></i> by <a href="/guild/" style="color: var(--c-text); text-decoration: none; border-bottom: 1px solid var(--c-primary);">SuperGalen's Dungeon</a>
+            </p>
+        </div>
+    </section>
+
+    <!-- SCRIPTS -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // --- MOUSE TRACKING ---
+        const mouse = { x: 0, y: 0 };
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Custom Cursor Logic
+            const cursor = document.getElementById('cursor');
+            if(cursor) {
+                gsap.to(cursor, {
+                    x: e.clientX,
+                    y: e.clientY,
+                    duration: 0.1,
+                    ease: "power2.out"
+                });
+            }
+        });
+
+        // Magnetic Buttons
+        const magnets = document.querySelectorAll('.magnetic-btn');
+        magnets.forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+
+                gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3 });
+                document.getElementById('cursor')?.classList.add('hovered');
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+                document.getElementById('cursor')?.classList.remove('hovered');
+            });
+        });
+
+        // --- THREE.JS SCENE ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 15;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xd4af37, 1.5, 50);
+        pointLight.position.set(5, 5, 5);
+        scene.add(pointLight);
+
+        const blueLight = new THREE.PointLight(0x20b2aa, 1.0, 40);
+        blueLight.position.set(-5, -5, 5);
+        scene.add(blueLight);
+
+        const purpleLight = new THREE.PointLight(0x9370db, 0.0, 40); // Initially off
+        purpleLight.position.set(0, 10, 5);
+        scene.add(purpleLight);
+
+        // Post Processing
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.2;
+        bloomPass.strength = 0.4;
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // Geometry (Rings)
+        const group = new THREE.Group();
+        scene.add(group);
+        const rings = [];
+        const ringCount = 15;
+
+        for(let i=0; i<ringCount; i++) {
+            const geometry = new THREE.TorusGeometry(3 + i * 0.8, 0.02, 8, 60);
+            const material = new THREE.MeshBasicMaterial({
+                color: i % 3 === 0 ? 0xd4af37 : (i % 3 === 1 ? 0x20b2aa : 0x9370db),
+                transparent: true,
+                opacity: 0.1,
+                side: THREE.DoubleSide
+            });
+            const ring = new THREE.Mesh(geometry, material);
+
+            ring.rotation.x = Math.random() * Math.PI;
+            ring.rotation.y = Math.random() * Math.PI;
+
+            ring.userData = {
+                baseSpeedX: (Math.random() - 0.5) * 0.002,
+                baseSpeedY: (Math.random() - 0.5) * 0.002,
+                index: i
+            };
+
+            group.add(ring);
+            rings.push(ring);
+        }
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+        // Optimize: throttle/limit fps if needed, but for smooth animation we keep RAF.
+        // Check if tab is active could be added, but browser handles RAF throttling.
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Ring Animation with Mouse Influence
+            // Optimization: Iterate using standard loop for speed
+            const ringLen = rings.length;
+            for(let i = 0; i < ringLen; i++) {
+                const ring = rings[i];
+                ring.rotation.x += ring.userData.baseSpeedX;
+                ring.rotation.y += ring.userData.baseSpeedY;
+
+                // Mouse Interaction (Tilt)
+                const targetRotX = mouse.y * 0.2 * (i * 0.1);
+                const targetRotY = mouse.x * 0.2 * (i * 0.1);
+
+                ring.rotation.x += (targetRotX - ring.rotation.x * 0.1) * 0.05;
+                ring.rotation.y += (targetRotY - ring.rotation.y * 0.1) * 0.05;
+
+                // Breathing
+                const scale = 1 + Math.sin(time * 0.5 + i * 0.3) * 0.05;
+                ring.scale.set(scale, scale, scale);
+            }
+
+            // Whole group drift
+            group.rotation.z = time * 0.05;
+
+            composer.render();
+        }
+        animate();
+
+        // --- GSAP ANIMATIONS ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // 1. Scene Color Shift based on Section
+        // Hero (Gold) -> Timeline (Teal) -> Echoes (Purple)
+
+        ScrollTrigger.create({
+            trigger: "#timeline-sec",
+            start: "top center",
+            end: "bottom center",
+            onEnter: () => {
+                gsap.to(pointLight, { intensity: 0.5, duration: 1 });
+                gsap.to(blueLight, { intensity: 2.0, duration: 1 }); // Boost Teal
+                gsap.to(purpleLight, { intensity: 0, duration: 1 });
+            },
+            onLeaveBack: () => {
+                gsap.to(pointLight, { intensity: 1.5, duration: 1 }); // Boost Gold
+                gsap.to(blueLight, { intensity: 1.0, duration: 1 });
+                gsap.to(purpleLight, { intensity: 0, duration: 1 });
+            }
+        });
+
+        ScrollTrigger.create({
+            trigger: "#echoes-sec",
+            start: "top center",
+            onEnter: () => {
+                gsap.to(blueLight, { intensity: 0.5, duration: 1 });
+                gsap.to(purpleLight, { intensity: 2.5, duration: 1 }); // Boost Purple
+            },
+            onLeaveBack: () => {
+                gsap.to(blueLight, { intensity: 2.0, duration: 1 });
+                gsap.to(purpleLight, { intensity: 0, duration: 1 });
+            }
+        });
+
+        // 2. Camera Parallax
+        gsap.to(camera.position, {
+            z: 5,
+            ease: "none",
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 2
+            }
+        });
+
+        // 3. Text Split Reveal
+        if (window.SplitType) {
+            new SplitType('.split-text-lg', { types: 'chars' });
+            gsap.from('.split-text-lg .char', {
+                y: 100, opacity: 0, rotateZ: 10,
+                duration: 1.2, stagger: 0.05, ease: "back.out(1.7)",
+                scrollTrigger: { trigger: '#hero', start: "top 60%" }
+            });
+
+            new SplitType('.split-text', { types: 'words' });
+            gsap.from('.split-text .word', {
+                y: 20, opacity: 0,
+                duration: 1, stagger: 0.1, ease: "power2.out",
+                delay: 0.5
+            });
+        }
+
+        // 4. Standard Reveals
+        // Use batch for better performance if many elements, but for this amount forEach is fine.
+        gsap.utils.toArray('.gs-reveal').forEach(el => {
+            gsap.from(el, {
+                y: 50, opacity: 0, duration: 1, ease: "power3.out",
+                scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none reverse" }
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = () => {
+             setTimeout(() => {
+                 const loader = document.getElementById('loader');
+                 if(loader) {
+                    gsap.to(loader, {
+                        opacity: 0,
+                        duration: 0.8,
+                        onComplete: () => loader.remove()
+                    });
+                 }
+                 ScrollTrigger.refresh();
+             }, 800);
+        };
+    </script>
+</body>
+</html>

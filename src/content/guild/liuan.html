@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liuan | 健身自由教練</title>
+    <meta name="description" content="健身自由教練 Liuan - 從公職到自由，帶你找回對身體的掌控權。運動生理學背景，結合謎因與科學的健身指導。">
+    <meta property="og:image" content="/assets/img/guild/liuan/avatar.webp">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-neon-green: #39FF14;
+            --c-neon-cyan: #00FFFF;
+            --c-neon-pink: #FF00FF;
+            --c-bg: #050505;
+            --c-card-bg: rgba(10, 20, 10, 0.85);
+            --font-display: 'Black Ops One', cursive;
+            --font-meme: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+            --font-tech: 'Orbitron', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            margin: 0; padding: 0; box-sizing: border-box;
+            background-color: var(--c-bg);
+            color: #fff;
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        * { box-sizing: border-box; }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+            background: radial-gradient(circle at center, #1a2a1a 0%, #000000 100%);
+        }
+
+        /* --- Scroll Spacer --- */
+        #scroll-spacer {
+            height: 1800vh; /* Extended scroll for more content */
+            width: 100%; position: relative;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* --- UI Overlay --- */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        /* Brand Mark */
+        .brand-mark {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            display: flex; align-items: center; gap: 10px;
+            pointer-events: auto; text-decoration: none;
+            mix-blend-mode: exclusion;
+        }
+        .mark-text {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--c-neon-green);
+            text-shadow: 0 0 10px var(--c-neon-green);
+        }
+
+        /* --- Glitch Effect --- */
+        .glitch {
+            position: relative;
+            color: white;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch::before {
+            left: 2px; text-shadow: -1px 0 var(--c-neon-pink);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px; text-shadow: -1px 0 var(--c-neon-cyan);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim {
+            0% { clip: rect(13px, 9999px, 81px, 0); }
+            20% { clip: rect(88px, 9999px, 16px, 0); }
+            40% { clip: rect(24px, 9999px, 126px, 0); }
+            60% { clip: rect(102px, 9999px, 34px, 0); }
+            80% { clip: rect(56px, 9999px, 78px, 0); }
+            100% { clip: rect(12px, 9999px, 49px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            20% { clip: rect(2px, 9999px, 45px, 0); }
+            40% { clip: rect(15px, 9999px, 33px, 0); }
+            60% { clip: rect(80px, 9999px, 15px, 0); }
+            80% { clip: rect(33px, 9999px, 98px, 0); }
+            100% { clip: rect(110px, 9999px, 2px, 0); }
+        }
+
+        /* --- Typography & Layout --- */
+        .center-stage {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; width: 100%; max-width: 1200px;
+            pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        /* Classic Meme Style Text */
+        .meme-macro-text {
+            font-family: var(--font-meme);
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 1.1;
+            text-transform: uppercase;
+            color: #fff;
+            -webkit-text-stroke: 2px #000;
+            text-shadow:
+                3px 3px 0 #000,
+                -1px -1px 0 #000,
+                1px -1px 0 #000,
+                -1px 1px 0 #000,
+                1px 1px 0 #000;
+            margin-bottom: 2rem;
+            width: 100%;
+            pointer-events: auto; /* Clickable just for fun? */
+            cursor: cell;
+        }
+
+        .meme-subtext {
+            font-family: var(--font-meme);
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            color: #fff;
+            -webkit-text-stroke: 1px #000;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .avatar-frame {
+            width: 300px; height: 300px;
+            border: 4px solid var(--c-neon-green);
+            box-shadow: 0 0 30px var(--c-neon-green), inset 0 0 30px var(--c-neon-green);
+            border-radius: 50%; overflow: hidden;
+            position: relative;
+            background: #000;
+            transition: transform 0.1s;
+        }
+        .avatar-frame img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .avatar-frame:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        /* Content Sections */
+        .section-content {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 100%; padding: 0 10%;
+            display: flex; gap: 4rem; align-items: center;
+            opacity: 0; pointer-events: none;
+        }
+        .section-left { justify-content: flex-start; }
+        .section-right { justify-content: flex-end; }
+        .section-center { justify-content: center; text-align: center; flex-direction: column; }
+
+        .info-card {
+            background: var(--c-card-bg);
+            border: 1px solid var(--c-neon-green);
+            padding: 2.5rem; border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            box-shadow: 10px 10px 0px rgba(57, 255, 20, 0.2);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .info-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%;
+            background: var(--c-neon-green);
+        }
+
+        .info-card h2 {
+            font-family: var(--font-tech);
+            color: var(--c-neon-green);
+            font-size: 2rem; margin-top: 0; margin-bottom: 1rem;
+            text-transform: uppercase; border-bottom: 1px dashed rgba(255,255,255,0.3); padding-bottom: 10px;
+        }
+        .info-card p {
+            font-size: 1.1rem; line-height: 1.8; color: #ddd; margin-bottom: 1rem;
+        }
+        .info-card ul {
+            list-style: none; padding: 0;
+        }
+        .info-card li {
+            margin-bottom: 0.8rem; display: flex; align-items: center; gap: 10px;
+            font-size: 1.1rem;
+        }
+        .info-card li i { color: var(--c-neon-cyan); }
+
+        .highlight {
+            color: var(--c-neon-cyan); font-weight: 700;
+        }
+
+        /* --- Footer / Finale --- */
+        #finale {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        #finale.active { opacity: 1; pointer-events: auto; }
+
+        .social-links {
+            display: flex; gap: 2rem; margin-top: 2rem;
+        }
+        .social-btn {
+            color: var(--c-bg); background: var(--c-neon-green);
+            padding: 1rem 2rem; font-family: var(--font-tech); font-weight: 700;
+            text-decoration: none; border-radius: 5px; font-size: 1.2rem;
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%);
+        }
+        .social-btn:hover {
+            background: var(--c-neon-cyan); transform: scale(1.1) rotate(-2deg);
+            box-shadow: 0 0 20px var(--c-neon-cyan);
+        }
+
+        .footer-credit {
+            position: absolute; bottom: 1rem; width: 100%; text-align: center;
+            font-size: 0.8rem; color: #666; font-family: var(--font-tech);
+        }
+        .footer-credit a { color: #888; text-decoration: none; }
+        .footer-credit a:hover { color: var(--c-neon-green); }
+
+        .muscle-emoji {
+            position: fixed; font-size: 3rem; pointer-events: none; z-index: 9999;
+            animation: fly-up 2s ease-out forwards;
+        }
+        @keyframes fly-up {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; transform: translateY(-20vh) scale(1.5); }
+            100% { transform: translateY(-100vh) rotate(360deg) scale(1); opacity: 0; }
+        }
+
+        /* --- Entrance --- */
+        #entrance-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; z-index: 10001;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; /* Ensure text alignment for children */
+        }
+        #entrance-screen .meme-macro-text {
+            width: auto; /* Allow auto width to respect centering */
+            margin-bottom: 20px; /* Space between text and loader */
+            /* Reset any conflicting styles from .meme-macro-text class */
+            -webkit-text-stroke: 1px #000;
+            text-shadow: 2px 2px 0 #000;
+        }
+        .loader-bar {
+            width: 300px; height: 10px; /* Thicker bar for meme style */
+            background: #333;
+            border: 2px solid #fff; /* Add border to match meme style */
+            position: relative; overflow: hidden;
+        }
+        .loader-fill {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--c-neon-green);
+            animation: load 2s ease-in-out forwards;
+        }
+        @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
+
+        /* --- Marquee --- */
+        .marquee {
+            position: fixed; top: 0; width: 100%; background: var(--c-neon-green); color: #000;
+            overflow: hidden; z-index: 200; height: 30px; line-height: 30px;
+            font-family: var(--font-meme); font-size: 1.2rem;
+            white-space: nowrap;
+        }
+        .marquee-content {
+            display: inline-block;
+            animation: scroll-left 10s linear infinite;
+        }
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .click-hint {
+            position: fixed; bottom: 2rem; right: 2rem;
+            color: rgba(255,255,255,0.5); font-family: var(--font-tech);
+            font-size: 0.8rem; pointer-events: none;
+            animation: blink 2s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        @media (max-width: 768px) {
+            .meme-macro-text { font-size: 2.5rem; }
+            .avatar-frame { width: 200px; height: 200px; }
+            .section-content { flex-direction: column; padding: 0 1rem; justify-content: center; }
+            .info-card { width: 100%; padding: 1.5rem; }
+            .social-links { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="entrance-screen">
+        <div class="meme-macro-text" style="font-size: 2rem; margin: 0 0 20px 0;">INITIALIZING GAINS...</div>
+        <div class="loader-bar"><div class="loader-fill"></div></div>
+    </div>
+
+    <!-- Marquee -->
+    <div class="marquee">
+        <div class="marquee-content">
+            MUCH POWER /// SUCH MUSCLE /// DO YOU EVEN LIFT? /// LIGHT WEIGHT BABY! /// GET TO THE CHOPPA! /// GAINS LOADING... /// NEVER SKIP LEG DAY /// YES BUDDY!
+        </div>
+    </div>
+
+    <div id="webgl-container"></div>
+    <div id="scroll-spacer"></div>
+
+    <a href="/guild/" class="brand-mark">
+        <i class="fa-solid fa-dumbbell" style="font-size: 2rem; color: var(--c-neon-green);"></i>
+        <div class="mark-text">LIUAN</div>
+    </a>
+
+    <div class="click-hint">[CLICK FOR CHAOS]</div>
+
+    <div class="overlay">
+        <!-- Hero Section -->
+        <div id="hero" class="center-stage">
+            <div class="meme-macro-text glitch" data-text="WHEN YOU FINALLY">WHEN YOU FINALLY</div>
+            <div class="avatar-frame">
+                <img src="/assets/img/guild/liuan/avatar.webp" alt="Liuan Gains">
+            </div>
+            <div class="meme-macro-text glitch" data-text="GET THAT PUMP" style="margin-top: 1rem;">GET THAT PUMP</div>
+
+            <div class="meme-subtext" style="color: var(--c-neon-cyan);">
+                FITNESS COACH | MEME LORD
+            </div>
+        </div>
+
+        <!-- 1. Stats -->
+        <div id="section-stats" class="section-content section-left">
+            <div class="info-card">
+                <h2>// PLAYER STATS 📊</h2>
+                <ul style="font-family: var(--font-tech);">
+                    <li><strong>CLASS:</strong> FREELANCE COACH (LV. 99)</li>
+                    <li><strong>STR (Strength):</strong> ██████████ 100</li>
+                    <li><strong>INT (Physiology):</strong> ████████░░ 85</li>
+                    <li><strong>CHA (Meme Lord):</strong> ██████████ 100</li>
+                    <li><strong>LUCK (Gains):</strong> ███████░░░ 70</li>
+                </ul>
+                <p style="margin-top: 1rem; color: var(--c-neon-green); text-align: center; border: 1px solid var(--c-neon-green); padding: 5px;">
+                    PASSIVE SKILL: +50% GAINS TO ALLIES
+                </p>
+            </div>
+        </div>
+
+        <!-- 2. Origin -->
+        <div id="section-origin" class="section-content section-right">
+            <div class="info-card">
+                <h2>// ORIGIN STORY 🦍</h2>
+                <p>我是一個<span class="highlight">健身自由教練</span>！</p>
+                <p>之前在公職上班，但發現健身這件事對我來說才是最重要的。於是毅然決然離開舒適圈，投入運動領域。</p>
+                <p>研究所主修<span class="highlight">運動生理學</span>，大學是社會學系。喜歡觀察社會，也喜歡觀察肌肉 (?</p>
+                <p style="font-family: var(--font-meme); font-size: 1.5rem; color: yellow; text-shadow: 1px 1px 0 #000;">"DO IT FOR THE GAINS!"</p>
+            </div>
+        </div>
+
+        <!-- 3. Philosophy -->
+        <div id="section-philosophy" class="section-content section-left">
+            <div class="info-card">
+                <h2>// PHILOSOPHY 🗿</h2>
+                <p>「健身運動除了自己練，帶身邊的人或是爺爺奶奶運動，給我的感覺更踏實！」</p>
+                <p>玩過健美、健力。我的目標是把運動跟家人、工作結合，讓運動成為生活的一種<span class="highlight">日常風格</span>，而不只是痛苦的訓練。</p>
+                <div style="text-align: right; font-size: 2rem;">💪💪💪</div>
+            </div>
+        </div>
+
+        <!-- 4. Gym Ecology -->
+        <div id="section-ecology" class="section-content section-center">
+             <div class="info-card">
+                <h2>// GYM ECOLOGY 🌍</h2>
+                <p>健身房就像一個微型社會。觀察不同的人類行為也是我的興趣之一。</p>
+                <ul>
+                    <li>🔊 <strong>The Screamer:</strong> 喊得比舉的重。 (Volume: 110%)</li>
+                    <li>📸 <strong>The Tripod Master:</strong> 為了拍限動佔據深蹲架一小時。</li>
+                    <li>👵 <strong>The Wise Elder:</strong> 隱藏在角落舉起不可思議重量的阿嬤。</li>
+                </ul>
+                <p class="highlight" style="text-align: center;">"We are all just monkeys lifting heavy rocks."</p>
+            </div>
+        </div>
+
+        <!-- 5. Services -->
+        <div id="section-services" class="section-content section-right">
+            <div class="info-card">
+                <h2>// SERVICES 🔥</h2>
+                <ul>
+                    <li><i class="fa-solid fa-language"></i> <strong>健身影片翻譯</strong>：分享國外優質資訊。</li>
+                    <li><i class="fa-solid fa-person-running"></i> <strong>個人教練</strong>：科學化訓練安排。</li>
+                    <li><i class="fa-solid fa-question-circle"></i> <strong>疑難雜症解答</strong>：有問題隨時幫忙！</li>
+                </ul>
+                <p>目前正積極拍攝更多好玩的影片，推廣運動生活化！</p>
+            </div>
+        </div>
+
+        <!-- 6. Myth Busters -->
+        <div id="section-myths" class="section-content section-left">
+             <div class="info-card">
+                <h2>// MYTH BUSTERS ❌</h2>
+                <p>讓我們來打破一些常見的健身迷思：</p>
+                <div style="background: rgba(255,0,0,0.2); padding: 10px; border-left: 3px solid red; margin-bottom: 10px;">
+                    <strong>MYTH:</strong> 重訓會讓我變成金剛芭比？<br>
+                    <span style="color: #aaa;">(Lifting makes you bulky)</span>
+                </div>
+                <div style="background: rgba(57, 255, 20, 0.2); padding: 10px; border-left: 3px solid var(--c-neon-green);">
+                    <strong>FACT:</strong> 它會讓你變得閃閃發光。✨<br>
+                    <span style="color: var(--c-neon-green);">(It makes you FABULOUS)</span>
+                </div>
+                <p style="margin-top: 1rem;">還有更多問題？儘管來問！</p>
+            </div>
+        </div>
+
+        <!-- 7. Future -->
+        <div id="section-future" class="section-content section-center">
+            <div class="info-card" style="text-align: center;">
+                <h2>// NEXT LEVEL 🚀</h2>
+                <p>接下來會有更多好玩的計劃！😎</p>
+                <p>比如：<span class="highlight">找退休的家人來個挑戰</span>！</p>
+                <p>讓大家更了解運動健身的好，一起把日常運動呈現給大家。</p>
+                <div style="margin-top: 1rem; font-family: var(--font-meme); font-size: 1.5rem; color: var(--c-neon-green);">
+                    MUCH CHALLENGE. VERY HEALTH.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Finale -->
+    <div id="finale">
+        <div class="finale-content" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+            <h1 class="meme-macro-text glitch" data-text="JOIN THE REVOLUTION" style="font-size: 3rem; margin-bottom: 2rem;">JOIN THE REVOLUTION</h1>
+            <div class="avatar-frame" style="width: 150px; height: 150px; margin-bottom: 2rem;">
+                <img src="/assets/img/guild/liuan/avatar.webp" alt="Liuan">
+            </div>
+
+            <div class="social-links">
+                <a href="https://www.instagram.com/liuan_onesmallstep/" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-instagram"></i> INSTAGRAM
+                </a>
+                <a href="https://www.threads.net/@liuan_onesmallstep" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-threads"></i> THREADS
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-credit">
+            Made with <i class="fa-solid fa-heart" style="color: var(--c-neon-pink);"></i> by <a href="/guild/">SuperGalen's Dungeon</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        // Dark fog for depth
+        scene.fog = new THREE.FogExp2(0x050505, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0x39FF14, 2, 50); // Neon Green
+        pointLight.position.set(0, 0, 10);
+        scene.add(pointLight);
+
+        // Headlamp attached to camera
+        const headLamp = new THREE.PointLight(0x00FFFF, 1, 30);
+        camera.add(headLamp);
+        scene.add(camera);
+
+        // --- Load Meme Textures (Async) ---
+        const textureLoader = new THREE.TextureLoader();
+        const memeFiles = [
+            'doge.webp', 'woman_cat.webp', 'harold.webp', 'disaster.webp',
+            'success.webp', 'fine.webp', 'batman_slap.webp', 'change_mind.webp',
+            'distracted.webp', 'drake.webp', 'evil_kermit.webp', 'expanding_brain.webp',
+            'grumpy_cat.webp', 'one_does_not.webp', 'roll_safe.webp',
+            'spongebob.webp', 'two_buttons.webp'
+        ];
+
+        // --- Objects: "Tunnel of Gains" ---
+        const tunnelGroup = new THREE.Group();
+        scene.add(tunnelGroup);
+
+        const geometryBox = new THREE.BoxGeometry(1, 1, 2);
+        const geometryBar = new THREE.CylinderGeometry(0.1, 0.1, 4, 8);
+
+        const materialGreen = new THREE.MeshStandardMaterial({
+            color: 0x39FF14, wireframe: true, emissive: 0x004400
+        });
+        const materialCyan = new THREE.MeshStandardMaterial({
+            color: 0x00FFFF, wireframe: true, emissive: 0x004444
+        });
+
+        // Floating Text Sprites (Now with Emojis and Memes)
+        function createTextSprite(text, color, isEmoji = false) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 512; canvas.height = 256;
+
+            if (isEmoji) {
+                ctx.font = '150px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"';
+            } else {
+                ctx.font = 'Bold 80px Impact, sans-serif';
+            }
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            if (!isEmoji) {
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#000000';
+                ctx.strokeText(text, 256, 128);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillText(text, 256, 128);
+            } else {
+                ctx.fillText(text, 256, 128);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            const mat = new THREE.SpriteMaterial({ map: tex });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(10, 5, 1);
+            return sprite;
+        }
+
+        const memePhrases = [
+            { text: "GAINS", isEmoji: false }, { text: "MUCH POWER", isEmoji: false },
+            { text: "WOW", isEmoji: false }, { text: "💪", isEmoji: true },
+            { text: "🔥", isEmoji: true }, { text: "🦍", isEmoji: true },
+            { text: "🗿", isEmoji: true }, { text: "SUCH MUSCLE", isEmoji: false },
+            { text: "NEVER SKIP LEG DAY", isEmoji: false }, { text: "🤡", isEmoji: true },
+            { text: "💀", isEmoji: true }
+        ];
+
+        // --- Initialize Scene Content ---
+
+        async function initScene() {
+            // Load all textures first
+            const loadPromises = memeFiles.map(file => {
+                return new Promise((resolve) => {
+                    textureLoader.load(
+                        `/assets/img/guild/liuan/${file}`,
+                        (tex) => {
+                            tex.colorSpace = THREE.SRGBColorSpace;
+                            resolve(tex);
+                        },
+                        undefined,
+                        () => resolve(null)
+                    );
+                });
+            });
+
+            const textures = (await Promise.all(loadPromises)).filter(t => t !== null);
+
+            // Calculate Tunnel Layout
+            const spacing = 18; // Increased spacing for better visibility
+            const startZ = -10;
+            let currentZ = startZ;
+
+            // 1. Background Debris (Wireframes)
+            // Reduce count for optimization
+            const debrisCount = textures.length * 3;
+            for(let i=0; i<debrisCount; i++) {
+                const mesh = new THREE.Mesh(
+                    Math.random() > 0.5 ? geometryBox : geometryBar,
+                    Math.random() > 0.5 ? materialGreen : materialCyan
+                );
+
+                const theta = Math.random() * Math.PI * 2;
+                const radius = 12 + Math.random() * 20;
+                // Distribute evenly along the expected length
+                const z = startZ - (Math.random() * (textures.length * spacing));
+
+                mesh.position.set(Math.cos(theta) * radius, Math.sin(theta) * radius, z);
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                tunnelGroup.add(mesh);
+            }
+
+            // 2. Place Unique Memes & Phrases sequentially
+            // Loop exactly once through the texture array to guarantee uniqueness
+            textures.forEach((texture, index) => {
+                // Place Image Meme
+                const mat = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(mat);
+                const scale = 7 + Math.random() * 3;
+                sprite.scale.set(scale, scale, 1);
+
+                // Alternating spiral placement
+                const theta = (index * 0.8) + (Math.random() * 0.5);
+                const radius = 9 + Math.random() * 8;
+
+                sprite.position.set(Math.cos(theta)*radius, Math.sin(theta)*radius, currentZ);
+
+                sprite.userData = {
+                    rotateSpeed: (Math.random() - 0.5) * 0.05,
+                    floatSpeed: (Math.random() - 0.5) * 0.02,
+                    initialY: sprite.position.y
+                };
+                tunnelGroup.add(sprite);
+
+                // Advance Z for the next item
+                currentZ -= spacing;
+
+                // Interleave Text Phrases (also non-repeating loop)
+                if (index < memePhrases.length) {
+                    const item = memePhrases[index];
+                    const textSprite = createTextSprite(item.text, '#fff', item.isEmoji);
+
+                    const tTheta = theta + Math.PI + (Math.random() - 0.5); // Opposite side roughly
+                    const tRadius = 7 + Math.random() * 6;
+
+                    // Offset text slightly in Z to fill gaps
+                    textSprite.position.set(Math.cos(tTheta)*tRadius, Math.sin(tTheta)*tRadius, currentZ + (spacing * 0.5));
+
+                    textSprite.userData = {
+                        rotateSpeed: (Math.random() - 0.5) * 0.1,
+                        floatSpeed: (Math.random() - 0.5) * 0.05,
+                        initialY: textSprite.position.y
+                    };
+                    tunnelGroup.add(textSprite);
+                }
+            });
+
+            // 3. The CORE Finale
+            const coreGeo = new THREE.IcosahedronGeometry(6, 1);
+            const coreMat = new THREE.MeshBasicMaterial({
+                color: 0x39FF14, wireframe: true
+            });
+            const coreGlowMat = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(generateGlowTexture()),
+                color: 0x39FF14,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            coreMesh.position.set(0, 0, currentZ - 40); // End of tunnel
+            tunnelGroup.add(coreMesh);
+
+            const coreGlow = new THREE.Sprite(coreGlowMat);
+            coreGlow.scale.set(40, 40, 1);
+            coreGlow.position.copy(coreMesh.position);
+            tunnelGroup.add(coreGlow);
+
+            // Animate Core
+            gsap.to(coreMesh.rotation, {
+                x: Math.PI * 8, y: Math.PI * 4,
+                repeat: -1, duration: 20, ease: "none"
+            });
+            gsap.to(coreGlow.scale, {
+                x: 50, y: 50, duration: 2, yoyo: true, repeat: -1, ease: "sine.inOut"
+            });
+
+            // Re-init Scroll with correct length
+            initScroll(currentZ - 35); // Stop just before hitting the core
+        }
+
+        function generateGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(57, 255, 20, 0.5)');
+            gradient.addColorStop(0.5, 'rgba(57, 255, 20, 0.1)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+            return canvas;
+        }
+
+        // Initialize Everything
+        initScene();
+
+        // --- GSAP Animation ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        window.addEventListener('load', () => {
+            gsap.to('#entrance-screen', {
+                opacity: 0, duration: 1, delay: 1.5,
+                onComplete: () => {
+                    if(document.getElementById('entrance-screen'))
+                        document.getElementById('entrance-screen').remove();
+                }
+            });
+        });
+
+        function initScroll(targetZ) {
+            // Hero Exit
+            gsap.to('#hero', {
+                opacity: 0, scale: 2, filter: 'blur(10px)',
+                scrollTrigger: { trigger: '#scroll-spacer', start: 'top top', end: '10% top', scrub: true }
+            });
+
+            // Camera Flight to Core
+            gsap.to(camera.position, {
+                z: targetZ,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '#scroll-spacer',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                }
+            });
+
+            // Camera Rotation (Barrel Roll)
+            gsap.to(camera.rotation, {
+                z: Math.PI * 4, // More rotations for more chaos
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '#scroll-spacer',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                }
+            });
+
+            // Sections (Recalculated for longer scroll)
+            // 7 sections total across 1800vh
+            // Approximate spacing: 100 / 8 = ~12.5% per slot
+            const sections = [
+                { id: '#section-stats', start: 5, end: 15 },      // 1
+                { id: '#section-origin', start: 20, end: 30 },    // 2
+                { id: '#section-philosophy', start: 35, end: 45 },// 3
+                { id: '#section-ecology', start: 50, end: 60 },   // 4
+                { id: '#section-services', start: 65, end: 75 },  // 5
+                { id: '#section-myths', start: 80, end: 88 },     // 6
+                { id: '#section-future', start: 90, end: 95 }     // 7
+            ];
+
+            sections.forEach(s => {
+                const tl = gsap.timeline({
+                    scrollTrigger: {
+                        trigger: '#scroll-spacer',
+                        start: s.start + '% top',
+                        end: s.end + '% top',
+                        scrub: 1
+                    }
+                });
+
+                tl.fromTo(s.id,
+                    { opacity: 0, scale: 0.5, rotation: (Math.random()-0.5)*30 },
+                    { opacity: 1, scale: 1, rotation: 0, duration: 1, ease: "elastic.out(1, 0.5)" }
+                );
+
+                tl.to(s.id, { opacity: 0, scale: 1.5, filter: 'blur(5px)', duration: 1 }, 3);
+            });
+
+            // Finale
+            ScrollTrigger.create({
+                trigger: '#scroll-spacer',
+                start: '99% bottom',
+                onEnter: () => document.getElementById('finale').classList.add('active'),
+                onLeaveBack: () => document.getElementById('finale').classList.remove('active')
+            });
+        }
+
+        // --- Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime();
+
+            // Rotate objects in tunnel slightly
+            tunnelGroup.children.forEach((mesh, i) => {
+                if (mesh.type === 'Sprite') {
+                    // Wiggle sprites using userData if available, otherwise fallback
+                    if (mesh.userData && mesh.userData.initialY) {
+                         mesh.position.y = mesh.userData.initialY + Math.sin(time * 2 + i) * 0.5;
+                         mesh.material.rotation = Math.sin(time * 0.5 + i) * 0.1; // Gentle sway
+                    } else {
+                        mesh.position.x += Math.sin(time * 3 + i) * 0.01;
+                        mesh.position.y += Math.cos(time * 2 + i) * 0.01;
+                    }
+                } else {
+                    mesh.rotation.x += 0.02;
+                    mesh.rotation.y += 0.02;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Global Chaos Interaction ---
+        let isChaotic = false;
+
+        document.addEventListener('click', (e) => {
+            // Ignore if clicking a link or button or if already running
+            if (e.target.closest('a') || e.target.closest('button') || isChaotic) return;
+
+            isChaotic = true;
+            setTimeout(() => { isChaotic = false; }, 500); // Debounce
+
+            // Camera Shake (3D) - Much cheaper than DOM shake
+            if (camera) {
+                const originalX = camera.position.x;
+                const originalY = camera.position.y;
+                gsap.to(camera.position, {
+                    x: originalX + (Math.random() - 0.5) * 1,
+                    y: originalY + (Math.random() - 0.5) * 1,
+                    duration: 0.05,
+                    yoyo: true,
+                    repeat: 5,
+                    onComplete: () => {
+                        camera.position.x = originalX;
+                        camera.position.y = originalY;
+                    }
+                });
+            }
+
+            // Spawn Emojis at click position (Reduced count slightly for safety)
+            for(let i=0; i<3; i++) {
+                const el = document.createElement('div');
+                el.className = 'muscle-emoji';
+                el.textContent = ['💪', '🔥', '🦍', '🏋️', '🧱', '💊', '🚀', '💎', '🙌'][Math.floor(Math.random()*9)];
+                el.style.left = (e.clientX + (Math.random()-0.5)*50) + 'px';
+                el.style.top = (e.clientY + (Math.random()-0.5)*50) + 'px';
+                el.style.fontSize = (2 + Math.random()*2) + 'rem';
+                document.body.appendChild(el);
+
+                // Animate out
+                gsap.to(el, {
+                    y: -150 - Math.random()*150,
+                    x: (Math.random()-0.5)*100,
+                    rotation: Math.random()*360,
+                    opacity: 0,
+                    duration: 1 + Math.random(),
+                    onComplete: () => el.remove()
+                });
+            }
+
+            // Flash color overlay via a temporary DOM element instead of expensive canvas filter
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.backgroundColor = 'rgba(57, 255, 20, 0.2)'; // Neon Green tint
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '9998';
+            document.body.appendChild(flash);
+
+            gsap.to(flash, {
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => flash.remove()
+            });
+        });
+
+    </script>
+</body>
+</html>

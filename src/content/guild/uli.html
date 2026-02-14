@@ -9,13 +9,13 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
 
     <style>
         :root {
@@ -136,6 +136,52 @@
             min-height: 100vh;
         }
 
+        @keyframes avatar-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+                transform: scale(1);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(52, 152, 219, 0);
+                transform: scale(1.02);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+                transform: scale(1);
+            }
+        }
+
+        .avatar-img {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+            margin-bottom: 2rem;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            position: relative;
+            z-index: 20;
+        }
+
+        .avatar-img:hover {
+            transform: scale(1.1) rotate(5deg);
+            border-color: var(--c-accent-gold);
+            box-shadow: 0 0 40px var(--c-accent-gold);
+        }
+
+        /* Mobile Coolness */
+        @media (max-width: 768px) {
+            .avatar-img {
+                width: 220px;
+                height: 220px;
+                border: 6px solid var(--c-accent-blue);
+                animation: avatar-pulse 2s infinite;
+                box-shadow: 0 0 30px var(--c-accent-teal);
+            }
+        }
+
         .hero-subtitle {
             font-size: 1.5rem;
             background: #fff;
@@ -162,12 +208,18 @@
             z-index: 10;
         }
 
+        /* Standard alternating layout */
         .section:nth-child(even) .text-panel {
             margin-left: auto;
             margin-right: 10%;
         }
         .section:nth-child(odd) .text-panel {
             margin-left: 10%;
+        }
+
+        /* Centered layout for heavy image sections */
+        #artist .text-panel, #alchemist .text-panel {
+            margin: 0 auto !important;
         }
 
         /* Specific Visuals */
@@ -204,11 +256,50 @@
             z-index: 20;
         }
 
-        @media (max-width: 768px) {
+        /* Intermediate breakpoint for Laptops/Tablets */
+        @media (min-width: 769px) and (max-width: 1200px) {
             .scatter-img {
-                max-width: 150px;
-                border: 4px solid #fff;
+                /* Scale down images slightly to prevent overlap with centered text */
+                max-width: 180px !important;
             }
+        }
+
+        @media (max-width: 768px) {
+            .section {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .scattered-images {
+                position: relative;
+                height: auto;
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+                margin-top: 2rem;
+                z-index: 5;
+                pointer-events: auto;
+                order: 2; /* Ensure images appear after text on mobile */
+            }
+            .container {
+                order: 1; /* Text first */
+            }
+
+            .scatter-img {
+                /* Override inline absolute positioning for mobile flow */
+                position: relative !important;
+                top: auto !important;
+                bottom: auto !important;
+                left: auto !important;
+                right: auto !important;
+                transform: none !important;
+                max-width: 45% !important; /* Grid-like layout */
+                width: auto !important;
+                margin: 0;
+            }
+
             .section:nth-child(even) .text-panel,
             .section:nth-child(odd) .text-panel {
                 margin: 0 auto;
@@ -216,6 +307,7 @@
             .text-panel {
                 max-width: 100%;
                 background: rgba(255,255,255,0.98); /* More opaque on mobile */
+                margin-bottom: 1rem;
             }
         }
 
@@ -224,6 +316,18 @@
             text-align: center;
             background: transparent;
             min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            #finale {
+                min-height: auto;
+                padding-top: 4rem;
+                padding-bottom: 2rem;
+            }
         }
 
         .social-links {
@@ -235,32 +339,129 @@
         }
 
         .social-btn {
-            font-size: 1.5rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #2c3e50;
             text-decoration: none;
-            padding: 1rem 2rem;
             border: 3px solid #2c3e50;
-            border-radius: 10px;
-            font-weight: 900;
+            border-radius: 50%;
             background: #fff;
             box-shadow: 5px 5px 0px var(--c-accent-blue);
             transition: all 0.2s;
         }
 
+        .social-btn svg {
+            width: 32px;
+            height: 32px;
+        }
+
         .social-btn:hover {
             transform: translate(-3px, -3px);
             box-shadow: 8px 8px 0px var(--c-accent-coral);
+            color: var(--c-accent-coral);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 4rem 2rem 2rem;
+            color: var(--c-text);
+            font-size: 0.9rem;
+            opacity: 0.6;
+            width: 100%;
+        }
+
+        .footer a:hover {
+            color: var(--c-accent-blue);
+        }
+
+        /* Services Section */
+        #services {
+            background: transparent; /* Removed background to match theme */
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.9); /* Glassmorphism start */
+            backdrop-filter: blur(5px);
+            border: 2px solid var(--c-text);
+            border-radius: 20px; /* Matched to text-panel */
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.1); /* Subtle sketchy shadow */
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px) rotate(-1deg); /* Slight organic tilt */
+            box-shadow: 8px 8px 0px var(--c-accent-teal);
+            border-color: var(--c-accent-teal);
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            color: var(--c-accent-blue);
+            margin-bottom: 1.5rem;
+        }
+
+        .service-card h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+            font-size: 1.5rem;
+        }
+
+        .service-card p {
+            font-size: 1rem;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0 0;
+            text-align: left;
+        }
+
+        .service-card li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 0.95rem;
+            color: #444;
+        }
+
+        .service-card li::before {
+            content: "•";
+            color: var(--c-accent-gold);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+            line-height: 1;
         }
 
         /* Lightbox */
         #lightbox {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(253, 251, 247, 0.95);
+            background: rgba(10, 21, 37, 0.95); /* Darker background for better contrast */
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 99999; /* Ensure it's on top of everything */
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
@@ -272,8 +473,27 @@
         #lightbox img {
             max-width: 90vw;
             max-height: 85vh;
-            border: 10px solid #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 5px solid #fff;
+            box-shadow: 0 0 50px rgba(52, 152, 219, 0.3);
+            border-radius: 8px;
+        }
+
+        .lightbox-close-btn {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 3rem;
+            cursor: pointer;
+            z-index: 100000;
+            line-height: 1;
+        }
+
+        .lightbox-close-btn:hover {
+            color: var(--c-accent-coral);
+            transform: scale(1.1);
         }
 
         .back-btn {
@@ -298,17 +518,29 @@
 <body>
 
     <a href="/guild" class="back-btn">← Guild</a>
+
+    <!-- Intro Overlay -->
+    <div id="intro-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a1525; z-index: 9999; display: flex; justify-content: center; align-items: center; color: white; flex-direction: column; cursor: pointer;">
+        <h1 style="font-family: 'Cinzel', serif; font-size: 3rem; margin-bottom: 1rem; opacity: 0; transform: translateY(20px);" id="intro-title">Rational Intuition</h1>
+        <p style="opacity: 0; transform: translateY(20px);" id="intro-hint">Click to Connect</p>
+    </div>
+
     <div class="texture-overlay"></div>
     <div id="p5-container"></div>
-    <div id="lightbox"><img src="" alt="Art"></div>
+
+    <div id="lightbox">
+        <button class="lightbox-close-btn" aria-label="Close Lightbox">&times;</button>
+        <img src="" alt="Art">
+    </div>
 
     <div class="content-layer">
 
         <!-- 1. Hero -->
         <section class="section" id="hero">
+            <img src="/assets/img/guild/uli/gallery_7.webp" alt="Uli Avatar" class="avatar-img" loading="eager">
             <h1 class="hero-title">鄔莉 Uli</h1>
             <div class="hero-subtitle">
-                Rational Intuition & Creative Soul
+                Rational Intuition & The Art of Connection
             </div>
             <p style="margin-top: 2rem; font-size: 1rem; color: var(--c-accent-blue);">↓ Scroll to Draw the Story ↓</p>
         </section>
@@ -317,15 +549,17 @@
         <section class="section" id="logic">
             <div class="scattered-images">
                 <!-- Group 1: Early/Logic -->
-                <img src="/assets/img/guild/uli/gallery_1.webp" class="scatter-img" style="top: 10%; right: 10%; transform: rotate(5deg); width: 250px;">
-                <img src="/assets/img/guild/uli/gallery_2.webp" class="scatter-img" style="bottom: 10%; left: 5%; transform: rotate(-3deg); width: 200px;">
-                <img src="/assets/img/guild/uli/gallery_3.webp" class="scatter-img" style="top: 40%; right: 5%; transform: rotate(2deg); width: 180px;">
+                <!-- Text Right -> Images Left -->
+                <img src="/assets/img/guild/uli/gallery_1.webp" class="scatter-img" style="top: 10%; left: 10%; transform: rotate(5deg); width: 250px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_2.webp" class="scatter-img" style="bottom: 10%; left: 5%; transform: rotate(-3deg); width: 200px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_3.webp" class="scatter-img" style="top: 40%; left: 5%; transform: rotate(2deg); width: 180px;" loading="lazy">
             </div>
             <div class="container">
                 <div class="text-panel">
-                    <h2 class="section-title">The Analytical Mind</h2>
-                    <p>我是鄔莉，結合理性思維與直覺感知的動物溝通工作者。我並非天生「感受型」，而是擁有清晰邏輯背景的人，習慣以<span class="highlight">理解與分析</span>來認識世界。</p>
-                    <p>在學習初期，我曾歷經長時間的卡關與自我懷疑。我的大腦總是試圖尋找證據，而不是信任流動的感受。</p>
+                    <h2 class="section-title">理性與懷疑的起點</h2>
+                    <p>我是鄔莉 Uli。在成為動物溝通師之前，我是一個徹頭徹尾的「麻瓜」。</p>
+                    <p>我的世界由邏輯與分析構成，對於看不見、摸不著的「直覺」充滿了本能的懷疑。在學習溝通的初期，我的左腦總是不斷地跳出來爭辯，試圖在流動的感受中尋找科學的證據。</p>
+                    <p>那是一段充滿卡關與自我對話的過程，但也正因為這份懷疑，讓我更懂得<span class="highlight">理性腦</span>的運作模式。</p>
                 </div>
             </div>
         </section>
@@ -334,14 +568,15 @@
         <section class="section" id="awakening">
              <div class="scattered-images">
                 <!-- Group 2: Awakening/Shock -->
-                <img src="/assets/img/guild/uli/gallery_4.webp" class="scatter-img" style="top: 5%; left: 10%; transform: rotate(-5deg); width: 220px;">
-                <img src="/assets/img/guild/uli/gallery_5.webp" class="scatter-img" style="bottom: 20%; right: 8%; transform: rotate(4deg); width: 260px;">
+                <!-- Text Left -> Images Right -->
+                <img src="/assets/img/guild/uli/gallery_4.webp" class="scatter-img" style="top: 5%; right: 10%; transform: rotate(-5deg); width: 220px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_5.webp" class="scatter-img" style="bottom: 20%; right: 8%; transform: rotate(4deg); width: 260px;" loading="lazy">
             </div>
             <div class="container">
                 <div class="text-panel">
-                    <h2 class="section-title">The Cockroach Epiphany</h2>
-                    <p>轉折來自一次練習中，當我接收到貓咪傳來<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
-                    <p>那是一種超越邏輯的衝擊，那個瞬間，「直覺」不再是虛無縹緲的概念，而是真實存在的頻率。</p>
+                    <h2 class="section-title">那一隻蟑螂的啟示</h2>
+                    <p>真正的轉折發生在一次練習中。當時我連結到一隻貓咪，在那一瞬間，一股前所未有的感官體驗衝擊了我——那是<span class="highlight">「吃蟑螂的口感」</span>。</p>
+                    <p>那不是想像，而是真實的、具體的、帶著酥脆感的味覺資訊。那個瞬間的震撼，徹底擊碎了我邏輯腦的防線。我第一次深刻地理解到：感受本身就是一種精確的語言，它真實存在，只等待被轉譯。</p>
                 </div>
             </div>
         </section>
@@ -350,15 +585,16 @@
         <section class="section" id="bridge">
              <div class="scattered-images">
                 <!-- Group 3: Teaching/Connection -->
-                <img src="/assets/img/guild/uli/gallery_6.webp" class="scatter-img" style="top: 15%; right: 15%; transform: rotate(3deg); width: 240px;">
-                <img src="/assets/img/guild/uli/gallery_7.webp" class="scatter-img" style="bottom: 5%; left: 15%; transform: rotate(-2deg); width: 210px;">
-                <img src="/assets/img/guild/uli/gallery_8.webp" class="scatter-img" style="top: 50%; left: 5%; transform: rotate(6deg); width: 180px;">
+                <!-- Text Right -> Images Left -->
+                <img src="/assets/img/guild/uli/gallery_6.webp" class="scatter-img" style="top: 15%; left: 15%; transform: rotate(3deg); width: 240px;" loading="lazy">
+                <img src="/assets/img/guild/uli/avatar.webp" class="scatter-img" style="bottom: 5%; left: 15%; transform: rotate(-2deg); width: 210px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_8.webp" class="scatter-img" style="top: 50%; left: 5%; transform: rotate(6deg); width: 180px;" loading="lazy">
             </div>
             <div class="container">
                 <div class="text-panel">
-                    <h2 class="section-title">Bridging Left & Right Brain</h2>
-                    <p>從那之後，我開始以理性角度拆解直覺運作的機制。結合心理學、生物本能與能量感知，我整理出一套<span class="highlight">讓左腦也能理解</span>、能安心使用的動物溝通邏輯。</p>
-                    <p>自 2017 年開始教學至今，已服務上千組家庭，讓更多「理性腦」也能找回與動物連結的本能。</p>
+                    <h2 class="section-title">為理性腦搭建的橋樑</h2>
+                    <p>因為曾經懷疑，所以懂得如何引導。</p>
+                    <p>我開始致力於拆解直覺的運作機制，結合心理學、生物本能與能量感知，整理出一套<span class="highlight">連左腦也能理解</span>的動物溝通邏輯。自 2017 年開始教學至今，我協助了上千位「理性型」的家長，找回那份與生俱來的、與萬物連結的本能。</p>
                 </div>
             </div>
         </section>
@@ -366,18 +602,22 @@
         <!-- 5. The Artist (Flower of Life) -->
         <section class="section" id="artist">
              <div class="scattered-images">
-                <!-- Group 4: Art/Mandala - The big collage -->
-                <img src="/assets/img/guild/uli/gallery_9.webp" class="scatter-img" style="top: 0%; left: 0%; transform: rotate(-10deg); width: 200px;">
-                <img src="/assets/img/guild/uli/gallery_10.webp" class="scatter-img" style="top: 10%; right: 0%; transform: rotate(10deg); width: 220px;">
-                <img src="/assets/img/guild/uli/gallery_11.webp" class="scatter-img" style="bottom: 0%; left: 5%; transform: rotate(5deg); width: 240px;">
-                <img src="/assets/img/guild/uli/gallery_12.webp" class="scatter-img" style="bottom: 10%; right: 5%; transform: rotate(-5deg); width: 210px;">
-                <img src="/assets/img/guild/uli/gallery_13.webp" class="scatter-img" style="top: 40%; left: -5%; transform: rotate(-15deg); width: 160px;">
+                <!-- Group 4: Art/Mandala - Split Sides Layout -->
+
+                <!-- Left Side -->
+                <img src="/assets/img/guild/uli/gallery_9.webp" class="scatter-img" style="top: 0%; left: 5%; transform: rotate(-10deg); width: 180px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_13.webp" class="scatter-img" style="bottom: 10%; left: 2%; transform: rotate(8deg); width: 160px;" loading="lazy">
+
+                <!-- Right Side -->
+                <img src="/assets/img/guild/uli/gallery_10.webp" class="scatter-img" style="top: 10%; right: 2%; transform: rotate(10deg); width: 200px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_12.webp" class="scatter-img" style="top: 45%; right: 5%; transform: rotate(-5deg); width: 190px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_11.webp" class="scatter-img" style="bottom: 5%; right: 2%; transform: rotate(5deg); width: 210px;" loading="lazy">
             </div>
             <div class="container">
                 <div class="text-panel">
-                    <h2 class="section-title">Colors & Mandalas</h2>
-                    <p>在創作上，我以色彩作為媒介，發展出以<span class="highlight">「生命之花」</span>與「力量動物」為核心的作品。</p>
-                    <p>將動物的訊息與祝福轉化為可視的象徵 (Totem)，成為人與動物、人與自己之間的橋樑。</p>
+                    <h2 class="section-title">生命之花的能量語言</h2>
+                    <p>除了文字與語言，色彩是我另一種轉譯能量的方式。</p>
+                    <p>透過<span class="highlight">「生命之花」</span>與「力量動物」的創作，我將動物的訊息、脈輪的振動以及宇宙的祝福，轉化為肉眼可見的圖騰。這些畫作不只是裝飾，更是能量的載體，成為人與動物、人與內在自我之間最溫柔的橋樑。</p>
                 </div>
             </div>
         </section>
@@ -385,16 +625,75 @@
         <!-- 6. The Alchemist (Salt/Podcast) -->
         <section class="section" id="alchemist">
              <div class="scattered-images">
-                <!-- Group 5: Ocean/Final -->
-                <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 20%; left: 20%; transform: rotate(8deg); width: 280px; opacity: 0.8;">
-                <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 20%; right: 20%; transform: rotate(-8deg); width: 280px; opacity: 0.8;">
-                <img src="/assets/img/guild/uli/gallery_16.webp" class="scatter-img" style="top: 10%; right: 10%; transform: rotate(3deg); width: 180px;">
+                <!-- Group 5: Ocean/Final - Split Sides Layout -->
+
+                <!-- Left Side -->
+                <img src="/assets/img/guild/uli/gallery_16.webp" class="scatter-img" style="top: 5%; left: 2%; transform: rotate(3deg); width: 160px;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_19.webp" class="scatter-img" style="bottom: 15%; left: 5%; transform: rotate(-5deg); width: 150px;" loading="lazy">
+
+                <!-- Right Side -->
+                <img src="/assets/img/guild/uli/gallery_14.webp" class="scatter-img" style="top: 20%; right: 5%; transform: rotate(8deg); width: 220px; opacity: 0.8;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_15.webp" class="scatter-img" style="bottom: 5%; right: 2%; transform: rotate(-8deg); width: 220px; opacity: 0.8;" loading="lazy">
             </div>
             <div class="container">
                 <div class="text-panel">
-                    <h2 class="section-title">Deep Dive</h2>
-                    <p>除了溝通與創作，我也透過 Podcast 分享經驗，並與力量動物合作製作<span class="highlight">「淨化祝福鹽」</span>，希望大家在祝福中一起越來越好。</p>
-                    <p>因為熱愛潛水，海洋的寧靜與深邃也成為我內在探索的重要元素。</p>
+                    <h2 class="section-title">鍊金與深潛</h2>
+                    <p>生活的面向不只有一種。我透過 Podcast 分享溝通的點滴，也與力量動物合作製作<span class="highlight">「淨化祝福鹽」</span>，將無形的祝福化為有形的守護。</p>
+                    <p>而海洋，是我靈魂的充電站。熱愛潛水的我，在深海的寧靜中，找到了與這個世界最純粹的共振。那份深邃與包容，也成為我探索內在的重要元素。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Services -->
+        <section class="section" id="services">
+            <div class="container">
+                <h2 class="section-title" style="text-align: center; width: 100%; border-bottom: none;">服務項目</h2>
+                <p style="text-align: center; margin-bottom: 3rem;">理性與感性的交織，為您提供全方位的支持。</p>
+
+                <div class="services-grid">
+                    <!-- Service 1 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-paw"></i></div>
+                        <h3>動物溝通</h3>
+                        <ul>
+                            <li>在世與離世動物溝通</li>
+                            <li>家養與非家養動物皆可</li>
+                            <li>協助理解毛孩的真實想法與需求</li>
+                        </ul>
+                    </div>
+
+                    <!-- Service 2 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <h3>課程講座</h3>
+                        <ul>
+                            <li>系統化動物溝通教學</li>
+                            <li>結合心理學與生物本能</li>
+                            <li>適合「麻瓜」與理性腦的學習路徑</li>
+                        </ul>
+                    </div>
+
+                    <!-- Service 3 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-palette"></i></div>
+                        <h3>能量藝術</h3>
+                        <ul>
+                            <li>生命之花與力量動物圖騰</li>
+                            <li>個人專屬能量畫作</li>
+                            <li>將祝福轉化為可視的象徵</li>
+                        </ul>
+                    </div>
+
+                    <!-- Service 4 -->
+                    <div class="service-card">
+                        <div class="service-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <h3>淨化祝福</h3>
+                        <ul>
+                            <li>力量動物合作祝福鹽</li>
+                            <li>空間與氣場淨化</li>
+                            <li>Podcast 經驗分享與療癒</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
@@ -403,18 +702,30 @@
         <section class="section" id="finale">
              <div class="scattered-images">
                 <!-- Final decorative elements -->
-                <img src="/assets/img/guild/uli/gallery_17.webp" class="scatter-img" style="top: 10%; left: 10%; width: 150px; opacity: 0.5;">
-                <img src="/assets/img/guild/uli/gallery_18.webp" class="scatter-img" style="top: 10%; right: 10%; width: 150px; opacity: 0.5;">
+                <img src="/assets/img/guild/uli/gallery_17.webp" class="scatter-img" style="top: 10%; left: 10%; width: 150px; opacity: 0.5;" loading="lazy">
+                <img src="/assets/img/guild/uli/gallery_18.webp" class="scatter-img" style="top: 10%; right: 10%; width: 150px; opacity: 0.5;" loading="lazy">
             </div>
             <div class="container">
-                <h2 class="hero-title" style="font-size: clamp(3rem, 8vw, 6rem);">Connect</h2>
-                <p>Let's explore the unseen together.</p>
+                <h2 class="hero-title" style="font-size: clamp(3rem, 8vw, 6rem);">連結彼此</h2>
+                <p>讓我們一起探索那些肉眼不可見，卻真實存在的連結。</p>
                 <div class="social-links">
-                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" class="social-btn">Threads</a>
-                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" class="social-btn">Instagram</a>
+                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" class="social-btn" aria-label="Threads">
+                        <!-- Threads Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M6.321 6.016c-.27-.18-1.166-.802-1.166-.802.756-1.081 1.753-1.502 3.132-1.502.975 0 1.803.327 2.394.948s.928 1.509 1.005 2.644q.492.207.905.484c1.109.745 1.719 1.86 1.719 3.137 0 2.716-2.226 5.075-6.256 5.075C4.594 16 1 13.987 1 7.994 1 2.034 4.482 0 8.044 0 9.69 0 13.55.243 15 5.036l-1.36.353C12.516 1.974 10.163 1.43 8.006 1.43c-3.565 0-5.582 2.171-5.582 6.79 0 4.143 2.254 6.343 5.63 6.343 2.777 0 4.847-1.443 4.847-3.556 0-1.438-1.208-2.127-1.27-2.127-.236 1.234-.868 3.31-3.644 3.31-1.618 0-3.013-1.118-3.013-2.582 0-2.09 1.984-2.847 3.55-2.847.586 0 1.294.04 1.663.114 0-.637-.54-1.728-1.9-1.728-1.25 0-1.566.405-1.967.868ZM8.716 8.19c-2.04 0-2.304.87-2.304 1.416 0 .878 1.043 1.168 1.6 1.168 1.02 0 2.067-.282 2.232-2.423a6.2 6.2 0 0 0-1.528-.161"/>
+                        </svg>
+                    </a>
+                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" class="social-btn" aria-label="Instagram">
+                        <!-- Instagram Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/>
+                        </svg>
+                    </a>
                 </div>
-                <p style="margin-top: 4rem; opacity: 0.6; font-size: 0.9rem;">© 2024 Uli. Rational Intuition.</p>
             </div>
+            <footer class="footer">
+                <a href="/guild/" style="text-decoration: none; color: inherit;">Made with love by SuperGalen's Dungeon</a>
+            </footer>
         </section>
 
     </div>
@@ -423,14 +734,40 @@
         // Lightbox Logic
         const lightbox = document.getElementById('lightbox');
         const lbImg = lightbox.querySelector('img');
+        const closeBtn = lightbox.querySelector('.lightbox-close-btn');
 
-        document.querySelectorAll('.scatter-img').forEach(img => {
+        function openLightbox(src) {
+            lbImg.src = src;
+            lightbox.classList.add('visible');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+
+        // Attach to all scatter images AND the avatar explicitly if needed
+        document.querySelectorAll('.scatter-img, .avatar-img').forEach(img => {
             img.addEventListener('click', (e) => {
-                lbImg.src = e.target.src;
-                lightbox.classList.add('visible');
+                e.stopPropagation();
+                openLightbox(e.target.src);
             });
         });
-        lightbox.addEventListener('click', () => lightbox.classList.remove('visible'));
+
+        closeBtn.addEventListener('click', closeLightbox);
+
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('visible')) {
+                closeLightbox();
+            }
+        });
 
         // --- GSAP Content Animations ---
         gsap.registerPlugin(ScrollTrigger);
@@ -454,29 +791,37 @@
         });
 
         // 2. Scattered Images (Parallax & Float)
-        gsap.utils.toArray('.scatter-img').forEach((img, i) => {
-            // Parallax effect: Move different speeds based on random logic or class
-            const speed = 0.5 + Math.random() * 0.5;
+        const scatterImages = gsap.utils.toArray('.scatter-img');
 
-            gsap.to(img, {
-                y: -100 * speed, // Move up as we scroll down
-                rotation: Math.random() * 10 - 5, // Slight rotation change
-                scrollTrigger: {
-                    trigger: img.closest('.section'),
-                    start: "top bottom",
-                    end: "bottom top",
-                    scrub: 1
-                }
+        // Mobile/Desktop Split Logic
+        let mm = gsap.matchMedia();
+
+        mm.add("(min-width: 769px)", () => {
+            // Desktop: Parallax Effect
+            scatterImages.forEach((img) => {
+                const speed = 0.5 + Math.random() * 0.5;
+                gsap.to(img, {
+                    y: -100 * speed,
+                    rotation: Math.random() * 10 - 5,
+                    scrollTrigger: {
+                        trigger: img.closest('.section'),
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: 1
+                    }
+                });
             });
+        });
 
-            // Entrance
+        // Entrance works for all (Outside matchMedia to avoid duplication or state loss)
+        scatterImages.forEach((img) => {
             gsap.from(img, {
                 opacity: 0,
                 scale: 0.8,
                 duration: 1,
                 scrollTrigger: {
                     trigger: img,
-                    start: "top 90%",
+                    start: "top 95%",
                 }
             });
         });
@@ -489,34 +834,72 @@
             onLeaveBack: () => document.body.classList.remove('dark-mode')
         });
 
+        // --- Intro Logic ---
+        const introOverlay = document.getElementById('intro-overlay');
+        const introTitle = document.getElementById('intro-title');
+        const introHint = document.getElementById('intro-hint');
+        let isIntro = true;
+
+        // Intro Animation
+        gsap.to(introTitle, { opacity: 1, y: 0, duration: 1.5, ease: "power2.out", delay: 0.5 });
+        gsap.to(introHint, { opacity: 0.8, y: 0, duration: 1.5, ease: "power2.out", delay: 1, repeat: -1, yoyo: true });
+
+        // Enter Site
+        introOverlay.addEventListener('click', () => {
+            isIntro = false;
+            gsap.to(introOverlay, { opacity: 0, duration: 1, pointerEvents: 'none', onComplete: () => {
+                introOverlay.style.display = 'none';
+            }});
+
+            // Allow scroll
+            document.body.style.overflow = 'auto';
+
+            // Transition p5 background to Hero scene
+            fadeToScene('hero');
+
+            // Trigger Hero animations manually if needed, or let ScrollTrigger handle it
+            gsap.from(".hero-title", { opacity: 0, y: 50, duration: 1.5, ease: "power2.out" });
+        });
+
+        // Lock scroll initially
+        document.body.style.overflow = 'hidden';
+
         // --- p5.js Background Visuals (Smooth Transitions) ---
 
         // Scene Alpha States (0 to 1)
         const sceneWeights = {
-            hero: 1,
+            intro: 1,
+            hero: 0, // Start hidden, fade in after intro
             logic: 0,
             awakening: 0,
             bridge: 0,
             artist: 0,
-            alchemist: 0
+            alchemist: 0,
+            services: 0
         };
 
         // Create scroll triggers to crossfade scene weights
-        const sections = ['hero', 'logic', 'awakening', 'bridge', 'artist', 'alchemist'];
+        const sections = ['hero', 'logic', 'awakening', 'bridge', 'artist', 'alchemist', 'services'];
 
         sections.forEach((id, index) => {
             ScrollTrigger.create({
                 trigger: `#${id}`,
                 start: "top 50%",
                 end: "bottom 50%",
-                onEnter: () => fadeToScene(id),
-                onEnterBack: () => fadeToScene(id)
+                onEnter: () => {
+                    if (!isIntro) fadeToScene(id);
+                },
+                onEnterBack: () => {
+                    if (!isIntro) fadeToScene(id);
+                }
             });
         });
 
         function fadeToScene(targetId) {
+            if (isIntro) return; // Block scene changes during intro
+
             // Tween all weights to 0 except target to 1
-            const targetValues = {};
+            const targetValues = { intro: 0 };
             sections.forEach(s => targetValues[s] = (s === targetId ? 1 : 0));
 
             gsap.to(sceneWeights, {
@@ -551,7 +934,21 @@
             p.draw = () => {
                 p.clear(); // Transparent background
 
-                // We draw ALL scenes if they have weight > 0
+                if (sceneWeights.intro > 0.01) {
+                    p.push();
+                    drawIntro(p, sceneWeights.intro);
+                    p.pop();
+                }
+
+                // Interaction: Transition from Intro to Hero on click (handled by DOM click, but p5 needs to react)
+                if (!isIntro && sceneWeights.intro > 0) {
+                    // Manual fade out of intro managed by GSAP above?
+                    // Actually we need to tween sceneWeights here if not scroll triggered yet
+                    // The click handler should ideally trigger this.
+                    // Let's add a watcher or just let the draw loop handle weights.
+                    // For now, we rely on `fadeToScene('hero')` being called on click?
+                    // Let's update the click handler to call fadeToScene.
+                }
 
                 if (sceneWeights.hero > 0.01) {
                     p.push();
@@ -588,6 +985,12 @@
                     drawDeepOcean(p, sceneWeights.alchemist);
                     p.pop();
                 }
+
+                if (sceneWeights.services > 0.01) {
+                    p.push();
+                    drawServices(p, sceneWeights.services);
+                    p.pop();
+                }
             };
 
             p.windowResized = () => {
@@ -595,6 +998,33 @@
             };
 
             // --- Scene Functions (accept alpha) ---
+
+            function drawIntro(p, alpha) {
+                p.translate(p.width/2, p.height/2);
+
+                // Soul Seed / Pulse
+                let t = p.frameCount * 0.05;
+                let size = 20 + p.sin(t) * 5;
+
+                p.noStroke();
+                // Glow
+                for(let i=0; i<5; i++) {
+                    p.fill(52, 152, 219, alpha * (50 - i*10));
+                    p.circle(0, 0, size + i*20);
+                }
+
+                // Core
+                p.fill(255, 255, 255, alpha * 255);
+                p.circle(0, 0, size);
+
+                // Mouse interaction trails
+                let mouseDist = p.dist(p.mouseX - p.width/2, p.mouseY - p.height/2, 0, 0);
+                if (mouseDist < 200) {
+                    p.stroke(241, 196, 15, alpha * 100);
+                    p.strokeWeight(1);
+                    p.line(0, 0, p.mouseX - p.width/2, p.mouseY - p.height/2);
+                }
+            }
 
             function drawHero(p, alpha) {
                 // Subtle flow
@@ -752,6 +1182,45 @@
                     }
                     p.endShape();
                 }
+            }
+
+            function drawServices(p, alpha) {
+                // Geometric Web / Interconnection
+                p.translate(p.width/2, p.height/2);
+                p.strokeWeight(1);
+                p.noFill();
+
+                let t = p.frameCount * 0.005;
+                let radius = Math.min(p.width, p.height) * 0.4;
+
+                // Rotating Hexagon/Flower Structure
+                p.rotate(t);
+
+                // Draw 3 layers
+                for(let j=0; j<3; j++) {
+                    let r = radius * (0.5 + j*0.25);
+                    let points = 6;
+
+                    p.stroke(52, 152, 219, alpha * (100 - j*20)); // Blue fade
+                    p.beginShape();
+                    for(let i=0; i<points; i++) {
+                        let angle = p.TWO_PI / points * i;
+                        let x = p.cos(angle) * r;
+                        let y = p.sin(angle) * r;
+                        p.vertex(x, y);
+
+                        // Internal connections
+                        if (j === 1) {
+                            p.stroke(241, 196, 15, alpha * 50); // Gold trace
+                            p.line(0, 0, x, y);
+                        }
+                    }
+                    p.endShape(p.CLOSE);
+                }
+
+                // Reset matrix for other functions if they don't push/pop correctly (they do, but safe practice)
+                p.rotate(-t);
+                p.translate(-p.width/2, -p.height/2);
             }
 
             function drawParticles(p, alpha) {

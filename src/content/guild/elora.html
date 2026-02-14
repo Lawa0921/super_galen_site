@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elora | The Izakaya Alchemist</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Serif+TC:wght@300;600;900&family=Zen+Old+Mincho&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #050505;
+            --c-text: #e0e0e0;
+            --c-accent: #ff4d4d; /* Glowing Coal Red */
+            --c-cool: #4d79ff; /* Cool Blue (Design) */
+            --c-magic: #bd4dff; /* Magic Purple (Code) */
+            --c-smoke: rgba(255, 255, 255, 0.1);
+            --f-serif: 'Noto Serif TC', serif;
+            --f-mono: 'Courier Prime', monospace;
+            --f-jp: 'Zen Old Mincho', serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-serif);
+            overflow-x: hidden;
+            cursor: none; /* Custom Cursor */
+        }
+
+        /* --- Loading Screen --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .loader-bar {
+            width: 200px; height: 2px; background: #333; margin-top: 20px;
+            position: relative; overflow: hidden;
+        }
+        .loader-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--c-accent);
+            box-shadow: 0 0 10px var(--c-accent);
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
+            border: 1px solid var(--c-accent); border-radius: 50%;
+            pointer-events: none; z-index: 10000;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: screen;
+            transition: width 0.2s, height 0.2s, border-color 0.5s;
+        }
+        #cursor.hovered {
+            width: 50px; height: 50px;
+            background: rgba(255, 77, 77, 0.2);
+            box-shadow: 0 0 20px var(--c-accent);
+        }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- Heat Gauge (Scroll Progress) --- */
+        #heat-gauge {
+            position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+            width: 4px; height: 200px; background: rgba(255,255,255,0.1);
+            z-index: 100; border-radius: 2px;
+        }
+        #heat-level {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 0%;
+            background: linear-gradient(to top, var(--c-cool), var(--c-accent), var(--c-magic));
+            box-shadow: 0 0 10px var(--c-accent);
+            transition: height 0.1s;
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            color: var(--c-text); text-decoration: none;
+            font-family: var(--f-mono); font-size: 0.9rem;
+            border: 1px solid #333; padding: 0.5rem 1rem;
+            background: rgba(0,0,0,0.8);
+            transition: 0.3s;
+        }
+        .nav-back:hover {
+            border-color: var(--c-accent); color: var(--c-accent);
+        }
+
+        /* --- Layout --- */
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 4rem 2rem;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 1000px; width: 100%;
+            position: relative; z-index: 10;
+            margin: 0 auto;
+        }
+
+        /* --- Typography --- */
+        h1, h2 { font-weight: 900; margin: 0; line-height: 1.1; }
+        h1 { font-size: clamp(3rem, 10vw, 6rem); letter-spacing: -2px; font-family: var(--f-jp); }
+        h2 { font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem; font-family: var(--f-jp); }
+        h3 { font-family: var(--f-mono); color: var(--c-accent); margin-bottom: 1rem; font-size: 1.2rem; }
+
+        p {
+            font-size: 1.1rem; line-height: 1.8; color: #aaa;
+            max-width: 700px; margin-bottom: 1.5rem;
+        }
+
+        .mono-tag {
+            font-family: var(--f-mono); font-size: 0.8rem; color: var(--c-accent);
+            text-transform: uppercase; letter-spacing: 2px;
+            display: block; margin-bottom: 1rem;
+        }
+
+        .highlight { color: #fff; border-bottom: 1px solid var(--c-accent); }
+
+        /* --- Components --- */
+        .profile-card {
+            display: flex; gap: 3rem; align-items: center;
+            flex-wrap: wrap;
+        }
+        .avatar-box {
+            width: 200px; height: 200px; position: relative;
+            flex-shrink: 0;
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .avatar-glitch {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: 1px solid var(--c-accent);
+            opacity: 0.5; transform: translate(5px, 5px);
+            z-index: -1;
+        }
+
+        .text-block {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 2.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Skill Bridge */
+        .skill-bridge {
+            display: flex; justify-content: space-between; gap: 2rem;
+            margin-top: 3rem; flex-wrap: wrap;
+        }
+        .skill-col { flex: 1; min-width: 250px; }
+        .skill-item {
+            display: flex; justify-content: space-between;
+            padding: 1rem; border-bottom: 1px solid #333;
+            font-family: var(--f-mono); font-size: 0.9rem;
+            transition: 0.3s;
+        }
+        .skill-item:hover { background: rgba(255,255,255,0.05); padding-left: 1.5rem; }
+        .skill-item span:first-child { color: #888; }
+        .skill-item span:last-child { color: #fff; font-weight: bold; }
+
+        /* Philosophy Grid */
+        .philo-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem; margin-top: 2rem;
+        }
+        .philo-card {
+            border: 1px solid #333; padding: 2rem;
+            transition: 0.3s; background: rgba(0,0,0,0.5);
+            position: relative; overflow: hidden;
+        }
+        .philo-card:hover {
+            border-color: var(--c-accent);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(255, 77, 77, 0.1);
+        }
+        .philo-icon { font-size: 2rem; color: var(--c-accent); margin-bottom: 1rem; }
+
+        /* Life Menu */
+        .menu-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem; margin-top: 3rem;
+        }
+        .menu-item {
+            border: 1px solid #333; padding: 2rem;
+            background: rgba(5, 5, 5, 0.9);
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+            position: relative; overflow: hidden;
+            cursor: none; /* Keep custom cursor visible */
+        }
+        .menu-item:hover {
+            border-color: var(--c-accent);
+            transform: translateY(-5px);
+        }
+        .menu-item::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,77,77,0.1), transparent);
+            transform: translateX(-100%); transition: 0.5s;
+        }
+        .menu-item:hover::before { transform: translateX(100%); }
+
+        .menu-title {
+            font-family: var(--f-mono); font-weight: bold; font-size: 1.2rem;
+            color: #fff; margin-bottom: 0.5rem; display: flex; justify-content: space-between;
+        }
+        .menu-desc { font-size: 0.9rem; color: #777; margin: 0; transition: 0.3s; }
+        .menu-hidden {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 1rem;
+            background: var(--c-accent); color: #000; font-weight: bold;
+            transform: translateY(100%); transition: 0.3s; font-family: var(--f-mono);
+            font-size: 0.8rem; text-align: center;
+        }
+        .menu-item:hover .menu-hidden { transform: translateY(0); }
+
+        /* Code Kitchen */
+        .code-kitchen {
+            display: flex; flex-direction: column; gap: 1rem;
+            margin-top: 2rem; font-family: var(--f-mono);
+            background: #111; padding: 2rem; border-left: 3px solid var(--c-magic);
+            overflow-x: auto; /* Allow horizontal scroll for code */
+            max-width: 100%; /* Ensure it doesn't overflow container */
+        }
+        .code-line { display: flex; gap: 1rem; white-space: nowrap; } /* Prevent line wrapping */
+        .code-num { color: #444; user-select: none; }
+        .code-content { color: #aaa; }
+        .code-kw { color: var(--c-magic); }
+        .code-str { color: #98c379; }
+
+        .neon-sign {
+            text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(255,255,255,0.3);
+        }
+        .neon-red {
+            text-shadow: 0 0 10px var(--c-accent), 0 0 30px var(--c-accent);
+            color: var(--c-accent);
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 4rem 2rem; text-align: center;
+            border-top: 1px solid #222;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        footer .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        .social-link {
+            font-size: 2rem; color: #fff; text-decoration: none;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+        }
+        .social-link:hover {
+            color: var(--c-accent); transform: scale(1.1);
+            text-shadow: 0 0 20px var(--c-accent);
+        }
+
+        /* --- Mobile --- */
+        @media (max-width: 768px) {
+            .profile-card { justify-content: center; text-align: center; flex-direction: column; }
+            h1 { font-size: clamp(2.5rem, 8vw, 4rem); word-break: break-word; } /* Adjusted */
+            h2 { font-size: clamp(1.8rem, 6vw, 2.5rem); } /* Adjusted */
+            p { margin: 0 auto 1.5rem; width: 100%; box-sizing: border-box; } /* Width reset */
+            .nav-back { top: 1rem; left: 1rem; padding: 0.3rem 0.6rem; font-size: 0.8rem; } /* Compact nav */
+            .skill-bridge { flex-direction: column; gap: 1rem; }
+            .skill-col { width: 100%; } /* Full width */
+            .text-block { padding: 1.5rem; } /* Reduced padding */
+            section { padding: 3rem 1.5rem; } /* Reduced padding */
+
+            #cursor { display: none !important; } /* Force hide */
+            body { cursor: auto; }
+            #heat-gauge { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING SCREEN -->
+    <div id="loader">
+        <div style="font-family: var(--f-mono); color: #fff; letter-spacing: 2px;">IGNITING_CHARCOAL...</div>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
+    </div>
+
+    <!-- CUSTOM CURSOR -->
+    <div id="cursor"></div>
+
+    <!-- HEAT GAUGE -->
+    <div id="heat-gauge"><div id="heat-level"></div></div>
+
+    <a href="/guild/" class="nav-back">GUILD_HALL</a>
+    <div id="webgl-container"></div>
+
+    <!-- 1. HERO -->
+    <section id="hero">
+        <div class="container">
+            <div class="profile-card gs-reveal">
+                <div class="avatar-box">
+                    <img src="/assets/img/guild/elora/avatar.webp" alt="Elora" class="avatar-img">
+                    <div class="avatar-glitch"></div>
+                </div>
+                <div>
+                    <span class="mono-tag">Character Profile</span>
+                    <h1 class="neon-sign">ELORA</h1>
+                    <p style="font-family: var(--f-mono); color: var(--c-accent); font-weight: bold; font-size: 1.2rem;">
+                        <span id="typewriter"></span><span style="animation: blink 1s infinite">_</span>
+                    </p>
+                    <p style="margin-top: 1rem; font-size: 1rem; max-width: 400px; color: #888;">
+                        "From Pixels to Charcoal, and now to Code."
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); opacity: 0.5; font-family: var(--f-mono); font-size: 0.8rem;">
+            SCROLL TO IGNITE
+        </div>
+    </section>
+
+    <!-- 2. ORIGIN (Design) -->
+    <section id="origin">
+        <div class="container">
+            <span class="mono-tag" style="color: var(--c-cool);">Class: Visual Alchemist</span>
+            <h2 class="gs-reveal">The Designer Era</h2>
+            <div class="gs-reveal text-block">
+                <p>
+                    曾經，我的世界是由 <span class="highlight" style="border-color: var(--c-cool)">0 與 1 的像素</span> 構成的。
+                    2 年的平面設計磨練了我的審美直覺，接著在廣州的 2 年 UI 設計生涯，讓我學會了如何建構使用者體驗。
+                </p>
+
+                <div class="skill-bridge">
+                    <div class="skill-col">
+                        <h3 style="color: var(--c-cool);"><i class="fa-solid fa-layer-group"></i> Graphic Soul</h3>
+                        <div class="skill-item"><span>Core</span><span>Composition</span></div>
+                        <div class="skill-item"><span>Tool</span><span>Adobe Suite</span></div>
+                        <div class="skill-item"><span>Philosophy</span><span>Pixel Perfect</span></div>
+                    </div>
+                    <div class="skill-col">
+                        <h3 style="color: var(--c-cool);"><i class="fa-solid fa-mobile-screen"></i> UI Architect</h3>
+                        <div class="skill-item"><span>Core</span><span>Interaction</span></div>
+                        <div class="skill-item"><span>Tool</span><span>Figma / Sketch</span></div>
+                        <div class="skill-item"><span>Philosophy</span><span>User First</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. SHIFT (Izakaya & Philosophy) -->
+    <section id="shift">
+        <div class="container">
+            <span class="mono-tag">Event: The Shift</span>
+            <h2 class="gs-reveal neon-red">The Way of Fire</h2>
+            <div class="gs-reveal text-block">
+                <p>
+                    疫情是一場全球性的重構。我回到了台灣，脫下設計師的外衣，換上了居酒屋的圍裙。
+                    <span class="highlight">創業五年</span>，我的畫布變成了烤爐，我的像素變成了炭火。
+                </p>
+                <p style="font-style: italic; color: #888; margin-bottom: 2rem;">
+                    *其實本科系是企業管理，技能樹完全是亂點的。但這也意味著我不受框架限制。*
+                </p>
+
+                <h3>Izakaya UX Design</h3>
+                <div class="philo-grid">
+                    <div class="philo-card">
+                        <div class="philo-icon"><i class="fa-solid fa-fire-burner"></i></div>
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Temperature Control</div>
+                        <div style="font-size: 0.9rem; color: #aaa;">
+                            Just like color theory, heat requires balance. Too much is chaos; too little is stagnation.
+                        </div>
+                    </div>
+                    <div class="philo-card">
+                        <div class="philo-icon"><i class="fa-solid fa-utensils"></i></div>
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Plating as UI</div>
+                        <div style="font-size: 0.9rem; color: #aaa;">
+                            The plate is the interface. The texture is the interaction. The taste is the conversion.
+                        </div>
+                    </div>
+                    <div class="philo-card">
+                        <div class="philo-icon"><i class="fa-solid fa-heart"></i></div>
+                        <div style="font-weight: bold; color: #fff; margin-bottom: 0.5rem;">Omotenashi</div>
+                        <div style="font-size: 0.9rem; color: #aaa;">
+                            Anticipating needs before they are spoken. The ultimate User Journey Map.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. CHAOS (Life) -->
+    <section id="chaos">
+        <div class="container">
+            <span class="mono-tag">Status: Chaotic Good</span>
+            <h2 class="gs-reveal">Life Menu</h2>
+            <p class="gs-reveal">A curated selection of daily chaos and joy. Hover to inspect ingredients.</p>
+
+            <div class="menu-grid gs-reveal">
+                <div class="menu-item hover-trigger">
+                    <div class="menu-title">Husband <span style="color:var(--c-accent)">x1</span></div>
+                    <p class="menu-desc">Co-founder & Partner in crime.</p>
+                    <div class="menu-hidden">ROLE: TANK / SOUS CHEF</div>
+                </div>
+                <div class="menu-item hover-trigger">
+                    <div class="menu-title">Kid <span style="color:var(--c-accent)">x1</span></div>
+                    <p class="menu-desc">The ultimate startup project.</p>
+                    <div class="menu-hidden">STATUS: ENERGY OVERLOAD</div>
+                </div>
+                <div class="menu-item hover-trigger">
+                    <div class="menu-title">Cats <span style="color:var(--c-accent)">x5</span></div>
+                    <p class="menu-desc">The real owners of the house.</p>
+                    <div class="menu-hidden">PASSIVE: FUR SHIELD</div>
+                </div>
+                <div class="menu-item hover-trigger">
+                    <div class="menu-title">Aliens <span style="color:var(--c-accent)">?</span></div>
+                    <p class="menu-desc">I believe they are out there.</p>
+                    <div class="menu-hidden">TRUTH IS OUT THERE</div>
+                </div>
+                <div class="menu-item hover-trigger">
+                    <div class="menu-title">Meditation <span style="color:var(--c-accent)">Daily</span></div>
+                    <p class="menu-desc">Restoring sanity mana.</p>
+                    <div class="menu-hidden">BUFF: +50 FOCUS</div>
+                </div>
+                <div class="menu-item hover-trigger">
+                    <div class="menu-title">Self-Learning <span style="color:var(--c-accent)">MAX</span></div>
+                    <p class="menu-desc">Skill tree allocated randomly.</p>
+                    <div class="menu-hidden">TRAIT: ADAPTABILITY</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. GOAL (Vibe Coding) -->
+    <section id="goal">
+        <div class="container">
+            <span class="mono-tag" style="color: var(--c-magic);">Current Mission</span>
+            <h2 class="gs-reveal">Vibe Coding</h2>
+            <div class="gs-reveal text-block">
+                <p>
+                    自認學習能力很強，技能樹到處亂點。最近正在探索 <span class="highlight" style="border-color: var(--c-magic)">Vibe Coding</span> 的領域。
+                    我想幫助更多像我這樣的小型餐飲老闆們解決問題。
+                </p>
+
+                <div class="code-kitchen">
+                    <div class="code-line"><span class="code-num">01</span><span class="code-content"><span class="code-kw">class</span> RestaurantOwner <span class="code-kw">extends</span> Human {</span></div>
+                    <div class="code-line"><span class="code-num">02</span><span class="code-content">&nbsp;&nbsp;<span class="code-kw">constructor</span>() {</span></div>
+                    <div class="code-line"><span class="code-num">03</span><span class="code-content">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-kw">this</span>.passion = <span class="code-str">"High"</span>;</span></div>
+                    <div class="code-line"><span class="code-num">04</span><span class="code-content">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-kw">this</span>.tools = [<span class="code-str">"Design"</span>, <span class="code-str">"Cooking"</span>, <span class="code-str">"AI"</span>];</span></div>
+                    <div class="code-line"><span class="code-num">05</span><span class="code-content">&nbsp;&nbsp;}</span></div>
+                    <div class="code-line"><span class="code-num">06</span><span class="code-content">&nbsp;&nbsp;<span class="code-kw">solveProblem</span>(issue) {</span></div>
+                    <div class="code-line"><span class="code-num">07</span><span class="code-content">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-kw">return</span> vibeCode(issue);</span></div>
+                    <div class="code-line"><span class="code-num">08</span><span class="code-content">&nbsp;&nbsp;}</span></div>
+                    <div class="code-line"><span class="code-num">09</span><span class="code-content">}</span></div>
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center;">
+                    <p style="font-family: var(--f-mono); font-size: 0.9rem; color: #666;">
+                        > SYSTEM: Ready to Deploy Solutions.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <a href="https://www.threads.net/@eloradiary.dev" target="_blank" class="social-link">
+                <i class="fa-brands fa-threads"></i>
+            </a>
+            <p style="margin-top: 2rem; font-family: var(--f-mono); font-size: 0.8rem; color: #666;">
+                Made with <i class="fa-solid fa-fire" style="color: var(--c-accent)"></i> by SuperGalen's Dungeon
+            </p>
+        </div>
+    </footer>
+
+    <style>
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- LOADER ---
+        window.addEventListener('load', () => {
+            const bar = document.querySelector('.loader-progress');
+            const loader = document.getElementById('loader');
+
+            // Simulating load
+            let p = 0;
+            const int = setInterval(() => {
+                p += Math.random() * 10;
+                if(p > 100) p = 100;
+                bar.style.width = p + '%';
+
+                if(p === 100) {
+                    clearInterval(int);
+                    setTimeout(() => {
+                        gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.remove() });
+                        gsap.from('#hero .profile-card', { scale: 0.8, opacity: 0, duration: 1.5, ease: "power4.out" });
+                    }, 500);
+                }
+            }, 100);
+        });
+
+        // --- CUSTOM CURSOR ---
+        // Optimization: Only add cursor logic if not touch device
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const cursor = document.getElementById('cursor');
+
+        if (!isTouch) {
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.top = e.clientY + 'px';
+                cursor.style.left = e.clientX + 'px';
+
+                // Parallax Smoke (Simple)
+                // Debounce or reduce frequency could be here, but direct mapping is usually fine on desktop
+                const x = (e.clientX / window.innerWidth) - 0.5;
+                const y = (e.clientY / window.innerHeight) - 0.5;
+                if(camera) {
+                    gsap.to(camera.rotation, {
+                        x: -y * 0.1,
+                        y: -x * 0.1,
+                        duration: 1
+                    });
+                }
+            });
+
+            document.querySelectorAll('a, .hover-trigger, .philo-card').forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+            });
+        }
+
+        // --- TYPEWRITER ---
+        const texts = ["Grill Master", "UI Designer", "Cat Servant", "Vibe Coder"];
+        let textIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const typeTarget = document.getElementById('typewriter');
+
+        function type() {
+            const current = texts[textIndex];
+            if (isDeleting) {
+                typeTarget.innerText = current.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                typeTarget.innerText = current.substring(0, charIndex + 1);
+                charIndex++;
+            }
+
+            let speed = 100;
+            if (isDeleting) speed = 50;
+
+            if (!isDeleting && charIndex === current.length) {
+                isDeleting = true;
+                speed = 2000; // Pause at end
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                textIndex = (textIndex + 1) % texts.length;
+                speed = 500;
+            }
+
+            setTimeout(type, speed);
+        }
+        type();
+
+        // --- THREE.JS SCENE ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // antialias: true is expensive but good for quality. Mobile can handle it usually.
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- SMOKE PARTICLES ---
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(16,16,0, 16,16,16);
+        grad.addColorStop(0, 'rgba(200,200,200,1)');
+        grad.addColorStop(1, 'rgba(200,200,200,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,32,32);
+        const smokeTexture = new THREE.CanvasTexture(canvas);
+
+        const smokeGeo = new THREE.PlaneGeometry(5, 5);
+        const smokeMat = new THREE.MeshBasicMaterial({
+            map: smokeTexture,
+            transparent: true,
+            opacity: 0.1,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            color: 0xaaaaaa
+        });
+
+        // Optimization: Reduce particles on mobile
+        const isMobile = window.innerWidth < 768;
+        const smokeCount = isMobile ? 15 : 40;
+        const smokeParticles = [];
+
+        for (let i = 0; i < smokeCount; i++) {
+            const p = new THREE.Mesh(smokeGeo, smokeMat);
+            p.position.set(
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 10,
+                (Math.random() - 0.5) * 5 - 2
+            );
+            p.rotation.z = Math.random() * 360;
+            p.userData = {
+                rotSpeed: (Math.random() - 0.5) * 0.005,
+                floatSpeed: 0.002 + Math.random() * 0.005
+            };
+            scene.add(p);
+            smokeParticles.push(p);
+        }
+
+        // --- EMBERS ---
+        const emberGeo = new THREE.BufferGeometry();
+        const emberCount = isMobile ? 50 : 200; // Optimization: Fewer particles on mobile
+        const posArray = new Float32Array(emberCount * 3);
+        const speedArray = [];
+
+        for(let i=0; i<emberCount; i++) {
+            posArray[i*3] = (Math.random() - 0.5) * 15; // x
+            posArray[i*3+1] = -5 + Math.random() * 5; // y (bottom)
+            posArray[i*3+2] = (Math.random() - 0.5) * 10; // z
+            speedArray.push(0.01 + Math.random() * 0.03);
+        }
+        emberGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        const emberMat = new THREE.PointsMaterial({
+            size: 0.05,
+            color: 0xff4d4d, // Initial: Red
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const embers = new THREE.Points(emberGeo, emberMat);
+        scene.add(embers);
+
+        // --- ALIEN EYES (Easter Egg) ---
+        const alienGroup = new THREE.Group();
+        const eyeGeo = new THREE.SphereGeometry(0.1, 16, 16);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(-0.2, 0, 0);
+        leftEye.scale.y = 1.5;
+
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(0.2, 0, 0);
+        rightEye.scale.y = 1.5;
+
+        alienGroup.add(leftEye, rightEye);
+        alienGroup.position.set(3, 2, -2);
+        alienGroup.visible = false;
+        scene.add(alienGroup);
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Smoke
+            smokeParticles.forEach(p => {
+                p.rotation.z += p.userData.rotSpeed;
+                p.position.y += p.userData.floatSpeed;
+                if(p.position.y > 6) p.position.y = -6;
+            });
+
+            // Embers
+            const positions = embers.geometry.attributes.position.array;
+            for(let i=0; i<emberCount; i++) {
+                positions[i*3+1] += speedArray[i]; // move y up
+                // Wiggle x
+                positions[i*3] += Math.sin(Date.now() * 0.001 + i) * 0.002;
+
+                if(positions[i*3+1] > 6) {
+                    positions[i*3+1] = -6;
+                    positions[i*3] = (Math.random() - 0.5) * 15;
+                }
+            }
+            embers.geometry.attributes.position.needsUpdate = true;
+
+            // Alien Blink
+            if(Math.random() > 0.995) {
+                alienGroup.visible = !alienGroup.visible;
+                setTimeout(() => { if(Math.random() > 0.5) alienGroup.visible = false; }, 200);
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+
+        // --- SCROLL INTERACTIONS (GSAP) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Heat Gauge Logic
+        if (!isMobile) { // Only on desktop
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    document.getElementById('heat-level').style.height = (self.progress * 100) + '%';
+                }
+            });
+        }
+
+        // 1. Reveal Animations
+        gsap.utils.toArray('.gs-reveal').forEach(elem => {
+            gsap.from(elem, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: elem,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // 2. Color Shift & Atmosphere
+        const sections = [
+            { id: '#origin', color: new THREE.Color(0x4d79ff) }, // Blue
+            { id: '#shift', color: new THREE.Color(0xff4d4d) },  // Red
+            { id: '#chaos', color: new THREE.Color(0xbd4dff) },  // Purple
+            { id: '#goal', color: new THREE.Color(0x00ff00) }    // Matrix Green
+        ];
+
+        sections.forEach(sec => {
+            ScrollTrigger.create({
+                trigger: sec.id,
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => gsap.to(emberMat.color, { r: sec.color.r, g: sec.color.g, b: sec.color.b, duration: 1 }),
+                onEnterBack: () => gsap.to(emberMat.color, { r: sec.color.r, g: sec.color.g, b: sec.color.b, duration: 1 })
+            });
+        });
+
+        // 3. Parallax (Desktop Only)
+        if(!isMobile) {
+            gsap.to(".skill-bridge", {
+                y: -50,
+                scrollTrigger: {
+                    trigger: "#origin",
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+
+            gsap.to(".philo-grid", {
+                y: -30,
+                scrollTrigger: {
+                    trigger: "#shift",
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
+            });
+        }
+
+        // Resize with Debounce
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 100);
+        });
+
+    </script>
+</body>
+</html>

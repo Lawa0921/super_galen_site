@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毛哥 Bro Mao | 社群經營 x 蝦皮分潤</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+
+    <style>
+        :root {
+            --color-bg: #050505;
+            --color-primary: #00FF41; /* Matrix Green */
+            --color-secondary: #FFD700; /* Gold */
+            --color-accent: #FF0055; /* Cyber Red */
+            --color-dark-glass: rgba(5, 10, 5, 0.95);
+            --font-main: 'Noto Sans TC', sans-serif;
+            --font-code: 'Source Code Pro', monospace;
+            --font-display: 'Orbitron', sans-serif;
+            --cursor-size: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Custom cursor */
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: #ffffff;
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            overscroll-behavior: none;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--cursor-size);
+            height: var(--cursor-size);
+            border: 1px solid var(--color-primary);
+            background: rgba(0, 255, 65, 0.1);
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: exclusion;
+        }
+
+        #cursor::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: var(--color-primary);
+            transform: translate(-50%, -50%);
+        }
+
+        #cursor.hovered {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(0, 255, 65, 0.05);
+            border-color: var(--color-secondary);
+        }
+
+        /* --- Scroll Progress Bar --- */
+        #scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            width: 0%;
+            background: var(--color-primary);
+            z-index: 9998;
+            box-shadow: 0 0 10px var(--color-primary);
+        }
+
+        /* --- Canvas Background --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 1.5s ease-out;
+            will-change: opacity;
+        }
+
+        /* --- Global Utility --- */
+        .section {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            pointer-events: none;
+        }
+
+        .content-wrapper {
+            pointer-events: auto;
+            max-width: 1000px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        h1, h2, h3 {
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .section-label {
+            font-family: var(--font-code);
+            color: var(--color-primary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+            display: block;
+        }
+
+        /* --- Hero --- */
+        #sec-hero { height: 100vh; text-align: center; }
+
+        .avatar-container {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--color-primary);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+            margin: 0 auto 2rem auto;
+            position: relative;
+            transform: translateZ(0);
+        }
+
+        .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        .hero-title {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-code);
+            font-size: 1rem;
+            color: var(--color-secondary);
+            background: rgba(10, 10, 10, 0.8);
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            display: inline-block;
+        }
+
+        /* --- Section 1: Origin (Terminal) --- */
+        .ui-terminal {
+            background: rgba(5, 5, 5, 0.9);
+            border: 1px solid #333;
+            border-top: 2px solid var(--color-primary);
+            padding: 2rem;
+            font-family: var(--font-code);
+            color: #ccc;
+            position: relative;
+            margin-bottom: 5rem;
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .cmd-line { margin-bottom: 1rem; color: var(--color-primary); }
+        .cmd-output { margin-bottom: 2rem; line-height: 1.6; }
+        .highlight { color: #fff; font-weight: bold; }
+
+        /* --- Section 2: Grind (Market Graph) --- */
+        .ui-market {
+            background: linear-gradient(90deg, rgba(20,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            border-left: 4px solid var(--color-accent);
+            padding: 2rem;
+            margin-bottom: 5rem;
+            position: relative;
+        }
+
+        .market-stat {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--color-accent);
+            font-family: var(--font-display);
+            margin-bottom: 0.5rem;
+        }
+
+        .market-desc {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #ddd;
+        }
+
+        /* --- Section 3: Method (Deconstructor) --- */
+        .ui-method-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 5rem;
+        }
+
+        .method-block {
+            background: rgba(10, 15, 10, 0.8);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        .method-block:hover {
+            border-color: var(--color-primary);
+            transform: translateX(10px);
+        }
+
+        .method-icon {
+            font-size: 2rem;
+            color: var(--color-secondary);
+            margin-bottom: 1rem;
+        }
+
+        /* --- Section 4: Arsenal (Grid) --- */
+        .ui-arsenal {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            margin-bottom: 5rem;
+        }
+
+        .arsenal-card {
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid #333;
+            padding: 2rem;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .arsenal-card:hover {
+            background: rgba(0, 255, 65, 0.05);
+            border-color: var(--color-primary);
+        }
+
+        .arsenal-title {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .arsenal-meta {
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* --- Section 5: Creed (Manifesto) --- */
+        .ui-manifesto {
+            height: 60vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .creed-text {
+            font-size: 2.5rem;
+            font-weight: 900;
+            line-height: 1.3;
+            margin-bottom: 2rem;
+            color: #444; /* Inactive state */
+            transition: color 0.5s;
+        }
+
+        .creed-text.active { color: #fff; }
+        .creed-highlight { color: var(--color-primary); }
+
+        /* --- Footer --- */
+        .footer {
+            min-height: 40vh;
+            text-align: center;
+            border-top: 1px solid #222;
+        }
+
+        .social-grid {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .social-link {
+            font-size: 1.5rem;
+            color: #888;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+
+        .social-link:hover { color: var(--color-primary); transform: scale(1.2); }
+
+        .copyright { color: #444; font-size: 0.8rem; }
+        .copyright a { color: #666; text-decoration: none; }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            * { cursor: auto; }
+            #cursor { display: none; }
+
+            .hero-title { font-size: 2.5rem; }
+            .section { padding: 4rem 1.5rem; }
+            .creed-text { font-size: 1.8rem; }
+            .ui-arsenal { grid-template-columns: 1fr; }
+        }
+    </style>
+
+    <!-- Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="cursor"></div>
+    <div id="scroll-progress"></div>
+    <div id="canvas-container"></div>
+
+    <!-- Hero -->
+    <section id="sec-hero" class="section">
+        <div class="content-wrapper">
+            <div class="avatar-container gs-hero">
+                <img src="/assets/img/guild/bro_mao/avatar.webp" alt="Bro Mao" loading="lazy">
+            </div>
+            <h1 class="hero-title gs-hero">BRO MAO</h1>
+            <br>
+            <div class="hero-subtitle gs-hero">
+                > SYSTEM.INIT(Student, Affiliate, Ops);
+            </div>
+        </div>
+    </section>
+
+    <!-- 1. The Outlier (Origin) -->
+    <section id="sec-origin" class="section" data-color="#00FF41">
+        <div class="content-wrapper">
+            <span class="section-label">01 // THE OUTLIER</span>
+
+            <div class="ui-terminal gs-reveal">
+                <div class="terminal-header">
+                    <span>root@bro_mao:~/origin</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="cmd-line">> cat background.txt</div>
+                    <div class="cmd-output">
+                        我是一個半路出家社群經營與蝦皮分潤實戰的高中生。<br>
+                        <span class="highlight">沒有行銷背景，也不是商學院出身。</span><br>
+                        而是一般高中生一路亂撞進內容圈的那種人。
+                    </div>
+
+                    <div class="cmd-line">> run reality_check.exe</div>
+                    <div class="cmd-output">
+                        文案不是天生會寫，是寫到被忽略、被滑過、被冷處理後才慢慢學會。<br>
+                        流量也不是一開始就有，是一篇一篇發、一天一天熬出來的。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. The Silent War (Grind) -->
+    <section id="sec-grind" class="section" data-color="#FF0055">
+        <div class="content-wrapper">
+            <span class="section-label" style="color: var(--color-accent);">02 // THE SILENT WAR</span>
+
+            <div class="ui-market gs-reveal">
+                <h2 style="color: var(--color-accent); margin-bottom: 2rem;">MARKET VOLATILITY</h2>
+
+                <div class="market-desc">
+                    現在主要靠社群吃飯。<br>
+                    <strong>不拍短影音、不開直播。</strong><br>
+                    靠文字、邏輯、實戰紀錄養活自己。<br><br>
+
+                    <div style="border-left: 2px solid #555; padding-left: 1rem; margin: 1rem 0;">
+                        分潤被調整過 <span style="color: var(--color-accent);">[CRITICAL]</span><br>
+                        帳號沒流量過 <span style="color: var(--color-accent);">[WARNING]</span><br>
+                        但到現在還沒被市場淘汰 <span style="color: var(--color-primary);">[SURVIVED]</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. The Deconstructor (Method) -->
+    <section id="sec-method" class="section" data-color="#FFD700">
+        <div class="content-wrapper">
+            <span class="section-label" style="color: var(--color-secondary);">03 // THE DECONSTRUCTOR</span>
+
+            <h2 style="margin-bottom: 3rem;">SKILL TREE</h2>
+
+            <div class="ui-method-grid">
+                <div class="method-block gs-reveal interactive-el">
+                    <div class="method-icon"><i class="fa-solid fa-puzzle-piece"></i></div>
+                    <h3>複雜 -> 簡單</h3>
+                    <p style="margin-top: 1rem; color: #aaa;">
+                        比起教人『 快速成功 』<br>
+                        我比較擅長把複雜的東西，拆解成一般人也能做、也撐得久的版。
+                    </p>
+                </div>
+
+                <div class="method-block gs-reveal interactive-el">
+                    <div class="method-icon"><i class="fa-solid fa-wrench"></i></div>
+                    <h3>動態修補</h3>
+                    <p style="margin-top: 1rem; color: #aaa;">
+                        是一個技能樹亂點型玩家。<br>
+                        文案、社群、分潤、數據、流程、話術，哪個卡關就往哪補。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. The Survival Kit (Arsenal) -->
+    <section id="sec-arsenal" class="section" data-color="#00FF41">
+        <div class="content-wrapper">
+            <span class="section-label">04 // SURVIVAL KIT</span>
+
+            <div class="ui-arsenal">
+                <div class="arsenal-card interactive-el gs-reveal">
+                    <div class="arsenal-title">Shopee Affiliate</div>
+                    <div class="arsenal-meta">PASSIVE INCOME</div>
+                    <div style="margin-top: 1rem; color: #ccc;">分潤實戰核心，變現主力。</div>
+                </div>
+
+                <div class="arsenal-card interactive-el gs-reveal">
+                    <div class="arsenal-title">Instagram</div>
+                    <div class="arsenal-meta">COMMUNITY OPS</div>
+                    <div style="margin-top: 1rem; color: #ccc;">圖文經營，建立連結。</div>
+                </div>
+
+                <div class="arsenal-card interactive-el gs-reveal">
+                    <div class="arsenal-title">Logic & Data</div>
+                    <div class="arsenal-meta">OPTIMIZATION</div>
+                    <div style="margin-top: 1rem; color: #ccc;">只相信測試、紀錄、修正。</div>
+                </div>
+
+                <div class="arsenal-card interactive-el gs-reveal">
+                    <div class="arsenal-title">毛哥實戰筆記</div>
+                    <div class="arsenal-meta">OUTPUT</div>
+                    <div style="margin-top: 1rem; color: #ccc;">把我實際走過、踩過、活下來的方法留下來。</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. The Long Game (Creed) -->
+    <section id="sec-creed" class="section" data-color="#FFFFFF">
+        <div class="content-wrapper">
+            <div class="ui-manifesto">
+                <div class="creed-text gs-text">不迷信大神</div>
+                <div class="creed-text gs-text">只相信測試</div>
+                <div class="creed-text gs-text">不是最聰明</div>
+                <div class="creed-text gs-text" style="color: #fff;">但是是<span class="creed-highlight">撐夠久</span>的毛哥</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <section class="section footer">
+        <div class="content-wrapper">
+            <h2 style="font-size: 2rem;">CONNECT</h2>
+
+            <div class="social-grid">
+                <a href="https://www.instagram.com/bro.mao_/" target="_blank" class="social-link interactive-el"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.net/@bro.mao_" target="_blank" class="social-link interactive-el"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://portaly.cc/Bro.Mao" target="_blank" class="social-link interactive-el"><i class="fa-solid fa-link"></i></a>
+                <a href="https://line.me/ti/g2/cM-8hBIjj5xapE1TxNaBep5mdyTqNmjTuEOWiQ" target="_blank" class="social-link interactive-el"><i class="fa-brands fa-line"></i></a>
+            </div>
+
+            <div class="copyright">
+                Made with love by <a href="/guild/" class="interactive-el">SuperGalen's Dungeon</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Three.js Scene -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // --- Custom Cursor ---
+        const cursor = document.getElementById('cursor');
+        const interactiveEls = document.querySelectorAll('.interactive-el, a, button');
+
+        // Only on desktop
+        if (window.matchMedia("(min-width: 768px)").matches) {
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+
+            interactiveEls.forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+            });
+        }
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.03); // Heavier fog for depth
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // --- Post Processing (Subtle Bloom) ---
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            0.8, // Reduced strength (was 1.5)
+            0.5, // Radius
+            0.2  // Increased threshold (only bright things glow)
+        );
+        composer.addPass(bloomPass);
+
+        // --- Objects: Particles ---
+
+        // Texture Generator
+        function createSymbolTexture(char, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = 'bold 80px "Source Code Pro", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(char, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const colors = {
+            green: '#00FF41',
+            gold: '#FFD700',
+            red: '#FF0055',
+            white: '#FFFFFF'
+        };
+
+        const textures = [
+            createSymbolTexture('$', colors.green),
+            createSymbolTexture('%', colors.gold),
+            createSymbolTexture('!', colors.red),
+            createSymbolTexture('{ }', colors.white),
+            createSymbolTexture('>', colors.green),
+            createSymbolTexture('@', colors.green),
+            createSymbolTexture('#', colors.gold),
+            createSymbolTexture('&', colors.red),
+            createSymbolTexture('?', colors.white),
+            createSymbolTexture('*', colors.green),
+        ];
+
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+
+        // Batch particles by texture
+        const particleCount = 800; // Reduced density
+        const particlesPerTex = Math.floor(particleCount / textures.length);
+
+        textures.forEach(tex => {
+            const geo = new THREE.BufferGeometry();
+            const pos = new Float32Array(particlesPerTex * 3);
+            const sizes = new Float32Array(particlesPerTex);
+
+            for(let i=0; i<particlesPerTex; i++) {
+                pos[i*3] = (Math.random() - 0.5) * 150;     // x spread
+                pos[i*3+1] = (Math.random() - 0.5) * 80;    // y spread
+                pos[i*3+2] = (Math.random() - 0.5) * 200;   // z spread
+                sizes[i] = Math.random() * 2 + 1;
+            }
+
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const mat = new THREE.PointsMaterial({
+                size: 3,
+                map: tex,
+                transparent: true,
+                opacity: 0.4, // Reduced opacity (was 0.8)
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            const points = new THREE.Points(geo, mat);
+            particleGroup.add(points);
+        });
+
+        // --- Animation ---
+        let targetSpeed = 0.05;
+        let mouseX = 0, mouseY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0001;
+        });
+
+        gsap.ticker.add(() => {
+            particleGroup.children.forEach(points => {
+                const positions = points.geometry.attributes.position.array;
+
+                for(let i=0; i < positions.length / 3; i++) {
+                    const i3 = i * 3;
+                    positions[i3+2] += targetSpeed * 2; // Move forward
+
+                    // Seamless loop
+                    if(positions[i3+2] > 100) {
+                        positions[i3+2] = -100;
+                    }
+                }
+                points.geometry.attributes.position.needsUpdate = true;
+            });
+
+            // Gentle rotation
+            scene.rotation.y += (mouseX - scene.rotation.y) * 0.05;
+            scene.rotation.x += (mouseY - scene.rotation.x) * 0.05;
+
+            composer.render();
+        });
+
+        // --- GSAP Scroll Logic ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Fade in Canvas
+        window.addEventListener('load', () => container.style.opacity = 1);
+
+        // Scroll Progress
+        ScrollTrigger.create({
+            trigger: document.body,
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                gsap.to('#scroll-progress', { width: (self.progress * 100) + '%', duration: 0.1 });
+            }
+        });
+
+        // Hero
+        gsap.from('.gs-hero', {
+            y: 30, opacity: 0, duration: 1.5, stagger: 0.2, ease: "power3.out"
+        });
+
+        // Section Reveal
+        gsap.utils.toArray('.gs-reveal').forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1
+            });
+        });
+
+        // Color Sync
+        const colorCache = {};
+
+        gsap.utils.toArray('[data-color]').forEach(section => {
+            const hex = section.dataset.color;
+            if (!colorCache[hex]) colorCache[hex] = new THREE.Color(hex);
+
+            ScrollTrigger.create({
+                trigger: section,
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => updateFogColor(hex),
+                onEnterBack: () => updateFogColor(hex)
+            });
+        });
+
+        function updateFogColor(hex) {
+            const color = colorCache[hex];
+            // Tint the fog for ambient color shift
+            gsap.to(scene.fog.color, {
+                r: color.r * 0.1, // Keep it dark
+                g: color.g * 0.1,
+                b: color.b * 0.1,
+                duration: 1
+            });
+        }
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
