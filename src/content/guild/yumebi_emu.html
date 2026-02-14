@@ -1121,6 +1121,16 @@
         }
 
         // --- PARTICLES ---
+        const sparkleCanvas = document.createElement('canvas');
+        sparkleCanvas.width = 32; sparkleCanvas.height = 32;
+        const sCtx = sparkleCanvas.getContext('2d');
+        const sGrd = sCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        sGrd.addColorStop(0, 'rgba(255,255,255,1)');
+        sGrd.addColorStop(0.3, 'rgba(255,105,180,0.8)');
+        sGrd.addColorStop(1, 'rgba(0,0,0,0)');
+        sCtx.fillStyle = sGrd;
+        sCtx.fillRect(0, 0, 32, 32);
+
         const sparkleTex = new THREE.CanvasTexture(sparkleCanvas);
         const partGeo = new THREE.BufferGeometry();
         const pCnt = 80;
