@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michael Lai - Data Artisan</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+    <!-- Three.js Import Map for module support -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --c-main: #3B82A0; /* Greyish Blue */
+            --c-dark: #1E293B; /* Slate 800 */
+            --c-text: #0F172A; /* Slate 900 */
+            --c-bg: #F8FAFC;   /* Slate 50 */
+            --c-accent: #F97316; /* Orange */
+            --c-glass: rgba(255, 255, 255, 0.7);
+            --c-glass-border: rgba(255, 255, 255, 0.9);
+
+            --f-sans: 'Inter', sans-serif;
+            --f-mono: 'JetBrains Mono', monospace;
+            --f-serif: 'Noto Serif TC', serif;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-sans);
+            overflow-x: hidden;
+            line-height: 1.6;
+            cursor: crosshair;
+        }
+
+        /* Background Layers */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: auto; }
+        #p5-grain-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; opacity: 0.15; mix-blend-mode: overlay; }
+
+        /* Layout */
+        .scroller { position: relative; z-index: 10; padding-bottom: 10vh; pointer-events: none; }
+        .section {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 4rem 1rem;
+            position: relative;
+            pointer-events: none; /* Let clicks pass to background unless on card */
+        }
+
+        /* Glass Card */
+        .glass-card {
+            pointer-events: auto;
+            background: var(--c-glass);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--c-glass-border);
+            border-radius: 24px;
+            padding: 4rem;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow:
+                0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                0 20px 40px -10px rgba(59, 130, 160, 0.15);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-25deg);
+            transition: 0.5s;
+            pointer-events: none;
+        }
+
+        .glass-card:hover::before {
+            left: 150%;
+            transition: 1s ease-in-out;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow:
+                0 15px 25px -3px rgba(0, 0, 0, 0.05),
+                0 40px 80px -10px rgba(59, 130, 160, 0.25);
+            border-color: #fff;
+        }
+
+        /* Typography */
+        h1 {
+            font-family: var(--f-serif);
+            font-size: 4rem;
+            margin: 0 0 1rem;
+            background: linear-gradient(135deg, var(--c-main) 0%, var(--c-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        h2 {
+            font-family: var(--f-serif);
+            font-size: 2.5rem;
+            color: var(--c-dark);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .mono-tag {
+            font-family: var(--f-mono);
+            font-size: 0.9rem;
+            color: var(--c-main);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: block;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        p {
+            font-size: 1.15rem;
+            color: #475569;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+        }
+
+        .highlight {
+            color: var(--c-main);
+            font-weight: 700;
+            background: linear-gradient(120deg, transparent 0%, rgba(59, 130, 160, 0.1) 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 88%;
+            padding: 0 2px;
+        }
+
+        /* Avatar */
+        .avatar-container {
+            width: 240px; height: 240px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 160, 0.1), 0 20px 40px rgba(0,0,0,0.1);
+            margin: 0 auto 2rem;
+            position: relative;
+            transition: 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: pulse-border 4s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0px rgba(59, 130, 160, 0.2); }
+            50% { box-shadow: 0 0 0 15px rgba(59, 130, 160, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(59, 130, 160, 0); }
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.7s ease;
+        }
+        .avatar-container:hover {
+            border-color: var(--c-accent);
+        }
+        .avatar-container:hover .avatar-img {
+            transform: scale(1.15) rotate(-2deg);
+        }
+
+        /* Grid Layouts */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 5rem;
+            align-items: center;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .icon-box {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 2.5rem 2rem;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.6);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: default;
+        }
+        .icon-box:hover {
+            background: white;
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(59, 130, 160, 0.15);
+            border-color: var(--c-main);
+        }
+        .icon-box i {
+            font-size: 3rem;
+            color: var(--c-main);
+            margin-bottom: 1.5rem;
+            transition: 0.4s;
+            display: inline-block;
+        }
+        .icon-box:hover i {
+            transform: scale(1.2) rotate(15deg);
+            color: var(--c-accent);
+            text-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+        }
+        .icon-box h3 {
+            font-family: var(--f-serif);
+            margin: 0.5rem 0;
+            font-size: 1.4rem;
+            color: var(--c-dark);
+        }
+
+        /* Navigation */
+        .back-btn {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: var(--c-main);
+            text-decoration: none;
+            font-family: var(--f-mono);
+            font-weight: 700;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: 0.3s;
+            display: flex; align-items: center; gap: 0.8rem;
+            border: 1px solid rgba(255,255,255,1);
+        }
+        .back-btn:hover {
+            background: var(--c-main);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(59, 130, 160, 0.3);
+        }
+
+        /* Footer */
+        .footer {
+            min-height: 50vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: linear-gradient(to top, rgba(255,255,255,0.8), transparent);
+            position: relative; z-index: 20;
+            margin-top: -20vh;
+            pointer-events: none;
+        }
+        .footer > * { pointer-events: auto; }
+
+        .social-links { display: flex; gap: 2rem; margin-top: 2.5rem; }
+        .social-btn {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            background: white;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--c-main);
+            font-size: 1.8rem;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(59, 130, 160, 0.15);
+            transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .social-btn::after {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: var(--c-accent);
+            border-radius: 50%;
+            transform: scale(0);
+            transition: 0.4s;
+            z-index: 0;
+        }
+        .social-btn i { position: relative; z-index: 1; transition: 0.4s; }
+        .social-btn:hover::after { transform: scale(1); }
+        .social-btn:hover {
+            transform: translateY(-8px) scale(1.1);
+            box-shadow: 0 20px 40px rgba(249, 115, 22, 0.3);
+        }
+        .social-btn:hover i { color: white; }
+
+        /* Viz Container */
+        #data-flow-viz {
+            width: 100%; height: 320px;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            background: #0F172A;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 20px 40px rgba(0,0,0,0.2);
+            border: 1px solid rgba(59, 130, 160, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .split-layout { grid-template-columns: 1fr; gap: 3rem; text-align: center; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .glass-card { padding: 2.5rem; }
+            h1 { font-size: 3rem; }
+            .avatar-container { margin: 0 auto 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
+
+    <!-- Visual Layers -->
+    <div id="webgl-container"></div>
+    <div id="p5-grain-container"></div>
+
+    <div class="scroller">
+
+        <!-- 1. Hero -->
+        <section class="section">
+            <div class="glass-card split-layout">
+                <div style="text-align: center;">
+                    <div class="avatar-container">
+                        <img src="/assets/img/guild/michael/avatar.webp" class="avatar-img" alt="Michael Lai">
+                    </div>
+                    <div class="mono-tag">Lv.1 Data Analyst</div>
+                    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+                         <span class="mono-tag" style="padding: 0.4rem 0.8rem; background: rgba(59,130,160,0.1); border-radius: 8px;"><i class="fa-solid fa-code"></i> PYTHON</span>
+                        <span class="mono-tag" style="padding: 0.4rem 0.8rem; background: rgba(59,130,160,0.1); border-radius: 8px;"><i class="fa-solid fa-database"></i> SQL</span>
+                        <span class="mono-tag" style="padding: 0.4rem 0.8rem; background: rgba(59,130,160,0.1); border-radius: 8px;"><i class="fa-solid fa-robot"></i> AI</span>
+                    </div>
+                </div>
+                <div style="text-align: left;">
+                    <span class="mono-tag" style="color: var(--c-accent);">// INTRO_SEQUENCE</span>
+                    <h1>Michael Lai</h1>
+                    <p class="highlight" style="display:inline-block; margin-bottom: 2rem; font-size: 1.2rem;">半路出家的數據分析師 <i class="fa-solid fa-arrow-right" style="font-size: 0.8em; margin: 0 0.5rem;"></i> 未來的數據專家</p>
+                    <p>
+                        嗨，我是 Michael。一個在數據洪流中尋找秩序的探索者。
+                        我喜歡用 <span class="highlight">原始碼</span> 將繁瑣的流程自動化，
+                        也享受與 <span class="highlight">AI</span> 協作生成未知的創意。
+                    </p>
+                    <p style="font-size: 1rem; opacity: 0.8; font-family: var(--f-mono); margin-top: 2rem; border-left: 3px solid var(--c-accent); padding-left: 1rem;">
+                        "數據不僅是數字，它是通往真相的鑰匙。"
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Skills & Passion -->
+        <section class="section">
+            <div class="glass-card">
+                <span class="mono-tag" style="color: var(--c-accent);">// CORE_MODULES</span>
+                <h2><i class="fa-solid fa-microchip" style="color: var(--c-main);"></i> Automation & Synthesis</h2>
+
+                <div class="split-layout" style="gap: 4rem; text-align: left;">
+                    <div>
+                        <p>
+                            <strong style="color: var(--c-main); font-size: 1.3rem;">自動化的藝術</strong><br>
+                            對我來說，寫程式不僅是工作，更是一種將時間歸還給生活的魔法。
+                            看著繁瑣的任務被腳本一行行吞噬，有一種難以言喻的療癒感。
+                        </p>
+                        <p style="margin-top: 2rem;">
+                            <strong style="color: var(--c-main); font-size: 1.3rem;">AI 協作者</strong><br>
+                            我不害怕 AI 取代我，我擁抱它成為我的副駕駛。
+                            從生成圖像到優化代碼，我們共同創造出超出預期的成果。
+                        </p>
+                    </div>
+                    <!-- Visual representation of data flow -->
+                    <div id="data-flow-viz"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Interests -->
+        <section class="section">
+            <div class="glass-card">
+                <span class="mono-tag" style="color: var(--c-accent);">// PERSONALITY_TRAITS</span>
+                <h2><i class="fa-solid fa-fingerprint" style="color: var(--c-main);"></i> Beyond the Code</h2>
+                <p>數據之外，我是一個充滿好奇心的觀察者。</p>
+
+                <div class="grid-3">
+                    <div class="icon-box">
+                        <i class="fa-solid fa-earth-asia"></i>
+                        <h3>Cultural Observer</h3>
+                        <p style="font-size: 0.95rem;">喜歡觀察各國文化，學習他人的長處，將多元視角融入分析。</p>
+                    </div>
+                    <div class="icon-box">
+                        <i class="fa-solid fa-cat"></i>
+                        <h3>Cat Lover</h3>
+                        <p style="font-size: 0.95rem;">貓咪是真愛。<br>牠們的優雅與獨立是我嚮往的生活態度。</p>
+                    </div>
+                    <div class="icon-box">
+                        <i class="fa-solid fa-basketball"></i>
+                        <h3>Basketball</h3>
+                        <p style="font-size: 0.95rem;">享受運動的汗水，尤其是籃球場上的團隊流動。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div style="text-align: center;">
+                <h2 style="margin-bottom: 0.5rem; font-size: 3rem;">Let's Connect</h2>
+                <p>正在尋找數據分析相關機會</p>
+                <div class="social-links">
+                    <a href="https://www.threads.net/@michael_lwt" target="_blank" class="social-btn" title="Threads">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                    <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="social-btn" title="Instagram">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                </div>
+                <div style="margin-top: 4rem; font-family: var(--f-mono); font-size: 0.8rem; color: #64748b;">
+                    MADE WITH <i class="fa-solid fa-heart" style="color: var(--c-accent);"></i> BY SUPERGALEN'S DUNGEON
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- p5.js Scripts -->
+    <script>
+        // 1. Fullscreen Grain Effect
+        const grainSketch = (p) => {
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-grain-container');
+                p.noLoop();
+            };
+
+            p.draw = () => {
+                p.clear();
+                p.loadPixels();
+                // Add noise
+                for (let i = 0; i < p.width * p.height * 4; i += 4) {
+                    const noiseVal = p.random(200, 255);
+                    p.pixels[i] = noiseVal;
+                    p.pixels[i+1] = noiseVal;
+                    p.pixels[i+2] = noiseVal;
+                    p.pixels[i+3] = p.random(10, 30); // Low opacity
+                }
+                p.updatePixels();
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                p.draw();
+            };
+        };
+        new p5(grainSketch);
+
+        // 2. Data Flow Visualization (Matrix-ish) - Enhanced
+        const dataSketch = (p) => {
+            let streams = [];
+            let symbolSize = 20; // Larger text
+
+            p.setup = () => {
+                const container = document.getElementById('data-flow-viz');
+                const canvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
+                canvas.parent('data-flow-viz');
+                p.background(0, 0);
+                p.textFont('JetBrains Mono');
+                p.textSize(symbolSize);
+                p.textAlign(p.CENTER);
+
+                let x = 0;
+                for (let i = 0; i <= p.width / symbolSize; i++) {
+                    let stream = new Stream();
+                    stream.generateSymbols(x, p.random(-1000, 0));
+                    streams.push(stream);
+                    x += symbolSize;
+                }
+            };
+
+            p.draw = () => {
+                p.background(15, 23, 42, 80); // More trail (lower alpha)
+                streams.forEach(stream => stream.render());
+            };
+
+            p.windowResized = () => {
+                const container = document.getElementById('data-flow-viz');
+                p.resizeCanvas(container.offsetWidth, container.offsetHeight);
+                // Reset streams on resize for simplicity
+                streams = [];
+                let x = 0;
+                for (let i = 0; i <= p.width / symbolSize; i++) {
+                    let stream = new Stream();
+                    stream.generateSymbols(x, p.random(-1000, 0));
+                    streams.push(stream);
+                    x += symbolSize;
+                }
+            };
+
+            class Symbol {
+                constructor(x, y, speed, first) {
+                    this.x = x;
+                    this.y = y;
+                    this.value = '';
+                    this.speed = speed;
+                    this.switchInterval = p.round(p.random(2, 20));
+                    this.first = first;
+                }
+
+                setToRandomSymbol() {
+                    if (p.frameCount % this.switchInterval == 0) {
+                        const charType = p.random(1);
+                        if (charType > 0.3) {
+                            // Binary + Special Chars
+                            const chars = "01<>{}[]/|";
+                            this.value = chars.charAt(p.floor(p.random(chars.length)));
+                        } else {
+                            // Numbers
+                            this.value = p.floor(p.random(0, 9));
+                        }
+                    }
+                }
+
+                rain() {
+                    this.y = (this.y >= p.height) ? 0 : this.y += this.speed;
+                }
+            }
+
+            class Stream {
+                constructor() {
+                    this.symbols = [];
+                    this.totalSymbols = p.round(p.random(8, 20));
+                    this.speed = p.random(3, 8); // Faster
+                }
+
+                generateSymbols(x, y) {
+                    let first = p.round(p.random(0, 4)) == 1;
+                    for (let i = 0; i <= this.totalSymbols; i++) {
+                        let symbol = new Symbol(x, y, this.speed, first);
+                        symbol.setToRandomSymbol();
+                        this.symbols.push(symbol);
+                        y -= symbolSize;
+                        first = false;
+                    }
+                }
+
+                render() {
+                    this.symbols.forEach(symbol => {
+                        if (symbol.first) {
+                            p.fill(255, 255, 255); // White Head
+                            p.drawingContext.shadowBlur = 15;
+                            p.drawingContext.shadowColor = 'rgba(255,255,255,0.8)';
+                        } else {
+                            // Gradient color based on position in stream? simpler:
+                            // Mix Cyan and Orange
+                            if (p.random() > 0.9) p.fill(249, 115, 22); // Orange Accent
+                            else p.fill(59, 130, 160, 200); // Blue Body
+
+                            p.drawingContext.shadowBlur = 0;
+                        }
+                        p.text(symbol.value, symbol.x, symbol.y);
+                        symbol.rain();
+                        symbol.setToRandomSymbol();
+                    });
+                }
+            }
+        };
+        new p5(dataSketch);
+    </script>
+
+    <!-- Three.js Data Constellation & Interactions -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Scene Setup
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        // Lighter fog for depth
+        scene.fog = new THREE.FogExp2(0xF8FAFC, 0.005);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 40;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Interaction State
+        const mouse = new THREE.Vector2(0, 0);
+        const raycaster = new THREE.Raycaster();
+        let targetRotation = { x: 0, y: 0 };
+        let shockwaveRadius = 0;
+        let isShockwaveActive = false;
+
+        // 1. Interactive Particles - "Data Points"
+        const particleCount = 800;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const originalPositions = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for(let i=0; i<particleCount; i++) {
+            const x = (Math.random() - 0.5) * 120;
+            const y = (Math.random() - 0.5) * 120;
+            const z = (Math.random() - 0.5) * 80;
+
+            positions[i*3] = x;
+            positions[i*3+1] = y;
+            positions[i*3+2] = z;
+
+            originalPositions[i*3] = x;
+            originalPositions[i*3+1] = y;
+            originalPositions[i*3+2] = z;
+
+            sizes[i] = Math.random();
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        // Use custom shader for glowing dots
+        const particleMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: new THREE.Color(0x3B82A0) },
+                time: { value: 0 }
+            },
+            vertexShader: `
+                attribute float size;
+                uniform float time;
+                varying float vOpacity;
+                void main() {
+                    vec3 pos = position;
+                    // Float effect
+                    pos.y += sin(time * 0.5 + pos.x * 0.05) * 0.5;
+
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    // Scale size by distance
+                    gl_PointSize = size * 10.0 * (40.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                    vOpacity = size;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                varying float vOpacity;
+                void main() {
+                    // Circular soft particle
+                    float r = distance(gl_PointCoord, vec2(0.5));
+                    if (r > 0.5) discard;
+
+                    // Glow center
+                    float glow = 1.0 - (r * 2.0);
+                    glow = pow(glow, 1.5);
+
+                    gl_FragColor = vec4(color, glow * vOpacity);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particles = new THREE.Points(geometry, particleMaterial);
+        scene.add(particles);
+
+        // 2. Lines
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x3B82A0,
+            transparent: true,
+            opacity: 0.15,
+            blending: THREE.AdditiveBlending
+        });
+        const lineGeometry = new THREE.BufferGeometry();
+        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+        scene.add(lines);
+
+        // 3. Floating Glass Crystals
+        const shapeGroup = new THREE.Group();
+        scene.add(shapeGroup);
+        const crystalGeo = new THREE.IcosahedronGeometry(1, 0);
+        // Better glass material
+        const glassMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0,
+            roughness: 0,
+            transmission: 1.0,
+            thickness: 2,
+            ior: 1.5,
+            clearcoat: 1,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const crystals = [];
+        // Add more crystals
+        for(let i=0; i<15; i++) {
+            const mesh = new THREE.Mesh(crystalGeo, glassMat);
+            mesh.position.set(
+                (Math.random()-0.5) * 80,
+                (Math.random()-0.5) * 80,
+                (Math.random()-0.5) * 40
+            );
+            mesh.scale.setScalar(0.5 + Math.random() * 2);
+            mesh.userData = {
+                rotSpeed: new THREE.Vector3(
+                    (Math.random()-0.5) * 0.03,
+                    (Math.random()-0.5) * 0.03,
+                    (Math.random()-0.5) * 0.03
+                ),
+                originalPos: mesh.position.clone(),
+                floatSpeed: Math.random() * 0.02,
+                floatOffset: Math.random() * Math.PI * 2
+            };
+            shapeGroup.add(mesh);
+            crystals.push(mesh);
+        }
+
+        // Lighting
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambLight);
+
+        const blueLight = new THREE.PointLight(0x3B82A0, 2, 60);
+        blueLight.position.set(-20, 10, 10);
+        scene.add(blueLight);
+
+        const orangeLight = new THREE.PointLight(0xF97316, 2, 60); // Orange accent
+        orangeLight.position.set(20, -10, 10);
+        scene.add(orangeLight);
+
+        // Interaction Logic
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Parallax
+            targetRotation.x = mouse.y * 0.1;
+            targetRotation.y = mouse.x * 0.1;
+        });
+
+        // EXPLOSIVE CLICK
+        window.addEventListener('click', () => {
+            // Trigger shockwave
+            isShockwaveActive = true;
+            shockwaveRadius = 0;
+
+            // Camera Shake
+            gsap.to(camera.position, {
+                x: camera.position.x + (Math.random()-0.5)*2,
+                y: camera.position.y + (Math.random()-0.5)*2,
+                duration: 0.1,
+                yoyo: true,
+                repeat: 3,
+                onComplete: () => {
+                   camera.position.x = 0;
+                   camera.position.y = 0;
+                }
+            });
+
+            // Crystals scatter
+            crystals.forEach(c => {
+                gsap.to(c.position, {
+                    x: c.position.x + (Math.random()-0.5)*10,
+                    y: c.position.y + (Math.random()-0.5)*10,
+                    z: c.position.z + (Math.random()-0.5)*10,
+                    duration: 0.3,
+                    ease: "back.out(2)",
+                    yoyo: true,
+                    repeat: 1
+                });
+            });
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Rotation
+            scene.rotation.x += (targetRotation.x - scene.rotation.x) * 0.05;
+            scene.rotation.y += (targetRotation.y - scene.rotation.y) * 0.05;
+
+            // Uniforms
+            particleMaterial.uniforms.time.value = time;
+
+            // Shockwave logic
+            if (isShockwaveActive) {
+                shockwaveRadius += 1.5; // Expand speed
+                if(shockwaveRadius > 100) isShockwaveActive = false;
+            }
+
+            // Particle Physics
+            const posAttr = particles.geometry.attributes.position;
+            const linePositions = [];
+
+            // We'll update first N particles for physics/lines
+            const activeCount = 100;
+
+            for(let i=0; i<particleCount; i++) {
+                // Read current
+                let ix = posAttr.getX(i);
+                let iy = posAttr.getY(i);
+                let iz = posAttr.getZ(i);
+
+                // Original base
+                const ox = originalPositions[i*3];
+                const oy = originalPositions[i*3+1];
+                const oz = originalPositions[i*3+2];
+
+                // 1. Mouse Repel (Local disturbance)
+                // Project mouse to world Z=0 plane approximation
+                const mx = mouse.x * 40;
+                const my = mouse.y * 40;
+                const d = Math.sqrt((ix-mx)**2 + (iy-my)**2);
+
+                let forceX = 0, forceY = 0, forceZ = 0;
+
+                if (d < 15) {
+                    const angle = Math.atan2(iy - my, ix - mx);
+                    const force = (15 - d) * 0.1;
+                    forceX += Math.cos(angle) * force;
+                    forceY += Math.sin(angle) * force;
+                }
+
+                // 2. Shockwave (Explosion)
+                if (isShockwaveActive) {
+                    const distFromCenter = Math.sqrt(ix*ix + iy*iy + iz*iz);
+                    const waveDist = Math.abs(distFromCenter - shockwaveRadius);
+                    if (waveDist < 5) {
+                         // Push out
+                         const normX = ix / distFromCenter;
+                         const normY = iy / distFromCenter;
+                         const normZ = iz / distFromCenter;
+                         forceX += normX * 2;
+                         forceY += normY * 2;
+                         forceZ += normZ * 2;
+                    }
+                }
+
+                // Apply forces to position
+                ix += forceX;
+                iy += forceY;
+                iz += forceZ;
+
+                // Return to original (Elasticity)
+                ix += (ox - ix) * 0.05;
+                iy += (oy - iy) * 0.05;
+                iz += (oz - iz) * 0.05;
+
+                posAttr.setXYZ(i, ix, iy, iz);
+
+                // Line connections (only for first subset to save perf)
+                if (i < activeCount) {
+                    for(let j=i+1; j<activeCount; j++) {
+                        const jx = posAttr.getX(j);
+                        const jy = posAttr.getY(j);
+                        const jz = posAttr.getZ(j);
+                        const dist = Math.sqrt((ix-jx)**2 + (iy-jy)**2 + (iz-jz)**2);
+                        if(dist < 12) {
+                            linePositions.push(ix, iy, iz, jx, jy, jz);
+                        }
+                    }
+                }
+            }
+
+            lines.geometry.dispose();
+            lines.geometry = new THREE.BufferGeometry();
+            lines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+
+            // Crystals Animation
+            crystals.forEach((mesh) => {
+                mesh.rotation.x += mesh.userData.rotSpeed.x;
+                mesh.rotation.y += mesh.userData.rotSpeed.y;
+                mesh.position.y += Math.sin(time * 2 + mesh.userData.floatOffset) * 0.02;
+            });
+
+            // Lights follow mouse slightly
+            blueLight.position.x = -20 + mouse.x * 10;
+            orangeLight.position.x = 20 + mouse.x * 10;
+
+            posAttr.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Scroll Interactions
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: ".scroller",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // Move camera into the data cloud
+        tl.to(camera.position, { z: 5, ease: "none" });
+        tl.to(scene.rotation, { z: 0.5, ease: "none" }, "<");
+
+        // Element Entry
+        gsap.from("h1", { y: 50, opacity: 0, duration: 1.5, ease: "power4.out", delay: 0.2 });
+        gsap.from(".avatar-container", { scale: 0, rotation: -180, duration: 1, ease: "back.out(1.7)", delay: 0.5 });
+
+        // Stagger glass cards
+        gsap.utils.toArray('.glass-card').forEach((card, i) => {
+            if(i === 0) return;
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 100,
+                opacity: 0,
+                duration: 1,
+                ease: "power3.out"
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
