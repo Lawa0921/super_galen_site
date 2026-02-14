@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XmasFun689 - Plasma Core</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Updated FontAwesome to 6.5.1 for Threads Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            --c-void: #020205;
+            --c-plasma: #00F3FF;
+            --c-core: #0066FF;
+            --c-gold: #FFD700;
+            --c-alert: #FF3333;
+
+            --f-tech: 'Share Tech Mono', monospace;
+            --f-head: 'Orbitron', sans-serif;
+            --f-body: 'Noto Serif TC', serif;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--c-void);
+            color: white;
+            font-family: var(--f-body);
+            overflow-x: hidden;
+        }
+
+        /* Layers */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
+
+        /* CRT Scanline Overlay */
+        .scanlines {
+            position: fixed; inset: 0; z-index: 99; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            opacity: 0.6;
+        }
+
+        /* Layout */
+        .scroller { position: relative; z-index: 10; height: auto; padding-bottom: 20vh; }
+        .section {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 4rem 5%;
+            pointer-events: none;
+            margin-bottom: 30vh; /* Balanced spacing */
+            position: relative;
+        }
+
+        /* Data Cable Connection */
+        .scroller::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--c-plasma) 20%, var(--c-core) 80%, transparent);
+            transform: translateX(-50%);
+            z-index: -1;
+            opacity: 0.5;
+            box-shadow: 0 0 20px var(--c-plasma);
+        }
+
+        /* Tech Card (Industrial Overhaul - Side by Side) */
+        .tech-card {
+            pointer-events: auto;
+            width: 100%; max-width: 1000px;
+            background: linear-gradient(135deg, rgba(20, 25, 30, 0.95), rgba(5, 10, 15, 0.98));
+            border: 2px solid #333;
+            border-left: 4px solid var(--c-plasma);
+            padding: 3rem;
+            position: relative;
+            backdrop-filter: blur(10px);
+            clip-path: polygon(
+                20px 0, 100% 0,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                0 100%, 0 20px
+            );
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 50px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+
+            /* Flex Layout for Side-by-Side */
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 3rem;
+        }
+
+        .tech-card.reverse {
+            flex-direction: row-reverse;
+            border-left: 2px solid #333;
+            border-right: 4px solid var(--c-plasma);
+        }
+
+        .card-content { flex: 1; }
+        .card-visual { flex: 0 0 40%; max-width: 400px; }
+
+        .tech-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 20px var(--c-plasma);
+            border-color: var(--c-plasma);
+        }
+
+        /* Industrial Bolts */
+        .tech-card::before {
+            content: ''; position: absolute; top: 10px; right: 10px; width: 8px; height: 8px;
+            background: #555; border-radius: 50%; box-shadow: inset 1px 1px 2px black;
+        }
+        .tech-card::after {
+            content: ''; position: absolute; bottom: 10px; left: 10px; width: 8px; height: 8px;
+            background: #555; border-radius: 50%; box-shadow: inset 1px 1px 2px black;
+        }
+
+        /* Hazard Stripes */
+        .hazard-strip {
+            position: absolute; top: 0; left: 20px; right: 0; height: 5px;
+            background: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 10px,
+                var(--c-gold) 10px,
+                var(--c-gold) 20px
+            );
+            opacity: 0.8;
+        }
+
+        /* Theme Variants */
+        .card-gold { border-color: var(--c-gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
+        .card-gold::before, .card-gold::after { background: var(--c-gold); box-shadow: 0 0 10px var(--c-gold); }
+
+        .card-alert { border-color: var(--c-alert); box-shadow: 0 0 20px rgba(255, 50, 50, 0.15); }
+        .card-alert::before, .card-alert::after { background: var(--c-alert); box-shadow: 0 0 10px var(--c-alert); }
+
+        /* Typography */
+        h1 {
+            font-family: var(--f-head); font-size: 3.5rem; margin: 0; line-height: 1;
+            text-transform: uppercase; color: white;
+            text-shadow: 0 0 15px var(--c-plasma);
+            letter-spacing: 2px;
+        }
+        h2 {
+            font-family: var(--f-head); font-size: 2rem; margin: 0 0 1.5rem;
+            color: var(--c-plasma); display: flex; align-items: center; gap: 1rem;
+            text-shadow: 0 0 10px var(--c-plasma);
+        }
+        .code-line {
+            font-family: var(--f-tech); color: var(--c-plasma); font-size: 0.9rem;
+            letter-spacing: 2px; margin-bottom: 0.5rem; display: block; opacity: 0.8;
+        }
+
+        p { color: #ddd; line-height: 1.8; font-size: 1.1rem; margin-bottom: 1.5rem; text-align: justify; }
+
+        .highlight { color: var(--c-plasma); font-weight: bold; text-shadow: 0 0 5px var(--c-plasma); }
+        .gold { color: var(--c-gold); text-shadow: 0 0 5px var(--c-gold); }
+
+        /* Images */
+        .holo-frame {
+            position: relative; padding: 4px;
+            background: rgba(0, 243, 255, 0.05);
+            margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+        .holo-img { width: 100%; display: block; filter: contrast(1.1) brightness(0.9); }
+        .holo-tag {
+            position: absolute; bottom: 5px; right: 5px;
+            background: rgba(0,0,0,0.8); color: var(--c-plasma);
+            font-family: var(--f-tech); font-size: 0.7rem; padding: 2px 8px;
+            border: 1px solid var(--c-plasma);
+        }
+
+        @media (max-width: 900px) {
+            .tech-card, .tech-card.reverse {
+                flex-direction: column;
+                padding: 2rem;
+                gap: 2rem;
+            }
+            .card-visual { flex: 0 0 auto; width: 100%; max-width: 100%; }
+        }
+
+        /* Footer */
+        .footer {
+            height: 40vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative; z-index: 20; background: linear-gradient(to top, #000, transparent);
+            margin-top: 20vh; /* Ensure separation from last card */
+        }
+        .social-bar { display: flex; gap: 2rem; margin-bottom: 2rem; }
+        .social-btn {
+            width: 70px; height: 70px;
+            border: 2px solid var(--c-plasma);
+            display: flex; align-items: center; justify-content: center; color: var(--c-plasma);
+            transition: 0.3s; background: rgba(0,0,0,0.6);
+            text-decoration: none; font-size: 1.5rem;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+        .social-btn:hover {
+            background: var(--c-plasma); color: #000;
+            box-shadow: 0 0 30px var(--c-plasma);
+            transform: scale(1.1);
+        }
+        .social-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+        @media (max-width: 768px) {
+            .section { padding: 4rem 1rem; }
+            h1 { font-size: 2.5rem; }
+            .tech-card { padding: 1.5rem; }
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--c-plasma);
+            color: var(--c-plasma); padding: 10px 20px; text-decoration: none;
+            font-family: var(--f-tech); text-transform: uppercase;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: var(--c-plasma); color: black; }
+    </style>
+</head>
+<body>
+
+    <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Guild Hall</a>
+
+    <div class="scanlines"></div>
+
+    <!-- Background Layers -->
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <div class="scroller">
+
+        <!-- 1. Hero -->
+        <section class="section">
+            <div class="tech-card">
+                <div class="hazard-strip"></div>
+
+                <div class="card-visual" style="text-align: center;">
+                    <div style="position:relative; display: inline-block;">
+                        <!-- Using correct avatar asset (Bald guy) -->
+                        <img src="/assets/img/guild/xmasfun689/avatar.webp" style="width:120px; height:120px; object-fit:cover; border:2px solid var(--c-plasma); box-shadow: 0 0 20px var(--c-plasma); border-radius: 12px;">
+                        <div style="position:absolute; bottom:-10px; right:-10px; background:#000; border:1px solid var(--c-plasma); padding:4px 12px; font-size:0.9rem; font-family:var(--f-tech); color:var(--c-plasma);">LV.8</div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <div>
+                        <span class="code-line">// ID: XMASFUN689</span>
+                        <h1 style="font-size: 3rem;">PLASMA<br>ENGINEER</h1>
+                    </div>
+
+                    <p style="margin-top: 1.5rem;">
+                        「擁有 <span class="gold">戰士的體格</span>，卻守護著 <span class="highlight">召喚師的靈魂</span>。」
+                    </p>
+                    <p>
+                        在這個鋼鐵與電漿交織的矩陣中，我是引導能量的工程師。
+                        八年的工地煉金術，將汗水與意志熔鑄成城市的基石。
+                        我手握雷電 (Power) 與流水 (Cooling)，駕馭著大地的鋼鐵巨獸。
+                    </p>
+
+                    <!-- Circuit Stats -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2rem;">
+                        <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">STR: S+</div>
+                        <div style="border: 1px solid var(--c-plasma); padding: 5px 10px; color: var(--c-plasma); font-family: var(--f-tech);">INT: A</div>
+                        <div style="border: 1px solid var(--c-gold); padding: 5px 10px; color: var(--c-gold); font-family: var(--f-tech);">DEF: S</div>
+                        <div style="border: 1px solid var(--c-core); padding: 5px 10px; color: var(--c-core); font-family: var(--f-tech);">MANA: HIGH</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Machines -->
+        <section class="section">
+            <div class="tech-card card-gold reverse">
+                <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-gold) 10px, var(--c-gold) 20px);"></div>
+
+                <div class="card-visual">
+                    <div class="holo-frame" style="border-color: var(--c-gold);">
+                        <img src="/assets/img/guild/xmasfun689/excavator.webp" class="holo-img">
+                        <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">EXCAVATOR_UNIT</div>
+                    </div>
+                    <div class="holo-frame" style="border-color: var(--c-gold); margin-top: 1rem;">
+                        <img src="/assets/img/guild/xmasfun689/roller.webp" class="holo-img">
+                        <div class="holo-tag" style="border-color: var(--c-gold); color: var(--c-gold);">ROLLER_UNIT</div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <span class="code-line">Module: HEAVY_MACHINERY</span>
+                    <h2 style="color: var(--c-gold);"><i class="fa-solid fa-truck-monster"></i> Iron Legion</h2>
+
+                    <p>
+                        <b>大地魔像 (Excavator)</b><br>
+                        我的首席召喚獸。這隻鋼鐵手臂能輕易撕裂大地，重塑地形。
+                        雖然與執照擦肩而過（嘆），但這份操作手感早已刻入靈魂。
+                    </p>
+                    <p>
+                        <b>鎮壓巨獸 (Roller)</b><br>
+                        秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Skills (Circuits) -->
+        <section class="section">
+            <div class="tech-card">
+                <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-plasma) 10px, var(--c-plasma) 20px);"></div>
+
+                <div class="card-visual">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                        <div style="border: 1px solid var(--c-core); padding: 1rem; background: rgba(0, 102, 255, 0.1);">
+                            <i class="fa-solid fa-droplet" style="font-size: 3rem; color: var(--c-core); margin-bottom: 0.5rem;"></i>
+                            <h4 style="margin: 0; color: var(--c-core); font-family: var(--f-head);">WATER</h4>
+                        </div>
+                        <div style="border: 1px solid var(--c-plasma); padding: 1rem; background: rgba(0, 243, 255, 0.1);">
+                            <i class="fa-solid fa-bolt" style="font-size: 3rem; color: var(--c-plasma); margin-bottom: 0.5rem;"></i>
+                            <h4 style="margin: 0; color: var(--c-plasma); font-family: var(--f-head);">THUNDER</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <span class="code-line">System: ELEMENTAL_MATRIX</span>
+                    <h2><i class="fa-solid fa-bolt"></i> Circuit Mage</h2>
+
+                    <p>
+                        <b>水之脈絡</b> - 建築物如同巨大的生物，而管道是它的血管。我通曉流體力學，確保生命之源在其中順暢流動。<br><br>
+                        <b>雷之神經</b> - 編織能量的網。在看不見的牆壁中，佈設著傳遞意志的神經網路。
+                    </p>
+                    <div style="background: rgba(0, 243, 255, 0.1); border-left: 3px solid var(--c-plasma); padding: 10px;">
+                        <p style="margin:0; font-style:italic; color:white;">「朋友都叫我水電土三系混合大法師。」</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Personal -->
+        <section class="section">
+            <div class="tech-card card-alert reverse">
+                <div class="hazard-strip" style="background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-alert) 10px, var(--c-alert) 20px);"></div>
+
+                <div class="card-visual">
+                    <div class="holo-frame" style="border-color: var(--c-alert);">
+                        <img src="/assets/img/guild/xmasfun689/plushies.webp" class="holo-img">
+                        <div class="holo-tag" style="border-color: var(--c-alert); color: var(--c-alert);">MORALE_BOOSTER</div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <span class="code-line" style="color: var(--c-alert);">File: INNER_SANCTUM</span>
+                    <h2 style="color: var(--c-alert); text-shadow: 0 0 10px var(--c-alert);"><i class="fa-solid fa-heart"></i> Soft Core</h2>
+
+                    <p>
+                        <b>戰士的柔情</b><br>
+                        卸下重甲，戰士亦有溫柔的一面。
+                        習慣了單人副本的孤獨，<b>猴子布偶</b> 與 <b>Kururu 曹長</b> (Keroro Gunso) 是我最忠實的使魔。
+                    </p>
+                    <p>
+                        平常玩遊戲有召喚類選召喚，因為都自己一個人玩比較多... 但在這冷硬的工業世界裡，它們守護著我未曾磨滅的初心。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <h2 style="font-family: var(--f-head); color: var(--c-plasma);">LINK START</h2>
+            <div class="social-bar">
+                <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <div style="font-family:var(--f-tech); font-size:0.8rem; color:#666; letter-spacing: 1px;">MADE WITH LOVE BY SUPERGALEN'S DUNGEON</div>
+        </footer>
+    </div>
+
+    <!-- P5.js (PCB Overlay) -->
+    <script>
+        const sketch = (p) => {
+            let traces = [];
+
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.frameRate(30);
+
+                // Create PCB Traces - Increased Density
+                for(let i=0; i<60; i++) {
+                    traces.push(new Trace(p));
+                }
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Draw Traces
+                traces.forEach(t => {
+                    t.update();
+                    t.display();
+                });
+
+                // Plasma Current (From Center)
+                if (p.random() < 0.05) { // Frequent little sparks
+                    drawPlasmaSpark(p);
+                }
+            };
+
+            function drawPlasmaSpark(p) {
+                p.push();
+                p.stroke(0, 243, 255, 200); // Cyan
+                p.strokeWeight(p.random(1, 3));
+                p.noFill();
+
+                // Start from center
+                let cx = p.width / 2;
+                let cy = p.height / 2;
+
+                // Random Direction
+                let angle = p.random(p.TWO_PI);
+                let len = p.random(100, 400);
+
+                p.beginShape();
+                p.vertex(cx, cy);
+
+                let steps = 10;
+                for(let i=0; i<steps; i++) {
+                    let r = (len / steps) * (i+1);
+                    // Jitter
+                    let jx = cx + Math.cos(angle) * r + p.random(-20, 20);
+                    let jy = cy + Math.sin(angle) * r + p.random(-20, 20);
+                    p.vertex(jx, jy);
+                }
+                p.endShape();
+                p.pop();
+            }
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class Trace {
+                constructor(p) {
+                    this.p = p;
+                    this.reset();
+                }
+                reset() {
+                    // Start from random edge
+                    if(this.p.random() > 0.5) {
+                        this.x = this.p.random(this.p.width);
+                        this.y = -10;
+                        this.dir = {x:0, y:1};
+                    } else {
+                        this.x = -10;
+                        this.y = this.p.random(this.p.height);
+                        this.dir = {x:1, y:0};
+                    }
+
+                    this.path = [{x: this.x, y: this.y}];
+                    this.maxLength = this.p.random(100, 300);
+                    this.speed = this.p.random(4, 10); // Even Faster
+                    this.color = this.p.random() > 0.8 ? [255, 215, 0] : [0, 255, 255]; // Pure Gold or Pure Cyan
+                    this.head = 0;
+                }
+                update() {
+                    this.head += this.speed;
+
+                    let last = this.path[this.path.length-1];
+                    let nextX = last.x + this.dir.x * this.speed;
+                    let nextY = last.y + this.dir.y * this.speed;
+
+                    // Random Turn - More erratic
+                    if(this.p.random() < 0.1) {
+                        if(this.dir.x !== 0) this.dir = {x:0, y: this.p.random() > 0.5 ? 1 : -1};
+                        else this.dir = {x: this.p.random() > 0.5 ? 1 : -1, y:0};
+                    }
+
+                    this.path.push({x: nextX, y: nextY});
+
+                    if(this.path.length > 80 || nextX > this.p.width || nextY > this.p.height || nextX < 0 || nextY < 0) {
+                        this.reset();
+                    }
+                }
+                display() {
+                    this.p.noFill();
+
+                    // Glow Effect (Layer 1 - Blur/Wide) - Stronger
+                    this.p.stroke(this.color[0], this.color[1], this.color[2], 100);
+                    this.p.strokeWeight(12);
+                    this.p.beginShape();
+                    for(let i=0; i<this.path.length; i++) this.p.vertex(this.path[i].x, this.path[i].y);
+                    this.p.endShape();
+
+                    // Core Line (Layer 2 - Sharp/Bright) - Ultra Visible
+                    this.p.stroke(255); // Pure White Core
+                    this.p.strokeWeight(4);
+                    this.p.beginShape();
+                    for(let i=0; i<this.path.length; i++) this.p.vertex(this.path[i].x, this.path[i].y);
+                    this.p.endShape();
+
+                    // Head Dot
+                    let last = this.path[this.path.length-1];
+                    this.p.noStroke();
+
+                    // Dot Glow
+                    this.p.fill(this.color[0], this.color[1], this.color[2], 100);
+                    this.p.ellipse(last.x, last.y, 12, 12);
+
+                    // Dot Core
+                    this.p.fill(255);
+                    this.p.ellipse(last.x, last.y, 6, 6);
+                }
+            }
+        };
+        new p5(sketch);
+    </script>
+
+    <!-- Three.js (Plasma Environment) -->
+    <script type="module">
+        import * as THREE from 'https://esm.sh/three@0.160.0';
+        import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 25); // Start position for scroll animation (Reduced for slower zoom)
+
+        // Expose camera to window for debug/verification
+        window.camera = camera;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // Bloom
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 2.0; // High Bloom for Plasma
+        bloomPass.radius = 0.8;
+        composer.addPass(bloomPass);
+
+        // 1. Grid Floor (Infinite Plane)
+        const gridHelper = new THREE.GridHelper(100, 50, 0x00F3FF, 0x111111);
+        gridHelper.position.y = -5;
+        scene.add(gridHelper);
+
+        // 2. Plasma Core (Center)
+        const coreGeo = new THREE.SphereGeometry(2, 32, 32);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF, wireframe: true, transparent: true, opacity: 0.5 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
+
+        const coreInner = new THREE.Mesh(
+            new THREE.SphereGeometry(1.5, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+        );
+        core.add(coreInner);
+
+        // Secret Core (Icosahedron Geometry) - No FontLoader needed
+        const boxGeo = new THREE.IcosahedronGeometry(0.8, 0);
+        const boxMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true });
+        const secretCore = new THREE.Mesh(boxGeo, boxMat);
+        secretCore.scale.set(0,0,0); // Hidden initially
+        core.add(secretCore);
+
+        // 3. Lightning Arcs
+        const arcGroup = new THREE.Group();
+        scene.add(arcGroup);
+
+        function createLightning() {
+            const points = [];
+            let y = -5;
+            for(let i=0; i<10; i++) {
+                points.push(new THREE.Vector3(0, y, 0));
+                y += 1.5;
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
+            const line = new THREE.Line(geo, mat);
+            // Save base positions
+            line.userData = {
+                basePoints: points.map(p => p.clone()),
+                offset: Math.random() * 100
+            };
+            return line;
+        }
+
+        const bolts = [];
+        for(let i=0; i<5; i++) {
+            const bolt = createLightning();
+            bolt.position.x = (i - 2) * 5;
+            bolt.position.z = -5;
+            arcGroup.add(bolt);
+            bolts.push(bolt);
+        }
+
+        // 4. Data Particles (Cubes)
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+        const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const cubeMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF });
+
+        for(let i=0; i<50; i++) {
+            const m = new THREE.Mesh(cubeGeo, cubeMat);
+            m.position.set(
+                (Math.random()-0.5) * 30,
+                (Math.random()-0.5) * 20,
+                (Math.random()-0.5) * 10
+            );
+            m.userData = { speed: 0.05 + Math.random()*0.1 };
+            particleGroup.add(m);
+        }
+
+        // 5. Heavy Machinery Gears (Background) - WALL OF GEARS
+        const gearGroup = new THREE.Group();
+        gearGroup.position.z = -5; // Much closer to be visible behind core
+        scene.add(gearGroup);
+
+        // Add Lights for Metallic Effect
+        const pointLight = new THREE.PointLight(0x00F3FF, 4, 60); // Even stronger light
+        pointLight.position.set(0, 0, 5);
+        scene.add(pointLight);
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Very bright ambient
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xFFD700, 1.5); // Very bright gold light
+        dirLight.position.set(10, 10, 5);
+        scene.add(dirLight);
+
+        function createGear(radius, teeth, color, x, y, z) {
+            const shape = new THREE.Shape();
+            const outerRadius = radius;
+            const innerRadius = radius * 0.85; // Sharp teeth
+            const holeRadius = radius * 0.5; // Larger hollow center
+
+            const numPoints = teeth * 2;
+            const angleStep = (Math.PI * 2) / numPoints;
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = i * angleStep;
+                const r = (i % 2 === 0) ? outerRadius : innerRadius;
+                if (i === 0) shape.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                else shape.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            }
+
+            const holePath = new THREE.Path();
+            holePath.absarc(0, 0, holeRadius, 0, Math.PI * 2, true);
+            shape.holes.push(holePath);
+
+            const extrudeSettings = { depth: 0.5, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.1, bevelThickness: 0.1 };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.95,
+                roughness: 0.1,
+                emissive: color,
+                emissiveIntensity: 0.5 // Stronger glow
+            });
+            const gear = new THREE.Mesh(geometry, material);
+            gear.position.set(x, y, z);
+            gear.userData = { speed: (Math.random() - 0.5) * 0.05 }; // Faster rotation
+            gearGroup.add(gear);
+            return gear;
+        }
+
+        // Generate Wall of Gears (Increased Density)
+        for (let i = 0; i < 80; i++) {
+            const radius = 2 + Math.random() * 8; // Varied sizes
+            const teeth = Math.floor(8 + radius * 2);
+            const x = (Math.random() - 0.5) * 70; // Wider spread
+            const y = (Math.random() - 0.5) * 50;
+            const z = -2 - Math.random() * 25; // Deeper field
+
+            // Industrial colors (Darker, rusted)
+            const colors = [0x444444, 0x222222, 0x555555, 0x443300];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            createGear(radius, teeth, color, x, y, z);
+        }
+
+        // 6. Gunpowder Smoke System
+        const smokeParticles = [];
+        const smokeGroup = new THREE.Group();
+        scene.add(smokeGroup);
+
+        // Generate Smoke Texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
+        grad.addColorStop(0, 'rgba(100,100,100,0.5)'); // Darker core
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,128,128);
+        const smokeTex = new THREE.CanvasTexture(canvas);
+
+        const smokeMat = new THREE.SpriteMaterial({
+            map: smokeTex,
+            color: 0x333333, /* Dark Grey (Gunpowder) */
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            blending: THREE.NormalBlending // Opaque smoke, not additive
+        });
+
+        // Add Embers
+        const emberGeo = new THREE.BufferGeometry();
+        const emberCount = 200;
+        const emberPos = new Float32Array(emberCount * 3);
+        for(let i=0; i<emberCount*3; i++) emberPos[i] = (Math.random()-0.5)*50;
+        emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
+        const emberMat = new THREE.PointsMaterial({ color: 0xFF5500, size: 0.1, transparent: true, opacity: 0.8 });
+        const embers = new THREE.Points(emberGeo, emberMat);
+        scene.add(embers);
+
+        // Volumetric Smoke Tunnel (Massive Scale)
+        const lightSmokeMat = smokeMat.clone();
+        lightSmokeMat.color.setHex(0xcccccc); // Brighter Grey
+        lightSmokeMat.opacity = 0.5;
+
+        // Generate huge smoke clouds along the path
+        for (let z = 60; z > 0; z -= 5) {
+            for(let k=0; k<5; k++) {
+                const smoke = new THREE.Sprite(z > 25 ? lightSmokeMat : smokeMat);
+                smoke.position.set(
+                    (Math.random() - 0.5) * 60, // Wider spread
+                    (Math.random() - 0.5) * 40,
+                    z + (Math.random() - 0.5) * 5
+                );
+                smoke.scale.set(30, 30, 1); // Huge Scale
+                smoke.userData = {
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.01, Math.random() * 0.01, 0),
+                    rotationSpeed: (Math.random() - 0.5) * 0.005
+                };
+                smokeGroup.add(smoke);
+                smokeParticles.push(smoke);
+            }
+        }
+
+        // Animation
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // Core Pulse
+            const s = 1 + Math.sin(t * 5) * 0.1;
+            core.scale.set(s, s, s);
+            core.rotation.y = t;
+            core.rotation.z = t * 0.5;
+
+            // Secret Core Reveal based on Camera Z
+            if (camera.position.z < 6) {
+                const reveal = Math.max(0, (6 - camera.position.z) / 4); // 0 to 1
+                secretCore.scale.set(reveal, reveal, reveal);
+                secretCore.rotation.x -= 0.05;
+                secretCore.rotation.y -= 0.05;
+            } else {
+                secretCore.scale.set(0,0,0);
+            }
+
+            // Gears Rotate
+            gearGroup.children.forEach(gear => {
+                gear.rotation.z += gear.userData.speed;
+            });
+
+            // Smoke Drift
+            smokeParticles.forEach(smoke => {
+                smoke.position.add(smoke.userData.velocity);
+                smoke.material.rotation += smoke.userData.rotationSpeed;
+                if(smoke.position.y > 20) {
+                    smoke.position.y = -15;
+                    smoke.position.x = (Math.random() - 0.5) * 50;
+                }
+            });
+
+            // Embers Float
+            const ep = embers.geometry.attributes.position.array;
+            for(let i=1; i<ep.length; i+=3) {
+                ep[i] += 0.02; // Upward
+                if(ep[i] > 20) ep[i] = -20;
+            }
+            embers.geometry.attributes.position.needsUpdate = true;
+
+            // Grid Wave
+            gridHelper.position.z = (t * 2) % 2;
+
+            // Lightning Jitter
+            bolts.forEach(bolt => {
+                const positions = bolt.geometry.attributes.position.array;
+                const bases = bolt.userData.basePoints;
+                for(let i=0; i<bases.length; i++) {
+                    if(i === 0 || i === bases.length-1) continue; // Pin ends
+                    positions[i*3] = bases[i].x + (Math.random()-0.5) * 0.5;
+                    positions[i*3+2] = bases[i].z + (Math.random()-0.5) * 0.5;
+                }
+                bolt.geometry.attributes.position.needsUpdate = true;
+
+                // Random Flash
+                bolt.visible = Math.random() > 0.1;
+            });
+
+            // Particle Flow
+            particleGroup.children.forEach(p => {
+                p.position.y += p.userData.speed;
+                if(p.position.y > 10) p.position.y = -10;
+            });
+
+            composer.render();
+        }
+        animate();
+
+        // Unified Scroll Interaction (Immediate Control)
+        // Camera moves from Z=25 (Start) -> Z=3 (Finale) based on scroll
+        const camTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: ".scroller",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1 // Tighter scrub for better sync with scroll bottom
+            }
+        });
+
+        camTl.to(camera.position, {
+            z: 3, // Finale Position (Close to Core)
+            y: 0,
+            ease: "none" // Linear movement for direct 1:1 scroll control
+        });
+
+        // Increase Core Light Intensity on Scroll
+        camTl.to(pointLight, {
+            intensity: 10,
+            distance: 100,
+            ease: "power2.in"
+        }, "<");
+
+        // Background Elements React to Scroll
+        camTl.to(gearGroup.position, {
+            z: -30, // Move gears away at the end
+            ease: "power1.in",
+            duration: 0.3 // Only at the very end
+        }, ">0.7"); // Start at 70% scroll progress
+
+        // GSAP Entry Animations & Dynamic Lighting
+        gsap.utils.toArray('.tech-card').forEach((card, i) => {
+            // "Magnetic Plasma" Entry
+            const isLeft = i % 2 === 0;
+            const xOffset = isLeft ? -400 : 400; // Alternating sides
+
+            gsap.fromTo(card,
+                {
+                    x: xOffset,
+                    opacity: 0,
+                    scale: 0.1, // Materialize from small point
+                    filter: "blur(20px)", // Plasma blur
+                    borderColor: "#FFFFFF" // Flash white start
+                },
+                {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    },
+                    x: 0,
+                    opacity: 1,
+                    scale: 1,
+                    filter: "blur(0px)",
+                    borderColor: "#333", // Return to normal industrial border
+                    duration: 1.2,
+                    ease: "elastic.out(1, 0.6)", // Magnetic snap
+                    clearProps: "filter" // Performance cleanup
+                }
+            );
+
+            // "Plasma Illumination" Effect when card is center screen
+            gsap.to(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top center+=100",
+                    end: "bottom center-=100",
+                    toggleActions: "play reverse play reverse",
+                    scrub: 0.5
+                },
+                boxShadow: "0 0 50px rgba(0, 243, 255, 0.6), inset 0 0 20px rgba(0, 243, 255, 0.2)",
+                borderColor: "#00F3FF",
+                backgroundColor: "rgba(10, 20, 30, 0.98)", // Lighter when lit
+                duration: 0.5
+            });
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

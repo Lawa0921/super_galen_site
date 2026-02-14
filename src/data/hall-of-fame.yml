@@ -680,6 +680,19 @@ members:
       - id: "wood_craft"
         label: "木工魂"
 
+<<<<<<< guild-xmasfun689-7519242459708634315
+  - id: "xmasfun689"
+    name: "XmasFun"
+    avatar: "/assets/img/guild/xmasfun689/avatar.webp"
+    page: "/guild/xmasfun689.html"
+    tags:
+      - id: "construction_mage"
+        label: "營造法師"
+      - id: "heavy_machinery"
+        label: "重機械操作"
+      - id: "warrior_physique"
+        label: "戰士體質"
+=======
   - id: "flora"
     name: "Flora 芙老師"
     avatar: "/assets/img/guild/flora/profile.webp"
@@ -825,3 +838,4 @@ members:
         label: "爵士鼓"
       - id: "musician"
         label: "音樂人"
+>>>>>>> master
