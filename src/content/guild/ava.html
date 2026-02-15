@@ -29,11 +29,11 @@
 
     <style>
         :root {
-            --c-bg: #1a1a1a;
-            --c-text: #e0e0e0;
-            --c-accent: #FFD700; /* Gold */
+            --c-bg: #F5E6CA; /* Warm Beige */
+            --c-text: #3E3E3E; /* Dark Grey */
+            --c-accent: #FFD700; /* Goose Yellow / Gold */
             --c-highlight: #8B0000; /* Wine Red */
-            --c-warm: #F5E6CA; /* Beige */
+            --c-white: #ffffff;
 
             --f-serif: 'Noto Serif TC', serif;
             --f-tech: 'Orbitron', sans-serif;
@@ -54,7 +54,7 @@
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: var(--c-bg); z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--c-accent);
+            color: var(--c-highlight);
         }
         .loader-text {
             font-family: var(--f-tech); font-size: 1.5rem; letter-spacing: 2px;
@@ -64,26 +64,26 @@
 
         /* --- Canvas Layers --- */
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
-        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; mix-blend-mode: overlay; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; mix-blend-mode: multiply; }
 
         /* --- Custom Cursor --- */
         #cursor-follower {
             position: fixed; top: 0; left: 0; width: 60px; height: 60px;
-            border: 2px solid var(--c-accent); border-radius: 50%;
+            border: 2px solid var(--c-highlight); border-radius: 50%;
             pointer-events: none; z-index: 10001; transform: translate(-50%, -50%);
             transition: width 0.2s, height 0.2s, border-color 0.2s;
             mix-blend-mode: difference;
             display: flex; align-items: center; justify-content: center;
         }
         #cursor-follower::after {
-            content: ''; width: 100%; height: 1px; background: var(--c-accent); position: absolute;
+            content: ''; width: 100%; height: 1px; background: var(--c-highlight); position: absolute;
         }
         #cursor-follower::before {
-            content: ''; height: 100%; width: 1px; background: var(--c-accent); position: absolute;
+            content: ''; height: 100%; width: 1px; background: var(--c-highlight); position: absolute;
         }
         #cursor-dot {
             position: fixed; top: 0; left: 0; width: 6px; height: 6px;
-            background: var(--c-highlight); border-radius: 50%;
+            background: var(--c-accent); border-radius: 50%;
             pointer-events: none; z-index: 10002; transform: translate(-50%, -50%);
         }
 
@@ -92,11 +92,11 @@
             position: fixed; top: 20px; left: 20px; z-index: 101;
             color: var(--c-text); text-decoration: none; font-family: var(--f-tech);
             font-size: 0.9rem; border: 1px solid var(--c-text); padding: 5px 15px;
-            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(5px);
+            background: rgba(245, 230, 202, 0.8); backdrop-filter: blur(5px);
             transition: 0.3s;
         }
         .back-btn:hover {
-            background: var(--c-highlight); color: var(--c-accent); border-color: var(--c-highlight);
+            background: var(--c-highlight); color: var(--c-bg); border-color: var(--c-highlight);
         }
 
         /* --- Layout --- */
@@ -109,14 +109,16 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             pointer-events: none; opacity: 0;
             padding: 2rem; box-sizing: border-box;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            /* text-shadow removed for clean look */
         }
 
         .story-content {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            padding: 2rem;
-            border: 1px solid var(--c-accent);
+            background: rgba(255, 255, 255, 0.85); /* Light glass */
+            backdrop-filter: blur(8px);
+            padding: 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.5);
             max-width: 600px;
             text-align: center;
             transform: translateY(30px);
@@ -125,25 +127,28 @@
 
         h1 {
             font-family: var(--f-serif); font-size: clamp(3rem, 6vw, 5rem);
-            color: var(--c-accent); margin: 0 0 1rem; line-height: 1.1;
+            color: var(--c-highlight); margin: 0 0 1rem; line-height: 1.1;
         }
         h2 {
-            font-family: var(--f-tech); font-size: 1.2rem; color: var(--c-warm);
+            font-family: var(--f-tech); font-size: 1.2rem; color: #666;
             margin: 0 0 2rem; letter-spacing: 3px; text-transform: uppercase;
         }
         h3 {
             font-family: var(--f-serif); font-size: 2rem; color: var(--c-highlight);
             margin-bottom: 1rem;
+            border-bottom: 2px solid var(--c-accent);
+            display: inline-block;
+            padding-bottom: 0.5rem;
         }
         p {
-            font-size: 1.1rem; line-height: 1.8; color: #ddd; margin-bottom: 1.5rem;
+            font-size: 1.1rem; line-height: 1.8; color: var(--c-text); margin-bottom: 1.5rem;
             text-align: justify;
         }
 
-        .highlight { color: var(--c-accent); font-weight: bold; }
+        .highlight { color: var(--c-highlight); font-weight: bold; background: rgba(255, 215, 0, 0.2); padding: 0 5px; }
 
         /* Section Specific Styles */
-        .hero-title { font-size: clamp(4rem, 8vw, 6rem); mix-blend-mode: overlay; opacity: 0.8; }
+        .hero-title { font-size: clamp(4rem, 8vw, 6rem); color: var(--c-highlight); opacity: 1; }
 
         .polaroid-stack {
             display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;
@@ -153,6 +158,7 @@
             color: #333; font-family: var(--f-hand); font-size: 1.2rem;
             transform: rotate(-5deg); transition: transform 0.3s;
             width: 150px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         .polaroid:hover { transform: scale(1.1) rotate(0deg); z-index: 10; }
         .polaroid-img { width: 100%; height: 150px; background: #eee; object-fit: cover; }
@@ -162,11 +168,11 @@
             gap: 1rem; margin-top: 2rem; width: 100%;
         }
         .gear-item {
-            border: 1px solid var(--c-text); padding: 1rem; text-align: center;
-            transition: 0.3s;
+            border: 1px dashed var(--c-text); padding: 1rem; text-align: center;
+            transition: 0.3s; background: rgba(255,255,255,0.5);
         }
-        .gear-item:hover { background: var(--c-highlight); border-color: var(--c-highlight); }
-        .gear-icon { font-size: 2rem; margin-bottom: 0.5rem; color: var(--c-accent); }
+        .gear-item:hover { background: var(--c-white); border-color: var(--c-highlight); border-style: solid; transform: translateY(-5px); }
+        .gear-icon { font-size: 2rem; margin-bottom: 0.5rem; color: var(--c-highlight); }
 
         /* Blur Text Effect Class */
         .blur-in { filter: blur(10px); opacity: 0; transition: filter 1s, opacity 1s; }
@@ -176,16 +182,16 @@
             display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;
         }
         .footer-link {
-            font-size: 2rem; color: var(--c-accent); transition: 0.3s;
+            font-size: 2rem; color: var(--c-highlight); transition: 0.3s;
         }
-        .footer-link:hover { transform: scale(1.2); color: var(--c-highlight); }
+        .footer-link:hover { transform: scale(1.2); color: var(--c-accent); }
 
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loader-text">LOADING LENS...</div>
+        <div class="loader-text">WARMING UP LENS...</div>
     </div>
 
     <!-- Custom Cursor -->
@@ -204,10 +210,13 @@
 
     <!-- 1. Hero -->
     <section class="story-section" id="sec-hero">
-        <div class="story-content" style="background: transparent; border: none; backdrop-filter: none;">
+        <div class="story-content" style="background: transparent; border: none; backdrop-filter: none; box-shadow: none;">
+            <div style="width: 150px; height: 150px; margin: 0 auto 2rem; border-radius: 50%; overflow: hidden; border: 4px solid var(--c-highlight); box-shadow: 0 0 20px rgba(139,0,0,0.2);">
+                <img src="/assets/img/guild/ava/avatar.webp" style="width:100%; height:100%; object-fit:cover;">
+            </div>
             <h1 class="hero-title blur-in">AVA</h1>
             <h2 class="blur-in" style="transition-delay: 0.2s">The Storyteller's Lens</h2>
-            <p class="blur-in" style="transition-delay: 0.4s; text-align: center;">"Capturing the Soul of Space"</p>
+            <p class="blur-in" style="transition-delay: 0.4s; text-align: center; font-style: italic; color: #555;">"Capturing the Soul of Space with Warmth"</p>
         </div>
     </section>
 
@@ -221,7 +230,7 @@
             </p>
             <p>
                 From running a beverage shop to managing a B&B, I've lived many lives.
-                Back then, I saw the world in a blur of speed and freedom.
+                Back then, I saw the world in a blur of speed and freedom. But the passion remains.
             </p>
         </div>
     </section>
@@ -239,11 +248,11 @@
             </p>
             <div class="polaroid-stack">
                 <div class="polaroid">
-                    <img src="/assets/img/guild/ava/avatar.webp" class="polaroid-img" style="filter: sepia(0.5);">
+                    <img src="/assets/img/guild/ava/avatar.webp" class="polaroid-img" style="filter: sepia(0.3) contrast(1.1);">
                     <div>Little Crew</div>
                 </div>
                 <div class="polaroid">
-                    <div class="polaroid-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#ccc;"><i class="fa-solid fa-ice-cream"></i></div>
+                    <div class="polaroid-img" style="display:flex;align-items:center;justify-content:center;font-size:2rem;color:#ccc;"><i class="fa-solid fa-ice-cream" style="color:pink"></i></div>
                     <div>Sweet Stops</div>
                 </div>
             </div>
@@ -298,11 +307,9 @@
         </div>
     </section>
 
-    <!-- P5.js Overlay (Focus Peaking & Grain) -->
+    <!-- P5.js Overlay (Focus Peaking) -->
     <script>
         const sketch = (p) => {
-            let noiseScale = 0.02;
-
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
@@ -312,24 +319,12 @@
             p.draw = () => {
                 p.clear();
 
-                // Subtle Film Grain
-                p.loadPixels();
-                // Optimization: Don't update every pixel every frame, maybe just a static noise overlay or update regions?
-                // For performance in this environment, let's just do a simple random scattering of dots instead of full pixel array manipulation
+                // Remove Grain - Keeping it clean for light theme
 
-                p.noStroke();
-                p.fill(255, 255, 255, 30);
-                for (let i = 0; i < 100; i++) {
-                    let x = p.random(p.width);
-                    let y = p.random(p.height);
-                    p.circle(x, y, p.random(1, 3));
-                }
-
-                // Focus Peaking Effect (Red outline around mouse)
-                // Simulates camera focus peaking
+                // Focus Peaking Effect (Wine Red outline around mouse)
                 p.noFill();
-                p.stroke(255, 0, 0, 150); // Red
-                p.strokeWeight(1);
+                p.stroke(139, 0, 0, 150); // Wine Red
+                p.strokeWeight(2);
 
                 // Draw a "Focus Zone" around cursor
                 const mx = p.mouseX;
@@ -344,8 +339,18 @@
                 p.arc(mx, my, s, s, p.PI*3/4 + offset*0.01, p.PI*5/4 - offset*0.01);
 
                 // Center point
-                p.fill(255, 0, 0);
-                p.circle(mx, my, 2);
+                p.fill(139, 0, 0);
+                p.circle(mx, my, 4);
+
+                // Add "REC" indicator in corner occasionally blinking
+                if (Math.floor(p.millis() / 1000) % 2 === 0) {
+                    p.fill(255, 0, 0);
+                    p.circle(30, 30, 10);
+                    p.fill(50);
+                    p.noStroke();
+                    p.textSize(12);
+                    p.text("REC", 45, 34);
+                }
             };
 
             // Global click listener for flash effect
@@ -355,7 +360,7 @@
                 p.noCursor();
 
                 window.addEventListener('click', () => {
-                    // Flash effect could be implemented here or via CSS
+                    // Flash effect
                     const flash = document.createElement('div');
                     flash.style.position = 'fixed';
                     flash.style.top = '0'; flash.style.left = '0';
@@ -365,7 +370,7 @@
                     flash.style.pointerEvents = 'none';
                     document.body.appendChild(flash);
 
-                    gsap.to(flash, { opacity: 0, duration: 0.3, onComplete: () => flash.remove() });
+                    gsap.to(flash, { opacity: 0, duration: 0.5, onComplete: () => flash.remove() });
                 });
             };
 
@@ -383,7 +388,9 @@
         // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05); // Dark Fog
+        // Warm/Beige Fog
+        scene.fog = new THREE.FogExp2(0xF5E6CA, 0.03);
+        scene.background = new THREE.Color(0xF5E6CA);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -392,38 +399,34 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Helper: Create Text Texture ---
+        // --- Helper: Create Text Texture (Light Mode) ---
         function createTextTexture(text, bgColor) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Background
-            ctx.fillStyle = bgColor;
+            // Background - Polaroids style (White with shadow/border)
+            ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, 512, 512);
 
-            // Border (Film Frame)
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 40;
+            // Inner color box
+            ctx.fillStyle = bgColor; // Pastel color
+            ctx.fillRect(40, 40, 432, 350); // Photo area
+
+            // Border (simulating frame)
+            ctx.strokeStyle = '#eee';
+            ctx.lineWidth = 10;
             ctx.strokeRect(0, 0, 512, 512);
 
             // Text
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 80px sans-serif';
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 60px sans-serif'; // Noto Serif fallback
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Word Wrap simple
-            const words = text.split(' ');
-            let line = '';
-            let y = 256;
-            if (words.length > 1) {
-                ctx.fillText(words[0], 256, 200);
-                ctx.fillText(words[1], 256, 312);
-            } else {
-                ctx.fillText(text, 256, 256);
-            }
+            // Text below the "photo"
+            ctx.fillText(text, 256, 450);
 
             const texture = new THREE.CanvasTexture(canvas);
             return texture;
@@ -436,24 +439,24 @@
         // Create a spiral/rollercoaster path
         for (let i = 0; i < 50; i++) {
             const angle = i * 0.5;
-            const radius = 5 + Math.sin(i * 0.3) * 3;
-            const height = -i * 2; // Going down/forward
+            const radius = 8 + Math.sin(i * 0.3) * 4; // Wider radius for airy feel
+            const height = -i * 2.5; // Going down/forward
 
             curvePoints.push(new THREE.Vector3(
                 Math.cos(angle) * radius,
-                Math.sin(angle) * radius, // Twist vertical
-                -i * 5 // Move forward/deep
+                Math.sin(angle) * radius,
+                -i * 5
             ));
         }
         const curve = new THREE.CatmullRomCurve3(curvePoints);
 
         // Tube Geometry for the ribbon
-        const tubeGeo = new THREE.TubeGeometry(curve, 200, 1.5, 4, false); // 4 segments = flat ribbon-ish
+        const tubeGeo = new THREE.TubeGeometry(curve, 200, 0.5, 4, false); // Thinner line
         const tubeMat = new THREE.MeshBasicMaterial({
-            color: 0x333333,
-            wireframe: true,
+            color: 0x8B0000, // Wine Red Line
+            wireframe: false,
             transparent: true,
-            opacity: 0.2
+            opacity: 0.3
         });
         const ribbon = new THREE.Mesh(tubeGeo, tubeMat);
         scene.add(ribbon);
@@ -463,15 +466,15 @@
         scene.add(framesGroup);
 
         const frameData = [
-            { t: 0.1, text: "BIKER", color: "#8B0000" },
-            { t: 0.3, text: "SPEED", color: "#555" },
-            { t: 0.5, text: "FAMILY", color: "#F5E6CA" },
-            { t: 0.7, text: "TRAVEL", color: "#FFD700" },
-            { t: 0.9, text: "HOME", color: "#444" }
+            { t: 0.1, text: "BIKER", color: "#FFD700" }, // Gold
+            { t: 0.3, text: "SPEED", color: "#8B0000" }, // Red
+            { t: 0.5, text: "FAMILY", color: "#F5E6CA" }, // Beige
+            { t: 0.7, text: "TRAVEL", color: "#FFD700" }, // Gold
+            { t: 0.9, text: "HOME", color: "#8B0000" }  // Red
         ];
 
         frameData.forEach(data => {
-            const geo = new THREE.PlaneGeometry(3, 3);
+            const geo = new THREE.PlaneGeometry(4, 4); // Square-ish
             const tex = createTextTexture(data.text, data.color);
             const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
             const mesh = new THREE.Mesh(geo, mat);
@@ -484,21 +487,24 @@
             mesh.lookAt(pos.clone().add(tangent)); // Face along path
             mesh.rotateY(Math.PI / 2); // Rotate to face side of path (like film strip)
 
+            // Add some random sway/rotation for "floating in wind" feel
+            mesh.rotation.z += (Math.random() - 0.5) * 0.5;
+
             framesGroup.add(mesh);
         });
 
-        // 3. Floating Particles (Dust/Light)
-        const particlesCount = 500;
+        // 3. Floating Particles (Sun Motes)
+        const particlesCount = 300;
         const pGeo = new THREE.BufferGeometry();
         const pPos = new Float32Array(particlesCount * 3);
 
         for(let i=0; i<particlesCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 50;
-            pPos[i*3+1] = (Math.random() - 0.5) * 50;
+            pPos[i*3] = (Math.random() - 0.5) * 60;
+            pPos[i*3+1] = (Math.random() - 0.5) * 60;
             pPos[i*3+2] = -Math.random() * 200;
         }
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({ color: 0xFFD700, size: 0.1, transparent: true, opacity: 0.5 });
+        const pMat = new THREE.PointsMaterial({ color: 0xFFD700, size: 0.2, transparent: true, opacity: 0.6 }); // Gold motes
         const particles = new THREE.Points(pGeo, pMat);
         scene.add(particles);
 
@@ -506,7 +512,11 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            particles.rotation.z += 0.0005;
+            particles.rotation.z += 0.0002;
+            // Gentle sway for frames
+            framesGroup.children.forEach((f, i) => {
+                f.rotation.x += Math.sin(Date.now() * 0.001 + i) * 0.001;
+            });
             renderer.render(scene, camera);
         }
         animate();
@@ -522,29 +532,22 @@
                 trigger: ".scroller",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 0.5
+                scrub: 1 // Slower scrub for smoother feel
             },
             onUpdate: () => {
                 // Move Camera along curve
-                // We map progress (0-1) to curve t (0-1)
                 const t = scrollProxy.progress * 0.95;
                 const pos = curve.getPoint(t);
                 const lookAtPos = curve.getPoint(Math.min(t + 0.05, 1));
 
                 camera.position.copy(pos);
                 // Offset camera slightly to "ride" the ribbon
-                camera.position.y += 1;
+                camera.position.y += 2;
                 camera.lookAt(lookAtPos);
-
-                // Roll camera slightly based on curve tangent for "Banked turn" effect
-                // Simple implementation: rotate Z based on X movement
-                // camera.rotation.z = (lookAtPos.x - pos.x) * 0.2;
             }
         });
 
         // Section Reveals (Fade In/Blur Out based on scroll position)
-        // Since we have a long scroller, we can map sections to scroll triggers
-
         const sections = [
             { id: "#sec-hero", start: 0, end: 0.15 },
             { id: "#sec-biker", start: 0.2, end: 0.35 },
