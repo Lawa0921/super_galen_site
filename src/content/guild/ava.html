@@ -95,9 +95,12 @@
             text-transform: uppercase; letter-spacing: 4px; color: var(--c-primary);
             margin-bottom: 1rem; font-weight: 700;
         }
+        h3 {
+            font-family: var(--f-display); font-size: 2rem; color: var(--c-primary); margin-bottom: 1rem;
+        }
         p {
             font-size: 1.1rem; line-height: 1.8; color: #555; max-width: 600px;
-            margin-top: 2rem; font-weight: 300;
+            margin-top: 1rem; font-weight: 300;
         }
         .highlight { color: var(--c-primary); font-weight: 600; font-style: italic; }
 
@@ -123,20 +126,81 @@
             filter: sepia(0.2) contrast(1.1);
         }
 
+        /* Timeline Styles */
+        .timeline-container {
+            position: relative; max-width: 800px; margin: 4rem auto 0;
+            padding-left: 2rem;
+        }
+        .timeline-line {
+            position: absolute; left: 0; top: 0; width: 2px; height: 100%;
+            background: rgba(138, 28, 28, 0.2);
+            transform-origin: top;
+        }
+        .timeline-progress {
+            position: absolute; left: 0; top: 0; width: 2px; height: 0%;
+            background: var(--c-primary);
+        }
+        .timeline-item {
+            position: relative; padding-bottom: 4rem; padding-left: 2rem;
+            opacity: 0; transform: translateY(20px);
+        }
+        .timeline-dot {
+            position: absolute; left: -2.4rem; top: 0; width: 12px; height: 12px;
+            border-radius: 50%; background: var(--c-bg);
+            border: 2px solid var(--c-primary);
+            z-index: 2;
+        }
+        .timeline-year {
+            font-family: var(--f-ui); font-weight: 700; color: var(--c-accent);
+            font-size: 0.9rem; letter-spacing: 2px; margin-bottom: 0.5rem;
+        }
+        .timeline-role {
+            font-family: var(--f-display); font-size: 1.5rem; color: var(--c-text);
+            font-style: italic; margin-bottom: 0.5rem;
+        }
+
+        /* Skill Tags */
+        .skill-cloud {
+            display: flex; flex-wrap: wrap; gap: 1rem; max-width: 600px; margin-top: 2rem;
+        }
+        .skill-tag {
+            padding: 0.5rem 1.5rem; border-radius: 50px;
+            font-size: 0.9rem; font-family: var(--f-ui); letter-spacing: 1px;
+            background: rgba(255,255,255,0.6); border: 1px solid #ddd;
+            color: #888; transition: 0.3s;
+        }
+        .skill-tag.active {
+            background: var(--c-primary); color: #fff; border-color: var(--c-primary);
+            transform: scale(1.1); box-shadow: 0 5px 15px rgba(138, 28, 28, 0.3);
+        }
+
+        /* Service Cards */
+        .services-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem; margin-top: 4rem; width: 100%; max-width: 1000px;
+        }
+        .service-card {
+            background: rgba(255,255,255,0.9); padding: 2rem;
+            border-top: 4px solid var(--c-accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: 0.3s; opacity: 0; transform: translateY(30px);
+        }
+        .service-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .card-icon { font-size: 2.5rem; color: var(--c-primary); margin-bottom: 1.5rem; }
+        .card-title { font-family: var(--f-display); font-size: 1.4rem; margin-bottom: 1rem; color: var(--c-text); }
+        .card-desc { font-size: 0.95rem; color: #666; line-height: 1.6; }
+
         /* Section Specifics */
         #sec-hero { align-items: flex-start; }
         #sec-biker { align-items: flex-end; text-align: right; }
         #sec-biker .content-block { border-left: none; border-right: 4px solid var(--c-primary); transform: translateX(50px); }
+
+        #sec-timeline { align-items: center; justify-content: flex-start; padding-top: 8rem; }
+
         #sec-travel { align-items: center; text-align: center; }
         #sec-travel .content-block { border: none; border-top: 4px solid var(--c-accent); transform: translateY(50px); }
 
-        /* Toolkit Grid */
-        .toolkit {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem;
-        }
-        .tool-item { text-align: center; }
-        .tool-icon { font-size: 2rem; color: var(--c-primary); margin-bottom: 0.5rem; }
-        .tool-label { font-family: var(--f-ui); font-size: 0.8rem; letter-spacing: 1px; color: #888; text-transform: uppercase; }
+        #sec-work { align-items: center; }
 
         /* Footer */
         .footer-cta {
@@ -165,6 +229,8 @@
             .content-block { max-width: 100%; transform: none !important; opacity: 1 !important; padding: 2rem; }
             #sec-biker { align-items: flex-start; text-align: left; }
             #sec-biker .content-block { border-right: none; border-left: 4px solid var(--c-primary); }
+            .timeline-container { padding-left: 1.5rem; }
+            .services-grid { grid-template-columns: 1fr; }
         }
 
     </style>
@@ -204,8 +270,57 @@
                 <h2 class="reveal-text">Chapter I. The Rider</h2>
                 <h1 class="reveal-text">曾經的<br><span style="color:var(--c-accent)">熱血</span></h1>
                 <div class="content-block reveal-block">
-                    <p>我的背景有點「跳痛」。七年的行政資歷，當過飲料店老闆、民宿管家，甚至開過 Uber！</p>
                     <p>以前的我是個<span class="highlight">重機女騎士</span>，享受時速 100 公里的自由。那份對速度的渴望，如今轉化為對影像節奏的掌控。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.5 Career Journey (New) -->
+        <section id="sec-timeline">
+            <div style="z-index: 2; position: relative; width: 100%; max-width: 800px;">
+                <h2 class="reveal-text" style="text-align: center;">My Journey</h2>
+                <h1 class="reveal-text" style="text-align: center; margin-bottom: 2rem;">跳痛人生<br><span style="color:var(--c-primary)">做中學</span></h1>
+
+                <div class="timeline-container">
+                    <div class="timeline-line"><div class="timeline-progress"></div></div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">THE BEGINNING</div>
+                        <div class="timeline-role">飲料店老闆</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">學會了堅持與與人互動的溫度。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">EXPLORATION</div>
+                        <div class="timeline-role">民宿管家 & Uber</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">聽遍了來自四面八方的故事，學會了服務的細節。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">ADMINISTRATION</div>
+                        <div class="timeline-role">7年 行政資歷</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">磨練了細心與耐心，將繁雜的事務條理化。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">NOW</div>
+                        <div class="timeline-role">房產小蜜</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">結合所有經歷，用影像為每一間房子說故事。</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 4rem; text-align: center;">
+                    <p style="text-align: center; margin: 0 auto;">我還有一堆現在用不到的證照...</p>
+                    <div class="skill-cloud" style="margin: 1rem auto; justify-content: center;">
+                        <span class="skill-tag">美髮丙級</span>
+                        <span class="skill-tag">美容丙級</span>
+                        <span class="skill-tag">中餐烹調</span>
+                        <span class="skill-tag">西餐烹調</span>
+                        <span class="skill-tag active"><i class="fa-solid fa-house"></i> 不動產營業員</span>
+                        <span class="skill-tag active"><i class="fa-solid fa-helicopter"></i> 空拍機證照</span>
+                        <span class="skill-tag active"><i class="fa-solid fa-key"></i> 租賃管理</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -216,36 +331,42 @@
                 <h2 class="reveal-text">Chapter II. The Mother</h2>
                 <h1 class="reveal-text">現在的<br><span style="color:var(--c-primary)">溫度</span></h1>
                 <div class="content-block reveal-block">
-                    <p>結婚生子後，我換了一種速度看世界。與兩個寶貝組成「親子探險隊」，戴上藍牙對講機穿梭田中小巷。</p>
-                    <p><span class="highlight">「媽媽你看！」</span>孩子的視角成了我的新地圖。這些微旅行的點滴，比任何大片都更珍貴。</p>
+                    <p>結婚生子後，我換了一種速度看世界。與兩個寶貝組成<span class="highlight">「親子探險隊」</span>，戴上藍牙對講機穿梭田中小巷。</p>
+                    <p>「媽媽你看！」孩子的視角成了我的新地圖。這些微旅行的點滴，比任何大片都更珍貴。</p>
                 </div>
             </div>
         </section>
 
-        <!-- 4. Work -->
+        <!-- 4. Work (Expanded) -->
         <section id="sec-work">
-            <div style="z-index: 2; position: relative;">
+            <div style="z-index: 2; position: relative; width: 100%; display:flex; flex-direction:column; align-items:center;">
                 <h2 class="reveal-text">Chapter III. The Professional</h2>
                 <h1 class="reveal-text">看見<br><span style="color:var(--c-accent)">價值</span></h1>
-                <div class="content-block reveal-block">
-                    <p>我不追求高大上的器材大片，我擅長用<span class="highlight">手機攝影</span>捕捉當下的溫度。</p>
-                    <p>專注於<span class="highlight">彰化田中一帶</span>，透過影片讓物件「說話」。找我不只是拍房子，更是拍出人與土地的故事。</p>
 
-                    <div class="toolkit">
-                        <div class="tool-item">
-                            <div class="tool-icon"><i class="fa-solid fa-mobile-screen"></i></div>
-                            <div class="tool-label">Mobile Clip</div>
-                        </div>
-                        <div class="tool-item">
-                            <div class="tool-icon"><i class="fa-solid fa-helicopter"></i></div>
-                            <div class="tool-label">Aerial View</div>
-                        </div>
-                        <div class="tool-item">
-                            <div class="tool-icon"><i class="fa-solid fa-pen-nib"></i></div>
-                            <div class="tool-label">Storytelling</div>
-                        </div>
+                <p style="text-align: center; max-width: 700px; margin-bottom: 2rem;">
+                    專注於<span class="highlight">彰化田中一帶</span>，我不追求高大上的器材大片，<br>我擅長用<span class="highlight">手機攝影</span>捕捉當下的溫度，讓物件自己「說話」。
+                </p>
+
+                <div class="services-grid">
+                    <div class="service-card reveal-card">
+                        <div class="card-icon"><i class="fa-solid fa-house-chimney-window"></i></div>
+                        <div class="card-title">房產影音</div>
+                        <div class="card-desc">不僅僅是空間的展示，更是生活感的傳遞。透過運鏡與光影，帶出房子的靈魂與未來的想像。</div>
+                    </div>
+
+                    <div class="service-card reveal-card">
+                        <div class="card-icon"><i class="fa-solid fa-helicopter"></i></div>
+                        <div class="card-title">空拍視角</div>
+                        <div class="card-desc">換個高度看世界。用上帝視角展現基地優勢、周邊環境與地貌之美，讓視野更開闊。</div>
+                    </div>
+
+                    <div class="service-card reveal-card">
+                        <div class="card-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                        <div class="card-title">人物訪談</div>
+                        <div class="card-desc">每個人都有屬於自己的故事。不同行業的朋友，讓我用影像紀錄你的專業與價值。</div>
                     </div>
                 </div>
+
             </div>
         </section>
 
@@ -311,8 +432,6 @@
 
             p.draw = () => {
                 p.clear();
-                // Add some grain effect maybe? Too heavy for canvas pixel loop.
-                // Just animate blobs for atmosphere.
                 blobs.forEach(b => {
                     b.update();
                     b.display();
@@ -333,10 +452,8 @@
         // Scene Setup
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Background color matches CSS but slightly lighter/white for 3D depth
         scene.background = new THREE.Color(0xfbf7f2);
-        // Add subtle fog for depth
-        scene.fog = new THREE.Fog(0xfbf7f2, 5, 20);
+        scene.fog = new THREE.Fog(0xfbf7f2, 5, 25); // Increased fog slightly
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 10;
@@ -346,69 +463,48 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Objects: Floating "Polaroids" ---
-        const geometry = new THREE.PlaneGeometry(3, 4); // Standard photo ratio
-        const materialBase = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            side: THREE.DoubleSide
-        });
-
-        // We will create a group of planes scattered in Z-space
+        // --- Objects: Floating Elements ---
         const galleryGroup = new THREE.Group();
         scene.add(galleryGroup);
 
-        const planeCount = 15;
+        const planeCount = 18; // Increased count for more density
         const planes = [];
+        const geometry = new THREE.PlaneGeometry(3, 4);
 
-        // Function to create a "Polaroid" style mesh (white border + inner color/content)
-        // Since we don't have many textures, let's use colors or icons.
-        // Actually, let's make them "Glass" panels for a modern look, or just clean white cards.
+        // Add some smaller "Note" planes for texture
+        const noteGeometry = new THREE.PlaneGeometry(2, 2);
 
         for (let i = 0; i < planeCount; i++) {
-            const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+            const isNote = i % 3 === 0;
+            const geo = isNote ? noteGeometry : geometry;
+
+            const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
                 color: 0xffffff,
                 side: THREE.DoubleSide,
                 transparent: true,
-                opacity: 0.9,
+                opacity: 0.85,
             }));
 
-            // Random positioning
-            // Spread along Y axis (vertical scroll)
-            // But we want them to float around as we scroll down
-            mesh.position.x = (Math.random() - 0.5) * 15;
-            mesh.position.y = -i * 6 + 5; // Stacked vertically
-            mesh.position.z = (Math.random() - 0.5) * 8;
+            mesh.position.x = (Math.random() - 0.5) * 18;
+            mesh.position.y = -i * 5 + 8; // Spread vertically
+            mesh.position.z = (Math.random() - 0.5) * 10 - 2;
 
             mesh.rotation.z = (Math.random() - 0.5) * 0.5;
             mesh.rotation.y = (Math.random() - 0.5) * 0.5;
 
-            // Add a border (Wireframe) for "Frame" look
-            const edges = new THREE.EdgesGeometry(geometry);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xd4af37, opacity: 0.3, transparent: true }));
+            // Wireframe Border
+            const edges = new THREE.EdgesGeometry(geo);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xd4af37, opacity: 0.2, transparent: true }));
             mesh.add(line);
-
-            // Add shadow plane behind
-            const shadowGeo = new THREE.PlaneGeometry(3, 4);
-            const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.1, transparent: true });
-            const shadow = new THREE.Mesh(shadowGeo, shadowMat);
-            shadow.position.z = -0.1;
-            shadow.position.x = 0.2;
-            shadow.position.y = -0.2;
-            mesh.add(shadow);
 
             galleryGroup.add(mesh);
             planes.push({ mesh, speed: Math.random() * 0.005 + 0.002 });
         }
 
-        // --- Lights (Though using BasicMaterial, nice to have for future) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
-
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Subtle floating movement
             planes.forEach((p, i) => {
                 p.mesh.rotation.z += Math.sin(Date.now() * 0.001 + i) * 0.0005;
                 p.mesh.position.y += Math.sin(Date.now() * 0.001 + i) * 0.002;
@@ -419,9 +515,8 @@
         animate();
 
         // --- Scroll Interaction (GSAP) ---
-        // Move the camera down through the gallery
         gsap.to(camera.position, {
-            y: -planeCount * 5, // Move down deep
+            y: -planeCount * 4,
             ease: "none",
             scrollTrigger: {
                 trigger: ".scroller",
@@ -431,10 +526,9 @@
             }
         });
 
-        // Rotate planes as we pass them
         planes.forEach((p, i) => {
             gsap.to(p.mesh.rotation, {
-                x: Math.PI / 4, // Tilt
+                x: Math.PI / 4,
                 scrollTrigger: {
                     trigger: ".scroller",
                     start: "top top",
@@ -451,45 +545,61 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP Text Animations ---
-        // Reveal Images
-        gsap.utils.toArray('.reveal-img').forEach(img => {
-            gsap.fromTo(img,
-                { opacity: 0, scale: 0.8, rotate: -5 },
-                {
-                    opacity: 1, scale: 1, rotate: 0,
-                    duration: 1.5, ease: "power3.out",
-                    scrollTrigger: {
-                        trigger: img,
-                        start: "top 80%"
-                    }
-                }
-            );
-        });
+        // --- GSAP Content Animations ---
 
-        // Reveal Text
-        gsap.utils.toArray('.reveal-text').forEach(text => {
-            gsap.fromTo(text,
-                { opacity: 0, y: 50 },
+        // 1. Reveal Images/Text
+        gsap.utils.toArray('.reveal-img, .reveal-text, .reveal-block').forEach(el => {
+            gsap.fromTo(el,
+                { opacity: 0, y: 30 },
                 {
                     opacity: 1, y: 0,
                     duration: 1, ease: "power2.out",
-                    scrollTrigger: {
-                        trigger: text,
-                        start: "top 85%"
-                    }
+                    scrollTrigger: { trigger: el, start: "top 85%" }
                 }
             );
         });
 
-        // Reveal Blocks
-        gsap.utils.toArray('.reveal-block').forEach(block => {
-            gsap.to(block, {
-                opacity: 1, x: 0,
-                duration: 1, ease: "power2.out",
+        // 2. Timeline Animation
+        gsap.to('.timeline-progress', {
+            height: '100%',
+            scrollTrigger: {
+                trigger: '.timeline-container',
+                start: "top 70%",
+                end: "bottom 70%",
+                scrub: 1
+            }
+        });
+
+        gsap.utils.toArray('.timeline-item').forEach(item => {
+            gsap.to(item, {
+                opacity: 1, y: 0,
+                duration: 0.8,
                 scrollTrigger: {
-                    trigger: block,
+                    trigger: item,
                     start: "top 80%"
+                }
+            });
+        });
+
+        // 3. Skill Tags Stagger
+        gsap.from('.skill-tag', {
+            opacity: 0, scale: 0.8,
+            duration: 0.5,
+            stagger: 0.1,
+            scrollTrigger: {
+                trigger: '.skill-cloud',
+                start: "top 85%"
+            }
+        });
+
+        // 4. Service Cards Stagger
+        gsap.utils.toArray('.reveal-card').forEach((card, i) => {
+            gsap.to(card, {
+                opacity: 1, y: 0,
+                duration: 0.8, delay: i * 0.1,
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%"
                 }
             });
         });
@@ -500,9 +610,7 @@
             const line = loader.querySelector('.loader-line');
             gsap.to(line, { width: '100%', duration: 0.5 });
             gsap.to(loader, {
-                opacity: 0,
-                delay: 0.6,
-                duration: 0.8,
+                opacity: 0, delay: 0.6, duration: 0.8,
                 onComplete: () => loader.remove()
             });
         });
