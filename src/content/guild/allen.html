@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allen 少帥 | The Resilient Printer</title>
+    <meta name="description" content="墨帥印刷負責人 - 浴火重生的桌遊印刷專家。提供桌遊顧問、卡片製作、特殊印刷服務。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #0a0a0a;
+            --c-cyan: #00ffff;
+            --c-magenta: #ff00ff;
+            --c-yellow: #ffff00;
+            --c-black: #111;
+            --c-text: #e0e0e0;
+            --f-tech: 'Orbitron', sans-serif;
+            --f-mono: 'Share Tech Mono', monospace;
+            --f-main: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-main);
+            overflow-x: hidden;
+            /* overflow-y: hidden;  Lock initially handled by JS */
+        }
+
+        /* --- Canvas Layers --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: -1; pointer-events: none;
+        }
+        #p5-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: 0; pointer-events: none; mix-blend-mode: screen;
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            color: rgba(255,255,255,0.6); text-decoration: none;
+            font-family: var(--f-mono); font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.5rem 1.2rem;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .nav-back:hover {
+            color: var(--c-cyan); border-color: var(--c-cyan);
+            text-shadow: 0 0 10px var(--c-cyan);
+        }
+
+        /* --- Sections --- */
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative; padding: 4rem 1rem; box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .container {
+            max-width: 1000px; width: 100%; position: relative; margin: 0 auto;
+        }
+
+        /* --- Ruins Overlay --- */
+        .ruins-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                repeating-linear-gradient(45deg, rgba(255,0,0,0.05) 0, rgba(255,0,0,0.05) 10px, transparent 10px, transparent 20px),
+                radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none; z-index: -1;
+            opacity: 1; transition: opacity 2s ease;
+        }
+        .ruins-active .ruins-overlay { opacity: 0; }
+
+        /* --- News Ticker (Destroyed State) --- */
+        .news-ticker-container {
+            position: absolute; bottom: 10%; width: 100%; overflow: hidden;
+            background: rgba(255, 0, 0, 0.1); border-top: 1px solid red; border-bottom: 1px solid red;
+            padding: 0.5rem 0; font-family: var(--f-mono); color: red;
+            display: flex; white-space: nowrap; pointer-events: none; opacity: 1; transition: opacity 1s;
+        }
+        .news-ticker-content {
+            display: inline-block; animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* --- Archives (News Cards) --- */
+        .archive-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem; margin-top: 3rem; opacity: 0; transform: translateY(20px); transition: 1s;
+        }
+        .archive-card {
+            background: rgba(0, 255, 255, 0.05); border: 1px solid var(--c-cyan);
+            padding: 1.5rem; position: relative; overflow: hidden;
+        }
+        .archive-card::before {
+            content: 'ARCHIVE'; position: absolute; top: 0.5rem; right: 0.5rem;
+            font-size: 0.6rem; color: var(--c-cyan); opacity: 0.5; font-family: var(--f-mono);
+        }
+        .archive-date {
+            color: var(--c-cyan); font-family: var(--f-mono); font-size: 0.8rem; display: block; margin-bottom: 0.5rem;
+        }
+        .archive-title {
+            color: #fff; font-family: var(--f-tech); font-size: 1.2rem; margin-bottom: 0.5rem;
+        }
+        .archive-desc {
+            color: #aaa; font-size: 0.9rem; line-height: 1.5;
+        }
+
+        /* --- Hero --- */
+        .hero-title {
+            font-family: var(--f-tech); font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900; line-height: 0.9; text-transform: uppercase;
+            position: relative; color: #fff;
+            text-shadow: 2px 2px 0px var(--c-magenta), -2px -2px 0px var(--c-cyan);
+        }
+
+        .hero-subtitle {
+            font-family: var(--f-mono); color: var(--c-yellow);
+            font-size: 1.2rem; margin-top: 1rem; letter-spacing: 2px;
+        }
+
+        .avatar-frame {
+            position: relative; width: 280px; height: 280px; margin: 2rem auto;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            background: #222;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(1) contrast(1.2);
+            transition: 0.5s;
+        }
+        .avatar-frame:hover .avatar-img {
+            filter: grayscale(0) contrast(1);
+        }
+        .avatar-frame::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(45deg, var(--c-cyan), transparent, var(--c-magenta));
+            opacity: 0.3; mix-blend-mode: overlay; pointer-events: none;
+        }
+
+        /* --- Glitch Effect --- */
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%;
+            background: var(--c-bg);
+        }
+        .glitch-text::before {
+            left: 2px; text-shadow: -1px 0 var(--c-magenta); clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px; text-shadow: -1px 0 var(--c-cyan); clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 10px, 0); }
+            100% { clip: rect(80px, 9999px, 100px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(10px, 9999px, 90px, 0); }
+            100% { clip: rect(5px, 9999px, 20px, 0); }
+        }
+
+        /* --- Story (The Quake) --- */
+        .story-block {
+            background: rgba(10,10,10,0.8); border: 1px solid #333;
+            padding: 2rem; position: relative; margin-top: 2rem;
+            border-left: 4px solid var(--c-magenta);
+        }
+        .story-year {
+            font-family: var(--f-mono); color: var(--c-magenta); font-size: 2rem;
+            font-weight: bold; margin-bottom: 0.5rem; display: block;
+        }
+
+        /* --- Services (Cards) --- */
+        .card-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem; width: 100%; padding: 2rem 0;
+        }
+
+        .service-card {
+            background: #111; border: 1px solid #333; padding: 2rem;
+            position: relative; overflow: hidden; transition: 0.3s;
+            clip-path: polygon(0 0, 100% 0, 100% 90%, 90% 100%, 0 100%);
+        }
+        .service-card:hover {
+            transform: translateY(-10px); border-color: var(--c-cyan);
+            box-shadow: 0 0 20px rgba(0,255,255,0.2);
+        }
+        .service-card h3 {
+            font-family: var(--f-tech); margin-bottom: 1rem; color: #fff;
+        }
+        .service-card p {
+            color: #aaa; font-size: 0.9rem; line-height: 1.6;
+        }
+        .card-icon {
+            font-size: 2.5rem; color: var(--c-yellow); margin-bottom: 1rem;
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 4rem 1rem; text-align: center; background: #000;
+            border-top: 1px solid #222;
+        }
+        .social-links {
+            display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 2rem;
+        }
+        .social-btn {
+            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #444; color: #fff; text-decoration: none; font-size: 1.5rem;
+            transition: 0.3s; clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+        }
+        .social-btn:hover {
+            background: var(--c-cyan); color: #000; border-color: var(--c-cyan);
+        }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .loader-bar {
+            width: 200px; height: 4px; background: #333; margin-top: 1rem; position: relative;
+            overflow: hidden;
+        }
+        .loader-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
+            transition: width 0.2s;
+        }
+        .loader-text {
+            font-family: var(--f-mono); color: var(--c-cyan); font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        /* --- Glass Panel (Readability) --- */
+        .glass-panel {
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+            padding: 2rem; border-radius: 8px;
+        }
+
+        /* GSAP Utility */
+        /* .gs-reveal { opacity: 0; } - Removed to let GSAP handle initial state */
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-text" id="loader-status">INITIALIZING SYSTEMS...</div>
+        <div class="loader-bar"><div class="loader-progress" id="loader-bar-inner"></div></div>
+    </div>
+
+    <a href="/guild/" class="nav-back">← GUILD</a>
+
+    <!-- Canvas -->
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <div id="main-content">
+
+        <!-- 1. Hero -->
+        <section id="hero">
+            <div class="container" style="text-align: center;">
+                <div class="avatar-frame gs-reveal">
+                    <img src="/assets/img/guild/allen/avatar.webp" alt="Allen" class="avatar-img">
+                </div>
+                <h1 class="hero-title gs-reveal glitch-text" data-text="少帥 ALLEN">少帥 ALLEN</h1>
+                <div class="hero-subtitle gs-reveal">THE INK COMMANDER</div>
+                <p style="max-width: 600px; margin: 1.5rem auto; color: #888; font-family: var(--f-mono);" class="gs-reveal">
+                    INK | MACHINERY | RESILIENCE
+                </p>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;" class="gs-reveal">
+                   <div style="border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;">PRINTING</div>
+                   <div style="border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;">CONSULTING</div>
+                   <div style="border: 1px solid var(--c-yellow); color: var(--c-yellow); padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;">PRODUCTION</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. The Commander (Personal Lore) -->
+        <section id="commander">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE COMMANDER</h2>
+                    <p style="font-family: var(--f-mono); color: var(--c-magenta);">// IDENTITY: ALLEN (少帥)</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+
+                    <!-- Protocol: Fatherhood -->
+                    <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-magenta);">
+                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">PROTOCOL: FATHERHOOD</h3>
+                        <p style="color: #ccc; line-height: 1.8;">
+                            我是三個女兒的爸爸。<br>
+                            這是我所有動力的核心反應爐。無論工廠倒塌多少次，為了她們，我都能夠再次站起來。<br>
+                            她們是我的「無限魔力源 (Infinite Mana)」，讓我在高壓的生產線與負債壓力下，依然能保持微笑與堅韌。
+                        </p>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <span style="background: var(--c-magenta); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CORE DRIVE</span>
+                            <span style="border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">PROTECTOR</span>
+                        </div>
+                    </div>
+
+                    <!-- Hands-On Leader -->
+                    <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-cyan);">
+                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">HANDS-ON LEADER</h3>
+                        <p style="color: #ccc; line-height: 1.8;">
+                            我不是坐在辦公室的總裁，我是穿梭在機台間的指揮官。<br>
+                            上一秒在會議室談百萬訂單，下一秒就在產線調整機台參數。<br>
+                            「親力親為」不是口號，是我的生存法則。我比任何人都了解這座工廠的每一次呼吸與震動。
+                        </p>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <span style="background: var(--c-cyan); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">OPERATOR</span>
+                            <span style="border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CONSULTANT</span>
+                        </div>
+                    </div>
+
+                    <!-- Stats Block -->
+                    <div class="gs-reveal glass-panel" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-around; align-items: center;">
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">STAMINA</div>
+                            <div style="font-family: var(--f-tech); color: var(--c-yellow); font-size: 2rem;">INFINITE</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">RESILIENCE</div>
+                            <div style="font-family: var(--f-tech); color: var(--c-magenta); font-size: 2rem;">MAX</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">CURRENT DEBT</div>
+                            <div style="font-family: var(--f-tech); color: #fff; font-size: 2rem;">> 10M</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">SPECIAL SKILL</div>
+                            <div style="font-family: var(--f-tech); color: var(--c-cyan); font-size: 1.5rem;">PHOENIX REBIRTH</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. The Battalion (Factory Team) -->
+        <section id="battalion">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE BATTALION</h2>
+                    <div style="height: 2px; width: 100px; background: var(--c-yellow); margin: 0.5rem auto;"></div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+                    <div class="gs-reveal glass-panel" style="flex: 1; min-width: 300px;">
+                        <h3 style="color: var(--c-cyan); font-family: var(--f-mono); margin-bottom: 1rem;">// UNIT STRENGTH: 30+</h3>
+                        <p style="color: #ccc; line-height: 1.8;">
+                            工廠大大小小內有二三十位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
+                            每天的日常就是在印桌遊，或是在開印的路上。<br>
+                            產線就是我們的戰場，每一張卡牌、每一個配件，都是我們共同打造的彈藥。
+                        </p>
+                    </div>
+                    <div class="gs-reveal glass-panel" style="flex: 1; min-width: 300px; border: 1px dashed var(--c-yellow);">
+                        <h3 style="color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem;">// MISSION LOG</h3>
+                        <ul style="list-style: none; padding: 0; color: #aaa; line-height: 2;">
+                            <li>> 08:00 - SYSTEMS CHECK (開機)</li>
+                            <li>> 10:00 - TACTICAL BRIEFING (會議接洽)</li>
+                            <li>> 14:00 - PRODUCTION LINE SUPPORT (產線支援)</li>
+                            <li>> 20:00 - STRATEGIC PLANNING (未來規劃)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Services (Factory Capabilities) -->
+        <section id="services">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SERVICES</h2>
+                    <p style="font-family: var(--f-mono); color: #888;">OUTPUT PROTOCOLS</p>
+                </div>
+
+                <div class="card-grid">
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-chess-board card-icon"></i>
+                        <h3>Board Game Consulting</h3>
+                        <p>桌遊顧問諮詢。兩小時三千。提供專業的生產與設計建議，幫你避開所有量產陷阱。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-print card-icon" style="color: var(--c-cyan)"></i>
+                        <h3>Professional Printing</h3>
+                        <p>桌遊印刷 / 禮盒 / 包裝。工廠大大小小二三十位同仁，確保每一份產品的完美品質。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-layer-group card-icon" style="color: var(--c-magenta)"></i>
+                        <h3>TCG & Foil Cards</h3>
+                        <p>卡包 / 閃卡 / TCG卡片。專精於特殊工藝與收藏級卡片的製作。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-puzzle-piece card-icon" style="color: #fff"></i>
+                        <h3>Special Design</h3>
+                        <p>解密桌遊生產 / 特殊配件設計。實現你最瘋狂的遊戲創意。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. System Logs (Story - The Fall & Resurgence) -->
+        <section id="story">
+            <div class="container">
+                <div class="gs-reveal" style="margin-bottom: 2rem; text-align: center;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SYSTEM LOGS</h2>
+                    <div style="height: 2px; width: 100px; background: var(--c-cyan); margin: 0.5rem auto;"></div>
+                </div>
+
+                <div class="story-block gs-reveal glass-panel">
+                    <span class="story-year">EVENT: THE FALL</span>
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">2024.04.03 - SEISMIC COLLAPSE</h3>
+                    <p style="color: #ccc; line-height: 1.8;">
+                        那一刻，大地發出怒吼。<br>
+                        前年403地震，我的工廠瞬間倒塌。那座專門製作桌遊的夢工廠，在幾秒鐘內化為瓦礫堆。<br>
+                        所有的機台、紙張、夢想，彷彿都被埋葬在塵土之下。<br>
+                        但我沒有時間悲傷。這不是結束，這只是系統強制重啟的信號。
+                    </p>
+                </div>
+
+                <div class="story-block gs-reveal glass-panel" style="border-left-color: var(--c-yellow); margin-left: 2rem; margin-top: 2rem;">
+                    <span class="story-year" style="color: var(--c-yellow)">PHASE: REBOOT</span>
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">T+7 DAYS - ONLINE</h3>
+                    <p style="color: #ccc; line-height: 1.8;">
+                        當天我就啟動了緊急募資，號召各方好友支援。<br>
+                        這不僅僅是修復，這是「熱插拔 (Hot-swapping)」級別的極限操作。<br>
+                        我花了不到一週的時間重新開機，將所有的錯位與混亂強制歸零。<br>
+                        機台重新運轉的轟鳴聲，是世界上最悅耳的樂章。
+                    </p>
+                </div>
+
+                <div class="story-block gs-reveal glass-panel" style="border-left-color: var(--c-cyan); margin-left: 4rem; margin-top: 2rem;">
+                    <span class="story-year" style="color: var(--c-cyan)">PHASE: RESURGENCE</span>
+                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">THE VOID ENGINE</h3>
+                    <p style="color: #ccc; line-height: 1.8;">
+                        目前負債金額超過一千（萬）。<br>
+                        這看似絕望的數字，在我的系統裡被轉化為推進的燃料。<br>
+                        這股龐大的「虛空壓力」迫使我進化出更高的效率與更精準的決策。<br>
+                        每天不是在印桌遊，就是在開印的路上。停滯即是毀滅，唯有前進才能維持系統穩定。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Reconstruction Interaction -->
+        <section id="reconstruction" style="height: 100vh; position: relative; pointer-events: none;">
+            <div class="ruins-overlay"></div>
+
+            <div class="news-ticker-container" id="ruin-ticker">
+                <div class="news-ticker-content" style="padding-right: 50px;">
+                     ALERT: SEISMIC ACTIVITY DETECTED /// FACTORY INTEGRITY COMPROMISED /// PRODUCTION HALTED /// INITIATING EMERGENCY PROTOCOLS
+                </div>
+                <div class="news-ticker-content">
+                     ALERT: SEISMIC ACTIVITY DETECTED /// FACTORY INTEGRITY COMPROMISED /// PRODUCTION HALTED /// INITIATING EMERGENCY PROTOCOLS
+                </div>
+            </div>
+
+            <div class="container" style="text-align: center; pointer-events: auto;">
+                <h2 class="gs-reveal" style="font-family: var(--f-tech); font-size: 3rem; color: #fff; margin-bottom: 1rem;">RECONSTRUCTION</h2>
+                <p class="gs-reveal" style="font-family: var(--f-mono); color: var(--c-yellow); margin-bottom: 2rem;">
+                    CLICK TO REPAIR THE STRUCTURE
+                </p>
+                <button id="btn-repair" class="gs-reveal" style="
+                    background: transparent; border: 2px solid var(--c-cyan); color: var(--c-cyan);
+                    padding: 1rem 3rem; font-family: var(--f-tech); font-size: 1.2rem; cursor: pointer;
+                    transition: 0.3s; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+                ">INITIATE REPAIR</button>
+
+                <!-- Post-Repair Content (Hidden Initially) -->
+                <div id="post-repair-content" style="display: none; opacity: 0; margin-top: 3rem; position: relative; z-index: 5;">
+                    <div style="background: rgba(10,10,10,0.85); backdrop-filter: blur(8px); border: 1px solid rgba(0,255,255,0.3); padding: 2rem; border-radius: 4px;">
+                        <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" style="
+                            display: inline-block; background: var(--c-cyan); color: #000; text-decoration: none;
+                            padding: 1rem 3rem; font-family: var(--f-tech); font-weight: 700; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%); margin-bottom: 2rem;
+                        ">SUPPORT THE REBOOT</a>
+
+                        <div class="archive-grid" style="margin-top: 0;">
+                        <div class="archive-card">
+                            <span class="archive-date">2024.04.03</span>
+                            <div class="archive-title">TOTAL COLLAPSE</div>
+                            <div class="archive-desc">
+                                403地震重創廠房。所有機台位移，結構損毀。生產線全面停擺。損失難以估計。
+                            </div>
+                        </div>
+                        <div class="archive-card">
+                            <span class="archive-date">2024.04.04</span>
+                            <div class="archive-title">COMMUNITY RALLY</div>
+                            <div class="archive-desc">
+                                啟動緊急募資。桌遊圈好友與客戶紛紛響應。「墨帥不能倒」成為最強大的後盾。
+                            </div>
+                        </div>
+                        <div class="archive-card">
+                            <span class="archive-date">2024.04.10</span>
+                            <div class="archive-title">SYSTEM ONLINE</div>
+                            <div class="archive-desc">
+                                奇蹟般的一週重啟。新廠房定位，機台校正完成。負債雖重，但信念更強。
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Visit (CTA) -->
+        <section id="visit">
+            <div class="container">
+                <div class="gs-reveal glass-panel" style="text-align: center; padding: 2rem;">
+                    <h3 style="color: #fff; font-family: var(--f-tech); margin-bottom: 1rem;">VISIT THE BASE</h3>
+                    <p style="color: #ccc; margin-bottom: 1.5rem;">有空可以來看看我們的新廠房，見證重啟後的鋼鐵意志。</p>
+                    <span style="color: var(--c-cyan); font-family: var(--f-mono); border: 1px solid var(--c-cyan); padding: 0.5rem 1rem;">
+                        <i class="fa-solid fa-location-dot"></i> COORDINATES CLASSIFIED (Contact for Tour)
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <h2 style="font-family: var(--f-tech); color: #fff; margin-bottom: 2rem;">CONNECT</h2>
+                <div class="social-links">
+                    <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" class="social-btn"><i class="fa-solid fa-rocket"></i></a>
+                    <a href="https://www.threads.com/@gxallenlen" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/gxallenlen/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <p style="color: #666; font-family: var(--f-mono); font-size: 0.8rem;">
+                    MADE WITH <i class="fa-solid fa-bolt" style="color: var(--c-yellow)"></i> BY SUPERGALEN'S DUNGEON
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- THREE.JS BACKGROUND ---
+        function initThree() {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            // Fog for depth
+            scene.fog = new THREE.FogExp2(0x0a0a0a, 0.05);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 20;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Performance cap
+            container.appendChild(renderer.domElement);
+
+            // Objects: Floating Plates (CMYK)
+            const plates = [];
+            const colors = [0x00ffff, 0xff00ff, 0xffff00, 0x333333];
+            const geometry = new THREE.PlaneGeometry(5, 8);
+
+            for (let i = 0; i < 30; i++) {
+                const material = new THREE.MeshBasicMaterial({
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    transparent: true,
+                    opacity: 0.1 + Math.random() * 0.2,
+                    side: THREE.DoubleSide,
+                    wireframe: Math.random() > 0.8
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+
+                mesh.position.set(
+                    (Math.random() - 0.5) * 60,
+                    (Math.random() - 0.5) * 60,
+                    (Math.random() - 0.5) * 40
+                );
+                mesh.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+
+                scene.add(mesh);
+                plates.push({ mesh, speed: Math.random() * 0.01 + 0.005 });
+            }
+
+            // --- RECONSTRUCTION INTERACTION ---
+            const houseGroup = new THREE.Group();
+            scene.add(houseGroup);
+            houseGroup.position.set(0, -50, 0); // Position it lower, near the reconstruction section
+
+            const voxels = [];
+            const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+
+            // Build House Shape (Simple)
+            function createHouse() {
+                // Base
+                for(let x=-2; x<=2; x++) {
+                    for(let z=-2; z<=2; z++) {
+                        for(let y=0; y<3; y++) {
+                             if(Math.random() > 0.8) continue; // Some holes
+                             addVoxel(x, y, z);
+                        }
+                    }
+                }
+                // Roof
+                for(let x=-2; x<=2; x++) {
+                    addVoxel(x, 3, 0);
+                    addVoxel(x, 3, 1);
+                    addVoxel(x, 3, -1);
+                    addVoxel(x, 4, 0);
+                }
+            }
+
+            function addVoxel(tx, ty, tz) {
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0x333333,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.5
+                });
+                const mesh = new THREE.Mesh(boxGeo, material);
+
+                // Exploded State (Random)
+                const ex = (Math.random() - 0.5) * 30;
+                const ey = (Math.random() - 0.5) * 30;
+                const ez = (Math.random() - 0.5) * 30;
+
+                mesh.position.set(ex, ey, ez);
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+
+                houseGroup.add(mesh);
+
+                voxels.push({
+                    mesh,
+                    target: new THREE.Vector3(tx, ty, tz),
+                    baseColor: 0x333333,
+                    activeColor: colors[Math.floor(Math.random() * 3)] // CMY
+                });
+            }
+
+            createHouse();
+
+            // Link Button
+            const btn = document.getElementById('btn-repair');
+            const postRepair = document.getElementById('post-repair-content');
+            const ruinTicker = document.getElementById('ruin-ticker');
+
+            if(btn) {
+                btn.addEventListener('click', () => {
+                    // Animate Reconstruction
+                    voxels.forEach((v, i) => {
+                        gsap.to(v.mesh.position, {
+                            x: v.target.x,
+                            y: v.target.y,
+                            z: v.target.z,
+                            duration: 1.5,
+                            ease: "power2.inOut",
+                            delay: Math.random() * 0.5
+                        });
+                        gsap.to(v.mesh.rotation, {
+                            x: 0, y: 0, z: 0,
+                            duration: 1.5,
+                            ease: "power2.inOut"
+                        });
+
+                        // Color Shift
+                        setTimeout(() => {
+                            v.mesh.material.color.setHex(v.activeColor);
+                            v.mesh.material.wireframe = false;
+                            v.mesh.material.opacity = 0.9;
+                        }, 1200 + Math.random() * 300);
+                    });
+
+                    gsap.to(houseGroup.rotation, {
+                        y: "+=" + Math.PI * 2,
+                        duration: 10,
+                        repeat: -1,
+                        ease: "none",
+                        delay: 1.5
+                    });
+
+                    // Button UI Update
+                    btn.innerHTML = "SYSTEM RESTORED";
+                    btn.style.borderColor = "#00ff00";
+                    btn.style.color = "#00ff00";
+                    btn.style.pointerEvents = "none"; // Prevent double click
+
+                    // Fade out ruins overlay
+                    const overlay = document.querySelector('.ruins-overlay');
+                    if(overlay) overlay.style.opacity = '0';
+
+                    // Hide Ticker
+                    if(ruinTicker) {
+                        gsap.to(ruinTicker, { opacity: 0, duration: 0.5 });
+                    }
+
+                    // Reveal Post-Repair Content
+                    postRepair.style.display = 'block';
+                    gsap.to(postRepair, { opacity: 1, duration: 1, delay: 1.5 });
+                    gsap.to('.archive-grid', { opacity: 1, y: 0, duration: 1, delay: 2, stagger: 0.2 });
+                });
+            }
+
+            // ScrollTrigger to move the House Group into view
+            // When we scroll to #reconstruction, move houseGroup to Z=5 (in front of camera)
+            // Wait, camera moves. Let's position houseGroup at fixed world coords that align with scroll.
+            // Actually, let's just keep it at (0,0,0) relative to camera or world.
+            // Since camera moves from Z=20 to Z=5, if we put houseGroup at Z=0, it will be close at the end.
+
+            // Let's refine house position based on camera movement.
+            // The camera ends at Z=5. If house is at Z=0, it's 5 units away. Perfect.
+            // We just need to make sure it's not visible initially or looks like debris in background.
+            // It is added to scene, so it's visible.
+            // Let's set its Y position based on scroll to "rise" up or stay fixed.
+
+            // To make sure it appears in the specific section, we can use a separate scrollTrigger for the group position.
+            gsap.fromTo(houseGroup.position,
+                { y: -30 },
+                {
+                    y: 0,
+                    scrollTrigger: {
+                        trigger: "#reconstruction",
+                        start: "top center",
+                        end: "center center",
+                        scrub: 1
+                    }
+                }
+            );
+
+
+            // Animation Loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                plates.forEach(p => {
+                    p.mesh.rotation.x += p.speed;
+                    p.mesh.rotation.y += p.speed;
+                    p.mesh.position.y += Math.sin(Date.now() * 0.001 * p.speed * 100) * 0.02;
+                });
+
+                // Slowly rotate house if waiting
+                if(!btn || btn.innerText !== "SYSTEM RESTORED") {
+                    houseGroup.rotation.y += 0.002;
+                    houseGroup.rotation.z = Math.sin(Date.now()*0.001) * 0.05;
+                }
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // GSAP Scroll for Camera
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.to(camera.position, {
+                z: 5,
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+        }
+
+        // --- INIT SEQUENCE ---
+        document.addEventListener("DOMContentLoaded", () => {
+            initThree();
+
+            // GSAP Reveals
+            gsap.utils.toArray('.gs-reveal').forEach(el => {
+                gsap.from(el, {
+                    y: 50, opacity: 0, duration: 1, ease: "power2.out",
+                    scrollTrigger: { trigger: el, start: "top 85%" }
+                });
+            });
+
+            // Fake Loader
+            const bar = document.getElementById('loader-bar-inner');
+            const status = document.getElementById('loader-status');
+            const loader = document.getElementById('loader');
+
+            let p = 0;
+            const interval = setInterval(() => {
+                p += Math.random() * 5;
+                if(p > 100) p = 100;
+                bar.style.width = p + "%";
+
+                if(p < 30) status.innerText = "LOADING ASSETS...";
+                else if(p < 70) status.innerText = "CALIBRATING PRESS...";
+                else status.innerText = "SYSTEM READY.";
+
+                if(p === 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        gsap.to(loader, { opacity: 0, duration: 0.5, onComplete: () => loader.remove() });
+                        document.body.style.overflowY = 'auto'; // Unlock
+                    }, 500);
+                }
+            }, 50);
+        });
+
+    </script>
+
+    <!-- p5.js Sketch (Ink Trail) -->
+    <script>
+        function setup() {
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('p5-container');
+            noStroke();
+            frameRate(60);
+        }
+
+        let particles = [];
+
+        function draw() {
+            clear();
+
+            // Create particles on mouse move
+            if (mouseX !== pmouseX || mouseY !== pmouseY) {
+                for(let i=0; i<3; i++) {
+                    particles.push(new Particle(mouseX, mouseY));
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.update();
+                p.show();
+                if (p.finished()) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = random(-1, 1);
+                this.vy = random(-1, 1);
+                this.alpha = 255;
+                this.color = random([
+                    color(0, 255, 255), // Cyan
+                    color(255, 0, 255), // Magenta
+                    color(255, 255, 0)  // Yellow
+                ]);
+                this.d = random(2, 8);
+            }
+
+            finished() {
+                return this.alpha < 0;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 5;
+            }
+
+            show() {
+                noStroke();
+                fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], this.alpha);
+                ellipse(this.x, this.y, this.d);
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>
