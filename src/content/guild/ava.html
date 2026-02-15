@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+TC:wght@300;400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -29,356 +29,294 @@
 
     <style>
         :root {
-            /* Cinematic Palette: Deep Wine, Warm Gold, Dark Grey */
-            --c-bg: #2b0a0a; /* Dark Wine */
-            --c-text: #ffffff;
-            --c-accent: #FFD700; /* Gold */
-            --c-secondary: #ff6b35; /* Sunset Orange */
+            /* Warm Editorial Palette */
+            --c-bg: #f9f5eb;       /* Cream/Warm Beige */
+            --c-text: #2c2c2c;     /* Dark Charcoal */
+            --c-accent: #d4af37;   /* Classic Gold */
+            --c-primary: #8a1c1c;  /* Deep Wine Red */
+            --c-light: #ffffff;    /* Paper White */
 
-            --f-serif: 'Noto Serif TC', serif;
-            --f-tech: 'Orbitron', sans-serif;
+            --f-display: 'Playfair Display', serif;
+            --f-body: 'Noto Serif TC', serif;
+            --f-ui: 'Lato', sans-serif;
         }
 
         body {
             margin: 0;
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: var(--f-serif);
+            font-family: var(--f-body);
             overflow-x: hidden;
-            cursor: none; /* Custom cursor */
+            /* No custom cursor, keep it natural/editorial */
         }
 
-        /* --- Loader --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--c-accent);
-        }
-        .loader-text {
-            font-family: var(--f-tech); font-size: 2rem; letter-spacing: 5px;
-            animation: glitch 1s infinite alternate;
-        }
-        @keyframes glitch {
-            0% { transform: skew(0deg); opacity: 1; }
-            20% { transform: skew(-10deg); opacity: 0.8; }
-            40% { transform: skew(10deg); opacity: 1; }
-            60% { transform: skew(-5deg); opacity: 0.9; }
-            80% { transform: skew(5deg); opacity: 1; }
-            100% { transform: skew(0deg); opacity: 1; }
-        }
-
-        /* --- Canvas Layers --- */
-        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
-        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; }
+        /* --- Layers --- */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; opacity: 0.6; mix-blend-mode: screen; }
 
         /* --- UI Elements --- */
-        .back-btn {
-            position: fixed; top: 30px; left: 30px; z-index: 200;
-            color: var(--c-accent); text-decoration: none; font-family: var(--f-tech);
-            font-size: 1rem; border: 1px solid var(--c-accent); padding: 8px 20px;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-            transition: 0.3s; text-transform: uppercase; letter-spacing: 2px;
+        .nav-header {
+            position: fixed; top: 0; left: 0; width: 100%; padding: 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; box-sizing: border-box;
+            mix-blend-mode: exclusion; /* Ensures visibility on light/dark */
+            color: #fff; /* Blend mode flips this to dark on light bg */
         }
-        .back-btn:hover {
-            background: var(--c-accent); color: #000; box-shadow: 0 0 15px var(--c-accent);
+
+        .back-btn {
+            font-family: var(--f-ui); font-weight: 700; letter-spacing: 2px;
+            text-decoration: none; color: inherit; text-transform: uppercase;
+            font-size: 0.9rem; border-bottom: 1px solid transparent; transition: 0.3s;
+        }
+        .back-btn:hover { border-bottom-color: currentColor; }
+
+        .brand-logo {
+            font-family: var(--f-display); font-style: italic; font-weight: 700; font-size: 1.5rem;
         }
 
         /* --- Layout --- */
-        .scroller { position: relative; z-index: 10; height: 1000vh; /* Very long scroll for cinematic pacing */ }
+        .scroller { position: relative; z-index: 10; padding-bottom: 20vh; }
 
-        .story-section {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            pointer-events: none; opacity: 0;
-            padding: 2rem; box-sizing: border-box;
-        }
-
-        /* Glass Card Design - Cinematic Dark Mode */
-        .story-content {
-            background: rgba(20, 5, 5, 0.7); /* Dark semi-transparent */
-            backdrop-filter: blur(10px);
-            padding: 3rem;
-            border-radius: 4px;
-            box-shadow: 0 0 30px rgba(255, 107, 53, 0.2);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            max-width: 800px;
-            text-align: center;
-            transform: scale(0.9);
-            pointer-events: auto;
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 4rem; box-sizing: border-box;
             position: relative;
-            overflow: hidden;
         }
 
-        /* "Recording" Effect Border */
-        .story-content::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, transparent, var(--c-accent), transparent);
-            animation: scanline 2s linear infinite;
-        }
-        @keyframes scanline { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-
+        /* Typography Styles */
         h1 {
-            font-family: var(--f-serif); font-size: clamp(3.5rem, 8vw, 6rem);
-            color: var(--c-accent); margin: 0 0 0.5rem; line-height: 1.1;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            font-family: var(--f-display); font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.9; margin: 0; color: var(--c-text);
+            position: relative; z-index: 2;
         }
         h2 {
-            font-family: var(--f-tech); font-size: clamp(1rem, 2vw, 1.5rem); color: #fff;
-            margin: 0 0 2rem; letter-spacing: 5px; text-transform: uppercase;
-            opacity: 0.8;
-        }
-        h3 {
-            font-family: var(--f-serif); font-size: 2.5rem; color: var(--c-secondary);
-            margin-bottom: 1.5rem;
-            display: inline-block;
-            border-bottom: 2px solid var(--c-accent);
-            padding-bottom: 0.5rem;
+            font-family: var(--f-ui); font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+            text-transform: uppercase; letter-spacing: 4px; color: var(--c-primary);
+            margin-bottom: 1rem; font-weight: 700;
         }
         p {
-            font-size: 1.2rem; line-height: 1.8; color: #eee; margin-bottom: 1.5rem;
-            text-align: justify; font-weight: 300;
+            font-size: 1.1rem; line-height: 1.8; color: #555; max-width: 600px;
+            margin-top: 2rem; font-weight: 300;
+        }
+        .highlight { color: var(--c-primary); font-weight: 600; font-style: italic; }
+
+        /* Content Blocks */
+        .content-block {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 3rem; margin-top: 2rem;
+            border-left: 4px solid var(--c-primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            max-width: 600px;
+            transform: translateX(-50px); opacity: 0; /* Init for animation */
         }
 
-        .highlight { color: var(--c-accent); font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .hero-img-container {
+            position: absolute; right: 10%; top: 50%; transform: translateY(-50%);
+            width: 30vw; height: 40vw; max-width: 400px; max-height: 500px;
+            z-index: 1; opacity: 0; /* Init */
+        }
+        .hero-img {
+            width: 100%; height: 100%; object-fit: cover;
+            box-shadow: 20px 20px 0 var(--c-primary);
+            filter: sepia(0.2) contrast(1.1);
+        }
 
-        /* Hero Specifics */
-        .hero-avatar {
-            width: 180px; height: 180px; margin: 0 auto 2rem; border-radius: 50%;
-            border: 4px solid var(--c-accent);
-            box-shadow: 0 0 30px var(--c-secondary);
-            position: relative; overflow: hidden;
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .hero-avatar:hover { transform: scale(1.1) rotate(5deg); }
-        .hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        /* Section Specifics */
+        #sec-hero { align-items: flex-start; }
+        #sec-biker { align-items: flex-end; text-align: right; }
+        #sec-biker .content-block { border-left: none; border-right: 4px solid var(--c-primary); transform: translateX(50px); }
+        #sec-travel { align-items: center; text-align: center; }
+        #sec-travel .content-block { border: none; border-top: 4px solid var(--c-accent); transform: translateY(50px); }
 
-        /* Polaroid Grid for Travel Section */
-        .polaroid-grid {
-            display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;
+        /* Toolkit Grid */
+        .toolkit {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem;
         }
-        .polaroid {
-            background: #fff; padding: 12px 12px 45px 12px;
-            color: #222; font-family: 'Caveat', cursive; font-size: 1.5rem; font-weight: bold;
-            transform: rotate(-3deg); transition: 0.4s;
-            width: 160px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        }
-        .polaroid:hover { transform: scale(1.15) rotate(2deg) translateY(-10px); z-index: 10; box-shadow: 0 20px 40px rgba(255, 107, 53, 0.4); }
-        .polaroid-img { width: 100%; height: 160px; background: #ddd; object-fit: cover; filter: sepia(0.2); }
+        .tool-item { text-align: center; }
+        .tool-icon { font-size: 2rem; color: var(--c-primary); margin-bottom: 0.5rem; }
+        .tool-label { font-family: var(--f-ui); font-size: 0.8rem; letter-spacing: 1px; color: #888; text-transform: uppercase; }
 
-        /* Toolkit Icons */
-        .toolkit-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 2rem;
+        /* Footer */
+        .footer-cta {
+            text-align: center; margin-top: 4rem;
         }
-        .tool-icon {
-            font-size: 2.5rem; color: var(--c-accent); margin-bottom: 0.5rem;
-            transition: 0.3s;
+        .social-row {
+            display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; font-size: 2rem;
         }
-        .tool-item:hover .tool-icon { transform: scale(1.2); color: var(--c-secondary); text-shadow: 0 0 15px var(--c-secondary); }
-        .tool-text { font-family: var(--f-tech); font-size: 0.9rem; color: #ccc; letter-spacing: 1px; }
+        .social-link { color: var(--c-text); transition: 0.3s; }
+        .social-link:hover { color: var(--c-primary); transform: scale(1.1); }
 
-        /* Footer Links */
-        .social-links {
-            display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;
+        /* Loader */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
         }
-        .social-link {
-            font-size: 2.5rem; color: #fff; transition: 0.3s; opacity: 0.7;
+        .loader-line {
+            width: 0%; height: 2px; background: var(--c-primary);
         }
-        .social-link:hover { opacity: 1; color: var(--c-accent); transform: translateY(-5px); text-shadow: 0 0 20px var(--c-accent); }
 
-        /* Text Animation Classes */
-        .split-char { display: inline-block; opacity: 0; transform: translateY(20px); }
+        @media (max-width: 768px) {
+            section { padding: 2rem; min-height: auto; margin-bottom: 5rem; }
+            h1 { font-size: 3.5rem; }
+            .hero-img-container { position: relative; width: 100%; height: 300px; right: auto; top: auto; transform: none; margin-bottom: 2rem; order: -1; }
+            .content-block { max-width: 100%; transform: none !important; opacity: 1 !important; padding: 2rem; }
+            #sec-biker { align-items: flex-start; text-align: left; }
+            #sec-biker .content-block { border-right: none; border-left: 4px solid var(--c-primary); }
+        }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="loader-text">LOADING...</div>
+    <div id="loader"><div class="loader-line"></div></div>
+
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <header class="nav-header">
+        <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Gallery</a>
+        <div class="brand-logo">Ava.</div>
+    </header>
+
+    <div class="scroller">
+
+        <!-- 1. Hero -->
+        <section id="sec-hero">
+            <div class="hero-img-container reveal-img">
+                <img src="/assets/img/guild/ava/avatar.webp" alt="Ava" class="hero-img">
+            </div>
+            <div style="z-index: 2; position: relative;">
+                <h2 class="reveal-text">The Visual Storyteller</h2>
+                <h1 class="reveal-text">房產小蜜<br><span style="color:var(--c-primary); font-style:italic;">AVA</span></h1>
+                <div class="content-block reveal-block">
+                    <p>「從追風騎士到影音說書人」</p>
+                    <p>以前我一個人騎車看風景；現在，我載著孩子，用他們的高度重新認識這片土地。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Biker Past -->
+        <section id="sec-biker">
+            <div style="z-index: 2; position: relative; max-width: 800px;">
+                <h2 class="reveal-text">Chapter I. The Rider</h2>
+                <h1 class="reveal-text">曾經的<br><span style="color:var(--c-accent)">熱血</span></h1>
+                <div class="content-block reveal-block">
+                    <p>我的背景有點「跳痛」。七年的行政資歷，當過飲料店老闆、民宿管家，甚至開過 Uber！</p>
+                    <p>以前的我是個<span class="highlight">重機女騎士</span>，享受時速 100 公里的自由。那份對速度的渴望，如今轉化為對影像節奏的掌控。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Family & Travel -->
+        <section id="sec-travel">
+            <div style="z-index: 2; position: relative;">
+                <h2 class="reveal-text">Chapter II. The Mother</h2>
+                <h1 class="reveal-text">現在的<br><span style="color:var(--c-primary)">溫度</span></h1>
+                <div class="content-block reveal-block">
+                    <p>結婚生子後，我換了一種速度看世界。與兩個寶貝組成「親子探險隊」，戴上藍牙對講機穿梭田中小巷。</p>
+                    <p><span class="highlight">「媽媽你看！」</span>孩子的視角成了我的新地圖。這些微旅行的點滴，比任何大片都更珍貴。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Work -->
+        <section id="sec-work">
+            <div style="z-index: 2; position: relative;">
+                <h2 class="reveal-text">Chapter III. The Professional</h2>
+                <h1 class="reveal-text">看見<br><span style="color:var(--c-accent)">價值</span></h1>
+                <div class="content-block reveal-block">
+                    <p>我不追求高大上的器材大片，我擅長用<span class="highlight">手機攝影</span>捕捉當下的溫度。</p>
+                    <p>專注於<span class="highlight">彰化田中一帶</span>，透過影片讓物件「說話」。找我不只是拍房子，更是拍出人與土地的故事。</p>
+
+                    <div class="toolkit">
+                        <div class="tool-item">
+                            <div class="tool-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+                            <div class="tool-label">Mobile Clip</div>
+                        </div>
+                        <div class="tool-item">
+                            <div class="tool-icon"><i class="fa-solid fa-helicopter"></i></div>
+                            <div class="tool-label">Aerial View</div>
+                        </div>
+                        <div class="tool-item">
+                            <div class="tool-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                            <div class="tool-label">Storytelling</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Footer -->
+        <section id="sec-contact" style="align-items: center; justify-content: center; min-height: 80vh;">
+            <div class="footer-cta reveal-block">
+                <h2 style="margin-bottom: 2rem;">Let's Create Together</h2>
+                <h1 style="font-size: 4rem; color: var(--c-primary);">拍攝找小蜜<br>你委託我就拍</h1>
+
+                <div class="social-row">
+                    <a href="https://www.threads.net/@ava332266" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/chhsr_bee" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+
+                <p style="margin-top: 4rem; font-size: 0.8rem; color: #aaa;">
+                    Made with <i class="fa-solid fa-heart" style="color:var(--c-primary)"></i> by SuperGalen's Dungeon
+                </p>
+            </div>
+        </section>
+
     </div>
 
-    <!-- P5 Overlay -->
-    <div id="p5-container"></div>
-    <!-- Three.js Background -->
-    <div id="webgl-container"></div>
-
-    <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> GUILD HALL</a>
-
-    <div class="scroller"></div>
-
-    <!-- 1. Hero -->
-    <section class="story-section" id="sec-hero">
-        <div class="story-content" style="background: transparent; backdrop-filter: none; box-shadow: none; border: none;">
-            <div class="hero-avatar">
-                <img src="/assets/img/guild/ava/avatar.webp" alt="Ava">
-            </div>
-            <h1 class="split-reveal">房產小蜜 AVA</h1>
-            <h2 class="split-reveal" style="color: var(--c-accent);">The Visual Storyteller</h2>
-            <p class="split-reveal" style="font-size: 1.5rem; text-align: center; color: #ddd; max-width: 600px; margin: 0 auto;">
-                「從追風騎士到影音說書人」
-            </p>
-        </div>
-    </section>
-
-    <!-- 2. Biker Past -->
-    <section class="story-section" id="sec-biker">
-        <div class="story-content reveal-up">
-            <h3><i class="fa-solid fa-motorcycle"></i> 曾經的熱血</h3>
-            <p>
-                我的背景有點「跳痛」。七年的行政資歷，當過飲料店老闆、民宿管家，甚至開過 Uber！
-            </p>
-            <p>
-                以前的我，是個熱血的<span class="highlight">重機女騎士</span>，喜歡騎車到處跑，享受時速100公里的自由，用相機紀錄大家的快樂回憶。那份對速度與自由的渴望，至今仍流淌在我的血液裡。
-            </p>
-        </div>
-    </section>
-
-    <!-- 3. Current (Mom & Travel) -->
-    <section class="story-section" id="sec-travel">
-        <div class="story-content reveal-up">
-            <h3><i class="fa-solid fa-child-reaching"></i> 現在的溫度</h3>
-            <p>
-                結婚生子後，我換了一種速度看世界。現在，我與兩個寶貝組成「親子探險隊」，戴上藍牙對講機，騎車穿梭在田中的大街小巷。
-            </p>
-            <p>
-                <span class="highlight">「媽媽你看！」</span>孩子的視角成了我的新地圖。我們發現了那些開車看不到的風景、路邊的小吃，這些微旅行的點滴，比任何大片都更珍貴。
-            </p>
-            <div class="polaroid-grid">
-                <div class="polaroid">
-                    <div class="polaroid-img" style="background: #333; display:flex; align-items:center; justify-content:center; color:#FFD700;"><i class="fa-solid fa-heart"></i></div>
-                    <div>Little Crew</div>
-                </div>
-                <div class="polaroid">
-                    <div class="polaroid-img" style="background: #333; display:flex; align-items:center; justify-content:center; color:#FF6B35;"><i class="fa-solid fa-camera"></i></div>
-                    <div>Micro Travel</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. Profession (Real Estate) -->
-    <section class="story-section" id="sec-work">
-        <div class="story-content reveal-up">
-            <h3><i class="fa-solid fa-video"></i> 看見價值</h3>
-            <p>
-                我不追求高大上的器材大片，我擅長的是用<span class="highlight">手機攝影</span>捕捉當下的「溫度」。
-            </p>
-            <p>
-                專注於<span class="highlight">彰化田中一帶</span>，透過影片讓物件「說話」。找我不只是拍房子，更是拍出人與土地的故事，傳遞專屬於你的價值。
-            </p>
-            <div class="toolkit-grid">
-                <div class="tool-item">
-                    <div class="tool-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
-                    <div class="tool-text">MOBILE CLIP</div>
-                </div>
-                <div class="tool-item">
-                    <div class="tool-icon"><i class="fa-solid fa-plane-departure"></i></div>
-                    <div class="tool-text">AERIAL SHOT</div>
-                </div>
-                <div class="tool-item">
-                    <div class="tool-icon"><i class="fa-solid fa-pen-nib"></i></div>
-                    <div class="tool-text">STORYTELLING</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 5. Footer -->
-    <section class="story-section" id="sec-contact">
-        <div class="story-content reveal-up">
-            <h2 style="color: var(--c-secondary); font-size: 2rem;">Let's Frame It</h2>
-            <h1 style="font-size: 3rem; margin-bottom: 2rem;">拍攝找小蜜<br>你委託我就拍</h1>
-
-            <div class="social-links">
-                <a href="https://www.threads.net/@ava332266" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/chhsr_bee" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-
-            <p style="margin-top: 3rem; font-size: 0.8rem; opacity: 0.5;">
-                Made with <i class="fa-solid fa-heart" style="color:var(--c-accent)"></i> by SuperGalen's Dungeon
-            </p>
-        </div>
-    </section>
-
-    <!-- P5.js HUD Overlay -->
+    <!-- P5.js Light Leaks -->
     <script>
         const sketch = (p) => {
-            let fontRegular;
-            let scrollSpeed = 0;
-            let targetScrollSpeed = 0;
+            let blobs = [];
+
+            class Blob {
+                constructor() {
+                    this.x = p.random(p.width);
+                    this.y = p.random(p.height);
+                    this.vx = p.random(-0.5, 0.5);
+                    this.vy = p.random(-0.5, 0.5);
+                    this.r = p.random(200, 500);
+                    // Warm colors: Red, Orange, Gold
+                    let colors = [
+                        p.color(138, 28, 28, 20),   // Wine Red
+                        p.color(212, 175, 55, 30),  // Gold
+                        p.color(255, 100, 50, 20)   // Warm Orange
+                    ];
+                    this.c = p.random(colors);
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if(this.x < -this.r) this.x = p.width + this.r;
+                    if(this.x > p.width + this.r) this.x = -this.r;
+                    if(this.y < -this.r) this.y = p.height + this.r;
+                    if(this.y > p.height + this.r) this.y = -this.r;
+                }
+                display() {
+                    p.noStroke();
+                    p.fill(this.c);
+                    p.circle(this.x, this.y, this.r);
+                }
+            }
 
             p.setup = () => {
-                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
-                p.textFont('Orbitron'); // Ensure font is loaded via CSS
+                for(let i=0; i<8; i++) blobs.push(new Blob());
             };
 
             p.draw = () => {
                 p.clear();
-
-                // Calculate scroll speed for HUD interaction
-                let currentY = window.scrollY;
-                let delta = Math.abs(currentY - (p.prevY || 0));
-                p.prevY = currentY;
-                targetScrollSpeed = p.lerp(targetScrollSpeed, delta, 0.1);
-
-                // HUD Colors
-                p.stroke(255, 215, 0, 150); // Gold
-                p.noFill();
-                p.strokeWeight(2);
-
-                const w = p.width;
-                const h = p.height;
-                const m = 40; // margin
-                const len = 40; // bracket length
-
-                // 1. Corner Brackets (Camera Viewfinder)
-                // Top Left
-                p.line(m, m, m + len, m);
-                p.line(m, m, m, m + len);
-                // Top Right
-                p.line(w - m, m, w - m - len, m);
-                p.line(w - m, m, w - m, m + len);
-                // Bottom Left
-                p.line(m, h - m, m + len, h - m);
-                p.line(m, h - m, m, h - m - len);
-                // Bottom Right
-                p.line(w - m, h - m, w - m - len, h - m);
-                p.line(w - m, h - m, w - m, h - m - len);
-
-                // 2. Crosshair Center
-                p.stroke(255, 100);
-                p.strokeWeight(1);
-                p.line(w/2 - 10, h/2, w/2 + 10, h/2);
-                p.line(w/2, h/2 - 10, w/2, h/2 + 10);
-
-                // 3. Dynamic Data (Bottom)
-                p.noStroke();
-                p.fill(255, 215, 0);
-                p.textSize(14);
-                p.textAlign(p.LEFT, p.BOTTOM);
-
-                // Fake Camera Data
-                let iso = 100 + Math.floor(targetScrollSpeed * 10);
-                let shutter = "1/" + (60 + Math.floor(targetScrollSpeed * 50));
-                let fstop = "f/" + (1.8 + (targetScrollSpeed * 0.1)).toFixed(1);
-
-                p.text(`ISO ${iso}   ${shutter}   ${fstop}   [RAW]`, m + 10, h - m - 10);
-
-                // 4. REC Indicator (Top Right)
-                if (Math.floor(p.millis() / 1000) % 2 === 0) {
-                    p.fill(255, 0, 0);
-                    p.circle(w - m - 60, m + 20, 10);
-                    p.fill(255);
-                    p.text("REC", w - m - 45, m + 25);
-                }
-
-                // 5. Scroll Speed Visualizer (Right Side)
-                p.stroke(255, 107, 53); // Orange
-                p.strokeWeight(4);
-                let barH = p.map(targetScrollSpeed, 0, 100, 0, 200, true);
-                p.line(w - m, h/2 + 100, w - m, h/2 + 100 - barH);
+                // Add some grain effect maybe? Too heavy for canvas pixel loop.
+                // Just animate blobs for atmosphere.
+                blobs.forEach(b => {
+                    b.update();
+                    b.display();
+                });
             };
 
             p.windowResized = () => {
@@ -388,175 +326,121 @@
         new p5(sketch);
     </script>
 
-    <!-- Three.js Background -->
+    <!-- Three.js Floating Gallery -->
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Setup ---
+        // Scene Setup
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Cinematic dark fog
-        scene.fog = new THREE.FogExp2(0x2b0a0a, 0.02);
-        scene.background = new THREE.Color(0x2b0a0a);
+        // Background color matches CSS but slightly lighter/white for 3D depth
+        scene.background = new THREE.Color(0xfbf7f2);
+        // Add subtle fog for depth
+        scene.fog = new THREE.Fog(0xfbf7f2, 5, 20);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 5);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 10;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Perf optimization
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Bloom for Neon Look) ---
-        // Note: Playwright might stall on ReadPixels if heavy, but let's try for "Cool" factor
-        // If it fails tests, we can disable bloom via flag, but visually we need it.
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2; // Strong glow
-        bloomPass.radius = 0.5;
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // --- The "Memory Tunnel" ---
-        // A long curved tube that we fly through
-
-        // 1. Create Curve
-        const points = [];
-        for (let i = 0; i < 100; i++) {
-            const t = i * 0.5;
-            points.push(new THREE.Vector3(
-                Math.sin(t) * 10,          // X curve
-                Math.cos(t * 0.5) * 5,     // Y curve
-                -i * 5                     // Z depth (forward)
-            ));
-        }
-        const curve = new THREE.CatmullRomCurve3(points);
-
-        // 2. Tunnel "Wireframe/Grid" Geometry
-        // We use a TubeGeometry but map a texture that looks like light streaks
-        const tubeGeo = new THREE.TubeGeometry(curve, 200, 4, 8, false);
-
-        // Create a texture programmatically for light streaks
-        const canvas = document.createElement('canvas');
-        canvas.width = 1024; canvas.height = 1024;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#000'; ctx.fillRect(0,0,1024,1024);
-
-        // Draw random "Speed Lines"
-        for(let i=0; i<50; i++) {
-            const x = Math.random() * 1024;
-            const w = Math.random() * 10 + 2;
-            const h = Math.random() * 500 + 200;
-            const op = Math.random();
-            const color = Math.random() > 0.5 ? '#FFD700' : '#FF6B35'; // Gold or Orange
-
-            ctx.fillStyle = color;
-            ctx.globalAlpha = op;
-            ctx.fillRect(x, Math.random() * 1024, w, h);
-        }
-
-        const tunnelTex = new THREE.CanvasTexture(canvas);
-        tunnelTex.wrapS = THREE.RepeatWrapping;
-        tunnelTex.wrapT = THREE.RepeatWrapping;
-        tunnelTex.repeat.set(4, 20); // Repeat along length
-
-        const tubeMat = new THREE.MeshBasicMaterial({
-            map: tunnelTex,
-            side: THREE.BackSide, // Inside the tunnel
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
+        // --- Objects: Floating "Polaroids" ---
+        const geometry = new THREE.PlaneGeometry(3, 4); // Standard photo ratio
+        const materialBase = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide
         });
 
-        const tunnel = new THREE.Mesh(tubeGeo, tubeMat);
-        scene.add(tunnel);
+        // We will create a group of planes scattered in Z-space
+        const galleryGroup = new THREE.Group();
+        scene.add(galleryGroup);
 
-        // 3. Floating Particles (Bokeh)
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = [];
-        for(let i=0; i<1000; i++) {
-            // Position randomly along the tunnel path roughly
-            const t = Math.random();
-            const point = curve.getPoint(t);
-            // Add scatter
-            point.x += (Math.random()-0.5) * 20;
-            point.y += (Math.random()-0.5) * 20;
-            pPos.push(point.x, point.y, point.z);
+        const planeCount = 15;
+        const planes = [];
+
+        // Function to create a "Polaroid" style mesh (white border + inner color/content)
+        // Since we don't have many textures, let's use colors or icons.
+        // Actually, let's make them "Glass" panels for a modern look, or just clean white cards.
+
+        for (let i = 0; i < planeCount; i++) {
+            const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.9,
+            }));
+
+            // Random positioning
+            // Spread along Y axis (vertical scroll)
+            // But we want them to float around as we scroll down
+            mesh.position.x = (Math.random() - 0.5) * 15;
+            mesh.position.y = -i * 6 + 5; // Stacked vertically
+            mesh.position.z = (Math.random() - 0.5) * 8;
+
+            mesh.rotation.z = (Math.random() - 0.5) * 0.5;
+            mesh.rotation.y = (Math.random() - 0.5) * 0.5;
+
+            // Add a border (Wireframe) for "Frame" look
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xd4af37, opacity: 0.3, transparent: true }));
+            mesh.add(line);
+
+            // Add shadow plane behind
+            const shadowGeo = new THREE.PlaneGeometry(3, 4);
+            const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.1, transparent: true });
+            const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+            shadow.position.z = -0.1;
+            shadow.position.x = 0.2;
+            shadow.position.y = -0.2;
+            mesh.add(shadow);
+
+            galleryGroup.add(mesh);
+            planes.push({ mesh, speed: Math.random() * 0.005 + 0.002 });
         }
-        pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({
-            color: 0xFFD700,
-            size: 0.3,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        const particles = new THREE.Points(pGeo, pMat);
-        scene.add(particles);
+
+        // --- Lights (Though using BasicMaterial, nice to have for future) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
 
         // --- Animation Loop ---
-        let uTime = 0;
         function animate() {
             requestAnimationFrame(animate);
-            uTime += 0.01;
 
-            // Animate tunnel texture to simulate speed independent of scroll
-            tunnelTex.offset.y -= 0.002;
+            // Subtle floating movement
+            planes.forEach((p, i) => {
+                p.mesh.rotation.z += Math.sin(Date.now() * 0.001 + i) * 0.0005;
+                p.mesh.position.y += Math.sin(Date.now() * 0.001 + i) * 0.002;
+            });
 
-            // Pulse particles
-            particles.rotation.z += 0.001;
-
-            composer.render();
+            renderer.render(scene, camera);
         }
         animate();
 
         // --- Scroll Interaction (GSAP) ---
-        const scrollProxy = { t: 0, fov: 75 };
-
-        gsap.to(scrollProxy, {
-            t: 0.95, // Go to end of tunnel
+        // Move the camera down through the gallery
+        gsap.to(camera.position, {
+            y: -planeCount * 5, // Move down deep
             ease: "none",
             scrollTrigger: {
                 trigger: ".scroller",
                 start: "top top",
                 end: "bottom bottom",
                 scrub: 0.5
-            },
-            onUpdate: () => {
-                // Update Camera Position along curve
-                const point = curve.getPoint(scrollProxy.t);
-                const lookAtPoint = curve.getPoint(Math.min(scrollProxy.t + 0.05, 1));
-
-                camera.position.copy(point);
-                camera.lookAt(lookAtPoint);
-
-                // Add slight "Warp" effect on speed
-                // Using velocity from scrollTrigger is tricky, let's use a simpler FOV trick
-                // if needed, but for now linear movement is safer for nausea.
             }
         });
 
-        // "Warp Speed" FOV Effect on fast scroll
-        let lastScrollY = window.scrollY;
-
-        window.addEventListener('scroll', () => {
-            const dy = window.scrollY - lastScrollY;
-            lastScrollY = window.scrollY;
-
-            const speed = Math.abs(dy);
-            const targetFOV = 75 + Math.min(speed * 2, 40); // Max FOV 115
-
-            gsap.to(camera, {
-                fov: targetFOV,
-                duration: 0.2,
-                overwrite: true,
-                onUpdate: () => camera.updateProjectionMatrix()
+        // Rotate planes as we pass them
+        planes.forEach((p, i) => {
+            gsap.to(p.mesh.rotation, {
+                x: Math.PI / 4, // Tilt
+                scrollTrigger: {
+                    trigger: ".scroller",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
             });
         });
 
@@ -565,102 +449,61 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
         // --- GSAP Text Animations ---
-        // Split text helper (basic)
-        document.querySelectorAll('.split-reveal').forEach(el => {
-            const text = el.innerText;
-            el.innerHTML = text.split('').map(char => `<span class="split-char">${char}</span>`).join('');
+        // Reveal Images
+        gsap.utils.toArray('.reveal-img').forEach(img => {
+            gsap.fromTo(img,
+                { opacity: 0, scale: 0.8, rotate: -5 },
+                {
+                    opacity: 1, scale: 1, rotate: 0,
+                    duration: 1.5, ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: img,
+                        start: "top 80%"
+                    }
+                }
+            );
         });
 
-        // Hero Reveal
-        gsap.to('.split-char', {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            stagger: 0.05,
-            ease: "back.out(1.7)",
-            delay: 1 // Wait for loader
+        // Reveal Text
+        gsap.utils.toArray('.reveal-text').forEach(text => {
+            gsap.fromTo(text,
+                { opacity: 0, y: 50 },
+                {
+                    opacity: 1, y: 0,
+                    duration: 1, ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: text,
+                        start: "top 85%"
+                    }
+                }
+            );
         });
 
-        // Section Reveals (Fade + Slide Up)
-        const sections = [
-            { id: "#sec-hero", start: 0, end: 0.15 },
-            { id: "#sec-biker", start: 0.2, end: 0.35 },
-            { id: "#sec-travel", start: 0.4, end: 0.55 },
-            { id: "#sec-work", start: 0.6, end: 0.75 },
-            { id: "#sec-contact", start: 0.8, end: 1.0 }
-        ];
-
-        sections.forEach((sec, index) => {
-            const el = document.querySelector(sec.id);
-
-            if (index === 0) {
-                // Hero Section: Visible immediately, only handles Exit
-                el.style.opacity = 1;
-                const content = el.querySelector('.story-content');
-                if(content) content.style.transform = 'scale(1)';
-
-                // Exit only
-                ScrollTrigger.create({
-                    trigger: ".scroller",
-                    start: `${(sec.end - 0.1) * 100}% top`,
-                    end: `${sec.end * 100}% top`,
-                    scrub: true,
-                    onUpdate: (self) => {
-                        el.style.opacity = 1 - self.progress;
-                    }
-                });
-            } else {
-                // Other Sections: Entrance and Exit
-                ScrollTrigger.create({
-                    trigger: ".scroller",
-                    start: `${sec.start * 100}% top`,
-                    end: `${(sec.start + 0.1) * 100}% top`,
-                    scrub: true,
-                    onUpdate: (self) => {
-                        const prog = self.progress;
-                        el.style.opacity = prog;
-                        // Scale effect for cinematic entry
-                        const content = el.querySelector('.story-content');
-                        if(content) content.style.transform = `scale(${0.9 + (prog * 0.1)})`;
-                    }
-                });
-
-                ScrollTrigger.create({
-                    trigger: ".scroller",
-                    start: `${(sec.end - 0.1) * 100}% top`,
-                    end: `${sec.end * 100}% top`,
-                    scrub: true,
-                    onUpdate: (self) => {
-                        el.style.opacity = 1 - self.progress;
-                    }
-                });
-            }
+        // Reveal Blocks
+        gsap.utils.toArray('.reveal-block').forEach(block => {
+            gsap.to(block, {
+                opacity: 1, x: 0,
+                duration: 1, ease: "power2.out",
+                scrollTrigger: {
+                    trigger: block,
+                    start: "top 80%"
+                }
+            });
         });
 
         // Loader
         window.addEventListener('load', () => {
             const loader = document.getElementById('loader');
+            const line = loader.querySelector('.loader-line');
+            gsap.to(line, { width: '100%', duration: 0.5 });
             gsap.to(loader, {
                 opacity: 0,
-                duration: 1,
+                delay: 0.6,
+                duration: 0.8,
                 onComplete: () => loader.remove()
-            });
-        });
-
-        // Cursor
-        const cursorDot = document.createElement('div');
-        cursorDot.style.cssText = "position:fixed;width:8px;height:8px;background:var(--c-accent);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)";
-        document.body.appendChild(cursorDot);
-
-        document.addEventListener('mousemove', (e) => {
-            gsap.to(cursorDot, {
-                x: e.clientX,
-                y: e.clientY,
-                duration: 0.1
             });
         });
 
