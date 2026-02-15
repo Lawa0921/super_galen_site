@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Spirit Tavern)', () => {
+test.describe('SPJ Guild Page (Golden Core)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -9,24 +9,26 @@ test.describe('SPJ Guild Page (Spirit Tavern)', () => {
     } catch (e) {
         console.log('Navigation timeout or error:', e);
     }
-    // Wait for loader to vanish
-    await page.waitForTimeout(2000);
+    // Wait for loader
+    await page.waitForTimeout(1000);
   });
 
   test('should display Hero Section', async ({ page }) => {
-    await expect(page.locator('#panel-hero h1')).toContainText('塞趴卷');
-    await expect(page.locator('.hero-subtitle')).toContainText('THE GUILD ARCHITECT');
+    await expect(page.locator('#hero h1')).toContainText('塞趴卷 SPJ');
+    await expect(page.locator('.avatar-img')).toBeVisible();
   });
 
-  test('should display Origin Panel', async ({ page }) => {
-    // It's off-screen initially, but exists in DOM
-    await expect(page.locator('#panel-origin h2')).toContainText('代碼鍊金術');
+  test('should display Intro Content', async ({ page }) => {
+    // Scroll to Intro
+    await page.evaluate("document.getElementById('intro').scrollIntoView()");
+    await expect(page.locator('#intro h2')).toContainText('起源代碼');
   });
 
-  test('should display Project Cards', async ({ page }) => {
-    const cards = page.locator('.project-card');
-    await expect(cards).toHaveCount(3);
-    await expect(cards.first()).toContainText('文字小鎮');
+  test('should display Project Grid', async ({ page }) => {
+    await page.evaluate("document.getElementById('projects').scrollIntoView()");
+    const projects = page.locator('.project-item');
+    await expect(projects).toHaveCount(3);
+    await expect(projects.first()).toContainText('文字小鎮');
   });
 
   test('should have Three.js canvas', async ({ page }) => {
