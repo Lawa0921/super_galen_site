@@ -83,7 +83,7 @@
         }
 
         .container {
-            max-width: 1000px; width: 100%; position: relative;
+            max-width: 1000px; width: 100%; position: relative; margin: 0 auto;
         }
 
         /* --- Ruins Overlay --- */
@@ -405,6 +405,36 @@
             </div>
         </section>
 
+        <!-- The Battalion (Expanded Lore) -->
+        <section id="battalion">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE BATTALION</h2>
+                    <div style="height: 2px; width: 100px; background: var(--c-yellow); margin: 0.5rem auto;"></div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+                    <div class="gs-reveal" style="flex: 1; min-width: 300px;">
+                        <h3 style="color: var(--c-cyan); font-family: var(--f-mono); margin-bottom: 1rem;">// UNIT STRENGTH: 30+</h3>
+                        <p style="color: #ccc; line-height: 1.8;">
+                            工廠大大小小內有二三十位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
+                            每天的日常就是在印桌遊，或是在開印的路上。<br>
+                            產線就是我們的戰場，每一張卡牌、每一個配件，都是我們共同打造的彈藥。
+                        </p>
+                    </div>
+                    <div class="gs-reveal" style="flex: 1; min-width: 300px; background: rgba(255,255,0,0.05); padding: 2rem; border: 1px dashed var(--c-yellow);">
+                        <h3 style="color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem;">// MISSION LOG</h3>
+                        <ul style="list-style: none; padding: 0; color: #aaa; line-height: 2;">
+                            <li>> 08:00 - SYSTEMS CHECK (開機)</li>
+                            <li>> 10:00 - TACTICAL BRIEFING (會議接洽)</li>
+                            <li>> 14:00 - PRODUCTION LINE SUPPORT (產線支援)</li>
+                            <li>> 20:00 - STRATEGIC PLANNING (未來規劃)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Services -->
         <section id="services">
             <div class="container">
@@ -434,6 +464,14 @@
                         <h3>Special Design</h3>
                         <p>解密桌遊生產 / 特殊配件設計。實現你最瘋狂的遊戲創意。</p>
                     </div>
+                </div>
+
+                <div class="gs-reveal" style="text-align: center; margin-top: 4rem; padding: 2rem; border: 1px solid #333; background: rgba(0,0,0,0.5);">
+                    <h3 style="color: #fff; font-family: var(--f-tech); margin-bottom: 1rem;">VISIT THE BASE</h3>
+                    <p style="color: #ccc; margin-bottom: 1.5rem;">有空可以來看看我們的新廠房，見證重啟後的鋼鐵意志。</p>
+                    <span style="color: var(--c-cyan); font-family: var(--f-mono); border: 1px solid var(--c-cyan); padding: 0.5rem 1rem;">
+                        <i class="fa-solid fa-location-dot"></i> COORDINATES CLASSIFIED (Contact for Tour)
+                    </span>
                 </div>
             </div>
         </section>
@@ -593,7 +631,7 @@
                     });
 
                     gsap.to(houseGroup.rotation, {
-                        y: Math.PI * 2,
+                        y: "+=" + Math.PI * 2,
                         duration: 10,
                         repeat: -1,
                         ease: "none",
