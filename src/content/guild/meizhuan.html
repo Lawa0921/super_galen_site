@@ -438,7 +438,15 @@
         // 2. The City (InstancedMesh of Wireframe Cubes)
         const buildingsCount = 400;
         const geometry = new THREE.BoxGeometry(10, 50, 10);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.1 });
+        // Use AdditiveBlending and disable depthWrite to prevent flickering/z-fighting
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x00f3ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
         const buildings = new THREE.InstancedMesh(geometry, material, buildingsCount);
 
         const dummy = new THREE.Object3D();
@@ -460,14 +468,27 @@
 
         // 3. The Sun (Finale)
         const sunGeo = new THREE.SphereGeometry(100, 32, 32);
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xff0055, wireframe: true });
+        const sunMat = new THREE.MeshBasicMaterial({
+            color: 0xff0055,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
         const sun = new THREE.Mesh(sunGeo, sunMat);
         sun.position.set(0, 50, -1000); // Far away initially
         scene.add(sun);
 
         // Sun Core
         const sunCoreGeo = new THREE.SphereGeometry(40, 32, 32);
-        const sunCoreMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        const sunCoreMat = new THREE.MeshBasicMaterial({
+            color: 0xffaa00,
+            transparent: true,
+            opacity: 0.9,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
         const sunCore = new THREE.Mesh(sunCoreGeo, sunCoreMat);
         sunCore.position.set(0, 50, -1000);
         scene.add(sunCore);
@@ -492,7 +513,9 @@
                 onUpdate: (self) => {
                     // Increase speed based on scroll velocity + position
                     const v = self.getVelocity();
-                    params.speed = 1 + Math.abs(v) * 0.05 + (self.progress * 5); // Gets faster
+                    // Clamp velocity to prevent teleporting objects (flickering effect)
+                    const clampedV = Math.min(Math.abs(v), 2000);
+                    params.speed = 1 + clampedV * 0.05 + (self.progress * 5); // Gets faster
 
                     // Expose to p5
                     window.scrollSpeed = params.speed * 100;
