@@ -304,6 +304,47 @@
                         </p>
                     </div>
 
+                    <!-- New Section: Project Protocols -->
+                    <div class="bento-item span-12 glass-panel gs-reveal" style="margin-top: 1rem;">
+                        <h3 class="heading-font" style="margin-bottom: 1.5rem;">Operation: <span class="accent-text">Protocols</span></h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+
+                            <!-- Project 1 -->
+                            <div style="border-left: 2px solid var(--c-primary); padding-left: 1.5rem;">
+                                <span class="tag" style="font-size: 0.7rem; margin-bottom: 0.5rem;">AI / GENERATIVE</span>
+                                <h4 style="font-family: var(--f-main); font-weight: 700; margin-bottom: 0.5rem;">Project: Chimera</h4>
+                                <p style="font-size: 0.9rem; opacity: 0.8;">
+                                    利用 LLM 與圖像生成模型，將抽象的數據分析報告轉化為視覺化的故事板。
+                                    打破「數據 = 枯燥」的刻板印象。
+                                </p>
+                            </div>
+
+                            <!-- Project 2 -->
+                            <div style="border-left: 2px solid var(--c-accent); padding-left: 1.5rem;">
+                                <span class="tag" style="font-size: 0.7rem; margin-bottom: 0.5rem; color: var(--c-accent); border-color: var(--c-accent);">AUTOMATION</span>
+                                <h4 style="font-family: var(--f-main); font-weight: 700; margin-bottom: 0.5rem;">Protocol: Zero-Touch</h4>
+                                <p style="font-size: 0.9rem; opacity: 0.8;">
+                                    構建端到端的數據處理流水線 (Pipeline)。
+                                    從原始數據清洗到儀表板更新，實現 <span class="accent-text">0 人工介入</span> 的自動化閉環。
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Skill Constellation -->
+                    <div class="bento-item span-12 gs-reveal" style="text-align: center; margin-top: 2rem;">
+                        <span class="outline-text" style="font-size: 4rem; font-weight: 800; opacity: 0.1;">TECH STACK</span>
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: -2rem;">
+                            <span class="tag">Python</span>
+                            <span class="tag">SQL</span>
+                            <span class="tag">Tableau</span>
+                            <span class="tag">Generative AI</span>
+                            <span class="tag">Workflow Automation</span>
+                            <span class="tag">Data Storytelling</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -461,20 +502,17 @@
                 const oy = originalPositions[i * 3 + 1];
                 const oz = originalPositions[i * 3 + 2];
 
-                // Noise formula
-                const noise = Math.sin(ox * 0.5 + time) * Math.cos(oy * 0.5 + time) * Math.sin(oz * 0.5 + time);
-                const pulse = 1 + (noise * 0.2) + (Math.sin(time * 2) * 0.05);
+                // Reduced Pulse (Simulate breathing, not slime)
+                const pulse = 1 + (Math.sin(time * 1.5) * 0.02);
 
                 // Mouse Impact (Dribble)
-                // Need to project mouse (screen) to world roughly
-                // Or just use a simpler distance check from center + mouse offset
                 const dx = (ox + mesh.position.x) - (mouse.x * 20);
                 const dy = (oy + mesh.position.y) - (mouse.y * 20);
                 const dist = Math.sqrt(dx*dx + dy*dy);
 
-                // Impact is stronger when mouse moves fast
+                // Impact dampened heavily (no more slime)
                 const velocityMag = Math.sqrt(mouseVel.x*mouseVel.x + mouseVel.y*mouseVel.y);
-                const impact = Math.max(0, 1 - dist / 8) * velocityMag * 10;
+                const impact = Math.max(0, 1 - dist / 12) * velocityMag * 2;
 
                 positions[i * 3] = ox * (pulse + impact);
                 positions[i * 3 + 1] = oy * (pulse + impact);
