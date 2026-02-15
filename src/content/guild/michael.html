@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michael Lai | The Data Lens</title>
-    <meta name="description" content="Michael Lai - 數據分析師 | 自動化專家 | 透過鏡頭看見價值">
+    <title>Michael Lai | The Data Nebula</title>
+    <meta name="description" content="Michael Lai - 數據分析師 | 自動化專家 | 數據與藝術的碰撞">
 
-    <!-- Fonts: Inter & Source Code Pro -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;600&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://unpkg.com/lenis@1.0.42/dist/lenis.min.js"></script>
 
     <!-- Three.js Import Map -->
     <script type="importmap">
@@ -29,16 +28,16 @@
 
     <style>
         :root {
-            /* Palette: Grok Suggestion */
-            --c-bg: #F8FAFC;       /* Off-White / Blue-Tinted Light Grey */
-            --c-surface: #FFFFFF;
-            --c-primary: #3B82A0;  /* Deep Grey-Blue */
-            --c-secondary: #64748B;/* Slate Grey */
-            --c-text: #0F172A;     /* Dark Charcoal / Near Black */
-            --c-accent: #F97316;   /* Warm Orange */
-            --c-border: #E2E8F0;
+            /* Palette: Explosive Contrast */
+            --c-bg: #F8FAFC;       /* Off-White */
+            --c-text: #0F172A;     /* Deep Ink */
+            --c-primary: #3B82A0;  /* Data Blue */
+            --c-secondary: #64748B;/* Muted Slate */
+            --c-accent: #F97316;   /* Nuclear Orange */
+            --c-glass: rgba(255, 255, 255, 0.7);
 
-            --ease-elegant: cubic-bezier(0.16, 1, 0.3, 1);
+            --f-main: 'Inter', sans-serif;
+            --f-mono: 'JetBrains Mono', monospace;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,431 +45,448 @@
         body {
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: 'Inter', sans-serif;
+            font-family: var(--f-main);
             overflow-x: hidden;
             line-height: 1.6;
-            cursor: none; /* Custom Cursor */
         }
-
-        a { cursor: none; }
-
-        /* Custom Cursor */
-        .cursor-dot, .cursor-circle {
-            position: fixed; top: 0; left: 0; transform: translate(-50%, -50%);
-            border-radius: 50%; pointer-events: none; z-index: 9999;
-        }
-        .cursor-dot { width: 8px; height: 8px; background: var(--c-accent); transition: width 0.2s, height 0.2s; }
-        .cursor-circle {
-            width: 40px; height: 40px; border: 1px solid var(--c-secondary); opacity: 0.5;
-            transition: width 0.3s, height 0.3s, border-color 0.3s;
-        }
-
-        body:hover .cursor-circle { opacity: 1; }
-        a:hover ~ .cursor-dot { width: 12px; height: 12px; }
-        a:hover ~ .cursor-circle { width: 60px; height: 60px; border-color: var(--c-accent); }
 
         /* --- Global Layout --- */
         #webgl-container {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0;
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0; pointer-events: none; /* Mouse interactions handled via global listener */
         }
 
-        .scroller { position: relative; z-index: 10; }
+        .scroller { position: relative; z-index: 10; pointer-events: none; }
+        .interactive-layer { pointer-events: auto; } /* Specific interactive elements */
 
         .section {
             min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center;
-            padding: 6rem 2rem;
+            padding: 4rem 2rem;
+            display: flex; align-items: center; justify-content: center;
             position: relative;
         }
 
         .container {
             max-width: 1400px; width: 100%; margin: 0 auto;
-            display: grid; grid-template-columns: repeat(12, 1fr); gap: 2rem;
+            position: relative;
         }
 
         /* --- Typography --- */
-        h1, h2, h3, h4 {
+        h1 {
+            font-size: clamp(4rem, 10vw, 9rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 0.9;
             color: var(--c-text);
-            font-weight: 600;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
+            mix-blend-mode: multiply; /* Blend with particles */
         }
 
-        .display-text {
-            font-size: clamp(3.5rem, 8vw, 8rem);
-            grid-column: span 12;
-            margin-bottom: 2rem;
-        }
+        h2 { font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 700; letter-spacing: -0.03em; margin-bottom: 2rem; }
 
-        .subtitle {
-            font-family: 'Source Code Pro', monospace;
-            color: var(--c-secondary);
-            font-size: 0.9rem;
-            letter-spacing: 0.05em;
+        .tag {
+            font-family: var(--f-mono);
+            font-size: 0.85rem;
+            color: var(--c-accent);
             text-transform: uppercase;
-            display: block; margin-bottom: 1rem;
+            letter-spacing: 0.1em;
+            display: inline-block;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--c-accent);
         }
 
         p {
             font-family: 'Noto Serif TC', serif;
-            font-size: 1.25rem; color: var(--c-secondary); margin-bottom: 1.5rem;
-            max-width: 60ch;
+            font-size: 1.2rem; color: var(--c-secondary);
+            max-width: 60ch; margin-bottom: 2rem;
         }
 
-        .highlight { color: var(--c-primary); font-weight: 600; }
-        .accent { color: var(--c-accent); }
+        .highlight { color: var(--c-primary); font-weight: 700; }
 
         /* --- Components --- */
         .glass-card {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: var(--c-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.8);
             padding: 3rem;
-            border-radius: 4px; /* Sharp/Clean */
-            box-shadow: 0 10px 30px -10px rgba(59, 130, 160, 0.05);
-            transition: transform 0.4s var(--ease-elegant), box-shadow 0.4s;
+            border-radius: 2px;
+            box-shadow: 0 20px 50px rgba(59, 130, 160, 0.1);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px -10px rgba(59, 130, 160, 0.1);
-            background: rgba(255, 255, 255, 0.7);
+        .glass-card:hover { transform: scale(1.02); background: rgba(255,255,255,0.9); }
+
+        .btn-massive {
+            display: inline-flex; align-items: center; gap: 1rem;
+            font-family: var(--f-mono); font-size: 1.2rem; font-weight: 700;
+            color: var(--c-text); text-decoration: none;
+            padding: 1.5rem 3rem;
+            border: 2px solid var(--c-text);
+            transition: 0.2s; background: transparent;
+        }
+        .btn-massive:hover {
+            background: var(--c-text); color: white;
+            box-shadow: 10px 10px 0 var(--c-accent);
+            transform: translate(-5px, -5px);
         }
 
+        .grid-3 {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+        }
+        @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+
+        /* --- Nav --- */
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: 'Source Code Pro', monospace; font-weight: 600;
-            color: var(--c-primary); text-decoration: none;
-            display: flex; align-items: center; gap: 0.5rem;
-            mix-blend-mode: multiply; opacity: 0.7; transition: 0.3s;
-        }
-        .nav-fixed:hover { opacity: 1; transform: translateX(5px); }
-
-        .btn-outline {
-            display: inline-block;
-            padding: 1rem 2rem;
-            border: 1px solid var(--c-secondary);
-            color: var(--c-secondary);
-            text-decoration: none;
-            font-family: 'Source Code Pro', monospace;
-            margin-top: 1rem;
-            transition: 0.3s;
-            position: relative; overflow: hidden;
-        }
-        .btn-outline::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-primary); transform: scaleX(0); transform-origin: left;
-            transition: transform 0.3s var(--ease-elegant); z-index: -1;
-        }
-        .btn-outline:hover { color: white; border-color: var(--c-primary); }
-        .btn-outline:hover::before { transform: scaleX(1); }
-
-        /* --- Specific Layouts --- */
-        .hero-text { grid-column: span 8; z-index: 2; }
-        .hero-visual { grid-column: span 4; display: flex; align-items: flex-end; justify-content: flex-end; }
-
-        .stat-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem;
-        }
-        .stat-item h3 { font-size: 3rem; color: var(--c-primary); margin-bottom: 0.5rem; }
-        .stat-item span { font-family: 'Source Code Pro', monospace; color: var(--c-secondary); font-size: 0.85rem; }
-
-        .grid-full { grid-column: span 12; }
-        .grid-half { grid-column: span 6; }
-        .grid-third { grid-column: span 4; }
-
-        @media (max-width: 900px) {
-            .hero-text, .grid-half, .grid-third { grid-column: span 12; }
-            .stat-grid { grid-template-columns: 1fr; }
-            .display-text { font-size: 3rem; }
+            font-family: var(--f-mono); font-weight: 700;
+            color: var(--c-text); text-decoration: none;
+            padding: 0.5rem 1rem; background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(10px); pointer-events: auto;
         }
 
-        /* --- Footer --- */
-        footer {
-            height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            text-align: center;
+        /* --- Scroll Indicator --- */
+        .scroll-hint {
+            position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%);
+            font-family: var(--f-mono); font-size: 0.8rem; opacity: 0.5;
+            animation: bounce 2s infinite;
         }
-        .social-link {
-            font-size: 2rem; color: var(--c-secondary); margin: 0 1.5rem; transition: 0.3s; display: inline-block;
+        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+
+        .avatar-glitch {
+            width: 100%; max-width: 400px;
+            filter: grayscale(100%) contrast(1.2);
+            mix-blend-mode: multiply;
+            transition: 0.5s;
         }
-        .social-link:hover { color: var(--c-accent); transform: translateY(-5px); }
+        .glass-card:hover .avatar-glitch { filter: grayscale(0%); mix-blend-mode: normal; }
+
+        .footer-link {
+            font-size: 4rem; color: var(--c-secondary); margin: 0 1rem; transition: 0.3s; display: inline-block;
+        }
+        .footer-link:hover { color: var(--c-accent); transform: scale(1.1) rotate(-5deg); text-shadow: 5px 5px 0 rgba(0,0,0,0.1); }
 
     </style>
 </head>
 <body>
 
-    <!-- Cursor -->
-    <div class="cursor-dot"></div>
-    <div class="cursor-circle"></div>
-
-    <a href="/guild" class="nav-fixed">← GUILD_INDEX</a>
+    <a href="/guild" class="nav-fixed">← GUILD_NEBULA</a>
 
     <div id="webgl-container"></div>
 
     <div class="scroller">
 
-        <!-- 1. Hero: The Clarity -->
+        <!-- 1. Hero: The Big Bang -->
         <section class="section">
-            <div class="container">
-                <div class="hero-text gs-reveal">
-                    <span class="subtitle">Michael Lai / Data Architect</span>
-                    <h1 class="display-text">Decoding<br><span class="highlight">Complexity.</span></h1>
-                    <p style="margin-top: 2rem;">
+            <div class="container interactive-layer" style="text-align: center;">
+                <div class="gs-reveal">
+                    <span class="tag">System Initialize: Kinetic</span>
+                    <h1>DATA<br><span style="color: transparent; -webkit-text-stroke: 2px var(--c-text);">EXPLOSION</span></h1>
+                    <p style="margin: 2rem auto; font-size: 1.5rem;">
                         我是 Michael Lai。<br>
-                        一個半路出家的數據分析師，致力於將混沌的數字轉化為清晰的洞見。
-                        目標是從分析師進化為<span class="accent">數據專家 (Data Expert)</span>。
+                        拒絕平庸的數據架構師。在混亂中引爆價值。
                     </p>
-
-                    <div class="stat-grid">
-                        <div class="stat-item">
-                            <h3>Code</h3>
-                            <span>Python / SQL / Automation</span>
-                        </div>
-                        <div class="stat-item">
-                            <h3>Vision</h3>
-                            <span>Tableau / AI Generation</span>
-                        </div>
-                        <div class="stat-item">
-                            <h3>Focus</h3>
-                            <span>Efficiency / Scalability</span>
-                        </div>
+                    <div style="margin-top: 3rem;">
+                        <a href="#about" class="btn-massive">IGNITE PROTOCOL <i class="fa-solid fa-arrow-down"></i></a>
                     </div>
                 </div>
+                <div class="scroll-hint">SCROLL TO ACCELERATE</div>
             </div>
         </section>
 
-        <!-- 2. The Philosophy (Glass Cards) -->
-        <section class="section">
-            <div class="container">
-                <div class="grid-full gs-reveal" style="margin-bottom: 2rem;">
-                    <span class="subtitle">Methodology</span>
-                    <h2>The <span class="highlight">Core Variables</span></h2>
-                </div>
+        <!-- 2. The Core (About) -->
+        <section class="section" id="about">
+            <div class="container interactive-layer">
+                <div class="glass-card gs-reveal" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 4rem; align-items: center;">
 
-                <!-- Automation -->
-                <div class="grid-third glass-card gs-reveal">
-                    <span class="subtitle" style="color: var(--c-accent);">// SOURCE CODE</span>
-                    <h3>Automation</h3>
-                    <p style="font-size: 1rem; margin-top: 1rem;">
-                        享受用原始碼將繁瑣的流程自動化。
-                        對我來說，自動化不僅是節省時間，更是一種優雅的藝術形式。
-                        追求 <span class="highlight">Zero-Touch</span> 的工作流閉環。
-                    </p>
-                </div>
-
-                <!-- AI -->
-                <div class="grid-third glass-card gs-reveal" style="transition-delay: 0.1s;">
-                    <span class="subtitle" style="color: var(--c-primary);">// GENERATIVE</span>
-                    <h3>AI Synthesis</h3>
-                    <p style="font-size: 1rem; margin-top: 1rem;">
-                        利用 AI 工具生成不同事物。
-                        探索人腦邏輯與機器創造力的邊界，將分析結果轉化為更具說服力的故事。
-                    </p>
-                </div>
-
-                <!-- Observation -->
-                <div class="grid-third glass-card gs-reveal" style="transition-delay: 0.2s;">
-                    <span class="subtitle" style="color: var(--c-secondary);">// CULTURE</span>
-                    <h3>Global Lens</h3>
-                    <p style="font-size: 1rem; margin-top: 1rem;">
-                        喜歡觀察各國文化，學習他人的長處。
-                        數據不僅存於資料庫，更存於社會行為的細節之中。
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. Personal Interest (Editorial Layout) -->
-        <section class="section">
-            <div class="container" style="align-items: center;">
-                <div class="grid-half gs-reveal">
-                    <!-- Photo Composition -->
-                    <div style="position: relative; padding: 2rem;">
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid var(--c-border); z-index: -1;"></div>
-                        <img src="/assets/img/guild/michael/avatar.webp" alt="Michael" style="width: 100%; max-width: 400px; display: block; filter: grayscale(100%); transition: 0.5s;" onmouseover="this.style.filter='grayscale(0%)'" onmouseout="this.style.filter='grayscale(100%)'">
-                        <div style="position: absolute; bottom: -2rem; right: -2rem; font-family: 'Source Code Pro'; background: var(--c-bg); padding: 1rem; border: 1px solid var(--c-primary);">
-                            MICHAEL_LAI.Obj
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid-half gs-reveal" style="padding-left: 2rem;">
-                    <span class="subtitle">Offline Mode</span>
-                    <h2 style="font-size: 3rem; margin-bottom: 2rem;">Balanced <span class="accent">Life</span></h2>
-
-                    <div style="margin-bottom: 2rem;">
-                        <h4 style="font-size: 1.5rem; display: flex; align-items: center; gap: 1rem;">
-                            <i class="fa-solid fa-cat" style="color: var(--c-secondary);"></i> Feline Logic
-                        </h4>
-                        <p style="font-size: 1rem;">
-                            貓咪是真愛。牠們教會我獨立思考，以及在混亂中保持優雅的姿態。
-                        </p>
+                    <div style="position: relative;">
+                        <img src="/assets/img/guild/michael/avatar.webp" alt="Michael" class="avatar-glitch">
+                        <div style="position: absolute; top: -2rem; left: -2rem; border: 2px solid var(--c-accent); width: 100px; height: 100px; z-index: -1;"></div>
                     </div>
 
                     <div>
-                        <h4 style="font-size: 1.5rem; display: flex; align-items: center; gap: 1rem;">
-                            <i class="fa-solid fa-basketball" style="color: var(--c-secondary);"></i> Kinetic Energy
-                        </h4>
-                        <p style="font-size: 1rem;">
-                            熱愛運動，尤其是籃球。
-                            在球場上的每一次跑位與投籃，都是對空間與時間的即時運算。
+                        <span class="tag">Origin Story</span>
+                        <h2>From Chaos to <span class="highlight">Structure</span></h2>
+                        <p>
+                            半路出家意味著我不受傳統束縛。
+                            我將數據視為一種<span class="highlight">原力 (Force)</span>。
+                            不僅僅是分析過去，更是用自動化代碼 (Source Code) 與生成式 AI，預測並構建未來。
+                        </p>
+
+                        <div style="display: flex; gap: 2rem; margin-top: 2rem;">
+                            <div>
+                                <h4 style="font-family: var(--f-mono); font-size: 2rem;">99%</h4>
+                                <span style="font-size: 0.8rem; color: var(--c-secondary);">AUTOMATION</span>
+                            </div>
+                            <div>
+                                <h4 style="font-family: var(--f-mono); font-size: 2rem;">0%</h4>
+                                <span style="font-size: 0.8rem; color: var(--c-secondary);">FRICTION</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. The Constellation (Interests) -->
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="margin-bottom: 3rem;">
+                    <span class="tag">Energy Sources</span>
+                    <h2>Kinetic <span class="highlight">Variables</span></h2>
+                </div>
+
+                <div class="grid-3">
+
+                    <!-- Automation -->
+                    <div class="glass-card gs-reveal">
+                        <i class="fa-solid fa-code" style="font-size: 3rem; color: var(--c-primary); margin-bottom: 1.5rem;"></i>
+                        <h3 style="font-family: var(--f-mono);">Source Code</h3>
+                        <p style="font-size: 1rem; margin-top: 1rem;">
+                            將繁瑣流程轉化為優雅的腳本。
+                            追求極致的效率與 "Zero-Touch" 自動化閉環。
                         </p>
                     </div>
+
+                    <!-- AI -->
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.1s;">
+                        <i class="fa-solid fa-brain" style="font-size: 3rem; color: var(--c-accent); margin-bottom: 1.5rem;"></i>
+                        <h3 style="font-family: var(--f-mono);">AI Synthesis</h3>
+                        <p style="font-size: 1rem; margin-top: 1rem;">
+                            利用 AI 生成未知。
+                            探索人腦邏輯與機器創造力的共生邊界。
+                        </p>
+                    </div>
+
+                    <!-- Life -->
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.2s;">
+                        <i class="fa-solid fa-bolt" style="font-size: 3rem; color: var(--c-text); margin-bottom: 1.5rem;"></i>
+                        <h3 style="font-family: var(--f-mono);">Kinetic Life</h3>
+                        <p style="font-size: 1rem; margin-top: 1rem;">
+                            貓咪教會我觀察 (Observation)。
+                            籃球教會我動能 (Flow)。
+                            生活本身就是一場巨大的數據運算。
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </section>
 
         <!-- 4. Footer -->
-        <footer>
-            <div class="container" style="text-align: center; display: block;">
+        <section class="section" style="min-height: 80vh;">
+            <div class="container interactive-layer" style="text-align: center;">
                 <div class="gs-reveal">
-                    <span class="subtitle">Connect Node</span>
-                    <h2 style="font-size: 4rem; margin-bottom: 2rem;">Ready to <span class="highlight">Analyze?</span></h2>
-                    <p style="margin: 0 auto 3rem; text-align: center;">正在尋找數據分析相關機會</p>
+                    <span class="tag">Link Start</span>
+                    <h2 style="font-size: 5rem;">Ready to <span class="highlight">Ignite?</span></h2>
+                    <p style="margin: 0 auto 3rem;">正在尋找數據分析相關機會</p>
 
                     <div>
-                        <a href="https://www.threads.net/@michael_lwt" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                        <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.threads.net/@michael_lwt" target="_blank" class="footer-link"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="footer-link"><i class="fa-brands fa-instagram"></i></a>
                     </div>
                 </div>
 
-                <div style="margin-top: 5rem; font-family: 'Source Code Pro'; font-size: 0.8rem; color: var(--c-secondary); opacity: 0.6;">
-                    MADE WITH <i class="fa-solid fa-code" style="color: var(--c-accent);"></i> BY SUPERGALEN'S DUNGEON
+                <div style="margin-top: 5rem; font-family: var(--f-mono); font-size: 0.8rem; color: var(--c-secondary); opacity: 0.6;">
+                    MADE WITH <i class="fa-solid fa-fire" style="color: var(--c-accent);"></i> BY SUPERGALEN'S DUNGEON
                 </div>
             </div>
-        </footer>
+        </section>
 
     </div>
 
-    <!-- Script -->
+    <!-- SCRIPT: The Particle Explosion -->
     <script type="module">
         import * as THREE from 'three';
 
-        // --- Cursor Logic ---
-        const cursorDot = document.querySelector('.cursor-dot');
-        const cursorCircle = document.querySelector('.cursor-circle');
-
-        document.addEventListener('mousemove', (e) => {
-            cursorDot.style.top = e.clientY + 'px';
-            cursorDot.style.left = e.clientX + 'px';
-
-            // Lag for circle
-            setTimeout(() => {
-                cursorCircle.style.top = e.clientY + 'px';
-                cursorCircle.style.left = e.clientX + 'px';
-            }, 50);
-        });
-
-        // --- Three.js Setup ---
+        // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Match CSS bg
-        scene.fog = new THREE.FogExp2(0xF8FAFC, 0.035);
+        scene.fog = new THREE.FogExp2(0xF8FAFC, 0.002); // Distance fog
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 15;
-        camera.position.x = 5;
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
-        scene.add(ambientLight);
+        // --- Particles: "The Brain" / "The Network" ---
+        const count = 3000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const originalPositions = new Float32Array(count * 3); // For memory
+        const velocities = new Float32Array(count * 3); // For physics
+        const colors = new Float32Array(count * 3);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLight.position.set(5, 10, 5);
-        scene.add(dirLight);
+        const color1 = new THREE.Color(0x3B82A0);
+        const color2 = new THREE.Color(0xF97316);
 
-        // --- The "Prism of Insight" (Rotating Glass Panels) ---
-        const group = new THREE.Group();
-        group.position.x = 2; // Offset to right for balance
-        scene.add(group);
+        for(let i=0; i<count; i++) {
+            // Initial Shape: A Sphere/Brain-like Cloud
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            const r = 15 + Math.random() * 2; // Radius
 
-        const glassMaterial = new THREE.MeshPhysicalMaterial({
-            color: 0x3B82A0,        // Blue-Grey
-            metalness: 0.1,
-            roughness: 0.05,
-            transmission: 0.95,     // Transparent
-            thickness: 1.5,
-            ior: 1.45,              // Glass IOR
-            side: THREE.DoubleSide,
-            clearcoat: 1,
-            clearcoatRoughness: 0.1
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            positions[i*3] = x;
+            positions[i*3+1] = y;
+            positions[i*3+2] = z;
+
+            originalPositions[i*3] = x;
+            originalPositions[i*3+1] = y;
+            originalPositions[i*3+2] = z;
+
+            // Random colors
+            const mixedColor = color1.clone().lerp(color2, Math.random());
+            colors[i*3] = mixedColor.r;
+            colors[i*3+1] = mixedColor.g;
+            colors[i*3+2] = mixedColor.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.3,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
         });
 
-        const frameMaterial = new THREE.LineBasicMaterial({ color: 0x64748B, transparent: true, opacity: 0.3 });
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
 
-        // Create 3 Panels
-        for(let i=0; i<3; i++) {
-            const geo = new THREE.BoxGeometry(4, 6, 0.1);
-            const panel = new THREE.Mesh(geo, glassMaterial);
+        // --- Interaction State ---
+        const mouse = new THREE.Vector2(9999, 9999); // Off-screen initially
+        const mouseWorld = new THREE.Vector3(); // Projected mouse pos in 3D
+        let scrollY = 0;
+        let isExploding = false;
 
-            // Add wireframe edge for high-tech feel
-            const edges = new THREE.EdgesGeometry(geo);
-            const line = new THREE.LineSegments(edges, frameMaterial);
-            panel.add(line);
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
 
-            // Stagger panels slightly
-            panel.position.z = i * -1.0;
-            panel.position.x = i * 0.5;
-            panel.rotation.y = Math.PI * 0.15; // Slightly more angled
-            panel.rotation.z = Math.PI * 0.05;
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        });
 
-            group.add(panel);
-        }
-
-        // Add Floating Particles ("Data Dust")
-        const partGeo = new THREE.BufferGeometry();
-        const partCount = 300; // Increased count for atmosphere
-        const positions = new Float32Array(partCount * 3);
-        for(let i=0; i<partCount*3; i++) {
-            positions[i] = (Math.random() - 0.5) * 30; // Wider spread
-        }
-        partGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const partMat = new THREE.PointsMaterial({ color: 0xF97316, size: 0.05, transparent: true, opacity: 0.6 });
-        const particles = new THREE.Points(partGeo, partMat);
-        scene.add(particles);
+        // Click to "Shockwave"
+        window.addEventListener('mousedown', () => {
+            isExploding = true;
+            setTimeout(() => { isExploding = false; }, 200);
+        });
 
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
 
+        // Optimized Mouse Projection (reused vectors)
+        const vec = new THREE.Vector3();
+        const dir = new THREE.Vector3();
+
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Rotate Group gently
-            group.rotation.y = Math.sin(time * 0.2) * 0.2 + (window.scrollY * 0.001);
-            group.rotation.x = Math.cos(time * 0.15) * 0.1;
+            // Project mouse to world depth (z=0 roughly)
+            vec.set(mouse.x, mouse.y, 0.5);
+            vec.unproject(camera);
+            dir.copy(vec).sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
 
-            // Particles flow up
-            particles.rotation.y = time * 0.05;
+            // Safety check for distance (avoid NaN)
+            if (isFinite(distance)) {
+                mouseWorld.copy(camera.position).add(dir.multiplyScalar(distance));
+            }
+
+            const positions = geometry.attributes.position.array;
+
+            // Influence factors
+            const scrollFactor = Math.min(window.scrollY * 0.05, 50);
+
+            // Optimization: Pre-calculate rotation
+            const angle = time * 0.1;
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+
+            for(let i=0; i<count; i++) {
+                const ix = i*3;
+                const iy = i*3+1;
+                const iz = i*3+2;
+
+                let x = positions[ix];
+                let y = positions[iy];
+                let z = positions[iz];
+
+                const ox = originalPositions[ix];
+                const oy = originalPositions[iy];
+                const oz = originalPositions[iz];
+
+                // 1. Base Motion: Rotate around Y
+                let rx = ox * cos - oz * sin;
+                let rz = ox * sin + oz * cos;
+
+                // Add Scroll Explosion (Push outward)
+                // Using approximate length for speed
+                const lenSq = rx*rx + oy*oy + rz*rz;
+                const len = Math.sqrt(lenSq);
+
+                const normX = rx/len || 0;
+                const normY = oy/len || 0;
+                const normZ = rz/len || 0;
+
+                // Target Position
+                let tx = rx + (normX * scrollFactor * (1.5));
+                let ty = oy + (normY * scrollFactor * (1.5));
+                let tz = rz + (normZ * scrollFactor * (1.5));
+
+                // 2. Mouse Repulsion (only calculate if mouse is on screen)
+                if (mouseWorld.z !== 0) { // Simple check if mouseWorld was updated
+                    const dx = x - mouseWorld.x;
+                    const dy = y - mouseWorld.y;
+                    // Approximate distance check first
+                    if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+                        const distSq = dx*dx + dy*dy;
+                        if (distSq < 225) { // 15^2
+                             const dist = Math.sqrt(distSq);
+                             const force = (15 - dist) * 0.5;
+                             tx += (dx / dist) * force;
+                             ty += (dy / dist) * force;
+                        }
+                    }
+                }
+
+                // 3. Shockwave
+                if (isExploding) {
+                     tx += (Math.random()-0.5) * 10;
+                     ty += (Math.random()-0.5) * 10;
+                     tz += (Math.random()-0.5) * 10;
+                }
+
+                // Smoothly interpolate
+                positions[ix] += (tx - x) * 0.1;
+                positions[iy] += (ty - y) * 0.1;
+                positions[iz] += (tz - z) * 0.1;
+            }
+
+            geometry.attributes.position.needsUpdate = true;
+
+            // Rotate entire system slightly based on mouse
+            particleSystem.rotation.x += (mouse.y * 0.2 - particleSystem.rotation.x) * 0.05;
+            particleSystem.rotation.y += (mouse.x * 0.2 - particleSystem.rotation.y) * 0.05;
 
             renderer.render(scene, camera);
         }
         animate();
 
 
-        // --- GSAP Interactions ---
-        // Setup Lenis for smooth scrolling
-        const lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
-        });
-        function raf(time) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-
-        // Reveal Animations
+        // --- GSAP Reveals ---
         gsap.registerPlugin(ScrollTrigger);
 
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
@@ -479,30 +495,21 @@
                     trigger: elem,
                     start: "top 85%",
                 },
-                y: 30,
+                y: 50,
+                scale: 0.9,
                 opacity: 0,
-                duration: 1.5,
-                ease: "power3.out"
+                duration: 1,
+                ease: "back.out(1.7)" // Explosive entrance
             });
         });
 
-        // Parallax 3D Object
-        gsap.to(group.position, {
-            y: -2, // Move down slightly
-            x: -2, // Move left slightly to make room for text
-            scrollTrigger: {
-                trigger: 'body',
-                start: 'top top',
-                end: 'bottom bottom',
-                scrub: 1
-            }
-        });
-
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
     </script>
 </body>
 </html>
