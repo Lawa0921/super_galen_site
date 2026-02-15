@@ -128,7 +128,7 @@
 
             /* Initial Animation State */
             opacity: 0;
-            transform: translateZ(-100px) rotateX(20deg);
+            transform: translateZ(-50px) rotateX(10deg);
         }
 
         .hud-card::before {
@@ -413,12 +413,12 @@
         // --- Scene Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020202, 0.002); // Deep dark fog
+        scene.fog = new THREE.FogExp2(0x020202, 0.001); // Deep dark fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         // Start position: Low angle, looking forward
-        camera.position.set(0, 5, 20);
-        camera.lookAt(0, 5, -100);
+        camera.position.set(0, 3, 10);
+        camera.lookAt(0, 3, -100);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -428,101 +428,90 @@
         // --- Objects ---
 
         // 1. The Grid Floor (Moving Road)
-        // We use a large plane with a grid texture or just a GridHelper that we move
+        // We use two grids to loop seamlessly if needed, or just reset UVs
         const gridSize = 2000;
-        const gridDivisions = 100;
+        const gridDivisions = 40;
         const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x00f3ff, 0x111111);
         gridHelper.position.y = -5;
         scene.add(gridHelper);
 
-        // 2. The City (InstancedMesh of Wireframe Cubes)
-        const buildingsCount = 400;
-        const geometry = new THREE.BoxGeometry(10, 50, 10);
-        // Use AdditiveBlending and disable depthWrite to prevent flickering/z-fighting
-        const material = new THREE.MeshBasicMaterial({
+        // 2. The "Gates" (Passing structures)
+        // Instead of random buildings, let's use spaced-out "Neon Gates"
+        const gateCount = 20;
+        const gateGeometry = new THREE.TorusGeometry(30, 0.5, 8, 4); // Square-ish torus
+        // Additive Blending for neon glow without z-fighting
+        const gateMaterial = new THREE.MeshBasicMaterial({
             color: 0x00f3ff,
-            wireframe: true,
             transparent: true,
-            opacity: 0.15,
+            opacity: 0.3,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
-        const buildings = new THREE.InstancedMesh(geometry, material, buildingsCount);
+        const gates = new THREE.InstancedMesh(gateGeometry, gateMaterial, gateCount);
 
         const dummy = new THREE.Object3D();
-        const buildingSpeed = []; // Store random speeds if needed
+        const gateSpacing = 200; // Distance between gates
 
-        for (let i = 0; i < buildingsCount; i++) {
-            // Random positions on sides
-            const x = (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 400); // Leave a gap in middle
-            const z = Math.random() * -2000; // Far into distance
-            const y = Math.random() * 50; // Variable height offset
-            const scaleY = 1 + Math.random() * 5; // Taller buildings
-
-            dummy.position.set(x, y, z);
-            dummy.scale.set(1, scaleY, 1);
+        // Initial placement
+        for (let i = 0; i < gateCount; i++) {
+            const z = -i * gateSpacing;
+            dummy.position.set(0, 5, z);
+            dummy.rotation.z = Math.PI / 4; // Diamond shape
+            dummy.scale.set(1, 1, 1);
             dummy.updateMatrix();
-            buildings.setMatrixAt(i, dummy.matrix);
+            gates.setMatrixAt(i, dummy.matrix);
         }
-        scene.add(buildings);
+        scene.add(gates);
 
         // 3. The Sun (Finale)
-        const sunGeo = new THREE.SphereGeometry(100, 32, 32);
+        const sunGeo = new THREE.CircleGeometry(80, 64);
         const sunMat = new THREE.MeshBasicMaterial({
             color: 0xff0055,
-            wireframe: true,
             transparent: true,
             opacity: 0.8,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
         const sun = new THREE.Mesh(sunGeo, sunMat);
-        sun.position.set(0, 50, -1000); // Far away initially
+        sun.position.set(0, 40, -1000); // Fixed far away
         scene.add(sun);
 
-        // Sun Core
-        const sunCoreGeo = new THREE.SphereGeometry(40, 32, 32);
-        const sunCoreMat = new THREE.MeshBasicMaterial({
-            color: 0xffaa00,
+        // Sun gradient/glow (Gradient texture)
+        // Simple trick: another larger circle behind with lower opacity
+        const sunGlowGeo = new THREE.CircleGeometry(120, 64);
+        const sunGlowMat = new THREE.MeshBasicMaterial({
+            color: 0xff0055,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.2,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
-        const sunCore = new THREE.Mesh(sunCoreGeo, sunCoreMat);
-        sunCore.position.set(0, 50, -1000);
-        scene.add(sunCore);
+        const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
+        sunGlow.position.set(0, 40, -1001);
+        scene.add(sunGlow);
 
         // --- Interaction Logic ---
 
-        // Scroll triggers
-        const params = {
-            zOffset: 0,
-            speed: 0.5, // Base speed
-            sunScale: 0.1,
-            sunOpacity: 0
+        // Global State
+        const state = {
+            baseSpeed: 0.5,      // Resting speed (cruising)
+            scrollBoost: 0,      // Added by scrolling
+            currentSpeed: 0.5,   // Actual simulation speed
+            distance: 0          // Total distance traveled
         };
 
-        // Scroll controls the "Speed" and progress
-        gsap.to(params, {
-            scrollTrigger: {
-                trigger: ".content-scroll",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 0.5,
-                onUpdate: (self) => {
-                    // Increase speed based on scroll velocity + position
-                    const v = self.getVelocity();
-                    // Clamp velocity to prevent teleporting objects (flickering effect)
-                    const clampedV = Math.min(Math.abs(v), 2000);
-                    params.speed = 1 + clampedV * 0.05 + (self.progress * 5); // Gets faster
-
-                    // Expose to p5
-                    window.scrollSpeed = params.speed * 100;
-                }
-            },
-            sunScale: 1.5, // Sun grows huge
-            ease: "power2.inOut"
+        // ScrollTrigger just adds "Impulse" to scrollBoost
+        ScrollTrigger.create({
+            trigger: ".content-scroll",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                // Determine boost based on velocity
+                // self.getVelocity() returns pixels per second approx
+                const v = Math.abs(self.getVelocity());
+                // Add to boost, clamp max
+                state.scrollBoost = Math.min(v * 0.05, 50);
+            }
         });
 
         // Cards Animation
@@ -545,52 +534,71 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. Move Grid (Illusion of speed)
-            // Actually, we just move the camera or the objects.
-            // Let's move the objects towards camera to simulate forward motion.
+            // 1. Physics / Speed Logic
+            // Decay boost
+            state.scrollBoost *= 0.95; // 5% decay per frame
 
-            const speed = params.speed;
+            // Calculate target speed
+            const targetSpeed = state.baseSpeed + state.scrollBoost;
 
-            // Move Buildings
-            for (let i = 0; i < buildingsCount; i++) {
-                buildings.getMatrixAt(i, dummy.matrix);
+            // Smoothly interpolate current speed (acceleration/deceleration)
+            state.currentSpeed += (targetSpeed - state.currentSpeed) * 0.1;
+
+            // Expose to p5 (KM/H) - Scale factor to look good (0-300 range)
+            // 0.5 unit/frame ~ 60km/h
+            // 50 unit/frame ~ 300km/h
+            let kmh = 60 + (state.currentSpeed * 4);
+            if (kmh > 299) kmh = 299;
+            window.scrollSpeed = kmh;
+
+            // 2. Move World (Relative to Camera)
+            // Instead of moving camera, we move objects towards camera (+Z)
+
+            // Move Grid
+            // Texture offset logic for infinite scroll
+            gridHelper.position.z += state.currentSpeed;
+            if (gridHelper.position.z > 50) gridHelper.position.z = -50; // Wrap around smoothly (grid size is large, but tile size is small)
+            // Wait, for GridHelper, we just need to wrap by one cell size.
+            // Grid size 2000, divisions 40 -> cell size 50.
+            if (gridHelper.position.z >= (gridSize / gridDivisions)) {
+                gridHelper.position.z = 0;
+            }
+
+            // Move Gates
+            for (let i = 0; i < gateCount; i++) {
+                gates.getMatrixAt(i, dummy.matrix);
                 dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
 
-                dummy.position.z += speed * 2; // Move towards camera
+                dummy.position.z += state.currentSpeed;
 
                 // Reset if passed camera
-                if (dummy.position.z > 50) {
-                    dummy.position.z = -2000;
+                if (dummy.position.z > 20) {
+                    dummy.position.z = -(gateCount * gateSpacing) + 20; // Send to back
+                    // Randomize rotation slightly for variety
+                    dummy.rotation.z = (Math.PI / 4) + (Math.random() * 0.2);
                 }
 
                 dummy.updateMatrix();
-                buildings.setMatrixAt(i, dummy.matrix);
+                gates.setMatrixAt(i, dummy.matrix);
             }
-            buildings.instanceMatrix.needsUpdate = true;
+            gates.instanceMatrix.needsUpdate = true;
 
-            // Move Sun (It gets closer only near end, managed by GSAP moving it or scaling it)
-            // Actually, let's keep sun fixed but scale it up based on scroll
-            sun.scale.set(params.sunScale, params.sunScale, params.sunScale);
-            sunCore.scale.set(params.sunScale, params.sunScale, params.sunScale);
-            sun.rotation.y += 0.002;
-            sun.rotation.z += 0.001;
+            // Camera Sway (Mouse)
+            const targetX = (mouseX / window.innerWidth - 0.5) * 5;
+            const targetY = (mouseY / window.innerHeight - 0.5) * 2 + 3;
 
-            // Move Grid
-            // Simple trick: reset Z position
-            gridHelper.position.z += speed * 2;
-            if (gridHelper.position.z > 100) gridHelper.position.z = 0;
-
-            // Mouse Sway
-            const targetX = (mouseX / window.innerWidth - 0.5) * 20;
             camera.position.x += (targetX - camera.position.x) * 0.05;
-            camera.rotation.z = -(targetX - camera.position.x) * 0.02; // Bank turn
+            camera.position.y += (targetY - camera.position.y) * 0.05;
+            camera.rotation.z = -(targetX - camera.position.x) * 0.05; // Bank turn
 
             renderer.render(scene, camera);
         }
 
         let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
         window.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
+            mouseY = e.clientY;
         });
 
         animate();
@@ -624,39 +632,69 @@
             noFill();
 
             // Speedometer (Bottom Right)
-            let speed = window.scrollSpeed || 0;
-            if (speed < 50) speed = 50 + sin(frameCount * 0.1) * 2; // Idle RPM
+            let speed = window.scrollSpeed || 60;
 
-            translate(width - 120, height - 100);
+            translate(width - 150, height - 120);
 
-            // Circle Arc
+            // Outer Ring
             strokeWeight(2);
-            arc(0, 0, 150, 150, PI, PI + HALF_PI + (speed * 0.005));
+            stroke(0, 243, 255, 100);
+            arc(0, 0, 200, 200, PI - 0.5, TWO_PI + 0.5);
 
-            // Text
+            // Active RPM Bar
+            // Map 0-300 to Angle
+            let startAngle = PI;
+            let endAngle = map(speed, 0, 300, PI, TWO_PI + 0.5);
+
+            stroke(0, 243, 255);
+            strokeWeight(8);
+            if (speed > 250) stroke(255, 0, 85); // Redline
+
+            arc(0, 0, 180, 180, startAngle, endAngle);
+
+            // Digital Readout
             noStroke();
             fill(255);
-            textSize(32);
+            textFont('Orbitron');
             textAlign(CENTER, CENTER);
+
+            textSize(48);
             text(Math.floor(speed), 0, -10);
-            textSize(12);
-            text("KM/H", 0, 20);
+
+            textSize(14);
+            fill(0, 243, 255);
+            text("KM/H", 0, 30);
+
+            // Gear indicator (Fake)
+            let gear = "N";
+            if (speed > 10) gear = "1";
+            if (speed > 60) gear = "2";
+            if (speed > 100) gear = "3";
+            if (speed > 160) gear = "4";
+            if (speed > 220) gear = "5";
+            if (speed > 260) gear = "6";
+
+            textSize(24);
+            fill(255, 200, 0);
+            text(gear, 60, -40);
 
             pop();
 
             // Top Left Info
             push();
-            translate(30, 80);
+            translate(40, 60);
             fill(0, 243, 255);
+            textFont('Orbitron');
             textSize(12);
+            textAlign(LEFT);
             text("SYS: ONLINE", 0, 0);
-            text("LOC: CYBER_CITY", 0, 15);
-            text("OBJ: REACH_JAPAN", 0, 30);
+            text("LOC: NEON_HIGHWAY", 0, 20);
+            text("OBJ: REACH_JAPAN", 0, 40);
 
             // Blinking dot
-            if (frameCount % 30 < 15) {
+            if (frameCount % 60 < 30) {
                 fill(255, 0, 85); // Pink
-                ellipse(-10, 0, 6, 6);
+                ellipse(-15, 0, 6, 6);
             }
             pop();
         }
