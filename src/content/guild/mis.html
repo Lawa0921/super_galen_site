@@ -77,6 +77,17 @@
             margin-top: 1rem; opacity: 0.8;
             border-bottom: 1px solid var(--c-gold);
             padding-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .tagline {
+            font-family: var(--f-body);
+            font-size: 1.5rem;
+            letter-spacing: 0.1em;
+            margin-top: 2rem;
+            opacity: 0; /* Animated in */
+            color: var(--c-soul);
+            text-shadow: 0 0 10px rgba(106, 13, 173, 0.5);
         }
 
         p {
@@ -148,17 +159,24 @@
             height: 60vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
             background: linear-gradient(to top, #000 10%, transparent);
         }
-        .socials { display: flex; gap: 3rem; margin-top: 3rem; }
+        .socials { display: flex; gap: 2rem; margin-top: 3rem; flex-wrap: wrap; justify-content: center; max-width: 800px; }
         .social-link {
-            font-size: 1.8rem; color: var(--c-text); transition: 0.5s; opacity: 0.5;
-            position: relative;
+            font-size: 1.5rem; color: var(--c-text); transition: 0.5s; opacity: 0.5;
+            position: relative; padding: 0.5rem 1rem;
+            border: 1px solid transparent;
+            text-decoration: none;
+            display: flex; align-items: center; gap: 0.5rem;
         }
+        .social-link span { font-size: 0.9rem; font-family: var(--f-header); letter-spacing: 0.1em; display: none; }
         .social-link::after {
-            content: ''; position: absolute; bottom: -10px; left: 50%; width: 0; height: 1px;
+            content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 1px;
             background: var(--c-gold); transition: 0.3s; transform: translateX(-50%);
         }
-        .social-link:hover { opacity: 1; color: var(--c-gold); transform: translateY(-5px); }
+        .social-link:hover { opacity: 1; color: var(--c-gold); transform: translateY(-5px); border-color: rgba(197, 160, 89, 0.3); }
         .social-link:hover::after { width: 100%; }
+        .social-link:hover span { display: inline-block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
 
         .back-btn {
             position: fixed; top: 30px; left: 30px; z-index: 100;
@@ -168,10 +186,25 @@
         }
         .back-btn:hover { opacity: 1; color: var(--c-gold); }
 
+        .btn {
+            display: inline-block; padding: 1rem 3rem;
+            border: 1px solid var(--c-text); color: var(--c-text);
+            text-decoration: none; font-family: var(--f-header); letter-spacing: 0.2em;
+            transition: 0.5s; position: relative; overflow: hidden;
+        }
+        .btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: var(--c-soul); transition: 0.5s; z-index: -1;
+        }
+        .btn:hover { border-color: var(--c-soul); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .btn:hover::before { left: 0; }
+
         @media (max-width: 768px) {
             h1 { font-size: 3.5rem; }
             .section { padding: 4rem 5%; }
             .card { padding: 2rem; }
+            .tagline { font-size: 1.1rem; }
+            .social-link { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -186,7 +219,8 @@
         <section class="section">
             <div class="subtitle">THE GUIDE OF SOULS</div>
             <h1>MIS</h1>
-            <div class="subtitle">PARADISE BIRD // FALLEN ANGEL</div>
+            <div class="tagline">迷途的靈魂阿——跟著我吧。</div>
+            <div class="subtitle" style="margin-top: 2rem; font-size: 0.9rem;">PARADISE BIRD // FALLEN ANGEL</div>
         </section>
 
         <!-- Profile -->
@@ -201,13 +235,14 @@
                 </div>
                 <p>
                     我是 <span style="color: var(--c-text); font-weight: bold;">小米絲 (Mis)</span>。<br>
-                    一位天使人妻系的 VTuber，以百合與黑禮服為標誌。<br><br>
+                    一位 <span style="color: var(--c-soul);">呆蠢可愛的人妻麻咪系 VTuber</span>，以百合與黑禮服為標誌。<br><br>
                     前世是 <span style="color: var(--c-soul);">天堂鳥</span>，戴著瘟疫醫生的鳥嘴面具，手持一束白色百合，負責將亡者的靈魂引渡至彼岸。
                     人們敬畏地稱呼我為「死神」。
                 </p>
                 <p>
-                    作為天使，本應無情無慾，但我卻因對人類情感的好奇而成為了那個 <span style="color: var(--c-text); border-bottom: 1px dashed white;">「錯誤 (Mis)」</span>。
-                    為了理解人心，我向神祈求降生為人。現在的我，是一枚容易沒電的人妻，偶爾還會拾起那段作為引渡者的記憶。
+                    因為對人類情感的好奇，我向神祈求降生為人，成為了那個 <span style="color: var(--c-text); border-bottom: 1px dashed white;">「錯誤 (Mis)」</span>。
+                    現在的我，是一枚容易沒電的人妻，偶爾還會拾起那段作為引渡者的記憶。
+                    平時喜歡和女兒 <span style="color: var(--c-gold);">小貓淵</span> 一起玩耍。
                 </p>
             </div>
         </section>
@@ -224,6 +259,9 @@
                     記錄著夢境、幻想與靈魂的故事。
                     《天堂鳥》、《牧羊人》、《破碎的千語》......
                     每一部作品都是我對這個世界與人性的觀察筆記。
+                </p>
+                <p style="margin-top: -1rem; border-top: none;">
+                    此外，我還負責 <span style="color: var(--c-gold);">「麻麻報報」</span> —— 與台灣天然災害資訊合作的專欄，守護著大家的平安。
                 </p>
                 <div style="text-align: center; margin-top: 2rem;">
                     <a href="https://www.penana.com/user/37037/ʚ-ᴍɪs-ɞ/portfolio" target="_blank" class="btn">READ NOVELS</a>
@@ -252,7 +290,7 @@
                         <div style="font-family: var(--f-body); opacity: 0.8; line-height: 1.8;">
                             Mis 是錯誤的意思。<br>
                             卻也是神賜予我的名字。<br>
-                            現在只是個電池容易壞掉的人妻。
+                            偶爾有點呆萌的人妻屬性。
                         </div>
                     </div>
                 </div>
@@ -274,8 +312,8 @@
                     <div style="font-family: var(--f-sub); letter-spacing: 0.2em;">VALORANT</div>
                 </div>
                 <div style="text-align: center;">
-                    <i class="fa-brands fa-steam" style="font-size: 2rem; color: var(--c-gold); margin-bottom: 1rem;"></i>
-                    <div style="font-family: var(--f-sub); letter-spacing: 0.2em;">STEAM GAMES</div>
+                    <i class="fa-solid fa-comments" style="font-size: 2rem; color: var(--c-gold); margin-bottom: 1rem;"></i>
+                    <div style="font-family: var(--f-sub); letter-spacing: 0.2em;">ZATAN</div>
                 </div>
             </div>
         </section>
@@ -284,9 +322,13 @@
         <footer class="footer">
             <div class="subtitle">SOUL CONNECTION</div>
             <div class="socials">
-                <a href="https://www.threads.net/@misgirlnotoperating" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/misgirlnotoperating/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://linkgoods.com/misutopia" target="_blank" class="social-link"><i class="fa-solid fa-link"></i></a>
+                <a href="https://www.youtube.com/@%E5%B0%8F%E7%B1%B3%E7%B5%B2MIS" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i> <span>YOUTUBE</span></a>
+                <a href="https://www.twitch.tv/mis_0326" target="_blank" class="social-link"><i class="fa-brands fa-twitch"></i> <span>TWITCH</span></a>
+                <a href="https://www.threads.net/@misgirlnotoperating" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i> <span>THREADS</span></a>
+                <a href="https://www.instagram.com/misgirlnotoperating/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i> <span>INSTAGRAM</span></a>
+                <a href="https://discord.gg/rB2d6qQK64" target="_blank" class="social-link"><i class="fa-brands fa-discord"></i> <span>DISCORD</span></a>
+                <a href="https://www.tiktok.com/@misgirl0326" target="_blank" class="social-link"><i class="fa-brands fa-tiktok"></i> <span>TIKTOK</span></a>
+                <a href="https://linkgoods.com/misutopia" target="_blank" class="social-link"><i class="fa-solid fa-link"></i> <span>LINKGOODS</span></a>
             </div>
             <div style="margin-top: 4rem; font-family: var(--f-header); font-size: 0.7rem; color: #666; letter-spacing: 0.2em;">
                 MADE WITH <i class="fa-solid fa-heart" style="color: var(--c-soul);"></i> BY SUPERGALEN'S DUNGEON
@@ -475,9 +517,6 @@
         petalShape.bezierCurveTo(-0.2, 0.8, -0.2, 0.2, 0, 0);
 
         const flowerGeo = new THREE.ShapeGeometry(petalShape);
-        // Create 3 petals by rotating geometry in a group (simulation via instance)
-        // For simplicity in InstancedMesh, we use a single geometry that looks like a flower
-        // Or we just scatter single petals. Let's scatter petals for "fallen angel" vibe.
 
         const petalMat = new THREE.MeshBasicMaterial({
             color: 0xffffff,
@@ -700,13 +739,19 @@
         });
 
         // Title Reveal
-        gsap.from("h1", {
+        const tl = gsap.timeline();
+        tl.from("h1", {
             opacity: 0,
             y: 20,
             duration: 2,
             delay: 0.5,
             ease: "power3.out"
-        });
+        })
+        .to(".tagline", {
+            opacity: 1,
+            duration: 2,
+            ease: "power2.out"
+        }, "-=1.0"); // Overlap slightly
     </script>
 </body>
 </html>
