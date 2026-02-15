@@ -65,13 +65,19 @@
         #cursor {
             display: none; /* No ring, purely subtle */
         }
+        @keyframes candleFlicker {
+            0%, 100% { box-shadow: 0 0 8px 2px rgba(255, 100, 0, 0.5); }
+            25% { box-shadow: 0 0 12px 3px rgba(255, 130, 20, 0.6); }
+            50% { box-shadow: 0 0 6px 1px rgba(255, 80, 0, 0.4); }
+            75% { box-shadow: 0 0 14px 4px rgba(255, 150, 40, 0.55); }
+        }
         #cursor-dot {
-            position: fixed; top: 0; left: 0; width: 4px; height: 4px;
-            background: rgba(255, 160, 60, 0.8); /* Warm candle orange */
+            position: fixed; top: 0; left: 0; width: 6px; height: 6px;
+            background: rgba(255, 160, 60, 0.9); /* Warm candle orange */
             border-radius: 50%; pointer-events: none; z-index: 10001;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px rgba(255, 100, 0, 0.5);
-            filter: blur(1px);
+            animation: candleFlicker 0.8s ease-in-out infinite;
+            filter: blur(0.5px);
             transition: width 0.1s, height 0.1s;
         }
         .hovered #cursor-dot {
@@ -214,7 +220,7 @@
         .quest-item {
             background: rgba(255,255,255,0.02); border: 1px solid #333;
             padding: 0.6rem; text-align: center; border-radius: 3px;
-            transition: 0.3s; cursor: default;
+            transition: background 0.3s, border-color 0.3s; cursor: default;
         }
         .quest-item:hover {
             background: rgba(212, 175, 55, 0.08); border-color: var(--c-gold);
@@ -230,7 +236,7 @@
         }
         .keyword {
             border: 1px solid #444; padding: 0.3rem 1rem; border-radius: 50px;
-            font-size: 0.8rem; transition: 0.3s; cursor: pointer; color: #aaa;
+            font-size: 0.8rem; transition: background 0.3s, border-color 0.3s, color 0.3s; cursor: pointer; color: #aaa;
             background: rgba(0,0,0,0.2);
         }
         .keyword:hover {
@@ -276,11 +282,10 @@
             section { padding: 3rem 1rem; }
         }
 
-        /* Initial Hidden Wrapper */
+        /* Initial Hidden Wrapper — opacity controlled by GSAP */
         #main-content {
             opacity: 0;
             pointer-events: none;
-            transition: opacity 1s ease-in-out;
             width: 100%;
         }
     </style>
@@ -471,7 +476,7 @@
         const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
         const mouseVec = new THREE.Vector2();
         let trailIndex = 0;
-        const trailMax = 30;
+        const trailMax = 50;
         let trailPhases;
 
         // --- DEFERRED INITIALIZATION ---
@@ -582,9 +587,9 @@
 
             const trailMaterial = new THREE.PointsMaterial({
                 color: 0xffaa33, // Warm candle flame
-                size: 0.6,
+                size: 1.2,
                 transparent: true,
-                opacity: 0.3, // Slightly more visible but small
+                opacity: 0.6,
                 map: createInkTexture(),
                 blending: THREE.AdditiveBlending,
                 depthWrite: false
@@ -650,14 +655,14 @@
                 for(let i=0; i<trailMax; i++) {
                      if(i !== trailIndex && tArr[i*3+1] < 50) {
                          // Float up (Heat rises)
-                         tArr[i*3+1] += 0.03 + Math.random() * 0.01;
+                         tArr[i*3+1] += 0.02 + Math.random() * 0.01;
 
                          // Sway (Wind/Heat turbulence)
-                         const sway = Math.sin(time * 5 + trailPhases[i] + tArr[i*3+1]) * 0.02; // Faster flicker
+                         const sway = Math.sin(time * 4 + trailPhases[i] + tArr[i*3+1]) * 0.025;
                          tArr[i*3] += sway;
 
-                         // Short life: disappear quickly
-                         if(tArr[i*3+1] > target.y + 2.0) tArr[i*3+1] = 9999;
+                         // Fade out at end of life
+                         if(tArr[i*3+1] > target.y + 3.0) tArr[i*3+1] = 9999;
                      }
                 }
                 trailPoints.geometry.attributes.position.needsUpdate = true;
@@ -703,7 +708,8 @@
             gsap.utils.toArray('.quest-grid').forEach(grid => {
                 gsap.from(grid.children, {
                     y: 30, opacity: 0, duration: 0.5, stagger: 0.1,
-                    scrollTrigger: { trigger: grid, start: "top 90%" }
+                    immediateRender: false,
+                    scrollTrigger: { trigger: grid, start: "top 90%", toggleActions: "play none none none" }
                 });
             });
 

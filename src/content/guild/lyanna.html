@@ -36,7 +36,7 @@
             --font-body: 'Noto Serif TC', serif;
             --font-sans: 'Lato', sans-serif;
             --card-width: 320px;
-            --card-height: 480px;
+            --card-height: 400px;
         }
 
         * {
@@ -292,13 +292,12 @@
         }
 
         /* Avatar Specifics */
-        .avatar-container {
+        .narrative-visual.avatar-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            /* Override box-shadow on parent for cleaner look */
-            box-shadow: none !important;
-            background: none !important;
+            box-shadow: none;
+            background: none;
             min-height: auto;
             padding: 2rem;
         }
@@ -351,6 +350,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            object-position: top center;
             border-radius: 2px;
             display: block;
         }
@@ -511,7 +511,7 @@
                 width: 100%;
                 max-width: 320px;
                 margin: 0 auto;
-                aspect-ratio: 2/3;
+                aspect-ratio: 4/5;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.1);
                 border-radius: 8px;
                 overflow: hidden;

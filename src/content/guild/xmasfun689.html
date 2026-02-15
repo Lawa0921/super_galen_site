@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XmasFun689 - Plasma Core</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-void: #020205;
+            --c-plasma: #00F3FF;
+            --c-core: #0066FF;
+            --c-gold: #FFD700;
+            --c-alert: #FF3333;
+
+            --f-tech: 'Share Tech Mono', monospace;
+            --f-head: 'Orbitron', sans-serif;
+            --f-body: 'Noto Serif TC', serif;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--c-void);
+            color: white;
+            font-family: var(--f-body);
+            overflow-x: hidden;
+        }
+
+        /* Layers */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; }
+        #plasma-arcs { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 5; pointer-events: none; }
+
+        /* CRT Scanline Overlay */
+        .scanlines {
+            position: fixed; inset: 0; z-index: 99; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            opacity: 0.6;
+        }
+
+        /* Layout */
+        .scroller { position: relative; z-index: 10; }
+        .section {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 4rem 5%;
+            pointer-events: none;
+            margin-bottom: 25vh;
+            position: relative;
+        }
+
+        /* Tech Card (Industrial Overhaul - Side by Side) */
+        .tech-card {
+            pointer-events: auto;
+            width: 100%; max-width: 1000px;
+            background: linear-gradient(135deg, rgba(20, 25, 30, 0.95), rgba(5, 10, 15, 0.98));
+            border: 2px solid #333;
+            border-left: 4px solid var(--c-plasma);
+            padding: 3rem;
+            position: relative;
+            backdrop-filter: blur(10px);
+            clip-path: polygon(
+                20px 0, 100% 0,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                0 100%, 0 20px
+            );
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 50px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 3rem;
+        }
+
+        .tech-card.reverse {
+            flex-direction: row-reverse;
+            border-left: 2px solid #333;
+            border-right: 4px solid var(--c-plasma);
+        }
+
+        .card-content { flex: 1; }
+        .card-visual { flex: 0 0 40%; max-width: 400px; }
+        .card-visual--center { text-align: center; }
+
+        .tech-card:hover {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 20px var(--c-plasma);
+            border-color: var(--c-plasma);
+        }
+
+        /* Float animation after magnetic pull completes */
+        @keyframes card-float {
+            0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+            50% { transform: translateY(-10px) rotate(0.4deg); }
+        }
+        .tech-card.is-floating {
+            animation: card-float 3.5s ease-in-out infinite;
+        }
+
+        /* Industrial Bolts */
+        .tech-card::before {
+            content: ''; position: absolute; top: 10px; right: 10px; width: 8px; height: 8px;
+            background: #555; border-radius: 50%; box-shadow: inset 1px 1px 2px black;
+        }
+        .tech-card::after {
+            content: ''; position: absolute; bottom: 10px; left: 10px; width: 8px; height: 8px;
+            background: #555; border-radius: 50%; box-shadow: inset 1px 1px 2px black;
+        }
+
+        /* Hazard Stripes */
+        .hazard-strip {
+            position: absolute; top: 0; left: 20px; right: 0; height: 5px;
+            background: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 10px,
+                var(--c-gold) 10px,
+                var(--c-gold) 20px
+            );
+            opacity: 0.8;
+        }
+        .hazard-strip--gold {
+            background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-gold) 10px, var(--c-gold) 20px);
+        }
+        .hazard-strip--plasma {
+            background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-plasma) 10px, var(--c-plasma) 20px);
+        }
+        .hazard-strip--alert {
+            background: repeating-linear-gradient(45deg, #000, #000 10px, var(--c-alert) 10px, var(--c-alert) 20px);
+        }
+
+        /* Theme Variants */
+        .card-gold { border-color: var(--c-gold); box-shadow: 0 0 20px rgba(255, 215, 0, 0.15); }
+        .card-gold::before, .card-gold::after { background: var(--c-gold); box-shadow: 0 0 10px var(--c-gold); }
+
+        .card-alert { border-color: var(--c-alert); box-shadow: 0 0 20px rgba(255, 50, 50, 0.15); }
+        .card-alert::before, .card-alert::after { background: var(--c-alert); box-shadow: 0 0 10px var(--c-alert); }
+
+        /* Typography */
+        h1 {
+            font-family: var(--f-head); font-size: 3.5rem; margin: 0; line-height: 1;
+            text-transform: uppercase; color: white;
+            text-shadow: 0 0 15px var(--c-plasma);
+            letter-spacing: 2px;
+        }
+        h2 {
+            font-family: var(--f-head); font-size: 2rem; margin: 0 0 1.5rem;
+            color: var(--c-plasma); display: flex; align-items: center; gap: 1rem;
+            text-shadow: 0 0 10px var(--c-plasma);
+        }
+        .code-line {
+            font-family: var(--f-tech); color: var(--c-plasma); font-size: 0.9rem;
+            letter-spacing: 2px; margin-bottom: 0.5rem; display: block; opacity: 0.8;
+        }
+        .code-line--alert { color: var(--c-alert); }
+
+        p { color: #ddd; line-height: 1.8; font-size: 1.1rem; margin-bottom: 1.5rem; text-align: justify; }
+
+        .highlight { color: var(--c-plasma); font-weight: bold; text-shadow: 0 0 5px var(--c-plasma); }
+        .gold { color: var(--c-gold); text-shadow: 0 0 5px var(--c-gold); }
+
+        /* Avatar */
+        .avatar-wrapper { position: relative; display: inline-block; }
+        .avatar-img {
+            width: 120px; height: 120px; object-fit: cover;
+            border: 2px solid var(--c-plasma);
+            box-shadow: 0 0 20px var(--c-plasma);
+            border-radius: 12px;
+        }
+        .level-badge {
+            position: absolute; bottom: -10px; right: -10px;
+            background: #000; border: 1px solid var(--c-plasma);
+            padding: 4px 12px; font-size: 0.9rem;
+            font-family: var(--f-tech); color: var(--c-plasma);
+        }
+        .hero-title { font-size: 3rem; }
+        .hero-quote { margin-top: 1.5rem; }
+
+        /* Stat Grid */
+        .stat-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px; margin-top: 2rem;
+        }
+        .stat-item {
+            border: 1px solid; padding: 5px 10px;
+            font-family: var(--f-tech);
+        }
+        .stat-item--gold { border-color: var(--c-gold); color: var(--c-gold); }
+        .stat-item--plasma { border-color: var(--c-plasma); color: var(--c-plasma); }
+        .stat-item--core { border-color: var(--c-core); color: var(--c-core); }
+
+        /* Section Title Variants */
+        .section-title--gold { color: var(--c-gold); }
+        .section-title--alert { color: var(--c-alert); text-shadow: 0 0 10px var(--c-alert); }
+
+        /* Images */
+        .holo-frame {
+            position: relative; padding: 4px;
+            background: rgba(0, 243, 255, 0.05);
+            margin-bottom: 1.5rem; border: 1px solid rgba(0, 243, 255, 0.3);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+        .holo-frame--gold { border-color: var(--c-gold); }
+        .holo-frame--alert { border-color: var(--c-alert); }
+        .holo-frame--mt { margin-top: 1rem; }
+        .holo-img { width: 100%; display: block; filter: contrast(1.1) brightness(0.9); }
+        .holo-tag {
+            position: absolute; bottom: 5px; right: 5px;
+            background: rgba(0,0,0,0.8); color: var(--c-plasma);
+            font-family: var(--f-tech); font-size: 0.7rem; padding: 2px 8px;
+            border: 1px solid var(--c-plasma);
+        }
+        .holo-tag--gold { border-color: var(--c-gold); color: var(--c-gold); }
+        .holo-tag--alert { border-color: var(--c-alert); color: var(--c-alert); }
+
+        /* Element Grid */
+        .element-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1rem; text-align: center;
+        }
+        .element-card { border: 1px solid; padding: 1rem; }
+        .element-card--water { border-color: var(--c-core); background: rgba(0, 102, 255, 0.1); }
+        .element-card--thunder { border-color: var(--c-plasma); background: rgba(0, 243, 255, 0.1); }
+        .element-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .element-icon--water { color: var(--c-core); }
+        .element-icon--thunder { color: var(--c-plasma); }
+        .element-label { margin: 0; font-family: var(--f-head); }
+        .element-label--water { color: var(--c-core); }
+        .element-label--thunder { color: var(--c-plasma); }
+
+        /* Quote Box */
+        .quote-box {
+            background: rgba(0, 243, 255, 0.1);
+            border-left: 3px solid var(--c-plasma);
+            padding: 10px;
+        }
+        .quote-text { margin: 0; font-style: italic; color: white; }
+
+        @media (max-width: 900px) {
+            .tech-card, .tech-card.reverse {
+                flex-direction: column;
+                padding: 2rem;
+                gap: 2rem;
+            }
+            .card-visual { flex: 0 0 auto; width: 100%; max-width: 100%; }
+        }
+
+        /* Footer */
+        .footer {
+            height: 40vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative; z-index: 20; background: linear-gradient(to top, #000, transparent);
+            margin-top: 15vh;
+        }
+        .footer-title { font-family: var(--f-head); color: var(--c-plasma); }
+        .footer-credit {
+            font-family: var(--f-tech); font-size: 0.8rem;
+            color: #666; letter-spacing: 1px;
+        }
+        .social-bar { display: flex; gap: 2rem; margin-bottom: 2rem; }
+        .social-btn {
+            width: 70px; height: 70px;
+            border: 2px solid var(--c-plasma);
+            display: flex; align-items: center; justify-content: center; color: var(--c-plasma);
+            transition: 0.3s; background: rgba(0,0,0,0.6);
+            text-decoration: none; font-size: 1.5rem;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+        .social-btn:hover {
+            background: var(--c-plasma); color: #000;
+            box-shadow: 0 0 30px var(--c-plasma);
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .section { padding: 4rem 1rem; }
+            h1 { font-size: 2.5rem; }
+            .tech-card { padding: 1.5rem; }
+        }
+
+        .back-btn {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--c-plasma);
+            color: var(--c-plasma); padding: 10px 20px; text-decoration: none;
+            font-family: var(--f-tech); text-transform: uppercase;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: var(--c-plasma); color: black; }
+
+        /* Loading Overlay */
+        .loader-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: var(--c-void);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .loader-overlay.is-hidden {
+            opacity: 0; visibility: hidden; pointer-events: none;
+            transition: opacity 1.2s ease, visibility 1.2s ease;
+        }
+        .loader-ring {
+            position: relative;
+            width: 100px; height: 100px;
+            border: 3px solid rgba(0, 243, 255, 0.15);
+            border-top-color: var(--c-plasma);
+            border-radius: 50%;
+            animation: ring-spin 1s linear infinite;
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.3), inset 0 0 25px rgba(0, 243, 255, 0.1);
+            margin-bottom: 2rem;
+            transition: transform 0.8s ease-out, opacity 0.6s ease-out, box-shadow 0.6s ease-out;
+        }
+        .loader-ring::after {
+            content: ''; position: absolute; inset: 8px;
+            border: 2px solid transparent;
+            border-bottom-color: var(--c-gold);
+            border-radius: 50%;
+            animation: ring-spin 1.5s linear infinite reverse;
+        }
+        @keyframes ring-spin { to { transform: rotate(360deg); } }
+
+        /* Phase 2: Ring bursts outward */
+        .loader-overlay.is-ready .loader-ring {
+            transform: scale(3);
+            opacity: 0;
+            box-shadow: 0 0 120px rgba(0, 243, 255, 0.8);
+        }
+        .loader-overlay.is-ready .loader-ring::after {
+            opacity: 0;
+        }
+
+        .loader-title {
+            font-family: var(--f-head); font-size: 1.2rem;
+            color: var(--c-plasma); letter-spacing: 4px;
+            text-transform: uppercase; margin-bottom: 1.5rem;
+            text-shadow: 0 0 10px var(--c-plasma);
+            transition: opacity 0.4s, transform 0.6s;
+        }
+        .loader-overlay.is-ready .loader-title {
+            opacity: 0; transform: scale(1.5);
+        }
+
+        .loader-status {
+            font-family: var(--f-tech); font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            list-style: none; padding: 0; margin: 0;
+            transition: opacity 0.3s;
+        }
+        .loader-overlay.is-ready .loader-status { opacity: 0; }
+        .loader-status li {
+            opacity: 0; animation: status-appear 0.3s forwards;
+            margin-bottom: 0.3rem;
+        }
+        .loader-status li:nth-child(1) { animation-delay: 0.2s; }
+        .loader-status li:nth-child(2) { animation-delay: 0.7s; }
+        .loader-status li:nth-child(3) { animation-delay: 1.2s; }
+        .loader-status li:nth-child(4) { animation-delay: 1.7s; }
+        @keyframes status-appear { to { opacity: 1; } }
+
+        /* Plasma flash expanding from center during transition */
+        .loader-flash {
+            position: absolute;
+            width: 0; height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.6), rgba(0, 243, 255, 0.2) 40%, transparent 70%);
+            opacity: 0;
+            transition: width 1s ease-out, height 1s ease-out, opacity 1s ease-out;
+        }
+        .loader-overlay.is-ready .loader-flash {
+            width: 300vmax; height: 300vmax;
+            opacity: 1;
+        }
+        .loader-overlay.is-hidden .loader-flash {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div class="loader-overlay" id="loader">
+        <div class="loader-flash"></div>
+        <div class="loader-ring"></div>
+        <div class="loader-title">PLASMA CORE</div>
+        <ul class="loader-status">
+            <li>&gt; Initializing WebGL renderer...</li>
+            <li>&gt; Loading plasma environment...</li>
+            <li>&gt; Calibrating gear matrix...</li>
+            <li>&gt; System ready.</li>
+        </ul>
+    </div>
+
+    <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Guild Hall</a>
+
+    <div class="scanlines"></div>
+
+    <!-- Background Layers -->
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+    <canvas id="plasma-arcs"></canvas>
+
+    <div class="scroller">
+
+        <!-- 1. Hero -->
+        <section class="section">
+            <div class="tech-card">
+                <div class="hazard-strip"></div>
+
+                <div class="card-visual card-visual--center">
+                    <div class="avatar-wrapper">
+                        <img src="/assets/img/guild/xmasfun689/avatar.webp" class="avatar-img" alt="XmasFun689 Avatar">
+                        <div class="level-badge">LV.8</div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <div>
+                        <span class="code-line">// ID: XMASFUN689</span>
+                        <h1 class="hero-title">PLASMA<br>ENGINEER</h1>
+                    </div>
+
+                    <p class="hero-quote">
+                        「擁有 <span class="gold">戰士的體格</span>，卻守護著 <span class="highlight">召喚師的靈魂</span>。」
+                    </p>
+                    <p>
+                        在這個鋼鐵與電漿交織的矩陣中，我是引導能量的工程師。
+                        八年的工地煉金術，將汗水與意志熔鑄成城市的基石。
+                        我手握雷電 (Power) 與流水 (Cooling)，駕馭著大地的鋼鐵巨獸。
+                    </p>
+
+                    <!-- Circuit Stats -->
+                    <div class="stat-grid">
+                        <div class="stat-item stat-item--gold">STR: S+</div>
+                        <div class="stat-item stat-item--plasma">INT: A</div>
+                        <div class="stat-item stat-item--gold">DEF: S</div>
+                        <div class="stat-item stat-item--core">MANA: HIGH</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 2. Machines -->
+        <section class="section">
+            <div class="tech-card card-gold reverse">
+                <div class="hazard-strip hazard-strip--gold"></div>
+
+                <div class="card-visual">
+                    <div class="holo-frame holo-frame--gold">
+                        <img src="/assets/img/guild/xmasfun689/excavator.webp" class="holo-img" alt="Excavator">
+                        <div class="holo-tag holo-tag--gold">EXCAVATOR_UNIT</div>
+                    </div>
+                    <div class="holo-frame holo-frame--gold holo-frame--mt">
+                        <img src="/assets/img/guild/xmasfun689/roller.webp" class="holo-img" alt="Roller">
+                        <div class="holo-tag holo-tag--gold">ROLLER_UNIT</div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <span class="code-line">Module: HEAVY_MACHINERY</span>
+                    <h2 class="section-title--gold"><i class="fa-solid fa-truck-monster"></i> Iron Legion</h2>
+
+                    <p>
+                        <b>大地魔像 (Excavator)</b><br>
+                        我的首席召喚獸。這隻鋼鐵手臂能輕易撕裂大地，重塑地形。
+                        雖然與執照擦肩而過（嘆），但這份操作手感早已刻入靈魂。
+                    </p>
+                    <p>
+                        <b>鎮壓巨獸 (Roller)</b><br>
+                        秩序的維護者。以絕對的重量碾平一切崎嶇，為未來的建築鋪設最堅實的基礎。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 3. Skills (Circuits) -->
+        <section class="section">
+            <div class="tech-card">
+                <div class="hazard-strip hazard-strip--plasma"></div>
+
+                <div class="card-visual">
+                    <div class="element-grid">
+                        <div class="element-card element-card--water">
+                            <i class="fa-solid fa-droplet element-icon element-icon--water"></i>
+                            <h4 class="element-label element-label--water">WATER</h4>
+                        </div>
+                        <div class="element-card element-card--thunder">
+                            <i class="fa-solid fa-bolt element-icon element-icon--thunder"></i>
+                            <h4 class="element-label element-label--thunder">THUNDER</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <span class="code-line">System: ELEMENTAL_MATRIX</span>
+                    <h2><i class="fa-solid fa-bolt"></i> Circuit Mage</h2>
+
+                    <p>
+                        <b>水之脈絡</b> - 建築物如同巨大的生物，而管道是它的血管。我通曉流體力學，確保生命之源在其中順暢流動。<br><br>
+                        <b>雷之神經</b> - 編織能量的網。在看不見的牆壁中，佈設著傳遞意志的神經網路。
+                    </p>
+                    <div class="quote-box">
+                        <p class="quote-text">「朋友都叫我水電土三系混合大法師。」</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 4. Personal -->
+        <section class="section">
+            <div class="tech-card card-alert reverse">
+                <div class="hazard-strip hazard-strip--alert"></div>
+
+                <div class="card-visual">
+                    <div class="holo-frame holo-frame--alert">
+                        <img src="/assets/img/guild/xmasfun689/plushies.webp" class="holo-img" alt="Plushies">
+                        <div class="holo-tag holo-tag--alert">MORALE_BOOSTER</div>
+                    </div>
+                </div>
+
+                <div class="card-content">
+                    <span class="code-line code-line--alert">File: INNER_SANCTUM</span>
+                    <h2 class="section-title--alert"><i class="fa-solid fa-heart"></i> Soft Core</h2>
+
+                    <p>
+                        <b>戰士的柔情</b><br>
+                        卸下重甲，戰士亦有溫柔的一面。
+                        習慣了單人副本的孤獨，<b>猴子布偶</b> 與 <b>Kururu 曹長</b> (Keroro Gunso) 是我最忠實的使魔。
+                    </p>
+                    <p>
+                        平常玩遊戲有召喚類選召喚，因為都自己一個人玩比較多... 但在這冷硬的工業世界裡，它們守護著我未曾磨滅的初心。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <h2 class="footer-title">LINK START</h2>
+            <div class="social-bar">
+                <a href="https://www.threads.net/@xmasfun689" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/xmasfun689/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <div class="footer-credit">MADE WITH LOVE BY SUPERGALEN'S DUNGEON</div>
+        </footer>
+    </div>
+
+    <!-- Shared Page Visibility State -->
+    <script>
+        window.__pageVisible = true;
+        document.addEventListener('visibilitychange', function() {
+            window.__pageVisible = !document.hidden;
+        });
+    </script>
+
+    <!-- PCB Overlay (Vanilla Canvas2D) -->
+    <script>
+        (function() {
+            const cvs = document.createElement('canvas');
+            document.getElementById('p5-container').appendChild(cvs);
+            const ctx = cvs.getContext('2d');
+
+            function resize() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
+            resize();
+            window.addEventListener('resize', resize);
+
+            function newTrace() {
+                const fromTop = Math.random() > 0.5;
+                return {
+                    path: [{ x: fromTop ? Math.random() * cvs.width : -10, y: fromTop ? -10 : Math.random() * cvs.height }],
+                    dir: fromTop ? { x: 0, y: 1 } : { x: 1, y: 0 },
+                    speed: 4 + Math.random() * 6,
+                    color: Math.random() > 0.8 ? '255,215,0' : '0,255,255'
+                };
+            }
+
+            const traces = [];
+            for (let i = 0; i < 20; i++) traces.push(newTrace());
+
+            function drawPath(t) {
+                if (t.path.length < 2) return;
+                ctx.beginPath();
+                ctx.moveTo(t.path[0].x, t.path[0].y);
+                for (let i = 1; i < t.path.length; i++) ctx.lineTo(t.path[i].x, t.path[i].y);
+            }
+
+            let last = 0;
+            function loop(ts) {
+                requestAnimationFrame(loop);
+                if (!window.__pageVisible) return;
+                if (ts - last < 33) return;
+                last = ts;
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+                traces.forEach((t, idx) => {
+                    const tail = t.path[t.path.length - 1];
+                    if (Math.random() < 0.1) {
+                        t.dir = t.dir.x !== 0
+                            ? { x: 0, y: Math.random() > 0.5 ? 1 : -1 }
+                            : { x: Math.random() > 0.5 ? 1 : -1, y: 0 };
+                    }
+                    t.path.push({ x: tail.x + t.dir.x * t.speed, y: tail.y + t.dir.y * t.speed });
+                    const h = t.path[t.path.length - 1];
+                    if (t.path.length > 80 || h.x < 0 || h.y < 0 || h.x > cvs.width || h.y > cvs.height) {
+                        traces[idx] = newTrace();
+                        return;
+                    }
+                    ctx.strokeStyle = 'rgba(' + t.color + ',0.4)'; ctx.lineWidth = 8;
+                    drawPath(t); ctx.stroke();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+                    drawPath(t); ctx.stroke();
+                    ctx.fillStyle = 'rgba(' + t.color + ',0.4)';
+                    ctx.beginPath(); ctx.arc(h.x, h.y, 6, 0, 6.28); ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath(); ctx.arc(h.x, h.y, 3, 0, 6.28); ctx.fill();
+                });
+
+                if (Math.random() < 0.05) {
+                    const cx = cvs.width / 2, cy = cvs.height / 2, a = Math.random() * 6.28, len = 100 + Math.random() * 300;
+                    ctx.strokeStyle = 'rgba(0,243,255,0.8)'; ctx.lineWidth = 1 + Math.random() * 2;
+                    ctx.beginPath(); ctx.moveTo(cx, cy);
+                    for (let i = 1; i <= 10; i++) {
+                        const r = (len / 10) * i;
+                        ctx.lineTo(cx + Math.cos(a) * r + (Math.random() - 0.5) * 40, cy + Math.sin(a) * r + (Math.random() - 0.5) * 40);
+                    }
+                    ctx.stroke();
+                }
+            }
+            requestAnimationFrame(loop);
+        })();
+    </script>
+
+    <!-- Three.js (Plasma Environment) -->
+    <script type="module">
+        import * as THREE from 'https://esm.sh/three@0.160.0';
+        import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(-11.0, 2, 13.5);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // Bloom (reduced resolution for performance)
+        const bloomRes = new THREE.Vector2(
+            Math.floor(window.innerWidth / 3),
+            Math.floor(window.innerHeight / 3)
+        );
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(bloomRes, 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.5;
+        bloomPass.radius = 0.8;
+        composer.addPass(bloomPass);
+
+        // 1. Grid Floor
+        const gridHelper = new THREE.GridHelper(60, 30, 0x00F3FF, 0x111111);
+        gridHelper.position.y = -5;
+        scene.add(gridHelper);
+
+        // 2. Plasma Core (Center)
+        const coreGeo = new THREE.SphereGeometry(2, 24, 24);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF, wireframe: true, transparent: true, opacity: 0.5 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
+
+        const coreInner = new THREE.Mesh(
+            new THREE.SphereGeometry(1.5, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+        );
+        core.add(coreInner);
+
+        // 3. Lightning Arcs
+        const arcGroup = new THREE.Group();
+        scene.add(arcGroup);
+
+        function createLightning() {
+            const points = [];
+            let y = -5;
+            for(let i=0; i<10; i++) {
+                points.push(new THREE.Vector3(0, y, 0));
+                y += 1.5;
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color: 0x00F3FF });
+            const line = new THREE.Line(geo, mat);
+            line.userData = { basePoints: points.map(p => p.clone()) };
+            return line;
+        }
+
+        const bolts = [];
+        for(let i=0; i<5; i++) {
+            const bolt = createLightning();
+            bolt.position.x = (i - 2) * 5;
+            bolt.position.z = -5;
+            arcGroup.add(bolt);
+            bolts.push(bolt);
+        }
+
+        // 4. Data Particles (Cubes) - shared geometry and material
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+        const cubeGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const cubeMat = new THREE.MeshBasicMaterial({ color: 0x00F3FF });
+
+        for(let i=0; i<20; i++) {
+            const m = new THREE.Mesh(cubeGeo, cubeMat);
+            m.position.set(
+                (Math.random()-0.5) * 30,
+                (Math.random()-0.5) * 20,
+                (Math.random()-0.5) * 10
+            );
+            m.userData = { speed: 0.05 + Math.random()*0.1 };
+            particleGroup.add(m);
+        }
+
+        // 5. Heavy Machinery Gears - MeshBasicMaterial (no lights needed)
+        const gearGroup = new THREE.Group();
+        gearGroup.position.z = -5;
+        scene.add(gearGroup);
+
+        function createGear(radius, teeth, color, x, y, z) {
+            const shape = new THREE.Shape();
+            const innerRadius = radius * 0.85;
+            const holeRadius = radius * 0.5;
+
+            const numPoints = teeth * 2;
+            const angleStep = (Math.PI * 2) / numPoints;
+
+            for (let i = 0; i < numPoints; i++) {
+                const angle = i * angleStep;
+                const r = (i % 2 === 0) ? radius : innerRadius;
+                if (i === 0) shape.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                else shape.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            }
+
+            const holePath = new THREE.Path();
+            holePath.absarc(0, 0, holeRadius, 0, Math.PI * 2, true);
+            shape.holes.push(holePath);
+
+            const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.5, bevelEnabled: false, steps: 1 });
+            const material = new THREE.MeshBasicMaterial({ color: color });
+            const gear = new THREE.Mesh(geometry, material);
+            gear.position.set(x, y, z);
+            gear.userData = { speed: (Math.random() - 0.5) * 0.03 };
+            gearGroup.add(gear);
+            return gear;
+        }
+
+        // Reduced gear count: 35 → 18
+        for (let i = 0; i < 18; i++) {
+            const radius = 2 + Math.random() * 8;
+            const teeth = Math.floor(8 + radius * 2);
+            const x = (Math.random() - 0.5) * 70;
+            const y = (Math.random() - 0.5) * 50;
+            const z = -2 - Math.random() * 25;
+
+            const colors = [0x444444, 0x222222, 0x555555, 0x443300];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            createGear(radius, teeth, color, x, y, z);
+        }
+
+        // 6. Gunpowder Smoke System
+        const smokeParticles = [];
+        const smokeGroup = new THREE.Group();
+        scene.add(smokeGroup);
+
+        const smokeCanvas = document.createElement('canvas');
+        smokeCanvas.width = 64; smokeCanvas.height = 64;
+        const smokeCtx = smokeCanvas.getContext('2d');
+        const grad = smokeCtx.createRadialGradient(32,32,0, 32,32,32);
+        grad.addColorStop(0, 'rgba(100,100,100,0.5)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        smokeCtx.fillStyle = grad;
+        smokeCtx.fillRect(0,0,64,64);
+        const smokeTex = new THREE.CanvasTexture(smokeCanvas);
+
+        const smokeMat = new THREE.SpriteMaterial({
+            map: smokeTex,
+            color: 0x333333,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            blending: THREE.NormalBlending
+        });
+
+        // Embers: 80 → 40
+        const emberGeo = new THREE.BufferGeometry();
+        const emberCount = 40;
+        const emberPos = new Float32Array(emberCount * 3);
+        for(let i=0; i<emberCount*3; i++) emberPos[i] = (Math.random()-0.5)*50;
+        emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPos, 3));
+        const emberMat = new THREE.PointsMaterial({ color: 0xFF5500, size: 0.1, transparent: true, opacity: 0.8 });
+        const embers = new THREE.Points(emberGeo, emberMat);
+        scene.add(embers);
+
+        // Smoke clouds
+        for (let z = 12; z > 2; z -= 5) {
+            for(let k=0; k<3; k++) {
+                const smoke = new THREE.Sprite(smokeMat);
+                smoke.position.set(
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 30,
+                    z + (Math.random() - 0.5) * 3
+                );
+                smoke.scale.set(20, 20, 1);
+                smoke.userData = {
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 0.01, Math.random() * 0.01, 0),
+                    rotationSpeed: (Math.random() - 0.5) * 0.005
+                };
+                smokeGroup.add(smoke);
+                smokeParticles.push(smoke);
+            }
+        }
+
+        // Scroll-driven camera targets
+        let targetX = -11.0;
+        let targetY = 2;
+        let targetZ = 13.5;
+
+        // Animation (throttled to ~30fps)
+        const clock = new THREE.Clock();
+        let lastFrame = 0;
+        let frameCount = 0;
+        let loaderDismissed = false;
+        let sceneReadyTime = 0;
+        const LOADER_MIN_MS = 2200;
+
+        function animate(ts) {
+            requestAnimationFrame(animate);
+            if (!window.__pageVisible) return;
+            if (ts - lastFrame < 33) return;
+            lastFrame = ts;
+            frameCount++;
+
+            const t = clock.getElapsedTime();
+
+            // Smooth camera follow (orbit)
+            camera.position.x += (targetX - camera.position.x) * 0.12;
+            camera.position.y += (targetY - camera.position.y) * 0.12;
+            camera.position.z += (targetZ - camera.position.z) * 0.12;
+            camera.lookAt(0, 0, 0);
+
+            // Core Pulse
+            const s = 1 + Math.sin(t * 5) * 0.1;
+            core.scale.set(s, s, s);
+            core.rotation.y = t;
+            core.rotation.z = t * 0.5;
+
+            // Gears Rotate
+            const gears = gearGroup.children;
+            for (let i = 0, len = gears.length; i < len; i++) {
+                gears[i].rotation.z += gears[i].userData.speed;
+            }
+
+            // Smoke Drift
+            for (let i = 0, len = smokeParticles.length; i < len; i++) {
+                const smoke = smokeParticles[i];
+                smoke.position.add(smoke.userData.velocity);
+                smoke.material.rotation += smoke.userData.rotationSpeed;
+                if(smoke.position.y > 20) {
+                    smoke.position.y = -15;
+                    smoke.position.x = (Math.random() - 0.5) * 50;
+                }
+            }
+
+            // Embers Float
+            const ep = embers.geometry.attributes.position.array;
+            for(let i=1; i<ep.length; i+=3) {
+                ep[i] += 0.02;
+                if(ep[i] > 20) ep[i] = -20;
+            }
+            embers.geometry.attributes.position.needsUpdate = true;
+
+            // Grid Wave
+            gridHelper.position.z = (t * 2) % 2;
+
+            // Lightning Jitter (throttled to every 2nd frame)
+            if (frameCount % 2 === 0) {
+                for (let b = 0; b < bolts.length; b++) {
+                    const bolt = bolts[b];
+                    const positions = bolt.geometry.attributes.position.array;
+                    const bases = bolt.userData.basePoints;
+                    for(let i=1; i<bases.length-1; i++) {
+                        positions[i*3] = bases[i].x + (Math.random()-0.5) * 0.5;
+                        positions[i*3+2] = bases[i].z + (Math.random()-0.5) * 0.5;
+                    }
+                    bolt.geometry.attributes.position.needsUpdate = true;
+                    bolt.visible = Math.random() > 0.1;
+                }
+            }
+
+            // Particle Flow
+            const particles = particleGroup.children;
+            for (let i = 0, len = particles.length; i < len; i++) {
+                particles[i].position.y += particles[i].userData.speed;
+                if(particles[i].position.y > 10) particles[i].position.y = -10;
+            }
+
+            composer.render();
+
+            if (!loaderDismissed) {
+                if (!sceneReadyTime) sceneReadyTime = performance.now();
+                if (performance.now() - sceneReadyTime >= LOADER_MIN_MS) {
+                    loaderDismissed = true;
+                    const loader = document.getElementById('loader');
+                    if (loader) {
+                        loader.classList.add('is-ready');
+                        setTimeout(() => loader.classList.add('is-hidden'), 1000);
+                    }
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+
+        // Camera orbit
+        const ORBIT_RADIUS = 18;
+        const START_ANGLE = -Math.PI * 0.21;
+        const END_ANGLE = Math.PI * 0.21;
+
+        ScrollTrigger.create({
+            trigger: ".scroller",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                const p = self.progress;
+                const angle = START_ANGLE + p * (END_ANGLE - START_ANGLE);
+                targetX = ORBIT_RADIUS * Math.sin(angle);
+                targetZ = ORBIT_RADIUS * Math.cos(angle);
+                targetY = 2 * (1 - p);
+            }
+        });
+
+        // GSAP Entry
+        const cards = gsap.utils.toArray('.tech-card');
+        const tilts = [-2.5, 1.8, -1.5, 2.2];
+
+        cards.forEach((card, i) => {
+            const tilt = tilts[i] || (i % 2 === 0 ? -2 : 2);
+            card.style.transform = `translateY(150px) rotate(${tilt}deg)`;
+            card.style.opacity = '0';
+
+            ScrollTrigger.create({
+                trigger: card,
+                start: "top 95%",
+                end: "top 55%",
+                onUpdate: (self) => {
+                    const p = self.progress;
+                    const eased = p * p;
+                    if (eased >= 0.98) {
+                        card.style.transform = '';
+                        card.style.opacity = '';
+                        card.style.animationDelay = `${i * -0.9}s`;
+                        card.classList.add('is-floating');
+                    } else {
+                        card.classList.remove('is-floating');
+                        const pull = 150 * (1 - eased);
+                        const rot = tilt * (1 - eased);
+                        card.style.transform = `translateY(${pull}px) rotate(${rot}deg)`;
+                        card.style.opacity = String(Math.min(1, eased * 1.3));
+                    }
+                }
+            });
+
+            gsap.to(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top center+=100",
+                    end: "bottom center-=100",
+                    toggleActions: "play reverse play reverse",
+                    scrub: 0.5
+                },
+                boxShadow: "0 0 50px rgba(0, 243, 255, 0.6), inset 0 0 20px rgba(0, 243, 255, 0.2)",
+                borderColor: "#00F3FF",
+                backgroundColor: "rgba(10, 20, 30, 0.98)",
+                duration: 0.5
+            });
+        });
+
+        // Plasma Arcs
+        const arcCvs = document.getElementById('plasma-arcs');
+        const arcCtx = arcCvs.getContext('2d');
+
+        function resizeArcs() { arcCvs.width = window.innerWidth; arcCvs.height = window.innerHeight; }
+        resizeArcs();
+
+        function drawArc(ctx, x1, y1, x2, y2, segs, jitter) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            for (let i = 1; i < segs; i++) {
+                const t = i / segs;
+                ctx.lineTo(x1 + (x2 - x1) * t + (Math.random() - 0.5) * jitter, y1 + (y2 - y1) * t);
+            }
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        let arcLast = 0;
+        function arcLoop(ts) {
+            requestAnimationFrame(arcLoop);
+            if (!window.__pageVisible) return;
+            if (ts - arcLast < 66) return;
+            arcLast = ts;
+
+            arcCtx.clearRect(0, 0, arcCvs.width, arcCvs.height);
+            for (let i = 0; i < cards.length - 1; i++) {
+                const r1 = cards[i].getBoundingClientRect();
+                const r2 = cards[i + 1].getBoundingClientRect();
+                const top = r1.bottom;
+                const bot = r2.top;
+                const gap = bot - top;
+                if (top > arcCvs.height || bot < 0 || gap <= 0) continue;
+
+                const p = Math.max(0, Math.min(1, 1 - gap / (window.innerHeight * 1.5)));
+                if (p < 0.01) continue;
+
+                const left = Math.max(r1.left, r2.left);
+                const right = Math.min(r1.right, r2.right);
+                const cardW = right - left;
+                const midX = (left + right) / 2;
+
+                for (let a = 0; a < 3; a++) {
+                    const sx = left + cardW * 0.2 + Math.random() * cardW * 0.6;
+                    const ex = left + cardW * 0.2 + Math.random() * cardW * 0.6;
+                    arcCtx.strokeStyle = `rgba(0, 243, 255, ${p * 0.15})`;
+                    arcCtx.lineWidth = 6;
+                    drawArc(arcCtx, sx, top, ex, bot, 10, 35);
+                    arcCtx.strokeStyle = `rgba(0, 243, 255, ${p * 0.45})`;
+                    arcCtx.lineWidth = 1.5;
+                    drawArc(arcCtx, sx, top, ex, bot, 10, 25);
+                }
+
+                arcCtx.strokeStyle = `rgba(255, 255, 255, ${p * 0.6})`;
+                arcCtx.lineWidth = 1.5;
+                drawArc(arcCtx, midX, top, midX, bot, 8, 15);
+            }
+        }
+        requestAnimationFrame(arcLoop);
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            resizeArcs();
+        });
+    </script>
+</body>
+</html>
