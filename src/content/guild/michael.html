@@ -162,6 +162,27 @@
             font-family: var(--f-mono); color: var(--c-accent); font-size: 0.9rem; margin-bottom: 0.5rem; display: block;
         }
 
+        /* --- The Code Vault (Interactive) --- */
+        .code-block {
+            background: #1e293b; color: #a5b4fc; padding: 2rem;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
+            border-radius: 4px; border: 1px solid #334155;
+            position: relative; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: 0.3s; cursor: pointer;
+        }
+        .code-block:hover { border-color: var(--c-accent); transform: translateY(-5px); }
+        .code-line { display: block; margin-bottom: 0.5rem; opacity: 0; transform: translateX(-10px); }
+        .code-comment { color: #64748b; font-style: italic; }
+        .code-keyword { color: #c084fc; }
+        .code-func { color: #38bdf8; }
+        .code-string { color: #4ade80; }
+
+        .code-output {
+            margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #334155;
+            color: var(--c-accent); display: none;
+        }
+
         /* --- Project Card (Content Expansion) --- */
         .project-grid {
             display: grid; grid-template-columns: 1fr; gap: 4rem; margin-top: 4rem;
@@ -234,9 +255,6 @@
                         我是 Michael Lai。<br>
                         拒絕平庸的數據架構師。在混亂中引爆價值。
                     </p>
-                    <div style="margin-top: 3rem;">
-                        <a href="#about" class="btn-massive">IGNITE PROTOCOL <i class="fa-solid fa-arrow-down"></i></a>
-                    </div>
                 </div>
                 <div class="scroll-hint">SCROLL TO ACCELERATE</div>
             </div>
@@ -278,6 +296,36 @@
                                 <h4>AI Synthesis & Expert Path</h4>
                                 <p style="font-size: 1rem; margin-bottom: 0;">整合 Generative AI，創造全新的數據敘事體驗。</p>
                             </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.3 The Code Vault (New Content) -->
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="grid-3" style="align-items: center;">
+
+                    <div style="grid-column: span 1;" class="gs-reveal">
+                        <span class="tag">Technical Logic</span>
+                        <h2 style="font-size: 3rem; margin-bottom: 1.5rem;">The <span class="highlight">Code</span> Vault</h2>
+                        <p style="font-size: 1rem;">
+                            我不僅僅是分析師，我是構建者。<br>
+                            透過 Python 自動化腳本，我將重複性工作壓縮至零。<br>
+                            點擊代碼塊以執行模擬。
+                        </p>
+                    </div>
+
+                    <div style="grid-column: span 2;">
+                        <div class="code-block gs-reveal" onclick="runSimulation(this)">
+                            <div class="code-line"><span class="code-keyword">def</span> <span class="code-func">optimize_workflow</span>(data):</div>
+                            <div class="code-line">&nbsp;&nbsp;<span class="code-comment"># Remove inefficiencies</span></div>
+                            <div class="code-line">&nbsp;&nbsp;clean_data = data.<span class="code-func">filter</span>(noise=<span class="code-keyword">None</span>)</div>
+                            <div class="code-line">&nbsp;&nbsp;<span class="code-keyword">if</span> clean_data.<span class="code-func">is_ready</span>():</div>
+                            <div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> <span class="code-string">"Insight_Generated"</span></div>
+                            <div class="code-output">> SYSTEM: WORKFLOW OPTIMIZED. TIME SAVED: 99%</div>
                         </div>
                     </div>
 
@@ -591,6 +639,18 @@
         animate();
 
 
+        // Code Block Interaction
+        window.runSimulation = (el) => {
+            const output = el.querySelector('.code-output');
+            output.style.display = 'block';
+            output.innerText = "> EXECUTING...";
+
+            setTimeout(() => {
+                output.innerText = "> SYSTEM: WORKFLOW OPTIMIZED. TIME SAVED: 99%";
+                gsap.from(output, { opacity: 0, x: -10, duration: 0.3 });
+            }, 800);
+        };
+
         // --- GSAP Reveals ---
         gsap.registerPlugin(ScrollTrigger);
 
@@ -605,6 +665,20 @@
                 opacity: 0,
                 duration: 1,
                 ease: "back.out(1.7)" // Explosive entrance
+            });
+        });
+
+        // Typing Effect for Code
+        gsap.utils.toArray('.code-line').forEach((line, i) => {
+            gsap.to(line, {
+                opacity: 1,
+                x: 0,
+                duration: 0.5,
+                delay: i * 0.2,
+                scrollTrigger: {
+                    trigger: line.closest('.code-block'),
+                    start: "top 80%"
+                }
             });
         });
 
