@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Grand Archive)', () => {
+test.describe('SPJ Guild Page (Spirit Tavern)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -9,28 +9,24 @@ test.describe('SPJ Guild Page (Grand Archive)', () => {
     } catch (e) {
         console.log('Navigation timeout or error:', e);
     }
+    // Wait for loader to vanish
+    await page.waitForTimeout(2000);
   });
 
-  test('should display Hero with Expanded Role', async ({ page }) => {
-    await expect(page.locator('.hero-pre')).toContainText('THE GRAND ARCHITECT');
-    await expect(page.locator('.hero-role')).toContainText('weave reality');
+  test('should display Hero Section', async ({ page }) => {
+    await expect(page.locator('#panel-hero h1')).toContainText('塞趴卷');
+    await expect(page.locator('.hero-subtitle')).toContainText('THE GUILD ARCHITECT');
   });
 
-  test('should display Chapter I (Narrative)', async ({ page }) => {
-    // Check for drop cap content
-    await expect(page.locator('#chapter-1')).toContainText('數位荒原的邊境');
-    // Check for stats
-    await expect(page.locator('.stats-grid')).toContainText('CODE SYNTHESIS');
+  test('should display Origin Panel', async ({ page }) => {
+    // It's off-screen initially, but exists in DOM
+    await expect(page.locator('#panel-origin h2')).toContainText('代碼鍊金術');
   });
 
-  test('should display Chapter II (Text Town)', async ({ page }) => {
-    await expect(page.locator('#chapter-2')).toContainText('具現化：天書系統');
-    await expect(page.locator('#chapter-2')).toContainText('一座漂浮的黃金酒館'); // Specific phrase check
-  });
-
-  test('should display Chapter III (Guild)', async ({ page }) => {
-    await expect(page.locator('#chapter-3')).toContainText('聖域：塞趴卷公會');
-    await expect(page.locator('#chapter-3')).toContainText('吟遊詩人');
+  test('should display Project Cards', async ({ page }) => {
+    const cards = page.locator('.project-card');
+    await expect(cards).toHaveCount(3);
+    await expect(cards.first()).toContainText('文字小鎮');
   });
 
   test('should have Three.js canvas', async ({ page }) => {
