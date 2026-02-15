@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michael Lai | Data Architect</title>
-    <meta name="description" content="Michael Lai - 數據分析師 | 自動化專家 | AI 愛好者">
+    <title>Michael Lai | Kinetic Architect</title>
+    <meta name="description" content="Michael Lai - 數據分析師 | 轉化動能與邏輯的專家 | 貓與自動化的共生">
 
-    <!-- Fonts -->
+    <!-- Fonts: Use a strong, high-contrast pairing -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;700;800&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- GSAP -->
+    <!-- Libraries: GSAP (Global Animation) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
@@ -28,42 +28,36 @@
 
     <style>
         :root {
-            /* Palette */
-            --c-bg: #F8FAFC;       /* Off-White / Light Blue-Grey */
-            --c-text: #0F172A;     /* Dark Charcoal */
-            --c-primary: #3B82A0;  /* Muted Blue */
-            --c-secondary: #64748B;/* Slate */
-            --c-accent: #F97316;   /* Warm Orange */
-            --c-glass: rgba(255, 255, 255, 0.6);
-            --c-border: rgba(255, 255, 255, 0.8);
+            /* Palette: Light & Clean */
+            --c-bg: #F8FAFC;       /* Off-White */
+            --c-text: #0F172A;     /* Deep Slate */
+            --c-primary: #3B82A0;  /* Cool Blue-Grey */
+            --c-secondary: #64748B;/* Muted Slate */
+            --c-accent: #F97316;   /* Kinetic Orange */
+            --c-glass: rgba(255, 255, 255, 0.4);
 
-            --f-main: 'Inter', sans-serif;
-            --f-tc: 'Noto Sans TC', sans-serif;
+            --f-main: 'Manrope', sans-serif;
+            --f-serif: 'Noto Serif TC', serif;
+
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: var(--f-tc);
+            font-family: var(--f-serif); /* Contrast: Serif body for elegance */
             overflow-x: hidden;
-            line-height: 1.7;
+            line-height: 1.6;
         }
 
-        /* --- Layout --- */
+        /* --- Global Layout --- */
         #webgl-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: -1;
-            pointer-events: none; /* Let clicks pass through unless on specific objects */
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none; /* Pass interactions except specific meshes (handled in JS) */
         }
 
         .scroller {
@@ -73,11 +67,10 @@
 
         .section {
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
             padding: 4rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
         }
 
@@ -85,500 +78,483 @@
             max-width: 1200px;
             width: 100%;
             margin: 0 auto;
-        }
-
-        /* --- Glass Cards --- */
-        .glass-card {
-            background: var(--c-glass);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--c-border);
-            border-radius: 24px;
-            padding: 3rem;
-            box-shadow:
-                0 4px 6px -1px rgba(0, 0, 0, 0.05),
-                0 10px 15px -3px rgba(0, 0, 0, 0.05),
-                inset 0 0 20px rgba(255, 255, 255, 0.5);
-            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow:
-                0 20px 25px -5px rgba(0, 0, 0, 0.05),
-                0 10px 10px -5px rgba(0, 0, 0, 0.01);
+            position: relative;
         }
 
         /* --- Typography --- */
-        h1 {
+        h1, h2, h3, .heading-font {
             font-family: var(--f-main);
-            font-size: clamp(3rem, 8vw, 6rem);
             font-weight: 800;
-            line-height: 1.1;
             letter-spacing: -0.03em;
-            color: var(--c-primary);
-            margin-bottom: 1rem;
+            line-height: 1.1;
         }
 
-        h2 {
-            font-family: var(--f-main);
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 700;
-            margin-bottom: 2rem;
-            color: var(--c-text);
-            letter-spacing: -0.02em;
+        h1 { font-size: clamp(3.5rem, 8vw, 7rem); color: var(--c-text); }
+        h2 { font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem; }
+
+        .outline-text {
+            color: transparent;
+            -webkit-text-stroke: 1px var(--c-secondary);
+            opacity: 0.3;
         }
 
-        h3 {
-            font-size: 1.5rem;
-            color: var(--c-secondary);
-            margin-bottom: 1rem;
-            font-weight: 500;
-        }
-
-        p {
-            font-size: 1.125rem;
-            color: var(--c-secondary);
-            margin-bottom: 1.5rem;
-            max-width: 65ch;
-        }
-
-        .highlight {
-            color: var(--c-accent);
-            font-weight: 600;
-            position: relative;
-            display: inline-block;
-        }
+        .accent-text { color: var(--c-accent); position: relative; display: inline-block; }
 
         /* --- Components --- */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--c-accent);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-            box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.39);
+        .glass-panel {
+            background: var(--c-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: 2rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px -10px rgba(59, 130, 160, 0.1);
+            transition: transform 0.4s var(--ease-out);
+        }
+        .glass-panel:hover {
+            transform: translateY(-5px) scale(1.01);
+            background: rgba(255,255,255,0.6);
         }
 
-        .btn:hover {
-            background: #ea580c;
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.23);
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: auto;
+            gap: 1.5rem;
+        }
+
+        .bento-item {
+            grid-column: span 12;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        @media (min-width: 768px) {
+            .bento-item.span-4 { grid-column: span 4; }
+            .bento-item.span-6 { grid-column: span 6; }
+            .bento-item.span-8 { grid-column: span 8; }
+            .bento-item.span-12 { grid-column: span 12; }
+            .bento-item.row-2 { grid-row: span 2; }
         }
 
         .tag {
-            display: inline-block;
-            padding: 0.5rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.4rem 1rem;
             border-radius: 50px;
-            background: white;
-            border: 1px solid rgba(59, 130, 160, 0.2);
-            color: var(--c-primary);
-            font-size: 0.875rem;
+            font-family: var(--f-main);
             font-weight: 600;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.85rem;
+            background: rgba(255,255,255,0.8);
+            color: var(--c-primary);
+            border: 1px solid rgba(59, 130, 160, 0.2);
+            margin-bottom: 1rem;
+            width: fit-content;
         }
 
-        /* --- Hero Specific --- */
+        /* --- Hero Section --- */
         .hero-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
+            grid-template-columns: 1fr;
+            text-align: center;
+            gap: 2rem;
+        }
+        @media (min-width: 1024px) {
+            .hero-layout {
+                grid-template-columns: 1.2fr 1fr; /* Text left, visual right */
+                text-align: left;
+                height: 80vh;
+                align-items: center;
+            }
         }
 
-        .avatar-container {
-            position: relative;
-            width: 300px;
-            height: 300px;
+        .avatar-mask {
+            width: 200px; height: 200px;
             margin: 0 auto;
+            clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%); /* Parallelogram */
+            transition: 0.5s var(--ease-out);
         }
-
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-            box-shadow: 20px 20px 60px rgba(59, 130, 160, 0.15);
-            animation: morph 8s ease-in-out infinite;
-            position: relative;
-            z-index: 2;
+        .avatar-mask:hover {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); /* Square */
         }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%); transition: 0.5s; }
+        .avatar-mask:hover .avatar-img { filter: grayscale(0%); transform: scale(1.1); }
 
-        @keyframes morph {
-            0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
-            25% { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
-            50% { border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%; }
-            75% { border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%; }
-            100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+        /* --- Navigation --- */
+        .nav-fixed {
+            position: fixed; top: 2rem; left: 2rem; z-index: 50;
+            font-family: var(--f-main); font-weight: 700;
+            color: var(--c-primary); text-decoration: none;
+            display: flex; align-items: center; gap: 0.5rem;
+            mix-blend-mode: multiply;
         }
+        .nav-fixed:hover { color: var(--c-accent); }
 
-        /* --- Grid Layouts --- */
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 2rem;
-        }
-
-        .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-        }
-
-        /* --- Interest Cards --- */
-        .interest-card {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .interest-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
-            background: var(--c-primary);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s;
-        }
-
-        .interest-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-
-        .interest-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .icon-large {
-            font-size: 2.5rem;
-            color: var(--c-primary);
-            margin-bottom: 1.5rem;
-            opacity: 0.8;
+        /* --- Scroll Progress Bar --- */
+        .scroll-line {
+            position: fixed; top: 0; left: 0; height: 4px; width: 100%;
+            background: linear-gradient(to right, var(--c-primary), var(--c-accent));
+            transform-origin: left; transform: scaleX(0); z-index: 100;
         }
 
         /* --- Footer --- */
-        .social-link {
-            font-size: 2rem;
-            color: var(--c-secondary);
-            margin: 0 1rem;
-            transition: 0.3s;
+        .footer-link {
+            font-size: 3rem; color: var(--c-secondary); margin: 0 1rem; transition: 0.3s;
         }
-        .social-link:hover {
-            color: var(--c-accent);
-            transform: scale(1.2);
-        }
+        .footer-link:hover { color: var(--c-accent); transform: scale(1.1) rotate(5deg); }
 
-        /* Responsive */
-        @media (max-width: 900px) {
-            .hero-layout, .grid-2, .grid-3 { grid-template-columns: 1fr; }
-            .hero-layout { gap: 2rem; text-align: center; }
-            .avatar-container { margin-bottom: 2rem; }
-            h1 { font-size: 3.5rem; }
-            .glass-card { padding: 2rem; }
-        }
-
-        /* Nav */
-        .nav-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            color: var(--c-primary); font-weight: 600; text-decoration: none;
-            display: flex; align-items: center; gap: 0.5rem;
-            background: rgba(255,255,255,0.8); padding: 0.5rem 1rem; border-radius: 50px;
-            backdrop-filter: blur(5px); transition: 0.3s;
-        }
-        .nav-back:hover { background: white; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 
-    <a href="/guild" class="nav-back"><i class="fa-solid fa-arrow-left"></i> Guild</a>
+    <div class="scroll-line"></div>
+    <a href="/guild" class="nav-fixed"><i class="fa-solid fa-arrow-left"></i> GUILD_ARCHIVE</a>
+
+    <!-- WebGL Background -->
     <div id="webgl-container"></div>
 
     <div class="scroller">
 
-        <!-- 1. Hero -->
+        <!-- SECTION 1: HERO - The Architect -->
         <section class="section">
             <div class="container hero-layout">
                 <div class="gs-reveal">
-                    <div class="avatar-container">
-                        <img src="/assets/img/guild/michael/avatar.webp" alt="Michael Lai" class="avatar-img">
-                    </div>
-                </div>
-                <div class="gs-reveal">
-                    <span class="tag">Data Analyst</span>
-                    <span class="tag">Automation</span>
-                    <span class="tag">AI</span>
-                    <h1>Michael Lai</h1>
-                    <h3>Analyzing the Present,<br>Architecting the <span class="highlight">Future</span>.</h3>
-                    <p>
-                        我是 Michael，一個半路出家的數據分析師。
-                        在數據的海洋中，我尋找秩序；在自動化的流程裡，我創造效率。
-                        目標是從分析師進化為數據專家 (Data Expert)。
+                    <span class="tag">System Status: Online</span>
+                    <h1>The Kinetic<br><span class="accent-text">Architect</span></h1>
+                    <p style="font-size: 1.25rem; color: var(--c-secondary); margin-top: 1.5rem; max-width: 50ch;">
+                        我是 Michael Lai。<br>
+                        半路出家的數據煉金術士。在混沌中建立秩序，在靜止中創造動能。
                     </p>
-                    <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; width: 100%;">
-                        <a href="#about" class="btn">Explore My World <i class="fa-solid fa-arrow-down"></i></a>
+                    <div style="margin-top: 3rem; display: flex; gap: 1rem; align-items: center;">
+                        <span style="font-family: var(--f-main); font-weight: 700; font-size: 0.9rem; color: var(--c-primary);">SCROLL TO INITIALIZE</span>
+                        <div style="width: 50px; height: 1px; background: var(--c-primary);"></div>
                     </div>
+                </div>
+                <!-- Right side is reserved for the 3D object interaction -->
+                <div style="position: relative; height: 100%; min-height: 400px;" class="gs-reveal">
+                    <!-- The 3D Object will float here initially -->
                 </div>
             </div>
         </section>
 
-        <!-- 2. About & Philosophy -->
-        <section class="section" id="about">
-            <div class="container glass-card gs-reveal">
-                <div class="grid-2" style="align-items: center;">
-                    <div>
-                        <h2><span class="highlight">Origin</span> Algorithm</h2>
-                        <p>
-                            我的旅程並非直線。作為半路出家的數據分析師，我擁有獨特的視角。
-                            我不僅僅關注數字本身，更關注數字背後的<span class="highlight">故事與邏輯</span>。
-                        </p>
-                        <p>
-                            我喜歡用原始碼 (Source Code) 將繁瑣的流程自動化，
-                            這不僅是為了節省時間，更是為了讓思維有更多的空間去探索未知。
-                            AI 工具是我的畫筆，讓我能生成並體驗不同的事物。
-                        </p>
-                    </div>
-                    <div style="text-align: center;">
-                        <i class="fa-solid fa-network-wired" style="font-size: 8rem; color: var(--c-primary); opacity: 0.1;"></i>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. Interests Grid -->
+        <!-- SECTION 2: BENTO GRID - The Variables -->
         <section class="section">
             <div class="container">
-                <h2 style="text-align: center; margin-bottom: 4rem;" class="gs-reveal">Core <span class="highlight">Variables</span></h2>
+                <div class="gs-reveal" style="margin-bottom: 3rem;">
+                    <span class="tag">Core Variables</span>
+                    <h2>Analysis & <span class="accent-text">Intuition</span></h2>
+                </div>
 
-                <div class="grid-3">
-                    <!-- Interest 1 -->
-                    <div class="interest-card gs-reveal">
-                        <i class="fa-solid fa-globe icon-large"></i>
-                        <h3>Global Observer</h3>
-                        <p>喜歡觀察各國文化。每一個文化都是一套獨特的演算法，學習他人的長處，優化自己的思維模型。</p>
+                <div class="bento-grid">
+
+                    <!-- Bio Card -->
+                    <div class="bento-item span-8 glass-panel gs-reveal">
+                        <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
+                            <div class="avatar-mask">
+                                <img src="/assets/img/guild/michael/avatar.webp" class="avatar-img" alt="Michael Lai">
+                            </div>
+                            <div style="flex: 1; min-width: 250px;">
+                                <h3 class="heading-font" style="font-size: 1.5rem; margin-bottom: 1rem;">Origin Story</h3>
+                                <p>
+                                    從非本科系出發，我學會了用不同的鏡頭看世界。
+                                    數據不只是冰冷的數字，它是行為的軌跡 (Trajectory)。
+                                    目標是從分析師進化為<span class="accent-text">數據專家</span>，
+                                    用代碼編織出自動化的未來。
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Interest 2 -->
-                    <div class="interest-card gs-reveal">
-                        <i class="fa-solid fa-cat icon-large"></i>
-                        <h3>Feline Companion</h3>
-                        <p>貓咪是真愛。牠們教會我獨立、優雅以及在混亂中保持冷靜的藝術。</p>
+                    <!-- Stat Card: Automation -->
+                    <div class="bento-item span-4 glass-panel gs-reveal" style="background: rgba(59, 130, 160, 0.1);">
+                        <i class="fa-solid fa-code-branch" style="font-size: 3rem; color: var(--c-primary); margin-bottom: 1rem;"></i>
+                        <h3 class="heading-font">Source Code</h3>
+                        <p style="font-size: 0.9rem;">
+                            享受將繁瑣流程轉化為優雅的自動化腳本。
+                            效率是我的美學。
+                        </p>
                     </div>
 
-                    <!-- Interest 3 -->
-                    <div class="interest-card gs-reveal">
-                        <i class="fa-solid fa-basketball icon-large"></i>
-                        <h3>Kinetic Energy</h3>
-                        <p>熱愛運動，尤其是籃球。在球場上的每一次運球與投籃，都是對動態數據的即時運算。</p>
+                    <!-- Interest: AI -->
+                    <div class="bento-item span-4 glass-panel gs-reveal">
+                        <i class="fa-solid fa-brain" style="font-size: 3rem; color: var(--c-accent); margin-bottom: 1rem;"></i>
+                        <h3 class="heading-font">AI Synthesis</h3>
+                        <p style="font-size: 0.9rem;">
+                            利用 AI 生成未知。
+                            探索人腦與矽基智慧的共生邊界。
+                        </p>
                     </div>
+
+                    <!-- Interest: Cats -->
+                    <div class="bento-item span-4 glass-panel gs-reveal">
+                        <i class="fa-solid fa-cat" style="font-size: 3rem; color: var(--c-text); margin-bottom: 1rem;"></i>
+                        <h3 class="heading-font">Feline Logic</h3>
+                        <p style="font-size: 0.9rem;">
+                            貓咪是真愛。
+                            學習牠們的優雅、獨立，以及對環境的敏銳觀察。
+                        </p>
+                    </div>
+
+                    <!-- Interest: Basketball -->
+                    <div class="bento-item span-4 glass-panel gs-reveal" style="background: rgba(249, 115, 22, 0.1);">
+                        <i class="fa-solid fa-basketball" style="font-size: 3rem; color: var(--c-accent); margin-bottom: 1rem;"></i>
+                        <h3 class="heading-font">Kinetic Flow</h3>
+                        <p style="font-size: 0.9rem;">
+                            籃球場上的動態博弈。
+                            預判軌跡、瞬間決策，享受流汗的真實感。
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </section>
 
-        <!-- 4. Footer -->
-        <section class="section" style="min-height: 50vh;">
-            <div class="container glass-card gs-reveal" style="text-align: center; max-width: 600px;">
-                <h2>Connect <span class="highlight">Node</span></h2>
-                <p>正在尋找數據分析相關工作機會。<br>讓我們一起用數據創造價值。</p>
+        <!-- SECTION 3: FOOTER - Connect -->
+        <section class="section" style="min-height: 60vh;">
+            <div class="container" style="text-align: center;">
+                <div class="gs-reveal">
+                    <span class="tag">Link Start</span>
+                    <h2 style="font-size: clamp(3rem, 6vw, 5rem);">Ready to <span class="accent-text">Collaborate?</span></h2>
+                    <p style="margin-bottom: 3rem;">正在尋找數據分析相關機會</p>
 
-                <div style="margin-top: 2rem;">
-                    <a href="https://www.threads.net/@michael_lwt" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                    <div>
+                        <a href="https://www.threads.net/@michael_lwt" target="_blank" class="footer-link"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="footer-link"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
                 </div>
 
-                <div style="margin-top: 3rem; font-size: 0.8rem; opacity: 0.6;">
-                    Made with <i class="fa-solid fa-heart" style="color: var(--c-accent);"></i> by SuperGalen's Dungeon
+                <div style="margin-top: 5rem; opacity: 0.5; font-size: 0.8rem;">
+                    Made with <i class="fa-solid fa-bolt" style="color: var(--c-accent);"></i> by SuperGalen's Dungeon
                 </div>
             </div>
         </section>
 
     </div>
 
-    <!-- WebGL Logic -->
+    <!-- SCRIPT: Logic -->
     <script type="module">
         import * as THREE from 'three';
-        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Scene Setup ---
+        // --- 1. SETUP ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Clear color is managed by CSS body background, so we keep scene transparent or match it?
-        // Actually, for refraction to look good, we need an environment map, but we'll simulate it.
+        // Background color handled by CSS, but fog needs to match
+        const bgHex = 0xF8FAFC;
+        scene.fog = new THREE.FogExp2(bgHex, 0.02);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 20;
+        camera.position.z = 25;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        // Tone mapping for realistic lighting
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Limit for performance
+        // Tone mapping for realistic glass lighting
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 1.5;
         container.appendChild(renderer.domElement);
 
-        // --- Lighting ---
+        // --- 2. LIGHTING (Crucial for Glass) ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLight.position.set(5, 10, 7);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(10, 20, 10);
         scene.add(dirLight);
 
-        const spotLight = new THREE.SpotLight(0xF97316, 5); // Orange accent light
-        spotLight.position.set(-10, 0, 5);
-        spotLight.angle = Math.PI / 6;
-        spotLight.penumbra = 1;
-        scene.add(spotLight);
+        const accentLight = new THREE.PointLight(0xF97316, 5, 50);
+        accentLight.position.set(-5, 5, 5);
+        scene.add(accentLight);
 
-        // --- Object: The Data Crystal ---
-        // Using an Icosahedron for the geometric/data feel
-        const geometry = new THREE.IcosahedronGeometry(4, 0);
+        // --- 3. THE KINETIC OBJECT (Morphing Blob) ---
+        // Using Icosahedron with high detail for displacement
+        const geometry = new THREE.IcosahedronGeometry(4, 8); // Reduced segments for performance
 
-        // Physical material for glass effect
+        // Physical Glass Material
         const material = new THREE.MeshPhysicalMaterial({
-            color: 0x3B82A0,        // Blue tint
+            color: 0x3B82A0,
             metalness: 0.1,
-            roughness: 0.05,
-            transmission: 0.95,     // Glass-like transmission
-            thickness: 2.5,         // Refraction volume
-            envMapIntensity: 1,
+            roughness: 0.1,
+            transmission: 0.95,  // Glass
+            thickness: 2,
+            ior: 1.5,
             clearcoat: 1,
             clearcoatRoughness: 0.1,
-            ior: 1.5,
+            side: THREE.DoubleSide
         });
 
-        const crystal = new THREE.Mesh(geometry, material);
-        scene.add(crystal);
+        // Add displacement via custom shader modification (simulated here with vertex manipulation for performance/compatibility)
+        // We will animate the vertices in the render loop for the "liquid" effect
 
-        // Secondary Object: Floating Data Points (Cubes)
-        const cubesGroup = new THREE.Group();
-        scene.add(cubesGroup);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(5, 0, 0); // Initial position (Right side)
+        scene.add(mesh);
 
-        const cubeGeo = new RoundedBoxGeometry(0.5, 0.5, 0.5, 4, 0.1);
-        const cubeMat = new THREE.MeshStandardMaterial({
-            color: 0x64748B,
-            roughness: 0.4,
-            metalness: 0.6
+        // Internal Core (The "Energy")
+        const coreGeo = new THREE.IcosahedronGeometry(2, 1);
+        const coreMat = new THREE.MeshBasicMaterial({
+            color: 0xF97316,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5
         });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        mesh.add(core); // Child of the glass mesh
 
-        const cubes = [];
-        for(let i=0; i<30; i++) {
-            const mesh = new THREE.Mesh(cubeGeo, cubeMat);
-            // Random position around the crystal
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos((Math.random() * 2) - 1);
-            const r = 6 + Math.random() * 4;
-
-            mesh.position.set(
-                r * Math.sin(phi) * Math.cos(theta),
-                r * Math.sin(phi) * Math.sin(theta),
-                r * Math.cos(phi)
-            );
-
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-
-            mesh.userData = {
-                speed: 0.005 + Math.random() * 0.01,
-                axis: new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize()
-            };
-
-            cubesGroup.add(mesh);
-            cubes.push(mesh);
+        // Floating Particles (The "Data")
+        const particlesCount = 200;
+        const posArray = new Float32Array(particlesCount * 3);
+        for(let i=0; i<particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 40;
         }
+        const partGeo = new THREE.BufferGeometry();
+        partGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const partMat = new THREE.PointsMaterial({
+            size: 0.15,
+            color: 0x3B82A0,
+            transparent: true,
+            opacity: 0.6
+        });
+        const particleSystem = new THREE.Points(partGeo, partMat);
+        scene.add(particleSystem);
 
-        // --- Interaction ---
-        // Mouse Parallax
+        // --- 4. ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+        const originalPositions = geometry.attributes.position.array.slice(); // Store base shape
+
+        // Mouse Physics
         const mouse = new THREE.Vector2();
-        const targetRotation = new THREE.Vector2();
+        const targetMouse = new THREE.Vector2();
+        const mouseVel = new THREE.Vector2();
 
         window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-        // Animation Loop
-        const clock = new THREE.Clock();
+            // Calculate velocity
+            mouseVel.x = x - targetMouse.x;
+            mouseVel.y = y - targetMouse.y;
+
+            targetMouse.set(x, y);
+        });
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
             // Smooth mouse follow
-            targetRotation.x = mouse.y * 0.5;
-            targetRotation.y = mouse.x * 0.5;
+            mouse.lerp(targetMouse, 0.1);
 
-            // Base rotation
-            crystal.rotation.y += 0.002;
-            crystal.rotation.x = THREE.MathUtils.lerp(crystal.rotation.x, targetRotation.x * 0.5, 0.05);
-            crystal.rotation.z = THREE.MathUtils.lerp(crystal.rotation.z, targetRotation.y * 0.5, 0.05);
+            // 1. Liquid Morphing Effect
+            // We manipulate vertices based on Perlin-like noise (sine waves here for simplicity without external lib)
+            const positions = geometry.attributes.position.array;
 
-            // Animate cubes
-            cubes.forEach((cube, i) => {
-                cube.rotation.x += cube.userData.speed;
-                cube.rotation.y += cube.userData.speed;
-                // Orbit
-                cube.position.applyAxisAngle(new THREE.Vector3(0,1,0), 0.002);
-            });
+            // Optimization: Only update every other frame or if mouse is moving
+            // For now, full update for smoothness
 
-            // Gentle float
-            crystal.position.y = Math.sin(time * 0.5) * 0.2;
+            const positionAttribute = geometry.attributes.position;
+            const count = positionAttribute.count;
+
+            for (let i = 0; i < count; i++) {
+                const ox = originalPositions[i * 3];
+                const oy = originalPositions[i * 3 + 1];
+                const oz = originalPositions[i * 3 + 2];
+
+                // Noise formula
+                const noise = Math.sin(ox * 0.5 + time) * Math.cos(oy * 0.5 + time) * Math.sin(oz * 0.5 + time);
+                const pulse = 1 + (noise * 0.2) + (Math.sin(time * 2) * 0.05);
+
+                // Mouse Impact (Dribble)
+                // Need to project mouse (screen) to world roughly
+                // Or just use a simpler distance check from center + mouse offset
+                const dx = (ox + mesh.position.x) - (mouse.x * 20);
+                const dy = (oy + mesh.position.y) - (mouse.y * 20);
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                // Impact is stronger when mouse moves fast
+                const velocityMag = Math.sqrt(mouseVel.x*mouseVel.x + mouseVel.y*mouseVel.y);
+                const impact = Math.max(0, 1 - dist / 8) * velocityMag * 10;
+
+                positions[i * 3] = ox * (pulse + impact);
+                positions[i * 3 + 1] = oy * (pulse + impact);
+                positions[i * 3 + 2] = oz * (pulse + impact);
+            }
+            geometry.attributes.position.needsUpdate = true;
+            geometry.computeVertexNormals(); // Crucial for lighting updates
+
+            // 2. Rotation
+            mesh.rotation.y = time * 0.1;
+            mesh.rotation.z = time * 0.05;
+            core.rotation.x = -time * 0.2;
+
+            // 3. Particle Flow
+            particleSystem.rotation.y = time * 0.05;
+
+            // 4. Parallax
+            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
+            camera.position.y += (mouse.y * 2 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- Scroll Animations (GSAP) ---
+        // --- 5. SCROLL INTERACTIONS (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // 1. Crystal Transformation on Scroll
+        // Progress Bar
+        gsap.to('.scroll-line', {
+            scaleX: 1,
+            ease: 'none',
+            scrollTrigger: {
+                trigger: 'body',
+                start: 'top top',
+                end: 'bottom bottom',
+                scrub: 0.5
+            }
+        });
+
+        // Timeline for the Object's Journey
         const tl = gsap.timeline({
             scrollTrigger: {
-                trigger: ".scroller",
-                start: "top top",
-                end: "bottom bottom",
+                trigger: '.scroller',
+                start: 'top top',
+                end: 'bottom bottom',
                 scrub: 1
             }
         });
 
-        // Scroll 1: Crystal rotates and moves left (for About section)
-        tl.to(crystal.position, { x: -6, z: 15, duration: 1 });
-        tl.to(crystal.rotation, { y: Math.PI * 2, duration: 1 }, "<");
+        // Move mesh from Right (Hero) to Center (Grid) to Bottom
+        // Assuming Hero Layout: Mesh is center-right.
+        // Screen coordinates need to be mapped to World Space roughly.
+        mesh.position.set(6, 0, 0); // Start position
 
-        // Scroll 2: Crystal moves center and explodes (for Interests)
-        tl.to(crystal.position, { x: 0, z: 10, duration: 1 });
-        tl.to(crystal.scale, { x: 0.1, y: 0.1, z: 0.1, duration: 0.5 }, "<"); // Implode
+        // Step 1: Move to center for Bento Grid
+        tl.to(mesh.position, { x: 0, y: 0, z: 5, duration: 1, ease: 'power1.inOut' });
+        tl.to(mesh.scale, { x: 0.6, y: 0.6, z: 0.6, duration: 1 }, "<"); // Shrink slightly to fit behind text
 
-        // Cubes expand
-        tl.to(cubesGroup.scale, { x: 2, y: 2, z: 2, duration: 1 }, "<");
+        // Step 2: Explode/Disperse at Footer
+        tl.to(mesh.position, { y: -5, duration: 1 });
+        tl.to(material, { opacity: 0, duration: 0.5 }, ">-0.5"); // Fade out glass
+        tl.to(core.scale, { x: 5, y: 5, z: 5, duration: 1 }, "<"); // Core expands
 
-        // Reveal Elements
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
+        // Reveal Animations
+        gsap.utils.toArray('.gs-reveal').forEach((elem) => {
             gsap.from(elem, {
                 scrollTrigger: {
                     trigger: elem,
                     start: "top 85%",
                     toggleActions: "play none none reverse"
                 },
-                y: 50,
+                y: 60,
                 opacity: 0,
-                duration: 1,
+                duration: 1.2,
                 ease: "power3.out"
             });
         });
 
-        // Resize
+        // Resize Handler
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
