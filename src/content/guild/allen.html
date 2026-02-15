@@ -265,6 +265,12 @@
             text-transform: uppercase; letter-spacing: 2px;
         }
 
+        /* --- Glass Panel (Readability) --- */
+        .glass-panel {
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+            padding: 2rem; border-radius: 8px;
+        }
+
         /* GSAP Utility */
         /* .gs-reveal { opacity: 0; } - Removed to let GSAP handle initial state */
     </style>
@@ -285,7 +291,7 @@
 
     <div id="main-content">
 
-        <!-- Hero -->
+        <!-- 1. Hero -->
         <section id="hero">
             <div class="container" style="text-align: center;">
                 <div class="avatar-frame gs-reveal">
@@ -304,7 +310,132 @@
             </div>
         </section>
 
-        <!-- Story -->
+        <!-- 2. The Commander (Personal Lore) -->
+        <section id="commander">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE COMMANDER</h2>
+                    <p style="font-family: var(--f-mono); color: var(--c-magenta);">// IDENTITY: ALLEN (少帥)</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+
+                    <!-- Protocol: Fatherhood -->
+                    <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-magenta);">
+                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">PROTOCOL: FATHERHOOD</h3>
+                        <p style="color: #ccc; line-height: 1.8;">
+                            我是三個女兒的爸爸。<br>
+                            這是我所有動力的核心反應爐。無論工廠倒塌多少次，為了她們，我都能夠再次站起來。<br>
+                            她們是我的「無限魔力源 (Infinite Mana)」，讓我在高壓的生產線與負債壓力下，依然能保持微笑與堅韌。
+                        </p>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <span style="background: var(--c-magenta); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CORE DRIVE</span>
+                            <span style="border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">PROTECTOR</span>
+                        </div>
+                    </div>
+
+                    <!-- Hands-On Leader -->
+                    <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-cyan);">
+                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">HANDS-ON LEADER</h3>
+                        <p style="color: #ccc; line-height: 1.8;">
+                            我不是坐在辦公室的總裁，我是穿梭在機台間的指揮官。<br>
+                            上一秒在會議室談百萬訂單，下一秒就在產線調整機台參數。<br>
+                            「親力親為」不是口號，是我的生存法則。我比任何人都了解這座工廠的每一次呼吸與震動。
+                        </p>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <span style="background: var(--c-cyan); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">OPERATOR</span>
+                            <span style="border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CONSULTANT</span>
+                        </div>
+                    </div>
+
+                    <!-- Stats Block -->
+                    <div class="gs-reveal glass-panel" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-around; align-items: center;">
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">STAMINA</div>
+                            <div style="font-family: var(--f-tech); color: var(--c-yellow); font-size: 2rem;">INFINITE</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">RESILIENCE</div>
+                            <div style="font-family: var(--f-tech); color: var(--c-magenta); font-size: 2rem;">MAX</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">CURRENT DEBT</div>
+                            <div style="font-family: var(--f-tech); color: #fff; font-size: 2rem;">> 10M</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">SPECIAL SKILL</div>
+                            <div style="font-family: var(--f-tech); color: var(--c-cyan); font-size: 1.5rem;">PHOENIX REBIRTH</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. The Battalion (Factory Team) -->
+        <section id="battalion">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE BATTALION</h2>
+                    <div style="height: 2px; width: 100px; background: var(--c-yellow); margin: 0.5rem auto;"></div>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+                    <div class="gs-reveal glass-panel" style="flex: 1; min-width: 300px;">
+                        <h3 style="color: var(--c-cyan); font-family: var(--f-mono); margin-bottom: 1rem;">// UNIT STRENGTH: 30+</h3>
+                        <p style="color: #ccc; line-height: 1.8;">
+                            工廠大大小小內有二三十位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
+                            每天的日常就是在印桌遊，或是在開印的路上。<br>
+                            產線就是我們的戰場，每一張卡牌、每一個配件，都是我們共同打造的彈藥。
+                        </p>
+                    </div>
+                    <div class="gs-reveal glass-panel" style="flex: 1; min-width: 300px; border: 1px dashed var(--c-yellow);">
+                        <h3 style="color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem;">// MISSION LOG</h3>
+                        <ul style="list-style: none; padding: 0; color: #aaa; line-height: 2;">
+                            <li>> 08:00 - SYSTEMS CHECK (開機)</li>
+                            <li>> 10:00 - TACTICAL BRIEFING (會議接洽)</li>
+                            <li>> 14:00 - PRODUCTION LINE SUPPORT (產線支援)</li>
+                            <li>> 20:00 - STRATEGIC PLANNING (未來規劃)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Services (Factory Capabilities) -->
+        <section id="services">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SERVICES</h2>
+                    <p style="font-family: var(--f-mono); color: #888;">OUTPUT PROTOCOLS</p>
+                </div>
+
+                <div class="card-grid">
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-chess-board card-icon"></i>
+                        <h3>Board Game Consulting</h3>
+                        <p>桌遊顧問諮詢。兩小時三千。提供專業的生產與設計建議，幫你避開所有量產陷阱。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-print card-icon" style="color: var(--c-cyan)"></i>
+                        <h3>Professional Printing</h3>
+                        <p>桌遊印刷 / 禮盒 / 包裝。工廠大大小小二三十位同仁，確保每一份產品的完美品質。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-layer-group card-icon" style="color: var(--c-magenta)"></i>
+                        <h3>TCG & Foil Cards</h3>
+                        <p>卡包 / 閃卡 / TCG卡片。專精於特殊工藝與收藏級卡片的製作。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <i class="fa-solid fa-puzzle-piece card-icon" style="color: #fff"></i>
+                        <h3>Special Design</h3>
+                        <p>解密桌遊生產 / 特殊配件設計。實現你最瘋狂的遊戲創意。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. System Logs (Story - The Fall & Resurgence) -->
         <section id="story">
             <div class="container">
                 <div class="gs-reveal" style="margin-bottom: 2rem; text-align: center;">
@@ -312,7 +443,7 @@
                     <div style="height: 2px; width: 100px; background: var(--c-cyan); margin: 0.5rem auto;"></div>
                 </div>
 
-                <div class="story-block gs-reveal">
+                <div class="story-block gs-reveal glass-panel">
                     <span class="story-year">EVENT: THE FALL</span>
                     <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">2024.04.03 - SEISMIC COLLAPSE</h3>
                     <p style="color: #ccc; line-height: 1.8;">
@@ -323,7 +454,7 @@
                     </p>
                 </div>
 
-                <div class="story-block gs-reveal" style="border-left-color: var(--c-yellow); margin-left: 2rem;">
+                <div class="story-block gs-reveal glass-panel" style="border-left-color: var(--c-yellow); margin-left: 2rem; margin-top: 2rem;">
                     <span class="story-year" style="color: var(--c-yellow)">PHASE: REBOOT</span>
                     <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">T+7 DAYS - ONLINE</h3>
                     <p style="color: #ccc; line-height: 1.8;">
@@ -334,7 +465,7 @@
                     </p>
                 </div>
 
-                <div class="story-block gs-reveal" style="border-left-color: var(--c-cyan); margin-left: 4rem;">
+                <div class="story-block gs-reveal glass-panel" style="border-left-color: var(--c-cyan); margin-left: 4rem; margin-top: 2rem;">
                     <span class="story-year" style="color: var(--c-cyan)">PHASE: RESURGENCE</span>
                     <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">THE VOID ENGINE</h3>
                     <p style="color: #ccc; line-height: 1.8;">
@@ -347,7 +478,7 @@
             </div>
         </section>
 
-        <!-- Reconstruction Interaction -->
+        <!-- 6. Reconstruction Interaction -->
         <section id="reconstruction" style="height: 100vh; position: relative; pointer-events: none;">
             <div class="ruins-overlay"></div>
 
@@ -407,130 +538,10 @@
             </div>
         </section>
 
-        <!-- The Commander (Personal Lore) -->
-        <section id="commander">
+        <!-- 7. Visit (CTA) -->
+        <section id="visit">
             <div class="container">
-                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE COMMANDER</h2>
-                    <p style="font-family: var(--f-mono); color: var(--c-magenta);">// IDENTITY: ALLEN (少帥)</p>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-
-                    <!-- Protocol: Fatherhood -->
-                    <div class="gs-reveal" style="background: rgba(255,0,255,0.05); padding: 2rem; border-left: 4px solid var(--c-magenta);">
-                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">PROTOCOL: FATHERHOOD</h3>
-                        <p style="color: #ccc; line-height: 1.8;">
-                            我是三個女兒的爸爸。<br>
-                            這是我所有動力的核心反應爐。無論工廠倒塌多少次，為了她們，我都能夠再次站起來。<br>
-                            她們是我的「無限魔力源 (Infinite Mana)」，讓我在高壓的生產線與負債壓力下，依然能保持微笑與堅韌。
-                        </p>
-                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                            <span style="background: var(--c-magenta); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CORE DRIVE</span>
-                            <span style="border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">PROTECTOR</span>
-                        </div>
-                    </div>
-
-                    <!-- Hands-On Leader -->
-                    <div class="gs-reveal" style="background: rgba(0,255,255,0.05); padding: 2rem; border-left: 4px solid var(--c-cyan);">
-                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">HANDS-ON LEADER</h3>
-                        <p style="color: #ccc; line-height: 1.8;">
-                            我不是坐在辦公室的總裁，我是穿梭在機台間的指揮官。<br>
-                            上一秒在會議室談百萬訂單，下一秒就在產線調整機台參數。<br>
-                            「親力親為」不是口號，是我的生存法則。我比任何人都了解這座工廠的每一次呼吸與震動。
-                        </p>
-                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                            <span style="background: var(--c-cyan); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">OPERATOR</span>
-                            <span style="border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CONSULTANT</span>
-                        </div>
-                    </div>
-
-                    <!-- Stats Block -->
-                    <div class="gs-reveal" style="grid-column: 1 / -1; background: #111; border: 1px solid #333; padding: 2rem; display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-around; align-items: center;">
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">STAMINA</div>
-                            <div style="font-family: var(--f-tech); color: var(--c-yellow); font-size: 2rem;">INFINITE</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">RESILIENCE</div>
-                            <div style="font-family: var(--f-tech); color: var(--c-magenta); font-size: 2rem;">MAX</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">CURRENT DEBT</div>
-                            <div style="font-family: var(--f-tech); color: #fff; font-size: 2rem;">> 10M</div>
-                        </div>
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">SPECIAL SKILL</div>
-                            <div style="font-family: var(--f-tech); color: var(--c-cyan); font-size: 1.5rem;">PHOENIX REBIRTH</div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-
-        <!-- The Battalion (Expanded Lore) -->
-        <section id="battalion">
-            <div class="container">
-                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE BATTALION</h2>
-                    <div style="height: 2px; width: 100px; background: var(--c-yellow); margin: 0.5rem auto;"></div>
-                </div>
-
-                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
-                    <div class="gs-reveal" style="flex: 1; min-width: 300px;">
-                        <h3 style="color: var(--c-cyan); font-family: var(--f-mono); margin-bottom: 1rem;">// UNIT STRENGTH: 30+</h3>
-                        <p style="color: #ccc; line-height: 1.8;">
-                            工廠大大小小內有二三十位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
-                            每天的日常就是在印桌遊，或是在開印的路上。<br>
-                            產線就是我們的戰場，每一張卡牌、每一個配件，都是我們共同打造的彈藥。
-                        </p>
-                    </div>
-                    <div class="gs-reveal" style="flex: 1; min-width: 300px; background: rgba(255,255,0,0.05); padding: 2rem; border: 1px dashed var(--c-yellow);">
-                        <h3 style="color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem;">// MISSION LOG</h3>
-                        <ul style="list-style: none; padding: 0; color: #aaa; line-height: 2;">
-                            <li>> 08:00 - SYSTEMS CHECK (開機)</li>
-                            <li>> 10:00 - TACTICAL BRIEFING (會議接洽)</li>
-                            <li>> 14:00 - PRODUCTION LINE SUPPORT (產線支援)</li>
-                            <li>> 20:00 - STRATEGIC PLANNING (未來規劃)</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Services -->
-        <section id="services">
-            <div class="container">
-                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SERVICES</h2>
-                    <p style="font-family: var(--f-mono); color: #888;">OUTPUT PROTOCOLS</p>
-                </div>
-
-                <div class="card-grid">
-                    <div class="service-card gs-reveal">
-                        <i class="fa-solid fa-chess-board card-icon"></i>
-                        <h3>Board Game Consulting</h3>
-                        <p>桌遊顧問諮詢。兩小時三千。提供專業的生產與設計建議，幫你避開所有量產陷阱。</p>
-                    </div>
-                    <div class="service-card gs-reveal">
-                        <i class="fa-solid fa-print card-icon" style="color: var(--c-cyan)"></i>
-                        <h3>Professional Printing</h3>
-                        <p>桌遊印刷 / 禮盒 / 包裝。工廠大大小小二三十位同仁，確保每一份產品的完美品質。</p>
-                    </div>
-                    <div class="service-card gs-reveal">
-                        <i class="fa-solid fa-layer-group card-icon" style="color: var(--c-magenta)"></i>
-                        <h3>TCG & Foil Cards</h3>
-                        <p>卡包 / 閃卡 / TCG卡片。專精於特殊工藝與收藏級卡片的製作。</p>
-                    </div>
-                    <div class="service-card gs-reveal">
-                        <i class="fa-solid fa-puzzle-piece card-icon" style="color: #fff"></i>
-                        <h3>Special Design</h3>
-                        <p>解密桌遊生產 / 特殊配件設計。實現你最瘋狂的遊戲創意。</p>
-                    </div>
-                </div>
-
-                <div class="gs-reveal" style="text-align: center; margin-top: 4rem; padding: 2rem; border: 1px solid #333; background: rgba(0,0,0,0.5);">
+                <div class="gs-reveal glass-panel" style="text-align: center; padding: 2rem;">
                     <h3 style="color: #fff; font-family: var(--f-tech); margin-bottom: 1rem;">VISIT THE BASE</h3>
                     <p style="color: #ccc; margin-bottom: 1.5rem;">有空可以來看看我們的新廠房，見證重啟後的鋼鐵意志。</p>
                     <span style="color: var(--c-cyan); font-family: var(--f-mono); border: 1px solid var(--c-cyan); padding: 0.5rem 1rem;">
