@@ -78,7 +78,10 @@
             letter-spacing: -0.04em;
             line-height: 0.9;
             color: var(--c-text);
-            mix-blend-mode: multiply; /* Blend with particles */
+            /* Removed mix-blend-mode for readability */
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -2px -2px 0px rgba(255,255,255,0.8);
+            position: relative;
+            z-index: 2;
         }
 
         h2 { font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 700; letter-spacing: -0.03em; margin-bottom: 2rem; }
@@ -142,6 +145,53 @@
             padding: 0.5rem 1rem; background: rgba(255,255,255,0.8);
             backdrop-filter: blur(10px); pointer-events: auto;
         }
+
+        /* --- Timeline (Content Expansion) --- */
+        .timeline-container {
+            border-left: 2px solid var(--c-secondary);
+            margin-left: 2rem;
+            padding-left: 2rem;
+        }
+        .timeline-item { position: relative; margin-bottom: 3rem; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -2.6rem; top: 0.5rem;
+            width: 1rem; height: 1rem; background: var(--c-bg);
+            border: 2px solid var(--c-accent); border-radius: 50%;
+        }
+        .timeline-date {
+            font-family: var(--f-mono); color: var(--c-accent); font-size: 0.9rem; margin-bottom: 0.5rem; display: block;
+        }
+
+        /* --- Project Card (Content Expansion) --- */
+        .project-grid {
+            display: grid; grid-template-columns: 1fr; gap: 4rem; margin-top: 4rem;
+        }
+        .project-card {
+            display: grid; grid-template-columns: 1fr; gap: 2rem;
+            align-items: center;
+        }
+        @media (min-width: 900px) {
+            .project-card { grid-template-columns: 1fr 1fr; }
+            /* Zig-zag layout */
+            .project-card:nth-child(odd) .project-visual { order: 1; }
+            .project-card:nth-child(odd) .project-info { order: 2; }
+
+            .project-card:nth-child(even) .project-visual { order: 2; }
+            .project-card:nth-child(even) .project-info { order: 1; }
+        }
+        .project-visual {
+            background: #e2e8f0; height: 300px; width: 100%; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--f-mono); color: var(--c-secondary); font-size: 2rem;
+            position: relative; overflow: hidden;
+        }
+        .project-visual::after {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+            background-size: 200% 200%;
+            animation: shine 3s infinite linear;
+        }
+        @keyframes shine { 0% { background-position: 100% 100%; } 100% { background-position: 0% 0%; } }
 
         /* --- Scroll Indicator --- */
         .scroll-hint {
@@ -211,19 +261,74 @@
                             不僅僅是分析過去，更是用自動化代碼 (Source Code) 與生成式 AI，預測並構建未來。
                         </p>
 
-                        <div style="display: flex; gap: 2rem; margin-top: 2rem;">
-                            <div>
-                                <h4 style="font-family: var(--f-mono); font-size: 2rem;">99%</h4>
-                                <span style="font-size: 0.8rem; color: var(--c-secondary);">AUTOMATION</span>
+                        <!-- Timeline Injection -->
+                        <div class="timeline-container" style="margin-top: 3rem;">
+                            <div class="timeline-item">
+                                <span class="timeline-date">PHASE 1: THE OBSERVER</span>
+                                <h4>Cross-Cultural Analysis</h4>
+                                <p style="font-size: 1rem; margin-bottom: 0;">以敏銳的觀察力，學習各國文化的底層邏輯與差異。</p>
                             </div>
-                            <div>
-                                <h4 style="font-family: var(--f-mono); font-size: 2rem;">0%</h4>
-                                <span style="font-size: 0.8rem; color: var(--c-secondary);">FRICTION</span>
+                            <div class="timeline-item">
+                                <span class="timeline-date">PHASE 2: THE BUILDER</span>
+                                <h4>Data Analyst & Automation</h4>
+                                <p style="font-size: 1rem; margin-bottom: 0;">掌握 Python/SQL，將觀察轉化為可執行的自動化腳本。</p>
+                            </div>
+                            <div class="timeline-item" style="margin-bottom: 0;">
+                                <span class="timeline-date">PHASE 3: THE ARCHITECT</span>
+                                <h4>AI Synthesis & Expert Path</h4>
+                                <p style="font-size: 1rem; margin-bottom: 0;">整合 Generative AI，創造全新的數據敘事體驗。</p>
                             </div>
                         </div>
                     </div>
 
                 </div>
+            </div>
+        </section>
+
+        <!-- 2.5 New Section: Projects (Detailed) -->
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="text-align: center;">
+                    <span class="tag">Operational Data</span>
+                    <h2>Key <span class="highlight">Protocols</span></h2>
+                </div>
+
+                <div class="project-grid">
+
+                    <!-- Project 1 -->
+                    <div class="glass-card project-card gs-reveal">
+                        <div class="project-visual">
+                            <i class="fa-solid fa-network-wired" style="font-size: 5rem; color: #cbd5e1;"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3 style="font-family: var(--f-mono);">PROJECT: CHIMERA</h3>
+                            <p style="font-size: 1rem; margin-top: 1rem;">
+                                利用 LLM 與圖像生成模型，將抽象的商業報表轉化為視覺化的故事板 (Storyboard)。
+                                解決了數據報告 "枯燥難懂" 的痛點。
+                            </p>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Generative AI</span>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Python</span>
+                        </div>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="glass-card project-card gs-reveal">
+                        <div class="project-visual">
+                            <i class="fa-solid fa-gears" style="font-size: 5rem; color: #cbd5e1;"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3 style="font-family: var(--f-mono);">PROTOCOL: ZERO-TOUCH</h3>
+                            <p style="font-size: 1rem; margin-top: 1rem;">
+                                構建端到端的數據流水線。從原始數據清洗 (ETL) 到儀表板更新，
+                                實現 <span class="highlight">0 人工介入</span> 的自動化閉環。
+                            </p>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Automation</span>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">SQL</span>
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
         </section>
 
