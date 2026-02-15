@@ -35,11 +35,20 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
             background-color: var(--dark-bg);
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden; /* Hide horizontal scroll only */
+        }
+
+        html {
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        body {
+            min-height: 100%;
+            position: relative;
         }
 
         /* Canvas Layers */
@@ -437,8 +446,9 @@
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
             const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-            gradient.addColorStop(0, 'rgba(255, 60, 0, 1)');
-            gradient.addColorStop(0.3, 'rgba(255, 30, 0, 0.5)');
+            // Changed glow to Golden/Orange to match new sun
+            gradient.addColorStop(0, 'rgba(255, 170, 0, 1)');
+            gradient.addColorStop(0.3, 'rgba(255, 100, 0, 0.5)');
             gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 128, 128);
@@ -549,26 +559,45 @@
 
             group.add(leftPillar, rightPillar, topBar, subBar);
 
-            // The Sun (Bright Red/Orange, Larger, Closer)
+            // The Sun (Now Wireframe & Golden/Orange)
             const sunGeo = new THREE.SphereGeometry(50, 32, 32);
-            const sunMat = new THREE.MeshBasicMaterial({ color: 0xff3300, fog: false });
+            // Wireframe sun, brighter orange/gold
+            const sunMat = new THREE.MeshBasicMaterial({
+                color: 0xffaa00,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8,
+                fog: false
+            });
             const sun = new THREE.Mesh(sunGeo, sunMat);
-            sun.position.set(0, 25, -40); // Move closer (was -60)
+            sun.position.set(0, 25, -40);
             group.add(sun);
 
-            // Sun Glow Sprite
+            // Sun Core (Solid small sphere for visibility)
+            const coreGeo = new THREE.SphereGeometry(20, 16, 16);
+            const coreMat = new THREE.MeshBasicMaterial({
+                color: 0xffdd00,
+                transparent: true,
+                opacity: 0.9,
+                fog: false
+            });
+            const sunCore = new THREE.Mesh(coreGeo, coreMat);
+            sunCore.position.set(0, 25, -40);
+            group.add(sunCore);
+
+            // Sun Glow Sprite (Scaled down, reduced opacity)
             const glowTex = createGlowTexture();
             const glowMat = new THREE.SpriteMaterial({
                 map: glowTex,
-                color: 0xff3300,
+                color: 0xffaa00, // Matching orange
                 transparent: true,
-                opacity: 0.8,
+                opacity: 0.6, // Reduced from 0.8
                 blending: THREE.AdditiveBlending,
                 fog: false
             });
             const glowSprite = new THREE.Sprite(glowMat);
-            glowSprite.scale.set(200, 200, 1);
-            glowSprite.position.set(0, 25, -45); // Between sun and gate pillars
+            glowSprite.scale.set(150, 150, 1); // Reduced from 200
+            glowSprite.position.set(0, 25, -45);
             group.add(glowSprite);
 
             // Glow Ring
@@ -658,7 +687,7 @@
             if (p > 0.9 && destination) {
                 // Look at Destination
                 targetPoint = destination.position.clone();
-                targetPoint.y += 20; // Look slightly up at the gate
+                targetPoint.y += 25; // Look directly at the sun center
             } else {
                 // Look ahead on path
                 const lookAtP = Math.min(p + 0.02, 0.999);
@@ -670,21 +699,33 @@
             params.lookTarget.lerp(targetPoint, 0.05); // Smooth factor
             camera.lookAt(params.lookTarget);
 
-            // Rotate tunnel
-            tube.rotation.z += 0.001 + (params.velocity * 0.00005);
-            particleSystem.rotation.z -= 0.002;
+            // Rotate tunnel - CHANGED: Removed base constant rotation, only rotates with velocity
+            tube.rotation.z += (params.velocity * 0.00005);
+
+            // Particles rotation - CHANGED: Only rotates with velocity
+            particleSystem.rotation.z -= (params.velocity * 0.0001);
 
             // Pulse destination
             if (destination) {
-                // The sun is child index 4, glow sprite index 5
+                // The sun is child index 4, sun core is 5, glow sprite index 6
                 const sun = destination.children[4];
+                const sunCore = destination.children[5];
+
+                // Pulse logic
+                const s = 1 + Math.sin(Date.now() * 0.002) * 0.05;
+
                 if(sun) {
-                     const s = 1 + Math.sin(Date.now() * 0.002) * 0.05;
                      sun.scale.set(s, s, s);
+                     sun.rotation.y += 0.002;
+                     sun.rotation.x += 0.001;
                 }
-                const glow = destination.children[5];
+                if(sunCore) {
+                     sunCore.scale.set(s, s, s);
+                }
+
+                const glow = destination.children[6];
                 if(glow) {
-                     glow.material.opacity = 0.6 + Math.sin(Date.now() * 0.005) * 0.2;
+                     glow.material.opacity = 0.4 + Math.sin(Date.now() * 0.005) * 0.2;
                 }
             }
 
