@@ -214,13 +214,7 @@
         }
         @keyframes shine { 0% { background-position: 100% 100%; } 100% { background-position: 0% 0%; } }
 
-        /* --- Scroll Indicator --- */
-        .scroll-hint {
-            position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%);
-            font-family: var(--f-mono); font-size: 0.8rem; opacity: 0.5;
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+        /* --- Scroll Indicator Removed --- */
 
         .avatar-glitch {
             width: 100%; max-width: 400px;
@@ -248,15 +242,14 @@
         <!-- 1. Hero: The Big Bang -->
         <section class="section">
             <div class="container interactive-layer" style="text-align: center;">
-                <div class="gs-reveal">
+                <div class="gs-reveal" style="background: rgba(248, 250, 252, 0.6); padding: 3rem; backdrop-filter: blur(8px); border-radius: 4px; display: inline-block;">
                     <span class="tag">System Initialize: Kinetic</span>
-                    <h1>DATA<br><span style="color: transparent; -webkit-text-stroke: 2px var(--c-text);">EXPLOSION</span></h1>
+                    <h1 style="text-shadow: none;">DATA<br><span style="color: transparent; -webkit-text-stroke: 2px var(--c-text);">EXPLOSION</span></h1>
                     <p style="margin: 2rem auto; font-size: 1.5rem;">
                         我是 Michael Lai。<br>
                         拒絕平庸的數據架構師。在混亂中引爆價值。
                     </p>
                 </div>
-                <div class="scroll-hint">SCROLL TO ACCELERATE</div>
             </div>
         </section>
 
@@ -303,6 +296,34 @@
             </div>
         </section>
 
+        <!-- 2.2 Methodology (New Content) -->
+        <section class="section" style="padding: 2rem 2rem;">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <span class="tag">The Process</span>
+                    <h2>Data <span class="highlight">Ecosystem</span></h2>
+                </div>
+
+                <div class="grid-3" style="text-align: center;">
+                    <div class="glass-card gs-reveal">
+                        <i class="fa-solid fa-magnifying-glass-chart" style="font-size: 2.5rem; color: var(--c-primary); margin-bottom: 1rem;"></i>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">DISCOVER</h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 0;">深入業務場景，挖掘潛在的數據價值與斷點。</p>
+                    </div>
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.1s;">
+                        <i class="fa-solid fa-flask" style="font-size: 2.5rem; color: var(--c-accent); margin-bottom: 1rem;"></i>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">SYNTHESIZE</h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 0;">運用 Python 與 AI 模型，將雜訊轉化為信號。</p>
+                    </div>
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.2s;">
+                        <i class="fa-solid fa-rocket" style="font-size: 2.5rem; color: var(--c-text); margin-bottom: 1rem;"></i>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">DEPLOY</h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 0;">建立自動化閉環，讓洞見即時落地。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- 2.3 The Code Vault (New Content) -->
         <section class="section">
             <div class="container interactive-layer">
@@ -329,6 +350,18 @@
                         </div>
                     </div>
 
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.4 Philosophy Quote -->
+        <section class="section" style="padding: 6rem 2rem; background: rgba(59, 130, 160, 0.05);">
+            <div class="container interactive-layer" style="text-align: center;">
+                <div class="gs-reveal">
+                    <i class="fa-solid fa-quote-left" style="font-size: 3rem; color: var(--c-secondary); opacity: 0.3; margin-bottom: 2rem;"></i>
+                    <h2 style="font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 300; font-family: var(--f-main); line-height: 1.4;">
+                        "Data is not just numbers. It is the <span class="highlight">raw material of truth</span> waiting to be sculpted."
+                    </h2>
                 </div>
             </div>
         </section>
@@ -377,6 +410,25 @@
 
                 </div>
 
+            </div>
+        </section>
+
+        <!-- 2.6 Toolkit (New Content) -->
+        <section class="section" style="padding: 2rem 2rem;">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="margin-bottom: 2rem;">
+                    <span class="tag">Arsenal</span>
+                    <h2>Tech <span class="highlight">Stack</span></h2>
+                </div>
+                <div class="gs-reveal" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Python</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">SQL</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Tableau</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">OpenAI API</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Pandas</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Scikit-learn</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Git</span>
+                </div>
             </div>
         </section>
 
