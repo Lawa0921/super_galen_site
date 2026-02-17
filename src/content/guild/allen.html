@@ -271,6 +271,232 @@
             padding: 2rem; border-radius: 8px;
         }
 
+        /* --- The Forge (Origin Era) --- */
+        .forge-counter {
+            text-align: center; padding: 1.5rem;
+        }
+        .forge-counter-value {
+            font-family: var(--f-tech); font-size: 2.5rem; font-weight: 900;
+            background: linear-gradient(135deg, var(--c-cyan), var(--c-magenta));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .forge-counter-label {
+            font-family: var(--f-mono); color: #888; font-size: 0.85rem; margin-top: 0.3rem;
+        }
+        .forge-milestone {
+            display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.2rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .forge-milestone:last-child { border-bottom: none; }
+        .forge-year {
+            font-family: var(--f-mono); color: var(--c-cyan); font-size: 0.85rem;
+            min-width: 60px; padding-top: 0.2rem;
+        }
+        .forge-desc {
+            color: #ccc; line-height: 1.7; font-size: 0.95rem;
+        }
+        .forge-desc strong { color: #fff; }
+
+        /* --- Damage Report --- */
+        .damage-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem; margin-top: 2rem;
+        }
+        .damage-card {
+            background: rgba(255, 0, 0, 0.03); border: 1px solid rgba(255, 50, 50, 0.3);
+            padding: 1.5rem; text-align: center; position: relative;
+        }
+        .damage-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, transparent, #ff3333, transparent);
+        }
+        .damage-value {
+            font-family: var(--f-tech); font-size: 2rem; color: #ff4444; font-weight: 900;
+        }
+        .damage-label {
+            font-family: var(--f-mono); color: #888; font-size: 0.8rem; margin-top: 0.5rem;
+        }
+        .damage-detail {
+            color: #aaa; font-size: 0.85rem; margin-top: 0.8rem; line-height: 1.5;
+        }
+
+        /* --- Phoenix Section --- */
+        .phoenix-timeline {
+            position: relative; padding-left: 3rem; margin-top: 2rem;
+        }
+        .phoenix-timeline::before {
+            content: ''; position: absolute; top: 0; left: 14px; width: 2px; height: 100%;
+            background: linear-gradient(to bottom, #ff3333, var(--c-yellow), var(--c-cyan), #00ff88);
+        }
+        .phoenix-event {
+            position: relative; margin-bottom: 2.5rem;
+        }
+        .phoenix-dot {
+            position: absolute; left: -3rem; top: 0.3rem; width: 12px; height: 12px;
+            border-radius: 50%; border: 2px solid currentColor;
+            transform: translateX(3px);
+        }
+        .phoenix-dot-red { color: #ff3333; background: rgba(255, 51, 51, 0.3); }
+        .phoenix-dot-yellow { color: var(--c-yellow); background: rgba(255, 255, 0, 0.3); }
+        .phoenix-dot-cyan { color: var(--c-cyan); background: rgba(0, 255, 255, 0.3); }
+        .phoenix-dot-green { color: #00ff88; background: rgba(0, 255, 136, 0.3); }
+        .phoenix-time {
+            font-family: var(--f-mono); font-size: 0.8rem; margin-bottom: 0.3rem;
+        }
+        .phoenix-title {
+            font-family: var(--f-tech); color: #fff; font-size: 1.3rem; margin-bottom: 0.5rem;
+        }
+        .phoenix-text {
+            color: #ccc; line-height: 1.8; font-size: 0.95rem;
+        }
+        .phoenix-quote {
+            border-left: 3px solid var(--c-yellow); padding-left: 1rem; margin-top: 1rem;
+            color: var(--c-yellow); font-style: italic; font-size: 0.95rem;
+        }
+
+        /* --- News Sources --- */
+        .news-source-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem; margin-top: 2rem;
+        }
+        .news-source-card {
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem; transition: 0.3s; text-decoration: none; display: block;
+        }
+        .news-source-card:hover {
+            border-color: var(--c-cyan); transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
+        }
+        .news-source-tag {
+            font-family: var(--f-mono); font-size: 0.7rem; color: var(--c-cyan);
+            border: 1px solid var(--c-cyan); padding: 0.15rem 0.5rem; display: inline-block;
+            margin-bottom: 0.8rem;
+        }
+        .news-source-title {
+            color: #fff; font-size: 1.1rem; margin-bottom: 0.5rem; line-height: 1.4;
+        }
+        .news-source-outlet {
+            color: #888; font-family: var(--f-mono); font-size: 0.8rem;
+        }
+
+        /* --- Repair CTA --- */
+        .repair-cta {
+            display: inline-block; background: var(--c-cyan); color: #000; text-decoration: none;
+            padding: 1rem 3rem; font-family: var(--f-tech); font-weight: 700;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            margin-bottom: 1rem; transition: 0.3s;
+        }
+        .repair-cta:hover { background: #fff; }
+
+        /* --- Visit Section --- */
+        .visit-address {
+            color: var(--c-cyan); font-family: var(--f-mono); font-size: 0.95rem;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+            border: 1px solid var(--c-cyan); padding: 0.7rem 1.5rem; transition: 0.3s;
+        }
+        .visit-address:hover {
+            background: rgba(0,255,255,0.1); color: #fff;
+        }
+        .visit-contact {
+            color: #888; font-family: var(--f-mono); font-size: 0.85rem; margin-top: 1rem;
+        }
+
+        /* --- Section Divider --- */
+        .section-divider {
+            width: 100%; max-width: 1000px; margin: 0 auto; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        }
+
+        /* --- Section Headers --- */
+        .section-header {
+            text-align: center; margin-bottom: 3rem;
+        }
+        .section-title {
+            font-family: var(--f-tech); font-size: 2.5rem; color: #fff;
+        }
+        .section-title-danger {
+            font-family: var(--f-tech); font-size: 2.5rem; color: #ff4444;
+        }
+        .section-subtitle {
+            font-family: var(--f-mono); color: #888;
+        }
+        .section-subtitle-magenta {
+            font-family: var(--f-mono); color: var(--c-magenta);
+        }
+        .section-subtitle-yellow {
+            font-family: var(--f-mono); color: var(--c-yellow);
+        }
+        .section-subtitle-danger {
+            font-family: var(--f-mono); color: #ff4444; opacity: 0.7;
+        }
+        .section-line {
+            height: 2px; width: 100px; margin: 0.5rem auto;
+        }
+        .section-line-cyan { background: var(--c-cyan); }
+        .section-line-yellow { background: var(--c-yellow); }
+
+        /* --- Tags --- */
+        .tag {
+            padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;
+        }
+        .tag-cyan { border: 1px solid var(--c-cyan); color: var(--c-cyan); }
+        .tag-magenta { border: 1px solid var(--c-magenta); color: var(--c-magenta); }
+        .tag-yellow { border: 1px solid var(--c-yellow); color: var(--c-yellow); }
+        .tag-fill-magenta { background: var(--c-magenta); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+        .tag-fill-cyan { background: var(--c-cyan); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+        .tag-outline-magenta { border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+        .tag-outline-cyan { border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+
+        /* --- Hero Utilities --- */
+        .hero-tagline {
+            max-width: 600px; margin: 1.5rem auto; color: #888; font-family: var(--f-mono);
+        }
+        .hero-tags {
+            margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;
+        }
+        .text-center { text-align: center; }
+
+        /* --- Commander Panels --- */
+        .commander-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;
+        }
+        .commander-panel-magenta { border-left: 4px solid var(--c-magenta); }
+        .commander-panel-cyan { border-left: 4px solid var(--c-cyan); }
+        .commander-panel-title {
+            color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);
+        }
+        .commander-panel-text {
+            color: #ccc; line-height: 1.8;
+        }
+        .commander-tags {
+            margin-top: 1rem; display: flex; gap: 0.5rem;
+        }
+        .commander-stats {
+            grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem;
+            justify-content: space-around; align-items: center;
+        }
+        .stat-block { text-align: center; }
+        .stat-label { font-family: var(--f-mono); color: #888; font-size: 0.9rem; }
+        .stat-value { font-family: var(--f-tech); font-size: 2rem; }
+        .stat-value-yellow { color: var(--c-yellow); }
+        .stat-value-magenta { color: var(--c-magenta); }
+        .stat-value-white { color: #fff; }
+        .stat-value-cyan { color: var(--c-cyan); font-size: 1.5rem; }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .forge-counter-value { font-size: 2rem; }
+            .damage-grid { grid-template-columns: 1fr 1fr; }
+            .damage-value { font-size: 1.5rem; }
+            .phoenix-timeline { padding-left: 2.5rem; }
+            .phoenix-title { font-size: 1.1rem; }
+            .news-source-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .damage-grid { grid-template-columns: 1fr; }
+        }
+
         /* GSAP Utility */
         /* .gs-reveal { opacity: 0; } - Removed to let GSAP handle initial state */
     </style>
@@ -293,19 +519,19 @@
 
         <!-- 1. Hero -->
         <section id="hero">
-            <div class="container" style="text-align: center;">
+            <div class="container text-center">
                 <div class="avatar-frame gs-reveal">
                     <img src="/assets/img/guild/allen/avatar.webp" alt="Allen" class="avatar-img">
                 </div>
                 <h1 class="hero-title gs-reveal glitch-text" data-text="少帥 ALLEN">少帥 ALLEN</h1>
                 <div class="hero-subtitle gs-reveal">THE INK COMMANDER</div>
-                <p style="max-width: 600px; margin: 1.5rem auto; color: #888; font-family: var(--f-mono);" class="gs-reveal">
+                <p class="hero-tagline gs-reveal">
                     INK | MACHINERY | RESILIENCE
                 </p>
-                <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;" class="gs-reveal">
-                   <div style="border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;">PRINTING</div>
-                   <div style="border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;">CONSULTING</div>
-                   <div style="border: 1px solid var(--c-yellow); color: var(--c-yellow); padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;">PRODUCTION</div>
+                <div class="hero-tags gs-reveal">
+                   <div class="tag tag-cyan">PRINTING</div>
+                   <div class="tag tag-magenta">CONSULTING</div>
+                   <div class="tag tag-yellow">PRODUCTION</div>
                 </div>
             </div>
         </section>
@@ -313,58 +539,58 @@
         <!-- 2. The Commander (Personal Lore) -->
         <section id="commander">
             <div class="container">
-                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE COMMANDER</h2>
-                    <p style="font-family: var(--f-mono); color: var(--c-magenta);">// IDENTITY: ALLEN (少帥)</p>
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE COMMANDER</h2>
+                    <p class="section-subtitle-magenta">// IDENTITY: ALLEN (少帥)</p>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                <div class="commander-grid">
 
                     <!-- Protocol: Fatherhood -->
-                    <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-magenta);">
-                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">PROTOCOL: FATHERHOOD</h3>
-                        <p style="color: #ccc; line-height: 1.8;">
+                    <div class="gs-reveal glass-panel commander-panel-magenta">
+                        <h3 class="commander-panel-title">PROTOCOL: FATHERHOOD</h3>
+                        <p class="commander-panel-text">
                             我是三個女兒的爸爸。<br>
                             這是我所有動力的核心反應爐。無論工廠倒塌多少次，為了她們，我都能夠再次站起來。<br>
                             她們是我的「無限魔力源 (Infinite Mana)」，讓我在高壓的生產線與負債壓力下，依然能保持微笑與堅韌。
                         </p>
-                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                            <span style="background: var(--c-magenta); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CORE DRIVE</span>
-                            <span style="border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">PROTECTOR</span>
+                        <div class="commander-tags">
+                            <span class="tag-fill-magenta">CORE DRIVE</span>
+                            <span class="tag-outline-magenta">PROTECTOR</span>
                         </div>
                     </div>
 
                     <!-- Hands-On Leader -->
-                    <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-cyan);">
-                        <h3 style="color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);">HANDS-ON LEADER</h3>
-                        <p style="color: #ccc; line-height: 1.8;">
+                    <div class="gs-reveal glass-panel commander-panel-cyan">
+                        <h3 class="commander-panel-title">HANDS-ON LEADER</h3>
+                        <p class="commander-panel-text">
                             我不是坐在辦公室的總裁，我是穿梭在機台間的指揮官。<br>
                             上一秒在會議室談百萬訂單，下一秒就在產線調整機台參數。<br>
                             「親力親為」不是口號，是我的生存法則。我比任何人都了解這座工廠的每一次呼吸與震動。
                         </p>
-                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                            <span style="background: var(--c-cyan); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">OPERATOR</span>
-                            <span style="border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono);">CONSULTANT</span>
+                        <div class="commander-tags">
+                            <span class="tag-fill-cyan">OPERATOR</span>
+                            <span class="tag-outline-cyan">CONSULTANT</span>
                         </div>
                     </div>
 
                     <!-- Stats Block -->
-                    <div class="gs-reveal glass-panel" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-around; align-items: center;">
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">STAMINA</div>
-                            <div style="font-family: var(--f-tech); color: var(--c-yellow); font-size: 2rem;">INFINITE</div>
+                    <div class="gs-reveal glass-panel commander-stats">
+                        <div class="stat-block">
+                            <div class="stat-label">STAMINA</div>
+                            <div class="stat-value stat-value-yellow">INFINITE</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">RESILIENCE</div>
-                            <div style="font-family: var(--f-tech); color: var(--c-magenta); font-size: 2rem;">MAX</div>
+                        <div class="stat-block">
+                            <div class="stat-label">RESILIENCE</div>
+                            <div class="stat-value stat-value-magenta">MAX</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">CURRENT DEBT</div>
-                            <div style="font-family: var(--f-tech); color: #fff; font-size: 2rem;">> 10M</div>
+                        <div class="stat-block">
+                            <div class="stat-label">CURRENT DEBT</div>
+                            <div class="stat-value stat-value-white">> 10M</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-family: var(--f-mono); color: #888; font-size: 0.9rem;">SPECIAL SKILL</div>
-                            <div style="font-family: var(--f-tech); color: var(--c-cyan); font-size: 1.5rem;">PHOENIX REBIRTH</div>
+                        <div class="stat-block">
+                            <div class="stat-label">SPECIAL SKILL</div>
+                            <div class="stat-value stat-value-cyan">PHOENIX REBIRTH</div>
                         </div>
                     </div>
 
@@ -402,7 +628,70 @@
             </div>
         </section>
 
-        <!-- 4. Services (Factory Capabilities) -->
+        <!-- 4. The Forge (Origin Era & Legacy) -->
+        <section id="forge">
+            <div class="container">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE FORGE</h2>
+                    <p style="font-family: var(--f-mono); color: var(--c-yellow);">// LEGACY DATA: 2017 - 2024.04.02</p>
+                </div>
+
+                <div class="gs-reveal glass-panel" style="margin-bottom: 2rem;">
+                    <p style="color: #ccc; line-height: 1.8; font-size: 1.05rem;">
+                        墨帥印刷，成立於 2017 年，座落在新北市中和區。<br>
+                        這不只是一座印刷廠——這是台灣桌遊產業的心臟。在多數廠商將生產線外移至中國大陸的年代，
+                        墨帥選擇<span style="color: var(--c-cyan);">「根留台灣」</span>，成為少數堅持在地生產的桌遊印刷製造商。<br><br>
+                        從一張白紙到一盒完整的桌遊，墨帥提供的不只是印刷，而是一條龍的夢想實現管線：
+                        <span style="color: var(--c-magenta);">卡牌印製、指示物配件、彩盒包裝、倉儲後援、成本規劃，甚至群眾集資的出貨配送。</span>
+                    </p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">2,500+</div>
+                        <div class="forge-counter-label">GAMES PRODUCED</div>
+                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">台灣桌遊作品</div>
+                    </div>
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">37</div>
+                        <div class="forge-counter-label">CREW MEMBERS</div>
+                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">與家庭生計</div>
+                    </div>
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">5F</div>
+                        <div class="forge-counter-label">FACTORY FLOORS</div>
+                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">五層樓廠房</div>
+                    </div>
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">7 YRS</div>
+                        <div class="forge-counter-label">OF OPERATION</div>
+                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">持續運轉</div>
+                    </div>
+                </div>
+
+                <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-yellow);">
+                    <h3 style="color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem;">// MILESTONE LOG</h3>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2017</span>
+                        <div class="forge-desc"><strong>SYSTEM INIT</strong> — 墨帥印刷在新北中和正式啟動。當別人笑他傻，他只說：「台灣的桌遊，就該在台灣印。」</div>
+                    </div>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2018</span>
+                        <div class="forge-desc"><strong>CAPACITY UPGRADE</strong> — 產能突破臨界值，從小型代工廠蛻變為專業桌遊生產基地。開始承接大型集資案。</div>
+                    </div>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2020</span>
+                        <div class="forge-desc"><strong>PANDEMIC SURVIVAL</strong> — 疫情衝擊下，桌遊市場逆勢成長。墨帥在最艱難的時刻反而迎來產能高峰。</div>
+                    </div>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2023</span>
+                        <div class="forge-desc"><strong>2500 GAMES ACHIEVED</strong> — 累計生產超過 2,500 款台灣桌遊。墨帥不只是印刷廠，已成為台灣桌遊產業的代名詞。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Services (Factory Capabilities) -->
         <section id="services">
             <div class="container">
                 <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
@@ -435,59 +724,159 @@
             </div>
         </section>
 
-        <!-- 5. System Logs (Story - The Fall & Resurgence) -->
-        <section id="story">
+        <!-- 6. Damage Report (The Quake Impact) — Data cards only, no prose (narrative is in Phoenix) -->
+        <section id="damage-report">
             <div class="container">
-                <div class="gs-reveal" style="margin-bottom: 2rem; text-align: center;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SYSTEM LOGS</h2>
-                    <div style="height: 2px; width: 100px; background: var(--c-cyan); margin: 0.5rem auto;"></div>
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title-danger">DAMAGE REPORT</h2>
+                    <p class="section-subtitle-danger">// 2024.04.03 — 07:58:09 TST — HUALIEN SEISMIC EVENT</p>
                 </div>
 
-                <div class="story-block gs-reveal glass-panel">
-                    <span class="story-year">EVENT: THE FALL</span>
-                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">2024.04.03 - SEISMIC COLLAPSE</h3>
-                    <p style="color: #ccc; line-height: 1.8;">
-                        那一刻，大地發出怒吼。<br>
-                        前年403地震，我的工廠瞬間倒塌。那座專門製作桌遊的夢工廠，在幾秒鐘內化為瓦礫堆。<br>
-                        所有的機台、紙張、夢想，彷彿都被埋葬在塵土之下。<br>
-                        但我沒有時間悲傷。這不是結束，這只是系統強制重啟的信號。
-                    </p>
-                </div>
-
-                <div class="story-block gs-reveal glass-panel" style="border-left-color: var(--c-yellow); margin-left: 2rem; margin-top: 2rem;">
-                    <span class="story-year" style="color: var(--c-yellow)">PHASE: REBOOT</span>
-                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">T+7 DAYS - ONLINE</h3>
-                    <p style="color: #ccc; line-height: 1.8;">
-                        當天我就啟動了緊急募資，號召各方好友支援。<br>
-                        這不僅僅是修復，這是「熱插拔 (Hot-swapping)」級別的極限操作。<br>
-                        我花了不到一週的時間重新開機，將所有的錯位與混亂強制歸零。<br>
-                        機台重新運轉的轟鳴聲，是世界上最悅耳的樂章。
-                    </p>
-                </div>
-
-                <div class="story-block gs-reveal glass-panel" style="border-left-color: var(--c-cyan); margin-left: 4rem; margin-top: 2rem;">
-                    <span class="story-year" style="color: var(--c-cyan)">PHASE: RESURGENCE</span>
-                    <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 1rem;">THE VOID ENGINE</h3>
-                    <p style="color: #ccc; line-height: 1.8;">
-                        目前負債金額超過一千（萬）。<br>
-                        這看似絕望的數字，在我的系統裡被轉化為推進的燃料。<br>
-                        這股龐大的「虛空壓力」迫使我進化出更高的效率與更精準的決策。<br>
-                        每天不是在印桌遊，就是在開印的路上。停滯即是毀滅，唯有前進才能維持系統穩定。
-                    </p>
+                <div class="damage-grid">
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">M 7.1</div>
+                        <div class="damage-label">RICHTER MAGNITUDE</div>
+                        <div class="damage-detail">花蓮壽豐震源深度 19.7km<br>921 後最大規模強震</div>
+                    </div>
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">>$10M</div>
+                        <div class="damage-label">TOTAL DAMAGE (TWD)</div>
+                        <div class="damage-detail">初估財損超過一千萬<br>設備、成品、原物料全毀</div>
+                    </div>
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">0%</div>
+                        <div class="damage-label">PRODUCTION CAPACITY</div>
+                        <div class="damage-detail">所有產線全面停擺<br>訂單全部延遲</div>
+                    </div>
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">7 DAYS</div>
+                        <div class="damage-label">TO REBOOT</div>
+                        <div class="damage-detail">從廢墟到復工<br>奇蹟般的七日重啟</div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- 6. Reconstruction Interaction -->
+        <!-- 7. System Logs - The Phoenix Timeline -->
+        <section id="story">
+            <div class="container">
+                <div class="gs-reveal" style="margin-bottom: 2rem; text-align: center;">
+                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE PHOENIX PROTOCOL</h2>
+                    <p style="font-family: var(--f-mono); color: var(--c-yellow);">// FROM ASHES TO REBIRTH — COMPLETE TIMELINE</p>
+                </div>
+
+                <div class="phoenix-timeline">
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-red"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time" style="color: #ff3333;">2024.04.03 — 07:58 AM</div>
+                            <div class="phoenix-title">EVENT ZERO: THE QUAKE</div>
+                            <div class="phoenix-text">
+                                印刷機台從地基上被震離、紙張散落如雪、
+                                成品桌遊從貨架上傾瀉而下。
+                                七年的心血在幾十秒內化為一座鋼筋與紙漿的廢墟。<br><br>
+                                但在粉塵還未落定的那個早晨，少帥 Allen 已經站在廢墟前方，
+                                不是哭泣，而是思考——<span style="color: #ff3333;">如何重啟。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-red"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time" style="color: #ff3333;">2024.04.03 — SAME DAY</div>
+                            <div class="phoenix-title">THE DISTRESS SIGNAL</div>
+                            <div class="phoenix-text">
+                                地震發生當天，Allen 在個人 Facebook 頁面發出求援訊號。<br>
+                                沒有華麗的文案，沒有包裝過的悲情——只有一個印刷廠負責人最真實的聲音：
+                            </div>
+                            <div class="phoenix-quote">
+                                「工廠倒了。但我不能倒。37 個員工的家庭在等我。」
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-yellow"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time" style="color: var(--c-yellow);">2024.04.04 — T+1 DAY</div>
+                            <div class="phoenix-title">THE RALLY: 墨帥不能倒</div>
+                            <div class="phoenix-text">
+                                訊號傳出，台灣桌遊圈瞬間沸騰。<br><br>
+                                過往合作夥伴、桌遊設計師、集資案發起人、甚至素未謀面的玩家——
+                                所有人不約而同地響應。「<span style="color: var(--c-yellow);">墨帥不能倒</span>」不是口號，而是整個產業的共識。<br><br>
+                                短短數天內，第一階段重啟經費 <span style="color: var(--c-yellow);">200 萬台幣</span> 到位。
+                                這不是施捨，這是台灣桌遊人對這座工廠的信任投票。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-cyan"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time" style="color: var(--c-cyan);">2024.04.10 — T+7 DAYS</div>
+                            <div class="phoenix-title">MIRACLE REBOOT: 七日復活</div>
+                            <div class="phoenix-text">
+                                不到一週。從廢墟到復工，只花了不到一週。<br><br>
+                                這不是修復，這是「<span style="color: var(--c-cyan);">熱插拔 (Hot-swapping)</span>」級別的極限操作。
+                                Allen 在瓦礫中搶救出還能運轉的機台，重新校正、重新定位、重新連線。<br><br>
+                                當機台重新運轉的轟鳴聲響起的那一刻，
+                                那是世界上最悅耳的樂章。
+                            </div>
+                            <div class="phoenix-quote">
+                                「機器在叫了。代表我們還活著。」
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-cyan"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time" style="color: var(--c-cyan);">2024.04.15</div>
+                            <div class="phoenix-title">CROWDFUNDING LAUNCH: 嘖嘖集資</div>
+                            <div class="phoenix-text">
+                                初步復工只是止血，真正的重建還需要更多資源。<br><br>
+                                Allen 在嘖嘖平台發起《<span style="color: var(--c-cyan);">墨帥印刷災後重建計畫</span>》，
+                                目標再募集 400 萬台幣完備生產機台與設備。<br><br>
+                                集資頁面的標題寫著：「2,500 款桌遊背後的生產力量，這次我們需要你一起幫忙！」<br>
+                                最終 <span style="color: var(--c-cyan);">737 位贊助人</span> 站了出來，用實際行動回應。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-green"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time" style="color: #00ff88;">2024.05 — T+30 DAYS</div>
+                            <div class="phoenix-title">FULL RESURGENCE: 100% ONLINE</div>
+                            <div class="phoenix-text">
+                                一個月。從完全歸零到 100% 產能恢復，只用了一個月。<br><br>
+                                新廠房定位完成，所有機台校正上線，產線全面運轉。
+                                負債金額超過 <span style="color: #00ff88;">一千萬</span>——但在 Allen 的系統裡，這個數字不是絕望，
+                                是推進的燃料。<br><br>
+                                這股龐大的「虛空壓力」迫使他進化出更高的效率與更精準的決策。<br>
+                                每天不是在印桌遊，就是在開印的路上。
+                                <span style="color: #00ff88;">停滯即是毀滅，唯有前進才能維持系統穩定。</span>
+                            </div>
+                            <div class="phoenix-quote">
+                                「負債是引擎，不是枷鎖。它逼我跑得更快。」
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Reconstruction Interaction -->
         <section id="reconstruction" style="height: 100vh; position: relative; pointer-events: none;">
             <div class="ruins-overlay"></div>
 
             <div class="news-ticker-container" id="ruin-ticker">
                 <div class="news-ticker-content" style="padding-right: 50px;">
-                     ALERT: SEISMIC ACTIVITY DETECTED /// FACTORY INTEGRITY COMPROMISED /// PRODUCTION HALTED /// INITIATING EMERGENCY PROTOCOLS
+                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房結構崩毀 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
                 </div>
                 <div class="news-ticker-content">
-                     ALERT: SEISMIC ACTIVITY DETECTED /// FACTORY INTEGRITY COMPROMISED /// PRODUCTION HALTED /// INITIATING EMERGENCY PROTOCOLS
+                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房結構崩毀 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
                 </div>
             </div>
 
@@ -504,49 +893,43 @@
 
                 <!-- Post-Repair Content (Hidden Initially) -->
                 <div id="post-repair-content" style="display: none; opacity: 0; margin-top: 3rem; position: relative; z-index: 5;">
-                    <div style="background: rgba(10,10,10,0.85); backdrop-filter: blur(8px); border: 1px solid rgba(0,255,255,0.3); padding: 2rem; border-radius: 4px;">
-                        <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" style="
-                            display: inline-block; background: var(--c-cyan); color: #000; text-decoration: none;
-                            padding: 1rem 3rem; font-family: var(--f-tech); font-weight: 700; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%); margin-bottom: 2rem;
-                        ">SUPPORT THE REBOOT</a>
+                    <div class="glass-panel" style="border: 1px solid rgba(0,255,255,0.3);">
+                        <a href="https://www.zeczec.com/projects/ink-play-reborn" target="_blank" rel="noopener noreferrer" class="repair-cta">SUPPORT THE REBOOT</a>
 
-                        <div class="archive-grid" style="margin-top: 0;">
-                        <div class="archive-card">
-                            <span class="archive-date">2024.04.03</span>
-                            <div class="archive-title">TOTAL COLLAPSE</div>
-                            <div class="archive-desc">
-                                403地震重創廠房。所有機台位移，結構損毀。生產線全面停擺。損失難以估計。
-                            </div>
-                        </div>
-                        <div class="archive-card">
-                            <span class="archive-date">2024.04.04</span>
-                            <div class="archive-title">COMMUNITY RALLY</div>
-                            <div class="archive-desc">
-                                啟動緊急募資。桌遊圈好友與客戶紛紛響應。「墨帥不能倒」成為最強大的後盾。
-                            </div>
-                        </div>
-                        <div class="archive-card">
-                            <span class="archive-date">2024.04.10</span>
-                            <div class="archive-title">SYSTEM ONLINE</div>
-                            <div class="archive-desc">
-                                奇蹟般的一週重啟。新廠房定位，機台校正完成。負債雖重，但信念更強。
-                            </div>
-                        </div>
+                        <div class="news-source-grid" style="margin-top: 1.5rem;">
+                            <a href="http://crowdwatch.tw/post/54872/" target="_blank" rel="noopener noreferrer" class="news-source-card">
+                                <span class="news-source-tag">NEWS</span>
+                                <div class="news-source-title">台灣桌遊生產大廠遭震毀！集資重建</div>
+                                <div class="news-source-outlet">群眾觀點 CrowdWatch</div>
+                            </a>
+                            <a href="https://www.tbd.com.tw/blogs/articles/153633" target="_blank" rel="noopener noreferrer" class="news-source-card">
+                                <span class="news-source-tag">INDUSTRY</span>
+                                <div class="news-source-title">墨帥印刷災後重建計畫</div>
+                                <div class="news-source-outlet">Taiwan Boardgame Design</div>
+                            </a>
+                            <a href="https://clusters.tw/creator-posts/4152529E-E966-42E0-B19D-D194D12174BD" target="_blank" rel="noopener noreferrer" class="news-source-card">
+                                <span class="news-source-tag">COMMUNITY</span>
+                                <div class="news-source-title">桌遊界知名印刷廠『墨帥』工廠倒塌</div>
+                                <div class="news-source-outlet">Clusters 桌遊社群</div>
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 7. Visit (CTA) -->
+        <!-- 9. Visit (CTA) -->
         <section id="visit">
             <div class="container">
-                <div class="gs-reveal glass-panel" style="text-align: center; padding: 2rem;">
-                    <h3 style="color: #fff; font-family: var(--f-tech); margin-bottom: 1rem;">VISIT THE BASE</h3>
-                    <p style="color: #ccc; margin-bottom: 1.5rem;">有空可以來看看我們的新廠房，見證重啟後的鋼鐵意志。</p>
-                    <span style="color: var(--c-cyan); font-family: var(--f-mono); border: 1px solid var(--c-cyan); padding: 0.5rem 1rem;">
-                        <i class="fa-solid fa-location-dot"></i> COORDINATES CLASSIFIED (Contact for Tour)
-                    </span>
+                <div class="gs-reveal glass-panel text-center">
+                    <h3 class="commander-panel-title">VISIT THE BASE</h3>
+                    <p class="commander-panel-text" style="margin-bottom: 1.5rem;">有空可以來看看重啟後的鋼鐵意志。</p>
+                    <a href="https://www.google.com/maps/search/?api=1&query=%E6%96%B0%E5%8C%97%E5%B8%82%E4%B8%AD%E5%92%8C%E5%8D%80%E9%80%A3%E5%9F%8E%E8%B7%AF222%E5%B7%B75%E8%99%9F" target="_blank" rel="noopener noreferrer" class="visit-address">
+                        <i class="fa-solid fa-location-dot"></i> 新北市中和區連城路222巷5號
+                    </a>
+                    <div class="visit-contact">
+                        <i class="fa-solid fa-phone"></i> 02-2240-3080
+                    </div>
                 </div>
             </div>
         </section>
@@ -731,7 +1114,6 @@
                     // Reveal Post-Repair Content
                     postRepair.style.display = 'block';
                     gsap.to(postRepair, { opacity: 1, duration: 1, delay: 1.5 });
-                    gsap.to('.archive-grid', { opacity: 1, y: 0, duration: 1, delay: 2, stagger: 0.2 });
                 });
             }
 
