@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Tavern Hearth)', () => {
+test.describe('SPJ Guild Page (Visual Novel)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -12,24 +12,28 @@ test.describe('SPJ Guild Page (Tavern Hearth)', () => {
     await page.waitForTimeout(2000);
   });
 
-  test('should display Hero Title', async ({ page }) => {
-    await expect(page.locator('.hero-title')).toContainText('THE ETERNAL TAVERN');
+  test('should display Character Sprite', async ({ page }) => {
+    await expect(page.locator('.char-container')).toBeVisible();
+    await expect(page.locator('.speaker-tag')).toHaveText('SPJ');
   });
 
   test('should display Dialogue Box', async ({ page }) => {
-    await expect(page.locator('.dialogue-container')).toBeVisible();
-    await expect(page.locator('.speaker-name')).toContainText('Innkeeper SPJ');
-    // Initial text check might fail if animation not started, wait for it
+    await expect(page.locator('.dialogue-box')).toBeVisible();
+    // Trigger scroll slightly to ensure GSAP updates
+    await page.mouse.wheel(0, 100);
     await page.waitForTimeout(1000);
-    await expect(page.locator('#dialogue-text')).toContainText('歡迎光臨');
+    // Initial text (might be typing, check substring)
+    await expect(page.locator('#dialogue-text')).toContainText('歡迎來到我的酒館');
   });
 
-  test('should update Dialogue on Scroll', async ({ page }) => {
-    // Scroll to 50%
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.5)");
-    await page.waitForTimeout(1000);
-    // Check for middle content (Text Town / Crystal phase)
-    await expect(page.locator('#dialogue-text')).toContainText('天書系統');
+  test('should trigger Project Panels on Scroll', async ({ page }) => {
+    // Scroll to middle (around Text Town beat)
+    // 6 beats total. Text Town is index 2 -> ~33-50%
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.4)");
+    await page.waitForTimeout(2000); // Wait for type + panel fade
+
+    await expect(page.locator('#panel-texttown')).toBeVisible();
+    await expect(page.locator('#dialogue-text')).toContainText('文字小鎮');
   });
 
   test('should have Three.js canvas', async ({ page }) => {

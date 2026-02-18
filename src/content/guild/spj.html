@@ -3,148 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>塞趴卷 - 酒館老闆</title>
+    <title>塞趴卷 - 具現化系鍊金術師</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <style>
         :root {
-            --bg-dark: #0f0805;
-            --wood: #3e2723;
-            --gold: #ffb74d;
-            --flame: #ff5722;
-            --text-parchment: #eec;
+            --bg-dark: #1a100a;
+            --ui-bg: rgba(20, 10, 5, 0.9);
+            --ui-border: #d4af37;
+            --text-gold: #ffcc00;
+            --text-white: #f0f0f0;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-dark);
-            color: var(--text-parchment);
+            color: var(--text-white);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
         }
 
-        /* --- 3D Background --- */
+        /* --- Background --- */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
         }
 
-        /* --- UI Overlay --- */
-        nav {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-        }
-        .nav-link {
-            color: var(--gold); text-decoration: none;
-            font-family: 'Cinzel'; font-weight: bold;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
-            border-bottom: 2px solid transparent;
-            transition: 0.3s;
-        }
-        .nav-link:hover { border-bottom-color: var(--gold); }
-
-        /* --- Scroll Container --- */
+        /* --- Scroll Track (Invisible) --- */
         .scroll-track {
-            height: 400vh; /* 4 Sections */
+            height: 600vh; /* 6 Narrative Beats */
         }
 
-        /* --- Narrative Panels (RPG Dialogue) --- */
-        .dialogue-container {
-            position: fixed;
-            bottom: 5vh; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 800px;
-            background: rgba(20, 10, 5, 0.95);
-            border: 4px double #5d4037;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.5);
-            border-radius: 4px;
-            opacity: 0;
+        /* --- Visual Novel UI --- */
+        #vn-stage {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
 
-        .visible { pointer-events: auto; opacity: 1; }
-
-        .speaker-name {
-            font-family: 'Cinzel'; color: var(--gold); font-size: 1.2rem; margin-bottom: 0.5rem;
-            text-transform: uppercase; letter-spacing: 2px;
+        /* Character Sprite Container */
+        .char-container {
+            position: absolute;
+            bottom: 30vh; /* Sit above text box */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px; height: 300px;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .dialogue-text {
-            font-size: 1.1rem; line-height: 1.8; color: #d7ccc8;
-            min-height: 80px;
+        .char-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid var(--ui-border);
+            box-shadow: 0 0 30px rgba(255, 200, 0, 0.3);
+            background: #000;
         }
 
-        .dialogue-text .highlight { color: var(--gold); font-weight: bold; }
-
-        /* --- Hero Title (Top Center) --- */
-        .hero-title-container {
-            position: fixed; top: 15vh; width: 100%; text-align: center;
-            pointer-events: none; opacity: 0;
+        .speaker-tag {
+            position: absolute;
+            bottom: -20px; left: 50%; transform: translateX(-50%);
+            background: var(--ui-border);
+            color: #000;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            padding: 5px 20px;
+            border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
-        .hero-title {
-            font-family: 'Cinzel'; font-size: 4rem; color: var(--gold);
-            text-shadow: 0 0 20px rgba(255, 100, 0, 0.5);
+        /* Dialogue Box */
+        .dialogue-box {
+            position: absolute;
+            bottom: 5vh; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 800px;
+            height: 20vh;
+            background: var(--ui-bg);
+            border: 3px double var(--ui-border);
+            border-radius: 8px;
+            padding: 2rem;
+            pointer-events: auto;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column;
+        }
+
+        .dialogue-content {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #eee;
+            flex: 1;
+        }
+
+        .dialogue-hint {
+            font-family: 'VT323', monospace;
+            color: var(--text-gold);
+            text-align: right;
+            font-size: 1.2rem;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Floating Content Panels (Projects) */
+        .panel {
+            position: absolute;
+            top: 20vh;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--ui-border);
+            padding: 2rem;
+            max-width: 400px;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: auto;
+        }
+
+        .panel-title {
+            color: var(--text-gold);
+            font-family: 'Cinzel';
+            font-size: 1.5rem;
+            border-bottom: 1px solid #555;
             margin-bottom: 1rem;
-        }
-        .hero-subtitle {
-            font-family: 'Crimson Text'; font-style: italic; font-size: 1.5rem; color: #a1887f;
+            padding-bottom: 0.5rem;
         }
 
-        /* --- Loader --- */
-        #loader {
+        .panel-img {
+            width: 100%; height: 150px;
+            background: #333;
+            margin-bottom: 1rem;
+            border: 1px solid #555;
+            object-fit: cover;
+        }
+
+        /* --- Navigation --- */
+        .nav-return {
+            position: fixed; top: 2rem; left: 2rem;
+            color: var(--text-gold);
+            text-decoration: none;
+            font-family: 'Cinzel';
+            font-weight: bold;
+            pointer-events: auto;
+            z-index: 100;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border: 1px solid var(--ui-border);
+        }
+
+        .loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
+            background: #000; z-index: 999;
             display: flex; align-items: center; justify-content: center;
-            color: var(--gold); font-family: 'Cinzel'; letter-spacing: 5px;
-        }
-
-        /* --- Footer (On Table) --- */
-        .table-footer {
-            position: fixed; bottom: 10px; right: 20px;
-            font-size: 0.8rem; color: #5d4037; font-family: 'Cinzel';
-            opacity: 0.6;
+            color: var(--text-gold); font-family: 'Cinzel'; font-size: 2rem;
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">IGNITING THE HEARTH...</div>
+    <div class="loader" id="loader">LOADING TAVERN...</div>
+
+    <a href="/guild/" class="nav-return">EXIT GAME</a>
+
     <div id="canvas-container"></div>
 
-    <nav>
-        <a href="/guild/" class="nav-link">← LEAVE TAVERN</a>
-    </nav>
-
-    <!-- Scroll Track -->
+    <!-- The Scroll Trigger -->
     <div class="scroll-track"></div>
 
-    <!-- Hero Title -->
-    <div class="hero-title-container" id="title-hero">
-        <div class="hero-title">THE ETERNAL TAVERN</div>
-        <div class="hero-subtitle">"Where ideas are brewed into reality."</div>
-    </div>
+    <!-- Visual Novel Stage -->
+    <div id="vn-stage">
 
-    <!-- Dialogue Box (Dynamic Content) -->
-    <div class="dialogue-container">
-        <div class="speaker-name">Innkeeper SPJ</div>
-        <div class="dialogue-text" id="dialogue-text">
-            <!-- Content injected by JS -->
+        <!-- Character -->
+        <div class="char-container" id="character">
+            <img src="/assets/img/guild/spj/avatar.webp" class="char-img">
+            <div class="speaker-tag">SPJ</div>
         </div>
-    </div>
 
-    <div class="table-footer">
-        System ID: SPJ-001 // Guild: Sepajuan
+        <!-- Dialogue -->
+        <div class="dialogue-box">
+            <div class="dialogue-content" id="dialogue-text"></div>
+            <div class="dialogue-hint">▼ SCROLL TO CONTINUE</div>
+        </div>
+
+        <!-- Pop-up Panels -->
+        <!-- Panel 1: Text Town -->
+        <div class="panel" id="panel-texttown" style="right: 10%;">
+            <div class="panel-title">PROJECT: TEXT TOWN</div>
+            <img src="https://placehold.co/400x200/1a100a/ffcc00?text=Text+Town" class="panel-img">
+            <p>天書系統核心。<br>將語言轉化為物理現實的煉金術。</p>
+        </div>
+
+        <!-- Panel 2: Guild -->
+        <div class="panel" id="panel-guild" style="left: 10%;">
+            <div class="panel-title">SEPAJUAN GUILD</div>
+            <img src="https://placehold.co/400x200/1a100a/ffcc00?text=Guild" class="panel-img">
+            <p>現實世界的冒險者公會。<br>組隊、資源共享、情報交換。</p>
+        </div>
+
+        <!-- Panel 3: Stats -->
+        <div class="panel" id="panel-stats" style="right: 15%;">
+            <div class="panel-title">CHARACTER STATS</div>
+            <p><strong>CLASS:</strong> Materialization Alchemist</p>
+            <p><strong>SKILL:</strong> Code Synthesis</p>
+            <p><strong>MANA:</strong> Coffee (High)</p>
+            <div style="margin-top: 1rem; border-top: 1px dotted #555; padding-top: 0.5rem; text-align: center;">
+                <a href="https://www.threads.net/@spj.story" target="_blank" style="color: var(--text-gold); text-decoration: none;">[ VIEW PROFILE ]</a>
+            </div>
+        </div>
+
     </div>
 
     <script type="importmap">
@@ -158,183 +232,87 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-
-        // --- Data: Narrative ---
-        const narrative = [
-            {
-                id: "hero",
-                text: "歡迎光臨，旅人。外面風雪很大吧？<br>我是這裡的老闆 <span class='highlight'>SPJ</span>，一名具現化系鍊金術師。<br>隨便找個位子坐吧，讓我為你倒一杯故事。",
-                objState: 0 // Stone
-            },
-            {
-                id: "origin",
-                text: "很久以前，我只是個孤獨的<span class='highlight'>軟體工程師</span>。<br>那時的我，手中只有冰冷的代碼原石。我日夜打磨，試圖在虛擬的荒原中創造出一點火光。<br>但原石終究只是原石，缺乏了靈魂的溫度。",
-                objState: 1 // Rough Crystal
-            },
-            {
-                id: "texttown",
-                text: "直到我發現了「天書系統」。<br>這是一種將語言轉化為現實的煉金術。我開始建造<span class='highlight'>「文字小鎮」</span>，一個僅憑文字描述就能具現化的世界。<br>看啊，這顆原石正在蛻變。",
-                objState: 2 // Glowing Crystal
-            },
-            {
-                id: "guild",
-                text: "但我不想獨自擁有這份力量。<br>我夢想建立<span class='highlight'>「塞趴卷冒險公會」</span>——一個屬於所有創造者的聖域。<br>來吧，舉起這杯酒。敬我們即將展開的偉大冒險。",
-                objState: 3 // Chalice
-            }
-        ];
 
         // --- Init Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0f0805, 0.05); // Warm dark fog
+        scene.fog = new THREE.FogExp2(0x1a100a, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 5, 10);
-        camera.lookAt(0, 0, 0);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 10;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        renderer.toneMapping = THREE.ReinhardToneMapping;
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Candle Bloom) ---
-        const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.strength = 0.8;
-        bloomPass.radius = 0.5;
-        bloomPass.threshold = 0.2;
-        composer.addPass(renderPass);
-        composer.addPass(bloomPass);
-
-        // --- Lighting ---
-        // Candle Light (Flickering)
-        const candleLight = new THREE.PointLight(0xff5722, 2, 20);
-        candleLight.position.set(2, 2, 2);
-        scene.add(candleLight);
-
-        const ambientLight = new THREE.AmbientLight(0xffb74d, 0.1);
-        scene.add(ambientLight);
-
-        // --- Objects ---
-
-        // 1. Table
-        const tableGeo = new THREE.PlaneGeometry(50, 50);
-        const tableMat = new THREE.MeshStandardMaterial({
-            color: 0x3e2723,
-            roughness: 0.9,
-            metalness: 0.1
-        });
-        const table = new THREE.Mesh(tableGeo, tableMat);
-        table.rotation.x = -Math.PI / 2;
-        table.position.y = -2;
-        scene.add(table);
-
-        // 2. The Artifact (Morphing Mesh)
-        // We simulate morphing by scaling/hiding different meshes or blending shapes
-        // Let's use a Group containing all states, and fade them in/out
-        const artifactGroup = new THREE.Group();
-
-        // State 0: Stone (Dodecahedron)
-        const stoneGeo = new THREE.DodecahedronGeometry(1.5, 0);
-        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.9 });
-        const stone = new THREE.Mesh(stoneGeo, stoneMat);
-        artifactGroup.add(stone);
-
-        // State 1: Rough Crystal (Octahedron)
-        const crystalGeo = new THREE.OctahedronGeometry(1.5, 0);
-        const crystalMat = new THREE.MeshPhysicalMaterial({
-            color: 0x00ffff, transmission: 0.2, opacity: 0.8, roughness: 0.2
-        });
-        const crystal = new THREE.Mesh(crystalGeo, crystalMat);
-        crystal.visible = false;
-        artifactGroup.add(crystal);
-
-        // State 2: Glowing Crystal (Icosahedron + Emissive)
-        const glowGeo = new THREE.IcosahedronGeometry(1.5, 1);
-        const glowMat = new THREE.MeshStandardMaterial({
-            color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 2, wireframe: true
-        });
-        const glowCrystal = new THREE.Mesh(glowGeo, glowMat);
-        glowCrystal.visible = false;
-        artifactGroup.add(glowCrystal);
-
-        // State 3: Chalice (Lathe)
-        const points = [];
-        for ( let i = 0; i < 10; i ++ ) {
-            points.push( new THREE.Vector2( Math.sin( i * 0.2 ) * 1 + 0.5, ( i - 5 ) * 0.5 ) );
+        // --- Background Atmosphere ---
+        // Floating Dust/Sparks
+        const pCount = 500;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) {
+            pPos[i] = (Math.random() - 0.5) * 40;
         }
-        const chaliceGeo = new THREE.LatheGeometry( points, 20 );
-        const chaliceMat = new THREE.MeshStandardMaterial({
-            color: 0xffd700, metalness: 1, roughness: 0.2
-        });
-        const chalice = new THREE.Mesh(chaliceGeo, chaliceMat);
-        chalice.visible = false;
-        chalice.scale.set(1.5, 1.5, 1.5);
-        artifactGroup.add(chalice);
-
-        scene.add(artifactGroup);
-
-        // 3. Candle Flame (Particles)
-        const flameGroup = new THREE.Group();
-        flameGroup.position.copy(candleLight.position);
-
-        const flameGeo = new THREE.BufferGeometry();
-        const flameCount = 50;
-        const fPos = new Float32Array(flameCount * 3);
-        flameGeo.setAttribute('position', new THREE.BufferAttribute(fPos, 3));
-        const flameMat = new THREE.PointsMaterial({
-            color: 0xff5722,
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({
+            color: 0xffcc00,
             size: 0.1,
             transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
+            opacity: 0.6
         });
-        const flame = new THREE.Points(flameGeo, flameMat);
-        flameGroup.add(flame);
-        scene.add(flameGroup);
+        const particles = new THREE.Points(pGeo, pMat);
+        scene.add(particles);
 
+        // Background Shelves/Beams (Abstract)
+        const beams = new THREE.Group();
+        const beamGeo = new THREE.BoxGeometry(1, 20, 1);
+        const beamMat = new THREE.MeshBasicMaterial({ color: 0x2c1e14 });
+
+        for(let i=0; i<10; i++) {
+            const b = new THREE.Mesh(beamGeo, beamMat);
+            b.position.set((i-5)*5, 0, -10 + Math.random()*5);
+            beams.add(b);
+        }
+        scene.add(beams);
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
-
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Flicker Candle
-            candleLight.intensity = 2 + Math.sin(time * 10) * 0.5 + Math.cos(time * 23) * 0.3;
+            particles.rotation.y = time * 0.05;
+            beams.position.x = Math.sin(time * 0.1) * 2; // Subtle parallax sway
 
-            // Animate Flame Particles
-            const pos = flame.geometry.attributes.position.array;
-            for(let i=1; i<flameCount*3; i+=3) {
-                pos[i] += 0.05; // Up
-                if (pos[i] > 1) {
-                    pos[i] = 0;
-                    pos[i-1] = (Math.random()-0.5)*0.2; // Reset X
-                    pos[i+1] = (Math.random()-0.5)*0.2; // Reset Z
-                }
-            }
-            flame.geometry.attributes.position.needsUpdate = true;
-
-            // Rotate Artifact
-            artifactGroup.rotation.y = time * 0.2;
-            artifactGroup.position.y = Math.sin(time) * 0.2; // Float
-
-            composer.render();
+            renderer.render(scene, camera);
         }
         animate();
 
+        // --- GSAP Logic (The Director) ---
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-        // --- GSAP Logic ---
-        gsap.registerPlugin(ScrollTrigger);
+        // Remove Loader
+        window.addEventListener('load', () => {
+            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").remove() });
+        });
 
-        // Morph Logic based on scroll
-        const meshes = [stone, crystal, glowCrystal, chalice];
+        // Narrative Script
+        const script = [
+            { text: "歡迎來到我的酒館，冒險者。我是這裡的負責人——塞趴卷 (SPJ)。" },
+            { text: "如你所見，我是一名具現化系鍊金術師... 或者用你們的話說，軟體工程師。" },
+            { text: "我正在進行一項名為「文字小鎮」的實驗。透過代碼，我能將純粹的語言轉化為物理現實。", panel: "#panel-texttown", pos: "left" },
+            { text: "但一個人的力量是有限的。我夢想建立一個龐大的「冒險公會」，連結所有孤獨的創造者。", panel: "#panel-guild", pos: "right" },
+            { text: "我們在這裡組隊、分享情報、紀錄傳說。每一個專案，都是一次偉大的遠征。", panel: "#panel-stats", pos: "center" },
+            { text: "那麼，你準備好加入這場冒險了嗎？" }
+        ];
+
+        // Character & Text Logic
+        const char = document.getElementById('character');
+        const textBox = document.getElementById('dialogue-text');
+
+        // Define Timeline based on Scroll
+        // We use scrollTrigger to update the state index
 
         ScrollTrigger.create({
             trigger: ".scroll-track",
@@ -342,51 +320,39 @@
             end: "bottom bottom",
             onUpdate: (self) => {
                 const p = self.progress;
+                const idx = Math.min(Math.floor(p * script.length), script.length - 1);
+                const beat = script[idx];
 
-                // Determine active index (0 to 3)
-                const idx = Math.min(Math.floor(p * 4), 3);
+                // Update Text (Typewriter effect check)
+                if (textBox.dataset.index != idx) {
+                    textBox.dataset.index = idx;
+                    gsap.to(textBox, { text: beat.text, duration: 1, ease: "none" });
 
-                // Update Text
-                const data = narrative[idx];
-                const textBox = document.querySelector('.dialogue-container');
-                const textEl = document.getElementById('dialogue-text');
-
-                if (textEl.innerHTML !== data.text) {
-                    gsap.to(textBox, { opacity: 0, duration: 0.2, onComplete: () => {
-                        textEl.innerHTML = data.text;
-                        gsap.to(textBox, { opacity: 1, duration: 0.5 });
-                    }});
-                } else {
-                    if (parseFloat(textBox.style.opacity) < 1) textBox.style.opacity = 1;
-                }
-
-                // Title Visibility (Only at top)
-                const title = document.getElementById('title-hero');
-                title.style.opacity = 1 - p * 5; // Fade out quickly
-
-                // Update Meshes
-                meshes.forEach((m, i) => {
-                    if (i === idx) {
-                        m.visible = true;
-                        // Scale in effect if just switched?
-                        // Simplified: just visibility toggle for now
+                    // Character Movement
+                    if (beat.pos === "left") {
+                        gsap.to(char, { x: "-120%", scale: 0.8, duration: 0.5 });
+                    } else if (beat.pos === "right") {
+                        gsap.to(char, { x: "20%", scale: 0.8, duration: 0.5 }); // Move to right side
                     } else {
-                        m.visible = false;
+                        gsap.to(char, { x: "-50%", scale: 1, duration: 0.5 }); // Center
                     }
-                });
-            }
-        });
 
-        // Loader
-        window.addEventListener('load', () => {
-            gsap.to("#loader", { opacity: 0, duration: 1, onComplete: () => document.getElementById("loader").remove() });
+                    // Panel Management
+                    document.querySelectorAll('.panel').forEach(p => {
+                        gsap.to(p, { opacity: 0, y: 20, duration: 0.3 });
+                    });
+
+                    if (beat.panel) {
+                        gsap.to(beat.panel, { opacity: 1, y: 0, duration: 0.5, delay: 0.2 });
+                    }
+                }
+            }
         });
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
