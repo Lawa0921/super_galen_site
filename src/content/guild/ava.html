@@ -126,6 +126,15 @@
             filter: sepia(0.2) contrast(1.1);
         }
 
+        /* Photo Accent */
+        .photo-accent {
+            position: absolute; width: 250px; z-index: 0;
+            border: 10px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: rotate(-5deg); transition: transform 0.5s ease;
+        }
+        .photo-accent:hover { transform: rotate(0deg) scale(1.05); z-index: 5; }
+        .photo-accent img { width: 100%; display: block; filter: grayscale(20%); }
+
         /* Timeline Styles */
         .timeline-container {
             position: relative; max-width: 800px; margin: 4rem auto 0;
@@ -231,6 +240,7 @@
             #sec-biker .content-block { border-right: none; border-left: 4px solid var(--c-primary); }
             .timeline-container { padding-left: 1.5rem; }
             .services-grid { grid-template-columns: 1fr; }
+            .photo-accent { display: none; } /* Hide accents on mobile for cleaner layout */
         }
 
     </style>
@@ -266,6 +276,11 @@
 
         <!-- 2. Biker Past -->
         <section id="sec-biker">
+            <!-- Accent Photo -->
+            <div class="photo-accent" style="left: 10%; bottom: 20%; transform: rotate(5deg);">
+                <img src="/assets/img/guild/ava/riding_family.webp" alt="Riding Family">
+            </div>
+
             <div style="z-index: 2; position: relative; max-width: 800px;">
                 <h2 class="reveal-text">Chapter I. The Rider</h2>
                 <h1 class="reveal-text">曾經的<br><span style="color:var(--c-accent)">熱血</span></h1>
@@ -327,6 +342,14 @@
 
         <!-- 3. Family & Travel -->
         <section id="sec-travel">
+             <!-- Accent Photos -->
+            <div class="photo-accent" style="right: 15%; top: 20%; transform: rotate(-3deg); width: 200px;">
+                <img src="/assets/img/guild/ava/gallery_03.webp" alt="Travel Memory">
+            </div>
+            <div class="photo-accent" style="left: 15%; bottom: 10%; transform: rotate(4deg); width: 220px;">
+                <img src="/assets/img/guild/ava/gallery_08.webp" alt="Travel Memory">
+            </div>
+
             <div style="z-index: 2; position: relative;">
                 <h2 class="reveal-text">Chapter II. The Mother</h2>
                 <h1 class="reveal-text">現在的<br><span style="color:var(--c-primary)">溫度</span></h1>
@@ -453,49 +476,71 @@
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xfbf7f2);
-        scene.fog = new THREE.Fog(0xfbf7f2, 5, 25); // Increased fog slightly
+        scene.fog = new THREE.Fog(0xfbf7f2, 5, 25);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 10;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization
         container.appendChild(renderer.domElement);
+
+        // --- Texture Loading ---
+        const textureLoader = new THREE.TextureLoader();
+        const texturePaths = [];
+        // Generate paths for gallery_01 to gallery_23
+        for(let i=1; i<=23; i++) {
+            texturePaths.push(`/assets/img/guild/ava/gallery_${String(i).padStart(2, '0')}.webp`);
+        }
+
+        // Load textures asynchronously
+        const textures = texturePaths.map(path => textureLoader.load(path));
 
         // --- Objects: Floating Elements ---
         const galleryGroup = new THREE.Group();
         scene.add(galleryGroup);
 
-        const planeCount = 18; // Increased count for more density
+        const planeCount = 30; // Increased count
         const planes = [];
-        const geometry = new THREE.PlaneGeometry(3, 4);
 
-        // Add some smaller "Note" planes for texture
-        const noteGeometry = new THREE.PlaneGeometry(2, 2);
+        // Base geometries - we will scale them based on texture later
+        const baseGeometry = new THREE.PlaneGeometry(1, 1);
 
         for (let i = 0; i < planeCount; i++) {
-            const isNote = i % 3 === 0;
-            const geo = isNote ? noteGeometry : geometry;
+            // Pick a random texture
+            const texture = textures[i % textures.length];
 
-            const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-                color: 0xffffff,
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
                 side: THREE.DoubleSide,
                 transparent: true,
                 opacity: 0.85,
-            }));
+            });
 
-            mesh.position.x = (Math.random() - 0.5) * 18;
-            mesh.position.y = -i * 5 + 8; // Spread vertically
-            mesh.position.z = (Math.random() - 0.5) * 10 - 2;
+            const mesh = new THREE.Mesh(baseGeometry, material);
+
+            // Randomize Scale (Portrait vs Landscape simulation)
+            // We can't know the exact aspect ratio without checking image dimensions,
+            // but we can vary size.
+            // Better: Force a slightly vertical aspect ratio for most,
+            // or use square and let texture contain/cover?
+            // Default PlaneGeometry is 1x1. Let's scale it up.
+            const s = 3 + Math.random() * 2;
+            mesh.scale.set(s, s * 1.2, 1); // Slight portrait bias
+
+            mesh.position.x = (Math.random() - 0.5) * 20;
+            mesh.position.y = -i * 3 + 10; // Spread vertically
+            mesh.position.z = (Math.random() - 0.5) * 12 - 4;
 
             mesh.rotation.z = (Math.random() - 0.5) * 0.5;
             mesh.rotation.y = (Math.random() - 0.5) * 0.5;
 
-            // Wireframe Border
-            const edges = new THREE.EdgesGeometry(geo);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xd4af37, opacity: 0.2, transparent: true }));
-            mesh.add(line);
+            // Wireframe Border (Gold Frame)
+            const edges = new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1));
+            const frame = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xd4af37, opacity: 0.4, transparent: true }));
+            // Frame needs to scale with mesh, but if we add it as child, it scales automatically
+            mesh.add(frame);
 
             galleryGroup.add(mesh);
             planes.push({ mesh, speed: Math.random() * 0.005 + 0.002 });
@@ -516,7 +561,7 @@
 
         // --- Scroll Interaction (GSAP) ---
         gsap.to(camera.position, {
-            y: -planeCount * 4,
+            y: -planeCount * 2, // Adjust travel distance based on density
             ease: "none",
             scrollTrigger: {
                 trigger: ".scroller",
@@ -540,79 +585,11 @@
 
         // Resize
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // --- GSAP Content Animations ---
-
-        // 1. Reveal Images/Text
-        gsap.utils.toArray('.reveal-img, .reveal-text, .reveal-block').forEach(el => {
-            gsap.fromTo(el,
-                { opacity: 0, y: 30 },
-                {
-                    opacity: 1, y: 0,
-                    duration: 1, ease: "power2.out",
-                    scrollTrigger: { trigger: el, start: "top 85%" }
-                }
-            );
-        });
-
-        // 2. Timeline Animation
-        gsap.to('.timeline-progress', {
-            height: '100%',
-            scrollTrigger: {
-                trigger: '.timeline-container',
-                start: "top 70%",
-                end: "bottom 70%",
-                scrub: 1
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
             }
-        });
-
-        gsap.utils.toArray('.timeline-item').forEach(item => {
-            gsap.to(item, {
-                opacity: 1, y: 0,
-                duration: 0.8,
-                scrollTrigger: {
-                    trigger: item,
-                    start: "top 80%"
-                }
-            });
-        });
-
-        // 3. Skill Tags Stagger
-        gsap.from('.skill-tag', {
-            opacity: 0, scale: 0.8,
-            duration: 0.5,
-            stagger: 0.1,
-            scrollTrigger: {
-                trigger: '.skill-cloud',
-                start: "top 85%"
-            }
-        });
-
-        // 4. Service Cards Stagger
-        gsap.utils.toArray('.reveal-card').forEach((card, i) => {
-            gsap.to(card, {
-                opacity: 1, y: 0,
-                duration: 0.8, delay: i * 0.1,
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top 85%"
-                }
-            });
-        });
-
-        // Loader
-        window.addEventListener('load', () => {
-            const loader = document.getElementById('loader');
-            const line = loader.querySelector('.loader-line');
-            gsap.to(line, { width: '100%', duration: 0.5 });
-            gsap.to(loader, {
-                opacity: 0, delay: 0.6, duration: 0.8,
-                onComplete: () => loader.remove()
-            });
         });
 
     </script>
