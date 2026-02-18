@@ -313,7 +313,7 @@
                     <div class="glass-card gs-reveal" style="transition-delay: 0.1s;">
                         <i class="fa-solid fa-flask" style="font-size: 2.5rem; color: var(--c-accent); margin-bottom: 1rem;"></i>
                         <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">SYNTHESIZE</h3>
-                        <p style="font-size: 0.9rem; margin-bottom: 0;">運用 Python 與 AI 模型，將雜訊轉化為信號。</p>
+                        <p style="font-size: 0.9rem; margin-bottom: 0;">運用工具與邏輯，將雜訊轉化為可執行的信號。</p>
                     </div>
                     <div class="glass-card gs-reveal" style="transition-delay: 0.2s;">
                         <i class="fa-solid fa-rocket" style="font-size: 2.5rem; color: var(--c-text); margin-bottom: 1rem;"></i>
@@ -382,13 +382,13 @@
                             <i class="fa-solid fa-network-wired" style="font-size: 5rem; color: #cbd5e1;"></i>
                         </div>
                         <div class="project-info">
-                            <h3 style="font-family: var(--f-mono);">PROJECT: CHIMERA</h3>
+                            <h3 style="font-family: var(--f-mono);">CONCEPT: DATA STORYTELLING</h3>
                             <p style="font-size: 1rem; margin-top: 1rem;">
-                                利用 LLM 與圖像生成模型，將抽象的商業報表轉化為視覺化的故事板 (Storyboard)。
-                                解決了數據報告 "枯燥難懂" 的痛點。
+                                利用 AI 工具生成輔助素材，將抽象的分析結果轉化為視覺化的故事板。
+                                讓數據報告不再枯燥，而是充滿說服力的敘事。
                             </p>
                             <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Generative AI</span>
-                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Python</span>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Visualization</span>
                         </div>
                     </div>
 
@@ -398,13 +398,13 @@
                             <i class="fa-solid fa-gears" style="font-size: 5rem; color: #cbd5e1;"></i>
                         </div>
                         <div class="project-info">
-                            <h3 style="font-family: var(--f-mono);">PROTOCOL: ZERO-TOUCH</h3>
+                            <h3 style="font-family: var(--f-mono);">CONCEPT: AUTOMATION</h3>
                             <p style="font-size: 1rem; margin-top: 1rem;">
-                                構建端到端的數據流水線。從原始數據清洗 (ETL) 到儀表板更新，
-                                實現 <span class="highlight">0 人工介入</span> 的自動化閉環。
+                                構建高效率的數據處理流程。從原始數據清洗到報表更新，
+                                致力於減少重複性勞動，實現流程自動化。
                             </p>
-                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Automation</span>
-                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">SQL</span>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Workflow</span>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Scripting</span>
                         </div>
                     </div>
 
@@ -423,11 +423,10 @@
                 <div class="gs-reveal" style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Python</span>
                     <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">SQL</span>
-                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Tableau</span>
-                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">OpenAI API</span>
-                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Pandas</span>
-                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Scikit-learn</span>
-                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Git</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Visualization</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Generative AI</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Automation</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Data Analysis</span>
                 </div>
             </div>
         </section>
@@ -569,17 +568,15 @@
         // --- Interaction State ---
         const mouse = new THREE.Vector2(9999, 9999); // Off-screen initially
         const mouseWorld = new THREE.Vector3(); // Projected mouse pos in 3D
-        let scrollY = 0;
         let isExploding = false;
 
+        // Optimization: Throttled event listener if needed, but for mouse move we just update refs
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
+        }, { passive: true });
 
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-        });
+        // Optimization: Removed redundant scroll listener var, reading window.scrollY directly in loop
 
         // Click to "Shockwave"
         window.addEventListener('mousedown', () => {
