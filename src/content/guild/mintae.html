@@ -37,7 +37,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-color) !important;
+            background-color: var(--bg-color);
             color: var(--text-color);
             font-family: var(--font-body);
             overflow-x: hidden;
@@ -56,6 +56,7 @@
             pointer-events: none;
             /* Subtle global hue shift animation */
             animation: hueShift 60s infinite linear;
+            will-change: filter;
         }
 
         @keyframes hueShift {
@@ -796,6 +797,7 @@
         function initThree() {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
+            const isMobile = window.innerWidth < 768;
 
             // Camera
             const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 8000);
@@ -803,9 +805,9 @@
             camera.rotation.z = 0.5; // Slight tilt
 
             // Renderer
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
             container.appendChild(renderer.domElement);
 
             // Fog for depth
@@ -834,9 +836,7 @@
             const cloudTexture = createCloudTexture();
 
             // Instanced Mesh for Clouds
-            // Optimization: Reduce counts on mobile for better FPS
-            const isMobile = window.innerWidth < 768;
-            const cloudCount = isMobile ? 300 : 800; // Drastic reduction for mobile
+            const cloudCount = isMobile ? 250 : 600;
 
             const cloudGeo = new THREE.PlaneGeometry(400, 400);
             const cloudMat = new THREE.MeshBasicMaterial({
@@ -882,7 +882,7 @@
 
             // Stars
             const starGeo = new THREE.BufferGeometry();
-            const starCount = isMobile ? 800 : 2000;
+            const starCount = isMobile ? 600 : 1500;
             const starPos = new Float32Array(starCount * 3);
             for(let i=0; i<starCount*3; i+=3) {
                 starPos[i] = (Math.random() - 0.5) * 2000; // x
@@ -904,9 +904,18 @@
 
             let scrollY = 0;
             const baseSpeed = 5;
+            let isPageVisible = true;
+            let animFrameId = null;
 
             window.addEventListener('scroll', () => {
                 scrollY = window.scrollY;
+            }, { passive: true });
+
+            document.addEventListener('visibilitychange', () => {
+                isPageVisible = !document.hidden;
+                if (isPageVisible && !animFrameId) {
+                    animFrameId = requestAnimationFrame(animate);
+                }
             });
 
             // Smoother Clamp/Map function
@@ -917,7 +926,11 @@
             }
 
             function animate() {
-                requestAnimationFrame(animate);
+                if (!isPageVisible) {
+                    animFrameId = null;
+                    return;
+                }
+                animFrameId = requestAnimationFrame(animate);
 
                 const docHeight = document.documentElement.scrollHeight - window.innerHeight;
                 const progress = Math.min(scrollY / (docHeight || 1), 1);
@@ -979,7 +992,7 @@
 
                 renderer.render(scene, camera);
             }
-            animate();
+            animFrameId = requestAnimationFrame(animate);
 
             // Optimization: Debounce resize
             let resizeTimeout;
