@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script type="importmap">
@@ -23,7 +22,6 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
@@ -44,7 +42,6 @@
             color: var(--c-text);
             font-family: var(--f-main);
             overflow-x: hidden;
-            /* overflow-y: hidden;  Lock initially handled by JS */
         }
 
         /* --- Canvas Layers --- */
@@ -105,34 +102,15 @@
             display: flex; white-space: nowrap; pointer-events: none; opacity: 1; transition: opacity 1s;
         }
         .news-ticker-content {
-            display: inline-block; animation: marquee 20s linear infinite;
+            display: inline-block; padding-right: 50px;
+            animation: marquee 20s linear infinite paused;
+        }
+        .ticker-active .news-ticker-content {
+            animation-play-state: running;
         }
         @keyframes marquee {
             0% { transform: translateX(100%); }
             100% { transform: translateX(-100%); }
-        }
-
-        /* --- Archives (News Cards) --- */
-        .archive-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem; margin-top: 3rem; opacity: 0; transform: translateY(20px); transition: 1s;
-        }
-        .archive-card {
-            background: rgba(0, 255, 255, 0.05); border: 1px solid var(--c-cyan);
-            padding: 1.5rem; position: relative; overflow: hidden;
-        }
-        .archive-card::before {
-            content: 'ARCHIVE'; position: absolute; top: 0.5rem; right: 0.5rem;
-            font-size: 0.6rem; color: var(--c-cyan); opacity: 0.5; font-family: var(--f-mono);
-        }
-        .archive-date {
-            color: var(--c-cyan); font-family: var(--f-mono); font-size: 0.8rem; display: block; margin-bottom: 0.5rem;
-        }
-        .archive-title {
-            color: #fff; font-family: var(--f-tech); font-size: 1.2rem; margin-bottom: 0.5rem;
-        }
-        .archive-desc {
-            color: #aaa; font-size: 0.9rem; line-height: 1.5;
         }
 
         /* --- Hero --- */
@@ -191,17 +169,6 @@
         @keyframes glitch-anim-2 {
             0% { clip: rect(10px, 9999px, 90px, 0); }
             100% { clip: rect(5px, 9999px, 20px, 0); }
-        }
-
-        /* --- Story (The Quake) --- */
-        .story-block {
-            background: rgba(10,10,10,0.8); border: 1px solid #333;
-            padding: 2rem; position: relative; margin-top: 2rem;
-            border-left: 4px solid var(--c-magenta);
-        }
-        .story-year {
-            font-family: var(--f-mono); color: var(--c-magenta); font-size: 2rem;
-            font-weight: bold; margin-bottom: 0.5rem; display: block;
         }
 
         /* --- Services (Cards) --- */
@@ -402,12 +369,6 @@
             color: #888; font-family: var(--f-mono); font-size: 0.85rem; margin-top: 1rem;
         }
 
-        /* --- Section Divider --- */
-        .section-divider {
-            width: 100%; max-width: 1000px; margin: 0 auto; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-        }
-
         /* --- Section Headers --- */
         .section-header {
             text-align: center; margin-bottom: 3rem;
@@ -433,7 +394,6 @@
         .section-line {
             height: 2px; width: 100px; margin: 0.5rem auto;
         }
-        .section-line-cyan { background: var(--c-cyan); }
         .section-line-yellow { background: var(--c-yellow); }
 
         /* --- Tags --- */
@@ -484,6 +444,81 @@
         .stat-value-white { color: #fff; }
         .stat-value-cyan { color: var(--c-cyan); font-size: 1.5rem; }
 
+        /* --- Inline SVG Icons --- */
+        .icon-inline {
+            display: inline-block; width: 1em; height: 1em;
+            vertical-align: -0.125em; fill: currentColor;
+        }
+        .card-icon-svg {
+            width: 2.5rem; height: 2.5rem; margin-bottom: 1rem;
+        }
+
+        /* --- Battalion Section --- */
+        .flex-wrap-container { display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; }
+        .battalion-panel { flex: 1; min-width: 300px; }
+        .battalion-panel-dashed { border: 1px dashed var(--c-yellow); }
+
+        /* --- Subsection Headings --- */
+        .subsection-heading-cyan { color: var(--c-cyan); font-family: var(--f-mono); margin-bottom: 1rem; }
+        .subsection-heading-yellow { color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem; }
+
+        /* --- Body Text --- */
+        .body-text { color: #ccc; line-height: 1.8; }
+        .body-text-lg { color: #ccc; line-height: 1.8; font-size: 1.05rem; }
+
+        /* --- Forge Layout --- */
+        .forge-counter-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
+        }
+        .forge-counter-sublabel { color: #666; font-size: 0.8rem; margin-top: 0.3rem; }
+
+        /* --- Panel Variants --- */
+        .panel-border-yellow { border-left: 4px solid var(--c-yellow); }
+        .glass-panel-cyan-border { border: 1px solid rgba(0,255,255,0.3); }
+
+        /* --- Mission Log --- */
+        .mission-log-list { list-style: none; padding: 0; color: #aaa; line-height: 2; }
+
+        /* --- Phoenix Time Colors --- */
+        .phoenix-time-red { color: #ff3333; }
+        .phoenix-time-yellow { color: var(--c-yellow); }
+        .phoenix-time-cyan { color: var(--c-cyan); }
+        .phoenix-time-green { color: #00ff88; }
+
+        /* --- Text Color Utilities --- */
+        .text-cyan { color: var(--c-cyan); }
+        .text-magenta { color: var(--c-magenta); }
+        .text-yellow { color: var(--c-yellow); }
+        .text-red { color: #ff3333; }
+        .text-green { color: #00ff88; }
+
+        /* --- Reconstruction Section --- */
+        .section-reconstruction { height: 100vh; position: relative; pointer-events: none; }
+        .reconstruction-content { text-align: center; pointer-events: auto; }
+
+        /* --- Repair Button --- */
+        .btn-repair {
+            background: transparent; border: 2px solid var(--c-cyan); color: var(--c-cyan);
+            padding: 1rem 3rem; font-family: var(--f-tech); font-size: 1.2rem; cursor: pointer;
+            transition: 0.3s; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .btn-repair-done {
+            border-color: #00ff00; color: #00ff00; pointer-events: none;
+        }
+
+        /* --- Post-Repair Content --- */
+        .post-repair-content { display: none; opacity: 0; margin-top: 3rem; position: relative; z-index: 5; }
+
+        /* --- Footer Extras --- */
+        .footer-title { font-family: var(--f-tech); color: #fff; margin-bottom: 2rem; }
+        .footer-credits { color: #666; font-family: var(--f-mono); font-size: 0.8rem; }
+
+        /* --- Spacing Utilities --- */
+        .mb-1-5 { margin-bottom: 1.5rem; }
+        .mb-2 { margin-bottom: 2rem; }
+        .mt-1-5 { margin-top: 1.5rem; }
+
         /* --- Responsive --- */
         @media (max-width: 768px) {
             .forge-counter-value { font-size: 2rem; }
@@ -496,9 +531,6 @@
         @media (max-width: 480px) {
             .damage-grid { grid-template-columns: 1fr; }
         }
-
-        /* GSAP Utility */
-        /* .gs-reveal { opacity: 0; } - Removed to let GSAP handle initial state */
     </style>
 </head>
 <body>
@@ -509,7 +541,7 @@
         <div class="loader-bar"><div class="loader-progress" id="loader-bar-inner"></div></div>
     </div>
 
-    <a href="/guild/" class="nav-back">← GUILD</a>
+    <a href="/guild/" class="nav-back">&larr; GUILD</a>
 
     <!-- Canvas -->
     <div id="webgl-container"></div>
@@ -586,7 +618,7 @@
                         </div>
                         <div class="stat-block">
                             <div class="stat-label">CURRENT DEBT</div>
-                            <div class="stat-value stat-value-white">> 10M</div>
+                            <div class="stat-value stat-value-white">&gt; 10M</div>
                         </div>
                         <div class="stat-block">
                             <div class="stat-label">SPECIAL SKILL</div>
@@ -601,27 +633,27 @@
         <!-- 3. The Battalion (Factory Team) -->
         <section id="battalion">
             <div class="container">
-                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE BATTALION</h2>
-                    <div style="height: 2px; width: 100px; background: var(--c-yellow); margin: 0.5rem auto;"></div>
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE BATTALION</h2>
+                    <div class="section-line section-line-yellow"></div>
                 </div>
 
-                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
-                    <div class="gs-reveal glass-panel" style="flex: 1; min-width: 300px;">
-                        <h3 style="color: var(--c-cyan); font-family: var(--f-mono); margin-bottom: 1rem;">// UNIT STRENGTH: 30+</h3>
-                        <p style="color: #ccc; line-height: 1.8;">
+                <div class="flex-wrap-container">
+                    <div class="gs-reveal glass-panel battalion-panel">
+                        <h3 class="subsection-heading-cyan">// UNIT STRENGTH: 30+</h3>
+                        <p class="body-text">
                             工廠大大小小內有二三十位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
                             每天的日常就是在印桌遊，或是在開印的路上。<br>
                             產線就是我們的戰場，每一張卡牌、每一個配件，都是我們共同打造的彈藥。
                         </p>
                     </div>
-                    <div class="gs-reveal glass-panel" style="flex: 1; min-width: 300px; border: 1px dashed var(--c-yellow);">
-                        <h3 style="color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem;">// MISSION LOG</h3>
-                        <ul style="list-style: none; padding: 0; color: #aaa; line-height: 2;">
-                            <li>> 08:00 - SYSTEMS CHECK (開機)</li>
-                            <li>> 10:00 - TACTICAL BRIEFING (會議接洽)</li>
-                            <li>> 14:00 - PRODUCTION LINE SUPPORT (產線支援)</li>
-                            <li>> 20:00 - STRATEGIC PLANNING (未來規劃)</li>
+                    <div class="gs-reveal glass-panel battalion-panel battalion-panel-dashed">
+                        <h3 class="subsection-heading-yellow">// MISSION LOG</h3>
+                        <ul class="mission-log-list">
+                            <li>&gt; 08:00 - SYSTEMS CHECK (開機)</li>
+                            <li>&gt; 10:00 - TACTICAL BRIEFING (會議接洽)</li>
+                            <li>&gt; 14:00 - PRODUCTION LINE SUPPORT (產線支援)</li>
+                            <li>&gt; 20:00 - STRATEGIC PLANNING (未來規劃)</li>
                         </ul>
                     </div>
                 </div>
@@ -631,49 +663,49 @@
         <!-- 4. The Forge (Origin Era & Legacy) -->
         <section id="forge">
             <div class="container">
-                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE FORGE</h2>
-                    <p style="font-family: var(--f-mono); color: var(--c-yellow);">// LEGACY DATA: 2017 - 2024.04.02</p>
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE FORGE</h2>
+                    <p class="section-subtitle-yellow">// LEGACY DATA: 2017 - 2024.04.02</p>
                 </div>
 
-                <div class="gs-reveal glass-panel" style="margin-bottom: 2rem;">
-                    <p style="color: #ccc; line-height: 1.8; font-size: 1.05rem;">
+                <div class="gs-reveal glass-panel mb-2">
+                    <p class="body-text-lg">
                         墨帥印刷，成立於 2017 年，座落在新北市中和區。<br>
                         這不只是一座印刷廠——這是台灣桌遊產業的心臟。在多數廠商將生產線外移至中國大陸的年代，
-                        墨帥選擇<span style="color: var(--c-cyan);">「根留台灣」</span>，成為少數堅持在地生產的桌遊印刷製造商。<br><br>
+                        墨帥選擇<span class="text-cyan">「根留台灣」</span>，成為少數堅持在地生產的桌遊印刷製造商。<br><br>
                         從一張白紙到一盒完整的桌遊，墨帥提供的不只是印刷，而是一條龍的夢想實現管線：
-                        <span style="color: var(--c-magenta);">卡牌印製、指示物配件、彩盒包裝、倉儲後援、成本規劃，甚至群眾集資的出貨配送。</span>
+                        <span class="text-magenta">卡牌印製、指示物配件、彩盒包裝、倉儲後援、成本規劃，甚至群眾集資的出貨配送。</span>
                     </p>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div class="forge-counter-grid">
                     <div class="gs-reveal forge-counter glass-panel">
                         <div class="forge-counter-value">2,500+</div>
                         <div class="forge-counter-label">GAMES PRODUCED</div>
-                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">台灣桌遊作品</div>
+                        <div class="forge-counter-sublabel">台灣桌遊作品</div>
                     </div>
                     <div class="gs-reveal forge-counter glass-panel">
                         <div class="forge-counter-value">37</div>
                         <div class="forge-counter-label">CREW MEMBERS</div>
-                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">與家庭生計</div>
+                        <div class="forge-counter-sublabel">與家庭生計</div>
                     </div>
                     <div class="gs-reveal forge-counter glass-panel">
                         <div class="forge-counter-value">5F</div>
                         <div class="forge-counter-label">FACTORY FLOORS</div>
-                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">五層樓廠房</div>
+                        <div class="forge-counter-sublabel">五層樓廠房</div>
                     </div>
                     <div class="gs-reveal forge-counter glass-panel">
                         <div class="forge-counter-value">7 YRS</div>
                         <div class="forge-counter-label">OF OPERATION</div>
-                        <div style="color: #666; font-size: 0.8rem; margin-top: 0.3rem;">持續運轉</div>
+                        <div class="forge-counter-sublabel">持續運轉</div>
                     </div>
                 </div>
 
-                <div class="gs-reveal glass-panel" style="border-left: 4px solid var(--c-yellow);">
-                    <h3 style="color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem;">// MILESTONE LOG</h3>
+                <div class="gs-reveal glass-panel panel-border-yellow">
+                    <h3 class="subsection-heading-yellow">// MILESTONE LOG</h3>
                     <div class="forge-milestone">
                         <span class="forge-year">2017</span>
-                        <div class="forge-desc"><strong>SYSTEM INIT</strong> — 墨帥印刷在新北中和正式啟動。當別人笑他傻，他只說：「台灣的桌遊，就該在台灣印。」</div>
+                        <div class="forge-desc"><strong>SYSTEM INIT</strong> — 墨帥印刷在新北中和正式啟動。當別人笑我傻，我只說：「台灣的桌遊，就該在台灣印。」</div>
                     </div>
                     <div class="forge-milestone">
                         <span class="forge-year">2018</span>
@@ -694,29 +726,29 @@
         <!-- 5. Services (Factory Capabilities) -->
         <section id="services">
             <div class="container">
-                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">SERVICES</h2>
-                    <p style="font-family: var(--f-mono); color: #888;">OUTPUT PROTOCOLS</p>
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">SERVICES</h2>
+                    <p class="section-subtitle">OUTPUT PROTOCOLS</p>
                 </div>
 
                 <div class="card-grid">
                     <div class="service-card gs-reveal glass-panel">
-                        <i class="fa-solid fa-chess-board card-icon"></i>
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-yellow)"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg>
                         <h3>Board Game Consulting</h3>
                         <p>桌遊顧問諮詢。兩小時三千。提供專業的生產與設計建議，幫你避開所有量產陷阱。</p>
                     </div>
                     <div class="service-card gs-reveal glass-panel">
-                        <i class="fa-solid fa-print card-icon" style="color: var(--c-cyan)"></i>
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-cyan)"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
                         <h3>Professional Printing</h3>
                         <p>桌遊印刷 / 禮盒 / 包裝。工廠大大小小二三十位同仁，確保每一份產品的完美品質。</p>
                     </div>
                     <div class="service-card gs-reveal glass-panel">
-                        <i class="fa-solid fa-layer-group card-icon" style="color: var(--c-magenta)"></i>
-                        <h3>TCG & Foil Cards</h3>
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-magenta)"><path d="M12 2L2 7l10 5 10-5L12 2z" opacity="1"/><path d="M2 12l10 5 10-5" fill="none" stroke="var(--c-magenta)" stroke-width="2"/><path d="M2 17l10 5 10-5" fill="none" stroke="var(--c-magenta)" stroke-width="2" opacity="0.6"/></svg>
+                        <h3>TCG &amp; Foil Cards</h3>
                         <p>卡包 / 閃卡 / TCG卡片。專精於特殊工藝與收藏級卡片的製作。</p>
                     </div>
                     <div class="service-card gs-reveal glass-panel">
-                        <i class="fa-solid fa-puzzle-piece card-icon" style="color: #fff"></i>
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="#fff"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
                         <h3>Special Design</h3>
                         <p>解密桌遊生產 / 特殊配件設計。實現你最瘋狂的遊戲創意。</p>
                     </div>
@@ -724,7 +756,7 @@
             </div>
         </section>
 
-        <!-- 6. Damage Report (The Quake Impact) — Data cards only, no prose (narrative is in Phoenix) -->
+        <!-- 6. Damage Report (The Quake Impact) -->
         <section id="damage-report">
             <div class="container">
                 <div class="gs-reveal section-header">
@@ -739,7 +771,7 @@
                         <div class="damage-detail">花蓮壽豐震源深度 19.7km<br>921 後最大規模強震</div>
                     </div>
                     <div class="gs-reveal damage-card">
-                        <div class="damage-value">>$10M</div>
+                        <div class="damage-value">&gt;$10M</div>
                         <div class="damage-label">TOTAL DAMAGE (TWD)</div>
                         <div class="damage-detail">初估財損超過一千萬<br>設備、成品、原物料全毀</div>
                     </div>
@@ -760,23 +792,23 @@
         <!-- 7. System Logs - The Phoenix Timeline -->
         <section id="story">
             <div class="container">
-                <div class="gs-reveal" style="margin-bottom: 2rem; text-align: center;">
-                    <h2 style="font-family: var(--f-tech); font-size: 2.5rem; color: #fff;">THE PHOENIX PROTOCOL</h2>
-                    <p style="font-family: var(--f-mono); color: var(--c-yellow);">// FROM ASHES TO REBIRTH — COMPLETE TIMELINE</p>
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE PHOENIX PROTOCOL</h2>
+                    <p class="section-subtitle-yellow">// FROM ASHES TO REBIRTH — COMPLETE TIMELINE</p>
                 </div>
 
                 <div class="phoenix-timeline">
                     <div class="phoenix-event gs-reveal">
                         <div class="phoenix-dot phoenix-dot-red"></div>
                         <div class="glass-panel">
-                            <div class="phoenix-time" style="color: #ff3333;">2024.04.03 — 07:58 AM</div>
+                            <div class="phoenix-time phoenix-time-red">2024.04.03 — 07:58 AM</div>
                             <div class="phoenix-title">EVENT ZERO: THE QUAKE</div>
                             <div class="phoenix-text">
                                 印刷機台從地基上被震離、紙張散落如雪、
                                 成品桌遊從貨架上傾瀉而下。
                                 七年的心血在幾十秒內化為一座鋼筋與紙漿的廢墟。<br><br>
-                                但在粉塵還未落定的那個早晨，少帥 Allen 已經站在廢墟前方，
-                                不是哭泣，而是思考——<span style="color: #ff3333;">如何重啟。</span>
+                                但在粉塵還未落定的那個早晨，我已經站在廢墟前方，
+                                不是哭泣，而是思考——<span class="text-red">如何重啟。</span>
                             </div>
                         </div>
                     </div>
@@ -784,10 +816,10 @@
                     <div class="phoenix-event gs-reveal">
                         <div class="phoenix-dot phoenix-dot-red"></div>
                         <div class="glass-panel">
-                            <div class="phoenix-time" style="color: #ff3333;">2024.04.03 — SAME DAY</div>
+                            <div class="phoenix-time phoenix-time-red">2024.04.03 — SAME DAY</div>
                             <div class="phoenix-title">THE DISTRESS SIGNAL</div>
                             <div class="phoenix-text">
-                                地震發生當天，Allen 在個人 Facebook 頁面發出求援訊號。<br>
+                                地震發生當天，我在個人 Facebook 頁面發出求援訊號。<br>
                                 沒有華麗的文案，沒有包裝過的悲情——只有一個印刷廠負責人最真實的聲音：
                             </div>
                             <div class="phoenix-quote">
@@ -799,13 +831,13 @@
                     <div class="phoenix-event gs-reveal">
                         <div class="phoenix-dot phoenix-dot-yellow"></div>
                         <div class="glass-panel">
-                            <div class="phoenix-time" style="color: var(--c-yellow);">2024.04.04 — T+1 DAY</div>
+                            <div class="phoenix-time phoenix-time-yellow">2024.04.04 — T+1 DAY</div>
                             <div class="phoenix-title">THE RALLY: 墨帥不能倒</div>
                             <div class="phoenix-text">
                                 訊號傳出，台灣桌遊圈瞬間沸騰。<br><br>
                                 過往合作夥伴、桌遊設計師、集資案發起人、甚至素未謀面的玩家——
-                                所有人不約而同地響應。「<span style="color: var(--c-yellow);">墨帥不能倒</span>」不是口號，而是整個產業的共識。<br><br>
-                                短短數天內，第一階段重啟經費 <span style="color: var(--c-yellow);">200 萬台幣</span> 到位。
+                                所有人不約而同地響應。「<span class="text-yellow">墨帥不能倒</span>」不是口號，而是整個產業的共識。<br><br>
+                                短短數天內，第一階段重啟經費 <span class="text-yellow">200 萬台幣</span> 到位。
                                 這不是施捨，這是台灣桌遊人對這座工廠的信任投票。
                             </div>
                         </div>
@@ -814,12 +846,12 @@
                     <div class="phoenix-event gs-reveal">
                         <div class="phoenix-dot phoenix-dot-cyan"></div>
                         <div class="glass-panel">
-                            <div class="phoenix-time" style="color: var(--c-cyan);">2024.04.10 — T+7 DAYS</div>
+                            <div class="phoenix-time phoenix-time-cyan">2024.04.10 — T+7 DAYS</div>
                             <div class="phoenix-title">MIRACLE REBOOT: 七日復活</div>
                             <div class="phoenix-text">
                                 不到一週。從廢墟到復工，只花了不到一週。<br><br>
-                                這不是修復，這是「<span style="color: var(--c-cyan);">熱插拔 (Hot-swapping)</span>」級別的極限操作。
-                                Allen 在瓦礫中搶救出還能運轉的機台，重新校正、重新定位、重新連線。<br><br>
+                                這不是修復，這是「<span class="text-cyan">熱插拔 (Hot-swapping)</span>」級別的極限操作。
+                                我在瓦礫中搶救出還能運轉的機台，重新校正、重新定位、重新連線。<br><br>
                                 當機台重新運轉的轟鳴聲響起的那一刻，
                                 那是世界上最悅耳的樂章。
                             </div>
@@ -832,14 +864,14 @@
                     <div class="phoenix-event gs-reveal">
                         <div class="phoenix-dot phoenix-dot-cyan"></div>
                         <div class="glass-panel">
-                            <div class="phoenix-time" style="color: var(--c-cyan);">2024.04.15</div>
+                            <div class="phoenix-time phoenix-time-cyan">2024.04.15</div>
                             <div class="phoenix-title">CROWDFUNDING LAUNCH: 嘖嘖集資</div>
                             <div class="phoenix-text">
                                 初步復工只是止血，真正的重建還需要更多資源。<br><br>
-                                Allen 在嘖嘖平台發起《<span style="color: var(--c-cyan);">墨帥印刷災後重建計畫</span>》，
+                                我在嘖嘖平台發起《<span class="text-cyan">墨帥印刷災後重建計畫</span>》，
                                 目標再募集 400 萬台幣完備生產機台與設備。<br><br>
                                 集資頁面的標題寫著：「2,500 款桌遊背後的生產力量，這次我們需要你一起幫忙！」<br>
-                                最終 <span style="color: var(--c-cyan);">737 位贊助人</span> 站了出來，用實際行動回應。
+                                最終 <span class="text-cyan">737 位贊助人</span> 站了出來，用實際行動回應。
                             </div>
                         </div>
                     </div>
@@ -847,16 +879,16 @@
                     <div class="phoenix-event gs-reveal">
                         <div class="phoenix-dot phoenix-dot-green"></div>
                         <div class="glass-panel">
-                            <div class="phoenix-time" style="color: #00ff88;">2024.05 — T+30 DAYS</div>
+                            <div class="phoenix-time phoenix-time-green">2024.05 — T+30 DAYS</div>
                             <div class="phoenix-title">FULL RESURGENCE: 100% ONLINE</div>
                             <div class="phoenix-text">
                                 一個月。從完全歸零到 100% 產能恢復，只用了一個月。<br><br>
                                 新廠房定位完成，所有機台校正上線，產線全面運轉。
-                                負債金額超過 <span style="color: #00ff88;">一千萬</span>——但在 Allen 的系統裡，這個數字不是絕望，
+                                負債金額超過 <span class="text-green">一千萬</span>——但在我的系統裡，這個數字不是絕望，
                                 是推進的燃料。<br><br>
-                                這股龐大的「虛空壓力」迫使他進化出更高的效率與更精準的決策。<br>
+                                這股龐大的「虛空壓力」迫使我進化出更高的效率與更精準的決策。<br>
                                 每天不是在印桌遊，就是在開印的路上。
-                                <span style="color: #00ff88;">停滯即是毀滅，唯有前進才能維持系統穩定。</span>
+                                <span class="text-green">停滯即是毀滅，唯有前進才能維持系統穩定。</span>
                             </div>
                             <div class="phoenix-quote">
                                 「負債是引擎，不是枷鎖。它逼我跑得更快。」
@@ -868,11 +900,11 @@
         </section>
 
         <!-- 8. Reconstruction Interaction -->
-        <section id="reconstruction" style="height: 100vh; position: relative; pointer-events: none;">
+        <section id="reconstruction" class="section-reconstruction">
             <div class="ruins-overlay"></div>
 
             <div class="news-ticker-container" id="ruin-ticker">
-                <div class="news-ticker-content" style="padding-right: 50px;">
+                <div class="news-ticker-content">
                      BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房結構崩毀 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
                 </div>
                 <div class="news-ticker-content">
@@ -880,23 +912,19 @@
                 </div>
             </div>
 
-            <div class="container" style="text-align: center; pointer-events: auto;">
-                <h2 class="gs-reveal" style="font-family: var(--f-tech); font-size: 3rem; color: #fff; margin-bottom: 1rem;">RECONSTRUCTION</h2>
-                <p class="gs-reveal" style="font-family: var(--f-mono); color: var(--c-yellow); margin-bottom: 2rem;">
+            <div class="container reconstruction-content">
+                <h2 class="gs-reveal section-title">RECONSTRUCTION</h2>
+                <p class="gs-reveal section-subtitle-yellow mb-2">
                     CLICK TO REPAIR THE STRUCTURE
                 </p>
-                <button id="btn-repair" class="gs-reveal" style="
-                    background: transparent; border: 2px solid var(--c-cyan); color: var(--c-cyan);
-                    padding: 1rem 3rem; font-family: var(--f-tech); font-size: 1.2rem; cursor: pointer;
-                    transition: 0.3s; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-                ">INITIATE REPAIR</button>
+                <button id="btn-repair" class="gs-reveal btn-repair">INITIATE REPAIR</button>
 
                 <!-- Post-Repair Content (Hidden Initially) -->
-                <div id="post-repair-content" style="display: none; opacity: 0; margin-top: 3rem; position: relative; z-index: 5;">
-                    <div class="glass-panel" style="border: 1px solid rgba(0,255,255,0.3);">
+                <div id="post-repair-content" class="post-repair-content">
+                    <div class="glass-panel glass-panel-cyan-border">
                         <a href="https://www.zeczec.com/projects/ink-play-reborn" target="_blank" rel="noopener noreferrer" class="repair-cta">SUPPORT THE REBOOT</a>
 
-                        <div class="news-source-grid" style="margin-top: 1.5rem;">
+                        <div class="news-source-grid mt-1-5">
                             <a href="http://crowdwatch.tw/post/54872/" target="_blank" rel="noopener noreferrer" class="news-source-card">
                                 <span class="news-source-tag">NEWS</span>
                                 <div class="news-source-title">台灣桌遊生產大廠遭震毀！集資重建</div>
@@ -923,12 +951,12 @@
             <div class="container">
                 <div class="gs-reveal glass-panel text-center">
                     <h3 class="commander-panel-title">VISIT THE BASE</h3>
-                    <p class="commander-panel-text" style="margin-bottom: 1.5rem;">有空可以來看看重啟後的鋼鐵意志。</p>
+                    <p class="commander-panel-text mb-1-5">有空可以來看看重啟後的鋼鐵意志。</p>
                     <a href="https://www.google.com/maps/search/?api=1&query=%E6%96%B0%E5%8C%97%E5%B8%82%E4%B8%AD%E5%92%8C%E5%8D%80%E9%80%A3%E5%9F%8E%E8%B7%AF222%E5%B7%B75%E8%99%9F" target="_blank" rel="noopener noreferrer" class="visit-address">
-                        <i class="fa-solid fa-location-dot"></i> 新北市中和區連城路222巷5號
+                        <svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg> 新北市中和區連城路222巷5號
                     </a>
                     <div class="visit-contact">
-                        <i class="fa-solid fa-phone"></i> 02-2240-3080
+                        <svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg> 02-2240-3080
                     </div>
                 </div>
             </div>
@@ -937,14 +965,14 @@
         <!-- Footer -->
         <footer>
             <div class="container">
-                <h2 style="font-family: var(--f-tech); color: #fff; margin-bottom: 2rem;">CONNECT</h2>
+                <h2 class="footer-title">CONNECT</h2>
                 <div class="social-links">
-                    <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" class="social-btn"><i class="fa-solid fa-rocket"></i></a>
-                    <a href="https://www.threads.com/@gxallenlen" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/gxallenlen/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5s-4 5-4 9.5a4 4 0 008 0c0-4.5-4-9.5-4-9.5zM8 19l1.5-2h5L16 19H8zm4-8a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg></a>
+                    <a href="https://www.threads.com/@gxallenlen" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12.6 2.4c2.4.1 4.3.8 5.6 2.2 1.1 1.1 1.8 2.7 2.1 4.5l-1.9.4c-.5-3.2-2.6-5-5.7-5.1-2.1 0-3.8.7-4.9 2.1-1 1.3-1.6 3.2-1.6 5.5s.5 4.2 1.6 5.5c1.1 1.4 2.8 2.1 4.9 2.1 1.8 0 3.2-.5 4.3-1.6 1.1-1.1 1.2-2.5.8-3.4a3.5 3.5 0 00-1.2-1.4c-.1 1.1-.5 2-1 2.7-.8 1-1.8 1.5-3.2 1.6-1.3 0-2.4-.4-3.1-1.3-.6-.7-1-1.7-1-2.8 0-2.2 1.5-3.6 3.9-3.6.3 0 .7 0 1 .1.3-1.7-.1-2.9-1.1-3.5-.7-.4-1.5-.6-2.4-.6-1.6 0-2.8.6-3.5 1.6l-1.4-.9C5.5 3.4 7.1 2.5 9.3 2.4h.3c1.1 0 2.1.2 3 .7 1 .6 1.6 1.5 2 2.7.6.1 1.2.3 1.7.5 1.1.4 2 1.1 2.7 2 .8 1.1 1.2 2.5 1.1 4h0c-.1 2-1 3.5-2.3 4.6-1.5 1.1-3.2 1.7-5.3 1.9-.4 0-.8.1-1.2.1-3 0-5.3-1-6.8-2.9C3.1 14.4 2.4 12 2.4 9.1v0c0-3 .7-5.3 2.1-6.9C6 .7 8.2-.1 11 0h.3l1.3.1v2.3z"/></svg></a>
+                    <a href="https://www.instagram.com/gxallenlen/" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2zm-.2 2A3.6 3.6 0 004 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6zm9.65 1.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zM12 7a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6z"/></svg></a>
                 </div>
-                <p style="color: #666; font-family: var(--f-mono); font-size: 0.8rem;">
-                    MADE WITH <i class="fa-solid fa-bolt" style="color: var(--c-yellow)"></i> BY SUPERGALEN'S DUNGEON
+                <p class="footer-credits">
+                    MADE WITH <svg class="icon-inline" viewBox="0 0 24 24" fill="var(--c-yellow)"><path d="M13 2L3 14h7l-2 8 10-12h-7l2-8z"/></svg> BY SUPERGALEN'S DUNGEON
                 </p>
             </div>
         </footer>
@@ -959,7 +987,6 @@
         function initThree() {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            // Fog for depth
             scene.fog = new THREE.FogExp2(0x0a0a0a, 0.05);
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -967,7 +994,7 @@
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Performance cap
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             container.appendChild(renderer.domElement);
 
             // Objects: Floating Plates (CMYK)
@@ -988,7 +1015,7 @@
                 mesh.position.set(
                     (Math.random() - 0.5) * 60,
                     (Math.random() - 0.5) * 60,
-                    (Math.random() - 0.5) * 40
+                    -Math.random() * 35 - 5
                 );
                 mesh.rotation.set(
                     Math.random() * Math.PI,
@@ -1003,23 +1030,20 @@
             // --- RECONSTRUCTION INTERACTION ---
             const houseGroup = new THREE.Group();
             scene.add(houseGroup);
-            houseGroup.position.set(0, -50, 0); // Position it lower, near the reconstruction section
+            houseGroup.position.set(0, -50, 0);
 
             const voxels = [];
             const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
 
-            // Build House Shape (Simple)
             function createHouse() {
-                // Base
                 for(let x=-2; x<=2; x++) {
                     for(let z=-2; z<=2; z++) {
                         for(let y=0; y<3; y++) {
-                             if(Math.random() > 0.8) continue; // Some holes
+                             if(Math.random() > 0.8) continue;
                              addVoxel(x, y, z);
                         }
                     }
                 }
-                // Roof
                 for(let x=-2; x<=2; x++) {
                     addVoxel(x, 3, 0);
                     addVoxel(x, 3, 1);
@@ -1037,7 +1061,6 @@
                 });
                 const mesh = new THREE.Mesh(boxGeo, material);
 
-                // Exploded State (Random)
                 const ex = (Math.random() - 0.5) * 30;
                 const ey = (Math.random() - 0.5) * 30;
                 const ez = (Math.random() - 0.5) * 30;
@@ -1051,19 +1074,21 @@
                     mesh,
                     target: new THREE.Vector3(tx, ty, tz),
                     baseColor: 0x333333,
-                    activeColor: colors[Math.floor(Math.random() * 3)] // CMY
+                    activeColor: colors[Math.floor(Math.random() * 3)]
                 });
             }
 
             createHouse();
 
-            // Link Button
             const btn = document.getElementById('btn-repair');
             const postRepair = document.getElementById('post-repair-content');
             const ruinTicker = document.getElementById('ruin-ticker');
+            let isRepaired = false;
 
             if(btn) {
                 btn.addEventListener('click', () => {
+                    isRepaired = true;
+
                     // Animate Reconstruction
                     voxels.forEach((v, i) => {
                         gsap.to(v.mesh.position, {
@@ -1080,7 +1105,6 @@
                             ease: "power2.inOut"
                         });
 
-                        // Color Shift
                         setTimeout(() => {
                             v.mesh.material.color.setHex(v.activeColor);
                             v.mesh.material.wireframe = false;
@@ -1096,15 +1120,12 @@
                         delay: 1.5
                     });
 
-                    // Button UI Update
+                    // Button UI Update via class
                     btn.innerHTML = "SYSTEM RESTORED";
-                    btn.style.borderColor = "#00ff00";
-                    btn.style.color = "#00ff00";
-                    btn.style.pointerEvents = "none"; // Prevent double click
+                    btn.classList.add('btn-repair-done');
 
-                    // Fade out ruins overlay
-                    const overlay = document.querySelector('.ruins-overlay');
-                    if(overlay) overlay.style.opacity = '0';
+                    // Fade out ruins overlay via class
+                    document.getElementById('reconstruction').classList.add('ruins-active');
 
                     // Hide Ticker
                     if(ruinTicker) {
@@ -1117,19 +1138,6 @@
                 });
             }
 
-            // ScrollTrigger to move the House Group into view
-            // When we scroll to #reconstruction, move houseGroup to Z=5 (in front of camera)
-            // Wait, camera moves. Let's position houseGroup at fixed world coords that align with scroll.
-            // Actually, let's just keep it at (0,0,0) relative to camera or world.
-            // Since camera moves from Z=20 to Z=5, if we put houseGroup at Z=0, it will be close at the end.
-
-            // Let's refine house position based on camera movement.
-            // The camera ends at Z=5. If house is at Z=0, it's 5 units away. Perfect.
-            // We just need to make sure it's not visible initially or looks like debris in background.
-            // It is added to scene, so it's visible.
-            // Let's set its Y position based on scroll to "rise" up or stay fixed.
-
-            // To make sure it appears in the specific section, we can use a separate scrollTrigger for the group position.
             gsap.fromTo(houseGroup.position,
                 { y: -30 },
                 {
@@ -1154,8 +1162,8 @@
                     p.mesh.position.y += Math.sin(Date.now() * 0.001 * p.speed * 100) * 0.02;
                 });
 
-                // Slowly rotate house if waiting
-                if(!btn || btn.innerText !== "SYSTEM RESTORED") {
+                // Slowly rotate house if not yet repaired (boolean flag, no DOM read)
+                if(!isRepaired) {
                     houseGroup.rotation.y += 0.002;
                     houseGroup.rotation.z = Math.sin(Date.now()*0.001) * 0.05;
                 }
@@ -1181,6 +1189,17 @@
                     end: "bottom bottom",
                     scrub: 1
                 }
+            });
+
+            // News ticker: only animate when reconstruction section is visible
+            ScrollTrigger.create({
+                trigger: "#reconstruction",
+                start: "top bottom",
+                end: "bottom top",
+                onEnter: () => ruinTicker?.classList.add('ticker-active'),
+                onLeave: () => ruinTicker?.classList.remove('ticker-active'),
+                onEnterBack: () => ruinTicker?.classList.add('ticker-active'),
+                onLeaveBack: () => ruinTicker?.classList.remove('ticker-active'),
             });
         }
 
@@ -1215,7 +1234,7 @@
                     clearInterval(interval);
                     setTimeout(() => {
                         gsap.to(loader, { opacity: 0, duration: 0.5, onComplete: () => loader.remove() });
-                        document.body.style.overflowY = 'auto'; // Unlock
+                        document.body.style.overflowY = 'auto';
                     }, 500);
                 }
             }, 50);
@@ -1223,72 +1242,68 @@
 
     </script>
 
-    <!-- p5.js Sketch (Ink Trail) -->
+    <!-- Vanilla Canvas Ink Trail (replaces p5.js) -->
     <script>
-        function setup() {
-            let canvas = createCanvas(windowWidth, windowHeight);
-            canvas.parent('p5-container');
-            noStroke();
-            frameRate(60);
-        }
+        (function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById('p5-container');
+            container.appendChild(canvas);
 
-        let particles = [];
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
 
-        function draw() {
-            clear();
+            const particles = [];
+            const colors = ['0,255,255', '255,0,255', '255,255,0'];
+            let mouseX = 0, mouseY = 0, prevMouseX = 0, prevMouseY = 0;
 
-            // Create particles on mouse move
-            if (mouseX !== pmouseX || mouseY !== pmouseY) {
-                for(let i=0; i<3; i++) {
-                    particles.push(new Particle(mouseX, mouseY));
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (mouseX !== prevMouseX || mouseY !== prevMouseY) {
+                    for (let i = 0; i < 3; i++) {
+                        particles.push({
+                            x: mouseX, y: mouseY,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            alpha: 1,
+                            color: colors[Math.floor(Math.random() * 3)],
+                            r: Math.random() * 3 + 1
+                        });
+                    }
+                    prevMouseX = mouseX;
+                    prevMouseY = mouseY;
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= 0.02;
+
+                    if (p.alpha <= 0) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
+                    ctx.fill();
                 }
             }
-
-            for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.update();
-                p.show();
-                if (p.finished()) {
-                    particles.splice(i, 1);
-                }
-            }
-        }
-
-        class Particle {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.vx = random(-1, 1);
-                this.vy = random(-1, 1);
-                this.alpha = 255;
-                this.color = random([
-                    color(0, 255, 255), // Cyan
-                    color(255, 0, 255), // Magenta
-                    color(255, 255, 0)  // Yellow
-                ]);
-                this.d = random(2, 8);
-            }
-
-            finished() {
-                return this.alpha < 0;
-            }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.alpha -= 5;
-            }
-
-            show() {
-                noStroke();
-                fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], this.alpha);
-                ellipse(this.x, this.y, this.d);
-            }
-        }
-
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
+            animate();
+        })();
     </script>
 </body>
 </html>
