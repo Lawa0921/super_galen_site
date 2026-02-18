@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lu Bu 呂布 — The Streamer Warlord</title>
+    <title>Lu Bu 呂布 — 冷門遊戲直播主</title>
     <meta name="description" content="呂布 (Lu Bu) — 來自三國的最強武將，現役個人勢 VTuber。直播獨立遊戲、冷門神作，尋找失散的部下。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -29,15 +29,16 @@
         :root {
             --c-bg: #050000;
             --c-blood: #8a0000;
-            --c-blood-bright: #ff0000;
-            --c-void: #000000;
+            --c-blood-bright: #ff3333;
+            --c-void: #1a0000;
             --c-gold: #d4af37;
-            --c-gold-dim: rgba(212, 175, 55, 0.2);
-            --c-glitch: #00ffcc; /* Cthulhu Neon */
-            --c-text: #e0e0e0;
+            --c-gold-bright: #ffd700;
+            --c-jade: #00ffaa; /* Cthulhu/Glitch accent */
+            --c-text: #f0f0f0;
 
             --f-header: 'Cinzel', serif;
             --f-body: 'Noto Serif TC', serif;
+            --f-calligraphy: 'Ma Shan Zheng', cursive;
             --f-tech: 'Orbitron', sans-serif;
         }
 
@@ -49,7 +50,7 @@
             font-family: var(--f-body);
             overflow-x: hidden;
             opacity: 0; /* Fade in body */
-            transition: opacity 0.5s ease-in;
+            transition: opacity 0.8s ease-in;
         }
 
         body.loaded {
@@ -66,21 +67,31 @@
             z-index: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0.8;
         }
 
+        /* Traditional Pattern Overlay */
+        .pattern-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(var(--c-gold) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.05;
+            z-index: -1;
+            pointer-events: none;
+        }
+
         /* ════════════ UI ELEMENTS ════════════ */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: rgba(255,255,255,0.6); text-decoration: none;
-            font-family: var(--f-header); font-size: 0.9rem; letter-spacing: 0.1em;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 0.5rem 1.2rem;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(4px);
+            color: var(--c-gold); text-decoration: none;
+            font-family: var(--f-header); font-size: 1rem; letter-spacing: 0.1em;
+            border: 1px solid var(--c-gold);
+            padding: 0.5rem 1.5rem;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
             transition: 0.3s;
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
         }
         .nav-back:hover {
-            color: var(--c-blood-bright); border-color: var(--c-blood-bright);
-            text-shadow: 0 0 10px var(--c-blood);
+            background: var(--c-gold); color: #000;
+            box-shadow: 0 0 20px var(--c-gold);
         }
 
         .scroller {
@@ -90,286 +101,316 @@
         section {
             min-height: 100vh;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 4rem 1rem; position: relative;
+            padding: 6rem 1rem; position: relative;
         }
 
         .container {
             max-width: 1000px; width: 100%; position: relative; margin: 0 auto;
         }
 
-        /* ════════════ TYPOGRAPHY & GLITCH ════════════ */
-        h1, h2, h3 { font-family: var(--f-header); text-transform: uppercase; }
-
-        .glitch {
+        /* ════════════ TYPOGRAPHY ════════════ */
+        h1.main-title {
+            font-family: var(--f-calligraphy);
+            font-size: clamp(4rem, 15vw, 8rem);
+            color: var(--c-gold);
+            text-shadow: 4px 4px 0 var(--c-blood);
+            margin: 0; line-height: 1.1;
+            text-align: center;
             position: relative;
-            color: var(--c-text);
-        }
-        .glitch::before, .glitch::after {
-            content: attr(data-text);
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        }
-        .glitch::before {
-            left: 2px; text-shadow: -1px 0 var(--c-blood-bright); clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
-        }
-        .glitch::after {
-            left: -2px; text-shadow: -1px 0 var(--c-glitch); clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+            z-index: 2;
         }
 
-        @keyframes glitch-anim-1 {
-            0% { clip: rect(20px, 9999px, 10px, 0); }
-            100% { clip: rect(80px, 9999px, 100px, 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(10px, 9999px, 90px, 0); }
-            100% { clip: rect(5px, 9999px, 20px, 0); }
+        .subtitle-tech {
+            font-family: var(--f-tech); color: var(--c-jade); letter-spacing: 0.2em;
+            font-size: 1rem; text-transform: uppercase;
+            text-align: center; margin-top: 1rem;
+            text-shadow: 0 0 10px var(--c-jade);
         }
 
-        .subtitle {
-            font-family: var(--f-tech); color: var(--c-gold); letter-spacing: 0.3em;
-            font-size: 1rem; margin-top: 1rem; text-align: center;
-            text-shadow: 0 0 10px var(--c-gold-dim);
+        .chinese-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            font-family: var(--f-calligraphy);
+            position: absolute;
+            font-size: 3rem;
+            color: rgba(138, 0, 0, 0.3);
+            user-select: none;
+            z-index: -1;
         }
 
-        .hero-title {
-            font-size: clamp(3rem, 10vw, 7rem); font-weight: 900; line-height: 1;
-            text-align: center; margin: 1rem 0;
-            color: #fff;
-            text-shadow: 4px 4px 0px var(--c-blood);
-        }
-
-        /* ════════════ AVATAR FRAME ════════════ */
-        .avatar-frame {
-            width: 280px; height: 280px; margin: 0 auto 2rem;
+        /* ════════════ AVATAR & GLITCH ════════════ */
+        .avatar-container {
             position: relative;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            background: #111;
-            padding: 4px;
-            transition: transform 0.3s;
+            width: 300px; height: 300px;
+            margin: 0 auto 2rem;
         }
-        .avatar-frame:hover { transform: scale(1.05); }
-        .avatar-frame::before {
-            content: ''; position: absolute; inset: 0;
-            background: var(--c-gold); z-index: -1;
+
+        .avatar-hex {
+            width: 100%; height: 100%;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            background: #000;
+            position: relative;
+            z-index: 2;
         }
+
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            filter: grayscale(0.4) contrast(1.2);
-            transition: filter 0.3s;
+            opacity: 0.9; transition: 0.3s;
         }
-        .avatar-frame:hover .avatar-img { filter: grayscale(0) contrast(1.1); }
 
-        /* ════════════ CARDS & PANELS ════════════ */
-        .glass-panel {
-            background: rgba(10, 0, 0, 0.7);
-            border: 1px solid rgba(138, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            padding: 2.5rem;
-            margin-top: 2rem;
+        .avatar-container:hover .avatar-img {
+            filter: contrast(1.2) drop-shadow(0 0 10px var(--c-jade));
+        }
+
+        /* Cockroach Antennae Effect via CSS pseudo elements? */
+        .avatar-container::before, .avatar-container::after {
+            content: ''; position: absolute;
+            width: 150px; height: 150px;
+            border-top: 2px solid var(--c-gold);
+            border-left: 2px solid transparent;
+            border-radius: 50%;
+            top: -40px; z-index: 1;
+            opacity: 0; transition: 0.5s;
+        }
+        .avatar-container::before {
+            left: 20px; transform: rotate(-30deg);
+        }
+        .avatar-container::after {
+            right: 20px; transform: rotate(30deg) scaleX(-1);
+        }
+        .avatar-container:hover::before, .avatar-container:hover::after {
+            opacity: 0.8; top: -60px;
+        }
+
+        /* ════════════ SCROLL TEXTURE ════════════ */
+        .scroll-panel {
+            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g fill="%231a0000" fill-opacity="0.8"><rect width="100" height="100"/></g></svg>');
+            border: 2px solid var(--c-gold);
+            padding: 3rem;
             position: relative;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            margin-top: 2rem;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
-        .glass-panel::after {
-            content: ''; position: absolute; bottom: 0; right: 0; width: 30px; height: 30px;
-            border-bottom: 2px solid var(--c-gold); border-right: 2px solid var(--c-gold);
+
+        /* Corner ornaments */
+        .scroll-panel::after, .scroll-panel::before {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border: 2px solid var(--c-gold); transition: 0.3s;
         }
-        .glass-panel::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 30px; height: 30px;
-            border-top: 2px solid var(--c-gold); border-left: 2px solid var(--c-gold);
-        }
+        .scroll-panel::before { top: -6px; left: -6px; border-right: 0; border-bottom: 0; }
+        .scroll-panel::after { bottom: -6px; right: -6px; border-left: 0; border-top: 0; }
 
         .lore-text {
-            font-size: 1.1rem; line-height: 2; color: #ccc; text-align: justify;
-            margin-bottom: 1.5rem;
+            font-size: 1.2rem; line-height: 2; color: #ddd; text-align: justify;
+            margin-bottom: 1.5rem; text-shadow: 1px 1px 2px #000;
         }
-        .highlight-blood { color: var(--c-blood-bright); font-weight: bold; }
-        .highlight-gold { color: var(--c-gold); font-weight: bold; }
-        .highlight-void { color: #aaa; font-style: italic; }
 
-        /* ════════════ MISSION GRID ════════════ */
+        .highlight-red { color: var(--c-blood-bright); font-weight: bold; }
+        .highlight-gold { color: var(--c-gold); font-weight: bold; font-family: var(--f-calligraphy); font-size: 1.4rem; }
+
+        /* ════════════ GENERALS GRID ════════════ */
         .generals-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1.5rem; width: 100%; margin-top: 2rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem; width: 100%; margin: 2rem 0;
         }
-        .general-slot {
-            aspect-ratio: 3/4;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        .general-token {
+            aspect-ratio: 1;
+            border: 2px solid #333;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #444; font-size: 1.5rem;
             position: relative;
+            background: #000;
             transition: 0.3s;
-            cursor: pointer;
         }
-        .general-slot:hover {
-            border-color: var(--c-blood-bright);
-            box-shadow: 0 0 15px rgba(255,0,0,0.2);
+        .general-token:hover {
+            border-color: var(--c-gold); color: var(--c-gold);
+            box-shadow: 0 0 15px var(--c-gold-dim);
+            transform: scale(1.1);
         }
-        .general-slot.locked::after {
-            content: 'LOCKED';
-            font-family: var(--f-tech); font-size: 0.8rem; letter-spacing: 0.1em;
-            color: #555; margin-top: 0.5rem;
+        .general-token::after {
+            content: '未解鎖';
+            position: absolute; bottom: -1.5rem;
+            font-size: 0.8rem; font-family: var(--f-body);
+            white-space: nowrap; opacity: 0; transition: 0.3s;
         }
-        .general-icon {
-            font-size: 2rem; color: #333; transition: 0.3s;
-        }
-        .general-slot:hover .general-icon {
-            color: var(--c-blood-bright); text-shadow: 0 0 10px var(--c-blood-bright);
-        }
+        .general-token:hover::after { opacity: 1; color: var(--c-gold); }
 
-        /* ════════════ STREAM SECTION ════════════ */
-        .stream-tags {
-            display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin: 2rem 0;
+        /* ════════════ GAME TAGS ════════════ */
+        .game-tags {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin: 2rem 0;
         }
-        .tag {
-            padding: 0.5rem 1rem; border: 1px solid var(--c-gold);
-            color: var(--c-gold); font-family: var(--f-tech); font-size: 0.8rem;
-            text-transform: uppercase; letter-spacing: 0.1em;
+        .game-tag {
+            padding: 0.5rem 1.5rem;
+            background: rgba(138, 0, 0, 0.2);
+            border: 1px solid var(--c-blood);
+            color: var(--c-text);
+            font-family: var(--f-body);
+            text-decoration: none;
             transition: 0.3s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
-        .tag:hover {
-            background: var(--c-gold); color: #000;
-            box-shadow: 0 0 15px var(--c-gold);
+        .game-tag:hover {
+            background: var(--c-blood);
+            color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(138, 0, 0, 0.5);
         }
 
         /* ════════════ FOOTER ════════════ */
         .socials {
-            display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;
+            display: flex; gap: 2rem; justify-content: center; margin-top: 3rem;
         }
-        .social-link {
-            font-size: 1.8rem; color: var(--c-text); opacity: 0.6; transition: 0.3s;
+        .social-btn {
+            width: 60px; height: 60px;
+            border: 2px solid var(--c-gold);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: var(--c-gold);
+            text-decoration: none;
+            transition: 0.3s;
+            background: #000;
         }
-        .social-link:hover {
-            opacity: 1; color: var(--c-glitch); transform: translateY(-5px);
-            text-shadow: 0 0 10px var(--c-glitch);
+        .social-btn:hover {
+            background: var(--c-gold); color: #000;
+            box-shadow: 0 0 20px var(--c-gold);
         }
 
-        /* ════════════ ANIMATION UTILS ════════════ */
-        .reveal-up { opacity: 0; transform: translateY(30px); }
-        .hero-anim { opacity: 0; transform: translateY(20px); }
+        /* ════════════ ANIMATIONS ════════════ */
+        .reveal { opacity: 0; transform: translateY(30px); }
 
-        /* Mobile tweaks */
         @media (max-width: 768px) {
-            .hero-title { font-size: 3.5rem; }
-            .glass-panel { padding: 1.5rem; }
-            .avatar-frame { width: 200px; height: 200px; }
+            h1.main-title { font-size: 4rem; }
+            .scroll-panel { padding: 1.5rem; }
+            .avatar-container { width: 220px; height: 220px; }
         }
     </style>
 </head>
 <body>
-    <a href="/guild" class="nav-back">&lt; GUILD</a>
+    <div class="pattern-overlay"></div>
+    <a href="/guild" class="nav-back">GUILD</a>
 
     <!-- Visual Layers -->
     <div id="webgl-container"></div>
     <div id="p5-container"></div>
 
     <div class="scroller">
-        <!-- 1. HERO -->
+
+        <!-- HERO -->
         <section id="hero">
             <div class="container" style="display: flex; flex-direction: column; align-items: center;">
-                <div class="avatar-frame hero-anim">
-                    <img src="/assets/img/guild/lubu/avatar.webp" alt="Lu Bu Avatar" class="avatar-img">
+                <div class="avatar-container reveal">
+                    <div class="avatar-hex">
+                        <img src="/assets/img/guild/lubu/avatar.webp" alt="Lu Bu Avatar" class="avatar-img">
+                    </div>
                 </div>
-                <h1 class="hero-title glitch hero-anim" data-text="LU BU">LU BU</h1>
-                <div class="subtitle hero-anim">THE REBORN WARLORD // VTUBER</div>
-                <div class="stream-tags hero-anim" style="margin-top: 1rem;">
-                    <span class="tag">INDIE GAMES</span>
-                    <span class="tag">HARDCORE</span>
-                    <span class="tag">REVENGE</span>
+
+                <h1 class="main-title reveal">呂布</h1>
+                <div class="subtitle-tech reveal">LU BU // THE STRONGEST WARLORD</div>
+
+                <div style="margin-top: 1.5rem;" class="reveal">
+                    <span style="font-family: var(--f-calligraphy); font-size: 1.5rem; color: var(--c-blood-bright); margin-right: 1rem;">冷門遊戲</span>
+                    <span style="font-family: var(--f-calligraphy); font-size: 1.5rem; color: var(--c-gold);">直播主</span>
                 </div>
             </div>
+
+            <div class="chinese-vertical" style="right: 5vw; top: 20vh;">天下無雙</div>
+            <div class="chinese-vertical" style="left: 5vw; top: 40vh;">方天畫戟</div>
         </section>
 
-        <!-- 2. LORE -->
+        <!-- LORE -->
         <section id="lore">
             <div class="container">
-                <div class="glass-panel reveal-up">
-                    <h2 style="text-align: center; margin-bottom: 2rem; color: var(--c-blood-bright);">THE ORIGIN</h2>
+                <div class="scroll-panel reveal">
+                    <h2 style="font-family: var(--f-calligraphy); text-align: center; font-size: 2.5rem; margin-bottom: 2rem; color: var(--c-gold);">【 前世今生 】</h2>
+
                     <p class="lore-text">
-                        在時間尚未被記錄之前，我曾以血為名，以戰為生。<br>
-                        以「<span class="highlight-gold">呂布</span>」之名，震動整個時代。方天畫戟橫掃千軍，鐵騎踏碎諸侯。<br>
-                        卻仍舊敗給名為「命運」的存在。敗北的瞬間，我向天嘶吼——若有來世，我必親手粉碎這條結局。
+                        在時間尚未被記錄之前，我曾以血為名，以戰為生。
+                        以「<span class="highlight-gold">呂布</span>」之名，震動整個時代。
+                        方天畫戟橫掃千軍，鐵騎踏碎諸侯。
+                        卻仍舊敗給名為「命運」的存在。
                     </p>
                     <p class="lore-text">
-                        就在怨念悔恨時，靈魂誤入了 <span class="highlight-void">克蘇魯的世界</span>，在那裡染上了不可名狀的力量。
-                        不知過了多少歲月，一位名為「<span class="highlight-gold">米絲 (Mis)</span>」的天堂鳥將我從那個世界解放，投放至名為「現代」的世界線。
+                        就在怨念悔恨時，靈魂誤入了 <span class="highlight-red">克蘇魯的世界</span>，染上了不可名狀的力量。
+                        不知過了多少歲月，一位名為「<span class="highlight-gold">米絲 (Mis)</span>」的天堂鳥將我從那個世界解放，
+                        投放至名為「現代」的世界線。
                     </p>
                     <p class="lore-text">
-                        來到這個世界後的我，被這位自稱為天使的魅魔拐走（？），成為了三個小屁孩的爸爸，而米絲在現實中也正是我的老婆。
+                        來到這個世界後的我，被這位自稱為天使的魅魔拐走（？），
+                        成為了三個小屁孩的爸爸，而米絲在現實中也正是我的老婆。
                         為了復仇、也為了理解這個全新的時代，我開始了直播。
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- 3. MISSION -->
+        <!-- MISSION -->
         <section id="mission">
             <div class="container">
-                <h2 class="reveal-up" style="text-align: center; color: var(--c-text);">SEEKING THE TEN</h2>
-                <div class="subtitle reveal-up">REBUILDING THE ARMY ACROSS TIMELINES</div>
+                <h2 class="reveal" style="font-family: var(--f-calligraphy); text-align: center; font-size: 2.5rem; margin-bottom: 1rem; color: var(--c-text);">【 尋找十部下 】</h2>
+                <div class="subtitle-tech reveal">REBUILDING THE LU ARMY</div>
 
-                <div class="glass-panel reveal-up" style="text-align: center;">
+                <div class="scroll-panel reveal" style="text-align: center;">
                     <p class="lore-text" style="text-align: center;">
                         穿越的代價是，原本追隨我的「十位呂家軍部下」，被拋散至不同的時間、不同的世界。<br>
                         我在螢幕前揮動手把，只為在無數世界線中，鎖定那十道熟悉的靈魂波動。
                     </p>
-                    <p class="lore-text" style="text-align: center; font-style: italic; color: var(--c-blood-bright);">
-                        若你的心臟因這個名字而震動！那麼答案只有一個：<br>
-                        你是 我正在尋找的「失散呂家軍部下」。
-                    </p>
 
                     <div class="generals-grid">
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
-                        <div class="general-slot locked"><i class="fa-solid fa-user-secret general-icon"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
+                        <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
                     </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- 4. STREAM -->
-        <section id="stream">
-            <div class="container" style="text-align: center;">
-                <h2 class="reveal-up" style="color: var(--c-glitch);">LIVE TRANSMISSION</h2>
-                <div class="subtitle reveal-up">TWITCH // INDIE // RETRO</div>
-
-                <div class="glass-panel reveal-up">
-                    <p class="lore-text" style="text-align: center;">
-                        我喜歡氣勢磅礡的馬砍，熱門主流的遊戲，還有各種藏於各地的獨立遊戲！<br>
-                        以及過了熱度的冷門神作遊戲！<br>
-                        <span class="highlight-gold">遺失的部下快來找我 R</span>
-                    </p>
-
-                    <a href="https://www.twitch.tv/lengmenyouxizhibozhu" target="_blank" class="tag" style="display: inline-block; margin-top: 1rem; padding: 1rem 2rem; font-size: 1.2rem;">
-                        <i class="fa-brands fa-twitch"></i> JOIN THE ARMY
+                    <a href="https://discord.gg/9AK4nWxdkW" target="_blank" class="game-tag" style="background: var(--c-gold); color: #000; font-weight: bold; border: none;">
+                        <i class="fa-brands fa-discord"></i> 加入呂家軍大本營
                     </a>
                 </div>
             </div>
         </section>
 
-        <!-- FOOTER -->
-        <footer style="padding: 4rem 1rem; text-align: center; background: #000;">
-            <div class="subtitle">CONNECT WITH THE GENERAL</div>
-            <div class="socials">
-                <a href="https://www.twitch.com/lengmenyouxizhibozhu" target="_blank" class="social-link"><i class="fa-brands fa-twitch"></i></a>
-                <a href="https://www.youtube.com/@%E5%91%82%E5%B8%83-g9b" target="_blank" class="social-link"><i class="fa-brands fa-youtube"></i></a>
-                <a href="https://www.instagram.com/lengmenyouxizhibozhu/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@lengmenyouxizhibozhu" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://linkgoods.com/wtf00000" target="_blank" class="social-link"><i class="fa-solid fa-link"></i></a>
+        <!-- GAMES & STREAM -->
+        <section id="stream">
+            <div class="container" style="text-align: center;">
+                <h2 class="reveal" style="font-family: var(--f-calligraphy); font-size: 3rem; color: var(--c-jade);">【 直播傳令 】</h2>
+                <div class="subtitle-tech reveal">LIVE ON TWITCH</div>
+
+                <div class="game-tags reveal">
+                    <a href="#" class="game-tag">傳說對決</a>
+                    <a href="#" class="game-tag">魔物獵人</a>
+                    <a href="#" class="game-tag">Minecraft</a>
+                    <a href="#" class="game-tag">寶可夢</a>
+                    <a href="#" class="game-tag">冷門神作</a>
+                </div>
+
+                <div class="scroll-panel reveal" style="max-width: 600px; margin: 0 auto;">
+                    <p class="lore-text" style="text-align: center;">
+                        我喜歡氣勢磅礡的馬砍，熱門主流的遊戲，還有各種藏於各地的獨立遊戲！
+                        以及過了熱度的冷門神作遊戲！
+                    </p>
+                    <div style="font-size: 1.2rem; color: var(--c-gold-bright); font-weight: bold; margin: 1rem 0;">
+                        「遺失的部下快來找我 R」
+                    </div>
+                </div>
+
+                <div class="socials reveal">
+                    <a href="https://www.twitch.tv/lengmenyouxizhibozhu" target="_blank" class="social-btn"><i class="fa-brands fa-twitch"></i></a>
+                    <a href="https://www.youtube.com/@%E5%91%82%E5%B8%83-g9b" target="_blank" class="social-btn"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="https://www.instagram.com/lengmenyouxizhibozhu/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.net/@lengmenyouxizhibozhu" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://linkgoods.com/wtf00000" target="_blank" class="social-btn"><i class="fa-solid fa-link"></i></a>
+                </div>
             </div>
-            <div style="margin-top: 3rem; font-size: 0.7rem; color: #555; letter-spacing: 0.2em;">
-                MADE WITH <i class="fa-solid fa-skull" style="color: var(--c-blood);"></i> IN THE VOID
-            </div>
-        </footer>
+        </section>
+
     </div>
 
     <!-- ════════════ THREE.JS SCENE ════════════ -->
@@ -379,8 +420,7 @@
         // Setup
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Dark Blood Fog
-        scene.fog = new THREE.FogExp2(0x050000, 0.02);
+        scene.fog = new THREE.FogExp2(0x050000, 0.025); // Dense dark fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 0, 15);
@@ -391,136 +431,134 @@
         container.appendChild(renderer.domElement);
 
         // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xff0000, 2, 50); // Blood light
-        pointLight.position.set(5, 5, 5);
-        scene.add(pointLight);
+        const redLight = new THREE.PointLight(0xff0000, 2, 40);
+        redLight.position.set(5, 10, 5);
+        scene.add(redLight);
 
-        const goldLight = new THREE.PointLight(0xd4af37, 1, 50); // Gold light
-        goldLight.position.set(-5, -5, 5);
+        const goldLight = new THREE.PointLight(0xd4af37, 1.5, 40);
+        goldLight.position.set(-5, -5, 10);
         scene.add(goldLight);
 
-        // ─── 1. HALBERD (FANGTIAN HUAJI) Construction ───
+        // ─── 1. HALBERD (FANGTIAN HUAJI) ───
         const halberdGroup = new THREE.Group();
 
-        // Pole
-        const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 25, 8);
-        const poleMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.8 });
+        // Pole (Black/Gold)
+        const poleGeo = new THREE.CylinderGeometry(0.15, 0.15, 30, 8);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4, metalness: 0.8 });
         const pole = new THREE.Mesh(poleGeo, poleMat);
         halberdGroup.add(pole);
 
-        // Blade (Main)
-        const bladeShape = new THREE.Shape();
-        bladeShape.moveTo(0, 0);
-        bladeShape.lineTo(0.5, 1);
-        bladeShape.lineTo(1.5, 3);
-        bladeShape.lineTo(0, 4);
-        bladeShape.lineTo(-1.5, 3);
-        bladeShape.lineTo(-0.5, 1);
-        bladeShape.lineTo(0, 0);
+        // Gold Rings on Pole
+        const ringGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 16);
+        const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 1.0 });
+        for(let i=0; i<5; i++) {
+            const ring = new THREE.Mesh(ringGeo, goldMat);
+            ring.rotation.x = Math.PI/2;
+            ring.position.y = 10 - i*2;
+            halberdGroup.add(ring);
+        }
 
-        const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 });
-        const bladeMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.2, metalness: 1.0 });
-        const blade = new THREE.Mesh(bladeGeo, bladeMat);
-        blade.position.y = 8;
-        blade.position.z = -0.05;
-        halberdGroup.add(blade);
+        // Blade System
+        const bladeGroup = new THREE.Group();
+        bladeGroup.position.y = 12;
 
-        // Side Blades (Crescent)
-        const crescentGeo = new THREE.TorusGeometry(1.5, 0.1, 8, 30, Math.PI);
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.2, metalness: 1.0, emissive: 0x332200 });
+        // Main Spike
+        const spikeGeo = new THREE.ConeGeometry(0.4, 6, 4);
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.2, metalness: 0.9 });
+        const spike = new THREE.Mesh(spikeGeo, metalMat);
+        bladeGroup.add(spike);
 
-        const leftCrescent = new THREE.Mesh(crescentGeo, goldMat);
-        leftCrescent.position.set(-1.2, 8, 0);
-        leftCrescent.rotation.z = Math.PI / 2;
-        halberdGroup.add(leftCrescent);
+        // Crescent Blades
+        const crescentShape = new THREE.Shape();
+        crescentShape.moveTo(0.5, -2);
+        crescentShape.quadraticCurveTo(3, 0, 0.5, 2);
+        crescentShape.quadraticCurveTo(2, 0, 0.5, -2);
 
-        const rightCrescent = new THREE.Mesh(crescentGeo, goldMat);
-        rightCrescent.position.set(1.2, 8, 0);
-        rightCrescent.rotation.z = -Math.PI / 2;
-        halberdGroup.add(rightCrescent);
+        const crescentGeo = new THREE.ExtrudeGeometry(crescentShape, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.05 });
+        const leftBlade = new THREE.Mesh(crescentGeo, goldMat);
+        leftBlade.position.set(-0.6, 0, 0);
+        leftBlade.rotation.y = Math.PI;
+        bladeGroup.add(leftBlade);
 
-        // Decoration (Red Tassel)
-        const tasselGeo = new THREE.ConeGeometry(0.3, 1, 8);
-        const tasselMat = new THREE.MeshStandardMaterial({ color: 0xaa0000 });
-        const tassel = new THREE.Mesh(tasselGeo, tasselMat);
-        tassel.position.y = 6.5;
-        halberdGroup.add(tassel);
+        const rightBlade = new THREE.Mesh(crescentGeo, goldMat);
+        rightBlade.position.set(0.6, 0, 0);
+        bladeGroup.add(rightBlade);
 
+        halberdGroup.add(bladeGroup);
         scene.add(halberdGroup);
-        halberdGroup.rotation.z = Math.PI / 8;
-        halberdGroup.rotation.x = Math.PI / 12;
 
-        // ─── 2. FLOATING TALISMANS (Data Charms) ───
+        halberdGroup.rotation.z = Math.PI / 6;
+        halberdGroup.rotation.x = Math.PI / 8;
+
+        // ─── 2. TALISMANS (Floating Papers) ───
         const talismans = [];
-        const talismanGeo = new THREE.PlaneGeometry(0.8, 2.5);
+        const talismanGeo = new THREE.PlaneGeometry(1.2, 3.0);
 
-        // Simple texture generation for talismans (canvas)
         function createTalismanTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 256;
+            canvas.width = 128; canvas.height = 300;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#8a0000'; // Dark red paper
-            ctx.fillRect(0, 0, 64, 256);
-            ctx.fillStyle = '#d4af37'; // Gold ink
-            ctx.font = '20px serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('封', 32, 50);
-            ctx.fillText('印', 32, 100);
-            ctx.fillText('解除', 32, 150);
 
-            // Add binary noise
-            ctx.fillStyle = '#000';
-            ctx.font = '10px monospace';
-            for(let i=0; i<10; i++) {
-                ctx.fillText(Math.random() > 0.5 ? '1' : '0', Math.random()*64, Math.random()*256);
-            }
+            // Paper
+            ctx.fillStyle = '#f2e6ce'; // Aged paper
+            ctx.fillRect(0, 0, 128, 300);
+
+            // Border
+            ctx.strokeStyle = '#8a0000';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(5, 5, 118, 290);
+
+            // Text
+            ctx.fillStyle = '#8a0000';
+            ctx.font = 'bold 60px serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('呂', 64, 100);
+            ctx.fillText('布', 64, 200);
+
+            // Cthulhu Glitch Overlay
+            ctx.fillStyle = 'rgba(0, 255, 100, 0.3)';
+            for(let i=0; i<5; i++) ctx.fillRect(Math.random()*128, Math.random()*300, 20, 2);
 
             const tex = new THREE.CanvasTexture(canvas);
             return tex;
         }
 
         const talismanTex = createTalismanTexture();
-        const talismanMat = new THREE.MeshBasicMaterial({ map: talismanTex, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+        const talismanMat = new THREE.MeshBasicMaterial({ map: talismanTex, side: THREE.DoubleSide, transparent: true });
 
-        for(let i=0; i<50; i++) {
+        for(let i=0; i<30; i++) {
             const mesh = new THREE.Mesh(talismanGeo, talismanMat);
             mesh.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 60,
-                (Math.random() - 0.5) * 30
+                (Math.random() - 0.5) * 35,
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 20
             );
-            mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
             mesh.userData = {
-                speed: Math.random() * 0.02 + 0.01,
-                axis: new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize()
+                rotSpeed: (Math.random()-0.5) * 0.02,
+                floatSpeed: Math.random() * 0.02 + 0.005
             };
             scene.add(mesh);
             talismans.push(mesh);
         }
 
-        // ─── 3. GLITCH PARTICLES (Cthulhu Void) ───
+        // ─── 3. EMBERS / PARTICLES ───
         const particlesGeo = new THREE.BufferGeometry();
-        const particlesCount = 1000;
-        const posArray = new Float32Array(particlesCount * 3);
+        const pCount = 800;
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) pPos[i] = (Math.random()-0.5) * 60;
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
 
-        for(let i=0; i<particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 50;
-        }
-
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         const particlesMat = new THREE.PointsMaterial({
-            size: 0.05,
-            color: 0x00ffcc, // Neon Green
-            transparent: true,
-            opacity: 0.6,
+            size: 0.15, color: 0xff3333,
+            transparent: true, opacity: 0.6,
             blending: THREE.AdditiveBlending
         });
-        const particlesMesh = new THREE.Points(particlesGeo, particlesMat);
-        scene.add(particlesMesh);
-
+        const particles = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particles);
 
         // Animation Loop
         const clock = new THREE.Clock();
@@ -529,20 +567,18 @@
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // Rotate Halberd slightly
-            halberdGroup.rotation.y = Math.sin(t * 0.5) * 0.2;
+            // Halberd Float
             halberdGroup.position.y = Math.sin(t * 0.8) * 0.5;
+            halberdGroup.rotation.y = Math.sin(t * 0.2) * 0.1;
 
-            // Animate Talismans
-            talismans.forEach(talisman => {
-                talisman.position.y += Math.sin(t + talisman.position.x) * 0.02;
-                talisman.rotation.x += talisman.userData.speed;
-                talisman.rotation.y += talisman.userData.speed;
+            // Talismans
+            talismans.forEach(t => {
+                t.position.y += Math.sin(clock.getElapsedTime() + t.position.x) * 0.01;
+                t.rotation.y += t.userData.rotSpeed;
             });
 
-            // Animate Particles
-            particlesMesh.rotation.y = t * 0.1;
-            particlesMesh.rotation.x = t * 0.05;
+            // Particles
+            particles.rotation.y = t * 0.05;
 
             renderer.render(scene, camera);
         }
@@ -555,73 +591,50 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // GSAP Scroll Interaction
+        // GSAP
         gsap.registerPlugin(ScrollTrigger);
 
-        // Move Camera on Scroll
-        gsap.to(camera.position, {
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            },
-            y: -10,
-            z: 20
-        });
-
-        // Rotate Halberd aggressively on scroll
+        // Scene Scroll Interaction
         gsap.to(halberdGroup.rotation, {
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            },
-            z: Math.PI, // Full spin
-            x: Math.PI / 2
+            scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 },
+            z: Math.PI * 1.5,
+            x: Math.PI / 4
         });
 
-        // ─── HERO ANIMATION SEQUENCE ───
+        gsap.to(camera.position, {
+            scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 },
+            z: 25, y: -5
+        });
+
+        // Entrance Animation
         window.onload = () => {
             document.body.classList.add('loaded');
 
             const tl = gsap.timeline();
-            tl.to('.hero-anim', {
-                opacity: 1,
-                y: 0,
-                duration: 1.2,
-                stagger: 0.2,
-                ease: 'power3.out'
+            tl.to('.reveal', {
+                opacity: 1, y: 0,
+                duration: 1, stagger: 0.1, ease: 'power3.out'
             });
 
-            // Refresh ScrollTrigger to ensure positions are correct
-            setTimeout(() => {
-                ScrollTrigger.refresh();
-            }, 500);
+            ScrollTrigger.refresh();
         };
 
-        // ─── SCROLL REVEAL (LATER SECTIONS) ───
-        gsap.utils.toArray('.reveal-up').forEach(elem => {
-            gsap.to(elem, {
-                scrollTrigger: {
-                    trigger: elem,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
-                },
-                y: 0,
-                opacity: 1,
-                duration: 1,
-                ease: "power2.out"
-            });
+        // Scroll Reveals
+        gsap.utils.toArray('.reveal').forEach(el => {
+            gsap.fromTo(el,
+                { opacity: 0, y: 30 },
+                {
+                    scrollTrigger: { trigger: el, start: "top 85%" },
+                    opacity: 1, y: 0, duration: 0.8
+                }
+            );
         });
-
     </script>
 
-    <!-- ════════════ P5.JS OVERLAY (Ink/Glitch Trails) ════════════ -->
+    <!-- ════════════ P5.JS INK TRAIL ════════════ -->
     <script>
         const sketch = (p) => {
-            let trails = [];
+            let inkDrops = [];
 
             p.setup = () => {
                 let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -632,37 +645,35 @@
             p.draw = () => {
                 p.clear();
 
-                // Add new point to trail if mouse moves
+                // Add ink on move
                 if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
-                    trails.push({
-                        x: p.mouseX,
-                        y: p.mouseY,
+                    inkDrops.push({
+                        x: p.mouseX, y: p.mouseY,
+                        size: p.random(10, 40),
                         life: 255,
-                        size: p.random(10, 30),
-                        isGlitch: p.random() > 0.8 // 20% chance to be a glitch square
+                        drift: p.random(-1, 1)
                     });
                 }
 
-                for (let i = trails.length - 1; i >= 0; i--) {
-                    let t = trails[i];
-                    t.life -= 5;
-                    t.size *= 0.95; // Shrink
+                for (let i = inkDrops.length - 1; i >= 0; i--) {
+                    let d = inkDrops[i];
+                    d.life -= 4;
+                    d.size *= 0.96;
+                    d.y += 1; // Gravity
+                    d.x += d.drift;
 
-                    if (t.life <= 0) {
-                        trails.splice(i, 1);
+                    if (d.life <= 0) {
+                        inkDrops.splice(i, 1);
                         continue;
                     }
 
-                    if (t.isGlitch) {
-                        // Draw Glitch Square (Neon Green)
-                        p.fill(0, 255, 204, t.life);
-                        p.rectMode(p.CENTER);
-                        p.rect(t.x + p.random(-5, 5), t.y + p.random(-5, 5), t.size, t.size);
-                    } else {
-                        // Draw Ink Blot (Dark Red/Black)
-                        p.fill(138, 0, 0, t.life * 0.8);
-                        p.circle(t.x, t.y, t.size);
-                    }
+                    // Ink Color: Dark Red/Black
+                    p.fill(139, 0, 0, d.life * 0.6);
+                    p.circle(d.x, d.y, d.size);
+
+                    // Core
+                    p.fill(0, d.life * 0.8);
+                    p.circle(d.x, d.y, d.size * 0.6);
                 }
             };
 
