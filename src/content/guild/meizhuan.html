@@ -94,7 +94,7 @@
             position: relative;
             z-index: 20;
             width: 100%;
-            height: 500vh; /* Long scroll for the ride */
+            height: 600vh; /* Extended for more sections */
         }
 
         .section {
@@ -285,10 +285,11 @@
 
         /* Section Positioning */
         #section-hero { top: 0; }
-        #section-about { top: 100vh; align-items: flex-start; padding-top: 10vh; }
+        #section-identity { top: 100vh; align-items: flex-start; padding-top: 10vh; }
         #section-skills { top: 200vh; align-items: flex-end; padding-bottom: 10vh; }
-        #section-hobby { top: 300vh; }
-        #section-goal { top: 400vh; }
+        #section-hobbies { top: 300vh; align-items: flex-start; padding-top: 10vh; }
+        #section-personal { top: 400vh; align-items: flex-end; padding-bottom: 10vh; }
+        #section-goal { top: 500vh; }
 
     </style>
 </head>
@@ -320,10 +321,10 @@
             </div>
         </div>
 
-        <!-- About Section (Left Aligned) -->
-        <div class="section" id="section-about" style="justify-content: flex-start; padding-left: 10%;">
+        <!-- Identity Section (Left Aligned) -->
+        <div class="section" id="section-identity" style="justify-content: flex-start; padding-left: 10%;">
             <div class="hud-card">
-                <h3><i class="fas fa-user-astronaut"></i> PROFILE_DATA</h3>
+                <h3><i class="fas fa-id-card"></i> IDENTITY_LOG</h3>
                 <p>
                     電機工程系畢業，目前身處<span class="highlight">助理工程師</span>的練功房。
                     正朝著真正的工程師之路疾馳，試圖解鎖更多技能樹。
@@ -334,8 +335,8 @@
                         <span class="stat-value">Asst. Engineer</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Main Quest</span>
-                        <span class="stat-value">Full Stack Dev</span>
+                        <span class="stat-label">Target Role</span>
+                        <span class="stat-value">Full Engineer</span>
                     </div>
                 </div>
             </div>
@@ -344,56 +345,88 @@
         <!-- Skills Section (Right Aligned) -->
         <div class="section" id="section-skills" style="justify-content: flex-end; padding-right: 10%;">
             <div class="hud-card">
-                <h3><i class="fas fa-terminal"></i> TECH_STACK</h3>
+                <h3><i class="fas fa-laptop-code"></i> SKILL_TREE</h3>
+                <p>
+                    持續自我升級中。正在鑽研 <span class="highlight">Python</span> 與 <span class="highlight">日語</span>，
+                    並嘗試開發屬於自己的獨立遊戲。
+                </p>
                 <div class="stat-grid">
                     <div class="stat-item">
                         <span class="stat-label">Language</span>
                         <span class="stat-value">Python (Active)</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Secondary</span>
-                        <span class="stat-value">Japanese (N/A)</span>
+                        <span class="stat-label">Lang. Aux</span>
+                        <span class="stat-value">Japanese (Loading)</span>
                     </div>
                     <div class="stat-item" style="grid-column: span 2;">
                         <span class="stat-label">Project</span>
-                        <span class="stat-value">"Untitled RPG" (In Dev)</span>
+                        <span class="stat-value">Indie Game Dev</span>
                     </div>
                 </div>
-                <p style="margin-top: 1.5rem;">
-                    夢想是開發一款屬於自己的小遊戲，將腦中的奇幻世界具現化。
+                <p style="margin-top: 1rem; font-size: 0.9rem; color: #aaa;">
                     歡迎各路大神給予建議或方向，讓我們一起 Debug 人生。
                 </p>
             </div>
         </div>
 
         <!-- Hobbies Section (Left Aligned) -->
-        <div class="section" id="section-hobby" style="justify-content: flex-start; padding-left: 15%;">
+        <div class="section" id="section-hobbies" style="justify-content: flex-start; padding-left: 15%;">
             <div class="hud-card">
-                <h3><i class="fas fa-gamepad"></i> LIFESTYLE</h3>
+                <h3><i class="fas fa-database"></i> INTEREST_DB</h3>
                 <p>
-                    <span class="highlight">STATUS:</span> 喜好吃美食，煩惱體重下不去。<br>
-                    目前執行強制運動協議，同步進行戒菸程序 (Purging Nicotine).
+                    平時是標準的 <span class="highlight">宅</span> 屬性，窩在家看動漫、打遊戲是標準充電方式。
+                    但若有朋友邀約，隨時切換至 <span class="highlight">Outdoor Mode</span> 出門走走。
                 </p>
-                <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Mode</span>
+                        <span class="stat-value">Otaku / Biker</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Focus</span>
+                        <span class="stat-value">Anime & Gaming</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal / Maintenance Log (Right Aligned) -->
+        <div class="section" id="section-personal" style="justify-content: flex-end; padding-right: 15%;">
+            <div class="hud-card">
+                <h3><i class="fas fa-wrench"></i> MAINTENANCE_LOG</h3>
                 <p>
-                    平時窩在家看動漫、打遊戲是標準充電方式。<br>
-                    但若有朋友邀約，隨時切換至 <span class="highlight">Outdoor Mode</span>。
-                    擁有重機駕照，雖暫時選擇租車體驗，但騎士魂燃燒依舊。
+                    <span class="highlight">STATUS:</span> 喜好吃美食，但也煩惱體重。
                 </p>
+                <p>
+                    目前已啟動 <span class="highlight">強制運動協議</span>，並同步執行
+                    <span class="highlight" style="color: var(--neon-yellow);">戒菸程序 (Purging Nicotine)</span>
+                    以優化機體性能。
+                </p>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Diet Protocol</span>
+                        <span class="stat-value">Exercise: ON</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Health Check</span>
+                        <span class="stat-value">Smoking: OFF</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Goal Section (Finale) -->
         <div class="section" id="section-goal">
             <div class="hud-card" style="text-align: center; border-color: var(--neon-pink); box-shadow: 0 0 50px rgba(255,0,85,0.3);">
-                <i class="fas fa-sun" style="font-size: 3rem; color: var(--neon-pink); margin-bottom: 1rem;"></i>
-                <h1 style="font-size: 2.5rem; color: var(--neon-pink);">TARGET: JAPAN</h1>
+                <i class="fas fa-motorcycle" style="font-size: 3rem; color: var(--neon-pink); margin-bottom: 1rem;"></i>
+                <h1 style="font-size: 2.5rem; color: var(--neon-pink);">DREAM_ROUTE</h1>
                 <p class="highlight" style="font-size: 1.2rem; margin: 1rem 0;">
-                    ULTIMATE RIDE
+                    DESTINATION: JAPAN
                 </p>
                 <p>
-                    終極目標：去日本進行一次重機旅行，感受異國的風與自由。
-                    希望能給家人更好的生活，這是驅動引擎的最大動力。
+                    擁有重機駕照，雖暫時選擇租車體驗各種車款，但騎士魂燃燒依舊。
+                    終極目標是去日本體驗重機旅行，並給家人更好的生活。
                 </p>
                 <div class="social-links">
                     <a href="https://www.threads.com/@meizhuan" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
@@ -510,7 +543,9 @@
                 // self.getVelocity() returns pixels per second approx
                 const v = Math.abs(self.getVelocity());
                 // Add to boost, clamp max
-                state.scrollBoost = Math.min(v * 0.05, 50);
+                // Reduced sensitivity significantly (0.05 -> 0.01)
+                // Clamped max boost lower (50 -> 30)
+                state.scrollBoost = Math.min(v * 0.01, 30);
             }
         });
 
@@ -536,18 +571,20 @@
 
             // 1. Physics / Speed Logic
             // Decay boost
-            state.scrollBoost *= 0.95; // 5% decay per frame
+            // Increased decay (0.95 -> 0.92) so it slows down faster
+            state.scrollBoost *= 0.92;
 
             // Calculate target speed
             const targetSpeed = state.baseSpeed + state.scrollBoost;
 
             // Smoothly interpolate current speed (acceleration/deceleration)
-            state.currentSpeed += (targetSpeed - state.currentSpeed) * 0.1;
+            // Lower interpolation factor (0.1 -> 0.05) for heavier feeling
+            state.currentSpeed += (targetSpeed - state.currentSpeed) * 0.05;
 
             // Expose to p5 (KM/H) - Scale factor to look good (0-300 range)
             // 0.5 unit/frame ~ 60km/h
-            // 50 unit/frame ~ 300km/h
-            let kmh = 60 + (state.currentSpeed * 4);
+            // 30 unit/frame ~ 250km/h
+            let kmh = 60 + (state.currentSpeed * 6); // Adjusted multiplier
             if (kmh > 299) kmh = 299;
             window.scrollSpeed = kmh;
 
