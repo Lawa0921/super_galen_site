@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zai Lab | Zaira Forzaaa</title>
-    <meta name="description" content="Zai Lab - Zaira's Space. Exploring life, language, and culture.">
+    <title>ZAI LAB | FREQUENCY: ONLINE</title>
+    <meta name="description" content="Zai Lab - Zaira's Frequency. Exploring life, culture, and sound waves.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&family=Outfit:wght@300;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- FontAwesome 6.5.1 for Threads Icon -->
+    <!-- FontAwesome 6.5.1 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -29,17 +29,17 @@
 
     <style>
         :root {
-            /* Light / Fresh Theme */
-            --c-bg: #f9fbf9;
-            --c-text: #333333;
-            --c-accent: #6db3a3; /* Sage/Teal */
-            --c-secondary: #f4a261; /* Soft Coral/Orange */
-            --c-highlight: #e9c46a; /* Soft Yellow */
-            --c-white: #ffffff;
+            /* Theme: Neon Audio-Lab / Cyberpunk Frequency */
+            --c-bg: #050505;
+            --c-text: #e0e0e0;
+            --c-neon-lime: #00ff88;    /* Lab / Toxic */
+            --c-neon-purple: #bd00ff;  /* Voice / Passion */
+            --c-neon-blue: #00ccff;    /* Data / Sky */
+            --c-dark-panel: rgba(10, 10, 10, 0.85);
 
-            --f-heading: 'Playfair Display', serif;
+            --f-display: 'Syncopate', sans-serif;
+            --f-tech: 'Space Mono', monospace;
             --f-body: 'Noto Sans TC', sans-serif;
-            --f-accent: 'Outfit', sans-serif;
         }
 
         body {
@@ -54,506 +54,575 @@
         /* --- Background Layers --- */
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-            z-index: -2;
+            z-index: -1; pointer-events: none;
         }
         #p5-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-            z-index: -1; pointer-events: none; mix-blend-mode: multiply; opacity: 0.5;
+            z-index: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0.4;
         }
+
+        /* --- HUD Overlay --- */
+        .hud-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
+            padding: 2rem; box-sizing: border-box;
+            font-family: var(--f-tech); font-size: 0.7rem; color: var(--c-neon-lime);
+            text-transform: uppercase; letter-spacing: 1px;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .hud-top, .hud-bottom {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .hud-line {
+            flex-grow: 1; height: 1px; background: rgba(0, 255, 136, 0.3);
+            margin: 0 1rem; position: relative;
+        }
+        .hud-line::after {
+            content: ''; position: absolute; right: 0; top: -2px; width: 5px; height: 5px;
+            background: var(--c-neon-lime);
+        }
+        .hud-status {
+            animation: blink 2s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
         /* --- Navigation --- */
         .nav-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: #666; text-decoration: none;
-            font-family: var(--f-accent); font-size: 0.9rem;
-            padding: 0.5rem 1rem; border: 1px solid rgba(0,0,0,0.1);
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(5px);
-            border-radius: 30px;
-            transition: 0.3s;
+            position: fixed; top: 2rem; left: 2rem; z-index: 200; pointer-events: auto;
+            color: var(--c-neon-lime); text-decoration: none;
+            font-family: var(--f-tech); font-size: 0.8rem; border: 1px solid var(--c-neon-lime);
+            padding: 0.5rem 1rem; transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            background: rgba(0, 255, 136, 0.1); backdrop-filter: blur(5px);
         }
         .nav-back:hover {
-            color: var(--c-accent); border-color: var(--c-accent);
-            transform: translateY(-2px);
+            background: var(--c-neon-lime); color: #000; box-shadow: 0 0 15px var(--c-neon-lime);
         }
 
         /* --- Sections --- */
         section {
             min-height: 100vh; display: flex; flex-direction: column;
             justify-content: center; align-items: center; position: relative;
-            padding: 4rem 1rem; box-sizing: border-box;
+            padding: 4rem 1rem; box-sizing: border-box; z-index: 10;
         }
         .container {
-            max-width: 900px; width: 100%; margin: 0 auto; position: relative;
+            max-width: 1000px; width: 100%; margin: 0 auto; position: relative;
         }
 
-        /* --- Typography --- */
-        h1, h2, h3 { margin: 0; font-weight: 700; color: #222; }
-        .font-heading { font-family: var(--f-heading); }
-        .font-accent { font-family: var(--f-accent); letter-spacing: 1px; text-transform: uppercase; }
-        .text-accent { color: var(--c-accent); }
-        .text-secondary { color: var(--c-secondary); }
+        /* --- Glitch Text --- */
+        .glitch {
+            position: relative; color: #fff;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg);
+        }
+        .glitch::before {
+            left: 2px; text-shadow: -1px 0 var(--c-neon-purple); clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px; text-shadow: -1px 0 var(--c-neon-blue); clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 10px, 0); }
+            100% { clip: rect(80px, 9999px, 100px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(10px, 9999px, 90px, 0); }
+            100% { clip: rect(5px, 9999px, 20px, 0); }
+        }
 
         /* --- Hero --- */
         #hero { text-align: center; }
         .hero-avatar-container {
-            width: 220px; height: 220px; margin: 0 auto 2rem; position: relative;
+            width: 200px; height: 200px; margin: 0 auto 2rem; position: relative;
+            padding: 5px; border: 1px dashed var(--c-neon-lime); border-radius: 50%;
         }
         .hero-avatar {
             width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
-            border: 4px solid #fff;
-            box-shadow: 0 10px 30px rgba(109, 179, 163, 0.2);
-            transition: 0.5s;
+            filter: grayscale(1) contrast(1.2); transition: 0.5s;
         }
-        .hero-avatar:hover { transform: scale(1.02); box-shadow: 0 15px 40px rgba(109, 179, 163, 0.3); }
-
-        /* Soft pulsing rings */
-        .hero-ring {
-            position: absolute; inset: -15px; border-radius: 50%;
-            border: 1px solid rgba(109, 179, 163, 0.3);
-            animation: breathe 4s ease-in-out infinite;
-        }
-        .hero-ring:nth-child(2) {
-            inset: -30px; border-color: rgba(244, 162, 97, 0.3);
-            animation: breathe 6s ease-in-out infinite reverse;
-        }
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-        }
+        .hero-avatar:hover { filter: grayscale(0); }
 
         .hero-title {
-            font-size: clamp(3rem, 6vw, 5rem); margin-bottom: 0.5rem;
-            color: #2a2a2a;
+            font-family: var(--f-display); font-size: clamp(2.5rem, 5vw, 5rem);
+            line-height: 1; margin-bottom: 0.5rem; text-transform: uppercase;
+            font-weight: 700; letter-spacing: -2px;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
         }
         .hero-subtitle {
-            font-size: 1.2rem; color: #666; margin-bottom: 2rem;
-            font-weight: 300;
+            font-family: var(--f-tech); color: var(--c-neon-purple); font-size: 1rem;
+            letter-spacing: 4px; margin-bottom: 2rem; text-transform: uppercase;
+        }
+        .hero-scroll-hint {
+            margin-top: 3rem; font-family: var(--f-tech); font-size: 0.7rem; color: #666;
+            animation: pulse 1.5s infinite;
         }
 
-        /* --- Glass Cards (Light) --- */
-        .fresh-card {
-            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.8); padding: 2.5rem;
-            border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        /* --- Lab Panels --- */
+        .lab-panel {
+            background: rgba(10, 10, 10, 0.7); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 2.5rem;
+            margin-bottom: 2rem; position: relative; overflow: hidden;
+            clip-path: polygon(0 0, 100% 0, 100% 95%, 95% 100%, 0 100%);
             transition: 0.3s;
         }
-        .fresh-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 50px rgba(109, 179, 163, 0.1);
+        .lab-panel:hover {
+            border-color: var(--c-neon-lime); box-shadow: 0 0 30px rgba(0, 255, 136, 0.1);
+        }
+        .lab-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 100%;
+            background: linear-gradient(to bottom, var(--c-neon-lime), transparent);
         }
 
-        /* --- Bio --- */
-        .bio-text p { margin-bottom: 1.5rem; color: #555; }
-        .bio-tags { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1.5rem; }
-        .tag {
-            padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem;
-            font-family: var(--f-accent); background: #fff;
-            color: #666; border: 1px solid #eee;
-            transition: 0.2s;
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
         }
-        .tag:hover {
-            background: var(--c-accent); color: #fff; border-color: var(--c-accent);
+        .panel-title {
+            font-family: var(--f-display); font-size: 1.5rem; color: #fff; margin: 0;
         }
-
-        /* --- Experiments Grid --- */
-        .exp-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem; width: 100%;
-        }
-        .project-link {
-            text-decoration: none; color: inherit; display: block; height: 100%;
-        }
-        .exp-card {
-            height: 100%; display: flex; flex-direction: column; align-items: flex-start;
-            background: #fff; padding: 2rem; border-radius: 16px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.02); transition: 0.3s;
-            border: 1px solid transparent;
-        }
-        .exp-card:hover {
-            border-color: var(--c-accent); transform: translateY(-5px);
-        }
-        .card-icon { font-size: 2rem; color: var(--c-accent); margin-bottom: 1rem; }
-        .exp-card h3 { font-family: var(--f-accent); font-size: 1.2rem; margin-bottom: 0.5rem; }
-        .exp-card p { font-size: 0.9rem; color: #888; line-height: 1.6; }
-
-        /* --- Field Research --- */
-        .location-item {
-            display: flex; align-items: center; margin-bottom: 1rem;
-            padding: 1rem; background: rgba(255,255,255,0.5); border-radius: 12px;
-        }
-        .location-icon {
-            width: 40px; height: 40px; border-radius: 50%; background: #eef7f5;
-            color: var(--c-accent); display: flex; align-items: center; justify-content: center;
-            margin-right: 1rem; flex-shrink: 0;
+        .panel-code {
+            font-family: var(--f-tech); font-size: 0.7rem; color: var(--c-neon-lime);
         }
 
-        /* --- Language Progress --- */
-        .lang-bar-container {
+        /* --- Bio Text --- */
+        .bio-text p {
+            margin-bottom: 1.5rem; color: #ccc; font-size: 1rem;
+        }
+        .highlight { color: var(--c-neon-purple); font-weight: 700; }
+        .highlight-blue { color: var(--c-neon-blue); font-weight: 700; }
+
+        /* --- Interest Tags (Chemical Elements) --- */
+        .element-grid {
+            display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-top: 2rem;
+        }
+        .element-tag {
+            border: 1px solid rgba(255,255,255,0.2); padding: 0.5rem 1rem;
+            font-family: var(--f-tech); font-size: 0.8rem; color: #aaa;
+            display: flex; align-items: center; gap: 0.5rem; transition: 0.3s;
+            cursor: default; background: rgba(0,0,0,0.3);
+        }
+        .element-tag:hover {
+            border-color: var(--c-neon-lime); color: #fff; background: rgba(0, 255, 136, 0.1);
+        }
+        .element-symbol {
+            font-weight: 700; color: var(--c-neon-lime);
+        }
+
+        /* --- Field Notes (Frequency Logs) --- */
+        .freq-log {
+            display: flex; align-items: stretch; margin-bottom: 2rem;
+            border-left: 2px solid var(--c-neon-purple); padding-left: 1.5rem;
+            position: relative;
+        }
+        .freq-log::before {
+            content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px;
+            background: var(--c-neon-purple); border-radius: 50%;
+        }
+        .freq-content h3 {
+            font-family: var(--f-display); font-size: 1.2rem; margin: 0 0 0.5rem 0;
+            color: #fff;
+        }
+        .freq-meta {
+            font-family: var(--f-tech); font-size: 0.75rem; color: var(--c-neon-blue);
+            margin-bottom: 0.5rem; display: block;
+        }
+        .freq-text {
+            font-size: 0.95rem; color: #aaa;
+        }
+
+        /* --- Decryption (Languages) --- */
+        .decrypt-row {
             margin-bottom: 1.5rem;
         }
-        .lang-label {
-            display: flex; justify-content: space-between; margin-bottom: 0.5rem;
-            font-family: var(--f-accent); font-size: 0.9rem; color: #555;
+        .decrypt-header {
+            display: flex; justify-content: space-between; font-family: var(--f-tech);
+            font-size: 0.8rem; margin-bottom: 0.3rem; color: #fff;
         }
-        .lang-track {
-            height: 6px; background: #eee; border-radius: 3px; overflow: hidden;
+        .decrypt-bar-bg {
+            height: 6px; background: rgba(255,255,255,0.1); width: 100%;
+            position: relative; overflow: hidden;
         }
-        .lang-fill {
-            height: 100%; border-radius: 3px;
+        .decrypt-bar-fill {
+            height: 100%; background: linear-gradient(90deg, var(--c-neon-blue), var(--c-neon-purple));
+            position: relative; width: 0; /* GSAP will animate */
+        }
+        .decrypt-bar-fill::after {
+            content: ''; position: absolute; top: 0; right: 0; width: 2px; height: 100%;
+            background: #fff; box-shadow: 0 0 10px #fff;
         }
 
-        /* --- Standard Footer (Matching allen.html structure) --- */
+        /* --- Transmission (Socials) --- */
+        .transmission-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem; width: 100%;
+        }
+        .trans-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem; display: flex; align-items: center; gap: 1rem;
+            text-decoration: none; color: #fff; transition: 0.3s;
+        }
+        .trans-card:hover {
+            background: rgba(0, 255, 136, 0.05); border-color: var(--c-neon-lime);
+            transform: translateX(5px);
+        }
+        .trans-icon {
+            font-size: 1.5rem; color: var(--c-neon-lime); width: 40px; text-align: center;
+        }
+        .trans-info h4 {
+            margin: 0; font-family: var(--f-display); font-size: 1rem;
+        }
+        .trans-info span {
+            font-family: var(--f-tech); font-size: 0.7rem; color: #888;
+        }
+
+        /* --- Footer --- */
         footer {
-            padding: 4rem 1rem; text-align: center; background: #fff;
-            border-top: 1px solid #f0f0f0; margin-top: 4rem;
+            text-align: center; padding: 4rem 1rem; border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 4rem; background: #000;
         }
-        .footer-title {
-            font-family: var(--f-accent); color: #333; margin-bottom: 2rem; font-size: 1.5rem;
-        }
-        .footer-social-links {
-            display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 2rem;
-        }
-        .footer-social-btn {
-            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
-            border: 1px solid #eee; color: #666; text-decoration: none; font-size: 1.5rem;
-            transition: 0.3s; clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
-            background: #fcfcfc;
-        }
-        .footer-social-btn:hover {
-            background: var(--c-accent); color: #fff; border-color: var(--c-accent);
+        .footer-end {
+            font-family: var(--f-display); font-size: 1.5rem; color: var(--c-neon-lime);
+            margin-bottom: 1rem; animation: pulse 2s infinite;
         }
         .footer-credits {
-            color: #999; font-family: var(--f-accent); font-size: 0.8rem;
-        }
-        .icon-inline {
-            display: inline-block; width: 1em; height: 1em; vertical-align: -0.125em; fill: currentColor;
+            font-family: var(--f-tech); font-size: 0.7rem; color: #666;
         }
 
-        /* --- Scroll Reveal --- */
-        .gs-reveal { opacity: 0; visibility: hidden; }
+        /* --- Utilities --- */
+        .gs-reveal { opacity: 0; transform: translateY(20px); }
+        .mb-2 { margin-bottom: 2rem; }
 
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3rem; }
+            .hud-overlay { padding: 1rem; }
+            .transmission-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
-    <a href="/guild/" class="nav-back">&larr; GUILD</a>
+    <!-- HUD Overlay -->
+    <div class="hud-overlay">
+        <div class="hud-top">
+            <span>FREQ: 88.4 MHz</span>
+            <div class="hud-line"></div>
+            <span class="hud-status">LIVE</span>
+        </div>
+        <div class="hud-bottom">
+            <span>LAT: -6.3690</span>
+            <div class="hud-line"></div>
+            <span>LON: 34.8888</span>
+        </div>
+    </div>
+
+    <a href="/guild/" class="nav-back">&lt; BASE</a>
 
     <div id="webgl-container"></div>
     <div id="p5-container"></div>
 
-    <!-- 1. Hero -->
+    <!-- 1. Signal Origin (Hero) -->
     <section id="hero">
         <div class="container">
             <div class="hero-avatar-container gs-reveal">
-                <div class="hero-ring"></div>
-                <div class="hero-ring"></div>
                 <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="hero-avatar">
             </div>
-            <h1 class="hero-title font-heading gs-reveal">Zai Lab</h1>
-            <div class="hero-subtitle font-accent gs-reveal">Explorer of Life | Experimental Soul</div>
+            <h1 class="hero-title gs-reveal glitch" data-text="ZAI LAB">ZAI LAB</h1>
+            <div class="hero-subtitle gs-reveal">EXPLORING LIFE FREQUENCIES</div>
 
-            <div class="gs-reveal" style="margin-top: 2rem;">
-                 <i class="fa-solid fa-leaf text-accent" style="font-size: 1.5rem;"></i>
+            <div class="element-grid gs-reveal">
+                <div class="element-tag"><span class="element-symbol">Vo</span> ICE</div>
+                <div class="element-tag"><span class="element-symbol">Hi</span> KING</div>
+                <div class="element-tag"><span class="element-symbol">Wr</span> ITING</div>
+                <div class="element-tag"><span class="element-symbol">Mx</span> ING</div>
+            </div>
+
+            <div class="hero-scroll-hint gs-reveal">
+                SCROLL TO TUNE FREQUENCY<br>
+                <i class="fa-solid fa-chevron-down" style="margin-top: 0.5rem;"></i>
             </div>
         </div>
     </section>
 
-    <!-- 2. Bio -->
+    <!-- 2. Subject Analysis (Bio) -->
     <section id="bio">
         <div class="container">
-            <div class="fresh-card gs-reveal">
-                <h2 class="font-heading" style="margin-bottom: 2rem; text-align: center;">Hello, I'm Zaira.</h2>
+            <div class="lab-panel gs-reveal">
+                <div class="panel-header">
+                    <h2 class="panel-title">SUBJECT ANALYSIS</h2>
+                    <span class="panel-code">ID: ZAIRA_FORZAAA</span>
+                </div>
                 <div class="bio-text">
                     <p>
-                        還在探索自己的人生路上。興趣多元廣泛，喜歡寫字、畫畫、唱歌、偶爾爬爬山，
+                        我是 <span class="highlight">Zaira</span>，還在探索自己的人生路上。
+                        興趣多元廣泛，喜歡寫字、畫畫、唱歌、偶爾爬爬山。
                         覺得有趣很特別的事情都想試試看！
                     </p>
                     <p>
+                        這是一個實驗室 <span class="highlight-blue">ZAI LAB</span>。
                         我非常喜歡與人交流，聆聽每個人背後的故事與經驗，這對我來說是很有趣的過程。
                         我熱衷於辦活動、參加工作坊，也曾多次擔任學校大型典禮與研討會的司儀。
                     </p>
-                </div>
-                <div class="bio-tags justify-center" style="justify-content: center;">
-                    <div class="tag">Writing</div>
-                    <div class="tag">Drawing</div>
-                    <div class="tag">Singing</div>
-                    <div class="tag">Hiking</div>
-                    <div class="tag">Host</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 3. Experiments -->
-    <section id="experiments">
-        <div class="container">
-            <h2 class="font-heading" style="margin-bottom: 3rem; text-align: center;">My Experiments</h2>
-            <div class="exp-grid">
-
-                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="project-link gs-reveal">
-                    <div class="exp-card">
-                        <div class="card-icon"><i class="fa-brands fa-medium"></i></div>
-                        <h3>Medium Logs</h3>
-                        <p>記錄值得分享的內容，包含語言學習、個人成長和歌詞翻譯。</p>
-                    </div>
-                </a>
-
-                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="project-link gs-reveal">
-                    <div class="exp-card">
-                        <div class="card-icon"><i class="fa-solid fa-microphone-lines"></i></div>
-                        <h3>Podcast</h3>
-                        <p>在意實驗室｜ Zai Lab。試試看各種有趣的事情，所以才叫實驗室。</p>
-                    </div>
-                </a>
-
-                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="project-link gs-reveal">
-                    <div class="exp-card">
-                        <div class="card-icon"><i class="fa-brands fa-instagram"></i></div>
-                        <h3>Instagram</h3>
-                        <p>日常生活與實驗紀錄的視覺化呈現。</p>
-                    </div>
-                </a>
-
-                <a href="https://www.threads.com/@zailab_zaira_forzaaa" target="_blank" class="project-link gs-reveal">
-                    <div class="exp-card">
-                        <div class="card-icon"><i class="fa-brands fa-threads"></i></div>
-                        <h3>Threads</h3>
-                        <p>碎碎念與即時想法的串流。</p>
-                    </div>
-                </a>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. Field Research -->
-    <section id="field-research">
-        <div class="container">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem;">
-
-                <!-- Travel -->
-                <div class="gs-reveal">
-                    <h2 class="font-heading" style="margin-bottom: 2rem;">Field Notes</h2>
-
-                    <div class="location-item">
-                        <div class="location-icon"><i class="fa-solid fa-earth-africa"></i></div>
-                        <div>
-                            <strong>Tanzania</strong>
-                            <div style="font-size: 0.85rem; color: #888;">Volunteer Service</div>
-                        </div>
-                    </div>
-
-                    <div class="location-item">
-                        <div class="location-icon"><i class="fa-solid fa-landmark"></i></div>
-                        <div>
-                            <strong>Rome, Italy</strong>
-                            <div style="font-size: 0.85rem; color: #888;">Exchange Student (1 Year)</div>
-                        </div>
-                    </div>
-
-                    <div class="location-item">
-                        <div class="location-icon"><i class="fa-solid fa-map-location-dot"></i></div>
-                        <div>
-                            <strong>Czech Republic</strong>
-                            <div style="font-size: 0.85rem; color: #888;">Internship (6 Months)</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Languages -->
-                <div class="gs-reveal">
-                    <h2 class="font-heading" style="margin-bottom: 2rem;">Language Tools</h2>
-
-                    <div class="lang-bar-container">
-                        <div class="lang-label"><span>English</span> <span>Communicative</span></div>
-                        <div class="lang-track"><div class="lang-fill" style="width: 90%; background: var(--c-accent);"></div></div>
-                    </div>
-
-                    <div class="lang-bar-container">
-                        <div class="lang-label"><span>Italian</span> <span>Fluent</span></div>
-                        <div class="lang-track"><div class="lang-fill" style="width: 85%; background: var(--c-secondary);"></div></div>
-                    </div>
-
-                    <div class="lang-bar-container">
-                        <div class="lang-label"><span>Spanish</span> <span>Unlocking...</span></div>
-                        <div class="lang-track"><div class="lang-fill" style="width: 40%; background: var(--c-highlight);"></div></div>
-                    </div>
-
-                    <p style="margin-top: 2rem; font-style: italic; color: #888; font-size: 0.9rem;">
-                        "語言與文化是我和世界產生連結的工具。"
+                    <p>
+                        目前正嘗試各種有趣的事情，所以才叫實驗室 🧪。
+                        歡迎大家來交流 ✨。
                     </p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Frequency Logs (Field Notes) -->
+    <section id="logs">
+        <div class="container">
+            <div class="panel-header gs-reveal">
+                <h2 class="panel-title" style="font-size: 2rem;">FREQUENCY LOGS</h2>
+                <span class="panel-code">SOURCE: GLOBAL</span>
+            </div>
+
+            <div class="gs-reveal">
+                <!-- Log 1 -->
+                <div class="freq-log">
+                    <div class="freq-content">
+                        <span class="freq-meta">SIGNAL ORIGIN: TANZANIA</span>
+                        <h3>VOLUNTEER SERVICE</h3>
+                        <p class="freq-text">深入坦尚尼亞，進行服務學習志工計劃。在原始頻率中尋找純粹的連結。</p>
+                    </div>
+                </div>
+
+                <!-- Log 2 -->
+                <div class="freq-log">
+                    <div class="freq-content">
+                        <span class="freq-meta">SIGNAL ORIGIN: ROME, ITALY</span>
+                        <h3>EXCHANGE YEAR</h3>
+                        <p class="freq-text">交換學生一年。在羅馬的古老石牆間迴響，解鎖義大利語頻段。</p>
+                    </div>
+                </div>
+
+                <!-- Log 3 -->
+                <div class="freq-log">
+                    <div class="freq-content">
+                        <span class="freq-meta">SIGNAL ORIGIN: CZECH REPUBLIC</span>
+                        <h3>TEACHING INTERNSHIP</h3>
+                        <p class="freq-text">華語老師實習半年。與來自烏克蘭、義大利、捷克、斯洛伐克和印尼的學生進行文化調頻。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Decryption (Languages) -->
+    <section id="decrypt">
+        <div class="container">
+            <div class="lab-panel gs-reveal">
+                <div class="panel-header">
+                    <h2 class="panel-title">DECRYPTION KEYS</h2>
+                    <span class="panel-code">LANG_PROTOCOLS</span>
+                </div>
+
+                <div class="bio-text mb-2">
+                    <p>語言與文化是我和世界產生連結的工具。</p>
+                </div>
+
+                <div class="decrypt-row">
+                    <div class="decrypt-header"><span>MANDARIN</span> <span>100%</span></div>
+                    <div class="decrypt-bar-bg"><div class="decrypt-bar-fill" style="width: 100%;"></div></div>
+                </div>
+                <div class="decrypt-row">
+                    <div class="decrypt-header"><span>ENGLISH</span> <span>90%</span></div>
+                    <div class="decrypt-bar-bg"><div class="decrypt-bar-fill" style="width: 90%;"></div></div>
+                </div>
+                <div class="decrypt-row">
+                    <div class="decrypt-header"><span>ITALIAN</span> <span>85%</span></div>
+                    <div class="decrypt-bar-bg"><div class="decrypt-bar-fill" style="width: 85%;"></div></div>
+                </div>
+                <div class="decrypt-row">
+                    <div class="decrypt-header"><span>SPANISH</span> <span>UNLOCKING...</span></div>
+                    <div class="decrypt-bar-bg"><div class="decrypt-bar-fill" style="width: 40%; background: linear-gradient(90deg, #333, var(--c-neon-lime));"></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Transmission (Socials) -->
+    <section id="transmission">
+        <div class="container">
+            <div class="panel-header gs-reveal">
+                <h2 class="panel-title" style="font-size: 2rem;">ACTIVE CHANNELS</h2>
+                <span class="panel-code">STATUS: BROADCASTING</span>
+            </div>
+
+            <div class="transmission-grid gs-reveal">
+
+                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="trans-card">
+                    <div class="trans-icon"><i class="fa-brands fa-medium"></i></div>
+                    <div class="trans-info">
+                        <h4>MEDIUM LOGS</h4>
+                        <span>Language, Growth, Lyrics</span>
+                    </div>
+                </a>
+
+                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="trans-card">
+                    <div class="trans-icon"><i class="fa-solid fa-microphone-lines"></i></div>
+                    <div class="trans-info">
+                        <h4>ZAI LAB PODCAST</h4>
+                        <span>Audio Experiments</span>
+                    </div>
+                </a>
+
+                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="trans-card">
+                    <div class="trans-icon"><i class="fa-brands fa-instagram"></i></div>
+                    <div class="trans-info">
+                        <h4>INSTAGRAM</h4>
+                        <span>Visual Data Stream</span>
+                    </div>
+                </a>
+
+                <a href="https://www.threads.com/@zailab_zaira_forzaaa" target="_blank" class="trans-card">
+                    <div class="trans-icon"><i class="fa-brands fa-threads"></i></div>
+                    <div class="trans-info">
+                        <h4>THREADS</h4>
+                        <span>Thoughts Stream</span>
+                    </div>
+                </a>
 
             </div>
         </div>
     </section>
 
-    <!-- Footer (Standardized) -->
+    <!-- Footer -->
     <footer>
         <div class="container">
-            <h2 class="footer-title">CONNECT</h2>
-            <div class="footer-social-links">
-                <!-- Medium -->
-                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="footer-social-btn">
-                    <i class="fa-brands fa-medium"></i>
-                </a>
-                <!-- Threads (Using FontAwesome 6.5.1) -->
-                <a href="https://www.threads.com/@zailab_zaira_forzaaa" target="_blank" class="footer-social-btn">
-                    <i class="fa-brands fa-threads"></i>
-                </a>
-                <!-- Instagram -->
-                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="footer-social-btn">
-                    <i class="fa-brands fa-instagram"></i>
-                </a>
-                <!-- Podcast -->
-                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="footer-social-btn">
-                    <i class="fa-solid fa-microphone"></i>
-                </a>
+            <div class="footer-end gs-reveal">END TRANSMISSION</div>
+            <div class="footer-credits gs-reveal">
+                MADE WITH <i class="fa-solid fa-bolt" style="color: var(--c-neon-lime);"></i> BY SUPERGALEN'S DUNGEON<br>
+                SYSTEM VERSION 2.0 // NEON_LAB
             </div>
-            <p class="footer-credits">
-                MADE WITH <svg class="icon-inline" viewBox="0 0 24 24" fill="var(--c-highlight)"><path d="M13 2L3 14h7l-2 8 10-12h-7l2-8z"/></svg> BY SUPERGALEN'S DUNGEON
-            </p>
         </div>
     </footer>
 
-    <!-- Three.js Scene: Soft Floating Bubbles/Helix -->
+    <!-- Three.js Scene: Soundscape Terrain -->
     <script type="module">
         import * as THREE from 'three';
+        // import { Perlin } from 'three/addons/math/Perlin.js'; // Use simple Math instead to avoid import issues
 
         // --- SCENE SETUP ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0xf9fbf9, 0.02); // Light Fog
+        scene.fog = new THREE.FogExp2(0x050505, 0.03); // Deep fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 20;
+        camera.position.set(0, 3, 10);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 2);
-        scene.add(ambientLight);
+        // --- OBJECT 1: WIREFRAME TERRAIN (Sound Wave) ---
+        const planeGeo = new THREE.PlaneGeometry(60, 100, 50, 50);
+        const planeMat = new THREE.MeshBasicMaterial({
+            color: 0x00ff88,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15
+        });
+        const terrain = new THREE.Mesh(planeGeo, planeMat);
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.position.y = -2;
+        scene.add(terrain);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(5, 10, 7);
-        scene.add(dirLight);
-
-        // --- OBJECTS: GLASS BUBBLES ---
-        const bubbles = [];
-        const geometry = new THREE.IcosahedronGeometry(1, 2); // Smoother
-        // Soft pastel colors
-        const colors = [0x6db3a3, 0xf4a261, 0xe9c46a, 0xa8dadc];
-
-        for(let i=0; i<40; i++) {
-            const material = new THREE.MeshPhysicalMaterial({
-                color: colors[Math.floor(Math.random() * colors.length)],
-                transparent: true,
-                opacity: 0.6,
-                roughness: 0.1,
-                metalness: 0.1,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.1,
-                side: THREE.DoubleSide
+        // Store original positions for animation
+        const positionAttribute = planeGeo.attributes.position;
+        const originalPositions = [];
+        for (let i = 0; i < positionAttribute.count; i++) {
+            originalPositions.push({
+                x: positionAttribute.getX(i),
+                y: positionAttribute.getY(i),
+                z: positionAttribute.getZ(i)
             });
+        }
 
-            const mesh = new THREE.Mesh(geometry, material);
+        // --- OBJECT 2: FLOATING BUBBLES (Chemicals/Ideas) ---
+        const bubbles = [];
+        const bubbleGeo = new THREE.IcosahedronGeometry(1, 0);
+        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0xbd00ff, wireframe: true, transparent: true, opacity: 0.5 });
+        const bubbleMat2 = new THREE.MeshBasicMaterial({ color: 0x00ccff, wireframe: true, transparent: true, opacity: 0.5 });
 
-            // Initial position (random cloud)
+        for(let i=0; i<20; i++) {
+            const mesh = new THREE.Mesh(bubbleGeo, Math.random() > 0.5 ? bubbleMat : bubbleMat2);
             mesh.position.set(
-                (Math.random() - 0.5) * 50,
-                (Math.random() - 0.5) * 80,
-                (Math.random() - 0.5) * 30 - 5
+                (Math.random() - 0.5) * 40,
+                Math.random() * 10 - 2,
+                (Math.random() - 0.5) * 50
             );
-
-            const scale = Math.random() * 1 + 0.5;
-            mesh.scale.set(scale, scale, scale);
-
+            mesh.scale.setScalar(Math.random() * 0.5 + 0.2);
             scene.add(mesh);
             bubbles.push({
                 mesh,
-                yOffset: Math.random() * Math.PI * 2,
-                speed: Math.random() * 0.005 + 0.002
+                speed: Math.random() * 0.02,
+                offset: Math.random() * 100
             });
         }
 
-        // --- DNA / VINE HELIX ---
-        const helixGroup = new THREE.Group();
-        scene.add(helixGroup);
-
-        const sphereGeo = new THREE.SphereGeometry(0.3, 16, 16);
-        const connectorMat = new THREE.LineBasicMaterial({ color: 0x6db3a3, transparent: true, opacity: 0.3 });
-
-        for(let i=0; i<60; i++) {
-            const y = i * 1.2 - 40;
-            const angle = i * 0.4;
-            const radius = 6;
-
-            // Strand 1
-            const b1 = new THREE.Mesh(sphereGeo, new THREE.MeshLambertMaterial({color: 0x6db3a3}));
-            b1.position.set(Math.cos(angle)*radius, y, Math.sin(angle)*radius);
-            helixGroup.add(b1);
-
-            // Strand 2
-            const b2 = new THREE.Mesh(sphereGeo, new THREE.MeshLambertMaterial({color: 0xf4a261}));
-            b2.position.set(Math.cos(angle + Math.PI)*radius, y, Math.sin(angle + Math.PI)*radius);
-            helixGroup.add(b2);
-
-            // Connector
-            const points = [b1.position, b2.position];
-            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-            const line = new THREE.Line(lineGeo, connectorMat);
-            helixGroup.add(line);
-        }
-
-
-        // --- ANIMATION ---
-        let mouseX = 0;
-        let mouseY = 0;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
+        // --- ANIMATION LOOP ---
+        let time = 0;
 
         function animate() {
             requestAnimationFrame(animate);
+            time += 0.05;
 
-            // Rotate Helix
-            helixGroup.rotation.y += 0.002;
+            // Animate Terrain (Simulate Sound Waves)
+            for (let i = 0; i < positionAttribute.count; i++) {
+                const orig = originalPositions[i];
+                // Wave formula: Sin(x + time) + Cos(y + time)
+                const z = Math.sin(orig.x * 0.5 + time * 0.5) * 1.5 +
+                          Math.cos(orig.y * 0.3 + time * 0.3) * 1.5;
 
-            // Float Bubbles
+                // Audio visualizer spike effect
+                const spike = Math.sin(orig.x * 2 + time * 2) * Math.cos(orig.y * 2) * 0.5;
+
+                positionAttribute.setZ(i, z + spike);
+            }
+            positionAttribute.needsUpdate = true;
+
+            // Animate Bubbles
             bubbles.forEach(b => {
-                b.mesh.position.y += Math.sin(Date.now() * 0.001 + b.yOffset) * 0.01;
                 b.mesh.rotation.x += b.speed;
                 b.mesh.rotation.y += b.speed;
+                b.mesh.position.y += Math.sin(time * 0.05 + b.offset) * 0.02;
             });
-
-            // Gentle Camera Sway
-            camera.position.x += (mouseX * 2 - camera.position.x) * 0.02;
-            camera.position.y += (mouseY * 2 - camera.position.y) * 0.02;
-            camera.lookAt(0, 0, 0);
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- RESIZE ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // --- GSAP ---
+        // --- SCROLL INTERACTION (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Move Helix Up on Scroll
-        gsap.to(helixGroup.position, {
-            y: 30,
-            rotation: Math.PI * 2,
+        // Move Camera Forward through Terrain
+        gsap.to(camera.position, {
+            z: -40,  // Fly deep into the screen
+            y: 5,    // Slight rise
+            ease: "none",
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // Rotate Bubbles group slightly
+        // (Not grouped, but we can animate scene rotation slightly)
+        gsap.to(scene.rotation, {
+            z: 0.1, // Slight tilt
             ease: "none",
             scrollTrigger: {
                 trigger: "body",
@@ -566,66 +635,45 @@
         // Reveals
         gsap.utils.toArray('.gs-reveal').forEach(el => {
             gsap.fromTo(el,
-                { y: 30, opacity: 0, visibility: 'hidden' },
-                { y: 0, opacity: 1, visibility: 'visible', duration: 1, ease: "power2.out",
+                { y: 50, opacity: 0 },
+                { y: 0, opacity: 1, duration: 1, ease: "power2.out",
                   scrollTrigger: { trigger: el, start: "top 90%" }
                 }
             );
         });
 
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
     </script>
 
-    <!-- P5.js Background (Subtle Flow) -->
+    <!-- P5.js: Glitch/Noise Overlay -->
     <script>
-        let particles = [];
-
         function setup() {
             const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('p5-container');
             noStroke();
-
-            for(let i=0; i<50; i++) {
-                particles.push(new Particle());
-            }
         }
 
         function draw() {
             clear();
-
-            for(let p of particles) {
-                p.update();
-                p.display();
+            // Random glitch rectangles
+            if(frameCount % 10 === 0) {
+                fill(0, 255, 136, 50); // Neon Lime low alpha
+                rect(random(width), random(height), random(10, 100), 2);
+            }
+            if(frameCount % 15 === 0) {
+                fill(189, 0, 255, 50); // Neon Purple low alpha
+                rect(random(width), random(height), 2, random(10, 100));
             }
         }
 
         function windowResized() {
             resizeCanvas(windowWidth, windowHeight);
-        }
-
-        class Particle {
-            constructor() {
-                this.pos = createVector(random(width), random(height));
-                this.vel = createVector(random(-0.5, 0.5), random(-0.5, 0.5));
-                this.size = random(2, 6);
-                this.color = random([
-                    color(109, 179, 163, 50), // Sage
-                    color(244, 162, 97, 50),  // Coral
-                    color(233, 196, 106, 50)  // Yellow
-                ]);
-            }
-
-            update() {
-                this.pos.add(this.vel);
-                if(this.pos.x < 0) this.pos.x = width;
-                if(this.pos.x > width) this.pos.x = 0;
-                if(this.pos.y < 0) this.pos.y = height;
-                if(this.pos.y > height) this.pos.y = 0;
-            }
-
-            display() {
-                fill(this.color);
-                ellipse(this.pos.x, this.pos.y, this.size);
-            }
         }
     </script>
 </body>
