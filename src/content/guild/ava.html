@@ -593,5 +593,144 @@
         });
 
     </script>
+
+    <!-- Main Logic & Loader -->
+    <script>
+        // --- Loader Logic ---
+        const loader = document.getElementById('loader');
+        const loaderLine = document.querySelector('.loader-line');
+
+        // Simulate progress or wait for resources
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress > 90) progress = 90;
+            loaderLine.style.width = progress + '%';
+        }, 100);
+
+        function removeLoader() {
+            clearInterval(interval);
+            loaderLine.style.width = '100%';
+
+            gsap.to(loader, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    loader.style.display = 'none';
+                    initScrollTrigger(); // Start animations only after load
+                }
+            });
+        }
+
+        // Wait for Fonts & Minimum Timeout
+        Promise.all([
+            document.fonts.ready,
+            new Promise(resolve => setTimeout(resolve, 1500)) // Min wait for effect
+        ]).then(() => {
+            removeLoader();
+        }).catch(() => {
+            // Fallback if fonts fail
+            removeLoader();
+        });
+
+        // --- ScrollTrigger Initialization ---
+        function initScrollTrigger() {
+            // Reveal Text
+            gsap.utils.toArray('.reveal-text').forEach(elem => {
+                gsap.fromTo(elem,
+                    { y: 50, opacity: 0 },
+                    {
+                        y: 0, opacity: 1,
+                        duration: 1.2,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 85%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+            });
+
+            // Reveal Block
+            gsap.utils.toArray('.reveal-block').forEach(elem => {
+                gsap.fromTo(elem,
+                    { x: -50, opacity: 0 },
+                    {
+                        x: 0, opacity: 1,
+                        duration: 1,
+                        ease: "power2.out",
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 80%"
+                        }
+                    }
+                );
+            });
+
+            // Reveal Image
+            gsap.utils.toArray('.reveal-img').forEach(elem => {
+                gsap.fromTo(elem,
+                    { scale: 0.8, opacity: 0, rotation: 5 },
+                    {
+                        scale: 1, opacity: 1, rotation: 0,
+                        duration: 1.5,
+                        ease: "expo.out",
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 70%"
+                        }
+                    }
+                );
+            });
+
+            // Timeline Items
+            gsap.utils.toArray('.timeline-item').forEach((elem, i) => {
+                gsap.fromTo(elem,
+                    { opacity: 0, x: -20 },
+                    {
+                        opacity: 1, x: 0,
+                        duration: 0.8,
+                        delay: i * 0.2, // Stagger effect
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 85%"
+                        }
+                    }
+                );
+            });
+
+            // Timeline Line Progress
+            gsap.to('.timeline-progress', {
+                height: '100%',
+                scrollTrigger: {
+                    trigger: '.timeline-container',
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: 1
+                }
+            });
+
+            // Service Cards
+            gsap.utils.toArray('.reveal-card').forEach((elem, i) => {
+                gsap.fromTo(elem,
+                    { y: 50, opacity: 0 },
+                    {
+                        y: 0, opacity: 1,
+                        duration: 0.8,
+                        delay: i * 0.1,
+                        scrollTrigger: {
+                            trigger: '.services-grid', // Trigger on container
+                            start: "top 80%"
+                        }
+                    }
+                );
+            });
+
+            ScrollTrigger.refresh();
+        }
+
+    </script>
 </body>
 </html>
