@@ -838,7 +838,6 @@ members:
       - id: "musician"
         label: "音樂人"
 
-<<<<<<< guild/michael-lai-9779475244762598322
   - id: "michael"
     name: "Michael Lai"
     avatar: "/assets/img/guild/michael/avatar.webp"
@@ -850,7 +849,7 @@ members:
         label: "自動化煉金術"
       - id: "feline_logic"
         label: "貓系邏輯"
-=======
+
   - id: "allen"
     name: "少帥 Allen"
     avatar: "/assets/img/guild/allen/avatar.webp"
@@ -886,4 +885,3 @@ members:
         label: "夢境魔女"
       - id: "forever_20"
         label: "永遠 20 歲"
->>>>>>> master
