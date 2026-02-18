@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zai Lab | Zaira Forzaaa</title>
-    <meta name="description" content="Zai Lab - Zaira's Experimental Space. Exploring life, language, and culture through writing, podcasting, and travel.">
+    <meta name="description" content="Zai Lab - Zaira's Space. Exploring life, language, and culture.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&family=Outfit:wght@300;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome 6.5.1 for Threads Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script type="importmap">
@@ -27,38 +29,27 @@
 
     <style>
         :root {
-            --c-bg: #050505;
-            --c-surface: #111;
-            --c-cyan: #00f3ff;
-            --c-green: #00ff9d;
-            --c-purple: #b026ff;
-            --c-white: #e0e0e0;
-            --f-tech: 'Orbitron', sans-serif;
-            --f-mono: 'Space Mono', monospace;
-            --f-main: 'Noto Sans TC', sans-serif;
+            /* Light / Fresh Theme */
+            --c-bg: #f9fbf9;
+            --c-text: #333333;
+            --c-accent: #6db3a3; /* Sage/Teal */
+            --c-secondary: #f4a261; /* Soft Coral/Orange */
+            --c-highlight: #e9c46a; /* Soft Yellow */
+            --c-white: #ffffff;
+
+            --f-heading: 'Playfair Display', serif;
+            --f-body: 'Noto Sans TC', sans-serif;
+            --f-accent: 'Outfit', sans-serif;
         }
 
         body {
             margin: 0;
             background-color: var(--c-bg);
-            color: var(--c-white);
-            font-family: var(--f-main);
+            color: var(--c-text);
+            font-family: var(--f-body);
             overflow-x: hidden;
-            cursor: none; /* Custom cursor */
+            line-height: 1.6;
         }
-
-        /* --- Custom Cursor --- */
-        #cursor-dot, #cursor-outline {
-            position: fixed; top: 0; left: 0; transform: translate(-50%, -50%);
-            border-radius: 50%; z-index: 9999; pointer-events: none;
-            mix-blend-mode: difference;
-        }
-        #cursor-dot { width: 8px; height: 8px; background: var(--c-green); }
-        #cursor-outline {
-            width: 40px; height: 40px; border: 1px solid var(--c-cyan);
-            transition: width 0.2s, height 0.2s;
-        }
-        body:hover #cursor-outline { width: 60px; height: 60px; border-color: var(--c-purple); }
 
         /* --- Background Layers --- */
         #webgl-container {
@@ -67,22 +58,22 @@
         }
         #p5-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
-            z-index: -1; pointer-events: none; mix-blend-mode: screen;
+            z-index: -1; pointer-events: none; mix-blend-mode: multiply; opacity: 0.5;
         }
 
         /* --- Navigation --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: rgba(255,255,255,0.6); text-decoration: none;
-            font-family: var(--f-mono); font-size: 0.9rem;
-            padding: 0.5rem 1rem; border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            color: #666; text-decoration: none;
+            font-family: var(--f-accent); font-size: 0.9rem;
+            padding: 0.5rem 1rem; border: 1px solid rgba(0,0,0,0.1);
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(5px);
+            border-radius: 30px;
             transition: 0.3s;
         }
         .nav-back:hover {
-            color: var(--c-cyan); border-color: var(--c-cyan);
-            background: rgba(0, 243, 255, 0.1);
+            color: var(--c-accent); border-color: var(--c-accent);
+            transform: translateY(-2px);
         }
 
         /* --- Sections --- */
@@ -92,161 +83,160 @@
             padding: 4rem 1rem; box-sizing: border-box;
         }
         .container {
-            max-width: 1000px; width: 100%; margin: 0 auto; position: relative;
+            max-width: 900px; width: 100%; margin: 0 auto; position: relative;
         }
 
         /* --- Typography --- */
-        h1, h2, h3 { margin: 0; font-weight: 700; }
-        .font-tech { font-family: var(--f-tech); text-transform: uppercase; letter-spacing: 2px; }
-        .font-mono { font-family: var(--f-mono); }
-        .text-cyan { color: var(--c-cyan); }
-        .text-green { color: var(--c-green); }
-        .text-purple { color: var(--c-purple); }
-
-        .glitch-text {
-            position: relative; display: inline-block;
-        }
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-bg);
-        }
-        .glitch-text::before {
-            left: 2px; text-shadow: -1px 0 var(--c-purple); clip-path: inset(0 0 0 0);
-            animation: glitch-anim-1 2s infinite linear alternate-reverse;
-        }
-        .glitch-text::after {
-            left: -2px; text-shadow: -1px 0 var(--c-green); clip-path: inset(0 0 0 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-        }
-        @keyframes glitch-anim-1 {
-            0% { clip-path: inset(20% 0 80% 0); }
-            20% { clip-path: inset(60% 0 10% 0); }
-            40% { clip-path: inset(40% 0 50% 0); }
-            60% { clip-path: inset(80% 0 5% 0); }
-            80% { clip-path: inset(10% 0 60% 0); }
-            100% { clip-path: inset(30% 0 30% 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip-path: inset(10% 0 60% 0); }
-            20% { clip-path: inset(30% 0 30% 0); }
-            40% { clip-path: inset(10% 0 80% 0); }
-            60% { clip-path: inset(50% 0 10% 0); }
-            80% { clip-path: inset(70% 0 20% 0); }
-            100% { clip-path: inset(20% 0 40% 0); }
-        }
+        h1, h2, h3 { margin: 0; font-weight: 700; color: #222; }
+        .font-heading { font-family: var(--f-heading); }
+        .font-accent { font-family: var(--f-accent); letter-spacing: 1px; text-transform: uppercase; }
+        .text-accent { color: var(--c-accent); }
+        .text-secondary { color: var(--c-secondary); }
 
         /* --- Hero --- */
         #hero { text-align: center; }
         .hero-avatar-container {
-            width: 200px; height: 200px; margin: 0 auto 2rem; position: relative;
+            width: 220px; height: 220px; margin: 0 auto 2rem; position: relative;
         }
         .hero-avatar {
             width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
-            border: 2px solid var(--c-cyan);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
-            filter: grayscale(100%); transition: 0.5s;
+            border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(109, 179, 163, 0.2);
+            transition: 0.5s;
         }
-        .hero-avatar:hover { filter: grayscale(0%); transform: scale(1.05); }
+        .hero-avatar:hover { transform: scale(1.02); box-shadow: 0 15px 40px rgba(109, 179, 163, 0.3); }
+
+        /* Soft pulsing rings */
         .hero-ring {
-            position: absolute; inset: -10px; border-radius: 50%;
-            border: 1px dashed var(--c-green); animation: spin 10s linear infinite;
+            position: absolute; inset: -15px; border-radius: 50%;
+            border: 1px solid rgba(109, 179, 163, 0.3);
+            animation: breathe 4s ease-in-out infinite;
         }
         .hero-ring:nth-child(2) {
-            inset: -20px; border-color: var(--c-purple); animation: spin 15s linear infinite reverse;
+            inset: -30px; border-color: rgba(244, 162, 97, 0.3);
+            animation: breathe 6s ease-in-out infinite reverse;
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
 
         .hero-title {
-            font-size: clamp(3rem, 8vw, 6rem); line-height: 1; margin-bottom: 1rem;
-            background: linear-gradient(135deg, var(--c-white), var(--c-cyan));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-size: clamp(3rem, 6vw, 5rem); margin-bottom: 0.5rem;
+            color: #2a2a2a;
         }
         .hero-subtitle {
-            font-size: 1.5rem; color: var(--c-green); margin-bottom: 2rem;
-            letter-spacing: 4px;
+            font-size: 1.2rem; color: #666; margin-bottom: 2rem;
+            font-weight: 300;
+        }
+
+        /* --- Glass Cards (Light) --- */
+        .fresh-card {
+            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.8); padding: 2.5rem;
+            border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+            transition: 0.3s;
+        }
+        .fresh-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(109, 179, 163, 0.1);
         }
 
         /* --- Bio --- */
-        .glass-panel {
-            background: rgba(17, 17, 17, 0.7); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1); padding: 2rem;
-            border-radius: 12px; position: relative; overflow: hidden;
-            transition: 0.3s;
-        }
-        .glass-panel::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, var(--c-cyan), var(--c-purple), var(--c-green));
-        }
-        .bio-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
-        }
-        .bio-text p { line-height: 1.8; color: #ccc; margin-bottom: 1.5rem; }
-        .bio-tags { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1rem; }
+        .bio-text p { margin-bottom: 1.5rem; color: #555; }
+        .bio-tags { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1.5rem; }
         .tag {
-            padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.8rem;
-            font-family: var(--f-mono); border: 1px solid rgba(255,255,255,0.2);
-            transition: 0.3s;
+            padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem;
+            font-family: var(--f-accent); background: #fff;
+            color: #666; border: 1px solid #eee;
+            transition: 0.2s;
         }
         .tag:hover {
-            border-color: var(--c-cyan); color: var(--c-cyan); background: rgba(0, 243, 255, 0.1);
+            background: var(--c-accent); color: #fff; border-color: var(--c-accent);
         }
 
-        /* --- Experiments (Projects) --- */
-        .project-card {
-            display: block; text-decoration: none; color: inherit;
-            height: 100%; padding: 2rem; border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(10,10,10,0.8); transition: 0.4s; position: relative;
+        /* --- Experiments Grid --- */
+        .exp-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem; width: 100%;
         }
-        .project-card:hover {
-            transform: translateY(-5px); border-color: var(--c-green);
-            box-shadow: 0 10px 30px rgba(0, 255, 157, 0.1);
+        .project-link {
+            text-decoration: none; color: inherit; display: block; height: 100%;
         }
-        .card-icon { font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--c-cyan); }
-        .project-card h3 { font-family: var(--f-tech); font-size: 1.5rem; margin-bottom: 0.5rem; }
-        .project-card p { font-size: 0.9rem; color: #888; line-height: 1.6; }
-        .status-dot {
-            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-            background: var(--c-green); margin-right: 0.5rem;
-            box-shadow: 0 0 5px var(--c-green);
+        .exp-card {
+            height: 100%; display: flex; flex-direction: column; align-items: flex-start;
+            background: #fff; padding: 2rem; border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.02); transition: 0.3s;
+            border: 1px solid transparent;
+        }
+        .exp-card:hover {
+            border-color: var(--c-accent); transform: translateY(-5px);
+        }
+        .card-icon { font-size: 2rem; color: var(--c-accent); margin-bottom: 1rem; }
+        .exp-card h3 { font-family: var(--f-accent); font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .exp-card p { font-size: 0.9rem; color: #888; line-height: 1.6; }
+
+        /* --- Field Research --- */
+        .location-item {
+            display: flex; align-items: center; margin-bottom: 1rem;
+            padding: 1rem; background: rgba(255,255,255,0.5); border-radius: 12px;
+        }
+        .location-icon {
+            width: 40px; height: 40px; border-radius: 50%; background: #eef7f5;
+            color: var(--c-accent); display: flex; align-items: center; justify-content: center;
+            margin-right: 1rem; flex-shrink: 0;
         }
 
-        /* --- Lab Equipment (Three.js Interaction) --- */
-        #lab-controls {
-            position: fixed; bottom: 2rem; right: 2rem; z-index: 50;
-            display: flex; flex-direction: column; gap: 1rem;
+        /* --- Language Progress --- */
+        .lang-bar-container {
+            margin-bottom: 1.5rem;
         }
-        .control-btn {
-            width: 50px; height: 50px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(0,0,0,0.5); color: #fff; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.3s;
+        .lang-label {
+            display: flex; justify-content: space-between; margin-bottom: 0.5rem;
+            font-family: var(--f-accent); font-size: 0.9rem; color: #555;
         }
-        .control-btn:hover { background: var(--c-purple); border-color: var(--c-purple); }
+        .lang-track {
+            height: 6px; background: #eee; border-radius: 3px; overflow: hidden;
+        }
+        .lang-fill {
+            height: 100%; border-radius: 3px;
+        }
 
-        /* --- Footer --- */
+        /* --- Standard Footer (Matching allen.html structure) --- */
         footer {
-            padding: 4rem 1rem; text-align: center; border-top: 1px solid #222;
-            background: #000;
+            padding: 4rem 1rem; text-align: center; background: #fff;
+            border-top: 1px solid #f0f0f0; margin-top: 4rem;
         }
-        .social-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
-        .social-icon {
-            font-size: 1.5rem; color: #888; transition: 0.3s;
+        .footer-title {
+            font-family: var(--f-accent); color: #333; margin-bottom: 2rem; font-size: 1.5rem;
         }
-        .social-icon:hover { color: var(--c-cyan); transform: scale(1.2); }
+        .footer-social-links {
+            display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 2rem;
+        }
+        .footer-social-btn {
+            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #eee; color: #666; text-decoration: none; font-size: 1.5rem;
+            transition: 0.3s; clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+            background: #fcfcfc;
+        }
+        .footer-social-btn:hover {
+            background: var(--c-accent); color: #fff; border-color: var(--c-accent);
+        }
+        .footer-credits {
+            color: #999; font-family: var(--f-accent); font-size: 0.8rem;
+        }
+        .icon-inline {
+            display: inline-block; width: 1em; height: 1em; vertical-align: -0.125em; fill: currentColor;
+        }
 
-        /* --- Responsive --- */
-        @media (max-width: 768px) {
-            .bio-grid { grid-template-columns: 1fr; }
-            .hero-title { font-size: 3rem; }
-        }
+        /* --- Scroll Reveal --- */
+        .gs-reveal { opacity: 0; visibility: hidden; }
+
     </style>
 </head>
 <body>
 
-    <div id="cursor-dot"></div>
-    <div id="cursor-outline"></div>
-
-    <a href="/guild/" class="nav-back">&lt; GUILD</a>
+    <a href="/guild/" class="nav-back">&larr; GUILD</a>
 
     <div id="webgl-container"></div>
     <div id="p5-container"></div>
@@ -259,343 +249,265 @@
                 <div class="hero-ring"></div>
                 <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="hero-avatar">
             </div>
-            <h1 class="hero-title font-tech gs-reveal glitch-text" data-text="ZAI LAB">ZAI LAB</h1>
-            <div class="hero-subtitle font-mono gs-reveal">// EXPERIMENTAL ZONE</div>
-            <p class="font-mono gs-reveal" style="color: #888;">
-                CLIMBING | MIXING | EXPLORING
-            </p>
+            <h1 class="hero-title font-heading gs-reveal">Zai Lab</h1>
+            <div class="hero-subtitle font-accent gs-reveal">Explorer of Life | Experimental Soul</div>
+
+            <div class="gs-reveal" style="margin-top: 2rem;">
+                 <i class="fa-solid fa-leaf text-accent" style="font-size: 1.5rem;"></i>
+            </div>
         </div>
     </section>
 
-    <!-- 2. Bio: The Alchemist -->
+    <!-- 2. Bio -->
     <section id="bio">
         <div class="container">
-            <div class="glass-panel gs-reveal">
-                <div class="bio-grid">
-                    <div>
-                        <h2 class="font-tech text-cyan mb-2">IDENTITY: ZAIRA</h2>
-                        <div class="bio-text font-mono">
-                            <p>
-                                我是 Zaira，還在探索自己的人生路上。興趣多元廣泛，喜歡寫字、畫畫、唱歌、偶爾爬爬山，
-                                覺得有趣很特別的事情都想試試看！
-                            </p>
-                            <p>
-                                我非常喜歡與人交流，聆聽每個人背後的故事與經驗，這對我來說是很有趣的過程。
-                                我熱衷於辦活動、參加工作坊，也曾多次擔任學校大型典禮與研討會的司儀。
-                            </p>
-                        </div>
-                        <div class="bio-tags">
-                            <div class="tag">#WRITING</div>
-                            <div class="tag">#DRAWING</div>
-                            <div class="tag">#SINGING</div>
-                            <div class="tag">#HIKING</div>
-                            <div class="tag">#HOSTING</div>
-                        </div>
-                    </div>
-                    <div style="text-align: center;">
-                        <!-- Abstract Visual or 3D Placeholder -->
-                        <div id="bio-visual" style="width: 100%; height: 300px; border: 1px dashed rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
-                            <span class="font-mono text-purple">Analyzing Bio-Data...</span>
-                        </div>
-                    </div>
+            <div class="fresh-card gs-reveal">
+                <h2 class="font-heading" style="margin-bottom: 2rem; text-align: center;">Hello, I'm Zaira.</h2>
+                <div class="bio-text">
+                    <p>
+                        還在探索自己的人生路上。興趣多元廣泛，喜歡寫字、畫畫、唱歌、偶爾爬爬山，
+                        覺得有趣很特別的事情都想試試看！
+                    </p>
+                    <p>
+                        我非常喜歡與人交流，聆聽每個人背後的故事與經驗，這對我來說是很有趣的過程。
+                        我熱衷於辦活動、參加工作坊，也曾多次擔任學校大型典禮與研討會的司儀。
+                    </p>
+                </div>
+                <div class="bio-tags justify-center" style="justify-content: center;">
+                    <div class="tag">Writing</div>
+                    <div class="tag">Drawing</div>
+                    <div class="tag">Singing</div>
+                    <div class="tag">Hiking</div>
+                    <div class="tag">Host</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 3. Experiments: Projects -->
+    <!-- 3. Experiments -->
     <section id="experiments">
         <div class="container">
-            <h2 class="font-tech text-green" style="margin-bottom: 3rem; text-align: center;">CURRENT EXPERIMENTS</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+            <h2 class="font-heading" style="margin-bottom: 3rem; text-align: center;">My Experiments</h2>
+            <div class="exp-grid">
 
-                <!-- Medium -->
-                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="project-card gs-reveal">
-                    <div class="card-icon"><i class="fa-brands fa-medium"></i></div>
-                    <h3>MEDIUM LOGS</h3>
-                    <p class="font-mono"><span class="status-dot"></span>ACTIVE</p>
-                    <p style="margin-top: 1rem;">
-                        記錄值得分享的內容，包含語言學習、個人成長和歌詞翻譯等主題。
-                    </p>
+                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="project-link gs-reveal">
+                    <div class="exp-card">
+                        <div class="card-icon"><i class="fa-brands fa-medium"></i></div>
+                        <h3>Medium Logs</h3>
+                        <p>記錄值得分享的內容，包含語言學習、個人成長和歌詞翻譯。</p>
+                    </div>
                 </a>
 
-                <!-- Podcast -->
-                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="project-card gs-reveal">
-                    <div class="card-icon"><i class="fa-solid fa-microphone-lines"></i></div>
-                    <h3>ZAI LAB PODCAST</h3>
-                    <p class="font-mono"><span class="status-dot"></span>ON AIR</p>
-                    <p style="margin-top: 1rem;">
-                        在意實驗室｜ Zai Lab。目前不知道最終會長成什麼樣子，但想試試看各種有趣的事情。
-                    </p>
+                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="project-link gs-reveal">
+                    <div class="exp-card">
+                        <div class="card-icon"><i class="fa-solid fa-microphone-lines"></i></div>
+                        <h3>Podcast</h3>
+                        <p>在意實驗室｜ Zai Lab。試試看各種有趣的事情，所以才叫實驗室。</p>
+                    </div>
                 </a>
 
-                <!-- Instagram -->
-                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="project-card gs-reveal">
-                    <div class="card-icon"><i class="fa-brands fa-instagram"></i></div>
-                    <h3>VISUAL DATA</h3>
-                    <p class="font-mono"><span class="status-dot"></span>SYNCING</p>
-                    <p style="margin-top: 1rem;">
-                        日常生活與實驗紀錄的視覺化呈現。
-                    </p>
+                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="project-link gs-reveal">
+                    <div class="exp-card">
+                        <div class="card-icon"><i class="fa-brands fa-instagram"></i></div>
+                        <h3>Instagram</h3>
+                        <p>日常生活與實驗紀錄的視覺化呈現。</p>
+                    </div>
                 </a>
 
-                <!-- Threads -->
-                <a href="https://www.threads.com/@zailab_zaira_forzaaa" target="_blank" class="project-card gs-reveal">
-                    <div class="card-icon"><i class="fa-brands fa-threads"></i></div>
-                    <h3>THOUGHT STREAM</h3>
-                    <p class="font-mono"><span class="status-dot"></span>FLOWING</p>
-                    <p style="margin-top: 1rem;">
-                        碎碎念與即時想法的串流。
-                    </p>
+                <a href="https://www.threads.com/@zailab_zaira_forzaaa" target="_blank" class="project-link gs-reveal">
+                    <div class="exp-card">
+                        <div class="card-icon"><i class="fa-brands fa-threads"></i></div>
+                        <h3>Threads</h3>
+                        <p>碎碎念與即時想法的串流。</p>
+                    </div>
                 </a>
 
             </div>
         </div>
     </section>
 
-    <!-- 4. Field Research: Travel & Languages -->
+    <!-- 4. Field Research -->
     <section id="field-research">
         <div class="container">
-            <div class="glass-panel gs-reveal">
-                <h2 class="font-tech text-purple" style="margin-bottom: 2rem;">FIELD RESEARCH</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem;">
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
-                    <div>
-                        <h3 class="font-mono text-cyan" style="margin-bottom: 1rem;">// LOCATION LOGS</h3>
-                        <ul style="list-style: none; padding: 0; line-height: 2; color: #aaa;">
-                            <li><i class="fa-solid fa-location-dot text-green" style="margin-right: 10px;"></i> <strong>TANZANIA:</strong> Volunteer Service</li>
-                            <li><i class="fa-solid fa-location-dot text-green" style="margin-right: 10px;"></i> <strong>ROME, ITALY:</strong> Exchange Program (1 Year)</li>
-                            <li><i class="fa-solid fa-location-dot text-green" style="margin-right: 10px;"></i> <strong>CZECH REPUBLIC:</strong> Internship (6 Months)</li>
-                        </ul>
+                <!-- Travel -->
+                <div class="gs-reveal">
+                    <h2 class="font-heading" style="margin-bottom: 2rem;">Field Notes</h2>
 
-                        <p style="margin-top: 2rem; color: #ccc; line-height: 1.6;">
-                            曾經當過華語老師，學生來自各個國家，包括烏克蘭、義大利、捷克、斯洛伐克和印尼。
-                        </p>
+                    <div class="location-item">
+                        <div class="location-icon"><i class="fa-solid fa-earth-africa"></i></div>
+                        <div>
+                            <strong>Tanzania</strong>
+                            <div style="font-size: 0.85rem; color: #888;">Volunteer Service</div>
+                        </div>
                     </div>
 
-                    <div>
-                        <h3 class="font-mono text-purple" style="margin-bottom: 1rem;">// LANGUAGE PROTOCOLS</h3>
-
-                        <div style="margin-bottom: 1.5rem;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span class="font-mono">ENGLISH</span>
-                                <span class="font-mono text-green">CONNECTED</span>
-                            </div>
-                            <div style="height: 4px; background: #333; border-radius: 2px;">
-                                <div style="height: 100%; width: 90%; background: var(--c-green);"></div>
-                            </div>
+                    <div class="location-item">
+                        <div class="location-icon"><i class="fa-solid fa-landmark"></i></div>
+                        <div>
+                            <strong>Rome, Italy</strong>
+                            <div style="font-size: 0.85rem; color: #888;">Exchange Student (1 Year)</div>
                         </div>
+                    </div>
 
-                        <div style="margin-bottom: 1.5rem;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span class="font-mono">ITALIAN</span>
-                                <span class="font-mono text-cyan">FLUENT</span>
-                            </div>
-                            <div style="height: 4px; background: #333; border-radius: 2px;">
-                                <div style="height: 100%; width: 85%; background: var(--c-cyan);"></div>
-                            </div>
+                    <div class="location-item">
+                        <div class="location-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+                        <div>
+                            <strong>Czech Republic</strong>
+                            <div style="font-size: 0.85rem; color: #888;">Internship (6 Months)</div>
                         </div>
-
-                        <div style="margin-bottom: 1.5rem;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span class="font-mono">SPANISH</span>
-                                <span class="font-mono text-purple">UNLOCKING...</span>
-                            </div>
-                            <div style="height: 4px; background: #333; border-radius: 2px;">
-                                <div style="height: 100%; width: 40%; background: var(--c-purple); position: relative; overflow: hidden;">
-                                    <div style="position: absolute; top:0; left:0; height:100%; width:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); animation: loading 1.5s infinite;"></div>
-                                </div>
-                            </div>
-                            <style>@keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }</style>
-                        </div>
-
-                        <p class="font-mono" style="font-size: 0.8rem; color: #666;">
-                            "語言與文化是我和世界產生連結的工具。"
-                        </p>
                     </div>
                 </div>
+
+                <!-- Languages -->
+                <div class="gs-reveal">
+                    <h2 class="font-heading" style="margin-bottom: 2rem;">Language Tools</h2>
+
+                    <div class="lang-bar-container">
+                        <div class="lang-label"><span>English</span> <span>Communicative</span></div>
+                        <div class="lang-track"><div class="lang-fill" style="width: 90%; background: var(--c-accent);"></div></div>
+                    </div>
+
+                    <div class="lang-bar-container">
+                        <div class="lang-label"><span>Italian</span> <span>Fluent</span></div>
+                        <div class="lang-track"><div class="lang-fill" style="width: 85%; background: var(--c-secondary);"></div></div>
+                    </div>
+
+                    <div class="lang-bar-container">
+                        <div class="lang-label"><span>Spanish</span> <span>Unlocking...</span></div>
+                        <div class="lang-track"><div class="lang-fill" style="width: 40%; background: var(--c-highlight);"></div></div>
+                    </div>
+
+                    <p style="margin-top: 2rem; font-style: italic; color: #888; font-size: 0.9rem;">
+                        "語言與文化是我和世界產生連結的工具。"
+                    </p>
+                </div>
+
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer (Standardized) -->
     <footer>
-        <div class="container gs-reveal">
-            <h2 class="font-tech text-white" style="margin-bottom: 1rem;">JOIN THE EXPERIMENT</h2>
-            <p class="font-mono" style="color: #666; margin-bottom: 2rem;">歡迎大家來交流✨</p>
-
-            <div class="social-links">
-                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-icon"><i class="fa-brands fa-medium"></i></a>
-                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@zailab_zaira_forzaaa" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="social-icon"><i class="fa-solid fa-microphone"></i></a>
+        <div class="container">
+            <h2 class="footer-title">CONNECT</h2>
+            <div class="footer-social-links">
+                <!-- Medium -->
+                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="footer-social-btn">
+                    <i class="fa-brands fa-medium"></i>
+                </a>
+                <!-- Threads (Using FontAwesome 6.5.1) -->
+                <a href="https://www.threads.com/@zailab_zaira_forzaaa" target="_blank" class="footer-social-btn">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <!-- Instagram -->
+                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="footer-social-btn">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <!-- Podcast -->
+                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="footer-social-btn">
+                    <i class="fa-solid fa-microphone"></i>
+                </a>
             </div>
-
-            <p class="font-mono" style="font-size: 0.8rem; color: #444;">
-                © 2024 ZAI LAB. ALL RIGHTS RESERVED.
+            <p class="footer-credits">
+                MADE WITH <svg class="icon-inline" viewBox="0 0 24 24" fill="var(--c-highlight)"><path d="M13 2L3 14h7l-2 8 10-12h-7l2-8z"/></svg> BY SUPERGALEN'S DUNGEON
             </p>
         </div>
     </footer>
 
-    <!-- P5.js Background (Chemical Bonds) -->
-    <script>
-        let molecules = [];
-
-        function setup() {
-            const canvas = createCanvas(windowWidth, windowHeight);
-            canvas.parent('p5-container');
-
-            for(let i=0; i<30; i++) {
-                molecules.push(new Molecule());
-            }
-        }
-
-        function draw() {
-            clear();
-
-            // Draw connections
-            stroke(0, 243, 255, 30);
-            strokeWeight(1);
-            for(let i=0; i<molecules.length; i++) {
-                for(let j=i+1; j<molecules.length; j++) {
-                    let d = dist(molecules[i].pos.x, molecules[i].pos.y, molecules[j].pos.x, molecules[j].pos.y);
-                    if(d < 150) {
-                        line(molecules[i].pos.x, molecules[i].pos.y, molecules[j].pos.x, molecules[j].pos.y);
-                    }
-                }
-                molecules[i].update();
-                molecules[i].display();
-            }
-        }
-
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
-
-        class Molecule {
-            constructor() {
-                this.pos = createVector(random(width), random(height));
-                this.vel = createVector(random(-0.5, 0.5), random(-0.5, 0.5));
-                this.size = random(2, 5);
-                this.type = random([0, 1, 2]); // 0: Cyan, 1: Green, 2: Purple
-            }
-
-            update() {
-                this.pos.add(this.vel);
-                if(this.pos.x < 0 || this.pos.x > width) this.vel.x *= -1;
-                if(this.pos.y < 0 || this.pos.y > height) this.vel.y *= -1;
-            }
-
-            display() {
-                noStroke();
-                if(this.type === 0) fill(0, 243, 255, 150);
-                else if(this.type === 1) fill(0, 255, 157, 150);
-                else fill(176, 38, 255, 150);
-
-                ellipse(this.pos.x, this.pos.y, this.size);
-            }
-        }
-    </script>
-
-    <!-- Three.js Scene -->
+    <!-- Three.js Scene: Soft Floating Bubbles/Helix -->
     <script type="module">
         import * as THREE from 'three';
 
         // --- SCENE SETUP ---
+        const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+        scene.fog = new THREE.FogExp2(0xf9fbf9, 0.02); // Light Fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 15;
+        camera.position.z = 20;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        document.getElementById('webgl-container').appendChild(renderer.domElement);
+        container.appendChild(renderer.domElement);
 
-        // --- OBJECTS: EXPERIMENTAL BUBBLES ---
-        const bubbles = [];
-        const bubbleGeo = new THREE.IcosahedronGeometry(1, 1);
-        const bubbleMat = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.3,
-            wireframe: true,
-            shininess: 100
-        });
-
-        // Add Lights
-        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0x00ffff, 2, 50);
-        pointLight.position.set(5, 5, 5);
-        scene.add(pointLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
 
-        const purpleLight = new THREE.PointLight(0xb026ff, 2, 50);
-        purpleLight.position.set(-5, -5, 5);
-        scene.add(purpleLight);
+        // --- OBJECTS: GLASS BUBBLES ---
+        const bubbles = [];
+        const geometry = new THREE.IcosahedronGeometry(1, 2); // Smoother
+        // Soft pastel colors
+        const colors = [0x6db3a3, 0xf4a261, 0xe9c46a, 0xa8dadc];
 
-        // Create Bubbles
-        for(let i=0; i<50; i++) {
-            const mesh = new THREE.Mesh(bubbleGeo, bubbleMat.clone());
+        for(let i=0; i<40; i++) {
+            const material = new THREE.MeshPhysicalMaterial({
+                color: colors[Math.floor(Math.random() * colors.length)],
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.1,
+                metalness: 0.1,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1,
+                side: THREE.DoubleSide
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Initial position (random cloud)
             mesh.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 60,
-                (Math.random() - 0.5) * 30
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 80,
+                (Math.random() - 0.5) * 30 - 5
             );
 
-            // Random scales
-            const s = Math.random() * 0.5 + 0.2;
-            mesh.scale.set(s, s, s);
-
-            // Random colors
-            const colors = [0x00f3ff, 0x00ff9d, 0xb026ff];
-            mesh.material.color.setHex(colors[Math.floor(Math.random() * colors.length)]);
-            mesh.material.opacity = Math.random() * 0.3 + 0.1;
+            const scale = Math.random() * 1 + 0.5;
+            mesh.scale.set(scale, scale, scale);
 
             scene.add(mesh);
-
             bubbles.push({
                 mesh,
-                speed: Math.random() * 0.02 + 0.005,
-                amp: Math.random() * 0.5 + 0.1,
-                offset: Math.random() * Math.PI * 2
+                yOffset: Math.random() * Math.PI * 2,
+                speed: Math.random() * 0.005 + 0.002
             });
         }
 
-        // --- MOLECULE/CONNECTORS ---
-        // Lines connecting close bubbles could be cool but expensive.
-        // Let's create a "DNA Helix" like structure that scrolls up
+        // --- DNA / VINE HELIX ---
+        const helixGroup = new THREE.Group();
+        scene.add(helixGroup);
 
-        const dnaGroup = new THREE.Group();
-        scene.add(dnaGroup);
+        const sphereGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const connectorMat = new THREE.LineBasicMaterial({ color: 0x6db3a3, transparent: true, opacity: 0.3 });
 
-        const dnaGeo = new THREE.SphereGeometry(0.2, 8, 8);
-        const dnaMat = new THREE.MeshBasicMaterial({ color: 0x00ff9d });
+        for(let i=0; i<60; i++) {
+            const y = i * 1.2 - 40;
+            const angle = i * 0.4;
+            const radius = 6;
 
-        for(let i=0; i<40; i++) {
-            const y = i * 1.5 - 30; // Spread vertically
-            const angle = i * 0.5;
-            const radius = 4;
+            // Strand 1
+            const b1 = new THREE.Mesh(sphereGeo, new THREE.MeshLambertMaterial({color: 0x6db3a3}));
+            b1.position.set(Math.cos(angle)*radius, y, Math.sin(angle)*radius);
+            helixGroup.add(b1);
 
-            const ball1 = new THREE.Mesh(dnaGeo, new THREE.MeshBasicMaterial({color: 0x00f3ff}));
-            ball1.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+            // Strand 2
+            const b2 = new THREE.Mesh(sphereGeo, new THREE.MeshLambertMaterial({color: 0xf4a261}));
+            b2.position.set(Math.cos(angle + Math.PI)*radius, y, Math.sin(angle + Math.PI)*radius);
+            helixGroup.add(b2);
 
-            const ball2 = new THREE.Mesh(dnaGeo, new THREE.MeshBasicMaterial({color: 0xb026ff}));
-            ball2.position.set(Math.cos(angle + Math.PI) * radius, y, Math.sin(angle + Math.PI) * radius);
-
-            dnaGroup.add(ball1);
-            dnaGroup.add(ball2);
-
-            // Connection line
-            const points = [];
-            points.push(ball1.position);
-            points.push(ball2.position);
+            // Connector
+            const points = [b1.position, b2.position];
             const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-            const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 }));
-            dnaGroup.add(line);
+            const line = new THREE.Line(lineGeo, connectorMat);
+            helixGroup.add(line);
         }
+
 
         // --- ANIMATION ---
         let mouseX = 0;
@@ -609,20 +521,19 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate Bubbles
+            // Rotate Helix
+            helixGroup.rotation.y += 0.002;
+
+            // Float Bubbles
             bubbles.forEach(b => {
+                b.mesh.position.y += Math.sin(Date.now() * 0.001 + b.yOffset) * 0.01;
                 b.mesh.rotation.x += b.speed;
                 b.mesh.rotation.y += b.speed;
-                b.mesh.position.y += Math.sin(Date.now() * 0.001 + b.offset) * 0.02;
             });
 
-            // Rotate DNA
-            dnaGroup.rotation.y += 0.005;
-            dnaGroup.position.y += Math.sin(Date.now() * 0.0005) * 0.05;
-
-            // Camera Parallax
-            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
-            camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
+            // Gentle Camera Sway
+            camera.position.x += (mouseX * 2 - camera.position.x) * 0.02;
+            camera.position.y += (mouseY * 2 - camera.position.y) * 0.02;
             camera.lookAt(0, 0, 0);
 
             renderer.render(scene, camera);
@@ -636,13 +547,13 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP SCROLL ---
+        // --- GSAP ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Move DNA up as we scroll
-        gsap.to(dnaGroup.position, {
-            y: 20,
-            rotation: Math.PI * 4,
+        // Move Helix Up on Scroll
+        gsap.to(helixGroup.position, {
+            y: 30,
+            rotation: Math.PI * 2,
             ease: "none",
             scrollTrigger: {
                 trigger: "body",
@@ -652,42 +563,70 @@
             }
         });
 
-        // Reveal Elements
-        gsap.utils.toArray('.gs-reveal').forEach(elem => {
-            gsap.from(elem, {
-                y: 50,
-                opacity: 0,
-                duration: 1,
-                ease: "power2.out",
-                scrollTrigger: {
-                    trigger: elem,
-                    start: "top 85%"
+        // Reveals
+        gsap.utils.toArray('.gs-reveal').forEach(el => {
+            gsap.fromTo(el,
+                { y: 30, opacity: 0, visibility: 'hidden' },
+                { y: 0, opacity: 1, visibility: 'visible', duration: 1, ease: "power2.out",
+                  scrollTrigger: { trigger: el, start: "top 90%" }
                 }
-            });
+            );
         });
 
-        // Cursor Follow
-        const cursorDot = document.getElementById('cursor-dot');
-        const cursorOutline = document.getElementById('cursor-outline');
+    </script>
 
-        window.addEventListener("mousemove", function (e) {
-            const posX = e.clientX;
-            const posY = e.clientY;
+    <!-- P5.js Background (Subtle Flow) -->
+    <script>
+        let particles = [];
 
-            // cursorDot.style.left = `${posX}px`;
-            // cursorDot.style.top = `${posY}px`;
+        function setup() {
+            const canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('p5-container');
+            noStroke();
 
-            cursorDot.animate({
-                left: `${posX}px`,
-                top: `${posY}px`
-            }, { duration: 100, fill: "forwards" });
+            for(let i=0; i<50; i++) {
+                particles.push(new Particle());
+            }
+        }
 
-            cursorOutline.animate({
-                left: `${posX}px`,
-                top: `${posY}px`
-            }, { duration: 500, fill: "forwards" });
-        });
+        function draw() {
+            clear();
 
+            for(let p of particles) {
+                p.update();
+                p.display();
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+
+        class Particle {
+            constructor() {
+                this.pos = createVector(random(width), random(height));
+                this.vel = createVector(random(-0.5, 0.5), random(-0.5, 0.5));
+                this.size = random(2, 6);
+                this.color = random([
+                    color(109, 179, 163, 50), // Sage
+                    color(244, 162, 97, 50),  // Coral
+                    color(233, 196, 106, 50)  // Yellow
+                ]);
+            }
+
+            update() {
+                this.pos.add(this.vel);
+                if(this.pos.x < 0) this.pos.x = width;
+                if(this.pos.x > width) this.pos.x = 0;
+                if(this.pos.y < 0) this.pos.y = height;
+                if(this.pos.y > height) this.pos.y = 0;
+            }
+
+            display() {
+                fill(this.color);
+                ellipse(this.pos.x, this.pos.y, this.size);
+            }
+        }
     </script>
 </body>
 </html>
