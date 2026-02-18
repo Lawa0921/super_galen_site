@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Materialization Engine)', () => {
+test.describe('SPJ Guild Page (Tavern Hearth)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -9,28 +9,27 @@ test.describe('SPJ Guild Page (Materialization Engine)', () => {
     } catch (e) {
         console.log('Navigation timeout or error:', e);
     }
+    await page.waitForTimeout(2000);
   });
 
-  test('should display Hero Section', async ({ page }) => {
-    // Initial state (Hero) should be visible or fading in
-    await expect(page.locator('#sec-hero h1')).toContainText('塞趴卷 SPJ');
-    await expect(page.locator('.brand')).toContainText('GUILD_HALL');
+  test('should display Hero Title', async ({ page }) => {
+    await expect(page.locator('.hero-title')).toContainText('THE ETERNAL TAVERN');
   });
 
-  test('should display Intro', async ({ page }) => {
-    // Scroll to Intro (25% of height approx)
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.2)");
+  test('should display Dialogue Box', async ({ page }) => {
+    await expect(page.locator('.dialogue-container')).toBeVisible();
+    await expect(page.locator('.speaker-name')).toContainText('Innkeeper SPJ');
+    // Initial text check might fail if animation not started, wait for it
     await page.waitForTimeout(1000);
-
-    await expect(page.locator('#sec-intro h2')).toContainText('起源代碼');
+    await expect(page.locator('#dialogue-text')).toContainText('歡迎光臨');
   });
 
-  test('should display Projects', async ({ page }) => {
-    // Scroll to end
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+  test('should update Dialogue on Scroll', async ({ page }) => {
+    // Scroll to 50%
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.5)");
     await page.waitForTimeout(1000);
-
-    await expect(page.locator('#sec-projects')).toContainText('具現化紀錄');
+    // Check for middle content (Text Town / Crystal phase)
+    await expect(page.locator('#dialogue-text')).toContainText('天書系統');
   });
 
   test('should have Three.js canvas', async ({ page }) => {
