@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Golden Thread)', () => {
+test.describe('SPJ Guild Page (Materialization Engine)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -12,28 +12,25 @@ test.describe('SPJ Guild Page (Golden Thread)', () => {
   });
 
   test('should display Hero Section', async ({ page }) => {
-    await expect(page.locator('#sec-hero h1')).toContainText('連結者 SPJ');
-    await expect(page.locator('.hero-avatar')).toBeVisible();
+    // Initial state (Hero) should be visible or fading in
+    await expect(page.locator('#sec-hero h1')).toContainText('塞趴卷 SPJ');
+    await expect(page.locator('.brand')).toContainText('GUILD_HALL');
   });
 
-  test('should display Interconnected Sections', async ({ page }) => {
-    // Scroll to Intro to trigger animation
-    await page.evaluate(() => document.getElementById('sec-intro')?.scrollIntoView());
-    await page.waitForTimeout(1000); // Wait for animation
+  test('should display Intro', async ({ page }) => {
+    // Scroll to Intro (25% of height approx)
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.2)");
+    await page.waitForTimeout(1000);
 
-    // Check Intro
-    await expect(page.locator('#sec-intro h2')).toContainText('創世協議');
-    // Check Connector Line existence (might be width 0 initially, check attached)
-    await expect(page.locator('#sec-intro .connector-line')).toBeAttached();
-
-    // Check Guild
-    await expect(page.locator('#sec-guild h2')).toContainText('靈魂網絡');
+    await expect(page.locator('#sec-intro h2')).toContainText('起源代碼');
   });
 
   test('should display Projects', async ({ page }) => {
-    const projects = page.locator('.project-item');
-    await expect(projects).toHaveCount(3);
-    await expect(projects.first()).toContainText('文字小鎮');
+    // Scroll to end
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+    await page.waitForTimeout(1000);
+
+    await expect(page.locator('#sec-projects')).toContainText('具現化紀錄');
   });
 
   test('should have Three.js canvas', async ({ page }) => {

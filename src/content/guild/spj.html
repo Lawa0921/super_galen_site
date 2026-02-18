@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>塞趴卷 - 連結者</title>
+    <title>塞趴卷 - 具現化系鍊金術師</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;600;900&family=Manrope:wght@200;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -16,225 +16,184 @@
 
     <style>
         :root {
-            --bg-color: #0b0c15;
-            --text-main: #e0e0e0;
+            --bg-color: #050505;
+            --text-color: #f0f0f0;
             --gold: #FFD700;
-            --gold-dim: #bfa850;
-            --accent: #4facfe;
-            --glass: rgba(15, 20, 30, 0.7);
+            --cyan: #00FFFF;
+            --dim: #444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-main);
+            color: var(--text-color);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
         }
 
-        /* --- Canvas --- */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
         }
 
-        /* --- Navigation --- */
-        .nav-return {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            text-decoration: none; color: var(--gold-dim);
-            font-family: 'Cinzel'; letter-spacing: 2px;
-            font-size: 0.8rem; mix-blend-mode: difference;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .nav-return::before { content: ''; width: 20px; height: 1px; background: currentColor; }
-
-        /* --- Scroll Layout --- */
-        .scroll-container {
-            position: relative;
+        /* --- UI Overlay --- */
+        .ui-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
             z-index: 10;
-            /* Extra height to allow scrolling through the 3D path */
-            height: 400vh;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 2rem;
         }
 
-        /* Fixed Content Containers that fade in/out */
-        .content-section {
-            position: absolute;
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            pointer-events: none; /* Allow scroll through */
+        .header {
+            display: flex; justify-content: space-between; align-items: flex-start;
         }
 
-        .content-box {
-            pointer-events: auto;
-            background: var(--glass);
-            border-left: 2px solid var(--gold);
-            padding: 3rem;
-            max-width: 500px;
-            backdrop-filter: blur(10px);
+        .brand {
+            font-family: 'Orbitron'; color: var(--gold); letter-spacing: 2px; font-size: 0.9rem;
+            border: 1px solid var(--gold); padding: 5px 10px;
+            pointer-events: auto; text-decoration: none;
+        }
+
+        .status {
+            font-family: 'Orbitron'; color: var(--cyan); font-size: 0.8rem; text-align: right;
+        }
+
+        .footer {
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+
+        .social-link {
+            pointer-events: auto; color: var(--text-color); text-decoration: none;
+            font-family: 'Cinzel'; border-bottom: 1px solid var(--gold);
+            transition: 0.3s;
+        }
+        .social-link:hover { color: var(--gold); }
+
+        .progress-indicator {
+            font-family: 'Orbitron'; font-size: 2rem; color: var(--dim);
+        }
+
+        /* --- Scroll Content --- */
+        .scroll-track {
+            height: 500vh; /* Long scroll for morphing */
+        }
+
+        .section-content {
+            position: fixed;
+            top: 50%; left: 10%;
+            transform: translateY(-50%);
+            width: 400px;
+            pointer-events: none;
             opacity: 0;
-            position: relative;
         }
 
-        /* Connector Line Visual (CSS) to bridge Card -> 3D Thread */
-        .connector-line {
-            position: absolute;
-            height: 1px; width: 100px;
-            background: var(--gold);
-            top: 50%;
-            opacity: 0.5;
+        .visible { pointer-events: auto; }
+
+        h1 {
+            font-family: 'Cinzel'; font-size: 4rem; margin-bottom: 1rem; color: var(--gold);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
         }
 
-        /* --- Typography --- */
-        h1, h2 {
-            font-family: 'Cinzel', serif;
-            color: var(--gold);
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
+        h2 {
+            font-family: 'Cinzel'; font-size: 2.5rem; margin-bottom: 1rem; color: var(--cyan);
         }
-        h1 { font-size: 4rem; }
-        h2 { font-size: 2.5rem; }
 
         p {
-            font-family: 'Manrope', sans-serif; /* Cleaner body font for tech feel */
-            font-size: 1rem;
-            line-height: 1.8;
-            color: #ccc;
-            margin-bottom: 1.5rem;
+            font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px #000;
         }
 
-        .highlight { color: var(--gold-dim); font-weight: 600; }
+        .highlight { color: var(--gold); font-weight: bold; }
 
-        /* --- Specific Sections --- */
-
-        /* Hero: Center */
-        #sec-hero {
-            justify-content: center;
-            text-align: center;
+        /* Hero Specific */
+        .avatar-glitch {
+            width: 100px; height: 100px;
+            margin-bottom: 2rem;
+            position: relative;
         }
-        #sec-hero .content-box {
-            border: 1px solid var(--gold);
-            padding: 4rem;
-            max-width: 600px;
-        }
-        .hero-avatar {
-            width: 120px; height: 120px;
+        .avatar-glitch img {
+            width: 100%; height: 100%; object-fit: cover;
             border-radius: 50%;
             border: 2px solid var(--gold);
-            margin: 0 auto 2rem auto;
-            object-fit: cover;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
         }
 
-        /* Intro: Left */
-        #sec-intro {
-            justify-content: flex-start;
-            padding-left: 10%;
+        /* Right aligned sections */
+        .right-align {
+            left: auto; right: 10%; text-align: right;
         }
-        #sec-intro .connector-line { left: 100%; width: 15vw; }
-
-        /* Guild: Right */
-        #sec-guild {
-            justify-content: flex-end;
-            padding-right: 10%;
-            text-align: right;
-        }
-        #sec-guild .content-box { border-left: none; border-right: 2px solid var(--gold); }
-        #sec-guild .connector-line { right: 100%; width: 15vw; }
-
-        /* Projects: Center Bottom */
-        #sec-projects {
-            align-items: flex-end; /* Bottom of screen */
-            justify-content: center;
-            padding-bottom: 10vh;
-        }
-        #sec-projects .content-box {
-            max-width: 900px;
-            display: flex; gap: 2rem;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-top: 2px solid var(--gold);
-        }
-
-        .project-item {
-            flex: 1;
-            padding-right: 1rem;
-            border-right: 1px solid rgba(255,255,255,0.1);
-        }
-        .project-item:last-child { border: none; padding: 0; }
-        .project-item h3 { font-family: 'Cinzel'; color: var(--gold-dim); margin-bottom: 0.5rem; }
-
-        /* Footer */
-        .footer-fixed {
-            position: fixed; bottom: 2rem; width: 100%; text-align: center;
-            font-family: 'Cinzel'; font-size: 0.7rem; color: #555;
-            z-index: 100; pointer-events: none;
-        }
-        .social-link { pointer-events: auto; color: var(--gold); text-decoration: none; margin-left: 10px; }
 
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
-    <a href="/guild/" class="nav-return">GUILD HALL</a>
 
-    <div class="scroll-container">
-        <!-- We use absolute positioning based on VH for these 'stops' -->
-
-        <!-- 1. Hero (Top) -->
-        <div class="content-section" id="sec-hero" style="top: 0;">
-            <div class="content-box">
-                <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ" class="hero-avatar">
-                <h1>連結者 SPJ</h1>
-                <p style="text-transform: uppercase; letter-spacing: 3px; color: var(--gold-dim);">The Architect of Connection</p>
-                <p>在破碎的數位荒原中，編織連結的具現化系鍊金術師。</p>
+    <div class="ui-layer">
+        <div class="header">
+            <a href="/guild/" class="brand">GUILD_HALL</a>
+            <div class="status">
+                SYSTEM: ONLINE<br>
+                MATERIALIZATION: ACTIVE
             </div>
         </div>
-
-        <!-- 2. Intro (Down Left) -->
-        <div class="content-section" id="sec-intro" style="top: 100vh;">
-            <div class="content-box">
-                <div class="connector-line"></div>
-                <h2>創世協議</h2>
-                <p>我將<span class="highlight">「程式碼」</span>視為編織現實的絲線。</p>
-                <p>透過<span class="highlight">「文字小鎮」</span>計畫，我正在構建一個天書系統。這是一個將純粹的想像力（Input）轉化為物理現實（Output）的煉成陣。</p>
+        <div class="footer">
+            <div class="progress-indicator">001</div>
+            <div>
+                <a href="https://www.threads.net/@spj.story" target="_blank" class="social-link">THREADS</a>
             </div>
         </div>
-
-        <!-- 3. Guild (Down Right) -->
-        <div class="content-section" id="sec-guild" style="top: 200vh;">
-            <div class="content-box">
-                <div class="connector-line"></div>
-                <h2>靈魂網絡</h2>
-                <p>孤獨的創造者就像散落的星辰。</p>
-                <p>我的夢想是建立<span class="highlight">「塞趴卷冒險公會」</span>——一個現實世界的連結中樞。在這裡，我們將星辰連成星座，讓彼此的光芒相互輝映。</p>
-            </div>
-        </div>
-
-        <!-- 4. Projects (Bottom) -->
-        <div class="content-section" id="sec-projects" style="top: 300vh;">
-            <div class="content-box">
-                <div class="project-item">
-                    <h3>文字小鎮</h3>
-                    <p>天書系統核心。<br>具現化無限創意的世界。</p>
-                </div>
-                <div class="project-item">
-                    <h3>冒險公會</h3>
-                    <p>現實連結 Nexus。<br>資源共享與組隊平台。</p>
-                </div>
-                <div class="project-item">
-                    <h3>傳說紀錄</h3>
-                    <p>吟遊詩人系統。<br>紀錄開發者的有溫度故事。</p>
-                </div>
-            </div>
-        </div>
-
     </div>
 
-    <div class="footer-fixed">
-        Made with 🍺 by SuperGalen's Dungeon <a href="https://www.threads.net/@spj.story" target="_blank" class="social-link">THREADS</a>
+    <!-- Scroll Trigger Track -->
+    <div class="scroll-track"></div>
+
+    <!-- Section 1: Hero -->
+    <div class="section-content" id="sec-hero">
+        <div class="avatar-glitch">
+            <img src="/assets/img/guild/spj/avatar.webp" alt="SPJ">
+        </div>
+        <h1>塞趴卷 SPJ</h1>
+        <p style="font-family: 'Orbitron'; letter-spacing: 2px; color: var(--cyan);">THE MATERIALIZER</p>
+        <p>在 0 與 1 的混沌中，我是編織現實的架構師。</p>
+    </div>
+
+    <!-- Section 2: Intro (Left) -->
+    <div class="section-content" id="sec-intro" style="top: 60%;">
+        <h2>起源代碼</h2>
+        <p>「想像力是虛無的，直到它被賦予結構。」</p>
+        <p>我是一名<span class="highlight">軟體工程師</span>。但我更願意稱自己為具現化系鍊金術師。我的煉成陣是螢幕，我的咒語是代碼，我的目標是將腦海中的<span class="highlight">「文字小鎮」</span>具現為可觸碰的現實。</p>
+    </div>
+
+    <!-- Section 3: Guild (Right) -->
+    <div class="section-content right-align" id="sec-guild">
+        <h2>靈魂網絡</h2>
+        <p>孤獨是創造者的詛咒。</p>
+        <p>我夢想建立<span class="highlight">「塞趴卷冒險公會」</span>——一個現實世界的連結中樞。</p>
+        <p>這是一個讓創造者們（冒險者）能夠集結、組隊、共享資源的節點。我們不再是孤島，而是星系。</p>
+    </div>
+
+    <!-- Section 4: Projects (Center) -->
+    <div class="section-content" id="sec-projects" style="left: 50%; transform: translate(-50%, -50%); text-align: center; width: 600px;">
+        <h2>具現化紀錄</h2>
+        <div style="display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;">
+            <div>
+                <div style="font-family: 'Orbitron'; font-size: 1.5rem; color: var(--gold);">01</div>
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">文字小鎮</div>
+                <div style="font-size: 0.8rem; color: #aaa;">天書系統核心</div>
+            </div>
+            <div>
+                <div style="font-family: 'Orbitron'; font-size: 1.5rem; color: var(--gold);">02</div>
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">冒險公會</div>
+                <div style="font-size: 0.8rem; color: #aaa;">現實連結 Nexus</div>
+            </div>
+            <div>
+                <div style="font-family: 'Orbitron'; font-size: 1.5rem; color: var(--gold);">03</div>
+                <div style="font-weight: bold; margin-bottom: 0.5rem;">傳說紀錄</div>
+                <div style="font-size: 0.8rem; color: #aaa;">吟遊詩人系統</div>
+            </div>
+        </div>
     </div>
 
     <script type="importmap">
@@ -252,179 +211,215 @@
         // --- Init ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0b0c15, 0.02);
+        // scene.background = new THREE.Color(0x050505);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- The Golden Thread (Curve) ---
-        // We define a path that snakes down the Y axis
-        // Top is Y=0, Bottom is Y=-50 (approx)
+        // --- Particles & Morph Targets ---
+        const pCount = 3000;
+        const geometry = new THREE.BufferGeometry();
 
-        const curvePoints = [
-            new THREE.Vector3(0, 5, 0), // Start above
-            new THREE.Vector3(0, 0, 0), // Hero (Center)
-            new THREE.Vector3(5, -10, -5), // Intro (Left logic visually, but 3D coords need adjusting)
-            // Wait, if camera moves down Y, we want points to be relative to that.
-            // Let's scroll along Z? Or Y? Y is standard for scroll mapping.
-            // Let's scroll camera from Y=0 to Y=-30.
+        // Define Shapes
+        const posSphere = new Float32Array(pCount * 3);
+        const posCube = new Float32Array(pCount * 3);
+        const posTorus = new Float32Array(pCount * 3);
+        const posChaos = new Float32Array(pCount * 3);
 
-            // Hero at Y=0
-            // Intro at Y=-10 (Left side: X=-5?)
-            // Guild at Y=-20 (Right side: X=5?)
-            // Projects at Y=-30 (Center)
+        // Helper: Random Point in Sphere
+        function getSpherePoint(r) {
+            const u = Math.random();
+            const v = Math.random();
+            const theta = 2 * Math.PI * u;
+            const phi = Math.acos(2 * v - 1);
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+            return [x, y, z];
+        }
 
-            new THREE.Vector3(0, 0, 0), // Hero
-            new THREE.Vector3(-3, -10, 2), // Intro (Camera will look at this)
-            new THREE.Vector3(3, -20, 2), // Guild
-            new THREE.Vector3(0, -30, 0), // Projects
-            new THREE.Vector3(0, -35, 0) // End tail
-        ];
+        // Helper: Random Point in Cube
+        function getCubePoint(s) {
+            return [
+                (Math.random() - 0.5) * s,
+                (Math.random() - 0.5) * s,
+                (Math.random() - 0.5) * s
+            ];
+        }
 
-        const curve = new THREE.CatmullRomCurve3(curvePoints);
-        curve.tension = 0.5;
+        // Helper: Random Point in Torus
+        function getTorusPoint(R, r) {
+            const u = Math.random() * Math.PI * 2;
+            const v = Math.random() * Math.PI * 2;
+            const x = (R + r * Math.cos(v)) * Math.cos(u);
+            const y = (R + r * Math.cos(v)) * Math.sin(u);
+            const z = r * Math.sin(v);
+            return [x, y, z];
+        }
 
-        // Tube Geometry
-        const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.1, 8, false);
-        const tubeMat = new THREE.MeshBasicMaterial({
-            color: 0xFFD700,
+        // Fill Arrays
+        for(let i=0; i<pCount; i++) {
+            const i3 = i*3;
+
+            // Sphere (Hero)
+            const s = getSpherePoint(10);
+            posSphere[i3] = s[0]; posSphere[i3+1] = s[1]; posSphere[i3+2] = s[2];
+
+            // Cube (Intro/Town)
+            const c = getCubePoint(15);
+            posCube[i3] = c[0]; posCube[i3+1] = c[1]; posCube[i3+2] = c[2];
+
+            // Torus (Guild/Network)
+            const t = getTorusPoint(10, 3);
+            posTorus[i3] = t[0]; posTorus[i3+1] = t[1]; posTorus[i3+2] = t[2];
+
+            // Chaos (Projects/Explosion)
+            posChaos[i3] = (Math.random() - 0.5) * 50;
+            posChaos[i3+1] = (Math.random() - 0.5) * 50;
+            posChaos[i3+2] = (Math.random() - 0.5) * 50;
+        }
+
+        // Current Positions (Start as Sphere)
+        const currentPos = new Float32Array(posSphere);
+        geometry.setAttribute('position', new THREE.BufferAttribute(currentPos, 3));
+
+        // Colors
+        const colors = new Float32Array(pCount * 3);
+        const color1 = new THREE.Color(0xFFD700);
+        const color2 = new THREE.Color(0x00FFFF);
+
+        for(let i=0; i<pCount; i++) {
+            const mixed = color1.clone().lerp(color2, Math.random());
+            colors[i*3] = mixed.r;
+            colors[i*3+1] = mixed.g;
+            colors[i*3+2] = mixed.b;
+        }
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.15,
+            vertexColors: true,
             transparent: true,
             opacity: 0.8,
-            wireframe: true // Tech/Blueprint feel
-        });
-        const tube = new THREE.Mesh(tubeGeo, tubeMat);
-        scene.add(tube);
-
-        // Glow Tube (Inner)
-        const glowGeo = new THREE.TubeGeometry(curve, 100, 0.05, 8, false);
-        const glowMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const glowTube = new THREE.Mesh(glowGeo, glowMat);
-        scene.add(glowTube);
-
-        // Nodes (Spheres at key points)
-        const nodeGeo = new THREE.IcosahedronGeometry(0.3, 0);
-        const nodeMat = new THREE.MeshBasicMaterial({ color: 0x4facfe, wireframe: true });
-
-        [0, 10, 20, 30].forEach(y => {
-            const point = curve.getPointAt( Math.abs(y / 35) ); // approx mapping
-            // Actually let's place them manually near the curve points
+            blending: THREE.AdditiveBlending
         });
 
-        // Add nodes at key curve indices
-        [1, 2, 3].forEach(idx => {
-            const mesh = new THREE.Mesh(nodeGeo, nodeMat);
-            mesh.position.copy(curvePoints[idx]);
-            scene.add(mesh);
-        });
-
-        // Floating Particles
-        const pCount = 500;
-        const pPos = new Float32Array(pCount * 3);
-        for(let i=0; i<pCount*3; i+=3) {
-            pPos[i] = (Math.random() - 0.5) * 20; // X
-            pPos[i+1] = (Math.random() - 0.5) * 40 - 15; // Y (Spread vertically)
-            pPos[i+2] = (Math.random() - 0.5) * 20; // Z
-        }
-        const pGeo = new THREE.BufferGeometry();
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({ color: 0x4facfe, size: 0.05, transparent: true, opacity: 0.4 });
-        const particles = new THREE.Points(pGeo, pMat);
+        const particles = new THREE.Points(geometry, material);
         scene.add(particles);
 
+        // --- Interaction State ---
+        let scrollProgress = 0;
+        let targetShape = 0; // 0: Sphere, 1: Cube, 2: Torus, 3: Chaos
 
-        // --- GSAP Scroll Interaction ---
+        // --- GSAP Scroll ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Animate Camera along the curve?
-        // Or simpler: Animate Camera Y position directly.
+        ScrollTrigger.create({
+            trigger: ".scroll-track",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                scrollProgress = self.progress;
 
-        // Initial Camera Pos
-        camera.position.set(0, 0, 10);
-        camera.lookAt(0, 0, 0);
+                // Determine target shape based on scroll
+                // 0-0.25: Sphere
+                // 0.25-0.5: Cube
+                // 0.5-0.75: Torus
+                // 0.75-1.0: Chaos
 
-        // Timeline linked to scroll container
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: ".scroll-container",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
+                // Map progress to float index (0 to 3)
+                targetShape = scrollProgress * 3;
+
+                // Update Progress UI
+                const p = Math.floor(scrollProgress * 100).toString().padStart(3, '0');
+                document.querySelector('.progress-indicator').innerText = p;
             }
         });
 
-        // Move Camera Down
-        tl.to(camera.position, { y: -30, ease: "none" }, 0);
-
-        // Move Camera X slightly to weave around the thread
-        // Keyframes
-        tl.to(camera.position, {
-            x: 2, // Look at Intro (Left) from Right?
-            duration: 0.33
-        }, 0)
-        .to(camera.position, {
-            x: -2, // Look at Guild (Right) from Left?
-            duration: 0.33
-        }, 0.33)
-        .to(camera.position, {
-            x: 0, // Back to Center
-            duration: 0.33
-        }, 0.66);
-
-        // Reveal Content Sections
-        // We use absolute triggers based on viewport
+        // Content Visibility
         const sections = ['#sec-hero', '#sec-intro', '#sec-guild', '#sec-projects'];
         sections.forEach((id, i) => {
-            // Fade In/Out logic
-            // Because they are absolutely positioned in a tall container, we can trigger off their top position relative to viewport?
-            // No, the container is scrolling naturally? No, wait.
-            // .scroll-container is 400vh tall.
-            // .content-section are absolute at 0, 100vh, 200vh...
-            // As we scroll native body, these come into view.
+            // Simple fade in/out based on scroll phases
+            // 0: Hero, 1: Intro, 2: Guild, 3: Projects
+            const start = i * 0.25;
+            const end = (i + 1) * 0.25;
 
-            // We just need to animate them when they enter view.
-            gsap.from(`${id} .content-box`, {
-                opacity: 0,
-                y: 50,
-                duration: 1,
+            // Use timeline to control opacity
+            gsap.timeline({
                 scrollTrigger: {
-                    trigger: id,
-                    start: "top center",
-                    end: "bottom center",
-                    toggleActions: "play reverse play reverse"
+                    trigger: ".scroll-track",
+                    start: `${start * 100}% top`,
+                    end: `${end * 100}% top`,
+                    scrub: 0.5
                 }
-            });
-
-            // Animate connector line width
-            gsap.from(`${id} .connector-line`, {
-                width: 0,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: id,
-                    start: "top center"
-                }
-            });
+            })
+            .to(id, { opacity: 1, y: 0, duration: 0.2 })
+            .to(id, { opacity: 0, y: -20, duration: 0.2 }, 0.8); // Fade out near end of segment
         });
+
+
+        // --- Morph Logic ---
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
 
         // Animation Loop
         const clock = new THREE.Clock();
+
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Pulse Thread
-            tubeMat.opacity = 0.5 + Math.sin(time) * 0.3;
+            // Rotate entire system
+            particles.rotation.y = time * 0.1;
 
-            // Rotate Particles
-            particles.rotation.y = time * 0.05;
+            // Calculate Current Morph
+            // targetShape is float 0..3
+            // If 0.5, we mix Shape 0 and Shape 1
 
-            // Camera LookAt adjustment
-            // We want camera to look slightly ahead on the curve?
-            // Simple look at (0, currentY, 0)
-            camera.lookAt(0, camera.position.y - 2, 0);
+            const positions = particles.geometry.attributes.position.array;
+
+            let sourceArr, targetArr, mix;
+
+            if (targetShape < 1) { // 0 -> 1 (Sphere -> Cube)
+                sourceArr = posSphere;
+                targetArr = posCube;
+                mix = targetShape;
+            } else if (targetShape < 2) { // 1 -> 2 (Cube -> Torus)
+                sourceArr = posCube;
+                targetArr = posTorus;
+                mix = targetShape - 1;
+            } else { // 2 -> 3 (Torus -> Chaos)
+                sourceArr = posTorus;
+                targetArr = posChaos;
+                mix = targetShape - 2;
+            }
+
+            // Interpolate
+            // Note: For 3000 particles, doing this every frame in JS is okay (~9000 ops)
+            // Ideally use vertex shader, but JS is easier to setup here
+
+            const speed = 0.1; // Smoothness factor
+
+            for(let i=0; i<pCount*3; i++) {
+                // Target position for this particle
+                const tx = lerp(sourceArr[i], targetArr[i], mix);
+
+                // Add noise/turbulence
+                const noise = Math.sin(time * 5 + i) * 0.05;
+
+                // Move current towards target
+                // positions[i] += (tx - positions[i]) * speed; // Easing
+                // Or Direct mapping for responsiveness to scroll
+                positions[i] = tx + noise;
+            }
+
+            particles.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
