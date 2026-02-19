@@ -520,12 +520,20 @@
         .social-link {
             font-size: 1.5rem;
             color: var(--c-text);
-            transition: all 0.5s;
-            opacity: 0.5;
+            opacity: 0;
+            transform: translateY(14px);
+            pointer-events: none;
             position: relative;
             padding: 0.5rem;
             border: 1px solid transparent;
             text-decoration: none;
+            transition: opacity 0.6s, transform 0.6s, color 0.3s, border-color 0.3s;
+        }
+
+        .social-link.soul-revealed {
+            opacity: 0.5;
+            transform: translateY(0);
+            pointer-events: auto;
         }
 
         .social-link::after {
@@ -1634,37 +1642,6 @@
             background: linear-gradient(90deg, transparent, #c5a059, transparent);
         }
 
-        /* ── Socials ── */
-        .intro-socials {
-            display: flex;
-            gap: 1.4rem;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-
-        .intro-social-link {
-            font-size: 1.05rem;
-            color: rgba(197, 160, 89, 0.4);
-            opacity: 0;
-            transform: translateY(8px);
-            text-decoration: none;
-            cursor: pointer;
-            transition: color 0.25s;
-        }
-
-        .intro-social-link:hover {
-            color: #c5a059;
-        }
-
-        .intro-social-link:nth-child(1) { animation: intro-fade-up 0.4s 2.40s ease-out forwards; }
-        .intro-social-link:nth-child(2) { animation: intro-fade-up 0.4s 2.50s ease-out forwards; }
-        .intro-social-link:nth-child(3) { animation: intro-fade-up 0.4s 2.60s ease-out forwards; }
-        .intro-social-link:nth-child(4) { animation: intro-fade-up 0.4s 2.70s ease-out forwards; }
-        .intro-social-link:nth-child(5) { animation: intro-fade-up 0.4s 2.80s ease-out forwards; }
-        .intro-social-link:nth-child(6) { animation: intro-fade-up 0.4s 2.90s ease-out forwards; }
-        .intro-social-link:nth-child(7) { animation: intro-fade-up 0.4s 3.00s ease-out forwards; }
-        .intro-social-link:nth-child(8) { animation: intro-fade-up 0.4s 3.10s ease-out forwards; }
-
         /* ── Status label ── */
         .intro-status {
             position: absolute;
@@ -1715,16 +1692,6 @@
                     <span class="intro-divider-line"></span>
                     <span>✦</span>
                     <span class="intro-divider-line"></span>
-                </div>
-                <div class="intro-socials">
-                    <a href="https://www.youtube.com/@%E5%B0%8F%E7%B1%B3%E7%B5%B2MIS" target="_blank" class="intro-social-link"><i class="fa-brands fa-youtube"></i></a>
-                    <a href="https://www.twitch.tv/mis_0326" target="_blank" class="intro-social-link"><i class="fa-brands fa-twitch"></i></a>
-                    <a href="https://x.com/utopia_mis" target="_blank" class="intro-social-link"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="https://www.threads.net/@misgirl0326" target="_blank" class="intro-social-link"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/mis_suger0326/" target="_blank" class="intro-social-link"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://discord.gg/rB2d6qQK64" target="_blank" class="intro-social-link"><i class="fa-brands fa-discord"></i></a>
-                    <a href="https://www.tiktok.com/@misgirl0326" target="_blank" class="intro-social-link"><i class="fa-brands fa-tiktok"></i></a>
-                    <a href="https://linkgoods.com/misutopia" target="_blank" class="intro-social-link"><i class="fa-solid fa-link"></i></a>
                 </div>
             </div>
         </div>
@@ -2325,6 +2292,12 @@
                 setTimeout(() => {
                     if (summonResult) summonResult.classList.add('revealed');
                 }, 800);
+
+                /* Reveal social links one by one after the result appears */
+                const socialLinks = document.querySelectorAll('.social-link');
+                socialLinks.forEach((link, i) => {
+                    setTimeout(() => link.classList.add('soul-revealed'), 1400 + i * 90);
+                });
 
                 /* Clean up flash/shockwave classes */
                 setTimeout(() => {
