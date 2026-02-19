@@ -1557,28 +1557,47 @@
             transition: opacity 0.25s ease;
         }
 
-        /* ── Soul Bloom Overlay ──
-           Independent element OUTSIDE veil — its opacity is NOT
-           multiplied by the veil, solving the dark-on-dark problem.
-           Created dynamically in lift(). */
-        .soul-bloom-overlay {
+        /* ── Veil Transition: Two-Layer System ──
+           Layer 1 (veil-fade, z-9998): solid black base that fades out.
+                Prevents page from flashing when veil is removed.
+           Layer 2 (veil-glow, z-9999): bright radial glow ON TOP.
+                Provides the visible transition event.
+                Its opacity is independent — NOT multiplied by the base. */
+        .veil-fade {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            pointer-events: none;
+            background: #000;
+            animation: base-fade 2s ease-in-out forwards;
+        }
+
+        .veil-glow {
             position: fixed;
             inset: 0;
             z-index: 9999;
             pointer-events: none;
             background: radial-gradient(circle at 50% 50%,
-                rgba(197, 160, 89, 0.30) 0%,
-                rgba(106, 13, 173, 0.18) 18%,
-                rgba(0, 0, 0, 0.97) 52%,
-                rgba(0, 0, 0, 1) 100%
+                rgba(255, 248, 210, 0.92) 0%,
+                rgba(197, 160, 89, 0.65) 12%,
+                rgba(106, 13, 173, 0.38) 30%,
+                transparent 55%
             );
-            animation: bloom-dissolve 2s ease-in-out forwards;
+            transform-origin: center center;
+            animation: glow-pulse 1.8s ease-out forwards;
         }
 
-        @keyframes bloom-dissolve {
+        @keyframes base-fade {
             0%   { opacity: 1; }
-            45%  { opacity: 0.5; }
+            40%  { opacity: 0.55; }
             100% { opacity: 0; }
+        }
+
+        @keyframes glow-pulse {
+            0%   { opacity: 0; transform: scale(0.08); }
+            15%  { opacity: 1; transform: scale(0.7); }
+            35%  { opacity: 0.85; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1.8); }
         }
 
         /* ── Ritual Circle ── */
@@ -2848,21 +2867,24 @@
                 /* Phase 1: disperse ritual content inside the veil */
                 veil.classList.add('is-lifting');
 
-                /* Phase 2: after ritual fades (~450ms), swap veil for
-                   an independent bloom overlay that fades smoothly.
-                   The overlay edges are opaque black (matching the veil)
-                   so the swap is invisible; its center has a soul glow. */
+                /* Phase 2: after ritual fades (~450ms), replace veil with
+                   two independent layers:
+                   - veil-fade (z-9998): solid black base → prevents flash
+                   - veil-glow (z-9999): bright bloom ON TOP → visible transition */
                 setTimeout(function () {
-                    var bloom = document.createElement('div');
-                    bloom.className = 'soul-bloom-overlay';
-                    document.body.appendChild(bloom);
+                    var fade = document.createElement('div');
+                    fade.className = 'veil-fade';
+                    document.body.appendChild(fade);
+
+                    var glow = document.createElement('div');
+                    glow.className = 'veil-glow';
+                    document.body.appendChild(glow);
 
                     veil.remove();
                     revealPage();
 
-                    bloom.addEventListener('animationend', function () {
-                        bloom.remove();
-                    });
+                    fade.addEventListener('animationend', function () { fade.remove(); });
+                    glow.addEventListener('animationend', function () { glow.remove(); });
                 }, 450);
             }
 
