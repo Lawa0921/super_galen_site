@@ -7,8 +7,6 @@
     <!-- GSAP Global -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <!-- p5.js Global -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Three.js Import Map -->
@@ -36,10 +34,12 @@
             margin: 0;
             padding: 0;
             width: 100%;
+            height: 100%;
             background-color: var(--dark-bg);
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
+            scroll-behavior: smooth;
         }
 
         /* Canvas Layers */
@@ -53,14 +53,30 @@
             pointer-events: none;
         }
 
-        #p5-container {
+        /* HUD Overlay (SVG) */
+        #hud-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
+            bottom: 2rem;
+            right: 2rem;
+            width: 300px;
+            height: 300px;
+            z-index: 100;
             pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #hud-top-left {
+            position: fixed;
+            top: 2rem;
+            left: 4rem; /* Offset for back button */
+            z-index: 100;
+            pointer-events: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            line-height: 1.5;
         }
 
         /* Navigation */
@@ -94,18 +110,23 @@
             position: relative;
             z-index: 20;
             width: 100%;
-            height: 800vh; /* Increased scroll length for more sections */
+            display: flex;
+            flex-direction: column;
+            /* Remove fixed height, allow natural flow */
         }
 
         .section {
-            position: absolute;
+            position: relative; /* Changed from absolute */
             width: 100%;
-            height: 100vh;
+            min-height: 100vh; /* Changed from fixed height */
+            height: auto;
             display: flex;
             justify-content: center; /* Centered by default */
             align-items: center;
             pointer-events: none;
             perspective: 1000px;
+            padding: 4rem 0; /* Add padding for mobile flow */
+            box-sizing: border-box;
         }
 
         /* Card Styling */
@@ -114,12 +135,13 @@
             background: linear-gradient(135deg, rgba(10,10,20,0.95), rgba(0,0,0,0.9));
             border: 1px solid rgba(0, 243, 255, 0.3);
             padding: 2.5rem;
-            max-width: 550px; /* Wider card */
-            width: 85%;
+            max-width: 550px;
+            width: 90%; /* Responsive width */
             position: relative;
             backdrop-filter: blur(10px);
             box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0, 243, 255, 0.05);
             transform-style: preserve-3d;
+            /* Simplified clip-path to avoid cutting off content on resize */
             clip-path: polygon(
                 20px 0, 100% 0,
                 100% calc(100% - 20px), calc(100% - 20px) 100%,
@@ -153,11 +175,12 @@
         }
 
         h1 {
-            font-size: 3rem;
+            font-size: clamp(2rem, 5vw, 3rem); /* Responsive font size */
             color: #fff;
             text-shadow: 0 0 10px var(--neon-cyan);
             letter-spacing: 5px;
             margin-bottom: 0.5rem;
+            line-height: 1.2;
         }
 
         h3 {
@@ -334,22 +357,46 @@
             text-shadow: 0 0 15px var(--neon-pink);
         }
 
-        /* Mobile specific adjustments */
+        /* Mobile specific adjustments (RWD) */
         @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            .hud-card { padding: 1.5rem; width: 90%; }
-            .stat-grid, .equip-grid { grid-template-columns: 1fr; }
+            .nav-back {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.8rem;
+                top: 1rem;
+                left: 1rem;
+            }
+            .hud-card {
+                padding: 1.5rem;
+                width: 90%;
+                margin: 0 auto;
+            }
+            .section {
+                padding: 2rem 0; /* Less padding on mobile */
+                align-items: flex-start; /* Align top for better scrolling flow */
+                padding-top: 6rem; /* More top padding to clear nav */
+            }
+            /* Override explicit alignments for mobile flow */
+            #section-identity, #section-skills, #section-hobbies, #section-personal {
+                justify-content: center !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+            .equip-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 cols instead of 1 for better use of space */
+            }
+            #hud-container {
+                right: 0;
+                bottom: 0;
+                transform: scale(0.7); /* Scale down HUD on mobile */
+                transform-origin: bottom right;
+            }
+            #hud-top-left {
+                display: none; /* Hide on mobile to prevent clutter */
+            }
         }
-
-        /* Section Positioning */
-        #section-hero { top: 0; }
-        #section-identity { top: 100vh; align-items: flex-start; padding-top: 10vh; }
-        #section-stats { top: 200vh; align-items: flex-end; padding-bottom: 10vh; }
-        #section-skills { top: 300vh; align-items: flex-start; padding-top: 10vh; }
-        #section-equip { top: 400vh; align-items: flex-end; padding-bottom: 10vh; }
-        #section-hobbies { top: 500vh; align-items: flex-start; padding-top: 10vh; }
-        #section-personal { top: 600vh; align-items: flex-end; padding-bottom: 10vh; }
-        #section-goal { top: 700vh; }
 
     </style>
 </head>
@@ -358,7 +405,54 @@
     <a href="/guild/" class="nav-back"><i class="fas fa-chevron-left"></i> Guild Hall</a>
 
     <div id="canvas-container"></div>
-    <div id="p5-container"></div>
+
+    <!-- Lightweight SVG HUD -->
+    <div id="hud-top-left">
+        <div>SYS: ONLINE</div>
+        <div>LOC: NEON_HIGHWAY</div>
+        <div>OBJ: REACH_JAPAN <span style="color:var(--neon-pink); animation: blink 1s infinite;">●</span></div>
+    </div>
+
+    <div id="hud-container">
+        <!-- Speedometer SVG -->
+        <svg width="250" height="250" viewBox="0 0 250 250">
+            <!-- Defs for glow -->
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <!-- Outer Ring (Static) -->
+            <path d="M 45 205 A 110 110 0 1 1 205 205" fill="none" stroke="rgba(0, 243, 255, 0.2)" stroke-width="2" />
+
+            <!-- Speed Arc (Dynamic) -->
+            <!-- Path length for dasharray calculation is roughly 2 * PI * 100 * (3/4 circle) approx 471 -->
+            <path id="speed-arc" d="M 55 195 A 100 100 0 1 1 195 195"
+                  fill="none"
+                  stroke="#00f3ff"
+                  stroke-width="8"
+                  stroke-linecap="round"
+                  filter="url(#glow)"
+                  stroke-dasharray="471"
+                  stroke-dashoffset="471" />
+
+            <!-- Text Readout -->
+            <text x="125" y="140" text-anchor="middle" fill="#fff" font-family="'Orbitron', sans-serif" font-size="48" font-weight="bold" id="speed-text">0</text>
+            <text x="125" y="170" text-anchor="middle" fill="#00f3ff" font-family="'Orbitron', sans-serif" font-size="14" letter-spacing="2">KM/H</text>
+
+            <!-- Gear -->
+            <text x="180" y="100" text-anchor="middle" fill="#ffc800" font-family="'Orbitron', sans-serif" font-size="24" id="gear-text">N</text>
+        </svg>
+    </div>
+
+    <style>
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+    </style>
 
     <div class="content-scroll">
 
@@ -582,7 +676,6 @@
         // --- Objects ---
 
         // 1. The Grid Floor (Moving Road)
-        // We use two grids to loop seamlessly if needed, or just reset UVs
         const gridSize = 2000;
         const gridDivisions = 40;
         const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x00f3ff, 0x111111);
@@ -590,10 +683,8 @@
         scene.add(gridHelper);
 
         // 2. The "Gates" (Passing structures)
-        // Instead of random buildings, let's use spaced-out "Neon Gates"
         const gateCount = 20;
-        const gateGeometry = new THREE.TorusGeometry(30, 0.5, 8, 4); // Square-ish torus
-        // Additive Blending for neon glow without z-fighting
+        const gateGeometry = new THREE.TorusGeometry(30, 0.5, 8, 4);
         const gateMaterial = new THREE.MeshBasicMaterial({
             color: 0x00f3ff,
             transparent: true,
@@ -627,11 +718,9 @@
             depthWrite: false
         });
         const sun = new THREE.Mesh(sunGeo, sunMat);
-        sun.position.set(0, 40, -1000); // Fixed far away
+        sun.position.set(0, 40, -1000);
         scene.add(sun);
 
-        // Sun gradient/glow (Gradient texture)
-        // Simple trick: another larger circle behind with lower opacity
         const sunGlowGeo = new THREE.CircleGeometry(120, 64);
         const sunGlowMat = new THREE.MeshBasicMaterial({
             color: 0xff0055,
@@ -651,7 +740,6 @@
             baseSpeed: 0.5,      // Resting speed (cruising)
             scrollBoost: 0,      // Added by scrolling
             currentSpeed: 0.5,   // Actual simulation speed
-            distance: 0          // Total distance traveled
         };
 
         // ScrollTrigger just adds "Impulse" to scrollBoost
@@ -660,12 +748,8 @@
             start: "top top",
             end: "bottom bottom",
             onUpdate: (self) => {
-                // Determine boost based on velocity
-                // self.getVelocity() returns pixels per second approx
                 const v = Math.abs(self.getVelocity());
-                // Add to boost, clamp max
-                // Reduced sensitivity AGAIN significantly (0.01 -> 0.002)
-                // Clamped max boost even lower (30 -> 10)
+                // Reduced sensitivity and clamped boost
                 state.scrollBoost = Math.min(v * 0.002, 10);
             }
         });
@@ -686,39 +770,29 @@
             });
         });
 
+        // HUD Elements (SVG)
+        const speedText = document.getElementById('speed-text');
+        const gearText = document.getElementById('gear-text');
+        const speedArc = document.getElementById('speed-arc');
+        const maxDash = 471; // Full arc length
+
         // Loop
         function animate() {
             requestAnimationFrame(animate);
 
             // 1. Physics / Speed Logic
-            // Decay boost
-            // Increased decay (0.92 -> 0.96) so it slows down very quickly
-            state.scrollBoost *= 0.96;
-
-            // Calculate target speed
+            state.scrollBoost *= 0.96; // Decay
             const targetSpeed = state.baseSpeed + state.scrollBoost;
-
-            // Smoothly interpolate current speed (acceleration/deceleration)
-            // Lower interpolation factor (0.05 -> 0.05)
             state.currentSpeed += (targetSpeed - state.currentSpeed) * 0.05;
 
-            // Expose to p5 (KM/H) - Scale factor to look good (0-300 range)
-            // 0.5 unit/frame ~ 60km/h
-            // Max scroll boost 10 -> 10.5 total.
-            // 10.5 * 6 = 63. 60+63 = 123 km/h max.
+            // KM/H calculation
             let kmh = 60 + (state.currentSpeed * 6);
-            if (kmh > 150) kmh = 150; // Hard clamp lower
-            window.scrollSpeed = kmh;
+            if (kmh > 150) kmh = 150;
 
             // 2. Move World (Relative to Camera)
-            // Instead of moving camera, we move objects towards camera (+Z)
-
             // Move Grid
-            // Texture offset logic for infinite scroll
             gridHelper.position.z += state.currentSpeed;
-            if (gridHelper.position.z > 50) gridHelper.position.z = -50; // Wrap around smoothly (grid size is large, but tile size is small)
-            // Wait, for GridHelper, we just need to wrap by one cell size.
-            // Grid size 2000, divisions 40 -> cell size 50.
+            if (gridHelper.position.z > 50) gridHelper.position.z = -50;
             if (gridHelper.position.z >= (gridSize / gridDivisions)) {
                 gridHelper.position.z = 0;
             }
@@ -730,10 +804,8 @@
 
                 dummy.position.z += state.currentSpeed;
 
-                // Reset if passed camera
                 if (dummy.position.z > 20) {
-                    dummy.position.z = -(gateCount * gateSpacing) + 20; // Send to back
-                    // Randomize rotation slightly for variety
+                    dummy.position.z = -(gateCount * gateSpacing) + 20;
                     dummy.rotation.z = (Math.PI / 4) + (Math.random() * 0.2);
                 }
 
@@ -742,15 +814,49 @@
             }
             gates.instanceMatrix.needsUpdate = true;
 
-            // Camera Sway (Mouse)
+            // Camera Sway
             const targetX = (mouseX / window.innerWidth - 0.5) * 5;
             const targetY = (mouseY / window.innerHeight - 0.5) * 2 + 3;
-
             camera.position.x += (targetX - camera.position.x) * 0.05;
             camera.position.y += (targetY - camera.position.y) * 0.05;
-            camera.rotation.z = -(targetX - camera.position.x) * 0.05; // Bank turn
+            camera.rotation.z = -(targetX - camera.position.x) * 0.05;
 
             renderer.render(scene, camera);
+
+            // 3. Update HUD (SVG)
+            updateHUD(kmh);
+        }
+
+        function updateHUD(speed) {
+            // Text
+            speedText.textContent = Math.floor(speed);
+
+            // Gear
+            let gear = "N";
+            if (speed > 10) gear = "1";
+            if (speed > 40) gear = "2";
+            if (speed > 70) gear = "3";
+            if (speed > 100) gear = "4";
+            if (speed > 120) gear = "5";
+            if (speed > 140) gear = "6";
+            gearText.textContent = gear;
+
+            // Arc Stroke (0 to 160 range)
+            // Offset goes from 471 (empty) to 0 (full)?
+            // Actually, for gauge, usually from 471 to 0 fills it.
+            // Let's map 0-160 speed to 471-0 offset.
+            // But the SVG arc is drawn fully. We want to 'reveal' it.
+            // dashoffset = length - (value / max) * length
+            const progress = (speed / 160);
+            const offset = maxDash - (progress * maxDash);
+            speedArc.style.strokeDashoffset = offset;
+
+            // Color shift for redline
+            if (speed > 130) {
+                speedArc.style.stroke = "#ff0055";
+            } else {
+                speedArc.style.stroke = "#00f3ff";
+            }
         }
 
         let mouseX = window.innerWidth / 2;
@@ -769,100 +875,5 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
-
-    <script>
-        // p5.js HUD
-        function setup() {
-            let cvs = createCanvas(windowWidth, windowHeight);
-            cvs.parent('p5-container');
-            frameRate(30);
-        }
-
-        function draw() {
-            clear();
-
-            // Draw Tech Lines
-            drawHUD();
-        }
-
-        function drawHUD() {
-            push();
-            stroke(0, 243, 255); // Cyan
-            noFill();
-
-            // Speedometer (Bottom Right)
-            let speed = window.scrollSpeed || 60;
-
-            translate(width - 150, height - 120);
-
-            // Outer Ring
-            strokeWeight(2);
-            stroke(0, 243, 255, 100);
-            arc(0, 0, 200, 200, PI - 0.5, TWO_PI + 0.5);
-
-            // Active RPM Bar
-            // Map 0-300 to Angle
-            let startAngle = PI;
-            // Updated range mapping to match new max speed
-            let endAngle = map(speed, 0, 160, PI, TWO_PI + 0.5);
-
-            stroke(0, 243, 255);
-            strokeWeight(8);
-            if (speed > 130) stroke(255, 0, 85); // Redline
-
-            arc(0, 0, 180, 180, startAngle, endAngle);
-
-            // Digital Readout
-            noStroke();
-            fill(255);
-            textFont('Orbitron');
-            textAlign(CENTER, CENTER);
-
-            textSize(48);
-            text(Math.floor(speed), 0, -10);
-
-            textSize(14);
-            fill(0, 243, 255);
-            text("KM/H", 0, 30);
-
-            // Gear indicator (Fake)
-            let gear = "N";
-            if (speed > 10) gear = "1";
-            if (speed > 40) gear = "2";
-            if (speed > 70) gear = "3";
-            if (speed > 100) gear = "4";
-            if (speed > 120) gear = "5";
-            if (speed > 140) gear = "6";
-
-            textSize(24);
-            fill(255, 200, 0);
-            text(gear, 60, -40);
-
-            pop();
-
-            // Top Left Info
-            push();
-            translate(40, 60);
-            fill(0, 243, 255);
-            textFont('Orbitron');
-            textSize(12);
-            textAlign(LEFT);
-            text("SYS: ONLINE", 0, 0);
-            text("LOC: NEON_HIGHWAY", 0, 20);
-            text("OBJ: REACH_JAPAN", 0, 40);
-
-            // Blinking dot
-            if (frameCount % 60 < 30) {
-                fill(255, 0, 85); // Pink
-                ellipse(-15, 0, 6, 6);
-            }
-            pop();
-        }
-
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
-    </script>
-
 </body>
 </html>
