@@ -1539,29 +1539,60 @@
             flex-direction: column;
             touch-action: none;
             cursor: wait;
-            will-change: opacity;
+            overflow: hidden;
+        }
+
+        /* Soul bloom — the visible light burst that makes transition perceivable */
+        #intro-veil::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center,
+                rgba(255, 248, 210, 0.95) 0%,
+                rgba(197, 160, 89, 0.80) 12%,
+                rgba(106, 13, 173, 0.65) 38%,
+                rgba(26, 5, 32, 0.40) 62%,
+                transparent 75%
+            );
+            opacity: 0;
+            transform: scale(0.04);
+            transform-origin: center center;
+            z-index: 1;
+            pointer-events: none;
         }
 
         #intro-veil.is-lifting {
             pointer-events: none;
-            animation: intro-veil-lift 1.6s ease-out forwards;
+            animation: intro-veil-lift 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* Bloom fires after ritual disperses */
+        #intro-veil.is-lifting::before {
+            animation: soul-bloom 2.0s ease-out forwards;
         }
 
         /* Ritual content disperses first */
         #intro-veil.is-lifting .intro-ritual {
             opacity: 0;
-            transform: scale(1.06);
-            transition: opacity 0.55s ease, transform 0.65s ease;
+            transform: scale(1.08);
+            transition: opacity 0.4s ease, transform 0.5s ease;
         }
 
         #intro-veil.is-lifting .intro-status {
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.25s ease;
+        }
+
+        @keyframes soul-bloom {
+            0%   { opacity: 0;    transform: scale(0.04); }
+            18%  { opacity: 1;    transform: scale(0.85); }
+            50%  { opacity: 0.85; transform: scale(1.55); }
+            100% { opacity: 0;    transform: scale(3.2);  }
         }
 
         @keyframes intro-veil-lift {
             0%   { opacity: 1; }
-            40%  { opacity: 0.85; }
+            18%  { opacity: 1; }   /* hold while bloom ignites */
             100% { opacity: 0; }
         }
 
