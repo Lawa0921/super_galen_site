@@ -1539,17 +1539,30 @@
             flex-direction: column;
             touch-action: none;
             cursor: wait;
-            will-change: transform;
+            will-change: opacity;
         }
 
         #intro-veil.is-lifting {
             pointer-events: none;
-            animation: intro-veil-lift 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: intro-veil-lift 1.6s ease-out forwards;
+        }
+
+        /* Ritual content disperses first */
+        #intro-veil.is-lifting .intro-ritual {
+            opacity: 0;
+            transform: scale(1.06);
+            transition: opacity 0.55s ease, transform 0.65s ease;
+        }
+
+        #intro-veil.is-lifting .intro-status {
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         @keyframes intro-veil-lift {
-            0%   { transform: translateY(0); }
-            100% { transform: translateY(-100vh); }
+            0%   { opacity: 1; }
+            40%  { opacity: 0.85; }
+            100% { opacity: 0; }
         }
 
         /* ── Ritual Circle ── */
