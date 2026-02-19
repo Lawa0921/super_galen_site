@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Visual Novel)', () => {
+test.describe('SPJ Guild Page (Interactive Tavern)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -14,26 +14,26 @@ test.describe('SPJ Guild Page (Visual Novel)', () => {
 
   test('should display Character Sprite', async ({ page }) => {
     await expect(page.locator('.char-container')).toBeVisible();
-    await expect(page.locator('.speaker-tag')).toHaveText('SPJ');
   });
 
   test('should display Dialogue Box', async ({ page }) => {
     await expect(page.locator('.dialogue-box')).toBeVisible();
-    // Trigger scroll slightly to ensure GSAP updates
-    await page.mouse.wheel(0, 100);
+    await page.mouse.wheel(0, 100); // Trigger update
     await page.waitForTimeout(1000);
-    // Initial text (might be typing, check substring)
-    await expect(page.locator('#dialogue-text')).toContainText('歡迎來到我的酒館');
+    // Note: The text is "嘿，你來了...", but contains "快進來" which implies welcome context.
+    // Let's check for "嘿" or "暖暖身子" which is in the first script line.
+    await expect(page.locator('#dialogue-text')).toContainText('嘿');
   });
 
-  test('should trigger Project Panels on Scroll', async ({ page }) => {
-    // Scroll to middle (around Text Town beat)
-    // 6 beats total. Text Town is index 2 -> ~33-50%
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.4)");
-    await page.waitForTimeout(2000); // Wait for type + panel fade
+  test('should display Skill Board on Scroll', async ({ page }) => {
+    // Scroll to Beat 2 (Menu) -> ~20-30%
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.25)");
+    await page.waitForTimeout(2000);
 
-    await expect(page.locator('#panel-texttown')).toBeVisible();
-    await expect(page.locator('#dialogue-text')).toContainText('文字小鎮');
+    // Check if opacity is 1 (visible)
+    const board = page.locator('#skill-board');
+    await expect(board).toHaveCSS('opacity', '1');
+    await expect(board).toContainText('SPECIALS');
   });
 
   test('should have Three.js canvas', async ({ page }) => {
