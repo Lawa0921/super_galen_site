@@ -1539,11 +1539,12 @@
             flex-direction: column;
             touch-action: none;
             cursor: wait;
+            will-change: transform;
         }
 
         #intro-veil.is-lifting {
             pointer-events: none;
-            animation: intro-veil-lift 1.4s cubic-bezier(0.87, 0, 0.13, 1) forwards;
+            animation: intro-veil-lift 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         @keyframes intro-veil-lift {
