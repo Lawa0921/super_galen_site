@@ -29,7 +29,7 @@
             --neon-yellow: #ffee00;
             --neon-purple: #bc13fe;
             --dark-bg: #020202;
-            --panel-bg: rgba(5, 5, 10, 0.85);
+            --panel-bg: rgba(5, 5, 10, 0.9);
         }
 
         body, html {
@@ -94,7 +94,7 @@
             position: relative;
             z-index: 20;
             width: 100%;
-            height: 600vh; /* Extended for more sections */
+            height: 800vh; /* Increased scroll length for more sections */
         }
 
         .section {
@@ -114,7 +114,7 @@
             background: linear-gradient(135deg, rgba(10,10,20,0.95), rgba(0,0,0,0.9));
             border: 1px solid rgba(0, 243, 255, 0.3);
             padding: 2.5rem;
-            max-width: 500px; /* Reduced width for "popup" feel */
+            max-width: 550px; /* Wider card */
             width: 85%;
             position: relative;
             backdrop-filter: blur(10px);
@@ -193,9 +193,9 @@
 
         /* Avatar */
         .avatar-container {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 1.5rem;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 1.5rem auto;
             position: relative;
         }
 
@@ -256,6 +256,63 @@
             color: #fff;
         }
 
+        /* Progress Bars (RPG Stats) */
+        .progress-container {
+            margin-bottom: 1rem;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+        }
+
+        .progress-bg {
+            background: rgba(255,255,255,0.1);
+            height: 6px;
+            width: 100%;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            width: 0%; /* Animate via GSAP */
+        }
+
+        /* Equipment Grid */
+        .equip-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .equip-slot {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #aaa;
+            transition: all 0.3s ease;
+        }
+
+        .equip-slot:hover {
+            border-color: var(--neon-yellow);
+            color: #fff;
+        }
+
+        .equip-icon {
+            font-size: 1.2rem;
+            margin-bottom: 0.3rem;
+            color: var(--neon-yellow);
+        }
+
         /* Social Icons */
         .social-links {
             display: flex;
@@ -281,15 +338,18 @@
         @media (max-width: 768px) {
             h1 { font-size: 2rem; }
             .hud-card { padding: 1.5rem; width: 90%; }
+            .stat-grid, .equip-grid { grid-template-columns: 1fr; }
         }
 
         /* Section Positioning */
         #section-hero { top: 0; }
         #section-identity { top: 100vh; align-items: flex-start; padding-top: 10vh; }
-        #section-skills { top: 200vh; align-items: flex-end; padding-bottom: 10vh; }
-        #section-hobbies { top: 300vh; align-items: flex-start; padding-top: 10vh; }
-        #section-personal { top: 400vh; align-items: flex-end; padding-bottom: 10vh; }
-        #section-goal { top: 500vh; }
+        #section-stats { top: 200vh; align-items: flex-end; padding-bottom: 10vh; }
+        #section-skills { top: 300vh; align-items: flex-start; padding-top: 10vh; }
+        #section-equip { top: 400vh; align-items: flex-end; padding-bottom: 10vh; }
+        #section-hobbies { top: 500vh; align-items: flex-start; padding-top: 10vh; }
+        #section-personal { top: 600vh; align-items: flex-end; padding-bottom: 10vh; }
+        #section-goal { top: 700vh; }
 
     </style>
 </head>
@@ -305,7 +365,7 @@
         <!-- Hero Section -->
         <div class="section" id="section-hero">
             <div class="hud-card" style="text-align: center;">
-                <div class="avatar-container" style="margin: 0 auto 1.5rem auto;">
+                <div class="avatar-container">
                     <div class="avatar-border"></div>
                     <img src="/assets/img/guild/meizhuan/avatar.webp" alt="Meizhuan" class="avatar-img">
                 </div>
@@ -342,8 +402,31 @@
             </div>
         </div>
 
-        <!-- Skills Section (Right Aligned) -->
-        <div class="section" id="section-skills" style="justify-content: flex-end; padding-right: 10%;">
+        <!-- RPG Stats (Right Aligned) -->
+        <div class="section" id="section-stats" style="justify-content: flex-end; padding-right: 10%;">
+            <div class="hud-card">
+                <h3><i class="fas fa-chart-bar"></i> ATTRIBUTE_MATRIX</h3>
+                <div class="progress-container">
+                    <div class="progress-label"><span>STR (Strength / Workout)</span><span>LV. 6</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: 60%;"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>INT (Code / Logic)</span><span>LV. 7</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: 70%;"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>AGI (Riding / Reflex)</span><span>LV. 8</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: 80%;"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>LUCK (Gacha / Drops)</span><span>LV. ???</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: 40%; background: var(--neon-purple);"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills Section (Left Aligned) -->
+        <div class="section" id="section-skills" style="justify-content: flex-start; padding-left: 10%;">
             <div class="hud-card">
                 <h3><i class="fas fa-laptop-code"></i> SKILL_TREE</h3>
                 <p>
@@ -367,6 +450,44 @@
                 <p style="margin-top: 1rem; font-size: 0.9rem; color: #aaa;">
                     歡迎各路大神給予建議或方向，讓我們一起 Debug 人生。
                 </p>
+            </div>
+        </div>
+
+        <!-- Equipment Loadout (Right Aligned) -->
+        <div class="section" id="section-equip" style="justify-content: flex-end; padding-right: 10%;">
+            <div class="hud-card">
+                <h3><i class="fas fa-briefcase"></i> EQUIPMENT_LOADOUT</h3>
+                <p style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #888;">// RIDER SLOT</p>
+                <div class="equip-grid">
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-motorcycle"></i></div>
+                        RENTAL BIKE
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-helmet-safety"></i></div>
+                        HELMET
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-map-location-dot"></i></div>
+                        LICENSE
+                    </div>
+                </div>
+
+                <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: #888;">// DEV SLOT</p>
+                <div class="equip-grid">
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-keyboard"></i></div>
+                        MECH KB
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-display"></i></div>
+                        DUAL MON
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fab fa-python"></i></div>
+                        VS CODE
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -543,9 +664,9 @@
                 // self.getVelocity() returns pixels per second approx
                 const v = Math.abs(self.getVelocity());
                 // Add to boost, clamp max
-                // Reduced sensitivity significantly (0.05 -> 0.01)
-                // Clamped max boost lower (50 -> 30)
-                state.scrollBoost = Math.min(v * 0.01, 30);
+                // Reduced sensitivity AGAIN significantly (0.01 -> 0.002)
+                // Clamped max boost even lower (30 -> 10)
+                state.scrollBoost = Math.min(v * 0.002, 10);
             }
         });
 
@@ -571,21 +692,22 @@
 
             // 1. Physics / Speed Logic
             // Decay boost
-            // Increased decay (0.95 -> 0.92) so it slows down faster
-            state.scrollBoost *= 0.92;
+            // Increased decay (0.92 -> 0.96) so it slows down very quickly
+            state.scrollBoost *= 0.96;
 
             // Calculate target speed
             const targetSpeed = state.baseSpeed + state.scrollBoost;
 
             // Smoothly interpolate current speed (acceleration/deceleration)
-            // Lower interpolation factor (0.1 -> 0.05) for heavier feeling
+            // Lower interpolation factor (0.05 -> 0.05)
             state.currentSpeed += (targetSpeed - state.currentSpeed) * 0.05;
 
             // Expose to p5 (KM/H) - Scale factor to look good (0-300 range)
             // 0.5 unit/frame ~ 60km/h
-            // 30 unit/frame ~ 250km/h
-            let kmh = 60 + (state.currentSpeed * 6); // Adjusted multiplier
-            if (kmh > 299) kmh = 299;
+            // Max scroll boost 10 -> 10.5 total.
+            // 10.5 * 6 = 63. 60+63 = 123 km/h max.
+            let kmh = 60 + (state.currentSpeed * 6);
+            if (kmh > 150) kmh = 150; // Hard clamp lower
             window.scrollSpeed = kmh;
 
             // 2. Move World (Relative to Camera)
@@ -681,11 +803,12 @@
             // Active RPM Bar
             // Map 0-300 to Angle
             let startAngle = PI;
-            let endAngle = map(speed, 0, 300, PI, TWO_PI + 0.5);
+            // Updated range mapping to match new max speed
+            let endAngle = map(speed, 0, 160, PI, TWO_PI + 0.5);
 
             stroke(0, 243, 255);
             strokeWeight(8);
-            if (speed > 250) stroke(255, 0, 85); // Redline
+            if (speed > 130) stroke(255, 0, 85); // Redline
 
             arc(0, 0, 180, 180, startAngle, endAngle);
 
@@ -705,11 +828,11 @@
             // Gear indicator (Fake)
             let gear = "N";
             if (speed > 10) gear = "1";
-            if (speed > 60) gear = "2";
-            if (speed > 100) gear = "3";
-            if (speed > 160) gear = "4";
-            if (speed > 220) gear = "5";
-            if (speed > 260) gear = "6";
+            if (speed > 40) gear = "2";
+            if (speed > 70) gear = "3";
+            if (speed > 100) gear = "4";
+            if (speed > 120) gear = "5";
+            if (speed > 140) gear = "6";
 
             textSize(24);
             fill(255, 200, 0);
