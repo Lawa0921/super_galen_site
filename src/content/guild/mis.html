@@ -2861,9 +2861,14 @@
                 lifted = true;
                 veil.classList.add('is-lifting');
                 revealPage();
-                veil.addEventListener('animationend', function () {
-                    veil.remove();
-                }, { once: true });
+                /* soul-bloom (::before) also fires animationend on this element —
+                   only remove when intro-veil-lift itself ends (fully transparent) */
+                veil.addEventListener('animationend', function handler(e) {
+                    if (e.animationName === 'intro-veil-lift') {
+                        veil.remove();
+                        veil.removeEventListener('animationend', handler);
+                    }
+                });
             }
 
             /* Minimum display time: 3 s (animation sequence runs ~2.5 s) */
