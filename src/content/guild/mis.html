@@ -102,12 +102,6 @@
             position: relative;
             z-index: 10;
             padding-bottom: 10vh;
-            opacity: 0;
-            transition: opacity 1.8s ease;
-        }
-
-        .scroller.page-revealed {
-            opacity: 1;
         }
 
         .section {
@@ -1549,12 +1543,12 @@
 
         #intro-veil.is-lifting {
             pointer-events: none;
-            animation: intro-veil-lift 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: intro-veil-lift 1.4s cubic-bezier(0.87, 0, 0.13, 1) forwards;
         }
 
         @keyframes intro-veil-lift {
-            0%   { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-20px); }
+            0%   { transform: translateY(0); }
+            100% { transform: translateY(-100vh); }
         }
 
         /* ── Ritual Circle ── */
@@ -2812,10 +2806,8 @@
             var pageReady = document.readyState === 'complete';
 
             function revealPage() {
-                var scroller = document.querySelector('.scroller');
-                var backBtn  = document.querySelector('.back-btn');
-                if (scroller) scroller.classList.add('page-revealed');
-                if (backBtn)  backBtn.classList.add('page-revealed');
+                var backBtn = document.querySelector('.back-btn');
+                if (backBtn) backBtn.classList.add('page-revealed');
             }
 
             function lift() {
