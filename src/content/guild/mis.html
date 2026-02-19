@@ -1539,39 +1539,13 @@
             flex-direction: column;
             touch-action: none;
             cursor: wait;
-            overflow: hidden;
-        }
-
-        /* Soul bloom — the visible light burst that makes transition perceivable */
-        #intro-veil::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at center,
-                rgba(255, 248, 210, 0.95) 0%,
-                rgba(197, 160, 89, 0.80) 12%,
-                rgba(106, 13, 173, 0.65) 38%,
-                rgba(26, 5, 32, 0.40) 62%,
-                transparent 75%
-            );
-            opacity: 0;
-            transform: scale(0.04);
-            transform-origin: center center;
-            z-index: 1;
-            pointer-events: none;
         }
 
         #intro-veil.is-lifting {
             pointer-events: none;
-            animation: intro-veil-lift 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
-        /* Bloom fires after ritual disperses */
-        #intro-veil.is-lifting::before {
-            animation: soul-bloom 2.0s ease-out forwards;
-        }
-
-        /* Ritual content disperses first */
+        /* Ritual content disperses before veil swap */
         #intro-veil.is-lifting .intro-ritual {
             opacity: 0;
             transform: scale(1.08);
@@ -1583,16 +1557,27 @@
             transition: opacity 0.25s ease;
         }
 
-        @keyframes soul-bloom {
-            0%   { opacity: 0;    transform: scale(0.04); }
-            18%  { opacity: 1;    transform: scale(0.85); }
-            50%  { opacity: 0.85; transform: scale(1.55); }
-            100% { opacity: 0;    transform: scale(3.2);  }
+        /* ── Soul Bloom Overlay ──
+           Independent element OUTSIDE veil — its opacity is NOT
+           multiplied by the veil, solving the dark-on-dark problem.
+           Created dynamically in lift(). */
+        .soul-bloom-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 50%,
+                rgba(197, 160, 89, 0.30) 0%,
+                rgba(106, 13, 173, 0.18) 18%,
+                rgba(0, 0, 0, 0.97) 52%,
+                rgba(0, 0, 0, 1) 100%
+            );
+            animation: bloom-dissolve 2s ease-in-out forwards;
         }
 
-        @keyframes intro-veil-lift {
+        @keyframes bloom-dissolve {
             0%   { opacity: 1; }
-            18%  { opacity: 1; }   /* hold while bloom ignites */
+            45%  { opacity: 0.5; }
             100% { opacity: 0; }
         }
 
@@ -2859,16 +2844,26 @@
                 if (lifted) return;
                 if (!minDone || !pageReady) return;
                 lifted = true;
+
+                /* Phase 1: disperse ritual content inside the veil */
                 veil.classList.add('is-lifting');
-                revealPage();
-                /* soul-bloom (::before) also fires animationend on this element —
-                   only remove when intro-veil-lift itself ends (fully transparent) */
-                veil.addEventListener('animationend', function handler(e) {
-                    if (e.animationName === 'intro-veil-lift') {
-                        veil.remove();
-                        veil.removeEventListener('animationend', handler);
-                    }
-                });
+
+                /* Phase 2: after ritual fades (~450ms), swap veil for
+                   an independent bloom overlay that fades smoothly.
+                   The overlay edges are opaque black (matching the veil)
+                   so the swap is invisible; its center has a soul glow. */
+                setTimeout(function () {
+                    var bloom = document.createElement('div');
+                    bloom.className = 'soul-bloom-overlay';
+                    document.body.appendChild(bloom);
+
+                    veil.remove();
+                    revealPage();
+
+                    bloom.addEventListener('animationend', function () {
+                        bloom.remove();
+                    });
+                }, 450);
             }
 
             /* Minimum display time: 3 s (animation sequence runs ~2.5 s) */
