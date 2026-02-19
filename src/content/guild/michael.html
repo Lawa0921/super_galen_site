@@ -216,13 +216,187 @@
 
         /* --- Scroll Indicator Removed --- */
 
-        .avatar-glitch {
-            width: 100%; max-width: 400px;
-            filter: grayscale(100%) contrast(1.2);
-            mix-blend-mode: multiply;
-            transition: 0.5s;
+        /* ===== BIOMETRIC AVATAR SYSTEM ===== */
+        .avatar-frame {
+            position: relative;
+            display: block;
+            width: 100%;
+            max-width: 380px;
+            cursor: crosshair;
         }
-        .glass-card:hover .avatar-glitch { filter: grayscale(0%); mix-blend-mode: normal; }
+
+        /* CRT scanline texture */
+        .avatar-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.045) 0px,
+                rgba(0,0,0,0.045) 1px,
+                transparent 1px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* Holographic tint overlay (appears on hover) */
+        .avatar-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg,
+                rgba(59,130,160,0.2) 0%,
+                transparent 50%,
+                rgba(249,115,22,0.14) 100%
+            );
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .avatar-frame:hover::after { opacity: 1; }
+
+        /* Photo */
+        .av-photo {
+            width: 100%;
+            display: block;
+            position: relative;
+            z-index: 1;
+            filter: contrast(1.05) saturate(1.08);
+        }
+        /* Glitch on hover — fires every 4s while hovering */
+        .avatar-frame:hover .av-photo {
+            animation: av-glitch 4s linear infinite;
+        }
+        @keyframes av-glitch {
+            0%   { transform: none; filter: contrast(1.05) saturate(1.08); }
+            1%   { transform: translateX(-5px) scaleX(1.01); filter: hue-rotate(-32deg) saturate(2.2) contrast(1.25); }
+            2%   { transform: translateX(6px) scaleX(0.99); filter: hue-rotate(32deg) saturate(2.2) contrast(1.15); }
+            3%   { transform: translateX(-3px); filter: hue-rotate(-12deg) saturate(1.4); }
+            4%   { transform: none; filter: contrast(1.05) saturate(1.08); }
+            100% { transform: none; filter: contrast(1.05) saturate(1.08); }
+        }
+
+        /* Sweep scan beam */
+        .av-scan-beam {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(59,130,160,0.4) 10%,
+                rgba(59,130,160,1) 50%,
+                rgba(59,130,160,0.4) 90%,
+                transparent 100%
+            );
+            box-shadow:
+                0 0 8px rgba(59,130,160,1),
+                0 0 22px rgba(59,130,160,0.65),
+                0 -12px 20px rgba(59,130,160,0.12),
+                0  12px 20px rgba(59,130,160,0.12);
+            animation: av-scan 4s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+        @keyframes av-scan {
+            0%   { top: 0; opacity: 0; }
+            4%   { opacity: 1; }
+            60%  { top: 100%; opacity: 0.9; }
+            62%  { opacity: 0; }
+            100% { top: 0; opacity: 0; }
+        }
+
+        /* Corner brackets */
+        .av-bracket {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            z-index: 6;
+            transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .av-bracket::before,
+        .av-bracket::after {
+            content: '';
+            position: absolute;
+            background: var(--c-accent);
+        }
+        .ab-tl { top: 0; left: 0; }
+        .ab-tl::before { top: 0; left: 0; width: 100%; height: 2px; }
+        .ab-tl::after  { top: 0; left: 0; width: 2px; height: 100%; }
+        .ab-tr { top: 0; right: 0; }
+        .ab-tr::before { top: 0; right: 0; width: 100%; height: 2px; }
+        .ab-tr::after  { top: 0; right: 0; width: 2px; height: 100%; }
+        .ab-bl { bottom: 0; left: 0; }
+        .ab-bl::before { bottom: 0; left: 0; width: 100%; height: 2px; }
+        .ab-bl::after  { bottom: 0; left: 0; width: 2px; height: 100%; }
+        .ab-br { bottom: 0; right: 0; }
+        .ab-br::before { bottom: 0; right: 0; width: 100%; height: 2px; }
+        .ab-br::after  { bottom: 0; right: 0; width: 2px; height: 100%; }
+
+        /* Hover: brackets spring outward */
+        .avatar-frame:hover .ab-tl { top: -10px; left: -10px; }
+        .avatar-frame:hover .ab-tr { top: -10px; right: -10px; }
+        .avatar-frame:hover .ab-bl { bottom: -10px; left: -10px; }
+        .avatar-frame:hover .ab-br { bottom: -10px; right: -10px; }
+
+        /* Data readout labels */
+        .av-data {
+            position: absolute;
+            font-family: var(--f-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            z-index: 7;
+            padding: 2px 8px;
+            pointer-events: none;
+            white-space: nowrap;
+            transition: color 0.3s, background 0.3s;
+        }
+        .av-data-top {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--c-primary);
+            background: rgba(248,250,252,0.88);
+        }
+        .av-data-bot {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--c-primary);
+            background: rgba(248,250,252,0.88);
+        }
+        .avatar-frame:hover .av-data-top,
+        .avatar-frame:hover .av-data-bot {
+            color: white;
+            background: rgba(15,23,42,0.88);
+        }
+
+        /* "■ IDENTIFIED" banner (slides up on hover) */
+        .av-identified {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(249,115,22,0.94);
+            color: white;
+            font-family: var(--f-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0.4rem 0;
+            letter-spacing: 0.3em;
+            z-index: 7;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: opacity 0.4s, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+        .avatar-frame:hover .av-identified {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
         .footer-link {
             font-size: 4rem; color: var(--c-secondary); margin: 0 1rem; transition: 0.3s; display: inline-block;
@@ -258,9 +432,23 @@
             <div class="container interactive-layer">
                 <div class="glass-card gs-reveal" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 4rem; align-items: center;">
 
-                    <div style="position: relative;">
-                        <img src="/assets/img/guild/michael/avatar.webp" alt="Michael" class="avatar-glitch" loading="lazy">
-                        <div style="position: absolute; top: -2rem; left: -2rem; border: 2px solid var(--c-accent); width: 100px; height: 100px; z-index: -1;"></div>
+                    <div style="position: relative; padding: 0.75rem;">
+                        <div class="avatar-frame" id="avatarFrame">
+                            <!-- Sweep scan beam -->
+                            <div class="av-scan-beam"></div>
+                            <!-- Corner brackets -->
+                            <div class="av-bracket ab-tl"></div>
+                            <div class="av-bracket ab-tr"></div>
+                            <div class="av-bracket ab-bl"></div>
+                            <div class="av-bracket ab-br"></div>
+                            <!-- Data readout labels -->
+                            <div class="av-data av-data-top" id="avDataTop">SYS.IDENT: M.LAI</div>
+                            <div class="av-data av-data-bot" id="avDataBot">&#9679; ONLINE</div>
+                            <!-- Photo -->
+                            <img src="/assets/img/guild/michael/avatar.webp" alt="Michael" class="av-photo" loading="lazy">
+                            <!-- Identified banner -->
+                            <div class="av-identified">&#9632; IDENTIFIED</div>
+                        </div>
                     </div>
 
                     <div>
@@ -739,6 +927,32 @@
                 animate();
             }
         });
+
+        // ── Avatar Biometric Scan Interaction ──
+        (function() {
+            const frame = document.getElementById('avatarFrame');
+            const topLabel = document.getElementById('avDataTop');
+            const botLabel = document.getElementById('avDataBot');
+            if (!frame || !topLabel || !botLabel) return;
+
+            let resetTimer;
+
+            frame.addEventListener('mouseenter', () => {
+                clearTimeout(resetTimer);
+                topLabel.textContent = 'SYS.SCAN: ACTIVE';
+                botLabel.textContent = '\u25b6 ANALYZING...';
+                setTimeout(() => {
+                    botLabel.textContent = '\u2713 VERIFIED';
+                }, 520);
+            });
+
+            frame.addEventListener('mouseleave', () => {
+                resetTimer = setTimeout(() => {
+                    topLabel.textContent = 'SYS.IDENT: M.LAI';
+                    botLabel.innerHTML = '&#9679; ONLINE';
+                }, 180);
+            });
+        })();
 
         // Debounced resize
         let resizeTimer;
