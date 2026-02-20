@@ -59,7 +59,7 @@
             transition: opacity 0.8s ease-in;
         }
 
-        body.loaded { opacity: 1; cursor: none; } /* Hide default cursor */
+        body.loaded { opacity: 1; cursor: none; }
 
         /* ════════════ CURSOR ════════════ */
         #cursor {
@@ -92,7 +92,6 @@
         }
         #cursor .sight-line.two { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* Hover State */
         body.hovering #cursor { width: 60px; height: 60px; }
         body.hovering #cursor .ring { border-color: var(--c-blood-bright); animation-duration: 1s; border-width: 3px; }
         body.hovering #cursor .dot { background: var(--c-gold); }
@@ -103,7 +102,6 @@
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -1;
-            /* Gradient: Darken right side for text readability */
             mask-image: linear-gradient(to right, black 40%, rgba(0,0,0,0.5) 100%);
         }
         #p5-container {
@@ -135,14 +133,13 @@
             justify-content: center;
             align-items: center;
             padding: 2rem;
-            /* The 3D model will be visible behind this */
         }
 
         .right-col {
             padding: 4rem 2rem 4rem 0;
             display: flex;
             flex-direction: column;
-            gap: 10vh; /* Vertical Rhythm */
+            gap: 10vh;
         }
 
         .nav-back {
@@ -167,8 +164,6 @@
             font-size: clamp(4rem, 12vw, 8rem);
             margin: 0; line-height: 1;
             text-align: center;
-
-            /* Gold Texture Text */
             background-image: url('/assets/img/guild/lubu/bg_gold.jpg');
             background-size: cover;
             background-position: center;
@@ -198,9 +193,8 @@
             position: relative;
             backdrop-filter: blur(12px);
             box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            max-width: 600px;
-            margin-left: auto; /* Push to right edge of container */
-            margin-right: 2rem;
+            max-width: 650px;
+            margin-left: auto; margin-right: 2rem;
             transform-origin: right center;
             transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
         }
@@ -211,7 +205,7 @@
             border-left-color: var(--c-blood-bright);
         }
 
-        /* Decorative Corners for Cards */
+        /* Decorative Corners */
         .section-card::before {
             content: ''; position: absolute; top: -1px; right: -1px; width: 30px; height: 30px;
             border-top: 2px solid var(--c-gold); border-right: 2px solid var(--c-gold);
@@ -222,10 +216,8 @@
             border-bottom: 2px solid var(--c-gold); border-right: 2px solid var(--c-gold);
             transition: 0.4s;
         }
-
         .section-card:hover::before, .section-card:hover::after {
-            width: 50px; height: 50px;
-            border-color: var(--c-blood-bright);
+            width: 50px; height: 50px; border-color: var(--c-blood-bright);
         }
 
         .card-header {
@@ -235,9 +227,7 @@
             border-bottom: 1px solid #333;
             padding-bottom: 0.5rem;
             margin-bottom: 1.5rem;
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
+            display: flex; align-items: baseline; justify-content: space-between;
         }
         .card-header span { font-size: 1rem; font-family: var(--f-tech); color: #555; }
 
@@ -248,24 +238,16 @@
 
         .highlight-red { color: var(--c-blood-bright); font-weight: bold; }
         .highlight-gold { color: var(--c-gold); font-weight: bold; }
-        .highlight-wacky {
-            color: var(--c-jade); font-weight: bold;
-            text-shadow: 0 0 5px var(--c-jade);
-        }
+        .highlight-wacky { color: var(--c-jade); font-weight: bold; text-shadow: 0 0 5px var(--c-jade); }
 
         /* ════════════ AVATAR ════════════ */
         .avatar-container {
-            position: relative;
-            width: 300px; height: 350px;
-            margin-bottom: 2rem;
+            position: relative; width: 300px; height: 350px; margin-bottom: 2rem;
         }
         .avatar-hex {
             width: 100%; height: 100%;
-            /* Custom Badge Shape */
             clip-path: polygon(50% 0%, 100% 15%, 100% 85%, 50% 100%, 0% 85%, 0% 15%);
-            background: #000;
-            position: relative;
-            z-index: 2;
+            background: #000; position: relative; z-index: 2;
             box-shadow: 0 0 30px rgba(138, 0, 0, 0.8);
             transition: transform 0.5s;
         }
@@ -296,57 +278,83 @@
             gap: 0.8rem; margin: 1.5rem 0;
         }
         .general-token {
-            aspect-ratio: 1;
-            border: 1px solid #444;
+            aspect-ratio: 1; border: 1px solid #444;
             display: flex; align-items: center; justify-content: center;
-            color: #444; font-size: 1.2rem;
-            background: #111;
-            transition: 0.3s;
-            position: relative; overflow: hidden;
+            color: #444; font-size: 1.2rem; background: #111;
+            transition: 0.3s; position: relative; overflow: hidden;
         }
         .general-token:hover {
             border-color: var(--c-gold); color: var(--c-gold);
             background: #220; box-shadow: 0 0 10px var(--c-gold-bright);
         }
-        /* Tooltip style */
         .general-token::after {
             content: '尋找中'; position: absolute; bottom: 2px; width: 100%;
             text-align: center; font-size: 0.5rem; opacity: 0; transition: 0.3s;
         }
         .general-token:hover::after { opacity: 1; }
 
-        /* ════════════ GAME TAGS ════════════ */
-        .game-tags {
-            display: flex; flex-wrap: wrap; gap: 0.8rem; margin: 1.5rem 0;
+        /* ════════════ BATTLE RECORDS (NEW) ════════════ */
+        .battle-record-list {
+            display: grid; grid-template-columns: 1fr; gap: 1rem;
         }
-        .game-tag {
-            padding: 0.5rem 1rem;
-            background: rgba(138,0,0,0.2);
-            border: 1px solid var(--c-blood);
-            color: var(--c-text);
-            font-size: 0.9rem;
-            text-decoration: none;
+        .battle-item {
+            display: flex; align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem; border-right: 2px solid transparent;
             transition: 0.3s;
         }
-        .game-tag:hover {
-            background: var(--c-blood); color: #fff;
-            box-shadow: 0 0 15px var(--c-blood);
-            /* Slash Effect */
-            position: relative; overflow: hidden;
+        .battle-item:hover {
+            background: rgba(138, 0, 0, 0.2);
+            border-right-color: var(--c-blood-bright);
+            transform: translateX(10px);
         }
-        .game-tag:hover::after {
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-            transform: skewX(-25deg);
-            animation: slash 0.4s ease-out forwards;
+        .battle-icon {
+            font-size: 1.5rem; width: 50px; text-align: center; color: var(--c-gold);
+            margin-right: 1rem;
         }
+        .battle-info h4 { color: #fff; font-size: 1.1rem; margin-bottom: 0.2rem; font-family: var(--f-header); }
+        .battle-info p { color: #888; font-size: 0.85rem; }
 
-        @keyframes slash {
-            0% { left: -100%; }
-            100% { left: 200%; }
+        /* ════════════ ARMORY / INTERESTS (NEW) ════════════ */
+        .armory-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem;
         }
+        .armory-item {
+            text-align: center; padding: 1.5rem 1rem;
+            border: 1px solid #333; background: #000;
+            transition: 0.3s;
+        }
+        .armory-item:hover {
+            border-color: var(--c-jade);
+            box-shadow: 0 0 15px rgba(0, 255, 170, 0.1);
+        }
+        .armory-icon { font-size: 2rem; color: #555; margin-bottom: 0.8rem; transition: 0.3s; }
+        .armory-item:hover .armory-icon { color: var(--c-jade); transform: scale(1.1); }
+        .armory-label { font-size: 0.9rem; color: #ccc; }
 
-        /* ════════════ STYLE STATS ════════════ */
+        /* ════════════ SOCIALS / COMMS ════════════ */
+        .comms-list {
+            display: flex; flex-direction: column; gap: 1rem;
+        }
+        .comm-link {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border: 1px solid #333;
+            background: linear-gradient(90deg, transparent, rgba(20,20,20,0.8));
+            text-decoration: none; color: #ccc;
+            transition: 0.3s;
+        }
+        .comm-link:hover {
+            border-color: var(--c-gold);
+            background: rgba(212, 175, 55, 0.1);
+            padding-left: 2rem;
+        }
+        .comm-left { display: flex; align-items: center; gap: 1rem; }
+        .comm-icon { font-size: 1.5rem; color: var(--c-gold); width: 30px; text-align: center; }
+        .comm-label { font-weight: bold; font-family: var(--f-header); letter-spacing: 0.05em; }
+        .comm-desc { font-size: 0.8rem; color: #666; font-family: var(--f-tech); text-transform: uppercase; }
+
+        /* ════════════ STYLE GRID ════════════ */
         .style-grid {
             display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;
             margin-bottom: 2rem;
@@ -374,24 +382,6 @@
             content: '➤'; position: absolute; left: 0; color: var(--c-blood-bright);
         }
 
-        /* ════════════ SOCIALS ════════════ */
-        .socials {
-            display: flex; gap: 1rem; margin-top: 2rem;
-        }
-        .social-btn {
-            width: 50px; height: 50px;
-            border: 1px solid var(--c-gold);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; color: var(--c-gold);
-            text-decoration: none;
-            transition: 0.3s;
-            background: #000;
-        }
-        .social-btn:hover {
-            background: var(--c-gold); color: #000;
-            transform: translateY(-3px);
-        }
-
         /* ════════════ MOBILE ════════════ */
         @media (max-width: 900px) {
             .main-layout { grid-template-columns: 1fr; }
@@ -404,6 +394,8 @@
             #webgl-container { mask-image: none; opacity: 0.6; }
             h1.main-title { font-size: 5rem; }
             .generals-grid { grid-template-columns: repeat(5, 1fr); }
+            .battle-item { flex-direction: column; text-align: center; }
+            .battle-icon { margin: 0 0 0.5rem 0; }
         }
     </style>
 </head>
@@ -460,9 +452,6 @@
                     方天畫戟橫掃千軍，鐵騎踏碎諸侯。
                     卻仍舊敗給名為「命運」的存在。
                 </p>
-                <p class="lore-text">
-                    敗北的瞬間，我向天嘶吼：若有來世，我必親手粉碎這條結局。
-                </p>
                 <div style="border-left: 2px solid var(--c-jade); padding-left: 1rem; margin: 1.5rem 0; color: #aaa; font-size: 0.9rem;">
                     <i class="fa-solid fa-ghost"></i> 然而怨念誤入虛空，靈魂被 <span class="highlight-wacky">克蘇魯之力</span> 侵蝕，
                     在那不可名狀的世界中漂流了無數歲月...
@@ -473,7 +462,7 @@
                 </p>
             </div>
 
-            <!-- 2. THE FAMILY (NEW) -->
+            <!-- 2. THE FAMILY -->
             <div class="section-card family-card reveal">
                 <div class="card-header">將軍府邸 <span>HOUSEHOLD</span></div>
                 <p class="lore-text">
@@ -486,12 +475,9 @@
                     <li><span class="highlight-red">小貓淵</span>：二女兒，偶爾會在直播中亂入。</li>
                     <li><span class="highlight-red">小舞兔</span>：老么，可愛擔當。</li>
                 </ul>
-                <p class="lore-text" style="font-size: 0.9rem; color: #888; margin-top: 1rem;">
-                    ( 直播時偶爾會聽到小朋友的聲音亂入，那是將軍府的日常 )
-                </p>
             </div>
 
-            <!-- 3. MISSION: FINDING 10 GENERALS -->
+            <!-- 3. MISSION & GENERALS -->
             <div class="section-card reveal">
                 <div class="card-header">尋找部下 <span>MISSION</span></div>
                 <p class="lore-text">
@@ -520,16 +506,11 @@
                     若你的心臟因這個名字而震動，那麼答案只有一個：
                     <br>你是 我正在尋找的「失散呂家軍部下」。
                 </p>
-
-                <a href="https://discord.gg/9AK4nWxdkW" target="_blank" class="game-tag" style="background: var(--c-gold); color: #000; font-weight: bold; border: none; text-align: center; display: block;">
-                    <i class="fa-brands fa-discord"></i> 立即歸隊 (Join Discord)
-                </a>
             </div>
 
-            <!-- 4. STREAM STYLE & CONTENT -->
-            <div class="section-card reveal" style="margin-bottom: 4rem;">
+            <!-- 4. STYLE & STATS -->
+            <div class="section-card reveal">
                 <div class="card-header">直播風格 <span>STYLE</span></div>
-
                 <div class="style-grid">
                     <div class="style-item">
                         <span class="style-icon" style="color: var(--c-jade);"><i class="fa-solid fa-ghost"></i></span>
@@ -547,25 +528,105 @@
                         <div class="style-desc">CHUUNI</div>
                     </div>
                 </div>
-
-                <p class="lore-text">
+                <p class="lore-text" style="text-align: center;">
                     平時專門直播 <span class="highlight-gold">獨立遊戲</span>、<span class="highlight-gold">冷門神作</span>。
                     偶爾也會客串一些目前火熱的遊戲，目標是把「被忽略的好遊戲」介紹給更多人。
                 </p>
+            </div>
 
-                <div class="game-tags">
-                    <a href="#" class="game-tag">氣勢磅礡的馬砍</a>
-                    <a href="#" class="game-tag">冷門神作</a>
-                    <a href="#" class="game-tag">獨立遊戲</a>
-                    <a href="#" class="game-tag">藏於各地的神作</a>
+            <!-- 5. BATTLE RECORDS (NEW) -->
+            <div class="section-card reveal">
+                <div class="card-header">輝煌戰績 <span>BATTLE RECORDS</span></div>
+                <div class="battle-record-list">
+                    <div class="battle-item">
+                        <div class="battle-icon"><i class="fa-brands fa-android"></i></div>
+                        <div class="battle-info">
+                            <h4>傳說對決 / 王者榮耀</h4>
+                            <p>MOBA MAIN FRONT</p>
+                        </div>
+                    </div>
+                    <div class="battle-item">
+                        <div class="battle-icon"><i class="fa-solid fa-dragon"></i></div>
+                        <div class="battle-info">
+                            <h4>魔物獵人 (Monster Hunter)</h4>
+                            <p>WYVERN SLAYING EXPEDITION</p>
+                        </div>
+                    </div>
+                    <div class="battle-item">
+                        <div class="battle-icon"><i class="fa-solid fa-cube"></i></div>
+                        <div class="battle-info">
+                            <h4>麥塊 (Minecraft)</h4>
+                            <p>WORLD BUILDING PROTOCOL</p>
+                        </div>
+                    </div>
+                    <div class="battle-item">
+                        <div class="battle-icon"><i class="fa-solid fa-gamepad"></i></div>
+                        <div class="battle-info">
+                            <h4>冷門神作 (Hidden Gems)</h4>
+                            <p>INDEPENDENT OPERATIONS</p>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="socials">
-                    <a href="https://www.twitch.tv/wtfffffff0" target="_blank" class="social-btn" title="Twitch"><i class="fa-brands fa-twitch"></i></a>
-                    <a href="https://www.youtube.com/@%E5%91%82%E5%B8%83-g9b" target="_blank" class="social-btn" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
-                    <a href="https://www.instagram.com/lengmenyouxizhibozhu/" target="_blank" class="social-btn" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.threads.net/@lengmenyouxizhibozhu" target="_blank" class="social-btn" title="Threads"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://linkgoods.com/wtf00000" target="_blank" class="social-btn" title="LinkGoods"><i class="fa-solid fa-link"></i></a>
+            <!-- 6. THE ARMORY (NEW) -->
+            <div class="section-card reveal">
+                <div class="card-header">私人軍械庫 <span>ARMORY</span></div>
+                <div class="armory-grid">
+                    <div class="armory-item">
+                        <div class="armory-icon"><i class="fa-solid fa-circle-dot"></i></div>
+                        <div class="armory-label">寶可夢大師</div>
+                    </div>
+                    <div class="armory-item">
+                        <div class="armory-icon"><i class="fa-brands fa-fort-awesome"></i></div>
+                        <div class="armory-label">中世紀歷史</div>
+                    </div>
+                    <div class="armory-item">
+                        <div class="armory-icon"><i class="fa-solid fa-compass"></i></div>
+                        <div class="armory-label">人生引導 (?)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. COMMUNICATIONS (UPDATED) -->
+            <div class="section-card reveal" style="margin-bottom: 4rem;">
+                <div class="card-header">軍情通報 <span>COMMS</span></div>
+                <div class="comms-list">
+                    <a href="https://discord.gg/9AK4nWxdkW" target="_blank" class="comm-link" style="border-color: var(--c-gold);">
+                        <div class="comm-left">
+                            <div class="comm-icon"><i class="fa-brands fa-discord"></i></div>
+                            <div class="comm-label">呂家軍大本營</div>
+                        </div>
+                        <div class="comm-desc">HEADQUARTERS</div>
+                    </a>
+                    <a href="https://www.twitch.tv/wtf00000" target="_blank" class="comm-link">
+                        <div class="comm-left">
+                            <div class="comm-icon"><i class="fa-brands fa-twitch"></i></div>
+                            <div class="comm-label">直播戰線 (Twitch)</div>
+                        </div>
+                        <div class="comm-desc">LIVE OPS</div>
+                    </a>
+                    <a href="https://www.threads.net/@lengmenyouxizhibozhu" target="_blank" class="comm-link">
+                        <div class="comm-left">
+                            <div class="comm-icon"><i class="fa-brands fa-threads"></i></div>
+                            <div class="comm-label">發神經的地方 (Threads)</div>
+                        </div>
+                        <div class="comm-desc">MADNESS LOG</div>
+                    </a>
+                    <a href="https://www.instagram.com/lengmenyouxizhibozhu/" target="_blank" class="comm-link">
+                        <div class="comm-left">
+                            <div class="comm-icon"><i class="fa-brands fa-instagram"></i></div>
+                            <div class="comm-label">私生活日記 (IG)</div>
+                        </div>
+                        <div class="comm-desc">CLASSIFIED</div>
+                    </a>
+                     <a href="https://www.tiktok.com/@fxxk0709" target="_blank" class="comm-link">
+                        <div class="comm-left">
+                            <div class="comm-icon"><i class="fa-brands fa-tiktok"></i></div>
+                            <div class="comm-label">怪怪的影片 (TikTok)</div>
+                        </div>
+                        <div class="comm-desc">ARCHIVE</div>
+                    </a>
                 </div>
             </div>
 
@@ -807,7 +868,7 @@
         window.addEventListener('mousemove', moveCursor);
 
         // Hover Detection
-        const hoverTargets = document.querySelectorAll('a, button, .section-card, .general-token, .social-btn, .game-tag, .style-item');
+        const hoverTargets = document.querySelectorAll('a, button, .section-card, .general-token, .social-btn, .game-tag, .style-item, .battle-item, .armory-item, .comm-link');
         hoverTargets.forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
