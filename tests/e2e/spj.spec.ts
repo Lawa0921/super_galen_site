@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Interactive Tavern)', () => {
+test.describe('SPJ Guild Page (Bright Interactive)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -18,22 +18,20 @@ test.describe('SPJ Guild Page (Interactive Tavern)', () => {
 
   test('should display Dialogue Box', async ({ page }) => {
     await expect(page.locator('.dialogue-box')).toBeVisible();
-    await page.mouse.wheel(0, 100); // Trigger update
+    await page.mouse.wheel(0, 100);
     await page.waitForTimeout(1000);
-    // Note: The text is "嘿，你來了...", but contains "快進來" which implies welcome context.
-    // Let's check for "嘿" or "暖暖身子" which is in the first script line.
+    // Use partial text match for robustnes
     await expect(page.locator('#dialogue-text')).toContainText('嘿');
   });
 
-  test('should display Skill Board on Scroll', async ({ page }) => {
-    // Scroll to Beat 2 (Menu) -> ~20-30%
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.25)");
-    await page.waitForTimeout(2000);
+  test('should display Footer Socials on Scroll End', async ({ page }) => {
+    // Scroll to end
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+    await page.waitForTimeout(2000); // Wait for fade in
 
-    // Check if opacity is 1 (visible)
-    const board = page.locator('#skill-board');
-    await expect(board).toHaveCSS('opacity', '1');
-    await expect(board).toContainText('SPECIALS');
+    await expect(page.locator('#footer-socials')).toHaveCSS('opacity', '1');
+    const threadsLink = page.locator('#footer-socials a[href*="threads.net"]');
+    await expect(threadsLink).toBeVisible();
   });
 
   test('should have Three.js canvas', async ({ page }) => {
