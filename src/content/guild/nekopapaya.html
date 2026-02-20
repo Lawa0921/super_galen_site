@@ -28,11 +28,12 @@
 
     <style>
         :root {
-            /* Palette: Swamp Lab / Safe Haven */
+            /* Palette: Gentle Haven with Neon Soul */
             --c-bg: #F4F1EC;       /* Milk Tea White */
             --c-bg-sec: #E8E2D9;   /* Sand */
-            --c-accent-1: #78C0A8; /* Frog Green (Tsuyu) */
-            --c-accent-2: #5DADE2; /* Capoo Blue */
+            --c-accent-1: #78C0A8; /* Soul Green */
+            --c-accent-2: #5DADE2; /* Hydrogen Blue */
+            --c-accent-3: #F5B041; /* Warm Joy */
             --c-text: #3F3F3F;     /* Warm Dark Grey */
             --c-note: #8C8C8C;     /* Light Grey */
             --c-glow: #FFD700;     /* Warm Lamp Glow */
@@ -49,7 +50,7 @@
             font-family: var(--f-main);
             overflow-x: hidden;
             line-height: 1.8;
-            cursor: crosshair; /* Analyst Mode */
+            cursor: default;
         }
 
         /* --- Global Layout --- */
@@ -69,7 +70,7 @@
         }
 
         .container {
-            max-width: 1000px; width: 100%; margin: 0 auto;
+            max-width: 1100px; width: 100%; margin: 0 auto;
             position: relative;
         }
 
@@ -81,7 +82,7 @@
             letter-spacing: -0.02em;
             margin-bottom: 0.5rem;
             line-height: 1.1;
-            text-shadow: 3px 3px 0px rgba(120, 192, 168, 0.3); /* Green Shadow */
+            text-shadow: 4px 4px 0px rgba(120, 192, 168, 0.2);
         }
 
         h2 {
@@ -91,6 +92,10 @@
             background: linear-gradient(120deg, var(--c-accent-1), var(--c-accent-2));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        h3 {
+            font-size: 1.5rem; color: var(--c-accent-1); margin-bottom: 1rem; font-weight: 700;
         }
 
         p {
@@ -110,27 +115,28 @@
 
         /* --- Components --- */
         .glass-card {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             padding: 3rem;
             border-radius: 30px;
             box-shadow:
-                0 10px 40px rgba(120, 192, 168, 0.1),
-                inset 0 0 20px rgba(255, 255, 255, 0.5);
+                0 15px 50px rgba(120, 192, 168, 0.15),
+                inset 0 0 30px rgba(255, 255, 255, 0.6);
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
             position: relative;
             overflow: hidden;
+            margin-bottom: 2rem;
         }
         .glass-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
-            background: linear-gradient(90deg, var(--c-accent-1), var(--c-accent-2));
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: linear-gradient(90deg, var(--c-accent-1), var(--c-accent-2), var(--c-accent-3));
         }
         .glass-card:hover {
-            transform: translateY(-5px) scale(1.01);
-            box-shadow: 0 20px 60px rgba(93, 173, 226, 0.2);
-            background: rgba(255, 255, 255, 0.7);
+            transform: translateY(-5px);
+            box-shadow: 0 25px 70px rgba(93, 173, 226, 0.25);
+            background: rgba(255, 255, 255, 0.85);
         }
 
         .tag {
@@ -149,9 +155,7 @@
             transition: all 0.3s;
         }
         .tag:hover {
-            background: var(--c-accent-2);
-            color: white;
-            transform: translateY(-3px);
+            background: var(--c-accent-2); color: white; transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(93, 173, 226, 0.3);
         }
         .tag.green {
@@ -162,109 +166,159 @@
             background: var(--c-accent-1); color: white;
             box-shadow: 0 10px 20px rgba(120, 192, 168, 0.3);
         }
+        .tag.yellow {
+            color: var(--c-accent-3); border-color: var(--c-accent-3);
+            box-shadow: 0 5px 15px rgba(245, 176, 65, 0.1);
+        }
+        .tag.yellow:hover {
+            background: var(--c-accent-3); color: white;
+            box-shadow: 0 10px 20px rgba(245, 176, 65, 0.3);
+        }
 
+        .avatar-container {
+            position: relative; display: inline-block; margin-bottom: 2rem;
+        }
         .avatar-img {
-            width: 180px; height: 180px;
-            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; /* Blob shape */
+            width: 200px; height: 200px;
+            border-radius: 50%;
             object-fit: cover;
-            border: 4px solid white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-            transition: border-radius 1s ease-in-out;
-            animation: blob-pulse 5s infinite ease-in-out;
+            border: 6px solid white;
+            box-shadow: 0 15px 40px rgba(120, 192, 168, 0.3);
+            position: relative; z-index: 2;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .avatar-container:hover .avatar-img { transform: scale(1.05) rotate(3deg); }
+        .avatar-bg-blob {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 240px; height: 240px;
+            background: linear-gradient(135deg, var(--c-accent-1), var(--c-accent-2));
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            opacity: 0.6; filter: blur(20px); z-index: 1;
+            animation: blob-pulse 8s infinite linear;
         }
         @keyframes blob-pulse {
-            0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
-            50% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-            100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            0% { transform: translate(-50%, -50%) rotate(0deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            50% { transform: translate(-50%, -50%) rotate(180deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            100% { transform: translate(-50%, -50%) rotate(360deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
         }
 
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
             font-family: var(--f-en); font-weight: 900;
             color: var(--c-text); text-decoration: none;
-            padding: 0.6rem 1.5rem; background: rgba(255,255,255,0.8);
-            backdrop-filter: blur(10px); border-radius: 50px;
+            padding: 0.8rem 1.8rem; background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(15px); border-radius: 50px;
             border: 2px solid var(--c-bg-sec);
             pointer-events: auto;
             transition: transform 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
         .nav-fixed:hover { transform: scale(1.05); border-color: var(--c-accent-1); color: var(--c-accent-1); }
 
         .btn-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 70px; height: 70px;
+            width: 80px; height: 80px;
             background: white; border-radius: 50%;
-            color: var(--c-text); font-size: 1.8rem;
-            margin: 0 0.8rem;
+            color: var(--c-text); font-size: 2rem;
+            margin: 0 1rem;
             transition: transform 0.3s, background 0.3s, color 0.3s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            border: 2px solid transparent;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 3px solid white;
         }
         .btn-link:hover {
-            transform: scale(1.1) rotate(15deg);
+            transform: scale(1.15) rotate(10deg);
             background: var(--c-accent-1);
             color: white;
-            box-shadow: 0 15px 30px rgba(120, 192, 168, 0.4);
+            box-shadow: 0 20px 40px rgba(120, 192, 168, 0.4);
         }
         .btn-link:nth-child(2):hover {
             background: var(--c-accent-2);
-            box-shadow: 0 15px 30px rgba(93, 173, 226, 0.4);
+            box-shadow: 0 20px 40px rgba(93, 173, 226, 0.4);
         }
 
         /* --- Custom Interactive Elements --- */
-        .mood-grid {
+        .grid-2 {
             display: grid; grid-template-columns: 1fr; gap: 3rem;
         }
-        @media(min-width: 768px) {
-            .mood-grid { grid-template-columns: 1fr 1fr; align-items: center; }
+        @media(min-width: 900px) {
+            .grid-2 { grid-template-columns: 1fr 1fr; align-items: start; }
         }
 
         .polaroid {
             background: white; padding: 1.5rem 1.5rem 4rem 1.5rem;
             box-shadow: 0 20px 50px rgba(0,0,0,0.15);
-            transform: rotate(-3deg);
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce */
-            max-width: 350px;
-            margin: 0 auto;
-            position: relative;
+            transform: rotate(-2deg);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 400px; margin: 2rem auto; position: relative;
         }
         .polaroid::after {
-            content: 'MOOD: COZY';
+            content: 'GATHERING JOY';
             position: absolute; bottom: 1.5rem; right: 1.5rem;
-            font-family: 'Nunito', sans-serif; font-weight: 900;
-            color: var(--c-accent-1); opacity: 0.5;
+            font-family: 'Nothing You Could Do', cursive;
+            color: var(--c-accent-3); font-size: 1.2rem; transform: rotate(-5deg);
         }
-        .polaroid:hover { transform: rotate(2deg) scale(1.05); z-index: 2; }
-        .polaroid img { width: 100%; display: block; filter: saturate(0.9); transition: filter 0.5s; border-radius: 4px; }
-        .polaroid:hover img { filter: saturate(1.2) contrast(1.1); }
+        .polaroid:hover { transform: rotate(1deg) scale(1.03); z-index: 2; }
+        .polaroid img { width: 100%; display: block; border-radius: 4px; filter: saturate(0.9); transition: filter 0.5s; }
+        .polaroid:hover img { filter: saturate(1.1); }
 
-        /* Custom Scanner Cursor */
-        #scanner-ui {
-            position: fixed; top: 0; left: 0;
-            pointer-events: none; z-index: 100;
-            display: none;
+        /* HUD UI (Scanner Replacement) */
+        #hud-ui {
+            position: fixed; top: 2rem; right: 2rem;
+            z-index: 40; pointer-events: none;
+            text-align: right;
+            font-family: var(--f-en);
+            display: flex; flex-direction: column; align-items: flex-end;
+            gap: 0.5rem;
         }
-        .scanner-label {
-            position: absolute;
-            background: rgba(0,0,0,0.8); color: #78C0A8;
-            font-family: monospace; font-size: 0.8rem;
-            padding: 4px 8px; border-radius: 4px;
-            transform: translate(20px, 20px);
-            white-space: nowrap;
+        .hud-panel {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(10px);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transform: translateX(120%); /* Hidden initially */
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .hud-panel.active { transform: translateX(0); }
+        .hud-label {
+            font-size: 0.75rem; letter-spacing: 0.1em; color: var(--c-note); text-transform: uppercase; display: block; margin-bottom: 0.2rem;
+        }
+        .hud-value {
+            font-size: 1.2rem; font-weight: 900; color: var(--c-accent-1);
+        }
+        .hud-desc {
+            font-size: 0.9rem; color: var(--c-text); max-width: 200px; line-height: 1.4; margin-top: 0.5rem;
+        }
+
+        /* Feature List */
+        .feature-list { list-style: none; padding: 0; }
+        .feature-item {
+            background: rgba(255,255,255,0.5); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 1rem;
+            transition: transform 0.3s, background 0.3s; cursor: default;
+        }
+        .feature-item:hover { transform: translateX(10px); background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .feature-icon {
+            width: 40px; height: 40px; background: var(--c-bg-sec); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: var(--c-accent-1); font-size: 1.2rem;
         }
 
     </style>
 </head>
 <body>
 
-    <a href="/guild" class="nav-fixed">← GUILD</a>
+    <a href="/guild" class="nav-fixed">← GUILD_LAB</a>
 
     <div id="webgl-container"></div>
 
-    <!-- Scanner UI -->
-    <div id="scanner-ui">
-        <div class="scanner-label" id="scanner-text">SCANNING...</div>
+    <!-- HUD UI -->
+    <div id="hud-ui">
+        <div class="hud-panel" id="hud-panel">
+            <span class="hud-label">Subject Analysis</span>
+            <div class="hud-value" id="hud-status">WAITING...</div>
+            <div class="hud-desc" id="hud-desc">Hover over particles to initiate scan.</div>
+        </div>
     </div>
 
     <div class="scroller">
@@ -273,72 +327,94 @@
         <section class="section">
             <div class="container interactive-layer" style="text-align: center;">
                 <div class="gs-reveal">
-                    <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar" class="avatar-img">
-                    <h1 class="glitch-text">NEKOPAPAYA</h1>
-                    <p style="font-size: 1.5rem; margin: 0 auto; color: var(--c-accent-1); font-weight: 900;">康樂股長 | 魔人揪揪</p>
+                    <div class="avatar-container">
+                        <div class="avatar-bg-blob"></div>
+                        <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar" class="avatar-img">
+                    </div>
+                    <h1>NEKOPAPAYA</h1>
+                    <p style="font-size: 1.8rem; margin: 0 auto 1.5rem; color: var(--c-accent-1); font-weight: 900;">
+                        人體狀態觀察分析師 <span style="font-weight: 300; color: var(--c-text);">|</span> 康樂股長
+                    </p>
+                    <p style="font-family: var(--f-en); font-size: 1.2rem; color: var(--c-accent-2); font-weight: 700;">
+                        "Hydrogen knocking on your soul." <br>
+                        （氫氫敲醒你的心靈）
+                    </p>
                     <div style="margin-top: 2rem;">
-                        <span class="tag green">人體狀態觀察分析師</span>
-                        <span class="tag">Mood Board Designer</span>
+                        <span class="tag green">Human Observer</span>
+                        <span class="tag yellow">Joy Conductor</span>
+                        <span class="tag">Safe Haven</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 2. Intro: The Philosophy (Safe Haven) -->
+        <!-- 2. Core Concept: Safe Haven -->
         <section class="section">
             <div class="container interactive-layer">
                 <div class="glass-card gs-reveal">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <span class="tag green">Core Concept</span>
-                        <i class="fa-solid fa-leaf" style="color: var(--c-accent-1); font-size: 1.5rem;"></i>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <span class="tag green">Laboratory Protocol 01</span>
+                        <i class="fa-solid fa-house-chimney" style="color: var(--c-accent-1); font-size: 1.5rem;"></i>
                     </div>
-                    <h2>避風港 Bio-Haven</h2>
+                    <h2>避風港 Safe Haven</h2>
                     <p>
-                        這裡是一個可以停下來、坐一下的<span style="color: var(--c-accent-1); font-weight: 700;">實驗室</span>。<br>
-                        有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。
+                        這是一個「避風港」型的個人頁面，呈現聚人的氛圍。<br>
+                        目標：讓人看到就有安全感、想停下來，不被要求或壓力。
                     </p>
-                    <p>
-                        不是為了任何目的，也不需要報名或承諾。<br>
-                        如果你剛好想參與、想一起感受，就可以私訊我。
-                    </p>
-                    <p class="note">
-                        Analysis Complete: 每個人都可以自由選擇，這裡只留一個空間給願意的人。
+                    <div class="grid-2" style="margin-top: 3rem;">
+                        <div>
+                            <h3><i class="fa-solid fa-wind"></i> 溫柔、慢、放鬆</h3>
+                            <p>這裡是一個可以停下來、坐一下的地方。有人但不熱鬧。空間感、留白多。不工整、自然、生活感。</p>
+                        </div>
+                        <div>
+                            <h3><i class="fa-solid fa-user-group"></i> 聚人的溫度</h3>
+                            <p>有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。不是為了任何目的，也不需要報名或承諾。</p>
+                        </div>
+                    </div>
+                    <p class="note" style="margin-top: 2rem; border-top: 1px dashed var(--c-note); padding-top: 1rem;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <strong>Safety Note:</strong> 每個人都可以自由選擇，這裡只留一個空間給願意的人。
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- 3. Mood Board: Visuals -->
+        <!-- 3. Methodology: The Human Analyst -->
         <section class="section">
             <div class="container interactive-layer">
-                <div class="mood-grid">
+                <div class="grid-2">
                     <div class="gs-reveal">
-                        <span class="tag">Atmosphere Analysis</span>
-                        <h2>溫柔、慢、放鬆</h2>
-                        <ul style="list-style: none; padding-left: 0; margin-bottom: 2rem;">
-                            <li style="margin-bottom: 1rem; display: flex; align-items: center;">
-                                <i class="fa-solid fa-check" style="color: var(--c-accent-1); margin-right: 1rem;"></i>
-                                有人但不熱鬧 (Low Noise)
+                        <span class="tag yellow">Methodology</span>
+                        <h2 style="background: linear-gradient(120deg, var(--c-accent-3), var(--c-accent-1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            觀測與連結 <br> Observe & Connect
+                        </h2>
+                        <p>
+                            作為「人體狀態觀察分析師」，我並不只是看，而是感受頻率。
+                            就像氫原子輕輕撞擊，喚醒沉睡的靈魂。
+                        </p>
+
+                        <ul class="feature-list" style="margin-top: 2rem;">
+                            <li class="feature-item">
+                                <div class="feature-icon"><i class="fa-solid fa-eye"></i></div>
+                                <div><strong>Observation</strong><br><span style="font-size: 0.9rem;">無聲地觀察每個人的狀態與需求。</span></div>
                             </li>
-                            <li style="margin-bottom: 1rem; display: flex; align-items: center;">
-                                <i class="fa-solid fa-check" style="color: var(--c-accent-1); margin-right: 1rem;"></i>
-                                空間感、留白多 (High Spacing)
+                            <li class="feature-item">
+                                <div class="feature-icon"><i class="fa-solid fa-flask"></i></div>
+                                <div><strong>Analysis</strong><br><span style="font-size: 0.9rem;">解構情緒，調配出最適合當下的氛圍。</span></div>
                             </li>
-                            <li style="margin-bottom: 1rem; display: flex; align-items: center;">
-                                <i class="fa-solid fa-check" style="color: var(--c-accent-1); margin-right: 1rem;"></i>
-                                不工整、自然、生活感 (Organic Flow)
+                            <li class="feature-item">
+                                <div class="feature-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                                <div><strong>Connection</strong><br><span style="font-size: 0.9rem;">魔人揪揪出動！將孤單的靈魂串連起來。</span></div>
                             </li>
                         </ul>
-                        <p>
-                            這是一個「避風港」型的個人頁面，呈現聚人的氛圍。<br>
-                            目標：讓人看到就有安全感、想停下來，不被要求或壓力。
-                        </p>
                     </div>
+
                     <div class="gs-reveal" style="text-align: center;">
-                        <div class="polaroid">
-                            <img src="/assets/img/guild/nekopapaya/scene.webp" alt="Cozy Gathering">
-                            <div style="font-family: 'Nothing You Could Do', cursive; margin-top: 1rem; color: #888; font-size: 1.5rem;">Cozy Gathering</div>
+                         <div class="polaroid">
+                            <img src="/assets/img/guild/nekopapaya/scene.webp" alt="Gathering Scene">
                         </div>
+                        <p style="font-size: 0.9rem; margin-top: 1rem; color: var(--c-note);">
+                            "Visual Record: Subject #042 - Joyful Gathering detected."
+                        </p>
                     </div>
                 </div>
             </div>
@@ -348,33 +424,42 @@
         <section class="section">
             <div class="container interactive-layer" style="text-align: center;">
                 <div class="gs-reveal">
-                    <h2 style="font-size: 3rem; margin-bottom: 3rem;">Ready to Gather?</h2>
-                    <div style="display: flex; justify-content: center; gap: 1rem;">
+                    <h2 style="font-size: 3.5rem; margin-bottom: 1rem;">Prepare to Sync?</h2>
+                    <p style="margin-bottom: 3rem;">如果你剛好想參與、想一起感受，就可以私訊我。</p>
+
+                    <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
                         <a href="https://www.threads.net/@nekopapaya" target="_blank" class="btn-link"><i class="fa-brands fa-threads"></i></a>
                         <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="btn-link"><i class="fa-brands fa-instagram"></i></a>
                     </div>
-                    <p class="note" style="margin-top: 2rem;">私訊請不要用小帳 全當作詐騙不理</p>
+
+                    <div class="glass-card" style="display: inline-block; margin-top: 3rem; padding: 1.5rem; border-radius: 16px;">
+                        <p class="note" style="margin: 0; font-size: 1rem;">
+                            <i class="fa-solid fa-shield-cat"></i> <strong>Anti-Fraud Protocol:</strong><br>
+                            私訊請不要用小帳，全當作詐騙不理。
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
 
     </div>
 
-    <!-- SCRIPT: The Bio-Luminescent Mood Lab -->
+    <!-- SCRIPT: The Bio-Luminescent Mood Lab V2 -->
     <script type="module">
         import * as THREE from 'three';
 
         // --- Setup ---
         const container = document.getElementById('webgl-container');
-        const scannerUI = document.getElementById('scanner-ui');
-        const scannerText = document.getElementById('scanner-text');
+        const hudPanel = document.getElementById('hud-panel');
+        const hudStatus = document.getElementById('hud-status');
+        const hudDesc = document.getElementById('hud-desc');
 
         const scene = new THREE.Scene();
-        // Fog: A mix of Milk Tea and Swamp Mist
-        scene.fog = new THREE.FogExp2(0xF4F1EC, 0.025);
+        // Fog: Gentle Morning Mist
+        scene.fog = new THREE.FogExp2(0xF4F1EC, 0.02);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 2, 12);
+        camera.position.set(0, 1, 14);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -382,45 +467,46 @@
         container.appendChild(renderer.domElement);
 
         // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        // "Lab Lamp" Warmth
-        const warmLight = new THREE.PointLight(0xFFD700, 2, 20);
-        warmLight.position.set(5, 5, 5);
+        const warmLight = new THREE.PointLight(0xF5B041, 1.5, 30); // Warm Joy
+        warmLight.position.set(10, 5, 5);
         scene.add(warmLight);
 
-        // "Bio" Coolness
-        const bioLight = new THREE.PointLight(0x78C0A8, 3, 25);
-        bioLight.position.set(-5, -2, 5);
-        scene.add(bioLight);
+        const coolLight = new THREE.PointLight(0x5DADE2, 1.5, 30); // Hydrogen Blue
+        coolLight.position.set(-10, -5, 10);
+        scene.add(coolLight);
 
+        // --- Objects: Mood Bubbles (The Souls) ---
+        const bubbleCount = 45;
+        const bubbleGeo = new THREE.IcosahedronGeometry(0.7, 2);
 
-        // --- Objects: The Mood Bubbles (Soft Bodies) ---
-        // We use Icosahedron with a custom shader to make them wobble like slime/bubbles
-
-        const bubbleCount = 40;
-        const bubbleGeo = new THREE.IcosahedronGeometry(0.6, 3); // Detailed
-
-        // Custom Shader Material for "Gooey" Look
-        const bubbleMaterial = new THREE.MeshStandardMaterial({
+        const bubbleMaterial = new THREE.MeshPhysicalMaterial({
             color: 0xffffff,
-            roughness: 0.2,
+            roughness: 0.1,
             metalness: 0.1,
+            transmission: 0.6, // Glassy
+            thickness: 1.0,
             transparent: true,
             opacity: 0.8,
             envMapIntensity: 1,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1
         });
-
-        // We will create individual meshes to allow independent wobble animation
-        // (InstancedMesh is faster but harder to customize individual vertex shaders easily without plugin)
-        // Given 40 objects, individual meshes are fine.
 
         const bubbles = [];
         const bubbleGroup = new THREE.Group();
         scene.add(bubbleGroup);
 
-        const palette = [0x78C0A8, 0x5DADE2, 0xF7DC6F, 0xE59866]; // Green, Blue, Yellow, Orange
+        const palette = [0x78C0A8, 0x5DADE2, 0xF5B041, 0xE59866];
+        const statuses = [
+            { title: "RELAXED", desc: "Stable emotional frequency. Open to connection." },
+            { title: "OBSERVING", desc: "Analyzing environmental variables. Silent mode." },
+            { title: "JOYFUL", desc: "High energy output. Contagious laughter detected." },
+            { title: "DRIFTING", desc: "Low gravity state. Needs grounding." },
+            { title: "HUNGRY", desc: "Energy reserves low. Seeking sustenance." }
+        ];
 
         for(let i=0; i<bubbleCount; i++) {
             const mat = bubbleMaterial.clone();
@@ -428,24 +514,27 @@
 
             const mesh = new THREE.Mesh(bubbleGeo, mat);
 
-            // Random Position
+            // Distributed Random Position
             mesh.position.set(
-                (Math.random() - 0.5) * 25,
-                (Math.random() - 0.5) * 15,
-                (Math.random() - 0.5) * 10
+                (Math.random() - 0.5) * 35,
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 15
             );
 
-            // Store data for animation
+            const statusData = statuses[Math.floor(Math.random() * statuses.length)];
+
             mesh.userData = {
                 originalPos: mesh.position.clone(),
                 originalColor: mat.color.clone(),
                 speed: Math.random() * 0.02 + 0.01,
                 offset: Math.random() * 100,
                 wobbleSpeed: Math.random() * 2 + 1,
-                status: ["Relaxed", "Hungry", "Analyzing", "Sleepy", "Hyper"][Math.floor(Math.random() * 5)],
+                statusTitle: statusData.title,
+                statusDesc: statusData.desc,
                 isHovered: false,
-                hoverScale: 1.0, // Multiplier for hover effect
-                baseScale: Math.random() * 0.5 + 0.5
+                hoverScale: 1.0,
+                baseScale: Math.random() * 0.4 + 0.6,
+                connected: false // For "Constellation" mode
             };
 
             const s = mesh.userData.baseScale;
@@ -455,41 +544,24 @@
             bubbleGroup.add(mesh);
         }
 
-        // --- Objects: The Reeds / Data Vines ---
-        // Simple lines rising from bottom
-        const vineCount = 30;
-        const vineGroup = new THREE.Group();
-        scene.add(vineGroup);
-
-        const vineMat = new THREE.LineBasicMaterial({ color: 0x78C0A8, transparent: true, opacity: 0.3 });
-
-        for(let i=0; i<vineCount; i++) {
-            const points = [];
-            const x = (Math.random() - 0.5) * 40;
-            const z = (Math.random() - 0.5) * 20 - 5;
-            let y = -10;
-
-            // Create a curvy line
-            for(let j=0; j<20; j++) {
-                points.push(new THREE.Vector3(
-                    x + Math.sin(j * 0.5) * 0.5,
-                    y,
-                    z + Math.cos(j * 0.5) * 0.5
-                ));
-                y += 1 + Math.random();
-            }
-
-            const vineGeo = new THREE.BufferGeometry().setFromPoints(points);
-            const line = new THREE.Line(vineGeo, vineMat);
-            vineGroup.add(line);
-        }
+        // --- Objects: Connection Lines (The Constellation) ---
+        // We'll draw lines dynamically
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x78C0A8, transparent: true, opacity: 0.0 });
+        const maxConnections = 100;
+        const lineGeo = new THREE.BufferGeometry();
+        // Pre-allocate buffer
+        const linePos = new Float32Array(maxConnections * 2 * 3); // 2 points per line, 3 coords
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+        const connections = new THREE.LineSegments(lineGeo, lineMaterial);
+        connections.frustumCulled = false; // Always render
+        scene.add(connections);
 
 
         // --- Interaction State ---
         let scrollY = 0;
-        const mouse = new THREE.Vector2();
-        let isGathering = false; // "Magic Gather" mode
-        let gatherStrength = 0;
+        const mouse = new THREE.Vector2(-1, -1); // Start off-screen
+        let isConnecting = false; // "Constellation Mode"
+        let connectTime = 0;
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
@@ -498,37 +570,24 @@
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            // Update UI
-            scannerUI.style.display = 'block';
-            scannerUI.style.transform = `translate(${e.clientX + 20}px, ${e.clientY + 20}px)`;
         });
 
+        // Click to toggle "Joy Connection"
         window.addEventListener('mousedown', () => {
-            isGathering = true;
-            scannerText.innerText = "GATHERING...";
-            scannerText.style.color = "#FFD700";
-
-            // GSAP Camera Shake
-            gsap.to(camera.position, {
-                x: "+=0.2", y: "+=0.2",
-                duration: 0.1,
-                yoyo: true,
-                repeat: 5
-            });
+            isConnecting = true;
+            // Pulse effect
+            gsap.to(lineMaterial, { opacity: 0.6, duration: 0.5 });
+            gsap.to(camera.position, { z: 12, duration: 0.5, ease: "power2.out" }); // Zoom in slightly
         });
 
         window.addEventListener('mouseup', () => {
-            isGathering = false;
-            scannerText.innerText = "RELEASED";
-            scannerText.style.color = "#78C0A8";
-
-            // Explosion force
-            gatherStrength = -2; // Negative means push away violently
+            isConnecting = false;
+            gsap.to(lineMaterial, { opacity: 0, duration: 0.8 });
+            gsap.to(camera.position, { z: 14, duration: 0.8, ease: "power2.out" }); // Zoom out
         });
 
 
-        // --- Raycaster for "Scanner" ---
+        // --- Raycaster ---
         const raycaster = new THREE.Raycaster();
 
         // --- Animation Loop ---
@@ -545,56 +604,82 @@
 
             if (intersects.length > 0) {
                 hoveredObj = intersects[0].object;
-                scannerText.innerText = `STATUS: ${hoveredObj.userData.status}`;
+
+                // Update HUD
+                if (!hoveredObj.userData.isHovered) {
+                    hudPanel.classList.add('active');
+                    hudStatus.innerText = hoveredObj.userData.statusTitle;
+                    hudDesc.innerText = hoveredObj.userData.statusDesc;
+                    // Color match HUD
+                    hudStatus.style.color = '#' + hoveredObj.userData.originalColor.getHexString();
+                }
             } else {
-                scannerText.innerText = isGathering ? "GATHERING..." : "SCANNING...";
+                // Only hide if we haven't hovered anything for a bit? No, instant feedback is fine.
+                // But let's check if we just left one.
+                hudPanel.classList.remove('active');
             }
 
-            // 2. Camera Move
-            camera.position.y = 2 + scrollY * 0.005; // Rise up
-            camera.lookAt(0, scrollY * 0.002, 0);
+            // 2. Camera Move (Subtle Scroll)
+            camera.position.y = 1 + scrollY * 0.003;
+            camera.lookAt(0, scrollY * 0.001, 0);
 
-            // 3. Bubbles Logic
-            // Gathering Strength
-            if (isGathering) {
-                gatherStrength = Math.min(gatherStrength + 0.05, 1);
-            } else {
-                if(gatherStrength < 0) gatherStrength += 0.1;
-                else gatherStrength = Math.max(gatherStrength - 0.02, 0);
-            }
+            // 3. Logic & Rendering
+            let lineIndex = 0;
+            const positions = connections.geometry.attributes.position.array;
 
-            bubbles.forEach(mesh => {
+            bubbles.forEach((mesh, idx) => {
                 const data = mesh.userData;
 
                 // --- MOVEMENT ---
+                // Base Float
                 let tx = data.originalPos.x;
-                let ty = data.originalPos.y + Math.sin(time * data.speed + data.offset) * 2;
+                let ty = data.originalPos.y + Math.sin(time * data.speed + data.offset) * 1.5;
                 let tz = data.originalPos.z;
 
+                // Gentle Mouse Attraction
                 const mouseVec = new THREE.Vector3(mouse.x * 15, mouse.y * 10, 0);
+                const distToMouse = mesh.position.distanceTo(mouseVec);
 
-                if (Math.abs(gatherStrength) > 0.01) {
-                    const center = new THREE.Vector3(0, 0, 0);
-                    if (gatherStrength > 0) {
-                        mesh.position.lerp(center, gatherStrength * 0.1);
-                        mesh.rotation.x += 0.2; mesh.rotation.y += 0.2;
-                    } else {
-                        const dir = mesh.position.clone().sub(center).normalize();
-                        mesh.position.add(dir.multiplyScalar(Math.abs(gatherStrength) * 2));
-                    }
+                if(distToMouse < 6) {
+                    // Move slightly towards mouse
+                    mesh.position.lerp(mouseVec, 0.02);
                 } else {
-                    const distToMouse = mesh.position.distanceTo(mouseVec);
-                    if(distToMouse < 5) mesh.position.lerp(mouseVec, 0.02);
-
+                    // Return home
                     const target = new THREE.Vector3(tx, ty, tz);
                     mesh.position.lerp(target, 0.02);
                 }
 
-                // --- INTERACTION ---
+                // --- CONNECTING LOGIC ---
+                // If "Joy Mode" is active, draw lines to nearby neighbors
+                if (isConnecting) {
+                    // Find neighbors
+                    for(let j=idx+1; j<bubbles.length; j++) {
+                        const neighbor = bubbles[j];
+                        const dist = mesh.position.distanceTo(neighbor.position);
+
+                        if(dist < 6 && lineIndex < maxConnections * 6) {
+                            // Add line
+                            positions[lineIndex++] = mesh.position.x;
+                            positions[lineIndex++] = mesh.position.y;
+                            positions[lineIndex++] = mesh.position.z;
+
+                            positions[lineIndex++] = neighbor.position.x;
+                            positions[lineIndex++] = neighbor.position.y;
+                            positions[lineIndex++] = neighbor.position.z;
+
+                            // Slight attraction between connected nodes
+                            mesh.position.lerp(neighbor.position, 0.005);
+                            neighbor.position.lerp(mesh.position, 0.005);
+                        }
+                    }
+                }
+
+                // --- INTERACTION HOVER ---
                 if (mesh === hoveredObj) {
                     if (!data.isHovered) {
                         gsap.to(mesh.material.color, { r: 1, g: 1, b: 1, duration: 0.2 });
-                        gsap.to(data, { hoverScale: 1.5, duration: 0.3 });
+                        gsap.to(mesh.material, { opacity: 1, duration: 0.2 });
+                        gsap.to(data, { hoverScale: 1.4, duration: 0.3 });
                         data.isHovered = true;
                     }
                 } else {
@@ -602,13 +687,13 @@
                         gsap.to(mesh.material.color, {
                             r: data.originalColor.r, g: data.originalColor.g, b: data.originalColor.b, duration: 0.5
                         });
+                        gsap.to(mesh.material, { opacity: 0.8, duration: 0.5 });
                         gsap.to(data, { hoverScale: 1.0, duration: 0.5 });
                         data.isHovered = false;
                     }
                 }
 
                 // --- SCALE / WOBBLE ---
-                // Apply wobble on top of hover scale
                 const wobble = Math.sin(time * data.wobbleSpeed) * 0.1 + 1;
                 const finalScale = data.baseScale * data.hoverScale;
 
@@ -618,6 +703,12 @@
                     finalScale * wobble
                 );
             });
+
+            // Clear remaining lines
+            for(let k=lineIndex; k<maxConnections*6; k++) {
+                positions[k] = 0;
+            }
+            connections.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
@@ -640,7 +731,7 @@
                 y: 50,
                 opacity: 0,
                 duration: 1,
-                ease: "back.out(1.7)"
+                ease: "power3.out"
             });
         });
 
