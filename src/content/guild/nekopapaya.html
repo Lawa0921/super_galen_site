@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Safe Haven</title>
+    <title>NEKOPAPAYA | Bio-Luminescent Haven</title>
     <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Nunito:wght@400;700&family=Nothing+You+Could+Do&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Nunito:wght@400;700;900&family=Nothing+You+Could+Do&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -28,13 +28,14 @@
 
     <style>
         :root {
-            /* Palette: Gentle Safe Haven */
+            /* Palette: Swamp Lab / Safe Haven */
             --c-bg: #F4F1EC;       /* Milk Tea White */
             --c-bg-sec: #E8E2D9;   /* Sand */
-            --c-accent: #A8B2A1;   /* Sage Green */
+            --c-accent-1: #78C0A8; /* Frog Green (Tsuyu) */
+            --c-accent-2: #5DADE2; /* Capoo Blue */
             --c-text: #3F3F3F;     /* Warm Dark Grey */
             --c-note: #8C8C8C;     /* Light Grey */
-            --c-highlight: #D4A373; /* Warm Orange/Brown for boat light */
+            --c-glow: #FFD700;     /* Warm Lamp Glow */
 
             --f-main: 'Noto Sans TC', sans-serif;
             --f-en: 'Nunito', sans-serif;
@@ -48,6 +49,7 @@
             font-family: var(--f-main);
             overflow-x: hidden;
             line-height: 1.8;
+            cursor: crosshair; /* Analyst Mode */
         }
 
         /* --- Global Layout --- */
@@ -74,18 +76,21 @@
         /* --- Typography --- */
         h1 {
             font-size: clamp(3rem, 8vw, 6rem);
-            font-weight: 700;
+            font-weight: 900;
             color: var(--c-text);
             letter-spacing: -0.02em;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             line-height: 1.1;
+            text-shadow: 3px 3px 0px rgba(120, 192, 168, 0.3); /* Green Shadow */
         }
 
         h2 {
             font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 400;
+            font-weight: 700;
             margin-bottom: 2rem;
-            color: var(--c-accent);
+            background: linear-gradient(120deg, var(--c-accent-1), var(--c-accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         p {
@@ -93,103 +98,161 @@
             color: var(--c-text);
             max-width: 65ch;
             margin-bottom: 1.5rem;
-            font-weight: 300;
+            font-weight: 400;
         }
 
         .note {
             font-size: 0.9rem;
             color: var(--c-note);
             margin-top: 0.5rem;
+            font-style: italic;
         }
 
         /* --- Components --- */
         .glass-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             padding: 3rem;
-            border-radius: 24px;
-            box-shadow: 0 10px 40px rgba(168, 178, 161, 0.15);
+            border-radius: 30px;
+            box-shadow:
+                0 10px 40px rgba(120, 192, 168, 0.1),
+                inset 0 0 20px rgba(255, 255, 255, 0.5);
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+            background: linear-gradient(90deg, var(--c-accent-1), var(--c-accent-2));
         }
         .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 60px rgba(168, 178, 161, 0.25);
-            background: rgba(255, 255, 255, 0.8);
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 20px 60px rgba(93, 173, 226, 0.2);
+            background: rgba(255, 255, 255, 0.7);
         }
 
         .tag {
             display: inline-block;
-            padding: 0.4rem 1rem;
-            background: var(--c-bg-sec);
-            color: var(--c-text);
+            padding: 0.4rem 1.2rem;
+            background: white;
+            color: var(--c-accent-2);
+            border: 2px solid var(--c-accent-2);
             border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 700;
+            font-size: 0.9rem;
+            font-weight: 800;
             margin-bottom: 1rem;
             letter-spacing: 0.05em;
             margin-right: 0.5rem;
+            box-shadow: 0 5px 15px rgba(93, 173, 226, 0.1);
+            transition: all 0.3s;
+        }
+        .tag:hover {
+            background: var(--c-accent-2);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(93, 173, 226, 0.3);
+        }
+        .tag.green {
+            color: var(--c-accent-1); border-color: var(--c-accent-1);
+            box-shadow: 0 5px 15px rgba(120, 192, 168, 0.1);
+        }
+        .tag.green:hover {
+            background: var(--c-accent-1); color: white;
+            box-shadow: 0 10px 20px rgba(120, 192, 168, 0.3);
         }
 
         .avatar-img {
-            width: 150px; height: 150px;
-            border-radius: 50%;
+            width: 180px; height: 180px;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; /* Blob shape */
             object-fit: cover;
             border: 4px solid white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
-            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: border-radius 1s ease-in-out;
+            animation: blob-pulse 5s infinite ease-in-out;
         }
-        .avatar-img:hover {
-            transform: scale(1.1) rotate(5deg);
+        @keyframes blob-pulse {
+            0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            50% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
         }
 
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: var(--f-en); font-weight: 700;
+            font-family: var(--f-en); font-weight: 900;
             color: var(--c-text); text-decoration: none;
-            padding: 0.5rem 1.2rem; background: rgba(255,255,255,0.7);
+            padding: 0.6rem 1.5rem; background: rgba(255,255,255,0.8);
             backdrop-filter: blur(10px); border-radius: 50px;
+            border: 2px solid var(--c-bg-sec);
             pointer-events: auto;
             transition: transform 0.3s;
         }
-        .nav-fixed:hover { transform: scale(1.05); }
+        .nav-fixed:hover { transform: scale(1.05); border-color: var(--c-accent-1); color: var(--c-accent-1); }
 
         .btn-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 60px; height: 60px;
+            width: 70px; height: 70px;
             background: white; border-radius: 50%;
-            color: var(--c-text); font-size: 1.5rem;
-            margin: 0 0.5rem;
+            color: var(--c-text); font-size: 1.8rem;
+            margin: 0 0.8rem;
             transition: transform 0.3s, background 0.3s, color 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 2px solid transparent;
         }
         .btn-link:hover {
-            transform: scale(1.1) rotate(10deg);
-            background: var(--c-accent);
+            transform: scale(1.1) rotate(15deg);
+            background: var(--c-accent-1);
             color: white;
+            box-shadow: 0 15px 30px rgba(120, 192, 168, 0.4);
+        }
+        .btn-link:nth-child(2):hover {
+            background: var(--c-accent-2);
+            box-shadow: 0 15px 30px rgba(93, 173, 226, 0.4);
         }
 
         /* --- Custom Interactive Elements --- */
         .mood-grid {
-            display: grid; grid-template-columns: 1fr; gap: 2rem;
+            display: grid; grid-template-columns: 1fr; gap: 3rem;
         }
         @media(min-width: 768px) {
             .mood-grid { grid-template-columns: 1fr 1fr; align-items: center; }
         }
 
         .polaroid {
-            background: white; padding: 1rem 1rem 3rem 1rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: white; padding: 1.5rem 1.5rem 4rem 1.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
             transform: rotate(-3deg);
-            transition: transform 0.5s;
-            max-width: 300px;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce */
+            max-width: 350px;
             margin: 0 auto;
+            position: relative;
         }
-        .polaroid:hover { transform: rotate(0deg) scale(1.02); z-index: 2; }
-        .polaroid img { width: 100%; display: block; filter: saturate(0.8); transition: filter 0.5s; }
-        .polaroid:hover img { filter: saturate(1.1); }
+        .polaroid::after {
+            content: 'MOOD: COZY';
+            position: absolute; bottom: 1.5rem; right: 1.5rem;
+            font-family: 'Nunito', sans-serif; font-weight: 900;
+            color: var(--c-accent-1); opacity: 0.5;
+        }
+        .polaroid:hover { transform: rotate(2deg) scale(1.05); z-index: 2; }
+        .polaroid img { width: 100%; display: block; filter: saturate(0.9); transition: filter 0.5s; border-radius: 4px; }
+        .polaroid:hover img { filter: saturate(1.2) contrast(1.1); }
+
+        /* Custom Scanner Cursor */
+        #scanner-ui {
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 100;
+            display: none;
+        }
+        .scanner-label {
+            position: absolute;
+            background: rgba(0,0,0,0.8); color: #78C0A8;
+            font-family: monospace; font-size: 0.8rem;
+            padding: 4px 8px; border-radius: 4px;
+            transform: translate(20px, 20px);
+            white-space: nowrap;
+        }
 
     </style>
 </head>
@@ -199,31 +262,39 @@
 
     <div id="webgl-container"></div>
 
+    <!-- Scanner UI -->
+    <div id="scanner-ui">
+        <div class="scanner-label" id="scanner-text">SCANNING...</div>
+    </div>
+
     <div class="scroller">
 
-        <!-- 1. Hero: The Safe Haven -->
+        <!-- 1. Hero: The Bio-Lab -->
         <section class="section">
             <div class="container interactive-layer" style="text-align: center;">
                 <div class="gs-reveal">
                     <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar" class="avatar-img">
-                    <h1>NEKOPAPAYA</h1>
-                    <p style="font-size: 1.5rem; margin: 0 auto; color: var(--c-accent); font-weight: 700;">康樂股長 | 魔人揪揪</p>
+                    <h1 class="glitch-text">NEKOPAPAYA</h1>
+                    <p style="font-size: 1.5rem; margin: 0 auto; color: var(--c-accent-1); font-weight: 900;">康樂股長 | 魔人揪揪</p>
                     <div style="margin-top: 2rem;">
-                        <span class="tag">人體狀態觀察分析師</span>
+                        <span class="tag green">人體狀態觀察分析師</span>
                         <span class="tag">Mood Board Designer</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 2. Intro: The Philosophy -->
+        <!-- 2. Intro: The Philosophy (Safe Haven) -->
         <section class="section">
             <div class="container interactive-layer">
                 <div class="glass-card gs-reveal">
-                    <span class="tag">Core Concept</span>
-                    <h2>避風港 Safe Haven</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span class="tag green">Core Concept</span>
+                        <i class="fa-solid fa-leaf" style="color: var(--c-accent-1); font-size: 1.5rem;"></i>
+                    </div>
+                    <h2>避風港 Bio-Haven</h2>
                     <p>
-                        這裡是一個可以停下來、坐一下的地方。<br>
+                        這裡是一個可以停下來、坐一下的<span style="color: var(--c-accent-1); font-weight: 700;">實驗室</span>。<br>
                         有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。
                     </p>
                     <p>
@@ -231,7 +302,7 @@
                         如果你剛好想參與、想一起感受，就可以私訊我。
                     </p>
                     <p class="note">
-                        每個人都可以自由選擇，這裡只留一個空間給願意的人。
+                        Analysis Complete: 每個人都可以自由選擇，這裡只留一個空間給願意的人。
                     </p>
                 </div>
             </div>
@@ -242,13 +313,22 @@
             <div class="container interactive-layer">
                 <div class="mood-grid">
                     <div class="gs-reveal">
-                        <span class="tag">Atmosphere</span>
+                        <span class="tag">Atmosphere Analysis</span>
                         <h2>溫柔、慢、放鬆</h2>
-                        <p>
-                            有人但不熱鬧。<br>
-                            空間感、留白多。<br>
-                            不工整、自然、生活感。
-                        </p>
+                        <ul style="list-style: none; padding-left: 0; margin-bottom: 2rem;">
+                            <li style="margin-bottom: 1rem; display: flex; align-items: center;">
+                                <i class="fa-solid fa-check" style="color: var(--c-accent-1); margin-right: 1rem;"></i>
+                                有人但不熱鬧 (Low Noise)
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: center;">
+                                <i class="fa-solid fa-check" style="color: var(--c-accent-1); margin-right: 1rem;"></i>
+                                空間感、留白多 (High Spacing)
+                            </li>
+                            <li style="margin-bottom: 1rem; display: flex; align-items: center;">
+                                <i class="fa-solid fa-check" style="color: var(--c-accent-1); margin-right: 1rem;"></i>
+                                不工整、自然、生活感 (Organic Flow)
+                            </li>
+                        </ul>
                         <p>
                             這是一個「避風港」型的個人頁面，呈現聚人的氛圍。<br>
                             目標：讓人看到就有安全感、想停下來，不被要求或壓力。
@@ -257,7 +337,7 @@
                     <div class="gs-reveal" style="text-align: center;">
                         <div class="polaroid">
                             <img src="/assets/img/guild/nekopapaya/scene.webp" alt="Cozy Gathering">
-                            <div style="font-family: 'Nothing You Could Do', cursive; margin-top: 1rem; color: #888;">Cozy Gathering</div>
+                            <div style="font-family: 'Nothing You Could Do', cursive; margin-top: 1rem; color: #888; font-size: 1.5rem;">Cozy Gathering</div>
                         </div>
                     </div>
                 </div>
@@ -268,7 +348,7 @@
         <section class="section">
             <div class="container interactive-layer" style="text-align: center;">
                 <div class="gs-reveal">
-                    <h2 style="font-size: 3rem; margin-bottom: 3rem;">Ready to Join?</h2>
+                    <h2 style="font-size: 3rem; margin-bottom: 3rem;">Ready to Gather?</h2>
                     <div style="display: flex; justify-content: center; gap: 1rem;">
                         <a href="https://www.threads.net/@nekopapaya" target="_blank" class="btn-link"><i class="fa-brands fa-threads"></i></a>
                         <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="btn-link"><i class="fa-brands fa-instagram"></i></a>
@@ -280,18 +360,21 @@
 
     </div>
 
-    <!-- SCRIPT: The Cozy Cyber-Harbor -->
+    <!-- SCRIPT: The Bio-Luminescent Mood Lab -->
     <script type="module">
         import * as THREE from 'three';
 
         // --- Setup ---
         const container = document.getElementById('webgl-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0xF4F1EC, 0.02); // Soft Mist
+        const scannerUI = document.getElementById('scanner-ui');
+        const scannerText = document.getElementById('scanner-text');
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3, 8);
-        camera.lookAt(0, 0, 0);
+        const scene = new THREE.Scene();
+        // Fog: A mix of Milk Tea and Swamp Mist
+        scene.fog = new THREE.FogExp2(0xF4F1EC, 0.025);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 2, 12);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -299,108 +382,114 @@
         container.appendChild(renderer.domElement);
 
         // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xD4A373, 2, 15);
-        pointLight.position.set(0, 2, 0);
-        scene.add(pointLight);
+        // "Lab Lamp" Warmth
+        const warmLight = new THREE.PointLight(0xFFD700, 2, 20);
+        warmLight.position.set(5, 5, 5);
+        scene.add(warmLight);
 
-        // --- Objects ---
+        // "Bio" Coolness
+        const bioLight = new THREE.PointLight(0x78C0A8, 3, 25);
+        bioLight.position.set(-5, -2, 5);
+        scene.add(bioLight);
 
-        // 1. The Sea (Displaced Plane)
-        const seaGeometry = new THREE.PlaneGeometry(60, 60, 64, 64);
 
-        // Helper to displace vertices manually since we are using StandardMaterial
-        const posAttribute = seaGeometry.attributes.position;
-        const vertexCount = posAttribute.count;
-        const originalPositions = new Float32Array(vertexCount * 3);
+        // --- Objects: The Mood Bubbles (Soft Bodies) ---
+        // We use Icosahedron with a custom shader to make them wobble like slime/bubbles
 
-        for (let i = 0; i < vertexCount; i++) {
-             originalPositions[i * 3] = posAttribute.getX(i);
-             originalPositions[i * 3 + 1] = posAttribute.getY(i);
-             originalPositions[i * 3 + 2] = posAttribute.getZ(i);
-        }
+        const bubbleCount = 40;
+        const bubbleGeo = new THREE.IcosahedronGeometry(0.6, 3); // Detailed
 
-        const seaMaterial = new THREE.MeshStandardMaterial({
-            color: 0xA8B2A1,
-            roughness: 0.1,
+        // Custom Shader Material for "Gooey" Look
+        const bubbleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.2,
             metalness: 0.1,
             transparent: true,
-            opacity: 0.6,
-            side: THREE.DoubleSide
+            opacity: 0.8,
+            envMapIntensity: 1,
         });
-        const sea = new THREE.Mesh(seaGeometry, seaMaterial);
-        sea.rotation.x = -Math.PI / 2;
-        sea.position.y = -1;
-        scene.add(sea);
 
+        // We will create individual meshes to allow independent wobble animation
+        // (InstancedMesh is faster but harder to customize individual vertex shaders easily without plugin)
+        // Given 40 objects, individual meshes are fine.
 
-        // 2. The Boat (Procedural Paper Boat)
-        const boatGroup = new THREE.Group();
+        const bubbles = [];
+        const bubbleGroup = new THREE.Group();
+        scene.add(bubbleGroup);
 
-        // Hull
-        const hullGeo = new THREE.ConeGeometry(1.5, 1, 4, 1);
-        const hullMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.9 });
-        const hull = new THREE.Mesh(hullGeo, hullMat);
-        hull.rotation.z = Math.PI;
-        hull.scale.set(1, 0.5, 2);
-        boatGroup.add(hull);
+        const palette = [0x78C0A8, 0x5DADE2, 0xF7DC6F, 0xE59866]; // Green, Blue, Yellow, Orange
 
-        // Sail
-        const sailGeo = new THREE.BufferGeometry();
-        const sailVertices = new Float32Array([
-            0, 0.5, 0,
-            0, 2.5, 0,
-            0, 0.5, 1.5,
-            0, 0.5, 0,
-            0, 0.5, 1.5,
-            0, 2.5, 0
-        ]);
-        sailGeo.setAttribute('position', new THREE.BufferAttribute(sailVertices, 3));
-        sailGeo.computeVertexNormals();
-        const sailMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide, roughness: 0.9 });
-        const sail = new THREE.Mesh(sailGeo, sailMat);
-        boatGroup.add(sail);
+        for(let i=0; i<bubbleCount; i++) {
+            const mat = bubbleMaterial.clone();
+            mat.color.setHex(palette[Math.floor(Math.random() * palette.length)]);
 
-        // Lantern (Sphere)
-        const lanternGeo = new THREE.SphereGeometry(0.2, 16, 16);
-        const lanternMat = new THREE.MeshBasicMaterial({ color: 0xD4A373 });
-        const lantern = new THREE.Mesh(lanternGeo, lanternMat);
-        lantern.position.set(0, 0.5, 0);
-        boatGroup.add(lantern);
+            const mesh = new THREE.Mesh(bubbleGeo, mat);
 
-        scene.add(boatGroup);
+            // Random Position
+            mesh.position.set(
+                (Math.random() - 0.5) * 25,
+                (Math.random() - 0.5) * 15,
+                (Math.random() - 0.5) * 10
+            );
 
-        // 3. Particles ("Fireflies" / "Spirits")
-        const pCount = 300;
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(pCount * 3);
-        const pSpeed = new Float32Array(pCount); // Individual speeds
+            // Store data for animation
+            mesh.userData = {
+                originalPos: mesh.position.clone(),
+                originalColor: mat.color.clone(),
+                speed: Math.random() * 0.02 + 0.01,
+                offset: Math.random() * 100,
+                wobbleSpeed: Math.random() * 2 + 1,
+                status: ["Relaxed", "Hungry", "Analyzing", "Sleepy", "Hyper"][Math.floor(Math.random() * 5)],
+                isHovered: false,
+                hoverScale: 1.0, // Multiplier for hover effect
+                baseScale: Math.random() * 0.5 + 0.5
+            };
 
-        for(let i=0; i<pCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 40;
-            pPos[i*3+1] = (Math.random() * 5) + 1; // Above water
-            pPos[i*3+2] = (Math.random() - 0.5) * 40;
-            pSpeed[i] = Math.random() * 0.02 + 0.01;
+            const s = mesh.userData.baseScale;
+            mesh.scale.set(s,s,s);
+
+            bubbles.push(mesh);
+            bubbleGroup.add(mesh);
         }
 
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        // --- Objects: The Reeds / Data Vines ---
+        // Simple lines rising from bottom
+        const vineCount = 30;
+        const vineGroup = new THREE.Group();
+        scene.add(vineGroup);
 
-        const pMat = new THREE.PointsMaterial({
-            color: 0xD4A373,
-            size: 0.15,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
-        });
+        const vineMat = new THREE.LineBasicMaterial({ color: 0x78C0A8, transparent: true, opacity: 0.3 });
 
-        const particles = new THREE.Points(pGeo, pMat);
-        scene.add(particles);
+        for(let i=0; i<vineCount; i++) {
+            const points = [];
+            const x = (Math.random() - 0.5) * 40;
+            const z = (Math.random() - 0.5) * 20 - 5;
+            let y = -10;
+
+            // Create a curvy line
+            for(let j=0; j<20; j++) {
+                points.push(new THREE.Vector3(
+                    x + Math.sin(j * 0.5) * 0.5,
+                    y,
+                    z + Math.cos(j * 0.5) * 0.5
+                ));
+                y += 1 + Math.random();
+            }
+
+            const vineGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(vineGeo, vineMat);
+            vineGroup.add(line);
+        }
+
 
         // --- Interaction State ---
         let scrollY = 0;
         const mouse = new THREE.Vector2();
+        let isGathering = false; // "Magic Gather" mode
+        let gatherStrength = 0;
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
@@ -409,21 +498,38 @@
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Update UI
+            scannerUI.style.display = 'block';
+            scannerUI.style.transform = `translate(${e.clientX + 20}px, ${e.clientY + 20}px)`;
         });
 
-        // Click Explosion (Interactive Ripple)
-        let explosionTime = 0;
         window.addEventListener('mousedown', () => {
-            explosionTime = 1.0;
+            isGathering = true;
+            scannerText.innerText = "GATHERING...";
+            scannerText.style.color = "#FFD700";
 
-            // GSAP Shockwave on boat
-            gsap.to(boatGroup.scale, {
-                x: 1.2, y: 1.2, z: 1.2,
+            // GSAP Camera Shake
+            gsap.to(camera.position, {
+                x: "+=0.2", y: "+=0.2",
                 duration: 0.1,
                 yoyo: true,
-                repeat: 1
+                repeat: 5
             });
         });
+
+        window.addEventListener('mouseup', () => {
+            isGathering = false;
+            scannerText.innerText = "RELEASED";
+            scannerText.style.color = "#78C0A8";
+
+            // Explosion force
+            gatherStrength = -2; // Negative means push away violently
+        });
+
+
+        // --- Raycaster for "Scanner" ---
+        const raycaster = new THREE.Raycaster();
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
@@ -432,83 +538,86 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // 1. Water Wave Animation
-            const pos = seaGeometry.attributes.position;
+            // 1. Raycasting (Scanner)
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(bubbleGroup.children);
+            let hoveredObj = null;
 
-            // "Warp Speed" Factor based on scroll Y (simulating travel)
-            // As we scroll down, we move forward.
-            // But to make it infinite, we just animate the waves faster?
-            // Or we actually move the camera.
-
-            const effectiveScroll = scrollY * 0.005;
-
-            for(let i=0; i<vertexCount; i++) {
-                const x = originalPositions[i*3];
-                // const y = originalPositions[i*3+1];
-                const z = originalPositions[i*3+2];
-
-                // Turbulence from explosion
-                const turbulence = Math.max(0, explosionTime) * Math.sin(x * 5 + time * 10) * 0.5;
-
-                // Wave Calculation
-                // Adding scrollY to phase creates movement illusion
-                const waveHeight = 0.4;
-                const waveFreq = 0.4;
-
-                const zOffset = Math.sin(x * waveFreq + time + effectiveScroll) * Math.cos(z * waveFreq + time * 0.8) * waveHeight;
-
-                pos.setZ(i, zOffset + turbulence);
+            if (intersects.length > 0) {
+                hoveredObj = intersects[0].object;
+                scannerText.innerText = `STATUS: ${hoveredObj.userData.status}`;
+            } else {
+                scannerText.innerText = isGathering ? "GATHERING..." : "SCANNING...";
             }
-            pos.needsUpdate = true;
-            seaGeometry.computeVertexNormals();
 
-            // 2. Boat Movement (Gentle Float)
-            boatGroup.position.y = Math.sin(time * 1.5) * 0.1 - 0.3;
-            boatGroup.rotation.z = Math.sin(time * 0.5) * 0.05;
-            boatGroup.rotation.x = Math.sin(time * 0.3) * 0.05;
+            // 2. Camera Move
+            camera.position.y = 2 + scrollY * 0.005; // Rise up
+            camera.lookAt(0, scrollY * 0.002, 0);
 
-            // 3. Camera Follow
-            // Camera stays relative to boat but moves slightly with scroll
-            // Actually, let's move the camera forward through the mist as user scrolls
-            // Reset position to loop? Or just fog hides the end.
-            // We keep the boat in view.
+            // 3. Bubbles Logic
+            // Gathering Strength
+            if (isGathering) {
+                gatherStrength = Math.min(gatherStrength + 0.05, 1);
+            } else {
+                if(gatherStrength < 0) gatherStrength += 0.1;
+                else gatherStrength = Math.max(gatherStrength - 0.02, 0);
+            }
 
-            camera.position.z = 8 + Math.sin(time * 0.2) * 0.5;
-            camera.position.y = 3 + scrollY * 0.002;
-            camera.lookAt(0, 0, 0);
+            bubbles.forEach(mesh => {
+                const data = mesh.userData;
 
-            // 4. Particle Animation
-            const pPositions = particles.geometry.attributes.position.array;
+                // --- MOVEMENT ---
+                let tx = data.originalPos.x;
+                let ty = data.originalPos.y + Math.sin(time * data.speed + data.offset) * 2;
+                let tz = data.originalPos.z;
 
-            for(let i=0; i<pCount; i++) {
-                // Move particles relative to scroll to create "passing by" effect
-                // If we scroll down, particles should move towards camera (Z+)
+                const mouseVec = new THREE.Vector3(mouse.x * 15, mouse.y * 10, 0);
 
-                let z = pPositions[i*3+2];
-                z += 0.02 + (scrollY * 0.0005); // Speed up with scroll
+                if (Math.abs(gatherStrength) > 0.01) {
+                    const center = new THREE.Vector3(0, 0, 0);
+                    if (gatherStrength > 0) {
+                        mesh.position.lerp(center, gatherStrength * 0.1);
+                        mesh.rotation.x += 0.2; mesh.rotation.y += 0.2;
+                    } else {
+                        const dir = mesh.position.clone().sub(center).normalize();
+                        mesh.position.add(dir.multiplyScalar(Math.abs(gatherStrength) * 2));
+                    }
+                } else {
+                    const distToMouse = mesh.position.distanceTo(mouseVec);
+                    if(distToMouse < 5) mesh.position.lerp(mouseVec, 0.02);
 
-                if(z > 10) z = -30; // Reset far back
+                    const target = new THREE.Vector3(tx, ty, tz);
+                    mesh.position.lerp(target, 0.02);
+                }
 
-                pPositions[i*3+2] = z;
-
-                // Gentle drift
-                pPositions[i*3] += Math.sin(time + i) * 0.01;
-                pPositions[i*3+1] += Math.cos(time + i) * 0.01;
-
-                // Explosion Repulsion
-                if(explosionTime > 0) {
-                    const dx = pPositions[i*3];
-                    const dy = pPositions[i*3+1];
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if(dist < 5) {
-                        pPositions[i*3] += dx * 0.05 * explosionTime;
-                        pPositions[i*3+1] += dy * 0.05 * explosionTime;
+                // --- INTERACTION ---
+                if (mesh === hoveredObj) {
+                    if (!data.isHovered) {
+                        gsap.to(mesh.material.color, { r: 1, g: 1, b: 1, duration: 0.2 });
+                        gsap.to(data, { hoverScale: 1.5, duration: 0.3 });
+                        data.isHovered = true;
+                    }
+                } else {
+                    if (data.isHovered) {
+                        gsap.to(mesh.material.color, {
+                            r: data.originalColor.r, g: data.originalColor.g, b: data.originalColor.b, duration: 0.5
+                        });
+                        gsap.to(data, { hoverScale: 1.0, duration: 0.5 });
+                        data.isHovered = false;
                     }
                 }
-            }
-            particles.geometry.attributes.position.needsUpdate = true;
 
-            if(explosionTime > 0) explosionTime -= 0.03;
+                // --- SCALE / WOBBLE ---
+                // Apply wobble on top of hover scale
+                const wobble = Math.sin(time * data.wobbleSpeed) * 0.1 + 1;
+                const finalScale = data.baseScale * data.hoverScale;
+
+                mesh.scale.set(
+                    finalScale * wobble,
+                    finalScale * (1/wobble),
+                    finalScale * wobble
+                );
+            });
 
             renderer.render(scene, camera);
         }
@@ -522,8 +631,6 @@
         });
 
         // --- GSAP Reveals ---
-        gsap.registerPlugin(ScrollTrigger);
-
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.from(elem, {
                 scrollTrigger: {
@@ -532,8 +639,8 @@
                 },
                 y: 50,
                 opacity: 0,
-                duration: 1.2,
-                ease: "power3.out"
+                duration: 1,
+                ease: "back.out(1.7)"
             });
         });
 
