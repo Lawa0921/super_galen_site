@@ -142,7 +142,7 @@
             padding: 4rem 2rem 4rem 0;
             display: flex;
             flex-direction: column;
-            gap: 15vh; /* Vertical Rhythm */
+            gap: 10vh; /* Vertical Rhythm */
         }
 
         .nav-back {
@@ -248,6 +248,10 @@
 
         .highlight-red { color: var(--c-blood-bright); font-weight: bold; }
         .highlight-gold { color: var(--c-gold); font-weight: bold; }
+        .highlight-wacky {
+            color: var(--c-jade); font-weight: bold;
+            text-shadow: 0 0 5px var(--c-jade);
+        }
 
         /* ════════════ AVATAR ════════════ */
         .avatar-container {
@@ -342,6 +346,34 @@
             100% { left: 200%; }
         }
 
+        /* ════════════ STYLE STATS ════════════ */
+        .style-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .style-item {
+            text-align: center; border: 1px solid #333; padding: 1rem;
+            transition: 0.3s;
+        }
+        .style-item:hover { border-color: var(--c-jade); box-shadow: 0 0 15px rgba(0,255,170,0.2); }
+        .style-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+        .style-label { font-family: var(--f-calligraphy); font-size: 1.5rem; color: var(--c-text); }
+        .style-desc { font-size: 0.8rem; color: #888; margin-top: 0.5rem; }
+
+        /* ════════════ FAMILY ════════════ */
+        .family-card {
+            background: linear-gradient(135deg, rgba(20, 10, 10, 0.9), rgba(0,0,0,0.95));
+            border-left: 4px solid var(--c-blood-bright);
+        }
+        .family-list { list-style: none; margin-top: 1rem; }
+        .family-list li {
+            margin-bottom: 0.8rem; padding-left: 1.5rem; position: relative;
+            font-size: 1.1rem;
+        }
+        .family-list li::before {
+            content: '➤'; position: absolute; left: 0; color: var(--c-blood-bright);
+        }
+
         /* ════════════ SOCIALS ════════════ */
         .socials {
             display: flex; gap: 1rem; margin-top: 2rem;
@@ -419,9 +451,9 @@
         <!-- RIGHT COLUMN: Scrolling Content -->
         <div class="right-col">
 
-            <!-- Intro / Lore -->
+            <!-- 1. ORIGIN STORY -->
             <div class="section-card reveal">
-                <div class="card-header">前世今生 <span>LORE</span></div>
+                <div class="card-header">血戰終焉 <span>ORIGIN</span></div>
                 <p class="lore-text">
                     在時間尚未被記錄之前，我曾以血為名，以戰為生。
                     以「<span class="highlight-gold">呂布</span>」之名，震動整個時代。
@@ -430,26 +462,45 @@
                 </p>
                 <p class="lore-text">
                     敗北的瞬間，我向天嘶吼：若有來世，我必親手粉碎這條結局。
-                    就在怨念悔恨時，一隻誤用 <span class="highlight-red">克蘇魯之力</span> 的天堂鳥「<span class="highlight-gold">小米絲</span>」，
-                    將我自歷史中強行剝離，投放至名為「現代」的世界線。
                 </p>
+                <div style="border-left: 2px solid var(--c-jade); padding-left: 1rem; margin: 1.5rem 0; color: #aaa; font-size: 0.9rem;">
+                    <i class="fa-solid fa-ghost"></i> 然而怨念誤入虛空，靈魂被 <span class="highlight-wacky">克蘇魯之力</span> 侵蝕，
+                    在那不可名狀的世界中漂流了無數歲月...
+                </div>
                 <p class="lore-text">
-                    來到這個世界後的我，被米絲這個自稱為天使的魅魔拐走（？），是三個小屁孩的爸爸。
-                    為了復仇、也為了理解這個全新的時代，在米絲的建議下，我開始了直播。
+                    直到一位名為「<span class="highlight-gold">米絲</span>」的天堂鳥將我從地獄中解放，
+                    將我自歷史中強行剝離，投放至名為「現代」的世界線。
                 </p>
             </div>
 
-            <!-- Mission -->
+            <!-- 2. THE FAMILY (NEW) -->
+            <div class="section-card family-card reveal">
+                <div class="card-header">將軍府邸 <span>HOUSEHOLD</span></div>
+                <p class="lore-text">
+                    來到這個世界後的我，被米絲這個自稱為天使的魅魔拐走（？），
+                    不知不覺就蹦出了三隻小屁孩，成為了三個孩子的爸爸。
+                </p>
+                <ul class="family-list">
+                    <li><span class="highlight-gold">米絲 (Mis)</span>：我的老婆，誤用克蘇魯之力的天堂鳥，真實身份是魅魔。</li>
+                    <li><span class="highlight-red">諭</span>：大兒子，搗蛋鬼一號。</li>
+                    <li><span class="highlight-red">小貓淵</span>：二女兒，偶爾會在直播中亂入。</li>
+                    <li><span class="highlight-red">小舞兔</span>：老么，可愛擔當。</li>
+                </ul>
+                <p class="lore-text" style="font-size: 0.9rem; color: #888; margin-top: 1rem;">
+                    ( 直播時偶爾會聽到小朋友的聲音亂入，那是將軍府的日常 )
+                </p>
+            </div>
+
+            <!-- 3. MISSION: FINDING 10 GENERALS -->
             <div class="section-card reveal">
                 <div class="card-header">尋找部下 <span>MISSION</span></div>
                 <p class="lore-text">
                     穿越的代價是，原本追隨我的<span class="highlight-gold">「十位呂家軍部下」</span>，
                     被拋散至不同的時間、不同的世界。
-                    我在螢幕前揮動手把，只為在無數世界線中，鎖定那十道熟悉的靈魂波動。
                 </p>
-                <p class="lore-text" style="color: var(--c-gold);">
-                    若你的心臟因這個名字而震動，那麼答案只有一個：
-                    <br>你是 我正在尋找的「失散呂家軍部下」。
+                <p class="lore-text">
+                    於是我開始偽裝。偽裝成「直播主」，偽裝成「打遊戲的人類」。
+                    我在螢幕前揮動手把，只為在無數世界線中，鎖定那十道熟悉的靈魂波動。
                 </p>
 
                 <div class="generals-grid">
@@ -465,25 +516,48 @@
                     <div class="general-token"><i class="fa-solid fa-crown"></i></div>
                 </div>
 
+                <p class="lore-text" style="color: var(--c-gold); text-align: center; margin-top: 1.5rem;">
+                    若你的心臟因這個名字而震動，那麼答案只有一個：
+                    <br>你是 我正在尋找的「失散呂家軍部下」。
+                </p>
+
                 <a href="https://discord.gg/9AK4nWxdkW" target="_blank" class="game-tag" style="background: var(--c-gold); color: #000; font-weight: bold; border: none; text-align: center; display: block;">
-                    <i class="fa-brands fa-discord"></i> 加入呂家軍大本營
+                    <i class="fa-brands fa-discord"></i> 立即歸隊 (Join Discord)
                 </a>
             </div>
 
-            <!-- Stream -->
+            <!-- 4. STREAM STYLE & CONTENT -->
             <div class="section-card reveal" style="margin-bottom: 4rem;">
-                <div class="card-header">直播傳令 <span>STREAM</span></div>
+                <div class="card-header">直播風格 <span>STYLE</span></div>
+
+                <div class="style-grid">
+                    <div class="style-item">
+                        <span class="style-icon" style="color: var(--c-jade);"><i class="fa-solid fa-ghost"></i></span>
+                        <div class="style-label">搞怪</div>
+                        <div class="style-desc">WACKY</div>
+                    </div>
+                    <div class="style-item">
+                        <span class="style-icon" style="color: var(--c-gold);"><i class="fa-solid fa-heart"></i></span>
+                        <div class="style-label">真實</div>
+                        <div class="style-desc">REAL</div>
+                    </div>
+                    <div class="style-item">
+                        <span class="style-icon" style="color: var(--c-blood-bright);"><i class="fa-solid fa-fire-flame-curved"></i></span>
+                        <div class="style-label">中二</div>
+                        <div class="style-desc">CHUUNI</div>
+                    </div>
+                </div>
+
                 <p class="lore-text">
-                    平時專門直播獨立遊戲、冷門但超好玩的作品。
-                    偶爾也會客串一些目前火熱的遊戲，目標是把<span class="highlight-gold">「被忽略的好遊戲」</span>介紹給更多人。
+                    平時專門直播 <span class="highlight-gold">獨立遊戲</span>、<span class="highlight-gold">冷門神作</span>。
+                    偶爾也會客串一些目前火熱的遊戲，目標是把「被忽略的好遊戲」介紹給更多人。
                 </p>
 
                 <div class="game-tags">
-                    <a href="#" class="game-tag">獨立遊戲</a>
+                    <a href="#" class="game-tag">氣勢磅礡的馬砍</a>
                     <a href="#" class="game-tag">冷門神作</a>
-                    <a href="#" class="game-tag">魔物獵人</a>
-                    <a href="#" class="game-tag">Minecraft</a>
-                    <a href="#" class="game-tag">寶可夢</a>
+                    <a href="#" class="game-tag">獨立遊戲</a>
+                    <a href="#" class="game-tag">藏於各地的神作</a>
                 </div>
 
                 <div class="socials">
@@ -733,7 +807,7 @@
         window.addEventListener('mousemove', moveCursor);
 
         // Hover Detection
-        const hoverTargets = document.querySelectorAll('a, button, .section-card, .general-token, .social-btn, .game-tag');
+        const hoverTargets = document.querySelectorAll('a, button, .section-card, .general-token, .social-btn, .game-tag, .style-item');
         hoverTargets.forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
