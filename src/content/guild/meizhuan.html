@@ -69,14 +69,15 @@
 
         #hud-top-left {
             position: fixed;
-            top: 2rem;
-            left: 4rem; /* Offset for back button */
-            z-index: 100;
+            top: 6rem; /* Move below Nav Button */
+            left: 2rem; /* Align with Nav Button */
+            z-index: 90;
             pointer-events: none;
             font-family: 'Orbitron', sans-serif;
             font-size: 0.8rem;
             color: var(--neon-cyan);
             line-height: 1.5;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
         }
 
         /* Navigation */
@@ -90,13 +91,14 @@
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
             border: 1px solid var(--neon-cyan);
-            padding: 0.5rem 1rem;
+            padding: 0.8rem 1.5rem; /* Larger touch target */
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 2px;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9); /* Darker BG for readability */
             backdrop-filter: blur(5px);
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            white-space: nowrap; /* Prevent wrapping */
         }
 
         .nav-back:hover {
@@ -360,20 +362,20 @@
         /* Mobile specific adjustments (RWD) */
         @media (max-width: 768px) {
             .nav-back {
-                padding: 0.3rem 0.6rem;
-                font-size: 0.8rem;
-                top: 1rem;
-                left: 1rem;
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+                top: 1.5rem;
+                left: 1.5rem;
             }
             .hud-card {
                 padding: 1.5rem;
-                width: 90%;
+                width: 85%; /* Slightly narrower for breathing room */
                 margin: 0 auto;
             }
             .section {
                 padding: 2rem 0; /* Less padding on mobile */
                 align-items: flex-start; /* Align top for better scrolling flow */
-                padding-top: 6rem; /* More top padding to clear nav */
+                padding-top: 8rem; /* More top padding to clear nav */
             }
             /* Override explicit alignments for mobile flow */
             #section-identity, #section-skills, #section-hobbies, #section-personal {
