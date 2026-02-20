@@ -838,6 +838,18 @@ members:
       - id: "musician"
         label: "音樂人"
 
+  - id: "ava"
+    name: "房產小蜜 Ava"
+    avatar: "/assets/img/guild/ava/avatar.webp"
+    page: "/guild/ava.html"
+    tags:
+      - id: "real_estate_secretary"
+        label: "房產小秘書"
+      - id: "biker_mom"
+        label: "重機媽咪"
+      - id: "mobile_photographer"
+        label: "手機攝影"
+
   - id: "michael"
     name: "Michael Lai"
     avatar: "/assets/img/guild/michael/avatar.webp"
