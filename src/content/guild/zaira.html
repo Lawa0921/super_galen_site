@@ -1,27 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZAIRA | EXPLORER</title>
-    <!-- Fonts: Inter + IBM Plex Mono (Lab/Tech but grounded) -->
+    <title>Zaira | Zai Lab 🧪</title>
+    <meta name="description" content="Zaira's Experimental Lab - Exploring Life, Languages, and Culture.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <!-- FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-color: #0f172a; /* Slate 900 */
-            --bg-secondary: #1e293b; /* Slate 800 */
-            --text-main: #e2e8f0; /* Slate 200 */
-            --text-muted: #94a3b8; /* Slate 400 */
-            --accent-color: #f97316; /* Orange 500 (Signal/Alert/Warmth) */
-            --accent-glow: rgba(249, 115, 22, 0.2);
-            --font-main: 'Inter', sans-serif;
-            --font-mono: 'IBM Plex Mono', monospace;
-            --border-color: rgba(148, 163, 184, 0.2);
+            --neon-green: #39ff14;
+            --neon-pink: #ff00ff;
+            --neon-cyan: #00ffff;
+            --void-bg: #050505;
+            --glass-panel: rgba(10, 20, 30, 0.6);
         }
 
         * {
@@ -31,15 +29,13 @@
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: var(--font-main);
+            background-color: var(--void-bg);
+            color: #fff;
+            font-family: 'Zen Kaku Gothic New', sans-serif;
             overflow-x: hidden;
             overscroll-behavior: none;
-            cursor: crosshair; /* Lab precision feel */
         }
 
-        /* Canvas Containers */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -47,22 +43,264 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
+            /* Subtly grainy texture overlay */
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
         }
 
-        /* Grid Overlay (Subtle Tech) */
-        .grid-overlay {
-            position: fixed;
+        /* Glitch Effect Utility Class */
+        .glitch {
+            position: relative;
+            color: #fff;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-image:
-                linear-gradient(var(--border-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
-            background-size: 100px 100px;
-            opacity: 0.05;
-            z-index: -1;
+            background: var(--void-bg);
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--neon-pink);
+            clip-path: inset(44% 0 61% 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--neon-cyan);
+            clip-path: inset(50% 0 30% 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(20% 0 80% 0); }
+            20% { clip-path: inset(60% 0 10% 0); }
+            40% { clip-path: inset(40% 0 50% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(10% 0 70% 0); }
+            100% { clip-path: inset(30% 0 20% 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(10% 0 60% 0); }
+            20% { clip-path: inset(30% 0 10% 0); }
+            40% { clip-path: inset(80% 0 5% 0); }
+            60% { clip-path: inset(10% 0 90% 0); }
+            80% { clip-path: inset(50% 0 20% 0); }
+            100% { clip-path: inset(5% 0 60% 0); }
+        }
+
+        /* Scroll Content Container */
+        .scroll-content {
+            position: relative;
+            width: 100%;
+            height: 400vh;
+            z-index: 1;
             pointer-events: none;
+        }
+
+        /* Section Styling */
+        section {
+            position: absolute; /* Changed from relative for precise placement */
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            opacity: 0; /* Controlled by GSAP */
+            transform: translateY(50px);
+        }
+
+        #hero-section { top: 0; }
+        #bio-section { top: 100vh; }
+        #exp-section { top: 200vh; }
+        #social-section { top: 300vh; }
+
+
+        .panel {
+            background: var(--glass-panel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--neon-green);
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.1);
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            font-family: 'Space Mono', monospace;
+            color: var(--neon-green);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+        }
+
+        h1, h2 {
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: var(--neon-cyan);
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #e0e0e0;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight {
+            color: var(--neon-pink);
+            font-weight: 700;
+        }
+
+        /* Hero Section Specifics */
+        #hero-section {
+            text-align: center;
+        }
+
+        .hero-title-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-subtitle {
+            font-family: 'Space Mono', monospace;
+            color: var(--neon-green);
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* Avatar Styling */
+        .avatar-container {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 2rem;
+            position: relative;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--neon-green), var(--neon-pink));
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid #000;
+            filter: contrast(1.1) brightness(1.1);
+        }
+
+        /* Social Links */
+        .social-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            text-decoration: none;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .social-link:hover {
+            background: rgba(57, 255, 20, 0.1);
+            border-color: var(--neon-green);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(57, 255, 20, 0.2);
+        }
+
+        .social-link i {
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+            color: var(--neon-cyan);
+        }
+
+        .social-link:hover i {
+            color: var(--neon-green);
+        }
+
+        /* Lab Data Decorative Elements */
+        .lab-data {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.3);
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .data-tl { top: 10px; left: 10px; }
+        .data-tr { top: 10px; right: 10px; text-align: right; }
+        .data-bl { bottom: 10px; left: 10px; }
+        .data-br { bottom: 10px; right: 10px; text-align: right; }
+
+        /* Tag Cloud */
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .tag {
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 0.3rem 0.8rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            border-radius: 2px;
         }
 
         /* Loading Screen */
@@ -72,683 +310,482 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--bg-color);
+            background: #000;
+            z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
             flex-direction: column;
-            font-family: var(--font-mono);
-            transition: opacity 0.8s ease;
+            color: var(--neon-green);
+            font-family: 'Space Mono', monospace;
         }
-        .loader-text {
-            margin-bottom: 1rem;
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            color: var(--accent-color);
-        }
-        .loader-bar-container {
+
+        .loader-bar {
             width: 200px;
             height: 2px;
-            background: var(--bg-secondary);
+            background: rgba(57, 255, 20, 0.2);
+            margin-top: 1rem;
+            position: relative;
             overflow: hidden;
         }
-        .loader-bar {
+
+        .loader-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
             width: 0%;
-            height: 100%;
-            background: var(--accent-color);
-            animation: load 2s ease-in-out forwards;
-        }
-        @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
-
-        /* Typography */
-        h1, h2, h3, h4 {
-            font-family: var(--font-main);
-            font-weight: 300;
-        }
-
-        .mono {
-            font-family: var(--font-mono);
-        }
-
-        .accent {
-            color: var(--accent-color);
-        }
-
-        /* Section Layouts */
-        section {
-            min-height: 100vh;
-            padding: 4rem 2rem;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        /* Hero Section */
-        #hero {
-            justify-content: flex-start;
-            padding-top: 15vh;
-        }
-
-        .hero-content {
-            max-width: 600px;
-            z-index: 10;
-        }
-
-        .hero-label {
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            margin-bottom: 1rem;
-            display: block;
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-
-        .hero-title {
-            font-size: clamp(3rem, 8vw, 7rem);
-            line-height: 0.9;
-            margin-bottom: 2rem;
-            letter-spacing: -0.02em;
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-
-        .hero-desc {
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-            line-height: 1.8;
-            color: var(--text-muted);
-            border-left: 2px solid var(--accent-color);
-            padding-left: 1.5rem;
-            max-width: 400px;
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-
-        /* Avatar Float */
-        .avatar-float {
-            position: absolute;
-            right: 10%;
-            top: 20%;
-            width: 250px; /* Larger */
-            height: 350px; /* Portrait ratio */
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-            z-index: 5;
-            opacity: 0;
-            transform: translateY(30px);
-            background: var(--bg-secondary);
-        }
-        .avatar-float::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.3); /* Tint */
-            mix-blend-mode: multiply;
-        }
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
-            transition: transform 1s ease;
-        }
-        .avatar-float:hover .avatar-img {
-            transform: scale(1.05);
-        }
-        .avatar-label {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            background: var(--bg-color);
-            color: var(--text-muted);
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            padding: 0.5rem 1rem;
-            border-top: 1px solid var(--border-color);
-            border-left: 1px solid var(--border-color);
-        }
-
-
-        /* Content Panels (Asymmetrical) */
-        .panel-wrapper {
-            display: flex;
-            justify-content: flex-end; /* Push to right generally */
-            margin-bottom: 10vh;
-        }
-        .panel-wrapper.left {
-            justify-content: flex-start;
-        }
-
-        .data-panel {
-            background: rgba(30, 41, 59, 0.7); /* Semi-transparent Slate 800 */
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 500px;
-            position: relative;
-            transition: border-color 0.3s ease;
-        }
-        .data-panel:hover {
-            border-color: var(--accent-color);
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-        }
-
-        .panel-title {
-            font-size: 1.5rem;
-            letter-spacing: 0.05em;
-        }
-
-        .panel-id {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--accent-color);
-        }
-
-        .tag-cloud {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-        }
-        .tag {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            padding: 0.25rem 0.75rem;
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-            transition: all 0.3s ease;
-        }
-        .tag:hover {
-            color: var(--accent-color);
-            border-color: var(--accent-color);
-            background: rgba(249, 115, 22, 0.05);
-        }
-
-        /* Field Notes (Timeline) */
-        .log-item {
-            margin-bottom: 2rem;
-            padding-left: 1rem;
-            border-left: 1px solid var(--border-color);
-            position: relative;
-        }
-        .log-item::before {
-            content: '';
-            position: absolute;
-            left: -3px;
-            top: 5px;
-            width: 5px;
-            height: 5px;
-            background: var(--accent-color);
-        }
-        .log-meta {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 0.25rem;
-        }
-        .log-header {
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-        .log-desc {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            line-height: 1.6;
-        }
-
-        /* Social Hub */
-        .social-hub {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        .social-card {
-            display: flex;
-            align-items: center;
-            padding: 1.5rem;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        .social-card i {
-            font-size: 1.2rem;
-            margin-right: 1rem;
-            color: var(--text-main);
-        }
-        .social-card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-            background: rgba(30, 41, 59, 0.8);
-        }
-        .social-info div:first-child {
-            font-size: 0.9rem;
-            color: var(--text-main);
-            margin-bottom: 0.2rem;
-        }
-        .social-info div:last-child {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-        }
-
-        /* Frequency Indicator */
-        .freq-readout {
-            position: fixed;
-            bottom: 2rem;
-            left: 2rem;
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .freq-bar {
-            width: 30px;
-            height: 10px;
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-        }
-        .bar-seg {
-            width: 2px;
-            background: var(--accent-color);
-            animation: equalize 1s infinite ease-in-out;
-        }
-        .bar-seg:nth-child(2) { animation-delay: 0.1s; }
-        .bar-seg:nth-child(3) { animation-delay: 0.2s; }
-        .bar-seg:nth-child(4) { animation-delay: 0.3s; }
-        @keyframes equalize { 0%, 100% { height: 2px; } 50% { height: 100%; } }
-
-        /* Media Queries */
-        @media (max-width: 768px) {
-            .hero-title { font-size: 3.5rem; }
-            .avatar-float {
-                position: relative;
-                width: 100%;
-                height: 300px;
-                right: auto;
-                top: auto;
-                margin-bottom: 2rem;
-            }
-            .panel-wrapper { justify-content: flex-start; }
-            #hero { padding-top: 10vh; flex-direction: column-reverse; }
+            background: var(--neon-green);
+            transition: width 0.3s ease;
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Overlay -->
-    <div class="grid-overlay"></div>
+    <!-- Loading Screen -->
     <div id="loader">
-        <div class="loader-text mono">INITIALIZING FREQUENCIES...</div>
-        <div class="loader-bar-container"><div class="loader-bar"></div></div>
+        <div class="glitch" data-text="INITIALIZING ZAI LAB...">INITIALIZING ZAI LAB...</div>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
     </div>
 
     <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
-    <!-- UI Elements -->
-    <div class="freq-readout">
-        <div class="freq-bar">
-            <div class="bar-seg"></div>
-            <div class="bar-seg"></div>
-            <div class="bar-seg"></div>
-            <div class="bar-seg"></div>
-        </div>
-        <span>ZAI_LAB // V.1.0</span>
-        <span id="scroll-val">DEPTH: 0m</span>
+    <!-- Scroll Content -->
+    <div class="scroll-content">
+
+        <!-- Section 1: Hero -->
+        <section id="hero-section">
+            <div class="hero-content">
+                <h1 class="glitch" data-text="ZAI LAB">ZAI LAB</h1>
+                <div class="hero-subtitle">🧪 THE EXPERIMENT BEGINS</div>
+                <div class="scroll-indicator">SCROLL TO ASCEND</div>
+            </div>
+        </section>
+
+        <!-- Section 2: Intro/Bio -->
+        <section id="bio-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>ID: ZAIRA</span>
+                    <span>STATUS: EXPLORING</span>
+                </div>
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="avatar-img">
+                </div>
+                <h2>Who Am I?</h2>
+                <p>我是 <span class="highlight">Zaira</span>，還在探索自己的人生路上。</p>
+                <p>興趣多元廣泛，喜歡<span class="highlight">寫字、畫畫、唱歌</span>、偶爾<span class="highlight">爬爬山</span>，覺得有趣很特別的事情都想試試看！</p>
+                <p>語言與文化是我和世界產生連結的工具。我會說<span class="highlight">英語</span>和<span class="highlight">義大利語</span>，現在正努力解鎖<span class="highlight">西班牙語</span> 🔓</p>
+
+                <div class="lab-data data-bl">LOC: WORLDWIDE</div>
+                <div class="lab-data data-br">MODE: EXPERIMENTAL</div>
+            </div>
+        </section>
+
+        <!-- Section 3: Experience/Mixing -->
+        <section id="exp-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>PROTOCOL: MIXING</span>
+                    <span>TYPE: HYBRID</span>
+                </div>
+                <h2>The Laboratory</h2>
+                <p>目前我也不知道最終會長成什麼樣子，但想試試看各種有趣的事情，所以才叫<span class="highlight">實驗室</span> 🧪</p>
+                <p>曾經去坦尚尼亞服務學習，也曾到義大利羅馬交換一年。擔任過華語老師，到捷克實習半年，學生來自烏克蘭、義大利、斯洛伐克和印尼。</p>
+                <p>我熱衷於辦活動、參加工作坊，也曾多次擔任學校大型典禮與研討會的司儀。</p>
+                <div class="tag-cloud">
+                    <span class="tag">#LanguageLearning</span>
+                    <span class="tag">#GlobalCitizen</span>
+                    <span class="tag">#EventHost</span>
+                    <span class="tag">#Volunteer</span>
+                </div>
+
+                <div class="lab-data data-tl">REACTION: ACTIVE</div>
+            </div>
+        </section>
+
+        <!-- Section 4: Social/Connect -->
+        <section id="social-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <span>OUTPUT: CONNECT</span>
+                    <span>SIGNAL: ONLINE</span>
+                </div>
+                <h2>Join The Experiment</h2>
+                <p>非常喜歡和別人聊聊，知道別人背後的故事和不同的經驗讓我覺得很有趣！歡迎大家來交流 ✨</p>
+
+                <div class="social-grid">
+                    <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-link">
+                        <i class="fa-brands fa-medium"></i>
+                        <span>Medium</span>
+                    </a>
+                    <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-link">
+                        <i class="fa-brands fa-instagram"></i>
+                        <span>Instagram</span>
+                    </a>
+                    <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="social-link">
+                        <i class="fa-solid fa-microphone-lines"></i>
+                        <span>Podcast</span>
+                    </a>
+                    <a href="https://www.threads.net/@zailab_zaira_forzaaa" target="_blank" class="social-link">
+                        <i class="fa-brands fa-threads"></i>
+                        <span>Threads</span>
+                    </a>
+                </div>
+
+                <div class="lab-data data-br">END OF TRANSMISSION</div>
+            </div>
+        </section>
+
     </div>
 
-    <!-- Main Content -->
-    <main>
-
-        <!-- Hero Section -->
-        <section id="hero">
-            <div class="container">
-                <div class="avatar-float">
-                    <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="avatar-img">
-                    <div class="avatar-label">ID: ZAIRA</div>
-                </div>
-
-                <div class="hero-content">
-                    <span class="hero-label mono accent">SUBJECT_001</span>
-                    <h1 class="hero-title">EXPLORING<br>FREQUENCIES</h1>
-                    <div class="hero-desc">
-                        Experimenting. Climbing. Listening.<br>
-                        Still exploring the path of life.<br>
-                        <span class="mono accent" style="font-size: 0.7rem; margin-top: 1rem; display: block;">STATUS: ACTIVE</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Bio / Lab Data -->
-        <section id="bio">
-            <div class="container">
-                <div class="panel-wrapper left">
-                    <div class="data-panel scroll-reveal">
-                        <div class="panel-header">
-                            <h2 class="panel-title">THE LAB</h2>
-                            <span class="panel-id">SEC_01</span>
-                        </div>
-                        <p style="line-height: 1.8; color: var(--text-muted); margin-bottom: 1.5rem;">
-                            我是 Zaira，還在探索自己的人生路上。興趣多元廣泛，喜歡寫字、畫畫、唱歌、偶爾爬爬山，覺得有趣很特別的事情都想試試看！
-                        </p>
-                        <p style="line-height: 1.8; color: var(--text-muted);">
-                            我用 Medium 記錄我覺得值得分享的內容，包含語言學習、個人成長和歌詞翻譯等主題。
-                            在今天開了自己的 Podcast 頻道（在意實驗室｜ Zai Lab）和 Instagram 帳號。
-                            目前我也不知道最終會長成什麼樣子，但想試試看各種有趣的事情，所以才叫「實驗室」。
-                        </p>
-
-                        <div class="tag-cloud">
-                            <span class="tag">WRITING</span>
-                            <span class="tag">DRAWING</span>
-                            <span class="tag">SINGING</span>
-                            <span class="tag">HIKING</span>
-                            <span class="tag">LANGUAGES</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Field Notes (Logs) -->
-        <section id="logs">
-            <div class="container">
-                <div class="panel-wrapper"> <!-- Right aligned -->
-                    <div class="data-panel scroll-reveal">
-                        <div class="panel-header">
-                            <h2 class="panel-title">FIELD NOTES</h2>
-                            <span class="panel-id">SEC_02</span>
-                        </div>
-
-                        <div class="log-item">
-                            <div class="log-meta">LOC: ROME, IT // DURATION: 1YR</div>
-                            <h4 class="log-header">Exchange Program</h4>
-                            <p class="log-desc">交換學生一年。在羅馬的古老石牆間迴響，解鎖義大利語頻段。</p>
-                        </div>
-
-                        <div class="log-item">
-                            <div class="log-meta">LOC: TANZANIA // TYPE: VOLUNTEER</div>
-                            <h4 class="log-header">Service Learning</h4>
-                            <p class="log-desc">深入坦尚尼亞，進行服務學習志工計劃。在原始頻率中尋找純粹的連結。</p>
-                        </div>
-
-                        <div class="log-item">
-                            <div class="log-meta">LOC: CZECH REP // ROLE: TEACHER</div>
-                            <h4 class="log-header">Internship</h4>
-                            <p class="log-desc">華語老師實習半年。學生來自烏克蘭、義大利、捷克、斯洛伐克和印尼。</p>
-                        </div>
-
-                        <div style="margin-top: 2rem; padding: 1rem; border: 1px dashed var(--border-color); font-size: 0.9rem; color: var(--text-muted); text-align: center;">
-                            "語言與文化是我和世界產生連結的工具。"
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Connect -->
-        <section id="connect">
-            <div class="container">
-                <div class="panel-wrapper left">
-                    <div class="data-panel scroll-reveal" style="background: transparent; border: none; backdrop-filter: none; padding: 0;">
-                        <div class="panel-header" style="border-bottom: none;">
-                            <h2 class="panel-title">TRANSMIT</h2>
-                            <span class="panel-id">SEC_03</span>
-                        </div>
-                        <p style="margin-bottom: 2rem; color: var(--text-muted);">
-                            非常喜歡和別人聊聊，知道別人背後的故事和不同的經驗讓我覺得很有趣！歡迎大家來交流 ✨
-                        </p>
-
-                        <div class="social-hub">
-                            <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-card">
-                                <i class="fa-brands fa-medium"></i>
-                                <div class="social-info">
-                                    <div>Medium</div>
-                                    <div>Thoughts & Lyrics</div>
-                                </div>
-                            </a>
-
-                            <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="social-card">
-                                <i class="fa-solid fa-microphone-lines"></i>
-                                <div class="social-info">
-                                    <div>Zai Lab</div>
-                                    <div>Podcast</div>
-                                </div>
-                            </a>
-
-                            <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-card">
-                                <i class="fa-brands fa-instagram"></i>
-                                <div class="social-info">
-                                    <div>Instagram</div>
-                                    <div>Visual Diary</div>
-                                </div>
-                            </a>
-
-                            <a href="https://www.threads.net/@zailab_zaira_forzaaa" target="_blank" class="social-card">
-                                <i class="fa-brands fa-threads"></i>
-                                <div class="social-info">
-                                    <div>Threads</div>
-                                    <div>Daily Echoes</div>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <!-- Simplex Noise for procedural terrain generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
-    <script>
-        // --- Three.js: The Frequency Ridge ---
-        // Concept: A vertical ribbon/terrain that represents a climbing path and a sound wave.
-        // It's a generated mesh that undulates based on time (sound) and moves based on scroll (climb).
+    <!-- Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 
-        const initScene = () => {
-            const container = document.getElementById('canvas-container');
-            const scene = new THREE.Scene();
-            // Background color is handled by CSS, but fog should match
-            scene.fog = new THREE.Fog(0x0f172a, 10, 50);
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(0, 0, 20); // Default view
+        // --- Configuration ---
+        const config = {
+            colors: {
+                green: new THREE.Color(0x39ff14),
+                pink: new THREE.Color(0xff00ff),
+                cyan: new THREE.Color(0x00ffff),
+                void: new THREE.Color(0x050505)
+            }
+        };
 
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
+        // --- Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.03); // Heavier fog for mystery
 
-            // -- Create the Ridge Mesh --
-            // We'll use a PlaneGeometry but manipulate vertices to form a vertical "mountain slice"
-            // Width = X (time/frequency), Height = Y (Altitude/Scroll)
-            const width = 40;
-            const height = 60;
-            const segW = 80; // High resolution for smooth waves
-            const segH = 80;
-            const geometry = new THREE.PlaneGeometry(width, height, segW, segH);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, -10, 0); // Center in tunnel
+        camera.lookAt(0, 100, 0); // Look UP
 
-            // Material: Wireframe for "Schematic/Lab" feel
-            const material = new THREE.MeshBasicMaterial({
-                color: 0x64748b, // Slate 500
-                wireframe: true,
-                transparent: true,
-                opacity: 0.15,
-                side: THREE.DoubleSide
-            });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
 
-            const ridge = new THREE.Mesh(geometry, material);
-            scene.add(ridge);
+        // --- Post Processing ---
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
 
-            // Secondary Mesh: Points for "Data" feel
-            const pointMaterial = new THREE.PointsMaterial({
-                color: 0xf97316, // Orange Accent
-                size: 0.08,
-                transparent: true,
-                opacity: 0.4
-            });
-            const ridgePoints = new THREE.Points(geometry, pointMaterial);
-            scene.add(ridgePoints);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.8; // High bloom for explosive feel
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
 
-            // Simplex Noise instance
-            const simplex = new SimplexNoise();
+        // --- Scene Elements: The Volatile Reactor ---
 
-            // Store original positions
-            const posAttribute = geometry.attributes.position;
-            const originalPos = [];
-            for (let i = 0; i < posAttribute.count; i++) {
-                originalPos.push({
-                    x: posAttribute.getX(i),
-                    y: posAttribute.getY(i),
-                    z: posAttribute.getZ(i)
-                });
+        // 1. The Tunnel (Climbing)
+        const tunnelLength = 400; // Longer tunnel
+        const tunnelRadius = 8;
+
+        // Use multiple torus rings to create the "ribs" of the tunnel instead of a cylinder
+        // This looks more "Constructed" / Lab-like
+        const ringsGroup = new THREE.Group();
+        const ringsCount = 100;
+        const ringSpacing = 4;
+
+        for(let i=0; i<ringsCount; i++) {
+            // Alternating shapes: Hexagon (Lab) and Circle
+            let geometry;
+            if (i % 2 === 0) {
+                 geometry = new THREE.TorusGeometry(tunnelRadius, 0.05, 16, 6); // Hexagon-ish
+            } else {
+                 geometry = new THREE.TorusGeometry(tunnelRadius * 0.9, 0.02, 16, 50); // Circle
             }
 
-            // Animation Loop
-            let time = 0;
-            let scrollY = 0;
-            let targetScrollY = 0;
-
-            // Scroll Listener
-            window.addEventListener('scroll', () => {
-                targetScrollY = window.scrollY;
-                // Update UI Depth
-                document.getElementById('scroll-val').innerText = `DEPTH: ${Math.floor(targetScrollY * 0.5)}m`;
+            const material = new THREE.MeshBasicMaterial({
+                color: i % 5 === 0 ? config.colors.pink : (i % 3 === 0 ? config.colors.cyan : 0x333333),
+                transparent: true,
+                opacity: i % 5 === 0 ? 0.8 : 0.3
             });
 
-            const animate = () => {
-                requestAnimationFrame(animate);
-                time += 0.008;
+            const ring = new THREE.Mesh(geometry, material);
+            ring.rotation.x = Math.PI / 2;
+            if (i % 2 === 0) ring.rotation.z = Math.PI / 6; // Align hex
 
-                // Smooth scroll interpolation
-                scrollY += (targetScrollY - scrollY) * 0.05;
-                const normalizedScroll = scrollY * 0.01; // Scale down for 3D units
+            ring.position.y = (i * ringSpacing) - 20;
+            ringsGroup.add(ring);
+        }
+        scene.add(ringsGroup);
 
-                // Update Vertices
-                const count = posAttribute.count;
+        // 2. The Particles (Lab/Mixing/Chemicals)
+        const particleCount = 2000;
+        const particleGeo = new THREE.IcosahedronGeometry(0.15, 0); // Slightly larger
+        const particleMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const particleMesh = new THREE.InstancedMesh(particleGeo, particleMat, particleCount);
 
-                // Optimized vertex loop:
-                // Pre-calculate common factors to avoid redundant math inside the loop
-                const timeFactor = time;
-                const scrollFactor = normalizedScroll;
+        const dummy = new THREE.Object3D();
+        const particlesData = [];
 
-                for (let i = 0; i < count; i++) {
-                    const orig = originalPos[i];
+        for(let i=0; i<particleCount; i++) {
+            // Spread particles throughout the tunnel height
+            const yPos = (Math.random() * tunnelLength) - 20;
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * (tunnelRadius - 1); // Keep inside
 
-                    // Create a "Wave" effect that travels up (simulating climbing/moving forward)
-                    // Noise depends on X (horizontal spread) and Y (vertical position + time/scroll)
+            dummy.position.set(
+                Math.cos(angle) * radius,
+                yPos,
+                Math.sin(angle) * radius
+            );
 
-                    // 1. Base Terrain (Static-ish Mountain) - Large features
-                    const noise1 = simplex.noise2D(orig.x * 0.1, (orig.y + scrollFactor) * 0.1) * 2;
+            dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            const scale = Math.random() * 0.5 + 0.1;
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            particleMesh.setMatrixAt(i, dummy.matrix);
 
-                    // 2. Frequency Ripple (Dynamic Sound) - More intense in center, fading to edges
-                    // Use simple distance math instead of Math.abs for speed if possible, but abs is fast enough
-                    const distFromCenter = 1 - Math.min(Math.abs(orig.x) / 15, 1);
+            const colorType = Math.random();
+            const color = colorType > 0.7 ? config.colors.pink : (colorType > 0.4 ? config.colors.cyan : config.colors.green);
+            particleMesh.setColorAt(i, color);
 
-                    // 3D noise for "Sound" ripple
-                    const freq = simplex.noise3D(orig.x * 0.5, orig.y * 0.5, timeFactor) * distFromCenter * 2;
+            particlesData.push({
+                velocity: new THREE.Vector3(0, Math.random() * 0.1 + 0.05, 0), // Upward velocity
+                rotationSpeed: Math.random() * 0.05,
+                initialY: dummy.position.y,
+                wobble: Math.random() * Math.PI,
+                wobbleSpeed: Math.random() * 2
+            });
+        }
+        scene.add(particleMesh);
 
-                    // Combine Z offset
-                    const z = noise1 + freq;
+        // 3. Floating Rocks (Climbing Elements)
+        const rockCount = 40;
+        const rockGeo = new THREE.DodecahedronGeometry(1.5, 0);
+        const rockMat = new THREE.MeshBasicMaterial({ color: 0x222222, wireframe: true });
+        const rocksMesh = new THREE.InstancedMesh(rockGeo, rockMat, rockCount);
+        const rocksData = [];
 
-                    // Direct buffer write
-                    // (posAttribute.array is Float32Array, can write directly if we had the index,
-                    // but using setZ helper is cleaner for readability unless perf is critical)
-                    posAttribute.setZ(i, z);
+        for(let i=0; i<rockCount; i++) {
+            dummy.position.set(
+                (Math.random() - 0.5) * tunnelRadius * 1.5,
+                (Math.random() * tunnelLength) - 10,
+                (Math.random() - 0.5) * tunnelRadius * 1.5
+            );
+            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            const s = Math.random() * 1.5 + 0.5;
+            dummy.scale.set(s,s,s);
+            dummy.updateMatrix();
+            rocksMesh.setMatrixAt(i, dummy.matrix);
+
+            rocksData.push({
+                rotX: (Math.random() - 0.5) * 0.02,
+                rotY: (Math.random() - 0.5) * 0.02,
+                floatSpeed: Math.random() * 0.02
+            });
+        }
+        scene.add(rocksMesh);
+
+
+        // --- GSAP Scroll Logic ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        window.onload = () => {
+            const loader = document.getElementById('loader');
+            const progress = document.querySelector('.loader-progress');
+
+            gsap.to(progress, {
+                width: '100%',
+                duration: 1.5,
+                ease: 'power2.inOut',
+                onComplete: () => {
+                    gsap.to(loader, {
+                        opacity: 0,
+                        duration: 0.5,
+                        onComplete: () => {
+                            loader.style.display = 'none';
+                            initScrollAnimations();
+                        }
+                    });
                 }
-                posAttribute.needsUpdate = true;
-                geometry.computeVertexNormals();
-
-                // Rotate based on scroll slightly to give depth
-                ridge.rotation.x = 0.2 + (scrollY * 0.0002);
-                ridgePoints.rotation.x = ridge.rotation.x;
-
-                renderer.render(scene, camera);
-            };
-
-            animate();
-
-            // Handle Resize
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
             });
         };
 
-        // --- GSAP UI Animations ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Loader
-            setTimeout(() => {
-                const loader = document.getElementById('loader');
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                    initAnim();
-                }, 800);
-            }, 1500); // Artificial load time for "Initializing" feel
+        function initScrollAnimations() {
+            // Animate Sections Opacity
+            document.querySelectorAll('section').forEach((section, i) => {
+                // Ensure initial state
+                if(i === 0) gsap.set(section, { opacity: 1, y: 0 });
 
-            // Defer heavy Three.js init slightly to prioritize DOM paint if needed,
-            // but here we want it ready.
-            initScene();
+                if (i > 0) {
+                    gsap.to(section, {
+                        scrollTrigger: {
+                            trigger: section,
+                            start: "top 60%",
+                            end: "top 20%",
+                            toggleActions: "play none none reverse",
+                            scrub: 1
+                        },
+                        opacity: 1,
+                        y: 0,
+                        duration: 1
+                    });
+                }
 
-            function initAnim() {
-                gsap.registerPlugin(ScrollTrigger);
-
-                // Hero Entrance
-                const tl = gsap.timeline();
-                tl.to('.hero-label', { opacity: 1, x: 0, duration: 0.8, ease: 'power2.out' })
-                  .to('.hero-title', { opacity: 1, x: 0, duration: 1, ease: 'power2.out' }, '-=0.6')
-                  .to('.hero-desc', { opacity: 1, x: 0, duration: 1, ease: 'power2.out' }, '-=0.8')
-                  .to('.avatar-float', { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' }, '-=0.8');
-
-                // Panel Reveals
-                gsap.utils.toArray('.scroll-reveal').forEach(elem => {
-                    gsap.fromTo(elem,
-                        { opacity: 0, y: 50 },
-                        {
-                            opacity: 1, y: 0,
-                            duration: 1,
-                            ease: 'power3.out',
-                            scrollTrigger: {
-                                trigger: elem,
-                                start: 'top 85%',
-                                toggleActions: 'play none none reverse'
-                            }
-                        }
-                    );
+                // Exit animation
+                gsap.to(section, {
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "bottom 40%",
+                        end: "bottom 10%",
+                        toggleActions: "play none none reverse",
+                        scrub: 1
+                    },
+                    opacity: 0,
+                    y: -50,
+                    duration: 1
                 });
+            });
+        }
+
+        // --- Loop Variables ---
+        const clock = new THREE.Clock();
+
+        // Physics for Camera
+        let currentScrollY = 0;
+        let targetScrollY = 0;
+        let velocity = 0;
+        const maxVelocity = 200; // Cap visual velocity
+
+        window.addEventListener('scroll', () => {
+            targetScrollY = window.scrollY;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Smooth Scroll Physics
+            // Calculate velocity based on scroll delta
+            const targetVelocity = (targetScrollY - currentScrollY) * 2; // Sensitivity
+            velocity += (targetVelocity - velocity) * 0.1; // Ease into velocity
+
+            currentScrollY += (targetScrollY - currentScrollY) * 0.1;
+
+            // Camera Ascent Logic
+            // Map scroll Y directly to camera Y position in the tunnel
+            // 1px scroll = 0.05 units Y
+            const cameraY = -10 + (currentScrollY * 0.05);
+            camera.position.y = cameraY;
+
+            // "Explosive" Speed Effect
+            // Warp FOV based on velocity
+            const speed = Math.abs(velocity);
+            const targetFOV = 75 + Math.min(speed * 0.5, 50); // Max FOV 125
+            camera.fov += (targetFOV - camera.fov) * 0.1;
+            camera.updateProjectionMatrix();
+
+            // Camera Shake at high speed
+            if (speed > 5) {
+                camera.position.x = (Math.random() - 0.5) * 0.02 * speed;
+                camera.position.z = (Math.random() - 0.5) * 0.02 * speed;
+            } else {
+                camera.position.x += (0 - camera.position.x) * 0.1;
+                camera.position.z += (0 - camera.position.z) * 0.1;
             }
+
+            // Ensure camera always looks UP relative to its current position
+            // But with shake applied to position, lookAt target should remain stable
+            camera.lookAt(0, camera.position.y + 50, 0);
+
+            // Animate Particles
+            for(let i=0; i<particleCount; i++) {
+                particleMesh.getMatrixAt(i, dummy.matrix);
+                dummy.matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
+
+                // Basic rising
+                dummy.position.y += particlesData[i].velocity.y;
+
+                // Infinite loop logic relative to camera
+                // If particle is too far below camera, move it up
+                if (dummy.position.y < camera.position.y - 30) {
+                    dummy.position.y = camera.position.y + 60 + Math.random() * 20;
+                }
+                // If particle is too far above (rare if camera moves up), loop back?
+                // Mostly we care about them disappearing behind us
+
+                // Add "Mixing" turbulence
+                const t = time + i;
+                dummy.position.x += Math.sin(t * particlesData[i].wobbleSpeed) * 0.02;
+                dummy.position.z += Math.cos(t * particlesData[i].wobbleSpeed) * 0.02;
+
+                dummy.updateMatrix();
+                particleMesh.setMatrixAt(i, dummy.matrix);
+            }
+            particleMesh.instanceMatrix.needsUpdate = true;
+
+            // Animate Rocks
+            for(let i=0; i<rockCount; i++) {
+                rocksMesh.getMatrixAt(i, dummy.matrix);
+                dummy.matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
+
+                dummy.rotation.x += rocksData[i].rotX;
+                dummy.rotation.y += rocksData[i].rotY;
+                dummy.position.y += rocksData[i].floatSpeed;
+
+                // Loop logic
+                if (dummy.position.y < camera.position.y - 30) {
+                    dummy.position.y = camera.position.y + 80 + Math.random() * 20;
+                }
+
+                dummy.updateMatrix();
+                rocksMesh.setMatrixAt(i, dummy.matrix);
+            }
+            rocksMesh.instanceMatrix.needsUpdate = true;
+
+            // Infinite Tunnel Rings
+            // Check if ring is behind camera, move it forward
+            ringsGroup.children.forEach((ring, i) => {
+                if (ring.position.y < camera.position.y - 30) {
+                    // Move it to the top of the stack
+                    // Find the highest ring Y
+                    // Simple logic: we know we have ringsCount * spacing
+                    // New Y = old Y + totalLength
+                    ring.position.y += ringsCount * ringSpacing;
+                }
+
+                // Subtle rotation
+                ring.rotation.z += 0.005 * (i % 2 === 0 ? 1 : -1);
+            });
+
+            composer.render();
+        }
+
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
