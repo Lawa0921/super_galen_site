@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allen 少帥 | The Resilient Printer</title>
+    <meta name="description" content="墨帥印刷負責人 - 浴火重生的桌遊印刷專家。提供桌遊顧問、卡片製作、特殊印刷服務。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #0a0a0a;
+            --c-cyan: #00ffff;
+            --c-magenta: #ff00ff;
+            --c-yellow: #ffff00;
+            --c-black: #111;
+            --c-text: #e0e0e0;
+            --f-tech: 'Orbitron', sans-serif;
+            --f-mono: 'Share Tech Mono', monospace;
+            --f-main: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-main);
+            overflow-x: hidden;
+        }
+
+        /* --- Canvas Layers --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: -1; pointer-events: none;
+        }
+        #p5-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: 0; pointer-events: none; mix-blend-mode: screen;
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            color: rgba(255,255,255,0.6); text-decoration: none;
+            font-family: var(--f-mono); font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.5rem 1.2rem;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .nav-back:hover {
+            color: var(--c-cyan); border-color: var(--c-cyan);
+            text-shadow: 0 0 10px var(--c-cyan);
+        }
+
+        /* --- Sections --- */
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative; padding: 4rem 1rem; box-sizing: border-box;
+            z-index: 10;
+        }
+
+        .container {
+            max-width: 1000px; width: 100%; position: relative; margin: 0 auto;
+        }
+
+        /* --- Ruins Overlay --- */
+        .ruins-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                repeating-linear-gradient(45deg, rgba(255,0,0,0.05) 0, rgba(255,0,0,0.05) 10px, transparent 10px, transparent 20px),
+                radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none; z-index: -1;
+            opacity: 1; transition: opacity 2s ease;
+        }
+        .ruins-active .ruins-overlay { opacity: 0; }
+
+        /* --- News Ticker (Destroyed State) --- */
+        .news-ticker-container {
+            position: absolute; bottom: 10%; width: 100%; overflow: hidden;
+            background: rgba(255, 0, 0, 0.1); border-top: 1px solid red; border-bottom: 1px solid red;
+            padding: 0.5rem 0; font-family: var(--f-mono); color: red;
+            display: flex; white-space: nowrap; pointer-events: none; opacity: 1; transition: opacity 1s;
+        }
+        .news-ticker-content {
+            display: inline-block; padding-right: 50px;
+            animation: marquee 20s linear infinite paused;
+        }
+        .ticker-active .news-ticker-content {
+            animation-play-state: running;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* --- Hero --- */
+        .hero-title {
+            font-family: var(--f-tech); font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900; line-height: 0.9; text-transform: uppercase;
+            position: relative; color: #fff;
+            text-shadow: 2px 2px 0px var(--c-magenta), -2px -2px 0px var(--c-cyan);
+        }
+
+        .hero-subtitle {
+            font-family: var(--f-mono); color: var(--c-yellow);
+            font-size: 1.2rem; margin-top: 1rem; letter-spacing: 2px;
+        }
+
+        .avatar-frame {
+            position: relative; width: 280px; height: 280px; margin: 2rem auto;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            background: #222;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: contrast(1.05) saturate(1.1);
+            transition: filter 0.4s;
+        }
+        .avatar-frame:hover .avatar-img {
+            filter: contrast(1.1) saturate(1.2) brightness(1.05);
+        }
+        .avatar-frame::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(45deg, var(--c-cyan), transparent, var(--c-magenta));
+            opacity: 0.3; mix-blend-mode: overlay; pointer-events: none;
+        }
+
+        /* --- Glitch Effect --- */
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%;
+            background: var(--c-bg);
+        }
+        .glitch-text::before {
+            left: 2px; text-shadow: -1px 0 var(--c-magenta); clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px; text-shadow: -1px 0 var(--c-cyan); clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 10px, 0); }
+            100% { clip: rect(80px, 9999px, 100px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(10px, 9999px, 90px, 0); }
+            100% { clip: rect(5px, 9999px, 20px, 0); }
+        }
+
+        /* --- Services (Cards) --- */
+        .card-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem; width: 100%; padding: 2rem 0;
+        }
+
+        .service-card {
+            background: #111; border: 1px solid #333; padding: 2rem;
+            position: relative; overflow: hidden; transition: 0.3s;
+            clip-path: polygon(0 0, 100% 0, 100% 90%, 90% 100%, 0 100%);
+        }
+        .service-card:hover {
+            transform: translateY(-10px); border-color: var(--c-cyan);
+            box-shadow: 0 0 20px rgba(0,255,255,0.2);
+        }
+        .service-card h3 {
+            font-family: var(--f-tech); margin-bottom: 1rem; color: #fff;
+        }
+        .service-card p {
+            color: #aaa; font-size: 0.9rem; line-height: 1.6;
+        }
+        .card-icon {
+            font-size: 2.5rem; color: var(--c-yellow); margin-bottom: 1rem;
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 4rem 1rem; text-align: center; background: #000;
+            border-top: 1px solid #222;
+        }
+        .social-links {
+            display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 2rem;
+        }
+        .social-btn {
+            width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #444; color: #fff; text-decoration: none; font-size: 1.5rem;
+            transition: 0.3s; clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+        }
+        .social-btn:hover {
+            background: var(--c-cyan); color: #000; border-color: var(--c-cyan);
+        }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .loader-bar {
+            width: 200px; height: 4px; background: #333; margin-top: 1rem; position: relative;
+            overflow: hidden;
+        }
+        .loader-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
+            transition: width 0.2s;
+        }
+        .loader-text {
+            font-family: var(--f-mono); color: var(--c-cyan); font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        /* --- Glass Panel (Readability) --- */
+        .glass-panel {
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+            padding: 2rem; border-radius: 8px;
+        }
+
+        /* --- The Forge (Origin Era) --- */
+        .forge-counter {
+            text-align: center; padding: 1.5rem;
+        }
+        .forge-counter-value {
+            font-family: var(--f-tech); font-size: 2.5rem; font-weight: 900;
+            background: linear-gradient(135deg, var(--c-cyan), var(--c-magenta));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .forge-counter-label {
+            font-family: var(--f-mono); color: #888; font-size: 0.85rem; margin-top: 0.3rem;
+        }
+        .forge-milestone {
+            display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.2rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .forge-milestone:last-child { border-bottom: none; }
+        .forge-year {
+            font-family: var(--f-mono); color: var(--c-cyan); font-size: 0.85rem;
+            min-width: 60px; padding-top: 0.2rem;
+        }
+        .forge-desc {
+            color: #ccc; line-height: 1.7; font-size: 0.95rem;
+        }
+        .forge-desc strong { color: #fff; }
+
+        /* --- Damage Report --- */
+        .damage-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem; margin-top: 2rem;
+        }
+        .damage-card {
+            background: rgba(255, 0, 0, 0.03); border: 1px solid rgba(255, 50, 50, 0.3);
+            padding: 1.5rem; text-align: center; position: relative;
+        }
+        .damage-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, transparent, #ff3333, transparent);
+        }
+        .damage-value {
+            font-family: var(--f-tech); font-size: 2rem; color: #ff4444; font-weight: 900;
+        }
+        .damage-label {
+            font-family: var(--f-mono); color: #888; font-size: 0.8rem; margin-top: 0.5rem;
+        }
+        .damage-detail {
+            color: #aaa; font-size: 0.85rem; margin-top: 0.8rem; line-height: 1.5;
+        }
+
+        /* --- Phoenix Section --- */
+        .phoenix-timeline {
+            position: relative; padding-left: 3rem; margin-top: 2rem;
+        }
+        .phoenix-timeline::before {
+            content: ''; position: absolute; top: 0; left: 14px; width: 2px; height: 100%;
+            background: linear-gradient(to bottom, #ff3333, var(--c-yellow), var(--c-cyan), #00ff88);
+        }
+        .phoenix-event {
+            position: relative; margin-bottom: 2.5rem;
+        }
+        .phoenix-dot {
+            position: absolute; left: -3rem; top: 0.3rem; width: 12px; height: 12px;
+            border-radius: 50%; border: 2px solid currentColor;
+            transform: translateX(3px);
+        }
+        .phoenix-dot-red { color: #ff3333; background: rgba(255, 51, 51, 0.3); }
+        .phoenix-dot-yellow { color: var(--c-yellow); background: rgba(255, 255, 0, 0.3); }
+        .phoenix-dot-cyan { color: var(--c-cyan); background: rgba(0, 255, 255, 0.3); }
+        .phoenix-dot-green { color: #00ff88; background: rgba(0, 255, 136, 0.3); }
+        .phoenix-time {
+            font-family: var(--f-mono); font-size: 0.8rem; margin-bottom: 0.3rem;
+        }
+        .phoenix-title {
+            font-family: var(--f-tech); color: #fff; font-size: 1.3rem; margin-bottom: 0.5rem;
+        }
+        .phoenix-text {
+            color: #ccc; line-height: 1.8; font-size: 0.95rem;
+        }
+        .phoenix-quote {
+            border-left: 3px solid var(--c-yellow); padding-left: 1rem; margin-top: 1rem;
+            color: var(--c-yellow); font-style: italic; font-size: 0.95rem;
+        }
+
+        /* --- News Sources --- */
+        .news-source-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem; margin-top: 2rem;
+        }
+        .news-source-card {
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem; transition: 0.3s; text-decoration: none; display: block;
+        }
+        .news-source-card:hover {
+            border-color: var(--c-cyan); transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
+        }
+        .news-source-tag {
+            font-family: var(--f-mono); font-size: 0.7rem; color: var(--c-cyan);
+            border: 1px solid var(--c-cyan); padding: 0.15rem 0.5rem; display: inline-block;
+            margin-bottom: 0.8rem;
+        }
+        .news-source-title {
+            color: #fff; font-size: 1.1rem; margin-bottom: 0.5rem; line-height: 1.4;
+        }
+        .news-source-outlet {
+            color: #888; font-family: var(--f-mono); font-size: 0.8rem;
+        }
+
+        /* --- Repair CTA --- */
+        .repair-cta {
+            display: inline-block; background: var(--c-cyan); color: #000; text-decoration: none;
+            padding: 1rem 3rem; font-family: var(--f-tech); font-weight: 700;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            margin-bottom: 1rem; transition: 0.3s;
+        }
+        .repair-cta:hover { background: #fff; }
+
+        /* --- Visit Section --- */
+        .visit-address {
+            color: var(--c-cyan); font-family: var(--f-mono); font-size: 0.95rem;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+            border: 1px solid var(--c-cyan); padding: 0.7rem 1.5rem; transition: 0.3s;
+        }
+        .visit-address:hover {
+            background: rgba(0,255,255,0.1); color: #fff;
+        }
+        .visit-contact {
+            color: #888; font-family: var(--f-mono); font-size: 0.85rem; margin-top: 1rem;
+        }
+
+        /* --- Section Headers --- */
+        .section-header {
+            text-align: center; margin-bottom: 3rem;
+        }
+        .section-title {
+            font-family: var(--f-tech); font-size: 2.5rem; color: #fff;
+        }
+        .section-title-danger {
+            font-family: var(--f-tech); font-size: 2.5rem; color: #ff4444;
+        }
+        .section-subtitle {
+            font-family: var(--f-mono); color: #888;
+        }
+        .section-subtitle-magenta {
+            font-family: var(--f-mono); color: var(--c-magenta);
+        }
+        .section-subtitle-yellow {
+            font-family: var(--f-mono); color: var(--c-yellow);
+        }
+        .section-subtitle-danger {
+            font-family: var(--f-mono); color: #ff4444; opacity: 0.7;
+        }
+        .section-line {
+            height: 2px; width: 100px; margin: 0.5rem auto;
+        }
+        .section-line-yellow { background: var(--c-yellow); }
+
+        /* --- Tags --- */
+        .tag {
+            padding: 0.5rem 1rem; font-family: var(--f-mono); font-size: 0.8rem;
+        }
+        .tag-cyan { border: 1px solid var(--c-cyan); color: var(--c-cyan); }
+        .tag-magenta { border: 1px solid var(--c-magenta); color: var(--c-magenta); }
+        .tag-yellow { border: 1px solid var(--c-yellow); color: var(--c-yellow); }
+        .tag-fill-magenta { background: var(--c-magenta); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+        .tag-fill-cyan { background: var(--c-cyan); color: #000; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+        .tag-outline-magenta { border: 1px solid var(--c-magenta); color: var(--c-magenta); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+        .tag-outline-cyan { border: 1px solid var(--c-cyan); color: var(--c-cyan); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: var(--f-mono); }
+
+        /* --- Hero Utilities --- */
+        .hero-tagline {
+            max-width: 600px; margin: 1.5rem auto; color: #888; font-family: var(--f-mono);
+        }
+        .hero-tags {
+            margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;
+        }
+        .text-center { text-align: center; }
+
+        /* --- Commander Panels --- */
+        .commander-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;
+        }
+        .commander-panel-magenta { border-left: 4px solid var(--c-magenta); }
+        .commander-panel-cyan { border-left: 4px solid var(--c-cyan); }
+        .commander-panel-title {
+            color: #fff; margin-bottom: 1rem; font-family: var(--f-tech);
+        }
+        .commander-panel-text {
+            color: #ccc; line-height: 1.8;
+        }
+        .commander-tags {
+            margin-top: 1rem; display: flex; gap: 0.5rem;
+        }
+        .commander-stats {
+            grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem;
+            justify-content: space-around; align-items: center;
+        }
+        .stat-block { text-align: center; }
+        .stat-label { font-family: var(--f-mono); color: #888; font-size: 0.9rem; }
+        .stat-value { font-family: var(--f-tech); font-size: 2rem; }
+        .stat-value-yellow { color: var(--c-yellow); }
+        .stat-value-magenta { color: var(--c-magenta); }
+        .stat-value-white { color: #fff; }
+        .stat-value-cyan { color: var(--c-cyan); font-size: 1.5rem; }
+
+        /* --- Inline SVG Icons --- */
+        .icon-inline {
+            display: inline-block; width: 1em; height: 1em;
+            vertical-align: -0.125em; fill: currentColor;
+        }
+        .card-icon-svg {
+            width: 2.5rem; height: 2.5rem; margin-bottom: 1rem;
+        }
+
+        /* --- Battalion Section --- */
+        .flex-wrap-container { display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; }
+        .battalion-panel { flex: 1; min-width: 300px; box-sizing: border-box; }
+        .battalion-panel-dashed { border: 1px dashed var(--c-yellow); }
+
+        /* --- Subsection Headings --- */
+        .subsection-heading-cyan { color: var(--c-cyan); font-family: var(--f-mono); margin-bottom: 1rem; }
+        .subsection-heading-yellow { color: var(--c-yellow); font-family: var(--f-mono); margin-bottom: 1rem; }
+
+        /* --- Body Text --- */
+        .body-text { color: #ccc; line-height: 1.8; }
+        .body-text-lg { color: #ccc; line-height: 1.8; font-size: 1.05rem; }
+
+        /* --- Forge Layout --- */
+        .forge-counter-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
+        }
+        .forge-counter-sublabel { color: #666; font-size: 0.8rem; margin-top: 0.3rem; }
+
+        /* --- Panel Variants --- */
+        .panel-border-yellow { border-left: 4px solid var(--c-yellow); }
+        .glass-panel-cyan-border { border: 1px solid rgba(0,255,255,0.3); }
+
+        /* --- Mission Log --- */
+        .mission-log-list { list-style: none; padding: 0; color: #aaa; line-height: 2; }
+
+        /* --- Phoenix Time Colors --- */
+        .phoenix-time-red { color: #ff3333; }
+        .phoenix-time-yellow { color: var(--c-yellow); }
+        .phoenix-time-cyan { color: var(--c-cyan); }
+        .phoenix-time-green { color: #00ff88; }
+
+        /* --- Text Color Utilities --- */
+        .text-cyan { color: var(--c-cyan); }
+        .text-magenta { color: var(--c-magenta); }
+        .text-yellow { color: var(--c-yellow); }
+        .text-red { color: #ff3333; }
+        .text-green { color: #00ff88; }
+
+        /* --- Reconstruction Section --- */
+        .section-reconstruction { height: 100vh; position: relative; pointer-events: none; }
+        .reconstruction-content { text-align: center; pointer-events: auto; }
+
+        /* --- Repair Button --- */
+        .btn-repair {
+            background: transparent; border: 2px solid var(--c-cyan); color: var(--c-cyan);
+            padding: 1rem 3rem; font-family: var(--f-tech); font-size: 1.2rem; cursor: pointer;
+            transition: 0.3s; clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        .btn-repair-done {
+            border-color: #00ff00; color: #00ff00; pointer-events: none;
+        }
+
+        /* --- Post-Repair Content --- */
+        .post-repair-content { display: none; opacity: 0; margin-top: 3rem; position: relative; z-index: 5; }
+
+        /* --- Footer Extras --- */
+        .footer-title { font-family: var(--f-tech); color: #fff; margin-bottom: 2rem; }
+        .footer-credits { color: #666; font-family: var(--f-mono); font-size: 0.8rem; }
+
+        /* --- Spacing Utilities --- */
+        .mb-1-5 { margin-bottom: 1.5rem; }
+        .mb-2 { margin-bottom: 2rem; }
+        .mt-1-5 { margin-top: 1.5rem; }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .forge-counter-value { font-size: 2rem; }
+            .damage-grid { grid-template-columns: 1fr 1fr; }
+            .damage-value { font-size: 1.5rem; }
+            .phoenix-timeline { padding-left: 2.5rem; }
+            .phoenix-title { font-size: 1.1rem; }
+            .news-source-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .damage-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-text" id="loader-status">INITIALIZING SYSTEMS...</div>
+        <div class="loader-bar"><div class="loader-progress" id="loader-bar-inner"></div></div>
+    </div>
+
+    <a href="/guild/" class="nav-back">&larr; GUILD</a>
+
+    <!-- Canvas -->
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <div id="main-content">
+
+        <!-- 1. Hero -->
+        <section id="hero">
+            <div class="container text-center">
+                <div class="avatar-frame gs-reveal">
+                    <img src="/assets/img/guild/allen/avatar.webp" alt="Allen" class="avatar-img">
+                </div>
+                <h1 class="hero-title gs-reveal glitch-text" data-text="少帥 ALLEN">少帥 ALLEN</h1>
+                <div class="hero-subtitle gs-reveal">THE INK COMMANDER</div>
+                <p class="hero-tagline gs-reveal">
+                    INK | MACHINERY | RESILIENCE
+                </p>
+                <div class="hero-tags gs-reveal">
+                   <div class="tag tag-cyan">PRINTING</div>
+                   <div class="tag tag-magenta">CONSULTING</div>
+                   <div class="tag tag-yellow">PRODUCTION</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. The Commander (Personal Lore) -->
+        <section id="commander">
+            <div class="container">
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE COMMANDER</h2>
+                    <p class="section-subtitle-magenta">// IDENTITY: ALLEN (少帥)</p>
+                </div>
+
+                <div class="commander-grid">
+
+                    <!-- Protocol: Fatherhood -->
+                    <div class="gs-reveal glass-panel commander-panel-magenta">
+                        <h3 class="commander-panel-title">PROTOCOL: FATHERHOOD</h3>
+                        <p class="commander-panel-text">
+                            我是三個女兒的爸爸。<br>
+                            這是我所有動力的核心反應爐。無論工廠倒塌多少次，為了她們，我都能夠再次站起來。<br>
+                            她們是我的「無限魔力源 (Infinite Mana)」，讓我在高壓的生產線與負債壓力下，依然能保持微笑與堅韌。
+                        </p>
+                        <div class="commander-tags">
+                            <span class="tag-fill-magenta">CORE DRIVE</span>
+                            <span class="tag-outline-magenta">PROTECTOR</span>
+                        </div>
+                    </div>
+
+                    <!-- Hands-On Leader -->
+                    <div class="gs-reveal glass-panel commander-panel-cyan">
+                        <h3 class="commander-panel-title">HANDS-ON LEADER</h3>
+                        <p class="commander-panel-text">
+                            我不是坐在辦公室的總裁，我是穿梭在機台間的指揮官。<br>
+                            上一秒在會議室談百萬訂單，下一秒就在產線調整機台參數。<br>
+                            「親力親為」不是口號，是我的生存法則。我比任何人都了解這座工廠的每一次呼吸與震動。
+                        </p>
+                        <div class="commander-tags">
+                            <span class="tag-fill-cyan">OPERATOR</span>
+                            <span class="tag-outline-cyan">CONSULTANT</span>
+                        </div>
+                    </div>
+
+                    <!-- Stats Block -->
+                    <div class="gs-reveal glass-panel commander-stats">
+                        <div class="stat-block">
+                            <div class="stat-label">STAMINA</div>
+                            <div class="stat-value stat-value-yellow">INFINITE</div>
+                        </div>
+                        <div class="stat-block">
+                            <div class="stat-label">RESILIENCE</div>
+                            <div class="stat-value stat-value-magenta">MAX</div>
+                        </div>
+                        <div class="stat-block">
+                            <div class="stat-label">CURRENT DEBT</div>
+                            <div class="stat-value stat-value-white">&gt; 10M</div>
+                        </div>
+                        <div class="stat-block">
+                            <div class="stat-label">SPECIAL SKILL</div>
+                            <div class="stat-value stat-value-cyan">PHOENIX REBIRTH</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. The Battalion (Factory Team) -->
+        <section id="battalion">
+            <div class="container">
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE BATTALION</h2>
+                    <div class="section-line section-line-yellow"></div>
+                </div>
+
+                <div class="flex-wrap-container">
+                    <div class="gs-reveal glass-panel battalion-panel">
+                        <h3 class="subsection-heading-cyan">// UNIT STRENGTH: 37</h3>
+                        <p class="body-text">
+                            工廠共有三十多位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
+                            每天的日常就是在印桌遊，或是在開印的路上。<br>
+                            產線就是我們的戰場，每一張卡牌、每一個配件，都是我們共同打造的彈藥。
+                        </p>
+                    </div>
+                    <div class="gs-reveal glass-panel battalion-panel battalion-panel-dashed">
+                        <h3 class="subsection-heading-yellow">// MISSION LOG</h3>
+                        <ul class="mission-log-list">
+                            <li>&gt; 08:00 - SYSTEMS CHECK (開機)</li>
+                            <li>&gt; 10:00 - TACTICAL BRIEFING (會議接洽)</li>
+                            <li>&gt; 14:00 - PRODUCTION LINE SUPPORT (產線支援)</li>
+                            <li>&gt; 20:00 - STRATEGIC PLANNING (未來規劃)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. The Forge (Origin Era & Legacy) -->
+        <section id="forge">
+            <div class="container">
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE FORGE</h2>
+                    <p class="section-subtitle-yellow">// LEGACY DATA: 2017 - 2024.04.02</p>
+                </div>
+
+                <div class="gs-reveal glass-panel mb-2">
+                    <p class="body-text-lg">
+                        墨帥印刷，成立於 2017 年，座落在新北市中和區。<br>
+                        這不只是一座印刷廠——這是台灣桌遊界公認最專業的生產大廠。在多數廠商將生產線外移至中國大陸的年代，
+                        墨帥選擇<span class="text-cyan">「根留台灣」</span>，成為少數堅持在地生產的桌遊印刷製造商。<br><br>
+                        從一張白紙到一盒完整的桌遊，墨帥提供的不只是印刷，而是一條龍的夢想實現管線：
+                        <span class="text-magenta">卡牌印製、指示物配件、彩盒包裝、倉儲後援、成本規劃，甚至群眾集資的出貨配送。</span>
+                    </p>
+                </div>
+
+                <div class="forge-counter-grid">
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">2,500+</div>
+                        <div class="forge-counter-label">GAMES PRODUCED</div>
+                        <div class="forge-counter-sublabel">台灣桌遊作品</div>
+                    </div>
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">37</div>
+                        <div class="forge-counter-label">CREW MEMBERS</div>
+                        <div class="forge-counter-sublabel">與家庭生計</div>
+                    </div>
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">5F</div>
+                        <div class="forge-counter-label">FACTORY FLOORS</div>
+                        <div class="forge-counter-sublabel">五層樓廠房</div>
+                    </div>
+                    <div class="gs-reveal forge-counter glass-panel">
+                        <div class="forge-counter-value">7 YRS</div>
+                        <div class="forge-counter-label">OF OPERATION</div>
+                        <div class="forge-counter-sublabel">持續運轉</div>
+                    </div>
+                </div>
+
+                <div class="gs-reveal glass-panel panel-border-yellow">
+                    <h3 class="subsection-heading-yellow">// MILESTONE LOG</h3>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2017</span>
+                        <div class="forge-desc"><strong>SYSTEM INIT</strong> — 墨帥印刷在新北中和正式啟動。當別人笑我傻，我只說：「台灣的桌遊，就該在台灣印。」</div>
+                    </div>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2018</span>
+                        <div class="forge-desc"><strong>CAPACITY UPGRADE</strong> — 產能突破臨界值，從小型代工廠蛻變為專業桌遊生產基地。開始承接大型集資案。</div>
+                    </div>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2020</span>
+                        <div class="forge-desc"><strong>PANDEMIC SURVIVAL</strong> — 疫情衝擊下，桌遊市場逆勢成長。墨帥在最艱難的時刻反而迎來產能高峰。</div>
+                    </div>
+                    <div class="forge-milestone">
+                        <span class="forge-year">2023</span>
+                        <div class="forge-desc"><strong>2500 GAMES ACHIEVED</strong> — 累計生產超過 2,500 款台灣桌遊。墨帥不只是印刷廠，已成為台灣桌遊產業的代名詞。</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Services (Factory Capabilities) -->
+        <section id="services">
+            <div class="container">
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">SERVICES</h2>
+                    <p class="section-subtitle">OUTPUT PROTOCOLS</p>
+                </div>
+
+                <div class="card-grid">
+                    <div class="service-card gs-reveal glass-panel">
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-yellow)"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg>
+                        <h3>Board Game Consulting</h3>
+                        <p>桌遊顧問諮詢。兩小時三千。提供專業的生產與設計建議，幫你避開所有量產陷阱。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-cyan)"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                        <h3>Professional Printing</h3>
+                        <p>桌遊印刷 / 禮盒 / 包裝。工廠三十多位同仁，確保每一份產品的完美品質。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-magenta)"><path d="M12 2L2 7l10 5 10-5L12 2z" opacity="1"/><path d="M2 12l10 5 10-5" fill="none" stroke="var(--c-magenta)" stroke-width="2"/><path d="M2 17l10 5 10-5" fill="none" stroke="var(--c-magenta)" stroke-width="2" opacity="0.6"/></svg>
+                        <h3>TCG &amp; Foil Cards</h3>
+                        <p>卡包 / 閃卡 / TCG卡片。專精於特殊工藝與收藏級卡片的製作。</p>
+                    </div>
+                    <div class="service-card gs-reveal glass-panel">
+                        <svg class="card-icon-svg" viewBox="0 0 24 24" fill="#fff"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7s2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
+                        <h3>Special Design</h3>
+                        <p>解密桌遊生產 / 特殊配件設計。實現你最瘋狂的遊戲創意。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Damage Report (The Quake Impact) -->
+        <section id="damage-report">
+            <div class="container">
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title-danger">DAMAGE REPORT</h2>
+                    <p class="section-subtitle-danger">// 2024.04.03 — 07:58:09 TST — HUALIEN SEISMIC EVENT</p>
+                </div>
+
+                <div class="damage-grid">
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">M 7.1</div>
+                        <div class="damage-label">RICHTER MAGNITUDE</div>
+                        <div class="damage-detail">花蓮壽豐震源深度 19.7km<br>921 後最大規模強震</div>
+                    </div>
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">&gt;$10M</div>
+                        <div class="damage-label">TOTAL DAMAGE (TWD)</div>
+                        <div class="damage-detail">初估財損超過一千萬<br>設備、成品、原物料全毀</div>
+                    </div>
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">0%</div>
+                        <div class="damage-label">PRODUCTION CAPACITY</div>
+                        <div class="damage-detail">所有產線全面停擺<br>訂單全部延遲</div>
+                    </div>
+                    <div class="gs-reveal damage-card">
+                        <div class="damage-value">7 DAYS</div>
+                        <div class="damage-label">TO REBOOT</div>
+                        <div class="damage-detail">從廢墟到復工<br>奇蹟般的七日重啟</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. System Logs - The Phoenix Timeline -->
+        <section id="story">
+            <div class="container">
+                <div class="gs-reveal section-header">
+                    <h2 class="section-title">THE PHOENIX PROTOCOL</h2>
+                    <p class="section-subtitle-yellow">// FROM ASHES TO REBIRTH — COMPLETE TIMELINE</p>
+                </div>
+
+                <div class="phoenix-timeline">
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-red"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time phoenix-time-red">2024.04.03 — 07:58 AM</div>
+                            <div class="phoenix-title">EVENT ZERO: THE QUAKE</div>
+                            <div class="phoenix-text">
+                                印刷機台從地基上被震離、紙張散落如雪、
+                                成品桌遊從貨架上傾瀉而下。
+                                七年的心血在幾十秒內化為一座鋼筋與紙漿的廢墟。<br><br>
+                                但在粉塵還未落定的那個早晨，我已經站在廢墟前方，
+                                不是哭泣，而是思考——<span class="text-red">如何重啟。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-red"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time phoenix-time-red">2024.04.03 — SAME DAY</div>
+                            <div class="phoenix-title">THE DISTRESS SIGNAL</div>
+                            <div class="phoenix-text">
+                                地震發生當天，我在個人 Facebook 頁面發出求援訊號。<br>
+                                沒有華麗的文案，沒有包裝過的悲情——只有一個印刷廠負責人最真實的聲音：
+                            </div>
+                            <div class="phoenix-quote">
+                                工廠倒了，但人不能倒。37 個員工的家庭還在等著。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-yellow"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time phoenix-time-yellow">2024.04.04 — T+1 DAY</div>
+                            <div class="phoenix-title">THE RALLY: 墨帥不能倒</div>
+                            <div class="phoenix-text">
+                                訊號傳出，台灣桌遊圈瞬間沸騰。<br><br>
+                                過往合作夥伴、桌遊設計師、集資案發起人、甚至素未謀面的玩家——
+                                所有人不約而同地響應。「<span class="text-yellow">墨帥不能倒</span>」不是口號，而是整個產業的共識。<br><br>
+                                短短數天內，第一階段重啟經費 <span class="text-yellow">200 萬台幣</span> 到位。
+                                這不是施捨，這是台灣桌遊人對這座工廠的信任投票。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-cyan"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time phoenix-time-cyan">2024.04.10 — T+7 DAYS</div>
+                            <div class="phoenix-title">MIRACLE REBOOT: 七日復活</div>
+                            <div class="phoenix-text">
+                                不到一週。從廢墟到復工，只花了不到一週。<br><br>
+                                這不是修復，這是「<span class="text-cyan">熱插拔 (Hot-swapping)</span>」級別的極限操作。
+                                我在瓦礫中搶救出還能運轉的機台，重新校正、重新定位、重新連線。<br><br>
+                                當機台重新運轉的轟鳴聲響起的那一刻，
+                                那是世界上最悅耳的樂章。
+                            </div>
+                            <div class="phoenix-quote">
+                                機器重新運轉的那一刻，代表一切還活著。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-cyan"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time phoenix-time-cyan">2024.04.15</div>
+                            <div class="phoenix-title">CROWDFUNDING LAUNCH: 嘖嘖集資</div>
+                            <div class="phoenix-text">
+                                初步復工只是止血，真正的重建還需要更多資源。<br><br>
+                                我在嘖嘖平台發起《<span class="text-cyan">墨帥印刷災後重建計畫</span>》，
+                                目標募集 280 萬台幣完備生產機台與設備。<br><br>
+                                集資頁面的標題寫著：「2,500 款桌遊背後的生產力量，這次我們需要你一起幫忙！」<br>
+                                最終累計 <span class="text-cyan">737 筆贊助</span>，用實際行動回應。
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phoenix-event gs-reveal">
+                        <div class="phoenix-dot phoenix-dot-green"></div>
+                        <div class="glass-panel">
+                            <div class="phoenix-time phoenix-time-green">2024.05 — T+30 DAYS</div>
+                            <div class="phoenix-title">FULL RESURGENCE: 100% ONLINE</div>
+                            <div class="phoenix-text">
+                                一個月。從完全歸零到 100% 產能恢復，只用了一個月。<br><br>
+                                新廠房定位完成，所有機台校正上線，產線全面運轉。
+                                負債金額超過 <span class="text-green">一千萬</span>——但在我的系統裡，這個數字不是絕望，
+                                是推進的燃料。<br><br>
+                                這股龐大的「虛空壓力」迫使我進化出更高的效率與更精準的決策。<br>
+                                每天不是在印桌遊，就是在開印的路上。
+                                <span class="text-green">停滯即是毀滅，唯有前進才能維持系統穩定。</span>
+                            </div>
+                            <div class="phoenix-quote">
+                                負債不是枷鎖，而是推動前進的引擎。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Reconstruction Interaction -->
+        <section id="reconstruction" class="section-reconstruction">
+            <div class="ruins-overlay"></div>
+
+            <div class="news-ticker-container" id="ruin-ticker">
+                <div class="news-ticker-content">
+                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房後半部倒塌 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
+                </div>
+                <div class="news-ticker-content">
+                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房後半部倒塌 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
+                </div>
+            </div>
+
+            <div class="container reconstruction-content">
+                <h2 class="gs-reveal section-title">RECONSTRUCTION</h2>
+                <p class="gs-reveal section-subtitle-yellow mb-2">
+                    CLICK TO REPAIR THE STRUCTURE
+                </p>
+                <button id="btn-repair" class="gs-reveal btn-repair">INITIATE REPAIR</button>
+
+                <!-- Post-Repair Content (Hidden Initially) -->
+                <div id="post-repair-content" class="post-repair-content">
+                    <div class="glass-panel glass-panel-cyan-border">
+                        <a href="https://www.zeczec.com/projects/ink-play-reborn" target="_blank" rel="noopener noreferrer" class="repair-cta">SUPPORT THE REBOOT</a>
+
+                        <div class="news-source-grid mt-1-5">
+                            <a href="http://crowdwatch.tw/post/54872/" target="_blank" rel="noopener noreferrer" class="news-source-card">
+                                <span class="news-source-tag">NEWS</span>
+                                <div class="news-source-title">台灣桌遊生產大廠遭震毀！集資重建</div>
+                                <div class="news-source-outlet">群眾觀點 CrowdWatch</div>
+                            </a>
+                            <a href="https://www.tbd.com.tw/blogs/articles/153633" target="_blank" rel="noopener noreferrer" class="news-source-card">
+                                <span class="news-source-tag">INDUSTRY</span>
+                                <div class="news-source-title">墨帥印刷災後重建計畫</div>
+                                <div class="news-source-outlet">Taiwan Boardgame Design</div>
+                            </a>
+                            <a href="https://clusters.tw/creator-posts/4152529E-E966-42E0-B19D-D194D12174BD" target="_blank" rel="noopener noreferrer" class="news-source-card">
+                                <span class="news-source-tag">COMMUNITY</span>
+                                <div class="news-source-title">桌遊界知名印刷廠『墨帥』工廠倒塌</div>
+                                <div class="news-source-outlet">Clusters 桌遊社群</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. Visit (CTA) -->
+        <section id="visit">
+            <div class="container">
+                <div class="gs-reveal glass-panel text-center">
+                    <h3 class="commander-panel-title">VISIT THE BASE</h3>
+                    <p class="commander-panel-text mb-1-5">有空可以來看看重啟後的鋼鐵意志。</p>
+                    <a href="https://www.google.com/maps/search/?api=1&query=%E6%96%B0%E5%8C%97%E5%B8%82%E4%B8%AD%E5%92%8C%E5%8D%80%E9%80%A3%E5%9F%8E%E8%B7%AF222%E5%B7%B75%E8%99%9F" target="_blank" rel="noopener noreferrer" class="visit-address">
+                        <svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg> 新北市中和區連城路222巷5號
+                    </a>
+                    <div class="visit-contact">
+                        <svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg> 02-2240-3080
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <h2 class="footer-title">CONNECT</h2>
+                <div class="social-links">
+                    <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5s-4 5-4 9.5a4 4 0 008 0c0-4.5-4-9.5-4-9.5zM8 19l1.5-2h5L16 19H8zm4-8a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg></a>
+                    <a href="https://www.threads.com/@gxallenlen" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z"/></svg></a>
+                    <a href="https://www.instagram.com/gxallenlen/" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2zm-.2 2A3.6 3.6 0 004 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6zm9.65 1.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zM12 7a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6z"/></svg></a>
+                </div>
+                <p class="footer-credits">
+                    MADE WITH <svg class="icon-inline" viewBox="0 0 24 24" fill="var(--c-yellow)"><path d="M13 2L3 14h7l-2 8 10-12h-7l2-8z"/></svg> BY SUPERGALEN'S DUNGEON
+                </p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- THREE.JS BACKGROUND ---
+        function initThree() {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0a0a0a, 0.05);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 20;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            container.appendChild(renderer.domElement);
+
+            // Objects: Floating Plates (CMYK)
+            const plates = [];
+            const colors = [0x00ffff, 0xff00ff, 0xffff00, 0x333333];
+            const geometry = new THREE.PlaneGeometry(5, 8);
+
+            for (let i = 0; i < 30; i++) {
+                const material = new THREE.MeshBasicMaterial({
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    transparent: true,
+                    opacity: 0.1 + Math.random() * 0.2,
+                    side: THREE.DoubleSide,
+                    wireframe: Math.random() > 0.8
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+
+                mesh.position.set(
+                    (Math.random() - 0.5) * 60,
+                    (Math.random() - 0.5) * 60,
+                    -Math.random() * 35 - 5
+                );
+                mesh.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+
+                scene.add(mesh);
+                plates.push({ mesh, speed: Math.random() * 0.01 + 0.005 });
+            }
+
+            // --- RECONSTRUCTION INTERACTION ---
+            const houseGroup = new THREE.Group();
+            scene.add(houseGroup);
+            houseGroup.position.set(0, -50, 0);
+
+            const voxels = [];
+            const boxGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+
+            function createHouse() {
+                for(let x=-2; x<=2; x++) {
+                    for(let z=-2; z<=2; z++) {
+                        for(let y=0; y<3; y++) {
+                             if(Math.random() > 0.8) continue;
+                             addVoxel(x, y, z);
+                        }
+                    }
+                }
+                for(let x=-2; x<=2; x++) {
+                    addVoxel(x, 3, 0);
+                    addVoxel(x, 3, 1);
+                    addVoxel(x, 3, -1);
+                    addVoxel(x, 4, 0);
+                }
+            }
+
+            function addVoxel(tx, ty, tz) {
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0x333333,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.5
+                });
+                const mesh = new THREE.Mesh(boxGeo, material);
+
+                const ex = (Math.random() - 0.5) * 30;
+                const ey = (Math.random() - 0.5) * 30;
+                const ez = (Math.random() - 0.5) * 30;
+
+                mesh.position.set(ex, ey, ez);
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+
+                houseGroup.add(mesh);
+
+                voxels.push({
+                    mesh,
+                    target: new THREE.Vector3(tx, ty, tz),
+                    baseColor: 0x333333,
+                    activeColor: colors[Math.floor(Math.random() * 3)]
+                });
+            }
+
+            createHouse();
+
+            const btn = document.getElementById('btn-repair');
+            const postRepair = document.getElementById('post-repair-content');
+            const ruinTicker = document.getElementById('ruin-ticker');
+            let isRepaired = false;
+
+            if(btn) {
+                btn.addEventListener('click', () => {
+                    isRepaired = true;
+
+                    // Animate Reconstruction
+                    voxels.forEach((v, i) => {
+                        gsap.to(v.mesh.position, {
+                            x: v.target.x,
+                            y: v.target.y,
+                            z: v.target.z,
+                            duration: 1.5,
+                            ease: "power2.inOut",
+                            delay: Math.random() * 0.5
+                        });
+                        gsap.to(v.mesh.rotation, {
+                            x: 0, y: 0, z: 0,
+                            duration: 1.5,
+                            ease: "power2.inOut"
+                        });
+
+                        setTimeout(() => {
+                            v.mesh.material.color.setHex(v.activeColor);
+                            v.mesh.material.wireframe = false;
+                            v.mesh.material.opacity = 0.9;
+                        }, 1200 + Math.random() * 300);
+                    });
+
+                    gsap.to(houseGroup.rotation, {
+                        y: "+=" + Math.PI * 2,
+                        duration: 10,
+                        repeat: -1,
+                        ease: "none",
+                        delay: 1.5
+                    });
+
+                    // Button UI Update via class
+                    btn.innerHTML = "SYSTEM RESTORED";
+                    btn.classList.add('btn-repair-done');
+
+                    // Fade out ruins overlay via class
+                    document.getElementById('reconstruction').classList.add('ruins-active');
+
+                    // Hide Ticker
+                    if(ruinTicker) {
+                        gsap.to(ruinTicker, { opacity: 0, duration: 0.5 });
+                    }
+
+                    // Reveal Post-Repair Content
+                    postRepair.style.display = 'block';
+                    gsap.to(postRepair, { opacity: 1, duration: 1, delay: 1.5 });
+                });
+            }
+
+            gsap.fromTo(houseGroup.position,
+                { y: -30 },
+                {
+                    y: 0,
+                    scrollTrigger: {
+                        trigger: "#reconstruction",
+                        start: "top center",
+                        end: "center center",
+                        scrub: 1
+                    }
+                }
+            );
+
+
+            // Animation Loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                plates.forEach(p => {
+                    p.mesh.rotation.x += p.speed;
+                    p.mesh.rotation.y += p.speed;
+                    p.mesh.position.y += Math.sin(Date.now() * 0.001 * p.speed * 100) * 0.02;
+                });
+
+                // Slowly rotate house if not yet repaired (boolean flag, no DOM read)
+                if(!isRepaired) {
+                    houseGroup.rotation.y += 0.002;
+                    houseGroup.rotation.z = Math.sin(Date.now()*0.001) * 0.05;
+                }
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // GSAP Scroll for Camera
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.to(camera.position, {
+                z: 5,
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
+            // News ticker: only animate when reconstruction section is visible
+            ScrollTrigger.create({
+                trigger: "#reconstruction",
+                start: "top bottom",
+                end: "bottom top",
+                onEnter: () => ruinTicker?.classList.add('ticker-active'),
+                onLeave: () => ruinTicker?.classList.remove('ticker-active'),
+                onEnterBack: () => ruinTicker?.classList.add('ticker-active'),
+                onLeaveBack: () => ruinTicker?.classList.remove('ticker-active'),
+            });
+        }
+
+        // --- INIT SEQUENCE ---
+        document.addEventListener("DOMContentLoaded", () => {
+            initThree();
+
+            // GSAP Reveals
+            gsap.utils.toArray('.gs-reveal').forEach(el => {
+                gsap.from(el, {
+                    y: 50, opacity: 0, duration: 1, ease: "power2.out",
+                    scrollTrigger: { trigger: el, start: "top 85%" }
+                });
+            });
+
+            // Fake Loader
+            const bar = document.getElementById('loader-bar-inner');
+            const status = document.getElementById('loader-status');
+            const loader = document.getElementById('loader');
+
+            let p = 0;
+            const interval = setInterval(() => {
+                p += Math.random() * 5;
+                if(p > 100) p = 100;
+                bar.style.width = p + "%";
+
+                if(p < 30) status.innerText = "LOADING ASSETS...";
+                else if(p < 70) status.innerText = "CALIBRATING PRESS...";
+                else status.innerText = "SYSTEM READY.";
+
+                if(p === 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        gsap.to(loader, { opacity: 0, duration: 0.5, onComplete: () => loader.remove() });
+                        document.body.style.overflowY = 'auto';
+                    }, 500);
+                }
+            }, 50);
+        });
+
+    </script>
+
+    <!-- Vanilla Canvas Ink Trail (replaces p5.js) -->
+    <script>
+        (function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const container = document.getElementById('p5-container');
+            container.appendChild(canvas);
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const particles = [];
+            const colors = ['0,255,255', '255,0,255', '255,255,0'];
+            let mouseX = 0, mouseY = 0, prevMouseX = 0, prevMouseY = 0;
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (mouseX !== prevMouseX || mouseY !== prevMouseY) {
+                    for (let i = 0; i < 3; i++) {
+                        particles.push({
+                            x: mouseX, y: mouseY,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: (Math.random() - 0.5) * 2,
+                            alpha: 1,
+                            color: colors[Math.floor(Math.random() * 3)],
+                            r: Math.random() * 3 + 1
+                        });
+                    }
+                    prevMouseX = mouseX;
+                    prevMouseY = mouseY;
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= 0.02;
+
+                    if (p.alpha <= 0) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
+                    ctx.fill();
+                }
+            }
+            animate();
+        })();
+    </script>
+</body>
+</html>

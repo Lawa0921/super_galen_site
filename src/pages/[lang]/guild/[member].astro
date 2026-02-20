@@ -2,11 +2,19 @@
 /**
  * Guild Member 個人頁面
  * 動態路由：/[lang]/guild/[member]/
- * 直接渲染獨立的 HTML 頁面檔案
+ * 直接渲染獨立的 HTML 頁面檔案，優先使用翻譯版本
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { languages, defaultLang, type Language } from '@i18n/index';
+
+const langLabels: Record<string, string> = {
+  'zh-TW': '繁中',
+  'ja': '日本語',
+  'en': 'EN',
+  'ko': '한국어',
+  'zh-CN': '简中',
+};
 
 export async function getStaticPaths() {
   // 非預設語言（預設語言由 /guild/[member] 處理）
@@ -14,7 +22,12 @@ export async function getStaticPaths() {
 
   // 讀取 guild content 目錄中的所有 HTML 檔案
   const guildDir = path.join(process.cwd(), 'src/content/guild');
-  const files = fs.readdirSync(guildDir).filter(f => f.endsWith('.html'));
+  const files = fs.readdirSync(guildDir).filter(f => {
+    if (!f.endsWith('.html')) return false;
+    // 排除翻譯版本（如 tyou.ja.html）
+    const name = f.slice(0, -5);
+    return !nonDefaultLangs.some(code => name.endsWith(`.${code}`));
+  });
 
   // 為非預設語言和每個成員生成路徑
   const paths = nonDefaultLangs.flatMap((lang) =>
@@ -34,14 +47,24 @@ export async function getStaticPaths() {
 }
 
 const { lang, memberFile } = Astro.props;
+const member = memberFile.replace('.html', '');
 
-// 讀取 HTML 檔案內容
+// 讀取 HTML 檔案內容（優先使用翻譯版本）
 const guildDir = path.join(process.cwd(), 'src/content/guild');
-const htmlPath = path.join(guildDir, memberFile);
+const translatedFile = `${member}.${lang}.html`;
+const translatedPath = path.join(guildDir, translatedFile);
+const hasTranslation = fs.existsSync(translatedPath);
+const htmlPath = hasTranslation ? translatedPath : path.join(guildDir, memberFile);
 const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
+// 偵測可用的翻譯語言
+const translationLangCodes = (Object.keys(languages) as Language[]).filter(l => l !== defaultLang);
+const availableTranslations = translationLangCodes.filter(code =>
+  fs.existsSync(path.join(guildDir, `${member}.${code}.html`))
+);
+
 // 修改 HTML 中的連結和資源路徑
-const modifiedHtml = htmlContent
+let modifiedHtml = htmlContent
   // 修改相對路徑的圖片為絕對路徑
   .replace(/src="\.\.\/assets\//g, 'src="/assets/')
   .replace(/src="\.\/assets\//g, 'src="/assets/')
@@ -53,6 +76,29 @@ const modifiedHtml = htmlContent
   .replace(/href="\/"/g, `href="/${lang}/"`)
   // 修改其他 guild member 連結
   .replace(/href="\/guild\/([^"]+)"/g, `href="/${lang}/guild/$1"`);
+
+// 注入語言切換按鈕（僅當有翻譯版本時）
+if (availableTranslations.length > 0) {
+  // 判斷當前實際顯示的語言
+  const activeLang = hasTranslation ? lang : defaultLang;
+
+  const defaultBtn = `<a href="/guild/${member}/" class="guild-lang-btn${activeLang === defaultLang ? ' guild-lang-active' : ''}"${activeLang === defaultLang ? ' aria-current="page"' : ''}>${langLabels[defaultLang]}</a>`;
+
+  const toggleButtons = availableTranslations.map(code => {
+    const isActive = code === activeLang;
+    return `<a href="/${code}/guild/${member}/" class="guild-lang-btn${isActive ? ' guild-lang-active' : ''}"${isActive ? ' aria-current="page"' : ''}>${langLabels[code]}</a>`;
+  }).join('\n      ');
+
+  const langToggleHtml = `
+    <div class="guild-lang-toggle">
+      ${defaultBtn}
+      ${toggleButtons}
+    </div>`;
+
+  modifiedHtml = modifiedHtml
+    .replace('</head>', '  <link rel="stylesheet" href="/assets/css/guild-lang-toggle.css">\n</head>')
+    .replace(/<body[^>]*>/, `$&${langToggleHtml}`);
+}
 ---
 
 <Fragment set:html={modifiedHtml} />
