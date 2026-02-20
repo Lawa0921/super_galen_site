@@ -4,23 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZAIRA | EXPLORER</title>
-    <!-- Fonts: Inter for clean, modern look -->
+    <!-- Fonts: Inter + IBM Plex Mono (Lab/Tech but grounded) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Cormorant+Garamond:ital,wght@1,300&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-color: #0a0a0a;
-            --text-main: #e0e0e0;
-            --text-muted: #888888;
-            --accent-color: #7dd3fc; /* Soft sky blue */
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
+            --bg-color: #0f172a; /* Slate 900 */
+            --bg-secondary: #1e293b; /* Slate 800 */
+            --text-main: #e2e8f0; /* Slate 200 */
+            --text-muted: #94a3b8; /* Slate 400 */
+            --accent-color: #f97316; /* Orange 500 (Signal/Alert/Warmth) */
+            --accent-glow: rgba(249, 115, 22, 0.2);
             --font-main: 'Inter', sans-serif;
-            --font-serif: 'Cormorant Garamond', serif;
+            --font-mono: 'IBM Plex Mono', monospace;
+            --border-color: rgba(148, 163, 184, 0.2);
         }
 
         * {
@@ -35,6 +36,33 @@
             font-family: var(--font-main);
             overflow-x: hidden;
             overscroll-behavior: none;
+            cursor: crosshair; /* Lab precision feel */
+        }
+
+        /* Canvas Containers */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        /* Grid Overlay (Subtle Tech) */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 100px 100px;
+            opacity: 0.05;
+            z-index: -1;
+            pointer-events: none;
         }
 
         /* Loading Screen */
@@ -49,478 +77,626 @@
             justify-content: center;
             align-items: center;
             z-index: 9999;
+            flex-direction: column;
+            font-family: var(--font-mono);
             transition: opacity 0.8s ease;
         }
-        .loader-line {
-            width: 0;
-            height: 1px;
-            background: var(--text-muted);
-            animation: load 1.5s ease-out forwards;
+        .loader-text {
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            color: var(--accent-color);
         }
-        @keyframes load { to { width: 100px; } }
-
-        /* Canvas Containers */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            opacity: 0.6; /* Subtle background */
+        .loader-bar-container {
+            width: 200px;
+            height: 2px;
+            background: var(--bg-secondary);
+            overflow: hidden;
         }
+        .loader-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-color);
+            animation: load 2s ease-in-out forwards;
+        }
+        @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
 
-        #p5-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
-            mix-blend-mode: overlay;
+        /* Typography */
+        h1, h2, h3, h4 {
+            font-family: var(--font-main);
+            font-weight: 300;
         }
 
-        /* Main Content Wrapper */
-        .scroll-content {
-            position: relative;
-            z-index: 10;
-            width: 100%;
+        .mono {
+            font-family: var(--font-mono);
         }
 
+        .accent {
+            color: var(--accent-color);
+        }
+
+        /* Section Layouts */
         section {
             min-height: 100vh;
             padding: 4rem 2rem;
+            position: relative;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
             position: relative;
         }
 
-        /* Typography */
-        h1, h2, h3 {
-            font-weight: 300;
-            letter-spacing: 0.05em;
+        /* Hero Section */
+        #hero {
+            justify-content: flex-start;
+            padding-top: 15vh;
+        }
+
+        .hero-content {
+            max-width: 600px;
+            z-index: 10;
+        }
+
+        .hero-label {
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            display: block;
+            opacity: 0;
+            transform: translateX(-20px);
         }
 
         .hero-title {
-            font-size: clamp(3rem, 8vw, 6rem);
-            margin-bottom: 1rem;
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.9;
+            margin-bottom: 2rem;
+            letter-spacing: -0.02em;
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateX(-20px);
         }
 
-        .hero-subtitle {
-            font-family: var(--font-serif);
-            font-size: 1.5rem;
-            color: var(--text-muted);
-            font-style: italic;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        p {
+        .hero-desc {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
             line-height: 1.8;
             color: var(--text-muted);
-            max-width: 600px;
-            font-size: 1rem;
+            border-left: 2px solid var(--accent-color);
+            padding-left: 1.5rem;
+            max-width: 400px;
+            opacity: 0;
+            transform: translateX(-20px);
         }
 
-        /* Avatar */
-        .avatar-container {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
+        /* Avatar Float */
+        .avatar-float {
+            position: absolute;
+            right: 10%;
+            top: 20%;
+            width: 250px; /* Larger */
+            height: 350px; /* Portrait ratio */
+            border: 1px solid var(--border-color);
             overflow: hidden;
-            margin-bottom: 2rem;
-            border: 1px solid var(--glass-border);
+            z-index: 5;
             opacity: 0;
-            transform: scale(0.9);
-            transition: transform 0.5s ease;
+            transform: translateY(30px);
+            background: var(--bg-secondary);
         }
-        .avatar-container:hover {
-            transform: scale(1.0);
+        .avatar-float::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.3); /* Tint */
+            mix-blend-mode: multiply;
         }
         .avatar-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: grayscale(100%) contrast(1.1); /* Black and white style */
+            filter: grayscale(100%) contrast(1.2);
+            transition: transform 1s ease;
         }
-
-        /* Cards / Panels */
-        .glass-panel {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 2px;
-            transition: background 0.3s ease, border-color 0.3s ease;
+        .avatar-float:hover .avatar-img {
+            transform: scale(1.05);
         }
-        .glass-panel:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Section Specifics */
-        .intro-text {
-            text-align: center;
-            margin-top: 2rem;
-        }
-
-        .bio-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            width: 100%;
-            max-width: 1000px;
-            margin-top: 4rem;
-        }
-
-        .interest-tag {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--glass-border);
-            margin: 0.25rem;
-            font-size: 0.85rem;
+        .avatar-label {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--bg-color);
             color: var(--text-muted);
-            transition: color 0.3s, border-color 0.3s;
-        }
-        .interest-tag:hover {
-            color: var(--text-main);
-            border-color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.5rem 1rem;
+            border-top: 1px solid var(--border-color);
+            border-left: 1px solid var(--border-color);
         }
 
-        /* Timeline / Logs */
-        .log-entry {
-            border-left: 1px solid var(--glass-border);
-            padding-left: 2rem;
-            margin-bottom: 3rem;
-            position: relative;
-            max-width: 600px;
-            opacity: 0; /* Animated in */
+
+        /* Content Panels (Asymmetrical) */
+        .panel-wrapper {
+            display: flex;
+            justify-content: flex-end; /* Push to right generally */
+            margin-bottom: 10vh;
         }
-        .log-entry::before {
+        .panel-wrapper.left {
+            justify-content: flex-start;
+        }
+
+        .data-panel {
+            background: rgba(30, 41, 59, 0.7); /* Semi-transparent Slate 800 */
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+            transition: border-color 0.3s ease;
+        }
+        .data-panel:hover {
+            border-color: var(--accent-color);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        .panel-id {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--accent-color);
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        .tag:hover {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            background: rgba(249, 115, 22, 0.05);
+        }
+
+        /* Field Notes (Timeline) */
+        .log-item {
+            margin-bottom: 2rem;
+            padding-left: 1rem;
+            border-left: 1px solid var(--border-color);
+            position: relative;
+        }
+        .log-item::before {
             content: '';
             position: absolute;
             left: -3px;
-            top: 0;
+            top: 5px;
             width: 5px;
             height: 5px;
-            background: var(--text-muted);
-            border-radius: 50%;
+            background: var(--accent-color);
         }
-        .log-date {
-            font-size: 0.8rem;
+        .log-meta {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
             color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.5rem;
-            display: block;
+            margin-bottom: 0.25rem;
         }
-        .log-title {
-            font-size: 1.2rem;
+        .log-header {
+            font-size: 1.1rem;
             margin-bottom: 0.5rem;
+        }
+        .log-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
         }
 
-        /* Socials */
-        .social-grid {
+        /* Social Hub */
+        .social-hub {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            width: 100%;
-            max-width: 600px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
         }
-        .social-link {
+        .social-card {
             display: flex;
             align-items: center;
-            text-decoration: none;
-            color: var(--text-muted);
             padding: 1.5rem;
-            border: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            text-decoration: none;
             transition: all 0.3s ease;
         }
-        .social-link i {
-            font-size: 1.5rem;
+        .social-card i {
+            font-size: 1.2rem;
             margin-right: 1rem;
-            transition: transform 0.3s ease;
-        }
-        .social-link:hover {
             color: var(--text-main);
-            border-color: var(--text-muted);
-            background: var(--glass-bg);
         }
-        .social-link:hover i {
-            transform: translateX(5px);
+        .social-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            background: rgba(30, 41, 59, 0.8);
+        }
+        .social-info div:first-child {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+        }
+        .social-info div:last-child {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
         }
 
-        .footer-note {
-            margin-top: 4rem;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            opacity: 0.5;
-        }
-
-        /* Scroll Progress */
-        .progress-bar {
+        /* Frequency Indicator */
+        .freq-readout {
             position: fixed;
-            right: 2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 100px;
-            width: 1px;
-            background: var(--glass-border);
+            bottom: 2rem;
+            left: 2rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-muted);
             z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
-        .progress-indicator {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 0%;
-            background: var(--text-main);
-            transition: height 0.1s linear;
+        .freq-bar {
+            width: 30px;
+            height: 10px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+        }
+        .bar-seg {
+            width: 2px;
+            background: var(--accent-color);
+            animation: equalize 1s infinite ease-in-out;
+        }
+        .bar-seg:nth-child(2) { animation-delay: 0.1s; }
+        .bar-seg:nth-child(3) { animation-delay: 0.2s; }
+        .bar-seg:nth-child(4) { animation-delay: 0.3s; }
+        @keyframes equalize { 0%, 100% { height: 2px; } 50% { height: 100%; } }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3.5rem; }
+            .avatar-float {
+                position: relative;
+                width: 100%;
+                height: 300px;
+                right: auto;
+                top: auto;
+                margin-bottom: 2rem;
+            }
+            .panel-wrapper { justify-content: flex-start; }
+            #hero { padding-top: 10vh; flex-direction: column-reverse; }
         }
 
-        /* Mobile tweaks */
-        @media (max-width: 768px) {
-            .hero-title { font-size: 3rem; }
-            .social-grid { grid-template-columns: 1fr; }
-            section { padding: 4rem 1.5rem; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Loaders & Canvases -->
-    <div id="loader"><div class="loader-line"></div></div>
-    <div id="canvas-container"></div>
-    <div id="p5-container"></div>
+    <!-- Overlay -->
+    <div class="grid-overlay"></div>
+    <div id="loader">
+        <div class="loader-text mono">INITIALIZING FREQUENCIES...</div>
+        <div class="loader-bar-container"><div class="loader-bar"></div></div>
+    </div>
 
-    <!-- Scroll Indicator -->
-    <div class="progress-bar"><div class="progress-indicator"></div></div>
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Elements -->
+    <div class="freq-readout">
+        <div class="freq-bar">
+            <div class="bar-seg"></div>
+            <div class="bar-seg"></div>
+            <div class="bar-seg"></div>
+            <div class="bar-seg"></div>
+        </div>
+        <span>ZAI_LAB // V.1.0</span>
+        <span id="scroll-val">DEPTH: 0m</span>
+    </div>
 
     <!-- Main Content -->
-    <div class="scroll-content">
+    <main>
 
-        <!-- Section 1: Hero (Introverted, Quiet) -->
+        <!-- Hero Section -->
         <section id="hero">
-            <div class="avatar-container">
-                <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="avatar-img">
-            </div>
-            <h1 class="hero-title">ZAIRA</h1>
-            <h2 class="hero-subtitle">Exploring Life Frequencies</h2>
+            <div class="container">
+                <div class="avatar-float">
+                    <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="avatar-img">
+                    <div class="avatar-label">ID: ZAIRA</div>
+                </div>
 
-            <div class="intro-text" style="margin-top: 3rem; opacity: 0; transform: translateY(20px);" class="fade-in">
-                <p>Experimenting. Climbing. Listening.</p>
-            </div>
-        </section>
-
-        <!-- Section 2: Bio (The Lab / The Explorer) -->
-        <section id="about">
-            <div class="glass-panel fade-in" style="max-width: 800px; width: 100%;">
-                <h3 style="margin-bottom: 1.5rem; font-size: 0.9rem; letter-spacing: 0.2em; color: var(--text-muted);">ABOUT THE SUBJECT</h3>
-                <p style="margin-bottom: 1.5rem;">
-                    我是 Zaira，還在探索自己的人生路上。興趣多元廣泛，喜歡寫字、畫畫、唱歌、偶爾爬爬山，覺得有趣很特別的事情都想試試看！
-                </p>
-                <p style="margin-bottom: 1.5rem;">
-                    我用 Medium 記錄我覺得值得分享的內容，包含語言學習、個人成長和歌詞翻譯等主題。
-                    在今天開了自己的 Podcast 頻道（在意實驗室｜ Zai Lab）和 Instagram 帳號。
-                    目前我也不知道最終會長成什麼樣子，但想試試看各種有趣的事情，所以才叫「實驗室」。
-                </p>
-
-                <div style="margin-top: 2rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
-                    <span class="interest-tag">Writing</span>
-                    <span class="interest-tag">Drawing</span>
-                    <span class="interest-tag">Singing</span>
-                    <span class="interest-tag">Hiking</span>
-                    <span class="interest-tag">Languages</span>
+                <div class="hero-content">
+                    <span class="hero-label mono accent">SUBJECT_001</span>
+                    <h1 class="hero-title">EXPLORING<br>FREQUENCIES</h1>
+                    <div class="hero-desc">
+                        Experimenting. Climbing. Listening.<br>
+                        Still exploring the path of life.<br>
+                        <span class="mono accent" style="font-size: 0.7rem; margin-top: 1rem; display: block;">STATUS: ACTIVE</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Section 3: Logs (Travel / Experience) -->
+        <!-- Bio / Lab Data -->
+        <section id="bio">
+            <div class="container">
+                <div class="panel-wrapper left">
+                    <div class="data-panel scroll-reveal">
+                        <div class="panel-header">
+                            <h2 class="panel-title">THE LAB</h2>
+                            <span class="panel-id">SEC_01</span>
+                        </div>
+                        <p style="line-height: 1.8; color: var(--text-muted); margin-bottom: 1.5rem;">
+                            我是 Zaira，還在探索自己的人生路上。興趣多元廣泛，喜歡寫字、畫畫、唱歌、偶爾爬爬山，覺得有趣很特別的事情都想試試看！
+                        </p>
+                        <p style="line-height: 1.8; color: var(--text-muted);">
+                            我用 Medium 記錄我覺得值得分享的內容，包含語言學習、個人成長和歌詞翻譯等主題。
+                            在今天開了自己的 Podcast 頻道（在意實驗室｜ Zai Lab）和 Instagram 帳號。
+                            目前我也不知道最終會長成什麼樣子，但想試試看各種有趣的事情，所以才叫「實驗室」。
+                        </p>
+
+                        <div class="tag-cloud">
+                            <span class="tag">WRITING</span>
+                            <span class="tag">DRAWING</span>
+                            <span class="tag">SINGING</span>
+                            <span class="tag">HIKING</span>
+                            <span class="tag">LANGUAGES</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Field Notes (Logs) -->
         <section id="logs">
-            <h3 style="margin-bottom: 3rem; font-size: 0.9rem; letter-spacing: 0.2em; color: var(--text-muted);">FIELD NOTES</h3>
+            <div class="container">
+                <div class="panel-wrapper"> <!-- Right aligned -->
+                    <div class="data-panel scroll-reveal">
+                        <div class="panel-header">
+                            <h2 class="panel-title">FIELD NOTES</h2>
+                            <span class="panel-id">SEC_02</span>
+                        </div>
 
-            <div class="log-entry scroll-reveal">
-                <span class="log-date">Rome, Italy</span>
-                <h4 class="log-title">Exchange Year</h4>
-                <p>交換學生一年。在羅馬的古老石牆間迴響，解鎖義大利語頻段。</p>
-            </div>
+                        <div class="log-item">
+                            <div class="log-meta">LOC: ROME, IT // DURATION: 1YR</div>
+                            <h4 class="log-header">Exchange Program</h4>
+                            <p class="log-desc">交換學生一年。在羅馬的古老石牆間迴響，解鎖義大利語頻段。</p>
+                        </div>
 
-            <div class="log-entry scroll-reveal">
-                <span class="log-date">Tanzania</span>
-                <h4 class="log-title">Volunteer Service</h4>
-                <p>深入坦尚尼亞，進行服務學習志工計劃。在原始頻率中尋找純粹的連結。</p>
-            </div>
+                        <div class="log-item">
+                            <div class="log-meta">LOC: TANZANIA // TYPE: VOLUNTEER</div>
+                            <h4 class="log-header">Service Learning</h4>
+                            <p class="log-desc">深入坦尚尼亞，進行服務學習志工計劃。在原始頻率中尋找純粹的連結。</p>
+                        </div>
 
-            <div class="log-entry scroll-reveal">
-                <span class="log-date">Czech Republic</span>
-                <h4 class="log-title">Teaching Internship</h4>
-                <p>華語老師實習半年。學生來自烏克蘭、義大利、捷克、斯洛伐克和印尼。</p>
-            </div>
+                        <div class="log-item">
+                            <div class="log-meta">LOC: CZECH REP // ROLE: TEACHER</div>
+                            <h4 class="log-header">Internship</h4>
+                            <p class="log-desc">華語老師實習半年。學生來自烏克蘭、義大利、捷克、斯洛伐克和印尼。</p>
+                        </div>
 
-            <div class="glass-panel scroll-reveal" style="margin-top: 2rem; text-align: center;">
-                <p style="font-family: var(--font-serif); font-style: italic;">
-                    "語言與文化是我和世界產生連結的工具。"
-                </p>
+                        <div style="margin-top: 2rem; padding: 1rem; border: 1px dashed var(--border-color); font-size: 0.9rem; color: var(--text-muted); text-align: center;">
+                            "語言與文化是我和世界產生連結的工具。"
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Section 4: Connect (Socials) -->
+        <!-- Connect -->
         <section id="connect">
-            <h3 style="margin-bottom: 3rem; font-size: 0.9rem; letter-spacing: 0.2em; color: var(--text-muted);">CONNECT</h3>
+            <div class="container">
+                <div class="panel-wrapper left">
+                    <div class="data-panel scroll-reveal" style="background: transparent; border: none; backdrop-filter: none; padding: 0;">
+                        <div class="panel-header" style="border-bottom: none;">
+                            <h2 class="panel-title">TRANSMIT</h2>
+                            <span class="panel-id">SEC_03</span>
+                        </div>
+                        <p style="margin-bottom: 2rem; color: var(--text-muted);">
+                            非常喜歡和別人聊聊，知道別人背後的故事和不同的經驗讓我覺得很有趣！歡迎大家來交流 ✨
+                        </p>
 
-            <div class="social-grid">
-                <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-link scroll-reveal">
-                    <i class="fa-brands fa-medium"></i>
-                    <div>
-                        <div style="font-size: 0.9rem;">Medium</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Thoughts & Lyrics</div>
+                        <div class="social-hub">
+                            <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-card">
+                                <i class="fa-brands fa-medium"></i>
+                                <div class="social-info">
+                                    <div>Medium</div>
+                                    <div>Thoughts & Lyrics</div>
+                                </div>
+                            </a>
+
+                            <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="social-card">
+                                <i class="fa-solid fa-microphone-lines"></i>
+                                <div class="social-info">
+                                    <div>Zai Lab</div>
+                                    <div>Podcast</div>
+                                </div>
+                            </a>
+
+                            <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-card">
+                                <i class="fa-brands fa-instagram"></i>
+                                <div class="social-info">
+                                    <div>Instagram</div>
+                                    <div>Visual Diary</div>
+                                </div>
+                            </a>
+
+                            <a href="https://www.threads.net/@zailab_zaira_forzaaa" target="_blank" class="social-card">
+                                <i class="fa-brands fa-threads"></i>
+                                <div class="social-info">
+                                    <div>Threads</div>
+                                    <div>Daily Echoes</div>
+                                </div>
+                            </a>
+                        </div>
                     </div>
-                </a>
-
-                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="social-link scroll-reveal">
-                    <i class="fa-solid fa-microphone-lines"></i>
-                    <div>
-                        <div style="font-size: 0.9rem;">Zai Lab</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Podcast Experiments</div>
-                    </div>
-                </a>
-
-                <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-link scroll-reveal">
-                    <i class="fa-brands fa-instagram"></i>
-                    <div>
-                        <div style="font-size: 0.9rem;">Instagram</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Visual Diary</div>
-                    </div>
-                </a>
-
-                <a href="https://www.threads.net/@zailab_zaira_forzaaa" target="_blank" class="social-link scroll-reveal">
-                    <i class="fa-brands fa-threads"></i> <!-- Requires newer FA, fallback icon if fails -->
-                    <div>
-                        <div style="font-size: 0.9rem;">Threads</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">Daily Echoes</div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="footer-note scroll-reveal">
-                歡迎大家來交流，聆聽每個人背後的故事 ✨
+                </div>
             </div>
         </section>
-    </div>
+
+    </main>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <!-- Simplex Noise for procedural terrain generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 
     <script>
-        // --- 1. Three.js: Ethereal Point Cloud Terrain ---
-        const initThree = () => {
+        // --- Three.js: The Frequency Ridge ---
+        // Concept: A vertical ribbon/terrain that represents a climbing path and a sound wave.
+        // It's a generated mesh that undulates based on time (sound) and moves based on scroll (climb).
+
+        const initScene = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
-            // Fog for atmospheric depth (Dark/Misty)
-            scene.fog = new THREE.FogExp2(0x0a0a0a, 0.002);
+            // Background color is handled by CSS, but fog should match
+            scene.fog = new THREE.Fog(0x0f172a, 10, 50);
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 10, 30);
-            camera.lookAt(0, 0, 0);
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0, 20); // Default view
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Create Point Cloud Terrain
-            const geometry = new THREE.PlaneGeometry(100, 100, 60, 60); // High segment count for points
-            const count = geometry.attributes.position.count;
+            // -- Create the Ridge Mesh --
+            // We'll use a PlaneGeometry but manipulate vertices to form a vertical "mountain slice"
+            // Width = X (time/frequency), Height = Y (Altitude/Scroll)
+            const width = 40;
+            const height = 60;
+            const segW = 80; // High resolution for smooth waves
+            const segH = 80;
+            const geometry = new THREE.PlaneGeometry(width, height, segW, segH);
 
-            // Add randomness to initial positions to look more organic
-            const positions = geometry.attributes.position.array;
-            for(let i=0; i < count; i++) {
-                // Flatten it a bit initially
-                positions[i * 3 + 2] = 0;
-            }
-
-            const material = new THREE.PointsMaterial({
-                color: 0x888888, // Neutral grey
-                size: 0.15,
+            // Material: Wireframe for "Schematic/Lab" feel
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x64748b, // Slate 500
+                wireframe: true,
                 transparent: true,
-                opacity: 0.6,
-                sizeAttenuation: true
+                opacity: 0.15,
+                side: THREE.DoubleSide
             });
 
-            const points = new THREE.Points(geometry, material);
-            points.rotation.x = -Math.PI / 2; // Flat on ground
-            scene.add(points);
+            const ridge = new THREE.Mesh(geometry, material);
+            scene.add(ridge);
 
-            // Add some "Floating Stars/Dust" above
-            const starGeo = new THREE.BufferGeometry();
-            const starCount = 1000;
-            const starPos = new Float32Array(starCount * 3);
-            for(let i=0; i<starCount * 3; i++) {
-                starPos[i] = (Math.random() - 0.5) * 100;
-            }
-            starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-            const starMat = new THREE.PointsMaterial({
-                color: 0xffffff,
-                size: 0.1,
+            // Secondary Mesh: Points for "Data" feel
+            const pointMaterial = new THREE.PointsMaterial({
+                color: 0xf97316, // Orange Accent
+                size: 0.08,
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.4
             });
-            const stars = new THREE.Points(starGeo, starMat);
-            scene.add(stars);
+            const ridgePoints = new THREE.Points(geometry, pointMaterial);
+            scene.add(ridgePoints);
 
-            // Animation Loop variables
+            // Simplex Noise instance
+            const simplex = new SimplexNoise();
+
+            // Store original positions
+            const posAttribute = geometry.attributes.position;
+            const originalPos = [];
+            for (let i = 0; i < posAttribute.count; i++) {
+                originalPos.push({
+                    x: posAttribute.getX(i),
+                    y: posAttribute.getY(i),
+                    z: posAttribute.getZ(i)
+                });
+            }
+
+            // Animation Loop
             let time = 0;
+            let scrollY = 0;
+            let targetScrollY = 0;
+
+            // Scroll Listener
+            window.addEventListener('scroll', () => {
+                targetScrollY = window.scrollY;
+                // Update UI Depth
+                document.getElementById('scroll-val').innerText = `DEPTH: ${Math.floor(targetScrollY * 0.5)}m`;
+            });
 
             const animate = () => {
                 requestAnimationFrame(animate);
-                time += 0.005;
+                time += 0.008;
 
-                // Animate Terrain (Wave effect)
-                const pos = geometry.attributes.position.array;
-                for(let i=0; i < 61; i++) {
-                    for(let j=0; j < 61; j++) {
-                        const index = (i * 61 + j) * 3;
-                        const x = pos[index];
-                        // Using simple sin waves to simulate "breathing" terrain or sound waves
-                        // Z is the height because we rotated X by -90deg (so Z in local space is Y in world space effectively)
-                        // Actually, since we rotated the OBJECT, we manipulate the local Z which is World Y.
-                        const z = Math.sin(i * 0.2 + time) * 2 + Math.cos(j * 0.2 + time) * 2;
-                        pos[index + 2] = z;
-                    }
+                // Smooth scroll interpolation
+                scrollY += (targetScrollY - scrollY) * 0.05;
+                const normalizedScroll = scrollY * 0.01; // Scale down for 3D units
+
+                // Update Vertices
+                const count = posAttribute.count;
+
+                // Optimized vertex loop:
+                // Pre-calculate common factors to avoid redundant math inside the loop
+                const timeFactor = time;
+                const scrollFactor = normalizedScroll;
+
+                for (let i = 0; i < count; i++) {
+                    const orig = originalPos[i];
+
+                    // Create a "Wave" effect that travels up (simulating climbing/moving forward)
+                    // Noise depends on X (horizontal spread) and Y (vertical position + time/scroll)
+
+                    // 1. Base Terrain (Static-ish Mountain) - Large features
+                    const noise1 = simplex.noise2D(orig.x * 0.1, (orig.y + scrollFactor) * 0.1) * 2;
+
+                    // 2. Frequency Ripple (Dynamic Sound) - More intense in center, fading to edges
+                    // Use simple distance math instead of Math.abs for speed if possible, but abs is fast enough
+                    const distFromCenter = 1 - Math.min(Math.abs(orig.x) / 15, 1);
+
+                    // 3D noise for "Sound" ripple
+                    const freq = simplex.noise3D(orig.x * 0.5, orig.y * 0.5, timeFactor) * distFromCenter * 2;
+
+                    // Combine Z offset
+                    const z = noise1 + freq;
+
+                    // Direct buffer write
+                    // (posAttribute.array is Float32Array, can write directly if we had the index,
+                    // but using setZ helper is cleaner for readability unless perf is critical)
+                    posAttribute.setZ(i, z);
                 }
-                geometry.attributes.position.needsUpdate = true;
+                posAttribute.needsUpdate = true;
+                geometry.computeVertexNormals();
 
-                // Slowly rotate the entire system
-                points.rotation.z = time * 0.05;
-                stars.rotation.y = time * 0.02;
+                // Rotate based on scroll slightly to give depth
+                ridge.rotation.x = 0.2 + (scrollY * 0.0002);
+                ridgePoints.rotation.x = ridge.rotation.x;
 
                 renderer.render(scene, camera);
             };
 
             animate();
-
-            // GSAP Camera Movement
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Move camera forward and up as we scroll
-            gsap.to(camera.position, {
-                scrollTrigger: {
-                    trigger: "body",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 1
-                },
-                z: 0,   // Fly into the terrain
-                y: 5    // Get lower to the ground
-            });
 
             // Handle Resize
             window.addEventListener('resize', () => {
@@ -530,62 +706,36 @@
             });
         };
 
-        // --- 2. p5.js: Subtle Grain/Noise Texture ---
-        const initP5 = () => {
-            new p5((p) => {
-                p.setup = () => {
-                    const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                    canvas.parent('p5-container');
-                    p.noLoop(); // Static grain is fine, or very slow loop
-                    p.frameRate(10); // Low framerate for analog feel
-                };
-
-                p.draw = () => {
-                    p.clear();
-                    p.noStroke();
-                    // Draw random white dots for grain
-                    p.fill(255, 10); // Very transparent
-                    for (let i = 0; i < 5000; i++) {
-                        let x = p.random(p.width);
-                        let y = p.random(p.height);
-                        let s = p.random(1, 2);
-                        p.ellipse(x, y, s);
-                    }
-                };
-
-                p.windowResized = () => {
-                    p.resizeCanvas(p.windowWidth, p.windowHeight);
-                    p.draw();
-                };
-            });
-        };
-
-        // --- 3. Page Logic & GSAP UI Animations ---
+        // --- GSAP UI Animations ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Remove Loader
+            // Loader
             setTimeout(() => {
-                document.getElementById('loader').style.opacity = '0';
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
                 setTimeout(() => {
-                    document.getElementById('loader').style.display = 'none';
+                    loader.style.display = 'none';
                     initAnim();
                 }, 800);
-            }, 1000);
+            }, 1500); // Artificial load time for "Initializing" feel
 
-            initThree();
-            initP5();
+            // Defer heavy Three.js init slightly to prioritize DOM paint if needed,
+            // but here we want it ready.
+            initScene();
 
             function initAnim() {
-                // Hero Reveal
-                const tl = gsap.timeline();
-                tl.to('.avatar-container', { opacity: 1, scale: 1, duration: 1, ease: 'power3.out' })
-                  .to('.hero-title', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.5')
-                  .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.7')
-                  .to('.intro-text', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.5');
+                gsap.registerPlugin(ScrollTrigger);
 
-                // Scroll Reveals for content
+                // Hero Entrance
+                const tl = gsap.timeline();
+                tl.to('.hero-label', { opacity: 1, x: 0, duration: 0.8, ease: 'power2.out' })
+                  .to('.hero-title', { opacity: 1, x: 0, duration: 1, ease: 'power2.out' }, '-=0.6')
+                  .to('.hero-desc', { opacity: 1, x: 0, duration: 1, ease: 'power2.out' }, '-=0.8')
+                  .to('.avatar-float', { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' }, '-=0.8');
+
+                // Panel Reveals
                 gsap.utils.toArray('.scroll-reveal').forEach(elem => {
                     gsap.fromTo(elem,
-                        { opacity: 0, y: 30 },
+                        { opacity: 0, y: 50 },
                         {
                             opacity: 1, y: 0,
                             duration: 1,
@@ -593,36 +743,10 @@
                             scrollTrigger: {
                                 trigger: elem,
                                 start: 'top 85%',
+                                toggleActions: 'play none none reverse'
                             }
                         }
                     );
-                });
-
-                // Fade In Glass Panels
-                gsap.utils.toArray('.fade-in').forEach(elem => {
-                    gsap.fromTo(elem,
-                        { opacity: 0, y: 20 },
-                        {
-                            opacity: 1, y: 0,
-                            duration: 1,
-                            scrollTrigger: {
-                                trigger: elem,
-                                start: 'top 85%',
-                            }
-                        }
-                    );
-                });
-
-                // Progress Bar
-                gsap.to('.progress-indicator', {
-                    height: '100%',
-                    ease: 'none',
-                    scrollTrigger: {
-                        trigger: 'body',
-                        start: 'top top',
-                        end: 'bottom bottom',
-                        scrub: 0
-                    }
                 });
             }
         });
