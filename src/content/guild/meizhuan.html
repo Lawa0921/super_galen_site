@@ -30,16 +30,25 @@
             --panel-bg: rgba(5, 5, 10, 0.9);
         }
 
-        body, html {
+        html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
             background-color: var(--dark-bg);
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
-            scroll-behavior: smooth;
+            overflow-y: auto;
         }
 
         /* Canvas Layers */
@@ -362,41 +371,83 @@
         /* Mobile specific adjustments (RWD) */
         @media (max-width: 768px) {
             .nav-back {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
                 top: 1.5rem;
                 left: 1.5rem;
+                background: rgba(0,0,0,0.8); /* Stronger background for legibility */
+                backdrop-filter: blur(8px);
+                z-index: 200; /* Ensure above everything */
             }
             .hud-card {
                 padding: 1.5rem;
-                width: 85%; /* Slightly narrower for breathing room */
+                width: 88%;
                 margin: 0 auto;
+                /* Relax clip-path on mobile to prevent cutting text */
+                clip-path: polygon(
+                    10px 0, 100% 0,
+                    100% calc(100% - 10px), calc(100% - 10px) 100%,
+                    0 100%, 0 10px
+                );
+            }
+            .hud-card::before {
+                clip-path: polygon(
+                    10px 0, 100% 0,
+                    100% calc(100% - 10px), calc(100% - 10px) 100%,
+                    0 100%, 0 10px
+                );
             }
             .section {
-                padding: 2rem 0; /* Less padding on mobile */
-                align-items: flex-start; /* Align top for better scrolling flow */
-                padding-top: 8rem; /* More top padding to clear nav */
+                min-height: auto; /* Remove 100vh constraint on mobile */
+                height: auto;
+                padding: 6rem 0; /* Generous vertical spacing */
+                align-items: center; /* Center content vertically */
+                justify-content: center !important;
             }
+            /* Specific padding for first and last to clear UI */
+            #section-hero {
+                padding-top: 10rem; /* Clear Nav Button */
+                min-height: 90vh; /* Keep hero full screen */
+            }
+            #section-goal {
+                padding-bottom: 12rem; /* Clear Speedometer */
+            }
+
             /* Override explicit alignments for mobile flow */
             #section-identity, #section-skills, #section-hobbies, #section-personal {
                 justify-content: center !important;
                 padding-left: 0 !important;
                 padding-right: 0 !important;
+                margin-bottom: 4rem; /* Add space between sections */
             }
             .stat-grid {
                 grid-template-columns: 1fr;
+                gap: 0.8rem;
             }
             .equip-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2 cols instead of 1 for better use of space */
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
             }
             #hud-container {
-                right: 0;
-                bottom: 0;
-                transform: scale(0.7); /* Scale down HUD on mobile */
-                transform-origin: bottom right;
+                left: 50%;
+                right: auto;
+                bottom: 1rem;
+                transform: translateX(-50%) scale(0.65); /* Center speedometer at bottom */
+                transform-origin: bottom center;
+                pointer-events: none; /* Pass through clicks */
+                opacity: 0.8; /* Slightly transparent to be less intrusive */
             }
             #hud-top-left {
-                display: none; /* Hide on mobile to prevent clutter */
+                display: none;
+            }
+
+            /* Increase text readability */
+            p {
+                font-size: 1.05rem;
+                line-height: 1.8;
+            }
+            h1 {
+                font-size: 2.2rem; /* Slightly smaller for better fit */
             }
         }
 
@@ -759,18 +810,65 @@
         // Cards Animation
         const cards = document.querySelectorAll('.hud-card');
         cards.forEach((card) => {
-            gsap.to(card, {
-                opacity: 1,
-                transform: "translateZ(0) rotateX(0deg)", // Reset 3D transform
-                duration: 0.8,
-                ease: "back.out(1.7)",
+            // Create a timeline for each card's entry
+            const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: card.parentElement,
                     start: "top center+=100",
                     toggleActions: "play reverse play reverse"
                 }
             });
+
+            // 1. Card Pops in
+            tl.to(card, {
+                opacity: 1,
+                transform: "translateZ(0) rotateX(0deg)",
+                duration: 0.6,
+                ease: "back.out(1.5)"
+            });
+
+            // 2. Staggered Items (Stats/Equip)
+            const items = card.querySelectorAll('.stat-item, .equip-slot, .social-link');
+            if(items.length > 0) {
+                tl.from(items, {
+                    y: 20,
+                    opacity: 0,
+                    stagger: 0.05,
+                    duration: 0.4,
+                    ease: "power2.out"
+                }, "-=0.3");
+            }
+
+            // 3. Progress Bars (Grow)
+            const bars = card.querySelectorAll('.progress-fill');
+            if(bars.length > 0) {
+                tl.from(bars, {
+                    width: "0%",
+                    duration: 1,
+                    ease: "power2.out",
+                    stagger: 0.1
+                }, "-=0.3");
+            }
         });
+
+        // Hero Title Glitch Intro
+        const heroTitle = document.querySelector('h1');
+        if (heroTitle) {
+            const tl = gsap.timeline();
+            tl.fromTo(heroTitle,
+                { opacity: 0, scale: 0.8, textShadow: "0 0 0px #000" },
+                { opacity: 1, scale: 1, textShadow: "0 0 20px var(--neon-cyan)", duration: 1, ease: "elastic.out(1, 0.5)" }
+            );
+            // Random Glitch Loop
+            gsap.to(heroTitle, {
+                skewX: 20,
+                duration: 0.1,
+                repeat: -1,
+                yoyo: true,
+                repeatDelay: 5,
+                ease: "steps(1)"
+            });
+        }
 
         // HUD Elements (SVG)
         const speedText = document.getElementById('speed-text');
