@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zaira | Zai Lab 🧪</title>
+    <title>Zaira | The Cloud Lab ☁️</title>
     <meta name="description" content="Zaira's Experimental Lab - Exploring Life, Languages, and Culture.">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --neon-green: #39ff14;
-            --neon-pink: #ff00ff;
-            --neon-cyan: #00ffff;
-            --void-bg: #050505;
-            --glass-panel: rgba(10, 20, 30, 0.6);
+            --soft-blue: #e6f3ff;
+            --sage-green: #9fb8ad;
+            --warm-beige: #f9f7f2;
+            --text-dark: #2c3e50;
+            --glass-bg: rgba(255, 255, 255, 0.6);
         }
 
         * {
@@ -29,9 +29,9 @@
         }
 
         body {
-            background-color: var(--void-bg);
-            color: #fff;
-            font-family: 'Zen Kaku Gothic New', sans-serif;
+            background-color: var(--soft-blue);
+            color: var(--text-dark);
+            font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             overscroll-behavior: none;
         }
@@ -43,52 +43,8 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            /* Subtly grainy texture overlay */
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
-        }
-
-        /* Glitch Effect Utility Class */
-        .glitch {
-            position: relative;
-            color: #fff;
-        }
-        .glitch::before, .glitch::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--void-bg);
-        }
-        .glitch::before {
-            left: 2px;
-            text-shadow: -1px 0 var(--neon-pink);
-            clip-path: inset(44% 0 61% 0);
-            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
-        }
-        .glitch::after {
-            left: -2px;
-            text-shadow: -1px 0 var(--neon-cyan);
-            clip-path: inset(50% 0 30% 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim-1 {
-            0% { clip-path: inset(20% 0 80% 0); }
-            20% { clip-path: inset(60% 0 10% 0); }
-            40% { clip-path: inset(40% 0 50% 0); }
-            60% { clip-path: inset(80% 0 5% 0); }
-            80% { clip-path: inset(10% 0 70% 0); }
-            100% { clip-path: inset(30% 0 20% 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip-path: inset(10% 0 60% 0); }
-            20% { clip-path: inset(30% 0 10% 0); }
-            40% { clip-path: inset(80% 0 5% 0); }
-            60% { clip-path: inset(10% 0 90% 0); }
-            80% { clip-path: inset(50% 0 20% 0); }
-            100% { clip-path: inset(5% 0 60% 0); }
+            /* Soft gradient sky */
+            background: linear-gradient(to bottom, #dbeaff 0%, #fdfbf7 100%);
         }
 
         /* Scroll Content Container */
@@ -102,7 +58,7 @@
 
         /* Section Styling */
         section {
-            position: absolute; /* Changed from relative for precise placement */
+            position: absolute;
             width: 100%;
             height: 100vh;
             display: flex;
@@ -110,7 +66,7 @@
             align-items: center;
             pointer-events: auto;
             opacity: 0; /* Controlled by GSAP */
-            transform: translateY(50px);
+            transform: translateY(30px);
         }
 
         #hero-section { top: 0; }
@@ -120,60 +76,51 @@
 
 
         .panel {
-            background: var(--glass-panel);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-left: 4px solid var(--neon-green);
-            padding: 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            padding: 3rem;
             max-width: 800px;
             width: 90%;
-            box-shadow: 0 0 30px rgba(57, 255, 20, 0.1);
-            transform-style: preserve-3d;
-            perspective: 1000px;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 1rem;
-            margin-bottom: 1.5rem;
-            font-family: 'Space Mono', monospace;
-            color: var(--neon-green);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
+            box-shadow: 0 10px 40px rgba(159, 184, 173, 0.2); /* Soft sage shadow */
+            text-align: center; /* Centered layout for elegance */
         }
 
         h1, h2 {
-            font-weight: 900;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-            line-height: 1.1;
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
         }
 
         h1 {
-            font-size: clamp(3rem, 8vw, 6rem);
-            color: #fff;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            font-size: clamp(3rem, 6vw, 5rem);
+            font-style: italic;
+            background: -webkit-linear-gradient(45deg, #2c3e50, #556b8d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         h2 {
             font-size: 2rem;
-            color: var(--neon-cyan);
+            color: var(--sage-green);
         }
 
         p {
             font-size: 1.1rem;
-            line-height: 1.8;
-            color: #e0e0e0;
-            margin-bottom: 1.5rem;
+            line-height: 2;
+            color: #555;
+            margin-bottom: 2rem;
+            font-weight: 300;
         }
 
         .highlight {
-            color: var(--neon-pink);
-            font-weight: 700;
+            color: #556b8d; /* Muted blue */
+            font-weight: 500;
+            border-bottom: 1px solid #9fb8ad; /* Underline accent */
         }
 
         /* Hero Section Specifics */
@@ -181,45 +128,41 @@
             text-align: center;
         }
 
-        .hero-title-container {
-            position: relative;
-            display: inline-block;
-        }
-
         .hero-subtitle {
-            font-family: 'Space Mono', monospace;
-            color: var(--neon-green);
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            color: #7f8c8d;
             margin-top: 1rem;
-            font-size: 1.2rem;
-            letter-spacing: 4px;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
         }
 
         .scroll-indicator {
             position: absolute;
-            bottom: 50px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.5);
-            font-family: 'Space Mono', monospace;
-            font-size: 0.8rem;
-            animation: pulse 2s infinite;
+            color: #bdc3c7;
+            font-size: 0.9rem;
+            animation: bounce 2s infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
         }
 
         /* Avatar Styling */
         .avatar-container {
-            width: 150px;
-            height: 150px;
-            margin: 0 auto 2rem;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 2.5rem;
             position: relative;
             border-radius: 50%;
-            padding: 5px;
-            background: linear-gradient(45deg, var(--neon-green), var(--neon-pink));
-            box-shadow: 0 0 30px rgba(57, 255, 20, 0.3);
+            padding: 8px;
+            background: #fff;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
         }
 
         .avatar-img {
@@ -227,16 +170,16 @@
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
-            border: 4px solid #000;
-            filter: contrast(1.1) brightness(1.1);
+            filter: saturate(0.9) brightness(1.05); /* Slight filter for "fresh" look */
         }
 
         /* Social Links */
         .social-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
             margin-top: 2rem;
+            flex-wrap: wrap;
         }
 
         .social-link {
@@ -244,63 +187,52 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1.5rem;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #fff;
             text-decoration: none;
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
+            color: var(--text-dark);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .social-link:hover {
-            background: rgba(57, 255, 20, 0.1);
-            border-color: var(--neon-green);
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(57, 255, 20, 0.2);
+            transform: translateY(-5px) scale(1.05);
+            color: var(--sage-green);
+            box-shadow: 0 10px 25px rgba(159, 184, 173, 0.3);
         }
 
         .social-link i {
-            font-size: 2rem;
-            margin-bottom: 0.8rem;
-            color: var(--neon-cyan);
+            font-size: 1.5rem;
+            margin-bottom: 0.3rem;
         }
 
-        .social-link:hover i {
-            color: var(--neon-green);
-        }
-
-        /* Lab Data Decorative Elements */
-        .lab-data {
-            font-family: 'Space Mono', monospace;
+        .social-link span {
             font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.3);
-            position: absolute;
-            pointer-events: none;
+            font-weight: 500;
+            opacity: 0.7;
         }
 
-        .data-tl { top: 10px; left: 10px; }
-        .data-tr { top: 10px; right: 10px; text-align: right; }
-        .data-bl { bottom: 10px; left: 10px; }
-        .data-br { bottom: 10px; right: 10px; text-align: right; }
 
         /* Tag Cloud */
         .tag-cloud {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.8rem;
+            justify-content: center;
+            gap: 1rem;
             margin-top: 1rem;
         }
 
         .tag {
-            background: rgba(255, 0, 255, 0.1);
-            border: 1px solid var(--neon-pink);
-            color: var(--neon-pink);
-            padding: 0.3rem 0.8rem;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.8rem;
-            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #7f8c8d;
+            padding: 0.5rem 1.2rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.9rem;
+            font-style: italic;
+            border-radius: 50px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         /* Loading Screen */
@@ -310,33 +242,28 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000;
+            background: #fdfbf7;
             z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            color: var(--neon-green);
-            font-family: 'Space Mono', monospace;
+            color: var(--text-dark);
+            font-family: 'Playfair Display', serif;
         }
 
-        .loader-bar {
-            width: 200px;
-            height: 2px;
-            background: rgba(57, 255, 20, 0.2);
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(159, 184, 173, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--sage-green);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 1rem;
         }
 
-        .loader-progress {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 0%;
-            background: var(--neon-green);
-            transition: width 0.3s ease;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
     </style>
@@ -345,8 +272,8 @@
 
     <!-- Loading Screen -->
     <div id="loader">
-        <div class="glitch" data-text="INITIALIZING ZAI LAB...">INITIALIZING ZAI LAB...</div>
-        <div class="loader-bar"><div class="loader-progress"></div></div>
+        <div class="loader-spinner"></div>
+        <div>Breath in...</div>
     </div>
 
     <!-- 3D Canvas -->
@@ -358,40 +285,29 @@
         <!-- Section 1: Hero -->
         <section id="hero-section">
             <div class="hero-content">
-                <h1 class="glitch" data-text="ZAI LAB">ZAI LAB</h1>
-                <div class="hero-subtitle">🧪 THE EXPERIMENT BEGINS</div>
-                <div class="scroll-indicator">SCROLL TO ASCEND</div>
+                <h1>Zai Lab</h1>
+                <div class="hero-subtitle">The Cloud Laboratory</div>
+                <div class="scroll-indicator">Scroll to Explore</div>
             </div>
         </section>
 
         <!-- Section 2: Intro/Bio -->
         <section id="bio-section">
             <div class="panel">
-                <div class="panel-header">
-                    <span>ID: ZAIRA</span>
-                    <span>STATUS: EXPLORING</span>
-                </div>
                 <div class="avatar-container">
                     <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="avatar-img">
                 </div>
-                <h2>Who Am I?</h2>
+                <h2>A Gentle Ascent</h2>
                 <p>我是 <span class="highlight">Zaira</span>，還在探索自己的人生路上。</p>
                 <p>興趣多元廣泛，喜歡<span class="highlight">寫字、畫畫、唱歌</span>、偶爾<span class="highlight">爬爬山</span>，覺得有趣很特別的事情都想試試看！</p>
                 <p>語言與文化是我和世界產生連結的工具。我會說<span class="highlight">英語</span>和<span class="highlight">義大利語</span>，現在正努力解鎖<span class="highlight">西班牙語</span> 🔓</p>
-
-                <div class="lab-data data-bl">LOC: WORLDWIDE</div>
-                <div class="lab-data data-br">MODE: EXPERIMENTAL</div>
             </div>
         </section>
 
         <!-- Section 3: Experience/Mixing -->
         <section id="exp-section">
             <div class="panel">
-                <div class="panel-header">
-                    <span>PROTOCOL: MIXING</span>
-                    <span>TYPE: HYBRID</span>
-                </div>
-                <h2>The Laboratory</h2>
+                <h2>The Lab of Life</h2>
                 <p>目前我也不知道最終會長成什麼樣子，但想試試看各種有趣的事情，所以才叫<span class="highlight">實驗室</span> 🧪</p>
                 <p>曾經去坦尚尼亞服務學習，也曾到義大利羅馬交換一年。擔任過華語老師，到捷克實習半年，學生來自烏克蘭、義大利、斯洛伐克和印尼。</p>
                 <p>我熱衷於辦活動、參加工作坊，也曾多次擔任學校大型典禮與研討會的司儀。</p>
@@ -401,19 +317,13 @@
                     <span class="tag">#EventHost</span>
                     <span class="tag">#Volunteer</span>
                 </div>
-
-                <div class="lab-data data-tl">REACTION: ACTIVE</div>
             </div>
         </section>
 
         <!-- Section 4: Social/Connect -->
         <section id="social-section">
             <div class="panel">
-                <div class="panel-header">
-                    <span>OUTPUT: CONNECT</span>
-                    <span>SIGNAL: ONLINE</span>
-                </div>
-                <h2>Join The Experiment</h2>
+                <h2>Share a Moment</h2>
                 <p>非常喜歡和別人聊聊，知道別人背後的故事和不同的經驗讓我覺得很有趣！歡迎大家來交流 ✨</p>
 
                 <div class="social-grid">
@@ -434,8 +344,6 @@
                         <span>Threads</span>
                     </a>
                 </div>
-
-                <div class="lab-data data-br">END OF TRANSMISSION</div>
             </div>
         </section>
 
@@ -458,148 +366,142 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // --- Configuration ---
         const config = {
             colors: {
-                green: new THREE.Color(0x39ff14),
-                pink: new THREE.Color(0xff00ff),
-                cyan: new THREE.Color(0x00ffff),
-                void: new THREE.Color(0x050505)
+                glass: 0xffffff,
+                mountain: 0x9fb8ad, // Sage Green
+                pen: 0x556b8d, // Muted Blue
+                note: 0xe0a899 // Soft Peach
             }
         };
 
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.03); // Heavier fog for mystery
+        // Soft gradient background handled by CSS, but scene needs transparency
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, -10, 0); // Center in tunnel
-        camera.lookAt(0, 100, 0); // Look UP
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Important for "Glass" look
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing ---
-        const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
+        // --- Lighting (High Key Studio) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
 
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.8; // High bloom for explosive feel
-        bloomPass.radius = 0.5;
-        composer.addPass(bloomPass);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
 
-        // --- Scene Elements: The Volatile Reactor ---
+        const backLight = new THREE.DirectionalLight(0xe6f3ff, 0.5); // Soft blue rim light
+        backLight.position.set(-5, 0, -5);
+        scene.add(backLight);
 
-        // 1. The Tunnel (Climbing)
-        const tunnelLength = 400; // Longer tunnel
-        const tunnelRadius = 8;
+        // --- Scene Elements: The Cloud Lab ---
 
-        // Use multiple torus rings to create the "ribs" of the tunnel instead of a cylinder
-        // This looks more "Constructed" / Lab-like
-        const ringsGroup = new THREE.Group();
-        const ringsCount = 100;
-        const ringSpacing = 4;
+        // 1. Specimen Bubbles (Glass Spheres)
+        const bubbleCount = 15;
+        const bubbleGeo = new THREE.SphereGeometry(1, 32, 32);
+        // Physical material for glass effect
+        const bubbleMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0,
+            roughness: 0.1,
+            transmission: 0.95, // Glass-like transparency
+            thickness: 0.5, // Refraction
+            envMapIntensity: 1,
+            clearcoat: 1,
+            clearcoatRoughness: 0.1
+        });
 
-        for(let i=0; i<ringsCount; i++) {
-            // Alternating shapes: Hexagon (Lab) and Circle
-            let geometry;
-            if (i % 2 === 0) {
-                 geometry = new THREE.TorusGeometry(tunnelRadius, 0.05, 16, 6); // Hexagon-ish
+        const bubblesGroup = new THREE.Group();
+        const bubblesData = [];
+
+        // Geometries for internal objects
+        const mountainGeo = new THREE.ConeGeometry(0.4, 0.8, 4);
+        const penGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8);
+        const noteGeo = new THREE.IcosahedronGeometry(0.4, 0);
+
+        // Materials for internal objects
+        const mountainMat = new THREE.MeshStandardMaterial({ color: config.colors.mountain, flatShading: true });
+        const penMat = new THREE.MeshStandardMaterial({ color: config.colors.pen });
+        const noteMat = new THREE.MeshStandardMaterial({ color: config.colors.note, wireframe: true });
+
+        for(let i=0; i<bubbleCount; i++) {
+            const bubble = new THREE.Mesh(bubbleGeo, bubbleMat);
+
+            // Random positions spread vertically
+            const x = (Math.random() - 0.5) * 12;
+            const y = (Math.random() * 30) - 10; // Spread from -10 to 20
+            const z = (Math.random() - 0.5) * 5;
+
+            bubble.position.set(x, y, z);
+
+            const scale = Math.random() * 0.8 + 0.5;
+            bubble.scale.set(scale, scale, scale);
+
+            // Add internal "Specimen"
+            let specimen;
+            const type = i % 3;
+            if (type === 0) {
+                specimen = new THREE.Mesh(mountainGeo, mountainMat);
+            } else if (type === 1) {
+                specimen = new THREE.Mesh(penGeo, penMat);
+                specimen.rotation.z = Math.PI / 4;
             } else {
-                 geometry = new THREE.TorusGeometry(tunnelRadius * 0.9, 0.02, 16, 50); // Circle
+                specimen = new THREE.Mesh(noteGeo, noteMat);
             }
 
-            const material = new THREE.MeshBasicMaterial({
-                color: i % 5 === 0 ? config.colors.pink : (i % 3 === 0 ? config.colors.cyan : 0x333333),
-                transparent: true,
-                opacity: i % 5 === 0 ? 0.8 : 0.3
+            bubble.add(specimen); // Attach to bubble so they move together
+            bubblesGroup.add(bubble);
+
+            bubblesData.push({
+                mesh: bubble,
+                specimen: specimen,
+                floatSpeed: Math.random() * 0.005 + 0.002,
+                rotSpeed: Math.random() * 0.01,
+                initialY: y
             });
-
-            const ring = new THREE.Mesh(geometry, material);
-            ring.rotation.x = Math.PI / 2;
-            if (i % 2 === 0) ring.rotation.z = Math.PI / 6; // Align hex
-
-            ring.position.y = (i * ringSpacing) - 20;
-            ringsGroup.add(ring);
         }
-        scene.add(ringsGroup);
+        scene.add(bubblesGroup);
 
-        // 2. The Particles (Lab/Mixing/Chemicals)
-        const particleCount = 2000;
-        const particleGeo = new THREE.IcosahedronGeometry(0.15, 0); // Slightly larger
-        const particleMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const particleMesh = new THREE.InstancedMesh(particleGeo, particleMat, particleCount);
+        // 2. Clouds (Simple Sprites or Soft Particles)
+        // Let's use many small, soft white planes to simulate volumetric clouds cheaply
+        const cloudParticleCount = 50;
+        const cloudGeo = new THREE.CircleGeometry(2, 16);
+        const cloudMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.1,
+            side: THREE.DoubleSide,
+            depthWrite: false // Important for transparency overlap
+        });
 
-        const dummy = new THREE.Object3D();
-        const particlesData = [];
-
-        for(let i=0; i<particleCount; i++) {
-            // Spread particles throughout the tunnel height
-            const yPos = (Math.random() * tunnelLength) - 20;
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * (tunnelRadius - 1); // Keep inside
-
-            dummy.position.set(
-                Math.cos(angle) * radius,
-                yPos,
-                Math.sin(angle) * radius
+        const cloudsGroup = new THREE.Group();
+        for(let i=0; i<cloudParticleCount; i++) {
+            const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+            cloud.position.set(
+                (Math.random() - 0.5) * 20,
+                (Math.random() * 40) - 10,
+                (Math.random() - 0.5) * 10 - 5 // Behind bubbles
             );
-
-            dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-            const scale = Math.random() * 0.5 + 0.1;
-            dummy.scale.set(scale, scale, scale);
-            dummy.updateMatrix();
-            particleMesh.setMatrixAt(i, dummy.matrix);
-
-            const colorType = Math.random();
-            const color = colorType > 0.7 ? config.colors.pink : (colorType > 0.4 ? config.colors.cyan : config.colors.green);
-            particleMesh.setColorAt(i, color);
-
-            particlesData.push({
-                velocity: new THREE.Vector3(0, Math.random() * 0.1 + 0.05, 0), // Upward velocity
-                rotationSpeed: Math.random() * 0.05,
-                initialY: dummy.position.y,
-                wobble: Math.random() * Math.PI,
-                wobbleSpeed: Math.random() * 2
-            });
-        }
-        scene.add(particleMesh);
-
-        // 3. Floating Rocks (Climbing Elements)
-        const rockCount = 40;
-        const rockGeo = new THREE.DodecahedronGeometry(1.5, 0);
-        const rockMat = new THREE.MeshBasicMaterial({ color: 0x222222, wireframe: true });
-        const rocksMesh = new THREE.InstancedMesh(rockGeo, rockMat, rockCount);
-        const rocksData = [];
-
-        for(let i=0; i<rockCount; i++) {
-            dummy.position.set(
-                (Math.random() - 0.5) * tunnelRadius * 1.5,
-                (Math.random() * tunnelLength) - 10,
-                (Math.random() - 0.5) * tunnelRadius * 1.5
+            cloud.scale.set(
+                Math.random() * 2 + 1,
+                Math.random() * 1 + 0.5,
+                1
             );
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            const s = Math.random() * 1.5 + 0.5;
-            dummy.scale.set(s,s,s);
-            dummy.updateMatrix();
-            rocksMesh.setMatrixAt(i, dummy.matrix);
-
-            rocksData.push({
-                rotX: (Math.random() - 0.5) * 0.02,
-                rotY: (Math.random() - 0.5) * 0.02,
-                floatSpeed: Math.random() * 0.02
-            });
+            cloudsGroup.add(cloud);
         }
-        scene.add(rocksMesh);
+        scene.add(cloudsGroup);
 
 
         // --- GSAP Scroll Logic ---
@@ -607,27 +509,22 @@
 
         window.onload = () => {
             const loader = document.getElementById('loader');
-            const progress = document.querySelector('.loader-progress');
 
-            gsap.to(progress, {
-                width: '100%',
-                duration: 1.5,
-                ease: 'power2.inOut',
-                onComplete: () => {
-                    gsap.to(loader, {
-                        opacity: 0,
-                        duration: 0.5,
-                        onComplete: () => {
-                            loader.style.display = 'none';
-                            initScrollAnimations();
-                        }
-                    });
-                }
-            });
+            // Wait a moment for materials to compile
+            setTimeout(() => {
+                gsap.to(loader, {
+                    opacity: 0,
+                    duration: 1,
+                    onComplete: () => {
+                        loader.style.display = 'none';
+                        initScrollAnimations();
+                    }
+                });
+            }, 1000);
         };
 
         function initScrollAnimations() {
-            // Animate Sections Opacity
+            // Animate Sections Opacity & Float up
             document.querySelectorAll('section').forEach((section, i) => {
                 // Ensure initial state
                 if(i === 0) gsap.set(section, { opacity: 1, y: 0 });
@@ -636,8 +533,8 @@
                     gsap.to(section, {
                         scrollTrigger: {
                             trigger: section,
-                            start: "top 60%",
-                            end: "top 20%",
+                            start: "top 70%",
+                            end: "top 30%",
                             toggleActions: "play none none reverse",
                             scrub: 1
                         },
@@ -646,136 +543,49 @@
                         duration: 1
                     });
                 }
-
-                // Exit animation
-                gsap.to(section, {
-                    scrollTrigger: {
-                        trigger: section,
-                        start: "bottom 40%",
-                        end: "bottom 10%",
-                        toggleActions: "play none none reverse",
-                        scrub: 1
-                    },
-                    opacity: 0,
-                    y: -50,
-                    duration: 1
-                });
             });
         }
 
         // --- Loop Variables ---
         const clock = new THREE.Clock();
-
-        // Physics for Camera
-        let currentScrollY = 0;
-        let targetScrollY = 0;
-        let velocity = 0;
-        const maxVelocity = 200; // Cap visual velocity
+        let scrollY = 0;
 
         window.addEventListener('scroll', () => {
-            targetScrollY = window.scrollY;
+            scrollY = window.scrollY;
         });
 
         function animate() {
             requestAnimationFrame(animate);
 
-            const delta = clock.getDelta();
             const time = clock.getElapsedTime();
 
-            // Smooth Scroll Physics
-            // Calculate velocity based on scroll delta
-            const targetVelocity = (targetScrollY - currentScrollY) * 2; // Sensitivity
-            velocity += (targetVelocity - velocity) * 0.1; // Ease into velocity
+            // Camera Parallax (The Gentle Ascent)
+            // Camera moves UP slowly as we scroll
+            const targetCameraY = scrollY * 0.01;
+            camera.position.y += (targetCameraY - camera.position.y) * 0.05;
 
-            currentScrollY += (targetScrollY - currentScrollY) * 0.1;
+            // Animate Bubbles
+            bubblesData.forEach(data => {
+                // Gentle float
+                data.mesh.position.y = data.initialY + Math.sin(time * 0.5 + data.initialY) * 0.5;
 
-            // Camera Ascent Logic
-            // Map scroll Y directly to camera Y position in the tunnel
-            // 1px scroll = 0.05 units Y
-            const cameraY = -10 + (currentScrollY * 0.05);
-            camera.position.y = cameraY;
+                // Gentle rotation of the whole bubble
+                data.mesh.rotation.y += data.rotSpeed;
+                data.mesh.rotation.x = Math.sin(time * 0.5) * 0.1;
 
-            // "Explosive" Speed Effect
-            // Warp FOV based on velocity
-            const speed = Math.abs(velocity);
-            const targetFOV = 75 + Math.min(speed * 0.5, 50); // Max FOV 125
-            camera.fov += (targetFOV - camera.fov) * 0.1;
-            camera.updateProjectionMatrix();
-
-            // Camera Shake at high speed
-            if (speed > 5) {
-                camera.position.x = (Math.random() - 0.5) * 0.02 * speed;
-                camera.position.z = (Math.random() - 0.5) * 0.02 * speed;
-            } else {
-                camera.position.x += (0 - camera.position.x) * 0.1;
-                camera.position.z += (0 - camera.position.z) * 0.1;
-            }
-
-            // Ensure camera always looks UP relative to its current position
-            // But with shake applied to position, lookAt target should remain stable
-            camera.lookAt(0, camera.position.y + 50, 0);
-
-            // Animate Particles
-            for(let i=0; i<particleCount; i++) {
-                particleMesh.getMatrixAt(i, dummy.matrix);
-                dummy.matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
-
-                // Basic rising
-                dummy.position.y += particlesData[i].velocity.y;
-
-                // Infinite loop logic relative to camera
-                // If particle is too far below camera, move it up
-                if (dummy.position.y < camera.position.y - 30) {
-                    dummy.position.y = camera.position.y + 60 + Math.random() * 20;
-                }
-                // If particle is too far above (rare if camera moves up), loop back?
-                // Mostly we care about them disappearing behind us
-
-                // Add "Mixing" turbulence
-                const t = time + i;
-                dummy.position.x += Math.sin(t * particlesData[i].wobbleSpeed) * 0.02;
-                dummy.position.z += Math.cos(t * particlesData[i].wobbleSpeed) * 0.02;
-
-                dummy.updateMatrix();
-                particleMesh.setMatrixAt(i, dummy.matrix);
-            }
-            particleMesh.instanceMatrix.needsUpdate = true;
-
-            // Animate Rocks
-            for(let i=0; i<rockCount; i++) {
-                rocksMesh.getMatrixAt(i, dummy.matrix);
-                dummy.matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
-
-                dummy.rotation.x += rocksData[i].rotX;
-                dummy.rotation.y += rocksData[i].rotY;
-                dummy.position.y += rocksData[i].floatSpeed;
-
-                // Loop logic
-                if (dummy.position.y < camera.position.y - 30) {
-                    dummy.position.y = camera.position.y + 80 + Math.random() * 20;
-                }
-
-                dummy.updateMatrix();
-                rocksMesh.setMatrixAt(i, dummy.matrix);
-            }
-            rocksMesh.instanceMatrix.needsUpdate = true;
-
-            // Infinite Tunnel Rings
-            // Check if ring is behind camera, move it forward
-            ringsGroup.children.forEach((ring, i) => {
-                if (ring.position.y < camera.position.y - 30) {
-                    // Move it to the top of the stack
-                    // Find the highest ring Y
-                    // Simple logic: we know we have ringsCount * spacing
-                    // New Y = old Y + totalLength
-                    ring.position.y += ringsCount * ringSpacing;
-                }
-
-                // Subtle rotation
-                ring.rotation.z += 0.005 * (i % 2 === 0 ? 1 : -1);
+                // Specimen internal rotation
+                data.specimen.rotation.y += 0.01;
             });
 
-            composer.render();
+            // Animate Clouds (Slow drift)
+            cloudsGroup.children.forEach((cloud, i) => {
+                cloud.position.x += 0.002 * ((i % 2 === 0) ? 1 : -1);
+                // Wrap around
+                if (cloud.position.x > 15) cloud.position.x = -15;
+                if (cloud.position.x < -15) cloud.position.x = 15;
+            });
+
+            renderer.render(scene, camera);
         }
 
         animate();
@@ -785,7 +595,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
