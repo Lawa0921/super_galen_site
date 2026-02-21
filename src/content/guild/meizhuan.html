@@ -51,6 +51,17 @@
             overflow-y: auto;
         }
 
+        /* Animations */
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .animate-blink {
+            animation: blink 1s infinite;
+        }
+
         /* Canvas Layers */
         #canvas-container {
             position: fixed;
@@ -123,22 +134,69 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            /* Remove fixed height, allow natural flow */
         }
 
         .section {
-            position: relative; /* Changed from absolute */
+            position: relative;
             width: 100%;
-            min-height: 100vh; /* Changed from fixed height */
+            min-height: 100vh;
             height: auto;
             display: flex;
-            justify-content: center; /* Centered by default */
+            justify-content: center; /* Default center */
             align-items: center;
             pointer-events: none;
             perspective: 1000px;
-            padding: 4rem 0; /* Add padding for mobile flow */
+            padding: 4rem 0;
             box-sizing: border-box;
         }
+
+        /* Alignment Utilities (Replacing Inline Styles) */
+        .align-left {
+            justify-content: flex-start;
+            padding-left: 10%;
+        }
+
+        .align-right {
+            justify-content: flex-end;
+            padding-right: 10%;
+        }
+
+        .align-left-more {
+            justify-content: flex-start;
+            padding-left: 15%;
+        }
+
+        .align-right-more {
+            justify-content: flex-end;
+            padding-right: 15%;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* Helper Classes */
+        .col-span-2 {
+            grid-column: span 2;
+        }
+
+        .text-neon-cyan { color: var(--neon-cyan); }
+        .text-neon-pink { color: var(--neon-pink); }
+        .text-neon-yellow { color: var(--neon-yellow); }
+        .text-gray-aaa { color: #aaa; }
+        .text-gray-888 { color: #888; }
+
+        .mt-1 { margin-top: 1rem; }
+        .mt-2 { margin-top: 2rem; }
+        .mb-1 { margin-bottom: 1rem; }
+        .mb-05 { margin-bottom: 0.5rem; }
+        .my-1 { margin: 1rem 0; }
+
+        .font-sm { font-size: 0.8rem; }
+        .font-md { font-size: 0.9rem; }
+        .font-lg { font-size: 1.2rem; }
+        .font-xl { font-size: 2.5rem; }
+        .font-xxl { font-size: 3rem; }
 
         /* Card Styling */
         .hud-card {
@@ -152,7 +210,6 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0, 243, 255, 0.05);
             transform-style: preserve-3d;
-            /* Simplified clip-path to avoid cutting off content on resize */
             clip-path: polygon(
                 20px 0, 100% 0,
                 100% calc(100% - 20px), calc(100% - 20px) 100%,
@@ -162,6 +219,11 @@
             /* Initial Animation State */
             opacity: 0;
             transform: translateZ(-50px) rotateX(10deg);
+        }
+
+        .hud-card.final-card {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 50px rgba(255,0,85,0.3);
         }
 
         .hud-card::before {
@@ -186,7 +248,7 @@
         }
 
         h1 {
-            font-size: clamp(2rem, 5vw, 3rem); /* Responsive font size */
+            font-size: clamp(2rem, 5vw, 3rem);
             color: #fff;
             text-shadow: 0 0 10px var(--neon-cyan);
             letter-spacing: 5px;
@@ -315,8 +377,14 @@
             height: 100%;
             background: var(--neon-cyan);
             box-shadow: 0 0 10px var(--neon-cyan);
-            width: 0%; /* Animate via GSAP */
+            /* Width controlled by class */
         }
+
+        .w-60 { width: 60%; }
+        .w-70 { width: 70%; }
+        .w-80 { width: 80%; }
+        .w-40 { width: 40%; }
+        .bg-neon-purple { background: var(--neon-purple); }
 
         /* Equipment Grid */
         .equip-grid {
@@ -375,15 +443,14 @@
                 font-size: 0.8rem;
                 top: 1.5rem;
                 left: 1.5rem;
-                background: rgba(0,0,0,0.8); /* Stronger background for legibility */
+                background: rgba(0,0,0,0.8);
                 backdrop-filter: blur(8px);
-                z-index: 200; /* Ensure above everything */
+                z-index: 200;
             }
             .hud-card {
                 padding: 1.5rem;
                 width: 88%;
                 margin: 0 auto;
-                /* Relax clip-path on mobile to prevent cutting text */
                 clip-path: polygon(
                     10px 0, 100% 0,
                     100% calc(100% - 10px), calc(100% - 10px) 100%,
@@ -398,28 +465,33 @@
                 );
             }
             .section {
-                min-height: auto; /* Remove 100vh constraint on mobile */
+                min-height: auto;
                 height: auto;
-                padding: 6rem 0; /* Generous vertical spacing */
-                align-items: center; /* Center content vertically */
-                justify-content: center !important;
-            }
-            /* Specific padding for first and last to clear UI */
-            #section-hero {
-                padding-top: 10rem; /* Clear Nav Button */
-                min-height: 90vh; /* Keep hero full screen */
-            }
-            #section-goal {
-                padding-bottom: 12rem; /* Clear Speedometer */
+                padding: 6rem 0;
+                align-items: center;
+                /* By default, we override flex alignments below without !important */
             }
 
-            /* Override explicit alignments for mobile flow */
-            #section-identity, #section-skills, #section-hobbies, #section-personal {
-                justify-content: center !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
-                margin-bottom: 4rem; /* Add space between sections */
+            #section-hero {
+                padding-top: 10rem;
+                min-height: 90vh;
             }
+            #section-goal {
+                padding-bottom: 12rem;
+            }
+
+            /* Override explicit alignments with specific mobile rules */
+            /* Using specificity to override .align-left/right without !important */
+            body .section.align-left,
+            body .section.align-right,
+            body .section.align-left-more,
+            body .section.align-right-more {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+                margin-bottom: 4rem;
+            }
+
             .stat-grid {
                 grid-template-columns: 1fr;
                 gap: 0.8rem;
@@ -432,22 +504,39 @@
                 left: 50%;
                 right: auto;
                 bottom: 1rem;
-                transform: translateX(-50%) scale(0.65); /* Center speedometer at bottom */
+                transform: translateX(-50%) scale(0.65);
                 transform-origin: bottom center;
-                pointer-events: none; /* Pass through clicks */
-                opacity: 0.8; /* Slightly transparent to be less intrusive */
+                pointer-events: none;
+                opacity: 0.8;
             }
             #hud-top-left {
                 display: none;
             }
 
-            /* Increase text readability */
             p {
-                font-size: 1.05rem;
-                line-height: 1.8;
+                font-size: 1rem;
+                line-height: 1.6;
             }
             h1 {
-                font-size: 2.2rem; /* Slightly smaller for better fit */
+                font-size: 2rem;
+            }
+            h3 {
+                font-size: 1rem;
+                letter-spacing: 1px;
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            .hud-card {
+                padding: 1.25rem;
+                width: 90%;
+                box-sizing: border-box;
+            }
+
+            .equip-slot {
+                font-size: 0.65rem;
+                padding: 0.4rem;
+                word-break: break-all;
             }
         }
 
@@ -463,7 +552,7 @@
     <div id="hud-top-left">
         <div>SYS: ONLINE</div>
         <div>LOC: NEON_HIGHWAY</div>
-        <div>OBJ: REACH_JAPAN <span style="color:var(--neon-pink); animation: blink 1s infinite;">●</span></div>
+        <div>OBJ: REACH_JAPAN <span class="text-neon-pink animate-blink">●</span></div>
     </div>
 
     <div id="hud-container">
@@ -484,7 +573,6 @@
             <path d="M 45 205 A 110 110 0 1 1 205 205" fill="none" stroke="rgba(0, 243, 255, 0.2)" stroke-width="2" />
 
             <!-- Speed Arc (Dynamic) -->
-            <!-- Path length for dasharray calculation is roughly 2 * PI * 100 * (3/4 circle) approx 471 -->
             <path id="speed-arc" d="M 55 195 A 100 100 0 1 1 195 195"
                   fill="none"
                   stroke="#00f3ff"
@@ -503,15 +591,11 @@
         </svg>
     </div>
 
-    <style>
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-    </style>
-
     <div class="content-scroll">
 
         <!-- Hero Section -->
         <div class="section" id="section-hero">
-            <div class="hud-card" style="text-align: center;">
+            <div class="hud-card text-center">
                 <div class="avatar-container">
                     <div class="avatar-border"></div>
                     <img src="/assets/img/guild/meizhuan/avatar.webp" alt="Meizhuan" class="avatar-img">
@@ -522,14 +606,14 @@
                     "Full Throttle towards the Future."<br>
                     在代碼與引擎聲中尋找節奏的騎士。
                 </p>
-                <div style="margin-top: 2rem; font-size: 0.8rem; color: var(--neon-cyan);">
+                <div class="mt-2 font-sm text-neon-cyan">
                     <i class="fas fa-arrow-down"></i> INITIATE SEQUENCE
                 </div>
             </div>
         </div>
 
         <!-- Identity Section (Left Aligned) -->
-        <div class="section" id="section-identity" style="justify-content: flex-start; padding-left: 10%;">
+        <div class="section align-left" id="section-identity">
             <div class="hud-card">
                 <h3><i class="fas fa-id-card"></i> IDENTITY_LOG</h3>
                 <p>
@@ -550,30 +634,30 @@
         </div>
 
         <!-- RPG Stats (Right Aligned) -->
-        <div class="section" id="section-stats" style="justify-content: flex-end; padding-right: 10%;">
+        <div class="section align-right" id="section-stats">
             <div class="hud-card">
                 <h3><i class="fas fa-chart-bar"></i> ATTRIBUTE_MATRIX</h3>
                 <div class="progress-container">
                     <div class="progress-label"><span>STR (Strength / Workout)</span><span>LV. 6</span></div>
-                    <div class="progress-bg"><div class="progress-fill" style="width: 60%;"></div></div>
+                    <div class="progress-bg"><div class="progress-fill w-60"></div></div>
                 </div>
                 <div class="progress-container">
                     <div class="progress-label"><span>INT (Code / Logic)</span><span>LV. 7</span></div>
-                    <div class="progress-bg"><div class="progress-fill" style="width: 70%;"></div></div>
+                    <div class="progress-bg"><div class="progress-fill w-70"></div></div>
                 </div>
                 <div class="progress-container">
                     <div class="progress-label"><span>AGI (Riding / Reflex)</span><span>LV. 8</span></div>
-                    <div class="progress-bg"><div class="progress-fill" style="width: 80%;"></div></div>
+                    <div class="progress-bg"><div class="progress-fill w-80"></div></div>
                 </div>
                 <div class="progress-container">
                     <div class="progress-label"><span>LUCK (Gacha / Drops)</span><span>LV. ???</span></div>
-                    <div class="progress-bg"><div class="progress-fill" style="width: 40%; background: var(--neon-purple);"></div></div>
+                    <div class="progress-bg"><div class="progress-fill w-40 bg-neon-purple"></div></div>
                 </div>
             </div>
         </div>
 
         <!-- Skills Section (Left Aligned) -->
-        <div class="section" id="section-skills" style="justify-content: flex-start; padding-left: 10%;">
+        <div class="section align-left" id="section-skills">
             <div class="hud-card">
                 <h3><i class="fas fa-laptop-code"></i> SKILL_TREE</h3>
                 <p>
@@ -589,22 +673,22 @@
                         <span class="stat-label">Lang. Aux</span>
                         <span class="stat-value">Japanese (Loading)</span>
                     </div>
-                    <div class="stat-item" style="grid-column: span 2;">
+                    <div class="stat-item col-span-2">
                         <span class="stat-label">Project</span>
                         <span class="stat-value">Indie Game Dev</span>
                     </div>
                 </div>
-                <p style="margin-top: 1rem; font-size: 0.9rem; color: #aaa;">
+                <p class="mt-1 font-md text-gray-aaa">
                     歡迎各路大神給予建議或方向，讓我們一起 Debug 人生。
                 </p>
             </div>
         </div>
 
         <!-- Equipment Loadout (Right Aligned) -->
-        <div class="section" id="section-equip" style="justify-content: flex-end; padding-right: 10%;">
+        <div class="section align-right" id="section-equip">
             <div class="hud-card">
                 <h3><i class="fas fa-briefcase"></i> EQUIPMENT_LOADOUT</h3>
-                <p style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #888;">// RIDER SLOT</p>
+                <p class="mb-05 font-sm text-gray-888">// RIDER SLOT</p>
                 <div class="equip-grid">
                     <div class="equip-slot">
                         <div class="equip-icon"><i class="fas fa-motorcycle"></i></div>
@@ -620,7 +704,7 @@
                     </div>
                 </div>
 
-                <p style="margin-top: 1rem; margin-bottom: 0.5rem; font-size: 0.8rem; color: #888;">// DEV SLOT</p>
+                <p class="mt-1 mb-05 font-sm text-gray-888">// DEV SLOT</p>
                 <div class="equip-grid">
                     <div class="equip-slot">
                         <div class="equip-icon"><i class="fas fa-keyboard"></i></div>
@@ -639,7 +723,7 @@
         </div>
 
         <!-- Hobbies Section (Left Aligned) -->
-        <div class="section" id="section-hobbies" style="justify-content: flex-start; padding-left: 15%;">
+        <div class="section align-left-more" id="section-hobbies">
             <div class="hud-card">
                 <h3><i class="fas fa-database"></i> INTEREST_DB</h3>
                 <p>
@@ -660,7 +744,7 @@
         </div>
 
         <!-- Personal / Maintenance Log (Right Aligned) -->
-        <div class="section" id="section-personal" style="justify-content: flex-end; padding-right: 15%;">
+        <div class="section align-right-more" id="section-personal">
             <div class="hud-card">
                 <h3><i class="fas fa-wrench"></i> MAINTENANCE_LOG</h3>
                 <p>
@@ -668,7 +752,7 @@
                 </p>
                 <p>
                     目前已啟動 <span class="highlight">強制運動協議</span>，並同步執行
-                    <span class="highlight" style="color: var(--neon-yellow);">戒菸程序 (Purging Nicotine)</span>
+                    <span class="highlight text-neon-yellow">戒菸程序 (Purging Nicotine)</span>
                     以優化機體性能。
                 </p>
                 <div class="stat-grid">
@@ -686,10 +770,10 @@
 
         <!-- Goal Section (Finale) -->
         <div class="section" id="section-goal">
-            <div class="hud-card" style="text-align: center; border-color: var(--neon-pink); box-shadow: 0 0 50px rgba(255,0,85,0.3);">
-                <i class="fas fa-motorcycle" style="font-size: 3rem; color: var(--neon-pink); margin-bottom: 1rem;"></i>
-                <h1 style="font-size: 2.5rem; color: var(--neon-pink);">DREAM_ROUTE</h1>
-                <p class="highlight" style="font-size: 1.2rem; margin: 1rem 0;">
+            <div class="hud-card final-card text-center">
+                <i class="fas fa-motorcycle font-xxl text-neon-pink mb-1"></i>
+                <h1 class="font-xl text-neon-pink">DREAM_ROUTE</h1>
+                <p class="highlight font-lg my-1">
                     DESTINATION: JAPAN
                 </p>
                 <p>
@@ -697,7 +781,7 @@
                     終極目標是去日本體驗重機旅行，並給家人更好的生活。
                 </p>
                 <div class="social-links">
-                    <a href="https://www.threads.com/@meizhuan" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.threads.net/@meizhuan" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/meizhuan/" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
