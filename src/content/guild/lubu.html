@@ -43,6 +43,7 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        html { overflow-x: hidden; }
         body {
             background-color: var(--c-bg);
             /* Grunge Texture Overlay */
@@ -384,18 +385,42 @@
 
         /* ════════════ MOBILE ════════════ */
         @media (max-width: 900px) {
+            .nav-back { top: 1rem; left: 1rem; padding: 0.5rem 1rem; font-size: 0.8rem; }
             .main-layout { grid-template-columns: 1fr; }
             .left-col {
-                position: relative; height: auto; padding: 6rem 1rem 2rem;
+                position: relative; height: auto; padding: 5rem 1rem 2rem;
                 background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
             }
-            .right-col { padding: 1rem; gap: 4rem; }
-            .section-card { margin: 0 auto; width: 100%; }
-            #webgl-container { mask-image: none; opacity: 0.6; }
-            h1.main-title { font-size: 5rem; }
-            .generals-grid { grid-template-columns: repeat(5, 1fr); }
+            .right-col { padding: 1rem; gap: 3rem; }
+
+            .section-card {
+                margin: 0 auto; width: 100%;
+                padding: 1.5rem; /* Reduced from 3rem */
+            }
+            .card-header {
+                font-size: 1.8rem;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .card-header span { font-size: 0.9rem; }
+
+            #webgl-container { mask-image: none; opacity: 0.4; }
+
+            h1.main-title { font-size: clamp(3rem, 12vw, 5rem); }
+            .subtitle-tech { font-size: 0.8rem; padding: 0.5rem 1rem; }
+
+            .style-grid { grid-template-columns: 1fr; }
+
+            .generals-grid { grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
+            .general-token { font-size: 1rem; }
+
             .battle-item { flex-direction: column; text-align: center; }
             .battle-icon { margin: 0 0 0.5rem 0; }
+
+            .armory-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.8rem; }
+
+            .comm-link { padding: 0.8rem 1rem; }
         }
     </style>
 </head>
@@ -804,8 +829,8 @@
                 halberdGroup.rotation.z = Math.PI / 6;
                 halberdGroup.rotation.x = 0;
             } else {
-                // Mobile: Center background
-                halberdGroup.position.set(0, -2, -5);
+                // Mobile: Center background, lower and further back
+                halberdGroup.position.set(0, -6, -8);
                 halberdGroup.rotation.z = Math.PI / 4;
             }
         }
