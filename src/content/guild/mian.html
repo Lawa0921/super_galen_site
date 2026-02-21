@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mian | Velocity & Vision</title>
+    <meta name="description" content="Mian - 攝影 | 機車 | 模型 | 探索人生的青春地圖">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Noto+Sans+TC:wght@300;500;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --c-bg: #050505;
+            --c-text: #ffffff;
+            --c-cyan: #00f3ff; /* Bike Color */
+            --c-orange: #ff4d00; /* Warning/Recording Light */
+            --c-silver: #a0a0a0;
+            --c-glass: rgba(10, 10, 10, 0.8);
+
+            --f-display: 'Syncopate', sans-serif;
+            --f-tech: 'Rajdhani', sans-serif;
+            --f-body: 'Noto Sans TC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-body);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0; pointer-events: none;
+        }
+
+        /* --- Layout --- */
+        .scroller { position: relative; z-index: 10; }
+        .section {
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+        .container {
+            max-width: 1200px; width: 100%; margin: 0 auto;
+            position: relative; z-index: 2;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--f-display);
+            font-weight: 700;
+            font-size: clamp(3rem, 12vw, 10rem);
+            line-height: 0.9;
+            text-transform: uppercase;
+            letter-spacing: -0.05em;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--c-text);
+            position: relative;
+        }
+        h1::after {
+            content: attr(data-text);
+            position: absolute; left: 4px; top: 4px;
+            color: var(--c-cyan);
+            opacity: 0.7;
+            mix-blend-mode: screen;
+            z-index: -1;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            animation: glitch 2.5s infinite alternate-reverse;
+        }
+        h1::before {
+            content: attr(data-text);
+            position: absolute; left: -4px; top: -2px;
+            color: var(--c-orange);
+            opacity: 0.7;
+            mix-blend-mode: screen;
+            z-index: -1;
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+            animation: glitch 3s infinite alternate;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        h2 {
+            font-family: var(--f-tech);
+            font-size: clamp(2rem, 5vw, 4rem);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--c-cyan);
+            padding-left: 1rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            max-width: 60ch;
+            color: #d1d5db;
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .tagline {
+            font-family: var(--f-tech);
+            color: var(--c-cyan);
+            font-size: 1.2rem;
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* --- Components --- */
+        .glass-panel {
+            background: rgba(5, 5, 5, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, var(--c-cyan), transparent);
+        }
+
+        .grid-2 {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+        }
+        @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; gap: 2rem; } }
+
+        .btn-cyber {
+            display: inline-block;
+            font-family: var(--f-tech);
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--c-bg);
+            background: var(--c-cyan);
+            padding: 1rem 2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+        .btn-cyber:hover {
+            background: var(--c-text);
+            box-shadow: 0 0 20px var(--c-cyan);
+            transform: translateY(-2px);
+        }
+
+        /* --- Avatar --- */
+        .avatar-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1/1;
+            margin: 0 auto;
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            transition: filter 0.5s;
+            clip-path: circle(45%);
+        }
+        .avatar-container:hover .avatar-img {
+            filter: grayscale(0%) contrast(1);
+        }
+        .lens-ring {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+        }
+        .lens-ring:nth-child(1) { width: 92%; height: 92%; border-color: var(--c-cyan); border-width: 2px; border-left-color: transparent; animation: spin 10s linear infinite; }
+        .lens-ring:nth-child(2) { width: 105%; height: 105%; border-style: dashed; animation: spin 20s linear infinite reverse; }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* --- Bike Card --- */
+        .bike-card {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        .bike-img {
+            width: 100%; display: block;
+            transition: transform 0.5s;
+        }
+        .bike-card:hover .bike-img {
+            transform: scale(1.05);
+        }
+        .bike-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 1rem;
+            background: linear-gradient(to top, black, transparent);
+            font-family: var(--f-tech);
+        }
+        .stat-bar {
+            display: flex; justify-content: space-between; margin-top: 0.5rem;
+            font-size: 0.8rem; color: var(--c-cyan);
+        }
+
+        /* --- Nav --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 50;
+            color: var(--c-text); text-decoration: none;
+            font-family: var(--f-tech); font-size: 1.2rem;
+            mix-blend-mode: difference;
+        }
+
+        /* --- Footer --- */
+        .social-link {
+            font-size: 3rem; color: var(--c-text); margin: 0 1rem;
+            transition: color 0.3s;
+        }
+        .social-link:hover { color: var(--c-cyan); text-shadow: 0 0 15px var(--c-cyan); }
+
+        /* --- Loading --- */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            font-family: var(--f-display); color: var(--c-cyan);
+            font-size: 2rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">INITIALIZING SYSTEM...</div>
+
+    <a href="/guild" class="nav-back">&lt; GUILD_INDEX</a>
+
+    <div id="webgl-container"></div>
+
+    <div class="scroller">
+
+        <!-- HERO -->
+        <section class="section">
+            <div class="container" style="text-align: center;">
+                <span class="tagline gs-reveal">STUDENT | PHOTOGRAPHER | RIDER</span>
+                <h1 data-text="MIAN" class="gs-reveal">MIAN</h1>
+                <p class="gs-reveal" style="text-align: center; margin: 2rem auto; font-family: var(--f-tech); letter-spacing: 0.2em; color: var(--c-silver);">
+                    SHUTTER SPEED x RPM
+                </p>
+            </div>
+        </section>
+
+        <!-- INTRO: The Viewfinder -->
+        <section class="section">
+            <div class="container">
+                <div class="grid-2">
+                    <div class="gs-reveal">
+                        <div class="avatar-container">
+                            <img src="/assets/img/guild/mian/avatar.webp" alt="Mian" class="avatar-img">
+                            <div class="lens-ring"></div>
+                            <div class="lens-ring"></div>
+                        </div>
+                    </div>
+                    <div class="gs-reveal">
+                        <h2>The Viewfinder</h2>
+                        <p>
+                            我是 Mian，一名大二學生。
+                            我的世界由三種焦距構成：書桌前的微距、相機店的廣角，與公路上的無限遠。
+                        </p>
+                        <p>
+                            目前在相機店打工，每天接觸各式鏡頭與器材。
+                            這份工作讓我學會用不同焦段去觀察世界，對攝影美學有了更深的理解。
+                            鏡頭不僅是工具，更是我與世界對話的窗口。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HOBBY: The Garage -->
+        <section class="section">
+            <div class="container">
+                <div class="glass-panel gs-reveal">
+                    <div class="grid-2">
+                        <div>
+                            <h2>The Garage</h2>
+                            <p>
+                                工作之餘，我沉迷於機械美學。
+                                不僅熱衷於車展，更醉心於 1/64 模型車的微縮世界。
+                                從噴漆到細節調整，親手打造獨一無二的作品，那方寸之間的成就感無可取代。
+                            </p>
+                            <div class="stat-bar" style="border-top: 1px solid #333; padding-top: 1rem; margin-top: 2rem;">
+                                <span>MODELS BUILT: 50+</span>
+                                <span>PRECISION: 100%</span>
+                            </div>
+                        </div>
+                        <div class="bike-card">
+                            <img src="/assets/img/guild/mian/bike.webp" alt="Motorcycle" class="bike-img">
+                            <div class="bike-overlay">
+                                <h3>ON THE ROAD</h3>
+                                <div class="stat-bar">
+                                    <span>STATUS: CRUISING</span>
+                                    <span>DESTINATION: UNKNOWN</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIFESTYLE: The Horizon -->
+        <section class="section">
+            <div class="container">
+                <div class="grid-2">
+                    <div class="gs-reveal">
+                        <h2 style="border-color: var(--c-orange);">The Horizon</h2>
+                        <p>
+                            除了靜態的模型，我也嚮往自由。
+                            放假時，我最喜歡騎著我的小摩托到處亂晃，在風中感受城市的脈動。
+                        </p>
+                        <p>
+                            最近開始鑽研穿搭，試著把對車子改裝的那種審美眼光，應用到生活風格上。
+                            我還在尋找未來的精確定位，但希望能透過攝影、模型與旅行，拼湊出最精彩的青春地圖。
+                        </p>
+                    </div>
+                    <div class="gs-reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="glass-panel" style="text-align: center; padding: 3rem 1rem;">
+                            <i class="fa-solid fa-camera-retro" style="font-size: 3rem; color: var(--c-cyan); margin-bottom: 1rem;"></i>
+                            <h4 style="font-family: var(--f-tech);">PHOTO</h4>
+                        </div>
+                        <div class="glass-panel" style="text-align: center; padding: 3rem 1rem;">
+                            <i class="fa-solid fa-motorcycle" style="font-size: 3rem; color: var(--c-orange); margin-bottom: 1rem;"></i>
+                            <h4 style="font-family: var(--f-tech);">RIDE</h4>
+                        </div>
+                        <div class="glass-panel" style="text-align: center; padding: 3rem 1rem;">
+                            <i class="fa-solid fa-screwdriver-wrench" style="font-size: 3rem; color: var(--c-silver); margin-bottom: 1rem;"></i>
+                            <h4 style="font-family: var(--f-tech);">MOD</h4>
+                        </div>
+                        <div class="glass-panel" style="text-align: center; padding: 3rem 1rem;">
+                            <i class="fa-solid fa-plane" style="font-size: 3rem; color: #fff; margin-bottom: 1rem;"></i>
+                            <h4 style="font-family: var(--f-tech);">TRAVEL</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <section class="section" style="min-height: 50vh;">
+            <div class="container" style="text-align: center;">
+                <h2 class="gs-reveal" style="border: none; font-size: 3rem;">FOLLOW THE JOURNEY</h2>
+                <div class="gs-reveal" style="margin-top: 3rem;">
+                    <a href="https://www.threads.net/@zero_w9453" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/zero_w9453/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div style="margin-top: 5rem; opacity: 0.5; font-family: var(--f-tech);">
+                    GUILD MEMBER: MIAN | SYSTEM STATUS: ONLINE
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Init Three.js ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        // Fog for depth fading
+        scene.fog = new THREE.FogExp2(0x050505, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 0;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Tunnel of Light (Rings) ---
+        // We create a series of rings that move towards the camera
+        const ringCount = 40;
+        const rings = [];
+        const geometry = new THREE.TorusGeometry(1, 0.02, 16, 50);
+
+        // Materials
+        const matCyan = new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.6 });
+        const matOrange = new THREE.MeshBasicMaterial({ color: 0xff4d00, transparent: true, opacity: 0.6 });
+        const matSilver = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+
+        for (let i = 0; i < ringCount; i++) {
+            const mat = i % 3 === 0 ? matCyan : (i % 3 === 1 ? matOrange : matSilver);
+            const mesh = new THREE.Mesh(geometry, mat);
+
+            // Randomize position in a tunnel shape
+            const z = -i * 2; // Spaced out
+            mesh.position.set(0, 0, z);
+
+            // Random scale variation
+            const scale = 1 + Math.random() * 0.5;
+            mesh.scale.set(scale, scale, 1);
+
+            scene.add(mesh);
+            rings.push({ mesh, originalZ: z, speed: 0.02 + Math.random() * 0.05 });
+        }
+
+        // --- Particles (Dust/Speed lines) ---
+        const particlesGeom = new THREE.BufferGeometry();
+        const particlesCount = 1000;
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for(let i=0; i<particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 20;
+        }
+
+        particlesGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            size: 0.02,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.5
+        });
+        const particlesMesh = new THREE.Points(particlesGeom, particlesMat);
+        scene.add(particlesMesh);
+
+
+        // --- Animation Loop ---
+        let time = 0;
+        const mouse = { x: 0, y: 0 };
+        const targetMouse = { x: 0, y: 0 };
+
+        window.addEventListener('mousemove', (e) => {
+            targetMouse.x = (e.clientX / window.innerWidth) - 0.5;
+            targetMouse.y = (e.clientY / window.innerHeight) - 0.5;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            // Smooth mouse
+            mouse.x += (targetMouse.x - mouse.x) * 0.05;
+            mouse.y += (targetMouse.y - mouse.y) * 0.05;
+
+            // Camera Movement based on mouse (Parallax)
+            camera.position.x = mouse.x * 0.5;
+            camera.position.y = -mouse.y * 0.5;
+            camera.rotation.x = -mouse.y * 0.2;
+            camera.rotation.y = -mouse.x * 0.2;
+
+            // Move Rings (Tunnel Effect)
+            // Speed increases with scroll
+            const scrollSpeed = 1 + (window.scrollY * 0.002);
+
+            rings.forEach((ring, index) => {
+                ring.mesh.position.z += ring.speed * scrollSpeed;
+                ring.mesh.rotation.z += 0.005 * (index % 2 === 0 ? 1 : -1);
+
+                // Reset if behind camera
+                if (ring.mesh.position.z > 2) {
+                    ring.mesh.position.z = -80;
+                }
+            });
+
+            // Particles
+            particlesMesh.rotation.z += 0.001 * scrollSpeed;
+            particlesMesh.position.z += 0.05 * scrollSpeed;
+             if (particlesMesh.position.z > 5) {
+                particlesMesh.position.z = -5;
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- GSAP ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.gs-reveal').forEach(elem => {
+            gsap.from(elem, {
+                scrollTrigger: {
+                    trigger: elem,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                ease: "power3.out"
+            });
+        });
+
+        // Hide Loader
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.style.display = 'none' });
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
