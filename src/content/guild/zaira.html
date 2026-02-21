@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zaira | The Cloud Lab ☁️</title>
-    <meta name="description" content="Zaira's Experimental Lab - Exploring Life, Languages, and Culture.">
+    <title>Zai Lab | The Cloud Ascent ☁️</title>
+    <meta name="description" content="Zaira's Lab - Exploring Life, Languages, and Culture.">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --soft-blue: #e6f3ff;
-            --sage-green: #9fb8ad;
-            --warm-beige: #f9f7f2;
-            --text-dark: #2c3e50;
-            --glass-bg: rgba(255, 255, 255, 0.6);
+            --bg-color: #fdfbf7;
+            --text-color: #2c3e50;
+            --accent-sage: #9fb8ad;
+            --accent-blue: #a3c4f3;
+            --accent-peach: #eac4b6;
+            --glass: rgba(255, 255, 255, 0.7);
         }
 
         * {
@@ -29,11 +30,11 @@
         }
 
         body {
-            background-color: var(--soft-blue);
-            color: var(--text-dark);
+            background-color: var(--bg-color);
+            color: var(--text-color);
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
-            overscroll-behavior: none;
+            /* Allow vertical scroll for interaction, but no horizontal */
         }
 
         #canvas-container {
@@ -44,317 +45,439 @@
             height: 100vh;
             z-index: -1;
             /* Soft gradient sky */
-            background: linear-gradient(to bottom, #dbeaff 0%, #fdfbf7 100%);
+            background: linear-gradient(180deg, #dbeaff 0%, #fdfbf7 100%);
         }
 
-        /* Scroll Content Container */
-        .scroll-content {
-            position: relative;
+        /* --- UI Overlay --- */
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 400vh;
-            z-index: 1;
-            pointer-events: none;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass to 3D scene (if any) or scroll */
+            z-index: 10;
         }
 
-        /* Section Styling */
-        section {
+        /* HUD Elements */
+        .hud-top-left {
             position: absolute;
+            top: 2rem;
+            left: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .hud-logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--text-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .hud-status {
+            font-size: 0.8rem;
+            font-family: monospace;
+            color: var(--accent-sage);
+            border: 1px solid var(--accent-sage);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .hud-progress {
+            position: absolute;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 200px;
+            width: 2px;
+            background: rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-progress-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%; /* JS controlled */
+            background: var(--accent-sage);
+            transition: height 0.1s linear;
+        }
+
+        .hud-marker {
+            width: 8px;
+            height: 1px;
+            background: rgba(0,0,0,0.2);
+            position: absolute;
+            left: -3px;
+        }
+
+        /* --- Content Sections (Scroll Anchors) --- */
+        .scroll-container {
+            position: relative;
+            height: 500vh; /* Long scroll for the journey */
+        }
+
+        .content-block {
+            position: absolute; /* Placed based on scroll progress */
             width: 100%;
             height: 100vh;
             display: flex;
-            justify-content: center;
+            justify-content: flex-end; /* Align right mostly */
             align-items: center;
-            pointer-events: auto;
-            opacity: 0; /* Controlled by GSAP */
-            transform: translateY(30px);
+            padding: 0 10%;
+            pointer-events: none; /* Pass through to allow scroll */
         }
 
-        #hero-section { top: 0; }
-        #bio-section { top: 100vh; }
-        #exp-section { top: 200vh; }
-        #social-section { top: 300vh; }
-
-
-        .panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 20px;
-            padding: 3rem;
-            max-width: 800px;
-            width: 90%;
-            box-shadow: 0 10px 40px rgba(159, 184, 173, 0.2); /* Soft sage shadow */
-            text-align: center; /* Centered layout for elegance */
+        .content-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 0 10px 30px rgba(159, 184, 173, 0.15);
+            max-width: 500px;
+            width: 100%;
+            opacity: 0; /* GSAP controls */
+            transform: translateY(20px);
+            pointer-events: auto; /* Allow text selection/links */
         }
 
-        h1, h2 {
-            font-family: 'Playfair Display', serif;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 1.5rem;
-            line-height: 1.2;
-        }
+        .content-card.left { margin-right: auto; margin-left: 0; }
+        .content-card.center { margin: 0 auto; text-align: center; }
 
         h1 {
-            font-size: clamp(3rem, 6vw, 5rem);
-            font-style: italic;
-            background: -webkit-linear-gradient(45deg, #2c3e50, #556b8d);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.1;
+            color: var(--text-color);
         }
 
         h2 {
+            font-family: 'Playfair Display', serif;
             font-size: 2rem;
-            color: var(--sage-green);
+            margin-bottom: 1rem;
+            color: var(--text-color);
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: var(--accent-sage);
+        }
+
+        h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-sage);
+            margin-bottom: 1rem;
+            font-weight: 700;
         }
 
         p {
-            font-size: 1.1rem;
-            line-height: 2;
+            font-size: 1rem;
+            line-height: 1.8;
             color: #555;
-            margin-bottom: 2rem;
-            font-weight: 300;
+            margin-bottom: 1.5rem;
         }
 
         .highlight {
-            color: #556b8d; /* Muted blue */
+            color: #5d7fa3; /* Darker blue */
             font-weight: 500;
-            border-bottom: 1px solid #9fb8ad; /* Underline accent */
+            background: linear-gradient(120deg, rgba(163, 196, 243, 0.3) 0%, rgba(163, 196, 243, 0.3) 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 90%;
         }
 
-        /* Hero Section Specifics */
-        #hero-section {
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-item {
             text-align: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.5);
+            border-radius: 8px;
         }
 
-        .hero-subtitle {
+        .stat-val {
             font-family: 'Playfair Display', serif;
-            font-style: italic;
-            color: #7f8c8d;
-            margin-top: 1rem;
             font-size: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        .scroll-indicator {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #bdc3c7;
-            font-size: 0.9rem;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-10px);}
-            60% {transform: translateX(-50%) translateY(-5px);}
-        }
-
-        /* Avatar Styling */
-        .avatar-container {
-            width: 160px;
-            height: 160px;
-            margin: 0 auto 2.5rem;
-            position: relative;
+        /* Avatar */
+        .avatar-circle {
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            padding: 8px;
-            background: #fff;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin: 0 auto 1.5rem;
+            border: 4px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .avatar-img {
+        .avatar-circle img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 50%;
-            filter: saturate(0.9) brightness(1.05); /* Slight filter for "fresh" look */
         }
 
-        /* Social Links */
-        .social-grid {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .social-link {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #fff;
-            text-decoration: none;
-            color: var(--text-dark);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .social-link:hover {
-            transform: translateY(-5px) scale(1.05);
-            color: var(--sage-green);
-            box-shadow: 0 10px 25px rgba(159, 184, 173, 0.3);
-        }
-
-        .social-link i {
-            font-size: 1.5rem;
-            margin-bottom: 0.3rem;
-        }
-
-        .social-link span {
-            font-size: 0.7rem;
-            font-weight: 500;
-            opacity: 0.7;
-        }
-
-
-        /* Tag Cloud */
-        .tag-cloud {
+        /* Tags */
+        .tag-list {
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
-            gap: 1rem;
+            gap: 0.5rem;
             margin-top: 1rem;
         }
 
         .tag {
-            background: rgba(255, 255, 255, 0.8);
-            color: #7f8c8d;
-            padding: 0.5rem 1.2rem;
-            font-family: 'Playfair Display', serif;
-            font-size: 0.9rem;
-            font-style: italic;
-            border-radius: 50px;
-            border: 1px solid rgba(0,0,0,0.05);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.8rem;
+            background: rgba(159, 184, 173, 0.2); /* Sage tint */
+            color: #5a7566;
+            border-radius: 20px;
+            border: 1px solid rgba(159, 184, 173, 0.3);
         }
 
-        /* Loading Screen */
+        /* Social Links */
+        .social-row {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .social-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #eee;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            color: var(--accent-sage);
+        }
+
+        /* Loader */
         #loader {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #fdfbf7;
-            z-index: 9999;
+            background: var(--bg-color);
+            z-index: 100;
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            color: var(--text-dark);
             font-family: 'Playfair Display', serif;
+            color: var(--text-color);
+            flex-direction: column;
         }
 
-        .loader-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(159, 184, 173, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--sage-green);
-            animation: spin 1s ease-in-out infinite;
-            margin-bottom: 1rem;
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: #eee;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .loader-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--accent-sage);
+            animation: load 2s ease-in-out infinite;
+        }
+
+        @keyframes load {
+            0% { width: 0%; left: 0; }
+            50% { width: 50%; left: 25%; }
+            100% { width: 100%; left: 100%; }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .content-block { padding: 0 1rem; justify-content: center; }
+            .content-card { padding: 1.5rem; margin: 0 auto !important; }
+            h1 { font-size: 2.5rem; }
+            .hud-progress { display: none; }
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Loading Screen -->
     <div id="loader">
-        <div class="loader-spinner"></div>
-        <div>Breath in...</div>
+        <div>Initializing Zai Lab...</div>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
     </div>
 
     <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
-    <!-- Scroll Content -->
-    <div class="scroll-content">
+    <!-- UI Overlay -->
+    <div class="ui-overlay">
+        <div class="hud-top-left">
+            <div class="hud-logo">ZAI LAB</div>
+            <div class="hud-status">STATUS: EXPERIMENTAL</div>
+        </div>
 
-        <!-- Section 1: Hero -->
-        <section id="hero-section">
-            <div class="hero-content">
-                <h1>Zai Lab</h1>
-                <div class="hero-subtitle">The Cloud Laboratory</div>
-                <div class="scroll-indicator">Scroll to Explore</div>
-            </div>
-        </section>
+        <div class="hud-progress">
+            <div class="hud-marker" style="top: 0%"></div>
+            <div class="hud-marker" style="top: 25%"></div>
+            <div class="hud-marker" style="top: 50%"></div>
+            <div class="hud-marker" style="top: 75%"></div>
+            <div class="hud-marker" style="top: 100%"></div>
+            <div class="hud-progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
 
-        <!-- Section 2: Intro/Bio -->
-        <section id="bio-section">
-            <div class="panel">
-                <div class="avatar-container">
-                    <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira" class="avatar-img">
+    <!-- Scroll Content (Triggers) -->
+    <div class="scroll-container">
+
+        <!-- 0% - Start -->
+        <div class="content-block" style="top: 0;">
+            <div class="content-card center" id="card-intro">
+                <div class="avatar-circle">
+                    <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira">
                 </div>
-                <h2>A Gentle Ascent</h2>
-                <p>我是 <span class="highlight">Zaira</span>，還在探索自己的人生路上。</p>
-                <p>興趣多元廣泛，喜歡<span class="highlight">寫字、畫畫、唱歌</span>、偶爾<span class="highlight">爬爬山</span>，覺得有趣很特別的事情都想試試看！</p>
-                <p>語言與文化是我和世界產生連結的工具。我會說<span class="highlight">英語</span>和<span class="highlight">義大利語</span>，現在正努力解鎖<span class="highlight">西班牙語</span> 🔓</p>
-            </div>
-        </section>
-
-        <!-- Section 3: Experience/Mixing -->
-        <section id="exp-section">
-            <div class="panel">
-                <h2>The Lab of Life</h2>
-                <p>目前我也不知道最終會長成什麼樣子，但想試試看各種有趣的事情，所以才叫<span class="highlight">實驗室</span> 🧪</p>
-                <p>曾經去坦尚尼亞服務學習，也曾到義大利羅馬交換一年。擔任過華語老師，到捷克實習半年，學生來自烏克蘭、義大利、斯洛伐克和印尼。</p>
-                <p>我熱衷於辦活動、參加工作坊，也曾多次擔任學校大型典禮與研討會的司儀。</p>
-                <div class="tag-cloud">
-                    <span class="tag">#LanguageLearning</span>
-                    <span class="tag">#GlobalCitizen</span>
-                    <span class="tag">#EventHost</span>
-                    <span class="tag">#Volunteer</span>
+                <h3>Subject 001</h3>
+                <h1>Zaira</h1>
+                <p>Welcome to the Lab. Here, we explore the chemistry of <span class="highlight">Life</span>, <span class="highlight">Culture</span>, and <span class="highlight">Connection</span>.</p>
+                <div class="tag-list" style="justify-content: center;">
+                    <span class="tag">#Language</span>
+                    <span class="tag">#Climbing</span>
+                    <span class="tag">#Art</span>
+                    <span class="tag">#Experiments</span>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Section 4: Social/Connect -->
-        <section id="social-section">
-            <div class="panel">
-                <h2>Share a Moment</h2>
-                <p>非常喜歡和別人聊聊，知道別人背後的故事和不同的經驗讓我覺得很有趣！歡迎大家來交流 ✨</p>
+        <!-- 25% - Synthesis -->
+        <div class="content-block" style="top: 125vh;">
+            <div class="content-card left" id="card-lang">
+                <h3>Experiment I: Synthesis</h3>
+                <h2>Language & Culture</h2>
+                <p>Language is the catalyst for connection. Currently synthesizing:</p>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-val">EN</div>
+                        <div class="stat-label">English</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-val">IT</div>
+                        <div class="stat-label">Italiano</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-val">ES</div>
+                        <div class="stat-label">Español (Loading...)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-val">ZH</div>
+                        <div class="stat-label">Mandarin</div>
+                    </div>
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.9rem;">
+                    "Decoding the world one word at a time."
+                </p>
+            </div>
+        </div>
 
-                <div class="social-grid">
-                    <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-link">
-                        <i class="fa-brands fa-medium"></i>
-                        <span>Medium</span>
-                    </a>
-                    <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-link">
-                        <i class="fa-brands fa-instagram"></i>
-                        <span>Instagram</span>
-                    </a>
-                    <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="social-link">
-                        <i class="fa-solid fa-microphone-lines"></i>
-                        <span>Podcast</span>
-                    </a>
-                    <a href="https://www.threads.net/@zailab_zaira_forzaaa" target="_blank" class="social-link">
-                        <i class="fa-brands fa-threads"></i>
-                        <span>Threads</span>
-                    </a>
+        <!-- 50% - Field Work -->
+        <div class="content-block" style="top: 250vh;">
+            <div class="content-card" style="margin-left: auto;" id="card-travel">
+                <h3>Experiment II: Field Work</h3>
+                <h2>Global Exploration</h2>
+                <p>Data collected from diverse environments:</p>
+                <ul style="list-style: none; margin-left: 0; margin-bottom: 1.5rem;">
+                    <li style="margin-bottom: 0.8rem;"><i class="fa-solid fa-earth-africa" style="color: var(--accent-sage); margin-right: 10px;"></i> <strong>Tanzania:</strong> Service Learning & Volunteer Protocol.</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fa-solid fa-landmark" style="color: var(--accent-sage); margin-right: 10px;"></i> <strong>Rome, Italy:</strong> 1-Year Cultural Immersion.</li>
+                    <li style="margin-bottom: 0.8rem;"><i class="fa-solid fa-school" style="color: var(--accent-sage); margin-right: 10px;"></i> <strong>Czech Republic:</strong> Teaching Mandarin to global students (UA, IT, CZ, SK, ID).</li>
+                </ul>
+                <p class="highlight">Observation: Diversity fuels creativity.</p>
+            </div>
+        </div>
+
+        <!-- 75% - Broadcast -->
+        <div class="content-block" style="top: 375vh;">
+            <div class="content-card left" id="card-podcast">
+                <h3>Experiment III: Transmission</h3>
+                <h2>The Zai Lab Podcast</h2>
+                <p>Documenting findings on Medium and Airwaves.</p>
+                <p>Topics include: <br>
+                • Language Acquisition Protocols<br>
+                • Personal Growth Algorithms<br>
+                • Lyrical Translation Analysis</p>
+                <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" style="display: inline-block; padding: 0.8rem 1.5rem; background: var(--text-color); color: white; text-decoration: none; border-radius: 30px; margin-top: 1rem; font-size: 0.9rem;">
+                    <i class="fa-solid fa-play"></i> Listen to Frequency
+                </a>
+            </div>
+        </div>
+
+        <!-- 100% - Connect -->
+        <div class="content-block" style="top: 450vh; height: 50vh;"> <!-- Shorter end block -->
+            <div class="content-card center" id="card-social">
+                <h3>Final Report</h3>
+                <h2>Join the Experiment</h2>
+                <p>I thrive on exchange. Every story adds to the dataset.</p>
+                <div class="social-row">
+                    <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-btn" title="Medium"><i class="fa-brands fa-medium"></i></a>
+                    <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-btn" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.net/@zailab_zaira_forzaaa" target="_blank" class="social-btn" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                    <a href="mailto:contact@zailab.com" class="social-btn" title="Email"><i class="fa-regular fa-envelope"></i></a>
                 </div>
             </div>
-        </section>
+        </div>
 
     </div>
 
     <!-- Scripts -->
-    <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
-    <!-- Three.js -->
     <script type="importmap">
         {
             "imports": {
@@ -367,222 +490,267 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-        // --- Configuration ---
-        const config = {
-            colors: {
-                glass: 0xffffff,
-                mountain: 0x9fb8ad, // Sage Green
-                pen: 0x556b8d, // Muted Blue
-                note: 0xe0a899 // Soft Peach
-            }
-        };
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Soft gradient background handled by CSS, but scene needs transparency
+        // Fog for depth (soft white/blue)
+        scene.fog = new THREE.FogExp2(0xfdfbf7, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 15);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        // Important for "Glass" look
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.SoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Lighting (High Key Studio) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
+        // --- Lighting ---
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 0.6);
+        scene.add(hemiLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLight.position.set(5, 10, 7);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        const backLight = new THREE.DirectionalLight(0xe6f3ff, 0.5); // Soft blue rim light
-        backLight.position.set(-5, 0, -5);
-        scene.add(backLight);
+        // --- The Path (Spline) ---
+        // A spiral rising upwards
+        const points = [];
+        const curveRadius = 15;
+        const curveHeight = 80;
+        const turns = 3;
 
-        // --- Scene Elements: The Cloud Lab ---
-
-        // 1. Specimen Bubbles (Glass Spheres)
-        const bubbleCount = 15;
-        const bubbleGeo = new THREE.SphereGeometry(1, 32, 32);
-        // Physical material for glass effect
-        const bubbleMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0,
-            roughness: 0.1,
-            transmission: 0.95, // Glass-like transparency
-            thickness: 0.5, // Refraction
-            envMapIntensity: 1,
-            clearcoat: 1,
-            clearcoatRoughness: 0.1
-        });
-
-        const bubblesGroup = new THREE.Group();
-        const bubblesData = [];
-
-        // Geometries for internal objects
-        const mountainGeo = new THREE.ConeGeometry(0.4, 0.8, 4);
-        const penGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.8, 8);
-        const noteGeo = new THREE.IcosahedronGeometry(0.4, 0);
-
-        // Materials for internal objects
-        const mountainMat = new THREE.MeshStandardMaterial({ color: config.colors.mountain, flatShading: true });
-        const penMat = new THREE.MeshStandardMaterial({ color: config.colors.pen });
-        const noteMat = new THREE.MeshStandardMaterial({ color: config.colors.note, wireframe: true });
-
-        for(let i=0; i<bubbleCount; i++) {
-            const bubble = new THREE.Mesh(bubbleGeo, bubbleMat);
-
-            // Random positions spread vertically
-            const x = (Math.random() - 0.5) * 12;
-            const y = (Math.random() * 30) - 10; // Spread from -10 to 20
-            const z = (Math.random() - 0.5) * 5;
-
-            bubble.position.set(x, y, z);
-
-            const scale = Math.random() * 0.8 + 0.5;
-            bubble.scale.set(scale, scale, scale);
-
-            // Add internal "Specimen"
-            let specimen;
-            const type = i % 3;
-            if (type === 0) {
-                specimen = new THREE.Mesh(mountainGeo, mountainMat);
-            } else if (type === 1) {
-                specimen = new THREE.Mesh(penGeo, penMat);
-                specimen.rotation.z = Math.PI / 4;
-            } else {
-                specimen = new THREE.Mesh(noteGeo, noteMat);
-            }
-
-            bubble.add(specimen); // Attach to bubble so they move together
-            bubblesGroup.add(bubble);
-
-            bubblesData.push({
-                mesh: bubble,
-                specimen: specimen,
-                floatSpeed: Math.random() * 0.005 + 0.002,
-                rotSpeed: Math.random() * 0.01,
-                initialY: y
-            });
+        for (let i = 0; i <= 50; i++) {
+            const t = i / 50;
+            const angle = t * Math.PI * 2 * turns;
+            const x = Math.cos(angle) * curveRadius;
+            const z = Math.sin(angle) * curveRadius;
+            const y = t * curveHeight;
+            points.push(new THREE.Vector3(x, y, z));
         }
-        scene.add(bubblesGroup);
 
-        // 2. Clouds (Simple Sprites or Soft Particles)
-        // Let's use many small, soft white planes to simulate volumetric clouds cheaply
-        const cloudParticleCount = 50;
-        const cloudGeo = new THREE.CircleGeometry(2, 16);
-        const cloudMat = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
+        const curve = new THREE.CatmullRomCurve3(points);
+
+        // Visualize Path (Optional - faint line)
+        const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.1, 8, false);
+        const tubeMat = new THREE.MeshBasicMaterial({
+            color: 0x9fb8ad,
             transparent: true,
-            opacity: 0.1,
-            side: THREE.DoubleSide,
-            depthWrite: false // Important for transparency overlap
+            opacity: 0.3,
+            wireframe: false
+        });
+        const pathMesh = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(pathMesh);
+
+
+        // --- Procedural Generation Functions ---
+
+        // 1. Clouds (Low Poly Blobs)
+        const cloudGeo = new THREE.DodecahedronGeometry(1, 0); // Low poly sphere
+        const cloudMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            flatShading: true,
+            transparent: true,
+            opacity: 0.9
         });
 
         const cloudsGroup = new THREE.Group();
-        for(let i=0; i<cloudParticleCount; i++) {
-            const cloud = new THREE.Mesh(cloudGeo, cloudMat);
-            cloud.position.set(
-                (Math.random() - 0.5) * 20,
-                (Math.random() * 40) - 10,
-                (Math.random() - 0.5) * 10 - 5 // Behind bubbles
-            );
-            cloud.scale.set(
-                Math.random() * 2 + 1,
-                Math.random() * 1 + 0.5,
-                1
+
+        function createCloud(x, y, z, scale) {
+            const group = new THREE.Group();
+            group.position.set(x, y, z);
+
+            const puffs = 3 + Math.random() * 3;
+            for(let i=0; i<puffs; i++) {
+                const mesh = new THREE.Mesh(cloudGeo, cloudMat);
+                mesh.position.set(
+                    (Math.random()-0.5) * scale,
+                    (Math.random()-0.5) * scale * 0.5,
+                    (Math.random()-0.5) * scale
+                );
+                const s = scale * (0.5 + Math.random() * 0.5);
+                mesh.scale.set(s, s, s);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                group.add(mesh);
+            }
+            return group;
+        }
+
+        // Generate clouds along the path
+        for(let i=0; i<40; i++) {
+            const t = Math.random();
+            const pt = curve.getPoint(t);
+            // Offset from path
+            const offset = (Math.random() - 0.5) * 20;
+            // More clouds at bottom
+            const yOffset = (Math.random() - 0.5) * 5;
+
+            const cloud = createCloud(
+                pt.x + (Math.random()-0.5) * 20,
+                pt.y + yOffset,
+                pt.z + (Math.random()-0.5) * 20,
+                2 + Math.random() * 3
             );
             cloudsGroup.add(cloud);
         }
         scene.add(cloudsGroup);
 
+        // 2. Floating Islands (Stations)
+        const islandGeo = new THREE.CylinderGeometry(3, 1, 2, 6); // Hexagonalish
+        const islandMat = new THREE.MeshStandardMaterial({
+            color: 0xf0e6d2, // Beige/Sand
+            flatShading: true
+        });
 
-        // --- GSAP Scroll Logic ---
+        const stations = [
+            { t: 0.05, label: "Intro", color: 0x9fb8ad }, // Green
+            { t: 0.28, label: "Synthesis", color: 0xa3c4f3 }, // Blue
+            { t: 0.52, label: "Travel", color: 0xeac4b6 }, // Peach
+            { t: 0.76, label: "Broadcast", color: 0xc8b6ea } // Purple
+        ];
+
+        stations.forEach((station, index) => {
+            const pt = curve.getPoint(station.t);
+
+            // Island Base
+            const island = new THREE.Mesh(islandGeo, islandMat);
+            island.position.copy(pt);
+            island.position.y -= 2; // Below path
+            island.receiveShadow = true;
+            island.castShadow = true;
+
+            // Props per station
+            const propGroup = new THREE.Group();
+            propGroup.position.copy(pt);
+
+            // Abstract Prop (Floating Crystal/Shape)
+            const propGeo = new THREE.IcosahedronGeometry(0.8, 0);
+            const propMat = new THREE.MeshStandardMaterial({
+                color: station.color,
+                metalness: 0.1,
+                roughness: 0.2,
+                emissive: station.color,
+                emissiveIntensity: 0.2,
+                wireframe: true
+            });
+            const prop = new THREE.Mesh(propGeo, propMat);
+            prop.position.y = 1;
+
+            // Orbiting particles
+            const orbitGroup = new THREE.Group();
+            for(let j=0; j<3; j++) {
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), propMat);
+                p.position.x = 1.5;
+                const pivot = new THREE.Group();
+                pivot.add(p);
+                pivot.rotation.y = (j / 3) * Math.PI * 2;
+                orbitGroup.add(pivot);
+            }
+            prop.add(orbitGroup);
+            station.orbitGroup = orbitGroup; // Store for animation
+
+            propGroup.add(prop);
+            station.prop = prop; // Store for animation
+
+            scene.add(island);
+            scene.add(propGroup);
+        });
+
+        // --- Animation Loop ---
+
+        let scrollProgress = 0;
+        const clock = new THREE.Clock();
+
         gsap.registerPlugin(ScrollTrigger);
 
+        // Hide loader
         window.onload = () => {
-            const loader = document.getElementById('loader');
+            gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('loader').style.display = 'none';
+            }});
 
-            // Wait a moment for materials to compile
-            setTimeout(() => {
-                gsap.to(loader, {
-                    opacity: 0,
-                    duration: 1,
-                    onComplete: () => {
-                        loader.style.display = 'none';
-                        initScrollAnimations();
-                    }
-                });
-            }, 1000);
+            initScrollAnimations();
         };
 
         function initScrollAnimations() {
-            // Animate Sections Opacity & Float up
-            document.querySelectorAll('section').forEach((section, i) => {
-                // Ensure initial state
-                if(i === 0) gsap.set(section, { opacity: 1, y: 0 });
-
-                if (i > 0) {
-                    gsap.to(section, {
-                        scrollTrigger: {
-                            trigger: section,
-                            start: "top 70%",
-                            end: "top 30%",
-                            toggleActions: "play none none reverse",
-                            scrub: 1
-                        },
-                        opacity: 1,
-                        y: 0,
-                        duration: 1
-                    });
+            // Main scroll proxy
+            ScrollTrigger.create({
+                trigger: ".scroll-container",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: (self) => {
+                    scrollProgress = self.progress;
+                    // Update HUD
+                    document.getElementById('progress-fill').style.height = (scrollProgress * 100) + '%';
                 }
             });
+
+            // Card Reveals
+            const cards = ['.content-card#card-intro', '#card-lang', '#card-travel', '#card-podcast', '#card-social'];
+            cards.forEach((selector, i) => {
+                gsap.to(selector, {
+                    scrollTrigger: {
+                        trigger: ".scroll-container",
+                        // Timings based on the 0-1 progress of the container
+                        start: `top+=${i * 100}vh top`,
+                        end: `top+=${i * 100 + 50}vh top`,
+                        toggleActions: "play reverse play reverse",
+                        // Use scrub for smoother fade based on position
+                        scrub: true
+                    },
+                    opacity: 1,
+                    y: 0,
+                    ease: "power2.out"
+                });
+            });
         }
-
-        // --- Loop Variables ---
-        const clock = new THREE.Clock();
-        let scrollY = 0;
-
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-        });
 
         function animate() {
             requestAnimationFrame(animate);
 
             const time = clock.getElapsedTime();
 
-            // Camera Parallax (The Gentle Ascent)
-            // Camera moves UP slowly as we scroll
-            const targetCameraY = scrollY * 0.01;
-            camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+            // 1. Camera Movement along Path
+            // We want the camera to be slightly BEHIND the scroll progress point
+            const camPosT = Math.max(0, Math.min(1, scrollProgress * 0.98)); // Clamp
+            const camTargetT = Math.max(0, Math.min(1, scrollProgress * 0.98 + 0.05)); // Look ahead
 
-            // Animate Bubbles
-            bubblesData.forEach(data => {
-                // Gentle float
-                data.mesh.position.y = data.initialY + Math.sin(time * 0.5 + data.initialY) * 0.5;
+            const camPos = curve.getPoint(camPosT);
+            const camTarget = curve.getPoint(camTargetT);
 
-                // Gentle rotation of the whole bubble
-                data.mesh.rotation.y += data.rotSpeed;
-                data.mesh.rotation.x = Math.sin(time * 0.5) * 0.1;
+            // Offset camera slightly to the side and up
+            camPos.y += 2;
+            camPos.x += 5;
 
-                // Specimen internal rotation
-                data.specimen.rotation.y += 0.01;
+            // Smooth dampening
+            camera.position.lerp(camPos, 0.1);
+            camera.lookAt(camTarget);
+
+            // 2. Animate Clouds (Float)
+            cloudsGroup.children.forEach((cloud, i) => {
+                cloud.position.y += Math.sin(time * 0.5 + i) * 0.01;
+                cloud.rotation.y += 0.001;
             });
 
-            // Animate Clouds (Slow drift)
-            cloudsGroup.children.forEach((cloud, i) => {
-                cloud.position.x += 0.002 * ((i % 2 === 0) ? 1 : -1);
-                // Wrap around
-                if (cloud.position.x > 15) cloud.position.x = -15;
-                if (cloud.position.x < -15) cloud.position.x = 15;
+            // 3. Animate Stations
+            stations.forEach((s, i) => {
+                if(s.prop) {
+                    s.prop.rotation.y = time * 0.5;
+                    s.prop.position.y = 1 + Math.sin(time + i) * 0.2;
+                }
+                if(s.orbitGroup) {
+                    s.orbitGroup.children.forEach((pivot, j) => {
+                        pivot.rotation.y += 0.02 * (j+1);
+                        pivot.rotation.z = Math.sin(time * 2 + j) * 0.2;
+                    });
+                }
             });
 
             renderer.render(scene, camera);
@@ -590,7 +758,7 @@
 
         animate();
 
-        // Handle Resize
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
