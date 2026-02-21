@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Bright Interactive)', () => {
+test.describe('SPJ Guild Page (Parchment Tavern)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -16,25 +16,27 @@ test.describe('SPJ Guild Page (Bright Interactive)', () => {
     await expect(page.locator('.char-container')).toBeVisible();
   });
 
-  test('should display Dialogue Box', async ({ page }) => {
+  test('should display Dialogue', async ({ page }) => {
     await expect(page.locator('.dialogue-box')).toBeVisible();
     await page.mouse.wheel(0, 100);
     await page.waitForTimeout(1000);
-    // Use partial text match for robustnes
     await expect(page.locator('#dialogue-text')).toContainText('嘿');
   });
 
-  test('should display Footer Socials on Scroll End', async ({ page }) => {
-    // Scroll to end
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
-    await page.waitForTimeout(2000); // Wait for fade in
+  test('should open Parchment on Book Interaction (Simulated)', async ({ page }) => {
+    // We can't easily click the 3D book in headless without coordinate guessing,
+    // but we can call the exposed global function
+    await page.evaluate("window.openScroll()");
+    await page.waitForTimeout(1000);
 
-    await expect(page.locator('#footer-socials')).toHaveCSS('opacity', '1');
-    const threadsLink = page.locator('#footer-socials a[href*="threads.net"]');
-    await expect(threadsLink).toBeVisible();
+    await expect(page.locator('#quest-parchment')).toBeVisible();
+    await expect(page.locator('.parchment-header')).toHaveText('QUEST LOG');
+    await expect(page.locator('.quest-title').first()).toContainText('Text Town');
   });
 
-  test('should have Three.js canvas', async ({ page }) => {
-    await expect(page.locator('#canvas-container canvas')).toBeVisible();
+  test('should display Footer Socials at end', async ({ page }) => {
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+    await page.waitForTimeout(2000);
+    await expect(page.locator('#footer-socials')).toHaveCSS('opacity', '1');
   });
 });

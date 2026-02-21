@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -17,11 +17,13 @@
 
     <style>
         :root {
-            --bg-dark: #1a120b; /* Lighter dark */
+            --bg-dark: #0f0a05;
             --ui-bg: rgba(40, 28, 18, 0.95);
             --ui-border: #a1887f;
             --text-gold: #ffd54f;
             --text-white: #fff3e0;
+            --parchment: #f0e6d2;
+            --ink: #3e2723;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,7 +37,7 @@
 
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; /* Canvas at 0 */
+            z-index: 0;
         }
 
         /* --- Scroll Track --- */
@@ -44,7 +46,7 @@
         /* --- UI Layer --- */
         #ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; /* Pass clicks to canvas */
+            pointer-events: none;
             z-index: 10;
         }
 
@@ -59,13 +61,13 @@
         }
         .nav-return:hover { background: var(--text-gold); color: #000; }
 
-        /* Character Sprite (Innkeeper) */
+        /* Character Sprite */
         .char-container {
             position: absolute;
             bottom: 30vh; right: 10vw;
             width: 350px; height: 350px;
             transition: transform 0.5s ease-out;
-            pointer-events: none; /* Let clicks pass */
+            pointer-events: none;
         }
         .char-img {
             width: 100%; height: 100%; object-fit: cover;
@@ -104,50 +106,99 @@
         }
         @keyframes pulse { 50% { opacity: 0.3; } }
 
-        /* Interaction Overlay (Project Menu) */
-        #project-menu {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; max-width: 900px;
-            background: rgba(40, 28, 18, 0.98);
-            border: 2px solid var(--text-gold);
-            padding: 3rem;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
+        /* Parchment Overlay (The Book Interaction) */
+        #quest-parchment {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            width: 90%; max-width: 700px; height: 80vh;
+            background: var(--parchment);
+            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.3"/></svg>');
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+            padding: 4rem 3rem;
             opacity: 0; pointer-events: none;
             z-index: 20;
-            transition: opacity 0.3s;
+            color: var(--ink);
+            overflow-y: auto;
+            clip-path: polygon(0 2%, 2% 0, 98% 0, 100% 2%, 100% 98%, 98% 100%, 2% 100%, 0 98%); /* Rough edges */
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
         }
 
-        .menu-visible { opacity: 1 !important; pointer-events: auto !important; }
-
-        .menu-item {
-            border: 1px solid #5d4037; padding: 1.5rem; text-align: center;
-            transition: 0.3s; cursor: pointer;
+        #quest-parchment.visible {
+            opacity: 1; pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
         }
-        .menu-item:hover { background: #4e342e; border-color: var(--text-gold); }
-        .menu-item h3 { color: var(--text-gold); font-family: 'Cinzel'; margin-bottom: 0.5rem; }
-        .menu-item p { font-size: 0.9rem; color: #ccc; }
 
-        /* Skill Board (On Wall) */
+        .parchment-header {
+            text-align: center;
+            font-family: 'Cinzel';
+            font-size: 2.5rem;
+            border-bottom: 2px solid var(--ink);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            color: #5d4037;
+        }
+
+        .quest-item {
+            margin-bottom: 2rem;
+            border-bottom: 1px dashed rgba(62, 39, 35, 0.3);
+            padding-bottom: 1rem;
+        }
+        .quest-item:last-child { border: none; }
+
+        .quest-title {
+            font-family: 'IM Fell English', serif;
+            font-weight: bold;
+            font-size: 1.5rem;
+            display: flex; justify-content: space-between;
+            color: #3e2723;
+        }
+        .quest-desc {
+            font-family: 'Dancing Script', cursive; /* Handwritten feel */
+            font-size: 1.3rem;
+            color: #5d4037;
+            margin-top: 0.5rem;
+        }
+
+        .seal-close {
+            position: absolute; top: 1rem; right: 1rem;
+            width: 50px; height: 50px;
+            background: #8b0000;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-family: 'Cinzel'; font-weight: bold; font-size: 0.8rem;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            border: 2px dashed rgba(255,255,255,0.3);
+            transition: transform 0.2s;
+        }
+        .seal-close:hover { transform: scale(1.1); }
+
+        /* Skill Board (Wall) */
         #skill-board {
             position: absolute; top: 20vh; left: 15vw;
             width: 300px;
-            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="%234e342e"/></svg>');
+            background: #4e342e;
             border: 8px solid #3e2723;
             padding: 2rem;
             transform: rotate(-2deg);
             box-shadow: 5px 10px 20px rgba(0,0,0,0.5);
-            opacity: 0; /* Animated in */
+            opacity: 0;
         }
-        .skill-title { text-align: center; border-bottom: 2px solid #fff; padding-bottom: 5px; margin-bottom: 1rem; font-family: 'IM Fell English SC'; font-size: 1.5rem; }
+        .skill-title { text-align: center; border-bottom: 2px solid #fff; padding-bottom: 5px; margin-bottom: 1rem; font-family: 'IM Fell English'; font-size: 1.5rem; }
         .skill-list li { margin-bottom: 0.5rem; font-family: 'Noto Serif TC'; }
 
-        /* Instructions */
-        .instructions {
-            position: fixed; bottom: 30vh; width: 100%; text-align: center;
-            color: var(--text-gold); font-family: 'Cinzel'; text-shadow: 0 0 5px #000;
-            pointer-events: none; opacity: 0; transition: opacity 0.5s;
-            z-index: 15;
+        /* Footer Socials */
+        .footer-socials {
+            position: fixed; bottom: 2rem; right: 2rem;
+            display: flex; gap: 1rem;
+            pointer-events: auto;
+            opacity: 0;
+        }
+        .social-btn {
+            background: var(--text-gold); color: #000;
+            padding: 10px 20px; font-family: 'Cinzel';
+            text-decoration: none; border-radius: 4px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
         #loader {
@@ -157,29 +208,11 @@
             color: var(--text-gold); font-family: 'Cinzel'; letter-spacing: 5px;
         }
 
-        /* Footer / Socials (Visible at end) */
-        .footer-socials {
-            position: fixed; bottom: 2rem; right: 2rem;
-            display: flex; gap: 1rem;
-            pointer-events: auto;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .social-btn {
-            background: var(--text-gold); color: #000;
-            padding: 10px 20px; font-family: 'Cinzel';
-            text-decoration: none; border-radius: 4px;
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        .social-btn:hover { background: #fff; }
-
     </style>
 </head>
 <body>
 
-    <div id="loader">LIGHTING THE CANDLE...</div>
+    <div id="loader">MATERIALIZING TAVERN...</div>
 
     <div id="canvas-container"></div>
     <a href="/guild/" class="nav-return">LEAVE TAVERN</a>
@@ -194,19 +227,16 @@
             <div class="speaker-tag">SPJ</div>
         </div>
 
-        <!-- Skill Board (Wall) -->
+        <!-- Skill Board -->
         <div id="skill-board">
             <div class="skill-title">TODAY'S SPECIALS</div>
             <ul class="skill-list" style="list-style: none; padding: 0;">
-                <li>🍺 Code Synthesis (Lager)</li>
-                <li>🍷 Materialization (Red)</li>
-                <li>☕ Coffee (Mana Potion)</li>
+                <li>🍺 Code Synthesis</li>
+                <li>🍷 Materialization</li>
+                <li>☕ Mana Potion (Coffee)</li>
                 <li>📜 Creative Writing</li>
             </ul>
         </div>
-
-        <!-- Interaction Prompt -->
-        <div class="instructions" id="interaction-hint">CLICK THE BOOK TO VIEW QUESTS</div>
 
         <!-- Dialogue Box -->
         <div class="dialogue-box">
@@ -214,27 +244,38 @@
             <div class="dialogue-prompt">▼ SCROLL TO CONTINUE</div>
         </div>
 
-        <!-- Project Menu (Overlay) -->
-        <div id="project-menu">
-            <div style="grid-column: 1/-1; text-align: center; font-family: 'Cinzel'; color: var(--text-gold); font-size: 2rem; margin-bottom: 1rem;">Quest Log</div>
-            <div class="menu-item">
-                <h3>Text Town</h3>
-                <p>A world materialized from pure language.</p>
+        <!-- The Parchment (Hidden) -->
+        <div id="quest-parchment">
+            <div class="seal-close" onclick="closeScroll()">CLOSE</div>
+            <div class="parchment-header">QUEST LOG</div>
+
+            <div class="quest-item">
+                <div class="quest-title">Text Town <span style="color: #8b0000; font-size: 1rem;">RANK S</span></div>
+                <div class="quest-desc">
+                    "A world forged from language itself. Where descriptions become reality, and the 'Book of Heavens' governs all laws."
+                </div>
             </div>
-            <div class="menu-item">
-                <h3>Adventure Guild</h3>
-                <p>The nexus for real-world creators.</p>
+
+            <div class="quest-item">
+                <div class="quest-title">Sepajuan Guild <span style="color: #8b0000; font-size: 1rem;">RANK A</span></div>
+                <div class="quest-desc">
+                    "The Sanctuary. A gathering place for the weary creators of this realm to find allies, share resources, and rest."
+                </div>
             </div>
-            <div class="menu-item">
-                <h3>Chronicles</h3>
-                <p>Recording the warmth of the journey.</p>
+
+            <div class="quest-item">
+                <div class="quest-title">The Chronicles <span style="color: #8b0000; font-size: 1rem;">RANK B</span></div>
+                <div class="quest-desc">
+                    "Recording the warmth of the journey. For the result is cold, but the process burns with life."
+                </div>
             </div>
-            <div style="grid-column: 1/-1; text-align: center; margin-top: 1rem;">
-                <button onclick="closeMenu()" style="background:none; border:1px solid #8d6e63; color: #fff; padding: 5px 15px; cursor: pointer; font-family: 'Cinzel'; pointer-events: auto;">CLOSE</button>
+
+            <div style="text-align: center; margin-top: 3rem; opacity: 0.6; font-family: 'Cinzel'; color: #5d4037;">
+                [ QUESTS AVAILABLE ]
             </div>
         </div>
 
-        <!-- Footer Socials -->
+        <!-- Footer -->
         <div class="footer-socials" id="footer-socials">
             <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn">THREADS</a>
         </div>
@@ -256,210 +297,233 @@
         // --- Init Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Lighter fog for better visibility
-        scene.fog = new THREE.FogExp2(0x1a120b, 0.03);
+        scene.fog = new THREE.FogExp2(0x1a120b, 0.025);
 
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3, 8); // Seated position
+        camera.position.set(0, 3, 8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2; // Brighter
+        renderer.toneMappingExposure = 1.3;
         container.appendChild(renderer.domElement);
 
-        // --- Lighting (Brighter!) ---
-        const ambientLight = new THREE.AmbientLight(0xffe0b2, 0.6); // Boost ambient
+        // --- Lighting ---
+        // Ambient (Warm)
+        const ambientLight = new THREE.AmbientLight(0xffe0b2, 0.7);
         scene.add(ambientLight);
 
-        const hemisphereLight = new THREE.HemisphereLight(0xffe0b2, 0x3e2723, 0.4);
-        scene.add(hemisphereLight);
-
-        // Candle Light (Warm, Flickering)
+        // Candle (Flicker)
         const candleLight = new THREE.PointLight(0xff5722, 2, 20);
         candleLight.position.set(2, 1.5, 1);
         candleLight.castShadow = true;
         scene.add(candleLight);
 
-        // Window Light (Cool)
-        const windowLight = new THREE.SpotLight(0x4fc3f7, 3);
-        windowLight.position.set(-10, 5, 0);
-        windowLight.target.position.set(0, 0, 0);
+        // Window (Cool)
+        const windowLight = new THREE.SpotLight(0x4fc3f7, 2.5);
+        windowLight.position.set(-8, 5, -2);
+        windowLight.target.position.set(0, 0, -5);
         windowLight.castShadow = true;
         scene.add(windowLight);
         scene.add(windowLight.target);
 
+        // Book Highlight (Spotlight)
+        const bookSpot = new THREE.SpotLight(0xffd700, 5, 10, 0.5, 0.5, 1);
+        bookSpot.position.set(0, 5, 2);
+        bookSpot.target.position.set(-1.5, 0, 2);
+        bookSpot.visible = false; // Turn on when relevant
+        scene.add(bookSpot);
+        scene.add(bookSpot.target);
+
         // --- Environment ---
         const clickableObjects = [];
 
-        // 1. Counter Table
-        const tableGeo = new THREE.BoxGeometry(30, 1, 15);
-        const tableMat = new THREE.MeshStandardMaterial({
-            color: 0x5d4037, // Lighter wood
-            roughness: 0.7,
-            metalness: 0.1
-        });
-        const table = new THREE.Mesh(tableGeo, tableMat);
+        // 1. Bar Counter
+        const tableMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.6, metalness: 0.1 });
+        const table = new THREE.Mesh(new THREE.BoxGeometry(30, 1, 15), tableMat);
         table.position.set(0, -1, 0);
         table.receiveShadow = true;
         scene.add(table);
 
-        // 2. The Quest Book (Interactive)
-        const bookGroup = new THREE.Group();
-        // Cover
-        const coverGeo = new THREE.BoxGeometry(2, 0.3, 3);
-        const coverMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
-        const book = new THREE.Mesh(coverGeo, coverMat);
-        book.castShadow = true;
+        // 2. Back Wall (Shelves & Window)
+        const wallGroup = new THREE.Group();
+        wallGroup.position.set(0, 0, -5);
 
-        // Pages (Thicker/Brighter)
-        const pageGeo = new THREE.BoxGeometry(1.8, 0.15, 2.8);
-        const pageMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-        const pages = new THREE.Mesh(pageGeo, pageMat);
+        // Shelves
+        const shelfGeo = new THREE.BoxGeometry(12, 0.2, 1.5);
+        const s1 = new THREE.Mesh(shelfGeo, tableMat); s1.position.y = 2;
+        const s2 = new THREE.Mesh(shelfGeo, tableMat); s2.position.y = 4;
+        wallGroup.add(s1, s2);
+
+        // Bottles (Randomized)
+        const bottleColors = [0xef5350, 0x66bb6a, 0x42a5f5, 0xffca28, 0xab47bc];
+        const bottleGeo = new THREE.CylinderGeometry(0.25, 0.25, 1, 8);
+        for(let i=0; i<15; i++) {
+            const mat = new THREE.MeshStandardMaterial({
+                color: bottleColors[Math.floor(Math.random()*bottleColors.length)],
+                transparent: true, opacity: 0.9, roughness: 0.1
+            });
+            const b = new THREE.Mesh(bottleGeo, mat);
+            b.position.set((Math.random()-0.5)*10, Math.random()>0.5?2.6:4.6, 0);
+            b.scale.setY(0.8 + Math.random()*0.4);
+            wallGroup.add(b);
+        }
+
+        // Barrels
+        const barrelGeo = new THREE.CylinderGeometry(0.8, 0.8, 2, 16);
+        const barrelMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
+        const b1 = new THREE.Mesh(barrelGeo, barrelMat); b1.position.set(-5, 0, 0); b1.rotation.z = Math.PI/2;
+        const b2 = new THREE.Mesh(barrelGeo, barrelMat); b2.position.set(5, 0, 0); b2.rotation.z = Math.PI/2;
+        wallGroup.add(b1, b2);
+
+        // Window (Fake outside)
+        const winFrame = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 0.2), tableMat);
+        winFrame.position.set(-8, 3, 0);
+        const winGlass = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 3.5), new THREE.MeshBasicMaterial({ color: 0x0d47a1 })); // Night sky
+        winGlass.position.set(0, 0, 0.11);
+        winFrame.add(winGlass);
+        wallGroup.add(winFrame);
+
+        scene.add(wallGroup);
+
+        // 3. The Interactive Book
+        const bookGroup = new THREE.Group();
+        const coverMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
+        const book = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 3), coverMat);
+        const pages = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.15, 2.8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
         pages.position.y = 0.15;
 
-        // Label on cover
+        // "Magic Glow" particles above book
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(50 * 3);
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({ color: 0xffd700, size: 0.05, transparent: true });
+        const magic = new THREE.Points(pGeo, pMat);
+        magic.position.y = 0.5;
+        bookGroup.add(book, pages, magic);
 
-        bookGroup.add(book, pages);
         bookGroup.position.set(-1.5, -0.4, 2);
         bookGroup.rotation.y = 0.5;
         bookGroup.userData = { id: 'book' };
         scene.add(bookGroup);
 
-        // Invisible Hitbox for easier clicking
-        const bookHitbox = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 4), new THREE.MeshBasicMaterial({visible: false}));
-        bookHitbox.position.copy(bookGroup.position);
-        bookHitbox.userData = { id: 'book' };
-        scene.add(bookHitbox);
-        clickableObjects.push(bookHitbox);
+        // Hitbox
+        const bookHit = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 4), new THREE.MeshBasicMaterial({visible:false}));
+        bookHit.position.copy(bookGroup.position);
+        bookHit.userData = { id: 'book' };
+        scene.add(bookHit);
+        clickableObjects.push(bookHit);
 
-        // 3. Tankard (Interactive)
-        const tankardGroup = new THREE.Group();
-        const mugGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16);
-        const mugMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63 });
-        const mug = new THREE.Mesh(mugGeo, mugMat);
-        mug.castShadow = true;
+        // 4. Tankard
+        const mugGroup = new THREE.Group();
+        const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0x8d6e63 }));
         mug.position.y = 0.6;
+        mugGroup.add(mug);
+        mugGroup.position.set(1.5, -0.5, 2.5);
+        mugGroup.userData = { id: 'mug' };
+        scene.add(mugGroup);
 
-        // Foam
-        const foamGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.1, 16);
-        const foamMat = new THREE.MeshStandardMaterial({ color: 0xffecb3 });
-        const foam = new THREE.Mesh(foamGeo, foamMat);
-        foam.position.y = 1.2;
+        const mugHit = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3, 1.5), new THREE.MeshBasicMaterial({visible:false}));
+        mugHit.position.copy(mugGroup.position);
+        mugHit.userData = { id: 'mug' };
+        scene.add(mugHit);
+        clickableObjects.push(mugHit);
 
-        tankardGroup.add(mug, foam);
-        tankardGroup.position.set(1.5, -0.5, 2.5);
-        tankardGroup.userData = { id: 'mug' };
-        scene.add(tankardGroup);
-
-        const mugHitbox = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 2), new THREE.MeshBasicMaterial({visible: false}));
-        mugHitbox.position.copy(tankardGroup.position);
-        mugHitbox.position.y += 0.5;
-        mugHitbox.userData = { id: 'mug' };
-        scene.add(mugHitbox);
-        clickableObjects.push(mugHitbox);
-
-        // 4. Candle
-        const waxGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8);
-        const waxMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffaa00, emissiveIntensity: 0.2 });
-        const candle = new THREE.Mesh(waxGeo, waxMat);
+        // 5. Candle
+        const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8), new THREE.MeshStandardMaterial({color: 0xffffff}));
         candle.position.copy(candleLight.position);
         candle.position.y -= 0.5;
         scene.add(candle);
 
-        // 5. Business Card (Socials)
-        const cardGeo = new THREE.BoxGeometry(1, 0.02, 0.6);
-        const cardMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-        const bizCard = new THREE.Mesh(cardGeo, cardMat);
-        bizCard.position.set(0, -0.49, 3);
-        bizCard.rotation.y = -0.2;
-        bizCard.castShadow = true;
-        bizCard.userData = { id: 'card' };
-        scene.add(bizCard);
-        clickableObjects.push(bizCard);
+        // 6. Business Card
+        const card = new THREE.Mesh(new THREE.BoxGeometry(1, 0.02, 0.6), new THREE.MeshStandardMaterial({color: 0xffffff}));
+        card.position.set(0, -0.49, 3);
+        card.rotation.y = -0.2;
+        card.userData = { id: 'card' };
+        scene.add(card);
+        clickableObjects.push(card);
 
-        // --- Interaction Logic ---
+
+        // --- Interaction ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (e) => {
-            // Only raycast if clicking NOT on UI elements
-            if (e.target.closest('a, button, .menu-item')) return;
+            if (e.target.closest('a, button, .seal-close')) return;
 
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(clickableObjects);
 
             if (intersects.length > 0) {
                 const id = intersects[0].object.userData.id;
-                if (id === 'book') {
-                    openMenu();
-                } else if (id === 'mug') {
-                    toastAnim();
-                } else if (id === 'card') {
-                    window.open('https://www.threads.net/@spj.story', '_blank');
-                }
+                if (id === 'book') openScroll();
+                if (id === 'mug') toastAnim();
+                if (id === 'card') window.open('https://www.threads.net/@spj.story', '_blank');
             }
         });
 
-        // Hover Effect
+        // Hover
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(clickableObjects);
-            if (intersects.length > 0) {
-                document.body.style.cursor = 'pointer';
-            } else {
-                document.body.style.cursor = 'default';
-            }
+            document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
         });
 
         function toastAnim() {
-            gsap.to(tankardGroup.position, { y: 0.5, duration: 0.2, yoyo: true, repeat: 1 });
-            gsap.to(tankardGroup.rotation, { z: -0.2, duration: 0.2, yoyo: true, repeat: 1 });
+            gsap.to(mugGroup.position, { y: 0.5, duration: 0.2, yoyo: true, repeat: 1 });
+            gsap.to(mugGroup.rotation, { z: -0.3, duration: 0.2, yoyo: true, repeat: 1 });
         }
 
-        // --- Menu Logic ---
-        window.openMenu = () => {
-            document.getElementById('project-menu').classList.add('menu-visible');
+        window.openScroll = () => {
+            document.getElementById('quest-parchment').classList.add('visible');
+            // Animate book opening slightly
+            gsap.to(pages.scale, { y: 2, duration: 0.5 });
         };
-        window.closeMenu = () => {
-            document.getElementById('project-menu').classList.remove('menu-visible');
+        window.closeScroll = () => {
+            document.getElementById('quest-parchment').classList.remove('visible');
+            gsap.to(pages.scale, { y: 1, duration: 0.5 });
         };
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
-
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Flicker Candle
+            // Candle Flicker
             candleLight.intensity = 1.5 + Math.sin(time * 10) * 0.3 + Math.cos(time * 25) * 0.2;
 
-            // Float Foam
-            foam.position.y = 1.2 + Math.sin(time * 2) * 0.02;
+            // Magic Particles
+            const pos = magic.geometry.attributes.position.array;
+            for(let i=1; i<pos.length; i+=3) {
+                pos[i] += 0.01;
+                if (pos[i] > 1) {
+                    pos[i] = 0;
+                    pos[i-1] = (Math.random()-0.5);
+                    pos[i+1] = (Math.random()-0.5);
+                }
+            }
+            magic.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP Narrative Director ---
+        // --- GSAP Director ---
         gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-        // Script
         const script = [
-            { text: "嘿，你來了。外面天氣不好吧？快進來暖暖身子。", camera: { x:0, y:3, z:8 }, showSkill: false },
-            { text: "這裡的「菜單」還算豐富。你要來點代碼特調，還是關於具現化的故事？", camera: { x: -2, y: 3.5, z: 6 }, showSkill: true }, // Zoom to Wall
-            { text: "我正在寫一本冒險日誌... 關於「文字小鎮」的傳說。如果你有興趣，可以翻翻桌上那本書。", camera: { x: -1.5, y: 1, z: 4 }, showSkill: false, hint: true }, // Look at Book
-            { text: "不只是故事。我還想建立一個「公會」。連結所有像我們這樣孤獨的創造者。", camera: { x: 0, y: 3, z: 8 }, showSkill: false }, // Back to Center
-            { text: "這張名片你收著。這杯酒敬你，未來的冒險夥伴。乾杯！", camera: { x: 1.5, y: 1, z: 4 }, showSkill: false, footer: true } // Look at Mug/Card
+            { text: "嘿，你來了。外面天氣不好吧？快進來暖暖身子。", camera: { x:0, y:3, z:8 }, spot: false },
+            { text: "看看這面牆，都是我的拿手絕活。代碼特調，保證順口。", camera: { x: -2, y: 3.5, z: 6 }, spot: false, skill: true },
+            { text: "對了，桌上那本<span style='color:#ffd54f'>「任務日誌」</span>... 記載著我最近的瘋狂計畫。點開看看吧？", camera: { x: -1.5, y: 1, z: 4 }, spot: true, skill: false },
+            { text: "我夢想建立一個「公會」。讓所有孤獨的創造者都能在這裡找到歸屬。", camera: { x: 0, y: 3, z: 8 }, spot: false, skill: false },
+            { text: "這張名片你收著。這杯酒敬你，未來的冒險夥伴。乾杯！", camera: { x: 1.5, y: 1, z: 4 }, spot: false, skill: false, footer: true }
         ];
 
         const textBox = document.getElementById('dialogue-text');
@@ -469,16 +533,13 @@
             start: "top top",
             end: "bottom bottom",
             onUpdate: (self) => {
-                const p = self.progress;
-                const idx = Math.min(Math.floor(p * script.length), script.length - 1);
+                const idx = Math.min(Math.floor(self.progress * script.length), script.length - 1);
                 const beat = script[idx];
 
-                // Update Text
                 if (textBox.dataset.index != idx) {
                     textBox.dataset.index = idx;
                     gsap.to(textBox, { text: beat.text, duration: 1 });
 
-                    // Camera Move
                     if (beat.camera) {
                         gsap.to(camera.position, {
                             x: beat.camera.x, y: beat.camera.y, z: beat.camera.z,
@@ -486,31 +547,18 @@
                         });
                     }
 
-                    // Show/Hide Skill Board
-                    if (beat.showSkill) {
-                        gsap.to("#skill-board", { opacity: 1, x: 0, duration: 0.5 });
-                    } else {
-                        gsap.to("#skill-board", { opacity: 0, x: -50, duration: 0.5 });
-                    }
+                    // Spotlight logic
+                    bookSpot.visible = beat.spot;
 
-                    // Show Hint
-                    if (beat.hint) {
-                        gsap.to("#interaction-hint", { opacity: 1, duration: 0.5, delay: 1 });
-                    } else {
-                        gsap.to("#interaction-hint", { opacity: 0, duration: 0.3 });
-                    }
+                    // Skill Board
+                    gsap.to("#skill-board", { opacity: beat.skill ? 1 : 0, duration: 0.5 });
 
-                    // Show Footer
-                    if (beat.footer) {
-                        gsap.to("#footer-socials", { opacity: 1 });
-                    } else {
-                        gsap.to("#footer-socials", { opacity: 0 });
-                    }
+                    // Footer
+                    gsap.to("#footer-socials", { opacity: beat.footer ? 1 : 0, duration: 0.5 });
                 }
             }
         });
 
-        // Loader
         window.addEventListener('load', () => {
             gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").remove() });
         });
