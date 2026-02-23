@@ -362,6 +362,42 @@
         }
 
         /* ═══════════════════════════════════════
+           SOULBOUND (Couple Card)
+           ═══════════════════════════════════════ */
+        .soulbound-link {
+            display: flex; align-items: center; gap: 1.5rem;
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(138, 0, 0, 0.08), rgba(201, 168, 76, 0.05));
+            border: 1px solid rgba(201, 160, 89, 0.2);
+            text-decoration: none; color: var(--c-text);
+            transition: 0.4s; margin-top: 2rem;
+            max-width: 650px; width: 100%;
+        }
+        .soulbound-link:hover {
+            border-color: var(--c-gold);
+            background: linear-gradient(135deg, rgba(138, 0, 0, 0.15), rgba(201, 168, 76, 0.1));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(201, 168, 76, 0.12);
+        }
+        .soulbound-link .sb-avatar {
+            width: 56px; height: 56px;
+            clip-path: polygon(50% 0%, 95% 12%, 100% 50%, 95% 88%, 50% 100%, 5% 88%, 0% 50%, 5% 12%);
+            object-fit: cover; flex-shrink: 0;
+        }
+        .soulbound-link .sb-info { flex: 1; }
+        .soulbound-link .sb-name {
+            font-family: var(--f-header); font-size: 1.1rem;
+            color: var(--c-gold); letter-spacing: 0.05em;
+        }
+        .soulbound-link .sb-desc {
+            font-size: 0.8rem; color: #888; margin-top: 0.2rem;
+        }
+        .soulbound-link .sb-arrow {
+            color: rgba(197, 160, 89, 0.3); font-size: 1rem; transition: 0.3s;
+        }
+        .soulbound-link:hover .sb-arrow { color: var(--c-gold); transform: translateX(4px); }
+
+        /* ═══════════════════════════════════════
            AVATAR
            ═══════════════════════════════════════ */
         .avatar-frame {
@@ -1824,6 +1860,14 @@
                     平時喜歡和女兒 <span class="text-gold">小貓淵</span> 一起玩耍。
                 </p>
 
+                <a href="/guild/lubu" class="soulbound-link">
+                    <img src="/assets/img/guild/lubu/avatar.webp" alt="呂布" class="sb-avatar">
+                    <div class="sb-info">
+                        <div class="sb-name">呂布 — THE STRONGEST WARLORD</div>
+                        <div class="sb-desc">我的老公，被我從三國用克蘇魯之力拐來現代的最強武將。現在是陽台勢冷門遊戲直播主。</div>
+                    </div>
+                    <div class="sb-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                </a>
             </div>
         </section>
 
