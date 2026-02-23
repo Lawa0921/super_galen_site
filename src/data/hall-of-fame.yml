@@ -897,3 +897,15 @@ members:
         label: "夢境魔女"
       - id: "forever_20"
         label: "永遠 20 歲"
+
+  - id: "lubu"
+    name: "呂布"
+    avatar: "/assets/img/guild/lubu/avatar.webp"
+    page: "/guild/lubu.html"
+    tags:
+      - id: "vtuber"
+        label: "個人勢 VTuber"
+      - id: "warlord"
+        label: "最強武將"
+      - id: "indie_games"
+        label: "獨立遊戲"
