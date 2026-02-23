@@ -383,6 +383,13 @@
             content: '➤'; position: absolute; left: 0; color: var(--c-blood-bright);
         }
 
+        /* ════════════ INTRO VEIL ════════════ */
+        .intro-veil {
+            position: fixed; inset: 0; z-index: 100;
+            background: var(--c-bg);
+            pointer-events: none;
+        }
+
         /* ════════════ MOBILE ════════════ */
         @media (max-width: 900px) {
             .nav-back { top: 1rem; left: 1rem; padding: 0.5rem 1rem; font-size: 0.8rem; }
@@ -425,6 +432,7 @@
     </style>
 </head>
 <body>
+    <div class="intro-veil" id="intro-veil"></div>
     <div class="noise-overlay"></div>
 
     <!-- Custom Cursor -->
@@ -684,7 +692,15 @@
             map: goldTexture, color: 0xffd700, roughness: 0.3, metalness: 1.0, emissive: 0x332200
         });
         const darkMetalMat = new THREE.MeshStandardMaterial({
-            color: 0x222222, roughness: 0.5, metalness: 0.8
+            color: 0x2a2a2a, roughness: 0.5, metalness: 0.75, emissive: 0x080808
+        });
+        // Silver steel material for halberd pole, blades, and spike
+        const silverMat = new THREE.MeshStandardMaterial({
+            color: 0xc0c0c0, roughness: 0.25, metalness: 0.95, emissive: 0x111111
+        });
+        // Gold ornament material for guard
+        const goldGuardMat = new THREE.MeshStandardMaterial({
+            color: 0xdaa520, roughness: 0.3, metalness: 1.0, emissive: 0x332200
         });
 
         // Lights
@@ -697,41 +713,109 @@
         rimLight.position.set(-5, 0, 10);
         scene.add(rimLight);
 
-        // ─── HALBERD ───
+        // ─── HALBERD (方天畫戟) ───
         const halberdGroup = new THREE.Group();
 
-        // Pole
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 35, 12), darkMetalMat);
+        // Pole — silver steel, long and tapered
+        const pole = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.10, 0.14, 35, 16),
+            silverMat
+        );
         halberdGroup.add(pole);
-
-        // Rings
-        for(let i=0; i<6; i++) {
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.08, 8, 16), goldMat);
-            ring.rotation.x = Math.PI/2;
-            ring.position.y = 8 - i*3;
-            halberdGroup.add(ring);
-        }
 
         // Blade System
         const bladeGroup = new THREE.Group();
-        bladeGroup.position.y = 14;
-        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.5, 8, 4), goldMat);
+        bladeGroup.position.y = 15;
+
+        // Central spike — silver, tall and very slender spear tip
+        const spike = new THREE.Mesh(
+            new THREE.ConeGeometry(0.2, 10, 4),
+            silverMat
+        );
+        spike.position.y = 3;
         bladeGroup.add(spike);
 
+        // Crescent blade — narrow, razor-thin crescent matching 方天畫戟 reference
+        // Band width ~0.3, outward extent ~2.2, vertical span ~8
         const crescentShape = new THREE.Shape();
-        crescentShape.moveTo(0.6, -3);
-        crescentShape.bezierCurveTo(4, -1, 4, 3, 0.6, 5);
-        crescentShape.lineTo(0.6, 3);
-        crescentShape.bezierCurveTo(2.5, 2, 2.5, 0, 0.6, -1);
-        const crescentGeo = new THREE.ExtrudeGeometry(crescentShape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.05 });
-        const leftBlade = new THREE.Mesh(crescentGeo, goldMat);
-        leftBlade.scale.set(-1, 1, 1); leftBlade.position.x = -0.1;
-        const rightBlade = new THREE.Mesh(crescentGeo, goldMat);
-        rightBlade.position.x = 0.1;
-        bladeGroup.add(leftBlade); bladeGroup.add(rightBlade);
+        // Upper tip — sharp, pointing upward
+        crescentShape.moveTo(0.4, 4.0);
+        // Outer arc — gentle curve outward then sweeps down
+        crescentShape.bezierCurveTo(1.2, 3.6, 2.0, 2.0, 2.2, 0.0);
+        crescentShape.bezierCurveTo(2.3, -2.0, 1.6, -3.2, 0.8, -3.8);
+        // Lower tip — sharp hook curving back
+        crescentShape.bezierCurveTo(0.4, -4.0, 0.3, -3.6, 0.6, -3.3);
+        // Inner arc — very close to outer (thin blade ~0.3 band)
+        crescentShape.bezierCurveTo(1.3, -2.8, 1.9, -1.8, 1.9, 0.0);
+        crescentShape.bezierCurveTo(1.8, 1.8, 1.0, 3.2, 0.6, 3.6);
+        // Close to upper tip
+        crescentShape.bezierCurveTo(0.5, 3.8, 0.4, 3.9, 0.4, 4.0);
+
+        const crescentGeo = new THREE.ExtrudeGeometry(crescentShape, {
+            depth: 0.04,
+            bevelEnabled: true,
+            bevelThickness: 0.02,
+            bevelSize: 0.01,
+            bevelSegments: 2
+        });
+
+        // Right crescent blade
+        const rightBlade = new THREE.Mesh(crescentGeo, silverMat);
+        rightBlade.position.set(0.15, -1.5, -0.02);
+        bladeGroup.add(rightBlade);
+
+        // Left crescent blade (mirrored)
+        const leftBlade = new THREE.Mesh(crescentGeo, silverMat);
+        leftBlade.scale.set(-1, 1, 1);
+        leftBlade.position.set(-0.15, -1.5, -0.02);
+        bladeGroup.add(leftBlade);
+
+        // Cross guard — thin horizontal silver bar
+        const crossGuard = new THREE.Mesh(
+            new THREE.BoxGeometry(1.4, 0.12, 0.12),
+            silverMat
+        );
+        crossGuard.position.y = -1.5;
+        bladeGroup.add(crossGuard);
+
+        // Gold ornamental guard — small decorative knob at junction
+        const guard = new THREE.Mesh(
+            new THREE.SphereGeometry(0.35, 16, 16),
+            goldGuardMat
+        );
+        guard.position.y = -1.5;
+        guard.scale.set(1, 0.7, 1);
+        bladeGroup.add(guard);
+
+        // Small gold collar rings above and below guard
+        const collarGeo = new THREE.TorusGeometry(0.18, 0.04, 8, 16);
+        const collarTop = new THREE.Mesh(collarGeo, goldGuardMat);
+        collarTop.rotation.x = Math.PI / 2;
+        collarTop.position.y = -0.9;
+        bladeGroup.add(collarTop);
+        const collarBottom = new THREE.Mesh(collarGeo, goldGuardMat);
+        collarBottom.rotation.x = Math.PI / 2;
+        collarBottom.position.y = -2.1;
+        bladeGroup.add(collarBottom);
 
         halberdGroup.add(bladeGroup);
         scene.add(halberdGroup);
+
+        // Expose debug info for E2E testing
+        window.__halberdDebug = {
+            poleMaterial: silverMat,
+            bladeMaterial: silverMat,
+            spikeMaterial: silverMat,
+            guardMaterial: goldGuardMat,
+            camera: camera,
+            halberdGroup: halberdGroup,
+            hasSpike: true,
+            hasLeftBlade: true,
+            hasRightBlade: true,
+            hasPole: true,
+            hasGuard: true,
+            hasCrossGuard: true,
+        };
 
         // ─── TALISMANS ───
         const talismans = [];
@@ -818,44 +902,100 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Re-check layout
-            updateHalberdPosition();
         });
 
         function updateHalberdPosition() {
             if(window.innerWidth > 900) {
-                // Desktop: Shift Halberd to Left (-5) to frame content
-                halberdGroup.position.set(-5, -2, -2);
-                halberdGroup.rotation.z = Math.PI / 6;
+                // Desktop: Y=-6 讓刃部落在可視範圍 (Y=-6+15*cos(25.7°)≈8.5 < 11.5)
+                halberdGroup.position.set(-3, -6, 2);
+                halberdGroup.rotation.z = Math.PI / 7;  // ≈25.7° (原 30°)
                 halberdGroup.rotation.x = 0;
             } else {
-                // Mobile: Center background, lower and further back
-                halberdGroup.position.set(0, -6, -8);
-                halberdGroup.rotation.z = Math.PI / 4;
+                // Mobile: 調低位置，減少旋轉角度讓刃部可見
+                halberdGroup.position.set(-1, -6, -4);
+                halberdGroup.rotation.z = Math.PI / 6;  // 30° (原 45°)
             }
         }
-        updateHalberdPosition();
+        // 初始位置由入場動畫設定，updateHalberdPosition 作為最終目標位置
+        window.__halberdFinalPosition = updateHalberdPosition;
 
         // GSAP Scroll Interaction
         gsap.registerPlugin(ScrollTrigger);
 
-        // Spin the Halberd slowly as we scroll
+        // Spin the Halberd slowly as we scroll — 展示更多金屬面
         gsap.to(halberdGroup.rotation, {
             scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 },
-            y: Math.PI * 0.5, // Gentle spin
-            x: Math.PI * 0.1
+            y: Math.PI * 0.6,  // 108° 展示更多面 (原 0.5)
+            x: Math.PI * 0.05  // 減少傾斜 (原 0.1)
         });
 
-        // Entrance
+        // 滾動時緩慢上移，讓護手/月牙刃進入畫面中心
+        gsap.to(halberdGroup.position, {
+            scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 },
+            y: '+=10',  // 向上移動 (原 -=12 向下)
+            x: '+=2'
+        });
+
+        // ─── 入場動畫：方天畫戟破墨而出 ───
         window.onload = () => {
             document.body.classList.add('loaded');
 
-            // Left Col: Slide from left
-            gsap.from('.left-col .reveal', {
-                x: -50, opacity: 0, duration: 1.2, stagger: 0.1, ease: 'power3.out'
+            const introTL = gsap.timeline();
+
+            // Step 1: 戟從中央開始，靠近相機、正面朝向
+            halberdGroup.position.set(0, 0, 8);
+            halberdGroup.rotation.set(0, 0, 0);
+
+            // Step 2: 斬擊動畫 — 旋轉到最終角度
+            const isDesktop = window.innerWidth > 900;
+            const finalRotZ = isDesktop ? Math.PI / 7 : Math.PI / 6;
+            const finalPos = isDesktop
+                ? { x: -3, y: -6, z: 2 }
+                : { x: -1, y: -6, z: -4 };
+
+            introTL.to(halberdGroup.rotation, {
+                z: finalRotZ,
+                y: Math.PI * 0.15,
+                duration: 0.8,
+                ease: 'power3.in'
+            }, 0.3);
+
+            // Step 3: 移動到背景位置
+            introTL.to(halberdGroup.position, {
+                x: finalPos.x, y: finalPos.y, z: finalPos.z,
+                duration: 1.0,
+                ease: 'power2.inOut'
+            }, 0.5);
+
+            // Step 4: 在斬擊瞬間觸發墨汁爆發
+            introTL.call(() => {
+                if (typeof window.triggerInkBurst === 'function') {
+                    window.triggerInkBurst();
+                }
+            }, [], 0.8);
+
+            // Step 5: 遮罩淡出
+            introTL.to('#intro-veil', {
+                opacity: 0,
+                duration: 0.6,
+                ease: 'power2.out',
+                onComplete: () => document.getElementById('intro-veil')?.remove()
+            }, 1.0);
+
+            // Step 6: Hero 元素入場
+            introTL.from('.left-col .reveal', {
+                y: 40, opacity: 0,
+                duration: 0.8,
+                stagger: 0.12,
+                ease: 'power3.out'
+            }, 1.3);
+
+            // 標記入場動畫完成
+            introTL.call(() => {
+                window.__introComplete = true;
             });
 
-            // Cards: Slide from right + Scale up
+            // Cards: Slide from right + Scale up (scroll-triggered)
             const cards = document.querySelectorAll('.section-card');
             cards.forEach((card, i) => {
                 gsap.from(card, {
@@ -930,6 +1070,44 @@
                     p.circle(this.x, this.y, this.size);
                 }
             }
+
+            // 墨汁爆發用 Drop — 速度更快、方向放射狀
+            class BurstDrop {
+                constructor(x, y, size, angle, speed) {
+                    this.x = x; this.y = y; this.size = size;
+                    this.life = 255;
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+                }
+                update() {
+                    this.x += this.vx; this.y += this.vy;
+                    this.vx *= 0.96; this.vy *= 0.96;
+                    this.life -= 4;
+                    this.size *= 0.98;
+                }
+                draw() {
+                    p.fill(60, 0, 0, this.life * 0.5);
+                    p.circle(this.x, this.y, this.size);
+                }
+            }
+
+            // 全域墨汁爆發函式
+            window.triggerInkBurst = function() {
+                const cx = window.innerWidth / 2;
+                const cy = window.innerHeight / 2;
+                for (let i = 0; i < 40; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.random() * 60;
+                    const speed = 2 + Math.random() * 6;
+                    inkDrops.push(new BurstDrop(
+                        cx + Math.cos(angle) * dist,
+                        cy + Math.sin(angle) * dist,
+                        p.random(20, 50),
+                        angle,
+                        speed
+                    ));
+                }
+            };
 
             p.setup = () => {
                 let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
