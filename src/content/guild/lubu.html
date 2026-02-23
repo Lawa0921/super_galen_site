@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lu Bu 呂布 — 尋找失散部下的直播主</title>
-    <meta name="description" content="呂布 (Lu Bu) — 來自三國的最強武將，現役個人勢 VTuber。頂著蟑螂鬚鬚的呂布，直播獨立遊戲、冷門神作，尋找失散的十位部下。">
+    <title>Lu Bu 呂布 — 陽台勢 · 冷門遊戲直播主</title>
+    <meta name="description" content="呂布 (Lu Bu) — 來自三國的最強武將，現役陽台勢 VTuber。頂著蟑螂鬚鬚的呂布，直播獨立遊戲、冷門神作，尋找失散的十位部下。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
@@ -27,647 +26,1340 @@
 
     <style>
         :root {
-            --c-bg: #050202;
+            --c-bg: #0a0505;
             --c-blood: #8a0000;
-            --c-blood-bright: #ff3333;
-            --c-gold: #d4af37;
-            --c-gold-bright: #ffd700;
-            --c-jade: #00ffaa;
-            --c-text: #e0e0e0;
+            --c-blood-bright: #c62828;
+            --c-gold: #c9a84c;
+            --c-gold-bright: #e8c252;
+            --c-cream: #f0e6d3;
+            --c-ink: #1a1108;
+            --c-paper: #e8d5b5;
+            --c-seal: #b71c1c;
+            --c-text: #d4c5a9;
+            --c-text-dim: #8a7e6b;
 
             --f-header: 'Cinzel', serif;
             --f-body: 'Noto Serif TC', serif;
             --f-calligraphy: 'Ma Shan Zheng', cursive;
-            --f-tech: 'Orbitron', sans-serif;
+            --f-fun: 'ZCOOL KuaiLe', sans-serif;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        html { overflow-x: hidden; }
+        html { overflow-x: hidden; scroll-behavior: smooth; }
+
         body {
             background-color: var(--c-bg);
-            /* Grunge Texture Overlay */
             background-image: url('/assets/img/guild/lubu/bg_red.jpg');
             background-size: cover;
             background-position: center;
             background-blend-mode: multiply;
             background-attachment: fixed;
-
             color: var(--c-text);
             font-family: var(--f-body);
             overflow-x: hidden;
             opacity: 0;
             transition: opacity 0.8s ease-in;
         }
+        body.loaded { opacity: 1; }
 
-        body.loaded { opacity: 1; cursor: none; }
-
-        /* ════════════ CURSOR ════════════ */
-        #cursor {
-            position: fixed; top: 0; left: 0;
-            width: 40px; height: 40px;
-            pointer-events: none; z-index: 9999;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: difference;
-            transition: width 0.3s, height 0.3s, background 0.3s;
+        /* ════════════ CUSTOM CURSOR (Ink Brush) ════════════ */
+        @media (hover: hover) and (pointer: fine) {
+            body.loaded { cursor: none; }
+            #ink-cursor {
+                position: fixed; top: 0; left: 0;
+                pointer-events: none; z-index: 9999;
+                width: 28px; height: 28px;
+                transform: translate(-50%, -50%);
+            }
+            #ink-cursor .brush-tip {
+                width: 100%; height: 100%;
+                background: radial-gradient(ellipse at 60% 30%, var(--c-gold) 0%, var(--c-blood) 50%, transparent 70%);
+                border-radius: 50% 50% 50% 10%;
+                transform: rotate(-45deg);
+                opacity: 0.9;
+                transition: transform 0.2s, width 0.2s, height 0.2s;
+            }
+            body.hovering #ink-cursor .brush-tip {
+                width: 36px; height: 36px;
+                background: radial-gradient(ellipse at 60% 30%, var(--c-gold-bright) 0%, var(--c-seal) 60%, transparent 75%);
+                filter: drop-shadow(0 0 8px var(--c-gold));
+            }
         }
-        #cursor .ring {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border: 2px solid var(--c-gold); border-radius: 50%;
-            animation: rotate 4s linear infinite;
-            opacity: 0.8;
+        @media (hover: none) {
+            #ink-cursor { display: none; }
         }
-        #cursor .dot {
-            position: absolute; top: 50%; left: 50%;
-            width: 6px; height: 6px;
-            background: var(--c-blood-bright);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px var(--c-blood-bright);
-        }
-        #cursor .sight-line {
-            position: absolute; top: 50%; left: 50%;
-            width: 120%; height: 1px;
-            background: rgba(212, 175, 55, 0.5);
-            transform: translate(-50%, -50%) rotate(45deg);
-        }
-        #cursor .sight-line.two { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        body.hovering #cursor { width: 60px; height: 60px; }
-        body.hovering #cursor .ring { border-color: var(--c-blood-bright); animation-duration: 1s; border-width: 3px; }
-        body.hovering #cursor .dot { background: var(--c-gold); }
-
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* ════════════ LAYERS ════════════ */
+        /* ════════════ VISUAL LAYERS ════════════ */
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -1;
-            mask-image: linear-gradient(to right, black 40%, rgba(0,0,0,0.5) 100%);
+            mask-image: linear-gradient(to bottom, black 40%, rgba(0,0,0,0.4) 80%, rgba(0,0,0,0.15) 100%);
         }
         #p5-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; pointer-events: none; mix-blend-mode: overlay; opacity: 0.5;
+            z-index: 0; pointer-events: none; mix-blend-mode: multiply; opacity: 0.35;
         }
 
-        .noise-overlay {
+        /* Rice paper noise overlay */
+        .paper-grain {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIwLjA1Ii8+PC9zdmc+');
-            pointer-events: none; z-index: 99; opacity: 0.3;
+            pointer-events: none; z-index: 1; opacity: 0.08;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJnIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44IiBudW1PY3RhdmVzPSI0IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIxIi8+PC9zdmc+');
         }
 
-        /* ════════════ LAYOUT ════════════ */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            min-height: 100vh;
-            position: relative;
-            z-index: 10;
-        }
-
-        .left-col {
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-        }
-
-        .right-col {
-            padding: 4rem 2rem 4rem 0;
-            display: flex;
-            flex-direction: column;
-            gap: 10vh;
-        }
-
+        /* ════════════ NAV ════════════ */
         .nav-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            position: fixed; top: 1.5rem; left: 1.5rem; z-index: 100;
             color: var(--c-gold); text-decoration: none;
-            font-family: var(--f-header); font-size: 1rem; letter-spacing: 0.1em;
-            border: 1px solid var(--c-gold);
-            padding: 0.5rem 1.5rem;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
+            font-family: var(--f-calligraphy); font-size: 1.2rem;
+            padding: 0.4rem 1.2rem 0.4rem 1rem;
+            background: rgba(10, 5, 5, 0.85);
+            border: 2px solid var(--c-gold);
+            border-image: linear-gradient(135deg, var(--c-gold), transparent 60%) 1;
+            backdrop-filter: blur(8px);
             transition: 0.3s;
-            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .nav-back::before {
+            content: '◂'; font-size: 0.8rem;
         }
         .nav-back:hover {
-            background: var(--c-gold); color: #000;
-            box-shadow: 0 0 20px var(--c-gold);
+            background: var(--c-gold); color: var(--c-bg);
+            box-shadow: 0 0 25px rgba(201, 168, 76, 0.4);
         }
 
-        /* ════════════ TYPOGRAPHY & CARDS ════════════ */
-        h1.main-title {
-            font-family: var(--f-calligraphy);
-            font-size: clamp(4rem, 12vw, 8rem);
-            margin: 0; line-height: 1;
+        /* ════════════ HERO SECTION ════════════ */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; z-index: 10;
+            padding: 2rem;
             text-align: center;
+        }
+
+        .hero-avatar-wrap {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        /* Seal stamp ring around avatar */
+        .seal-ring {
+            position: absolute; top: -20px; left: -20px;
+            width: calc(100% + 40px); height: calc(100% + 40px);
+            border: 3px solid var(--c-seal);
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: seal-pulse 3s ease-in-out infinite;
+        }
+        @keyframes seal-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+        }
+
+        .avatar-frame {
+            width: 240px; height: 280px;
+            position: relative; overflow: visible;
+        }
+
+        .avatar-inner {
+            width: 100%; height: 100%;
+            clip-path: polygon(50% 0%, 95% 12%, 100% 50%, 95% 88%, 50% 100%, 5% 88%, 0% 50%, 5% 12%);
+            overflow: hidden;
+            border: none;
+            position: relative;
+            z-index: 2;
+        }
+        .avatar-inner img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: sepia(0.15) contrast(1.1);
+            transition: filter 0.5s;
+        }
+        .avatar-inner:hover img { filter: sepia(0) contrast(1); }
+
+        /* Decorative brush-stroke behind avatar */
+        .avatar-frame::before {
+            content: '';
+            position: absolute; top: -15px; left: -15px;
+            width: calc(100% + 30px); height: calc(100% + 30px);
+            background: radial-gradient(ellipse at center, transparent 45%, var(--c-blood) 46%, var(--c-blood) 48%, transparent 49%);
+            opacity: 0.5;
+            z-index: 1;
+        }
+
+        /* Cockroach Antennae */
+        .antennae {
+            position: absolute; top: -45px; left: 50%;
+            width: 160px; height: 80px;
+            transform: translateX(-50%);
+            pointer-events: none; z-index: 3;
+            opacity: 0; transition: opacity 0.4s, top 0.3s;
+        }
+        .hero-avatar-wrap:hover .antennae { opacity: 1; top: -55px; }
+
+        .antenna-l, .antenna-r {
+            position: absolute; bottom: 0;
+            width: 2.5px; height: 100%;
+            background: linear-gradient(to top, var(--c-gold), var(--c-gold-bright), transparent);
+            border-radius: 0 0 50% 50%;
+        }
+        .antenna-l {
+            left: 30px; transform: rotate(-25deg);
+            transform-origin: bottom center;
+        }
+        .antenna-r {
+            right: 30px; transform: rotate(25deg);
+            transform-origin: bottom center;
+        }
+        .hero-avatar-wrap:hover .antenna-l { animation: wiggle 0.15s infinite alternate; }
+        .hero-avatar-wrap:hover .antenna-r { animation: wiggle 0.15s infinite alternate-reverse; }
+        @keyframes wiggle {
+            from { transform: rotate(-25deg); }
+            to { transform: rotate(-30deg); }
+        }
+
+        /* Antenna tips (little balls) */
+        .antenna-l::after, .antenna-r::after {
+            content: '';
+            position: absolute; top: -4px; left: 50%;
+            width: 8px; height: 8px;
+            background: var(--c-gold-bright);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 6px var(--c-gold);
+        }
+
+        .hero-name {
+            font-family: var(--f-calligraphy);
+            font-size: clamp(5rem, 15vw, 10rem);
+            line-height: 1;
             background-image: url('/assets/img/guild/lubu/bg_gold.jpg');
             background-size: cover;
             background-position: center;
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
-            -webkit-text-stroke: 1px rgba(255, 215, 0, 0.3);
-            filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.5));
+            filter: drop-shadow(0 0 30px rgba(201, 168, 76, 0.4));
+            position: relative;
         }
 
-        .subtitle-tech {
-            font-family: var(--f-tech); color: var(--c-jade); letter-spacing: 0.3em;
-            font-size: 1rem; text-transform: uppercase;
-            text-align: center; margin-top: 1rem;
-            text-shadow: 0 0 10px var(--c-jade);
-            border-top: 1px solid var(--c-jade);
-            border-bottom: 1px solid var(--c-jade);
-            padding: 0.5rem 2rem;
-            background: rgba(0, 255, 170, 0.05);
+        /* Red seal stamp overlay on name */
+        .hero-name::after {
+            content: '呂';
+            position: absolute; top: -10px; right: -30px;
+            font-size: 2.5rem;
+            font-family: var(--f-calligraphy);
+            color: var(--c-seal);
+            border: 3px solid var(--c-seal);
+            padding: 0.2rem 0.4rem;
+            line-height: 1;
+            transform: rotate(8deg);
+            opacity: 0.7;
+        }
+
+        .hero-subtitle {
+            font-family: var(--f-calligraphy);
+            font-size: 1.4rem;
+            color: var(--c-gold);
+            letter-spacing: 0.3em;
+            margin-top: 1rem;
+            position: relative;
             display: inline-block;
         }
 
-        .section-card {
-            background: rgba(10, 5, 5, 0.85);
-            border-left: 4px solid var(--c-gold);
-            padding: 3rem;
+        /* Brush stroke underline */
+        .hero-subtitle::after {
+            content: '';
+            position: absolute; bottom: -8px; left: -10%;
+            width: 120%; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--c-blood), var(--c-gold), var(--c-blood), transparent);
+            border-radius: 2px;
+        }
+
+        .hero-tagline {
+            margin-top: 1.5rem;
+            color: var(--c-text-dim);
+            font-size: 1rem;
+        }
+        .hero-tagline .fun { color: var(--c-gold-bright); font-family: var(--f-fun); }
+
+        .hero-schedule {
+            margin-top: 2rem;
+            padding: 0.6rem 1.5rem;
+            background: rgba(138, 0, 0, 0.2);
+            border: 1px solid rgba(138, 0, 0, 0.5);
+            font-family: var(--f-body);
+            font-size: 0.9rem;
+            color: var(--c-text-dim);
+            display: inline-flex; align-items: center; gap: 0.6rem;
+        }
+        .hero-schedule i { color: var(--c-blood-bright); }
+        .hero-schedule .schedule-reason {
+            font-family: var(--f-fun); font-size: 0.75rem;
+            color: var(--c-text-dim); opacity: 0.7;
+        }
+
+        /* Scroll-down indicator */
+        .scroll-hint {
+            position: absolute; bottom: 2rem;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 0.5rem;
+            color: var(--c-text-dim); font-size: 0.8rem;
+            animation: float-down 2s ease-in-out infinite;
+        }
+        @keyframes float-down {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(8px); }
+        }
+
+        /* ════════════ MAIN CONTENT ════════════ */
+        .content {
+            position: relative; z-index: 10;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1.5rem 6rem;
+        }
+
+        /* ════════════ SECTION SCROLL (War Scroll) ════════════ */
+        .war-scroll {
             position: relative;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            max-width: 650px;
-            margin-left: auto; margin-right: 2rem;
-            transform-origin: right center;
-            transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+            padding: 3rem 2.5rem;
+            margin-bottom: 4rem;
+            background:
+                linear-gradient(135deg, rgba(15, 10, 5, 0.92), rgba(20, 12, 6, 0.88));
+            border: 1px solid rgba(201, 168, 76, 0.15);
+            box-shadow:
+                0 4px 30px rgba(0, 0, 0, 0.5),
+                inset 0 0 60px rgba(0, 0, 0, 0.3);
         }
 
-        .section-card:hover {
-            transform: translateX(-10px);
-            box-shadow: 0 20px 50px rgba(212, 175, 55, 0.15);
-            border-left-color: var(--c-blood-bright);
+        /* Top & bottom scroll rollers */
+        .war-scroll::before, .war-scroll::after {
+            content: '';
+            position: absolute; left: 0; right: 0; height: 6px;
+            background:
+                repeating-linear-gradient(90deg,
+                    var(--c-gold) 0px, var(--c-gold) 2px,
+                    transparent 2px, transparent 8px
+                );
+            opacity: 0.4;
         }
+        .war-scroll::before { top: 0; }
+        .war-scroll::after { bottom: 0; }
 
-        /* Decorative Corners */
-        .section-card::before {
-            content: ''; position: absolute; top: -1px; right: -1px; width: 30px; height: 30px;
-            border-top: 2px solid var(--c-gold); border-right: 2px solid var(--c-gold);
-            transition: 0.4s;
+        /* Corner ornaments */
+        .scroll-corner {
+            position: absolute; width: 24px; height: 24px;
+            border-color: var(--c-gold);
+            border-style: solid;
+            opacity: 0.5;
+            transition: opacity 0.3s;
         }
-        .section-card::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px; width: 30px; height: 30px;
-            border-bottom: 2px solid var(--c-gold); border-right: 2px solid var(--c-gold);
-            transition: 0.4s;
-        }
-        .section-card:hover::before, .section-card:hover::after {
-            width: 50px; height: 50px; border-color: var(--c-blood-bright);
-        }
+        .war-scroll:hover .scroll-corner { opacity: 0.9; }
+        .scroll-corner.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .scroll-corner.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+        .scroll-corner.bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+        .scroll-corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
-        .card-header {
+        .scroll-header {
+            display: flex; align-items: baseline; justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+        }
+        .scroll-header h2 {
             font-family: var(--f-calligraphy);
             font-size: 2.5rem;
             color: var(--c-gold);
-            border-bottom: 1px solid #333;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
-            display: flex; align-items: baseline; justify-content: space-between;
+            position: relative;
         }
-        .card-header span { font-size: 1rem; font-family: var(--f-tech); color: #555; }
+        /* Red seal stamp on section headers */
+        .scroll-header h2::after {
+            content: attr(data-seal);
+            position: absolute; top: -5px; right: -35px;
+            font-size: 0.9rem;
+            font-family: var(--f-calligraphy);
+            color: var(--c-seal);
+            border: 2px solid var(--c-seal);
+            padding: 0.1rem 0.25rem;
+            line-height: 1.1;
+            transform: rotate(6deg);
+            opacity: 0.6;
+        }
+        .scroll-header .section-num {
+            font-family: var(--f-header);
+            font-size: 0.75rem;
+            color: var(--c-text-dim);
+            letter-spacing: 0.15em;
+        }
 
         .lore-text {
-            font-size: 1.1rem; line-height: 1.8; color: #ccc;
+            font-size: 1.05rem; line-height: 2; color: var(--c-text);
             margin-bottom: 1.5rem; text-align: justify;
         }
 
-        .highlight-red { color: var(--c-blood-bright); font-weight: bold; }
-        .highlight-gold { color: var(--c-gold); font-weight: bold; }
-        .highlight-wacky { color: var(--c-jade); font-weight: bold; text-shadow: 0 0 5px var(--c-jade); }
+        .hl-gold { color: var(--c-gold-bright); font-weight: bold; }
+        .hl-red { color: var(--c-blood-bright); font-weight: bold; }
 
-        /* ════════════ AVATAR ════════════ */
-        .avatar-container {
-            position: relative; width: 300px; height: 350px; margin-bottom: 2rem;
+        /* Ink-stain blockquote */
+        .ink-quote {
+            border-left: 3px solid var(--c-blood);
+            padding: 1rem 1.2rem;
+            margin: 1.5rem 0;
+            color: var(--c-text-dim);
+            font-size: 0.95rem;
+            background: rgba(138, 0, 0, 0.08);
+            position: relative;
         }
-        .avatar-hex {
-            width: 100%; height: 100%;
-            clip-path: polygon(50% 0%, 100% 15%, 100% 85%, 50% 100%, 0% 85%, 0% 15%);
-            background: #000; position: relative; z-index: 2;
-            box-shadow: 0 0 30px rgba(138, 0, 0, 0.8);
-            transition: transform 0.5s;
-        }
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* Cockroach Antennae */
-        .antennae {
-            position: absolute; top: -50px; left: 50%; width: 200px; height: 120px;
-            transform: translateX(-50%); pointer-events: none; z-index: 1; opacity: 0;
-            transition: 0.4s;
-        }
-        .antenna-left, .antenna-right {
-            position: absolute; bottom: 0; width: 3px; height: 100%;
-            background: linear-gradient(to top, var(--c-gold), transparent);
+        .ink-quote::before {
+            content: '';
+            position: absolute; top: -8px; left: -8px;
+            width: 20px; height: 20px;
+            background: radial-gradient(circle, rgba(26, 17, 8, 0.6) 30%, transparent 70%);
             border-radius: 50%;
         }
-        .antenna-left { left: 40px; transform: rotate(-20deg); box-shadow: 0 0 5px var(--c-gold); }
-        .antenna-right { right: 40px; transform: rotate(20deg); box-shadow: 0 0 5px var(--c-gold); }
 
-        .avatar-container:hover .antennae { opacity: 1; top: -70px; }
-        .avatar-container:hover .antenna-left { animation: twitch 0.2s infinite alternate; }
-        .avatar-container:hover .antenna-right { animation: twitch 0.2s infinite alternate-reverse; }
-        @keyframes twitch { from { transform: rotate(-20deg); } to { transform: rotate(-25deg); } }
+        /* ════════════ FAMILY LIST ════════════ */
+        .family-list { list-style: none; margin-top: 1rem; }
+        .family-list li {
+            margin-bottom: 1rem; padding-left: 2rem; position: relative;
+            font-size: 1.05rem; line-height: 1.6;
+        }
+        .family-list li::before {
+            content: '⚔';
+            position: absolute; left: 0; top: 0;
+            color: var(--c-blood-bright);
+            font-size: 0.9rem;
+        }
+        .family-list li a {
+            color: var(--c-gold);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--c-gold);
+            transition: 0.2s;
+        }
+        .family-list li a:hover { color: var(--c-gold-bright); border-bottom-style: solid; }
 
         /* ════════════ GENERALS GRID ════════════ */
         .generals-grid {
             display: grid; grid-template-columns: repeat(5, 1fr);
-            gap: 0.8rem; margin: 1.5rem 0;
+            gap: 0.6rem; margin: 1.5rem 0;
         }
         .general-token {
-            aspect-ratio: 1; border: 1px solid #444;
-            display: flex; align-items: center; justify-content: center;
-            color: #444; font-size: 1.2rem; background: #111;
-            transition: 0.3s; position: relative; overflow: hidden;
+            aspect-ratio: 1;
+            border: 1px solid rgba(201, 168, 76, 0.2);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 0.2rem;
+            color: rgba(201, 168, 76, 0.3);
+            font-size: 1.2rem;
+            background: rgba(0, 0, 0, 0.4);
+            transition: 0.3s; position: relative;
+            overflow: hidden;
         }
         .general-token:hover {
-            border-color: var(--c-gold); color: var(--c-gold);
-            background: #220; box-shadow: 0 0 10px var(--c-gold-bright);
+            border-color: var(--c-gold);
+            color: var(--c-gold);
+            background: rgba(138, 0, 0, 0.15);
+            box-shadow: 0 0 15px rgba(201, 168, 76, 0.2);
         }
-        .general-token::after {
-            content: '尋找中'; position: absolute; bottom: 2px; width: 100%;
-            text-align: center; font-size: 0.5rem; opacity: 0; transition: 0.3s;
+        .general-token .label {
+            font-size: 0.5rem; opacity: 0;
+            font-family: var(--f-calligraphy);
+            transition: 0.3s;
+            color: var(--c-gold);
         }
-        .general-token:hover::after { opacity: 1; }
+        .general-token:hover .label { opacity: 1; }
 
-        /* ════════════ BATTLE RECORDS (NEW) ════════════ */
-        .battle-record-list {
-            display: grid; grid-template-columns: 1fr; gap: 1rem;
+        /* ════════════ STYLE BANNERS ════════════ */
+        .style-banners {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 1rem; margin: 1.5rem 0;
         }
-        .battle-item {
-            display: flex; align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1rem; border-right: 2px solid transparent;
+        .banner {
+            text-align: center;
+            padding: 1.5rem 0.5rem;
+            background: linear-gradient(180deg, rgba(138, 0, 0, 0.15), transparent);
+            border-top: 3px solid var(--c-blood);
+            position: relative;
             transition: 0.3s;
         }
-        .battle-item:hover {
-            background: rgba(138, 0, 0, 0.2);
-            border-right-color: var(--c-blood-bright);
-            transform: translateX(10px);
+        .banner:hover {
+            background: linear-gradient(180deg, rgba(138, 0, 0, 0.3), transparent);
+            transform: translateY(-4px);
         }
-        .battle-icon {
-            font-size: 1.5rem; width: 50px; text-align: center; color: var(--c-gold);
-            margin-right: 1rem;
-        }
-        .battle-info h4 { color: #fff; font-size: 1.1rem; margin-bottom: 0.2rem; font-family: var(--f-header); }
-        .battle-info p { color: #888; font-size: 0.85rem; }
 
-        /* ════════════ ARMORY / INTERESTS (NEW) ════════════ */
+        /* War banner triangle at bottom */
+        .banner::after {
+            content: '';
+            position: absolute; bottom: -12px; left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 12px solid rgba(138, 0, 0, 0.2);
+            transition: 0.3s;
+        }
+        .banner:hover::after {
+            border-top-color: rgba(138, 0, 0, 0.4);
+        }
+
+        .banner-icon { font-size: 1.5rem; color: var(--c-gold); margin-bottom: 0.5rem; }
+        .banner-label { font-family: var(--f-calligraphy); font-size: 1.8rem; color: var(--c-cream); }
+        .banner-sub { font-size: 0.75rem; color: var(--c-text-dim); margin-top: 0.3rem; letter-spacing: 0.1em; }
+
+        /* ════════════ BATTLE RECORDS ════════════ */
+        .battle-list { display: flex; flex-direction: column; gap: 0.8rem; }
+
+        .battle-row {
+            display: flex; align-items: center; gap: 1rem;
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid transparent;
+            transition: 0.3s;
+        }
+        .battle-row:hover {
+            background: rgba(138, 0, 0, 0.12);
+            border-left-color: var(--c-blood-bright);
+            padding-left: 1.5rem;
+        }
+
+        .battle-icon {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; color: var(--c-gold);
+            border: 1px solid rgba(201, 168, 76, 0.3);
+            flex-shrink: 0;
+        }
+        .battle-name { color: var(--c-cream); font-size: 1rem; font-weight: bold; }
+        .battle-desc { color: var(--c-text-dim); font-size: 0.8rem; margin-top: 0.15rem; }
+
+        /* ════════════ ARMORY GRID ════════════ */
         .armory-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+            margin-top: 1rem;
         }
         .armory-item {
-            text-align: center; padding: 1.5rem 1rem;
-            border: 1px solid #333; background: #000;
+            text-align: center; padding: 1.5rem 0.8rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(201, 168, 76, 0.1);
             transition: 0.3s;
         }
         .armory-item:hover {
-            border-color: var(--c-jade);
-            box-shadow: 0 0 15px rgba(0, 255, 170, 0.1);
+            border-color: var(--c-gold);
+            background: rgba(201, 168, 76, 0.05);
+            transform: translateY(-3px);
         }
-        .armory-icon { font-size: 2rem; color: #555; margin-bottom: 0.8rem; transition: 0.3s; }
-        .armory-item:hover .armory-icon { color: var(--c-jade); transform: scale(1.1); }
-        .armory-label { font-size: 0.9rem; color: #ccc; }
+        .armory-icon { font-size: 1.8rem; color: var(--c-text-dim); margin-bottom: 0.6rem; transition: 0.3s; }
+        .armory-item:hover .armory-icon { color: var(--c-gold); }
+        .armory-label { color: var(--c-text); font-family: var(--f-calligraphy); font-size: 1.2rem; }
+        .armory-detail { font-size: 0.75rem; color: var(--c-text-dim); margin-top: 0.3rem; }
 
-        /* ════════════ SOCIALS / COMMS ════════════ */
-        .comms-list {
-            display: flex; flex-direction: column; gap: 1rem;
+        /* ════════════ PLAYLIST EMBED ════════════ */
+        .war-scroll[data-section="highlights"] iframe {
+            margin-top: 1rem;
+        }
+
+        /* ════════════ STATS PANEL ════════════ */
+        .stats-panel {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem;
+            margin: 1.5rem 0;
+        }
+        .stat-box {
+            text-align: center; padding: 1rem 0.5rem;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(201, 168, 76, 0.1);
+            transition: 0.3s;
+        }
+        .stat-box:hover {
+            border-color: rgba(201, 168, 76, 0.3);
+            background: rgba(201, 168, 76, 0.05);
+        }
+        .stat-value {
+            font-family: var(--f-header); font-size: 1.6rem;
+            color: var(--c-gold); font-weight: 700;
+        }
+        .stat-label {
+            font-size: 0.7rem; color: var(--c-text-dim);
+            margin-top: 0.3rem; letter-spacing: 0.1em;
+        }
+        /* ════════════ CHALLENGE CARD ════════════ */
+        .challenge-card {
+            display: flex; align-items: center; gap: 1rem;
+            padding: 1rem 1.2rem;
+            background: linear-gradient(135deg, rgba(138, 0, 0, 0.12), rgba(0, 0, 0, 0.3));
+            border: 1px solid rgba(138, 0, 0, 0.3);
+            margin-top: 1rem;
+            transition: 0.3s;
+        }
+        .challenge-card:hover {
+            border-color: var(--c-blood-bright);
+            background: linear-gradient(135deg, rgba(138, 0, 0, 0.2), rgba(0, 0, 0, 0.35));
+        }
+        .challenge-icon {
+            font-size: 1.5rem; color: var(--c-blood-bright);
+            flex-shrink: 0; width: 40px; text-align: center;
+        }
+        .challenge-text { font-size: 0.95rem; color: var(--c-text); }
+        .challenge-text strong { color: var(--c-gold); }
+
+        /* ════════════ TIMELINE ════════════ */
+        .timeline {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-top: 1rem;
+        }
+
+        /* Vertical red thread */
+        .timeline::before {
+            content: '';
+            position: absolute; left: 8px; top: 0; bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--c-blood), var(--c-gold), var(--c-blood));
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 2rem;
+            padding-left: 1rem;
+        }
+        .timeline-item:last-child { padding-bottom: 0; }
+
+        /* Node on the thread */
+        .timeline-item::before {
+            content: '';
+            position: absolute; left: -2.5rem; top: 4px;
+            width: 14px; height: 14px;
+            background: var(--c-blood);
+            border: 2px solid var(--c-gold);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .timeline-item:hover::before {
+            background: var(--c-gold);
+            box-shadow: 0 0 10px var(--c-gold);
+        }
+
+        .timeline-date {
+            font-family: var(--f-header);
+            font-size: 0.75rem;
+            color: var(--c-gold);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.2rem;
+        }
+        .timeline-text { color: var(--c-text); font-size: 0.95rem; }
+        .timeline-item.current .timeline-text { color: var(--c-gold-bright); }
+
+        /* ════════════ SOULBOUND (Couple Link) ════════════ */
+        .soulbound-card {
+            display: flex; align-items: center; gap: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(106, 13, 173, 0.08), rgba(138, 0, 0, 0.08));
+            border: 1px solid rgba(106, 13, 173, 0.25);
+            transition: 0.4s;
+            text-decoration: none; color: var(--c-text);
+            margin-top: 1rem;
+        }
+        .soulbound-card:hover {
+            border-color: rgba(106, 13, 173, 0.6);
+            background: linear-gradient(135deg, rgba(106, 13, 173, 0.15), rgba(138, 0, 0, 0.12));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(106, 13, 173, 0.15);
+        }
+        .soulbound-avatar {
+            width: 64px; height: 64px; border-radius: 50%;
+            border: 2px solid rgba(106, 13, 173, 0.4);
+            object-fit: cover; flex-shrink: 0;
+        }
+        .soulbound-info { flex: 1; }
+        .soulbound-name {
+            font-family: var(--f-calligraphy); font-size: 1.3rem;
+            color: #b388ff;
+        }
+        .soulbound-role { font-size: 0.85rem; color: var(--c-text-dim); margin-top: 0.2rem; }
+        .soulbound-arrow { color: rgba(106, 13, 173, 0.4); font-size: 1.2rem; transition: 0.3s; }
+        .soulbound-card:hover .soulbound-arrow { color: #b388ff; transform: translateX(4px); }
+
+        /* ════════════ MEDIA IMAGES ════════════ */
+        .media-img {
+            width: 100%; display: block;
+            border: 1px solid rgba(201, 168, 76, 0.15);
+            margin-top: 1.2rem;
+            transition: 0.4s;
+            filter: brightness(0.9) saturate(0.95);
+        }
+        .media-img:hover {
+            border-color: var(--c-gold);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.6);
+            filter: brightness(1) saturate(1);
+        }
+        .media-caption {
+            font-size: 0.75rem; color: var(--c-text-dim);
+            text-align: center; margin-top: 0.5rem;
+            font-family: var(--f-fun);
+        }
+        .media-row {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1rem; margin-top: 1.2rem;
+        }
+        .media-row .media-item { overflow: hidden; }
+        .media-row .media-item .media-img { margin-top: 0; }
+        @media (max-width: 768px) {
+            .media-row { grid-template-columns: 1fr; }
+        }
+
+        /* ════════════ COMMS / SOCIAL ════════════ */
+        .comms-grid {
+            display: flex; flex-direction: column; gap: 0.7rem;
         }
         .comm-link {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 1rem 1.5rem;
-            border: 1px solid #333;
-            background: linear-gradient(90deg, transparent, rgba(20,20,20,0.8));
-            text-decoration: none; color: #ccc;
+            padding: 0.9rem 1.2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(201, 168, 76, 0.1);
+            text-decoration: none; color: var(--c-text);
             transition: 0.3s;
         }
         .comm-link:hover {
             border-color: var(--c-gold);
-            background: rgba(212, 175, 55, 0.1);
-            padding-left: 2rem;
+            background: rgba(201, 168, 76, 0.08);
+            padding-left: 1.5rem;
         }
-        .comm-left { display: flex; align-items: center; gap: 1rem; }
-        .comm-icon { font-size: 1.5rem; color: var(--c-gold); width: 30px; text-align: center; }
-        .comm-label { font-weight: bold; font-family: var(--f-header); letter-spacing: 0.05em; }
-        .comm-desc { font-size: 0.8rem; color: #666; font-family: var(--f-tech); text-transform: uppercase; }
+        .comm-left { display: flex; align-items: center; gap: 0.8rem; }
+        .comm-icon { font-size: 1.3rem; color: var(--c-gold); width: 28px; text-align: center; }
+        .comm-name { font-weight: bold; font-family: var(--f-calligraphy); font-size: 1.1rem; }
+        .comm-desc {
+            font-size: 0.7rem; color: var(--c-text-dim);
+            font-family: var(--f-header);
+            letter-spacing: 0.12em;
+        }
 
-        /* ════════════ STYLE GRID ════════════ */
-        .style-grid {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;
-            margin-bottom: 2rem;
+        /* ════════════ CTA BANNER (BOTTOM) ════════════ */
+        .cta-banner {
+            text-align: center;
+            padding: 3rem 2rem;
+            margin-top: 2rem;
+            background: linear-gradient(180deg, transparent, rgba(138, 0, 0, 0.1), transparent);
+            position: relative;
         }
-        .style-item {
-            text-align: center; border: 1px solid #333; padding: 1rem;
-            transition: 0.3s;
+        .cta-text {
+            font-family: var(--f-calligraphy);
+            font-size: 2rem;
+            color: var(--c-gold);
+            line-height: 1.6;
         }
-        .style-item:hover { border-color: var(--c-jade); box-shadow: 0 0 15px rgba(0,255,170,0.2); }
-        .style-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
-        .style-label { font-family: var(--f-calligraphy); font-size: 1.5rem; color: var(--c-text); }
-        .style-desc { font-size: 0.8rem; color: #888; margin-top: 0.5rem; }
+        .cta-sub {
+            margin-top: 1rem;
+            color: var(--c-text-dim);
+            font-size: 0.9rem;
+        }
 
-        /* ════════════ FAMILY ════════════ */
-        .family-card {
-            background: linear-gradient(135deg, rgba(20, 10, 10, 0.9), rgba(0,0,0,0.95));
-            border-left: 4px solid var(--c-blood-bright);
+        /* ════════════ SECTION DIVIDER ════════════ */
+        .divider {
+            display: flex; align-items: center; justify-content: center;
+            gap: 1rem; margin: 1rem 0 3rem;
+            color: var(--c-text-dim); font-size: 0.8rem;
         }
-        .family-list { list-style: none; margin-top: 1rem; }
-        .family-list li {
-            margin-bottom: 0.8rem; padding-left: 1.5rem; position: relative;
-            font-size: 1.1rem;
-        }
-        .family-list li::before {
-            content: '➤'; position: absolute; left: 0; color: var(--c-blood-bright);
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.3), transparent);
         }
 
         /* ════════════ MOBILE ════════════ */
-        @media (max-width: 900px) {
-            .nav-back { top: 1rem; left: 1rem; padding: 0.5rem 1rem; font-size: 0.8rem; }
-            .main-layout { grid-template-columns: 1fr; }
-            .left-col {
-                position: relative; height: auto; padding: 5rem 1rem 2rem;
-                background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            }
-            .right-col { padding: 1rem; gap: 3rem; }
+        @media (max-width: 768px) {
+            .nav-back { top: 0.8rem; left: 0.8rem; font-size: 1rem; padding: 0.3rem 0.8rem; }
 
-            .section-card {
-                margin: 0 auto; width: 100%;
-                padding: 1.5rem; /* Reduced from 3rem */
-            }
-            .card-header {
-                font-size: 1.8rem;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-            .card-header span { font-size: 0.9rem; }
+            .hero { min-height: 90vh; padding: 4rem 1rem 2rem; }
+            .avatar-frame { width: 180px; height: 210px; }
+            .hero-name { font-size: clamp(3.5rem, 15vw, 6rem); }
+            .hero-name::after { font-size: 1.8rem; right: -15px; top: -8px; }
+            .hero-subtitle { font-size: 1.1rem; letter-spacing: 0.15em; }
 
-            #webgl-container { mask-image: none; opacity: 0.4; }
+            .content { padding: 0 1rem 4rem; }
 
-            h1.main-title { font-size: clamp(3rem, 12vw, 5rem); }
-            .subtitle-tech { font-size: 0.8rem; padding: 0.5rem 1rem; }
+            .war-scroll { padding: 1.5rem 1.2rem; margin-bottom: 2.5rem; overflow: hidden; }
+            .scroll-header h2 { font-size: 1.8rem; }
+            .scroll-header h2::after { font-size: 0.7rem; right: -20px; }
 
-            .style-grid { grid-template-columns: 1fr; }
+            .lore-text { text-align: left; }
 
-            .generals-grid { grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
-            .general-token { font-size: 1rem; }
+            .style-banners { grid-template-columns: 1fr; gap: 0.8rem; }
+            .banner { padding: 1rem 0.5rem; }
+            .banner::after { display: none; }
 
-            .battle-item { flex-direction: column; text-align: center; }
-            .battle-icon { margin: 0 0 0.5rem 0; }
+            .generals-grid { grid-template-columns: repeat(5, 1fr); gap: 0.3rem; }
 
-            .armory-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.8rem; }
+            .battle-row { flex-direction: column; text-align: center; gap: 0.5rem; }
+            .battle-icon { margin: 0 auto; }
 
-            .comm-link { padding: 0.8rem 1rem; }
+            .challenge-card { flex-direction: column; text-align: center; }
+
+            .soulbound-card { flex-direction: column; text-align: center; gap: 1rem; }
+
+            .armory-grid { grid-template-columns: 1fr 1fr; }
+
+            .stats-panel { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .stat-value { font-size: 1.3rem; }
+
+            .cta-banner img { max-width: 150px; width: auto; }
+
+            #webgl-container { opacity: 0.4; mask-image: none; }
+        }
+
+        @media (max-width: 400px) {
+            .hero-name::after { display: none; }
+            .scroll-header h2::after { display: none; }
         }
     </style>
 </head>
 <body>
-    <div class="noise-overlay"></div>
+    <div class="paper-grain"></div>
 
-    <!-- Custom Cursor -->
-    <div id="cursor">
-        <div class="ring"></div>
-        <div class="dot"></div>
-        <div class="sight-line"></div>
-        <div class="sight-line two"></div>
+    <!-- Custom Cursor (Ink Brush) -->
+    <div id="ink-cursor">
+        <div class="brush-tip"></div>
     </div>
 
-    <a href="/guild" class="nav-back">GUILD</a>
+    <a href="/guild" class="nav-back">回營</a>
 
     <!-- Visual Layers -->
     <div id="webgl-container"></div>
     <div id="p5-container"></div>
 
-    <div class="main-layout">
-
-        <!-- LEFT COLUMN: Identity & Visual Anchor -->
-        <div class="left-col">
-            <div class="avatar-container reveal">
-                <div class="antennae">
-                    <div class="antenna-left"></div>
-                    <div class="antenna-right"></div>
-                </div>
-                <div class="avatar-hex">
-                    <img src="/assets/img/guild/lubu/avatar.webp" alt="Lu Bu Avatar" class="avatar-img">
-                </div>
+    <!-- ════════════ HERO ════════════ -->
+    <section class="hero">
+        <div class="hero-avatar-wrap reveal">
+            <div class="antennae">
+                <div class="antenna-l"></div>
+                <div class="antenna-r"></div>
             </div>
-
-            <h1 class="main-title reveal">呂布</h1>
-
-            <div class="reveal" style="text-align: center; margin-top: 2.5rem;">
-                <div class="subtitle-tech">THE STRONGEST WARLORD</div>
-                <div style="margin-top: 0.8rem; color: #888; font-size: 0.95rem;">
-                    ( 沒錯，就是頂著<span class="highlight-gold">蟑螂鬚鬚</span>的那個呂布 )
+            <div class="seal-ring"></div>
+            <div class="avatar-frame">
+                <div class="avatar-inner">
+                    <img src="/assets/img/guild/lubu/avatar.webp" alt="呂布 Avatar">
                 </div>
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Scrolling Content -->
-        <div class="right-col">
+        <h1 class="hero-name reveal">呂布</h1>
 
-            <!-- 1. ORIGIN STORY -->
-            <div class="section-card reveal">
-                <div class="card-header">血戰終焉 <span>ORIGIN</span></div>
-                <p class="lore-text">
-                    在時間尚未被記錄之前，我曾以血為名，以戰為生。
-                    以「<span class="highlight-gold">呂布</span>」之名，震動整個時代。
-                    方天畫戟橫掃千軍，鐵騎踏碎諸侯。
-                    卻仍舊敗給名為「命運」的存在。
-                </p>
-                <div style="border-left: 2px solid var(--c-jade); padding-left: 1rem; margin: 1.5rem 0; color: #aaa; font-size: 0.9rem;">
-                    <i class="fa-solid fa-ghost"></i> 然而怨念誤入虛空，靈魂被 <span class="highlight-wacky">克蘇魯之力</span> 侵蝕，
-                    在那不可名狀的世界中漂流了無數歲月...
-                </div>
-                <p class="lore-text">
-                    直到一位名為「<span class="highlight-gold">米絲</span>」的天堂鳥將我從地獄中解放，
-                    將我自歷史中強行剝離，投放至名為「現代」的世界線。
-                </p>
-            </div>
+        <div class="hero-subtitle reveal">陽台勢 · 冷門遊戲直播主</div>
 
-            <!-- 2. THE FAMILY -->
-            <div class="section-card family-card reveal">
-                <div class="card-header">將軍府邸 <span>HOUSEHOLD</span></div>
-                <p class="lore-text">
-                    來到這個世界後的我，被米絲這個自稱為天使的魅魔拐走（？），
-                    不知不覺就蹦出了三隻小屁孩，成為了三個孩子的爸爸。
-                </p>
-                <ul class="family-list">
-                    <li><span class="highlight-gold">米絲 (Mis)</span>：我的老婆，誤用克蘇魯之力的天堂鳥，真實身份是魅魔。</li>
-                    <li><span class="highlight-red">諭</span>：大兒子，搗蛋鬼一號。</li>
-                    <li><span class="highlight-red">小貓淵</span>：二女兒，偶爾會在直播中亂入。</li>
-                    <li><span class="highlight-red">小舞兔</span>：老么，可愛擔當。</li>
-                </ul>
-            </div>
+        <p class="hero-tagline reveal">
+            ( 沒錯，就是頂著<span class="fun">蟑螂鬚鬚</span>的那個呂布 )
+        </p>
 
-            <!-- 3. MISSION & GENERALS -->
-            <div class="section-card reveal">
-                <div class="card-header">尋找部下 <span>MISSION</span></div>
-                <p class="lore-text">
-                    穿越的代價是，原本追隨我的<span class="highlight-gold">「十位呂家軍部下」</span>，
-                    被拋散至不同的時間、不同的世界。
-                </p>
-                <p class="lore-text">
-                    於是我開始偽裝。偽裝成「直播主」，偽裝成「打遊戲的人類」。
-                    我在螢幕前揮動手把，只為在無數世界線中，鎖定那十道熟悉的靈魂波動。
-                </p>
-
-                <div class="generals-grid">
-                    <div class="general-token"><i class="fa-solid fa-chess-knight"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-scroll"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-dragon"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-khanda"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-shield-halved"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-bow-arrow"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-horse-head"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-flag"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-fire"></i></div>
-                    <div class="general-token"><i class="fa-solid fa-crown"></i></div>
-                </div>
-
-                <p class="lore-text" style="color: var(--c-gold); text-align: center; margin-top: 1.5rem;">
-                    若你的心臟因這個名字而震動，那麼答案只有一個：
-                    <br>你是 我正在尋找的「失散呂家軍部下」。
-                </p>
-            </div>
-
-            <!-- 4. STYLE & STATS -->
-            <div class="section-card reveal">
-                <div class="card-header">直播風格 <span>STYLE</span></div>
-                <div class="style-grid">
-                    <div class="style-item">
-                        <span class="style-icon" style="color: var(--c-jade);"><i class="fa-solid fa-ghost"></i></span>
-                        <div class="style-label">搞怪</div>
-                        <div class="style-desc">WACKY</div>
-                    </div>
-                    <div class="style-item">
-                        <span class="style-icon" style="color: var(--c-gold);"><i class="fa-solid fa-heart"></i></span>
-                        <div class="style-label">真實</div>
-                        <div class="style-desc">REAL</div>
-                    </div>
-                    <div class="style-item">
-                        <span class="style-icon" style="color: var(--c-blood-bright);"><i class="fa-solid fa-fire-flame-curved"></i></span>
-                        <div class="style-label">中二</div>
-                        <div class="style-desc">CHUUNI</div>
-                    </div>
-                </div>
-                <p class="lore-text" style="text-align: center;">
-                    平時專門直播 <span class="highlight-gold">獨立遊戲</span>、<span class="highlight-gold">冷門神作</span>。
-                    偶爾也會客串一些目前火熱的遊戲，目標是把「被忽略的好遊戲」介紹給更多人。
-                </p>
-            </div>
-
-            <!-- 5. BATTLE RECORDS (NEW) -->
-            <div class="section-card reveal">
-                <div class="card-header">輝煌戰績 <span>BATTLE RECORDS</span></div>
-                <div class="battle-record-list">
-                    <div class="battle-item">
-                        <div class="battle-icon"><i class="fa-brands fa-android"></i></div>
-                        <div class="battle-info">
-                            <h4>傳說對決 / 王者榮耀</h4>
-                            <p>MOBA MAIN FRONT</p>
-                        </div>
-                    </div>
-                    <div class="battle-item">
-                        <div class="battle-icon"><i class="fa-solid fa-dragon"></i></div>
-                        <div class="battle-info">
-                            <h4>魔物獵人 (Monster Hunter)</h4>
-                            <p>WYVERN SLAYING EXPEDITION</p>
-                        </div>
-                    </div>
-                    <div class="battle-item">
-                        <div class="battle-icon"><i class="fa-solid fa-cube"></i></div>
-                        <div class="battle-info">
-                            <h4>麥塊 (Minecraft)</h4>
-                            <p>WORLD BUILDING PROTOCOL</p>
-                        </div>
-                    </div>
-                    <div class="battle-item">
-                        <div class="battle-icon"><i class="fa-solid fa-gamepad"></i></div>
-                        <div class="battle-info">
-                            <h4>冷門神作 (Hidden Gems)</h4>
-                            <p>INDEPENDENT OPERATIONS</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 6. THE ARMORY (NEW) -->
-            <div class="section-card reveal">
-                <div class="card-header">私人軍械庫 <span>ARMORY</span></div>
-                <div class="armory-grid">
-                    <div class="armory-item">
-                        <div class="armory-icon"><i class="fa-solid fa-circle-dot"></i></div>
-                        <div class="armory-label">寶可夢大師</div>
-                    </div>
-                    <div class="armory-item">
-                        <div class="armory-icon"><i class="fa-brands fa-fort-awesome"></i></div>
-                        <div class="armory-label">中世紀歷史</div>
-                    </div>
-                    <div class="armory-item">
-                        <div class="armory-icon"><i class="fa-solid fa-compass"></i></div>
-                        <div class="armory-label">人生引導 (?)</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 7. COMMUNICATIONS (UPDATED) -->
-            <div class="section-card reveal" style="margin-bottom: 4rem;">
-                <div class="card-header">軍情通報 <span>COMMS</span></div>
-                <div class="comms-list">
-                    <a href="https://discord.gg/9AK4nWxdkW" target="_blank" class="comm-link" style="border-color: var(--c-gold);">
-                        <div class="comm-left">
-                            <div class="comm-icon"><i class="fa-brands fa-discord"></i></div>
-                            <div class="comm-label">呂家軍大本營</div>
-                        </div>
-                        <div class="comm-desc">HEADQUARTERS</div>
-                    </a>
-                    <a href="https://www.twitch.tv/wtf00000" target="_blank" class="comm-link">
-                        <div class="comm-left">
-                            <div class="comm-icon"><i class="fa-brands fa-twitch"></i></div>
-                            <div class="comm-label">直播戰線 (Twitch)</div>
-                        </div>
-                        <div class="comm-desc">LIVE OPS</div>
-                    </a>
-                    <a href="https://www.threads.net/@lengmenyouxizhibozhu" target="_blank" class="comm-link">
-                        <div class="comm-left">
-                            <div class="comm-icon"><i class="fa-brands fa-threads"></i></div>
-                            <div class="comm-label">發神經的地方 (Threads)</div>
-                        </div>
-                        <div class="comm-desc">MADNESS LOG</div>
-                    </a>
-                    <a href="https://www.instagram.com/lengmenyouxizhibozhu/" target="_blank" class="comm-link">
-                        <div class="comm-left">
-                            <div class="comm-icon"><i class="fa-brands fa-instagram"></i></div>
-                            <div class="comm-label">私生活日記 (IG)</div>
-                        </div>
-                        <div class="comm-desc">CLASSIFIED</div>
-                    </a>
-                     <a href="https://www.tiktok.com/@fxxk0709" target="_blank" class="comm-link">
-                        <div class="comm-left">
-                            <div class="comm-icon"><i class="fa-brands fa-tiktok"></i></div>
-                            <div class="comm-label">怪怪的影片 (TikTok)</div>
-                        </div>
-                        <div class="comm-desc">ARCHIVE</div>
-                    </a>
-                </div>
-            </div>
-
+        <div class="hero-schedule reveal">
+            <i class="fa-solid fa-moon"></i>
+            每晚 19:30 — 21:00 準時開戰
+            <span class="schedule-reason">（因為要接米絲）</span>
         </div>
+
+        <div class="scroll-hint">
+            <span>卷軸展開中</span>
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <!-- ════════════ SCROLLING CONTENT ════════════ -->
+    <div class="content">
+
+        <!-- 1. ORIGIN -->
+        <section class="war-scroll" data-section="origin">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="戰">血戰終焉</h2>
+                <span class="section-num">ORIGIN</span>
+            </div>
+            <p class="lore-text">
+                在時間尚未被記錄之前，我曾以血為名，以戰為生。
+                以「<span class="hl-gold">呂布</span>」之名，震動整個時代。
+                方天畫戟橫掃千軍，鐵騎踏碎諸侯。
+                卻仍舊敗給名為「命運」的存在。
+            </p>
+            <div class="ink-quote">
+                <i class="fa-solid fa-skull"></i>
+                敗北的瞬間，我向天嘶吼：<span class="hl-red">若有來世，我必親手粉碎這條結局。</span>
+                <br><br>
+                就在怨念悔恨時，靈魂被<span class="hl-red">克蘇魯之力</span>侵蝕，
+                在那不可名狀的世界中漂流了無數歲月...
+            </div>
+            <p class="lore-text">
+                直到一位誤用克蘇魯之力的天堂鳥「<span class="hl-gold">小米絲</span>」，
+                將我自歷史中強行剝離，投放至名為「現代」的世界線。
+            </p>
+
+            <img src="/assets/img/guild/lubu/content/threads-character-art.jpg" alt="呂布與呂家軍 Q 版插畫" class="media-img" loading="lazy">
+            <div class="media-caption">呂布與呂家軍部下們的 Q 版插畫</div>
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 1.5 STREAM HIGHLIGHTS -->
+        <section class="war-scroll" data-section="highlights">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="錄">直播精華</h2>
+                <span class="section-num">HIGHLIGHTS</span>
+            </div>
+
+            <iframe
+                src="https://www.youtube.com/embed/videoseries?list=UUWWn-VAk8zzP6T9eVq_LGLQ"
+                style="width: 100%; aspect-ratio: 16/9; border: none; max-width: 100%;"
+                loading="lazy"
+                allowfullscreen
+            ></iframe>
+
+            <p class="lore-text" style="margin-top: 1rem; text-align: center; font-size: 0.85rem; color: var(--c-text-dim);">
+                更多影片請至 <a href="https://www.youtube.com/@%E5%91%82%E5%B8%83-g9b" target="_blank" style="color: var(--c-gold); text-decoration: none; border-bottom: 1px dashed var(--c-gold);">YouTube 頻道</a> 觀看
+            </p>
+
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 2. FAMILY -->
+        <section class="war-scroll" data-section="family">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="家">將軍府邸</h2>
+                <span class="section-num">HOUSEHOLD</span>
+            </div>
+            <p class="lore-text">
+                來到這個世界後的我，被米絲這個自稱為天使的魅魔拐走（？），
+                不知不覺就蹦出了三隻小屁孩，成為了三個孩子的爸爸。
+                偶爾全家會一起在麥塊裡面蓋房子 ——
+                遊戲裡我叫「<span class="hl-gold">呂布;爸爸</span>」，她叫「<span class="hl-gold">小米絲媽媽</span>」。
+            </p>
+
+            <a href="/guild/mis" class="soulbound-card">
+                <img src="/assets/img/guild/mis/avatar.webp" alt="Mis" class="soulbound-avatar">
+                <div class="soulbound-info">
+                    <div class="soulbound-name">小米絲 (Mis)</div>
+                    <div class="soulbound-role">靈魂引渡者 · 天堂鳥 · 誤用克蘇魯之力的老婆大人 · 影片剪輯師</div>
+                </div>
+                <div class="soulbound-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
+            <p class="lore-text" style="margin-top: 0.8rem; font-size: 0.85rem; color: var(--c-text-dim);">
+                <i class="fa-solid fa-scissors" style="color: var(--c-gold); margin-right: 0.3rem;"></i>
+                米絲同時也是呂布的<span class="hl-gold">影片剪輯師</span>，精華影片都是她幫忙剪的。
+            </p>
+
+            <ul class="family-list" style="margin-top: 1.5rem;">
+                <li><span class="hl-red">諭</span>：大兒子，搗蛋鬼一號。</li>
+                <li><span class="hl-red">小貓淵</span>：二女兒，偶爾會在直播中亂入。最近跟小舞兔一起在麥塊蓋房子。</li>
+                <li><span class="hl-red">小舞兔</span>：老么，可愛擔當。</li>
+            </ul>
+
+            <div class="media-row">
+                <div class="media-item">
+                    <img src="/assets/img/guild/lubu/content/threads-minecraft-1.jpg" alt="麥塊裡的呂布爸爸" class="media-img" loading="lazy">
+                </div>
+                <div class="media-item">
+                    <img src="/assets/img/guild/lubu/content/threads-minecraft-2.jpg" alt="麥塊裡的小米絲媽媽" class="media-img" loading="lazy">
+                </div>
+            </div>
+            <div class="media-caption">全家的麥塊日常 — 「呂布;爸爸」和「小米絲媽媽」</div>
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 3. MISSION -->
+        <section class="war-scroll" data-section="mission">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="令">尋找部下</h2>
+                <span class="section-num">MISSION</span>
+            </div>
+            <p class="lore-text">
+                穿越的代價是，原本追隨我的<span class="hl-gold">「十位呂家軍部下」</span>，
+                被拋散至不同的時間、不同的世界。
+            </p>
+            <p class="lore-text">
+                於是我開始偽裝。偽裝成「直播主」，偽裝成「打遊戲的人類」。
+                偽裝成，已經接受和平的存在。<br>
+                <span class="hl-red">但真相只有一個！</span><br>
+                我在螢幕前揮動手把，只為在無數世界線中，鎖定那十道熟悉的靈魂波動。
+            </p>
+
+            <div class="generals-grid">
+                <div class="general-token"><i class="fa-solid fa-chess-knight"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-scroll"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-dragon"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-khanda"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-shield-halved"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-horse-head"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-flag"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-fire"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-crown"></i><span class="label">尋找中</span></div>
+                <div class="general-token"><i class="fa-solid fa-star"></i><span class="label">尋找中</span></div>
+            </div>
+
+            <p class="lore-text" style="color: var(--c-gold); text-align: center; margin-top: 1.5rem; margin-bottom: 0;">
+                若你的心臟因這個名字而震動，那麼答案只有一個：<br>
+                你是我正在尋找的「<span class="hl-red">失散呂家軍部下</span>」。
+            </p>
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 4. STYLE -->
+        <section class="war-scroll" data-section="style">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="風">直播風格</h2>
+                <span class="section-num">STYLE</span>
+            </div>
+            <div class="style-banners">
+                <div class="banner">
+                    <div class="banner-icon"><i class="fa-solid fa-face-laugh-squint"></i></div>
+                    <div class="banner-label">搞怪</div>
+                    <div class="banner-sub">WACKY</div>
+                </div>
+                <div class="banner">
+                    <div class="banner-icon"><i class="fa-solid fa-heart"></i></div>
+                    <div class="banner-label">真實</div>
+                    <div class="banner-sub">AUTHENTIC</div>
+                </div>
+                <div class="banner">
+                    <div class="banner-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                    <div class="banner-label">中二</div>
+                    <div class="banner-sub">CHUUNI</div>
+                </div>
+            </div>
+            <p class="lore-text" style="text-align: center;">
+                平時專門直播<span class="hl-gold">獨立遊戲</span>、<span class="hl-gold">冷門神作</span>。
+                偶爾也會客串一些目前火熱的遊戲，目標是把「被忽略的好遊戲」介紹給更多人。
+            </p>
+            <div class="ink-quote" style="text-align: center;">
+                <i class="fa-solid fa-house-chimney"></i>
+                什麼是「<span class="hl-gold">陽台勢</span>」？——
+                就是字面意思，真的在陽台上直播。
+                這個詞是呂布自創的，取「個人勢」的「勢」加上「陽台」，
+                全網獨一無二，別處找不到R
+            </div>
+            <div class="ink-quote" style="text-align: center; margin-top: 1rem;">
+                <i class="fa-solid fa-face-grin-squint-tears"></i>
+                官方人設：<span class="hl-red">很87</span>（？）
+                個性：<span class="hl-red">87</span>（怎麼又是這個）
+            </div>
+
+            <img src="/assets/img/guild/lubu/content/tiktok-cover-9.jpeg" alt="呂布自我介紹" class="media-img" style="max-width: 320px; margin: 1.5rem auto 0;" loading="lazy">
+            <div class="media-caption">冷門遊戲直播主 / 幹話系主播 / 耍87系</div>
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 5. BATTLE RECORDS -->
+        <section class="war-scroll" data-section="battles">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="武">輝煌戰績</h2>
+                <span class="section-num">BATTLE RECORDS</span>
+            </div>
+            <div class="battle-list">
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-crosshairs"></i></div>
+                    <div>
+                        <div class="battle-name">特戰英豪 (VALORANT)</div>
+                        <div class="battle-desc">目前主力戰線</div>
+                    </div>
+                </div>
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-chess"></i></div>
+                    <div>
+                        <div class="battle-name">傳說對決 / 王者榮耀</div>
+                        <div class="battle-desc">MOBA 主戰場</div>
+                    </div>
+                </div>
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-dragon"></i></div>
+                    <div>
+                        <div class="battle-name">魔物獵人 (Monster Hunter)</div>
+                        <div class="battle-desc">討伐飛龍遠征</div>
+                    </div>
+                </div>
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-horse"></i></div>
+                    <div>
+                        <div class="battle-name">騎馬與砍殺 II (Mount & Blade II)</div>
+                        <div class="battle-desc">中世紀征戰模擬</div>
+                    </div>
+                </div>
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-cubes"></i></div>
+                    <div>
+                        <div class="battle-name">麥塊 (Minecraft)</div>
+                        <div class="battle-desc">築城建國計畫</div>
+                    </div>
+                </div>
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-ghost"></i></div>
+                    <div>
+                        <div class="battle-name">R.E.P.O.</div>
+                        <div class="battle-desc">恐怖探索任務</div>
+                    </div>
+                </div>
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
+                    <div>
+                        <div class="battle-name">人渣 (SCUM)</div>
+                        <div class="battle-desc">末日生存戰線</div>
+                    </div>
+                </div>
+                <div class="battle-row">
+                    <div class="battle-icon"><i class="fa-solid fa-gem"></i></div>
+                    <div>
+                        <div class="battle-name">冷門神作 / 獨立遊戲</div>
+                        <div class="battle-desc">秘境探索 — 被忽略的寶藏</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="challenge-card">
+                <div class="challenge-icon"><i class="fa-solid fa-trophy"></i></div>
+                <div class="challenge-text">
+                    <strong>傳說中的挑戰：</strong>曾經嘗試「圖奇一個禮拜都不關台」的好奇心挑戰，
+                    也有過單場 <strong>10 小時</strong>的馬拉松直播。
+                </div>
+            </div>
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 6. ARMORY -->
+        <section class="war-scroll" data-section="armory">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="器">私人軍械庫</h2>
+                <span class="section-num">ARMORY</span>
+            </div>
+            <div class="armory-grid">
+                <div class="armory-item">
+                    <div class="armory-icon"><i class="fa-solid fa-circle-dot"></i></div>
+                    <div class="armory-label">寶可夢</div>
+                    <div class="armory-detail">TCG Pocket 重度玩家</div>
+                </div>
+                <div class="armory-item">
+                    <div class="armory-icon"><i class="fa-solid fa-chess-rook"></i></div>
+                    <div class="armory-label">中世紀歷史</div>
+                    <div class="armory-detail">馬砍狂熱者</div>
+                </div>
+                <div class="armory-item">
+                    <div class="armory-icon"><i class="fa-solid fa-compass"></i></div>
+                    <div class="armory-label">人生引導 (?)</div>
+                    <div class="armory-detail">對，他自己也打了問號</div>
+                </div>
+                <div class="armory-item">
+                    <div class="armory-icon"><i class="fa-solid fa-utensils"></i></div>
+                    <div class="armory-label">美食</div>
+                    <div class="armory-detail">武將也要吃飯的</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 7. TIMELINE -->
+        <section class="war-scroll" data-section="timeline">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="史">征戰歷程</h2>
+                <span class="section-num">MILESTONES</span>
+            </div>
+            <div class="stats-panel">
+                <div class="stat-box">
+                    <div class="stat-value">375+</div>
+                    <div class="stat-label">總直播時數</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">18</div>
+                    <div class="stat-label">征戰遊戲數</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">Top 3.85%</div>
+                    <div class="stat-label">Twitch 全站排名</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">20</div>
+                    <div class="stat-label">同接峰值觀眾</div>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">2024.10.25</div>
+                    <div class="timeline-text">建軍 — Twitch 頻道建立</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2024.12.20</div>
+                    <div class="timeline-text">初陣 — 首次直播開戰</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2025.03.18</div>
+                    <div class="timeline-text">開啟營利 — 獲得 Twitch Affiliate 聯盟資格</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2025.04</div>
+                    <div class="timeline-text">好奇心挑戰 — 嘗試「圖奇一個禮拜都不關台」</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2025.04.26</div>
+                    <div class="timeline-text">百人集結 — 追隨者突破 100</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2025.07.07</div>
+                    <div class="timeline-text">雙百陣容 — 追隨者突破 200</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">2025.08.17</div>
+                    <div class="timeline-text">最高峰 — 單場同接觀眾達到 20 人</div>
+                </div>
+                <div class="timeline-item current">
+                    <div class="timeline-date">目前</div>
+                    <div class="timeline-text">
+                        呂家軍 297 人集結中 — 下一個目標：300 追隨者 &amp; VTuber 2.0 進化<br>
+                        <span style="font-size: 0.8rem; color: var(--c-text-dim);">
+                            Threads 460 追隨 · TikTok 523 粉絲 · YouTube 49 訂閱
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider">⚔</div>
+
+        <!-- 8. COMMS -->
+        <section class="war-scroll" data-section="comms">
+            <div class="scroll-corner tl"></div>
+            <div class="scroll-corner tr"></div>
+            <div class="scroll-corner bl"></div>
+            <div class="scroll-corner br"></div>
+
+            <div class="scroll-header">
+                <h2 data-seal="報">軍情通報</h2>
+                <span class="section-num">COMMS</span>
+            </div>
+            <div class="comms-grid">
+                <a href="https://discord.gg/9AK4nWxdkW" target="_blank" class="comm-link">
+                    <div class="comm-left">
+                        <div class="comm-icon"><i class="fa-brands fa-discord"></i></div>
+                        <div>
+                            <div class="comm-name">呂家軍大本營</div>
+                            <div style="font-size: 0.75rem; color: var(--c-text-dim); font-family: var(--f-fun);">加入呂布呂家軍大本營 Discord 伺服器！</div>
+                        </div>
+                    </div>
+                    <div class="comm-desc">HEADQUARTERS</div>
+                </a>
+                <a href="https://www.twitch.tv/wtfffffff0" target="_blank" class="comm-link">
+                    <div class="comm-left">
+                        <div class="comm-icon"><i class="fa-brands fa-twitch"></i></div>
+                        <div>
+                            <div class="comm-name">冷門遊戲直播主呂布</div>
+                            <div style="font-size: 0.75rem; color: var(--c-text-dim); font-family: var(--f-fun);">為了網路穩定最近只在圖奇上直播</div>
+                        </div>
+                    </div>
+                    <div class="comm-desc">LIVE OPS</div>
+                </a>
+                <a href="https://www.youtube.com/@%E5%91%82%E5%B8%83-g9b" target="_blank" class="comm-link">
+                    <div class="comm-left">
+                        <div class="comm-icon"><i class="fa-brands fa-youtube"></i></div>
+                        <div>
+                            <div class="comm-name">呂布陽台勢 (YouTube)</div>
+                            <div style="font-size: 0.75rem; color: var(--c-text-dim); font-family: var(--f-fun);">放影片區（還在準備中）</div>
+                        </div>
+                    </div>
+                    <div class="comm-desc">ARCHIVES</div>
+                </a>
+                <a href="https://www.threads.com/@lengmenyouxizhibozhu" target="_blank" class="comm-link">
+                    <div class="comm-left">
+                        <div class="comm-icon"><i class="fa-brands fa-threads"></i></div>
+                        <div>
+                            <div class="comm-name">脆 (Threads)</div>
+                            <div style="font-size: 0.75rem; color: var(--c-text-dim); font-family: var(--f-fun);">我貼直播通知跟發神經的地方</div>
+                        </div>
+                    </div>
+                    <div class="comm-desc">MADNESS LOG</div>
+                </a>
+                <a href="https://www.instagram.com/lengmenyouxizhibozhu/" target="_blank" class="comm-link">
+                    <div class="comm-left">
+                        <div class="comm-icon"><i class="fa-brands fa-instagram"></i></div>
+                        <div>
+                            <div class="comm-name">IG</div>
+                            <div style="font-size: 0.75rem; color: var(--c-text-dim); font-family: var(--f-fun);">我偷偷私生活的地方</div>
+                        </div>
+                    </div>
+                    <div class="comm-desc">CLASSIFIED</div>
+                </a>
+                <a href="https://www.tiktok.com/@fxxk0709" target="_blank" class="comm-link">
+                    <div class="comm-left">
+                        <div class="comm-icon"><i class="fa-brands fa-tiktok"></i></div>
+                        <div>
+                            <div class="comm-name">TikTok</div>
+                            <div style="font-size: 0.75rem; color: var(--c-text-dim); font-family: var(--f-fun);">很多怪怪的影片</div>
+                        </div>
+                    </div>
+                    <div class="comm-desc">WEIRD CLIPS</div>
+                </a>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <div class="cta-banner">
+            <img src="/assets/img/guild/lubu/content/twitch-profile-banner.png" alt="呂布" loading="lazy" style="width: 200px; margin: 0 auto 1.5rem; display: block; border-radius: 4px; border: 1px solid rgba(201, 168, 76, 0.2);">
+            <div class="cta-text">
+                吾乃呂布，<br>在陽台等你來戰R
+            </div>
+            <div class="cta-sub">
+                成為呂家軍的一員，一起發掘被世界遺忘的好遊戲。<br>
+                兄弟們訂閱起來！
+            </div>
+        </div>
+
     </div>
 
     <!-- ════════════ THREE.JS SCENE ════════════ -->
     <script type="module">
         import * as THREE from 'three';
 
-        // Setup
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050202, 0.03);
+        scene.fog = new THREE.FogExp2(0x0a0505, 0.025);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(0, 0, 15);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -675,116 +1367,247 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Load Textures
         const textureLoader = new THREE.TextureLoader();
         const goldTexture = textureLoader.load('/assets/img/guild/lubu/bg_gold.jpg');
 
-        // Materials
         const goldMat = new THREE.MeshStandardMaterial({
-            map: goldTexture, color: 0xffd700, roughness: 0.3, metalness: 1.0, emissive: 0x332200
+            map: goldTexture, color: 0xc9a84c, roughness: 0.35, metalness: 0.9, emissive: 0x221800
         });
         const darkMetalMat = new THREE.MeshStandardMaterial({
-            color: 0x222222, roughness: 0.5, metalness: 0.8
+            color: 0x1a1a1a, roughness: 0.6, metalness: 0.7
         });
 
         // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
-        scene.add(ambientLight);
-        const spotLight = new THREE.SpotLight(0xff0000, 50, 50, 0.5, 0.5);
-        spotLight.position.set(5, 10, 5);
-        scene.add(spotLight);
-        const rimLight = new THREE.DirectionalLight(0xd4af37, 2);
-        rimLight.position.set(-5, 0, 10);
-        scene.add(rimLight);
+        scene.add(new THREE.AmbientLight(0xfff5e0, 0.15));
 
-        // ─── HALBERD ───
+        const warmSpot = new THREE.SpotLight(0xcc3300, 40, 60, 0.6, 0.5);
+        warmSpot.position.set(5, 10, 5);
+        scene.add(warmSpot);
+
+        const goldRim = new THREE.DirectionalLight(0xc9a84c, 1.5);
+        goldRim.position.set(-5, 0, 10);
+        scene.add(goldRim);
+
+        // Blade highlight — catches metallic surfaces from front-right
+        const bladeLight = new THREE.PointLight(0xffeedd, 30, 40);
+        bladeLight.position.set(8, 16, 12);
+        scene.add(bladeLight);
+
+        // ─── HALBERD (方天畫戟 — Dynasty Warriors Style) ───
         const halberdGroup = new THREE.Group();
 
-        // Pole
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 35, 12), darkMetalMat);
+        // Pole (桿身)
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 38, 16), darkMetalMat);
         halberdGroup.add(pole);
 
-        // Rings
-        for(let i=0; i<6; i++) {
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.08, 8, 16), goldMat);
-            ring.rotation.x = Math.PI/2;
-            ring.position.y = 8 - i*3;
+        // Pole tip cap (桿尾金屬頭)
+        const poleCap = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.5, 12), goldMat);
+        poleCap.position.y = -19.5;
+        poleCap.rotation.x = Math.PI;
+        halberdGroup.add(poleCap);
+
+        // Decorative rings (裝飾環) — 3 gold rings near blade
+        for (let i = 0; i < 3; i++) {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.06, 8, 20), goldMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 12 - i * 2.5;
             halberdGroup.add(ring);
         }
 
-        // Blade System
+        // ═══ Blade Assembly (刀刃組) ═══
         const bladeGroup = new THREE.Group();
-        bladeGroup.position.y = 14;
-        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.5, 8, 4), goldMat);
+        bladeGroup.position.y = 16;
+
+        // Silver blade material (刀刃用銀色金屬)
+        const bladeMat = new THREE.MeshStandardMaterial({
+            color: 0xc0c0c0, roughness: 0.2, metalness: 0.95, emissive: 0x222222
+        });
+
+        // Spear tip (矛尖) — wide leaf blade, NOT a cone
+        // Reference: flat diamond/leaf shape, wider at base, tapers to point
+        const spearShape = new THREE.Shape();
+        spearShape.moveTo(0, 7);                                         // sharp tip
+        spearShape.bezierCurveTo(0.4, 5.5, 0.8, 3, 0.9, 1.5);         // right edge widens
+        spearShape.bezierCurveTo(0.95, 0.5, 0.7, 0, 0.5, -0.3);       // right edge base
+        spearShape.lineTo(0, -0.6);                                      // bottom center
+        spearShape.lineTo(-0.5, -0.3);                                   // left edge base
+        spearShape.bezierCurveTo(-0.7, 0, -0.95, 0.5, -0.9, 1.5);     // left edge widens
+        spearShape.bezierCurveTo(-0.8, 3, -0.4, 5.5, 0, 7);           // left edge to tip
+        const spearGeo = new THREE.ExtrudeGeometry(spearShape, {
+            depth: 0.12,
+            bevelEnabled: true,
+            bevelThickness: 0.06,
+            bevelSize: 0.04,
+            bevelSegments: 2
+        });
+        const spike = new THREE.Mesh(spearGeo, bladeMat);
+        spike.position.set(0, 0.5, -0.06);
         bladeGroup.add(spike);
 
-        const crescentShape = new THREE.Shape();
-        crescentShape.moveTo(0.6, -3);
-        crescentShape.bezierCurveTo(4, -1, 4, 3, 0.6, 5);
-        crescentShape.lineTo(0.6, 3);
-        crescentShape.bezierCurveTo(2.5, 2, 2.5, 0, 0.6, -1);
-        const crescentGeo = new THREE.ExtrudeGeometry(crescentShape, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.05 });
-        const leftBlade = new THREE.Mesh(crescentGeo, goldMat);
-        leftBlade.scale.set(-1, 1, 1); leftBlade.position.x = -0.1;
-        const rightBlade = new THREE.Mesh(crescentGeo, goldMat);
-        rightBlade.position.x = 0.1;
-        bladeGroup.add(leftBlade); bladeGroup.add(rightBlade);
+        // Central ridge on spear (矛脊 — raised line down center)
+        const ridge = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.04, 0.04, 7, 6),
+            bladeMat
+        );
+        ridge.position.set(0, 4, 0);
+        bladeGroup.add(ridge);
+
+        // Gold collar (金色座 — ornamental mount)
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, 1.0, 16), goldMat);
+        collar.position.y = -0.5;
+        bladeGroup.add(collar);
+
+        // Cross-guard bar (橫刃座)
+        const guardBar = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.1, 2.5, 12),
+            goldMat
+        );
+        guardBar.rotation.z = Math.PI / 2;
+        guardBar.position.y = -0.5;
+        bladeGroup.add(guardBar);
+
+        // ═══ Crescent Blades (月牙刀刃) ═══
+        // Based on reference image: compact crescent with hooked tips.
+        // Each crescent is a thin curved blade with:
+        //   - Upper tip curving upward, hooking slightly outward
+        //   - Lower tip curving downward, hooking slightly outward
+        //   - Concave inner edge facing the shaft
+        //   - Convex outer cutting edge away from shaft
+        //
+        // Front view (right blade):
+        //
+        //      ↗ upper tip (hooks outward)
+        function makeCrescentBlade() {
+            const shape = new THREE.Shape();
+            // Crescent "(" shape: concave cutting edge outward, convex spine toward shaft
+            shape.moveTo(2.0, 1.5);
+            shape.bezierCurveTo(1.5, 1.3, 0.8, 0.8, 0.7, 0);
+            shape.bezierCurveTo(0.8, -0.8, 1.5, -1.3, 2.0, -1.5);
+            shape.bezierCurveTo(1.7, -1.2, 1.1, -0.6, 1.05, 0);
+            shape.bezierCurveTo(1.1, 0.6, 1.7, 1.2, 2.0, 1.5);
+
+            return new THREE.ExtrudeGeometry(shape, {
+                depth: 0.05,
+                bevelEnabled: true,
+                bevelThickness: 0.03,
+                bevelSize: 0.02,
+                bevelSegments: 2
+            });
+        }
+
+        const crescentGeo = makeCrescentBlade();
+
+        // Right blade
+        const rightBlade = new THREE.Mesh(crescentGeo, bladeMat);
+        rightBlade.position.set(0, -0.5, -0.1);
+        bladeGroup.add(rightBlade);
+
+        // Left blade (mirrored)
+        const leftBlade = new THREE.Mesh(crescentGeo, bladeMat);
+        leftBlade.scale.set(-1, 1, 1);
+        leftBlade.position.set(0, -0.5, -0.1);
+        bladeGroup.add(leftBlade);
+
+        // ═══ Red Tassel (紅纓) ═══
+        const tasselMat = new THREE.MeshStandardMaterial({
+            color: 0xcc0000, roughness: 0.7, metalness: 0.1, emissive: 0x440000
+        });
+
+        // Tassel ring
+        const tasselRing = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.06, 8, 16), tasselMat);
+        tasselRing.rotation.x = Math.PI / 2;
+        tasselRing.position.y = -1.5;
+        bladeGroup.add(tasselRing);
+
+        // Tassel strands (纓穗)
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const strand = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.03, 0.008, 2.5, 4),
+                tasselMat
+            );
+            strand.position.set(
+                Math.cos(angle) * 0.25,
+                -3.0,
+                Math.sin(angle) * 0.25
+            );
+            strand.rotation.x = Math.sin(angle) * 0.15;
+            strand.rotation.z = Math.cos(angle) * 0.15;
+            bladeGroup.add(strand);
+        }
 
         halberdGroup.add(bladeGroup);
         scene.add(halberdGroup);
 
-        // ─── TALISMANS ───
+        // ─── TALISMANS (戰旗符咒) ───
         const talismans = [];
         const talismanGeo = new THREE.PlaneGeometry(1.5, 3.5);
+
         function createTalismanTexture(char1, char2) {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 300;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#f2e6ce'; ctx.fillRect(0, 0, 128, 300);
-            ctx.strokeStyle = '#8a0000'; ctx.lineWidth = 6; ctx.strokeRect(5, 5, 118, 290);
-            ctx.fillStyle = '#8a0000'; ctx.font = 'bold 80px serif';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(char1, 64, 100); ctx.fillText(char2, 64, 200);
+            // Rice paper background
+            ctx.fillStyle = '#e8d5b5';
+            ctx.fillRect(0, 0, 128, 300);
+            // Red border (like a real talisman)
+            ctx.strokeStyle = '#8a0000';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(4, 4, 120, 292);
+            // Inner border
+            ctx.strokeStyle = '#c9a84c';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(10, 10, 108, 280);
+            // Characters
+            ctx.fillStyle = '#1a0000';
+            ctx.font = 'bold 72px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(char1, 64, 105);
+            ctx.fillText(char2, 64, 200);
             return new THREE.CanvasTexture(canvas);
         }
-        const tTex = [createTalismanTexture('呂', '布'), createTalismanTexture('無', '雙'), createTalismanTexture('戰', '神')];
-        const tMats = tTex.map(t => new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide, transparent: true, opacity: 0.8 }));
 
-        for(let i=0; i<25; i++) {
-            const mesh = new THREE.Mesh(talismanGeo, tMats[i % 3]);
-            // Scatter widely but keep behind content (Z < -5)
+        const tTextures = [
+            createTalismanTexture('呂', '布'),
+            createTalismanTexture('無', '雙'),
+            createTalismanTexture('戰', '神')
+        ];
+        const tMaterials = tTextures.map(t =>
+            new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })
+        );
+
+        for (let i = 0; i < 20; i++) {
+            const mesh = new THREE.Mesh(talismanGeo, tMaterials[i % 3]);
             mesh.position.set(
-                (Math.random()-0.5)*60,
-                (Math.random()-0.5)*80,
-                -5 - Math.random() * 25 // Z: -5 to -30
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 70,
+                -8 - Math.random() * 20
             );
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
             mesh.userData = {
-                rotSpeed: (Math.random()-0.5)*0.02,
-                floatSpeed: 0.005 + Math.random()*0.01,
-                yOffset: Math.random()*Math.PI
+                rotSpeed: (Math.random() - 0.5) * 0.015,
+                floatSpeed: 0.003 + Math.random() * 0.008,
+                yOffset: Math.random() * Math.PI * 2
             };
             scene.add(mesh);
             talismans.push(mesh);
         }
 
-        // ─── PARTICLES ───
+        // ─── EMBER PARTICLES ───
         const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(1500 * 3);
-        // Spread particles wider and deeper
-        for(let i=0; i<1500*3; i+=3) {
-            pPos[i] = (Math.random()-0.5)*100;
-            pPos[i+1] = (Math.random()-0.5)*100;
-            pPos[i+2] = -5 + (Math.random()-0.5)*40;
+        const pCount = 1000;
+        const pPos = new Float32Array(pCount * 3);
+        for (let i = 0; i < pCount * 3; i += 3) {
+            pPos[i] = (Math.random() - 0.5) * 80;
+            pPos[i + 1] = (Math.random() - 0.5) * 80;
+            pPos[i + 2] = -5 + (Math.random() - 0.5) * 30;
         }
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
         const pMat = new THREE.PointsMaterial({
-            size: 0.2,
-            color: 0xffaa33,
-            transparent: true,
-            opacity: 0.4,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            size: 0.15, color: 0xcc6600,
+            transparent: true, opacity: 0.35,
+            blending: THREE.AdditiveBlending, depthWrite: false
         });
         const particles = new THREE.Points(pGeo, pMat);
         scene.add(particles);
@@ -795,170 +1618,194 @@
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // Passive Float
             talismans.forEach(m => {
-                m.position.y += Math.sin(t * 1.5 + m.userData.yOffset) * m.userData.floatSpeed;
+                m.position.y += Math.sin(t * 1.2 + m.userData.yOffset) * m.userData.floatSpeed;
                 m.rotation.y += m.userData.rotSpeed;
-                m.rotation.x += m.userData.rotSpeed * 0.5;
+                m.rotation.x += m.userData.rotSpeed * 0.4;
             });
 
-            // Subtle Halberd Float
-            if(halberdGroup) {
-                 halberdGroup.position.y += Math.sin(t) * 0.002;
+            if (halberdGroup) {
+                halberdGroup.position.y += Math.sin(t * 0.8) * 0.0015;
             }
 
-            particles.rotation.y = t * 0.02;
-
+            particles.rotation.y = t * 0.015;
             renderer.render(scene, camera);
         }
         animate();
 
-        // Responsive
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Re-check layout
             updateHalberdPosition();
         });
 
         function updateHalberdPosition() {
-            if(window.innerWidth > 900) {
-                // Desktop: Shift Halberd to Left (-5) to frame content
-                halberdGroup.position.set(-5, -2, -2);
-                halberdGroup.rotation.z = Math.PI / 6;
+            if (window.innerWidth > 768) {
+                halberdGroup.position.set(-4, 2, 0);
+                halberdGroup.rotation.z = Math.PI / 5;
                 halberdGroup.rotation.x = 0;
             } else {
-                // Mobile: Center background, lower and further back
-                halberdGroup.position.set(0, -6, -8);
+                halberdGroup.position.set(0, 2, -6);
                 halberdGroup.rotation.z = Math.PI / 4;
             }
         }
         updateHalberdPosition();
 
-        // GSAP Scroll Interaction
+        // GSAP Scroll
         gsap.registerPlugin(ScrollTrigger);
 
-        // Spin the Halberd slowly as we scroll
         gsap.to(halberdGroup.rotation, {
-            scrollTrigger: { trigger: "body", start: "top top", end: "bottom bottom", scrub: 1 },
-            y: Math.PI * 0.5, // Gentle spin
-            x: Math.PI * 0.1
+            scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 1.5 },
+            y: Math.PI * 0.4,
+            x: Math.PI * 0.08
         });
 
-        // Entrance
+        // Pan the halberd downward as user scrolls, keeping blade visible
+        gsap.to(halberdGroup.position, {
+            scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom bottom', scrub: 1.5 },
+            y: '-=12',
+            x: '+=3'
+        });
+
         window.onload = () => {
             document.body.classList.add('loaded');
 
-            // Left Col: Slide from left
-            gsap.from('.left-col .reveal', {
-                x: -50, opacity: 0, duration: 1.2, stagger: 0.1, ease: 'power3.out'
+            // Hero entrance
+            gsap.from('.hero .reveal', {
+                y: 40, opacity: 0, duration: 1, stagger: 0.15, ease: 'power3.out', delay: 0.2
             });
 
-            // Cards: Slide from right + Scale up
-            const cards = document.querySelectorAll('.section-card');
-            cards.forEach((card, i) => {
-                gsap.from(card, {
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    },
-                    x: 100,
-                    opacity: 0,
-                    duration: 1,
-                    ease: 'power4.out'
+            // Scroll sections: appear from below with subtle rotation
+            document.querySelectorAll('.war-scroll').forEach(scroll => {
+                gsap.from(scroll, {
+                    scrollTrigger: { trigger: scroll, start: 'top 88%', toggleActions: 'play none none reverse' },
+                    y: 60, opacity: 0, duration: 0.8, ease: 'power3.out'
                 });
+            });
+
+            // Dividers
+            document.querySelectorAll('.divider').forEach(d => {
+                gsap.from(d, {
+                    scrollTrigger: { trigger: d, start: 'top 90%' },
+                    scaleX: 0, opacity: 0, duration: 0.6, ease: 'power2.out'
+                });
+            });
+
+            // Timeline items stagger
+            document.querySelectorAll('.timeline-item').forEach((item, i) => {
+                gsap.from(item, {
+                    scrollTrigger: { trigger: item, start: 'top 85%' },
+                    x: -30, opacity: 0, duration: 0.6, delay: i * 0.1, ease: 'power2.out'
+                });
+            });
+
+            // CTA
+            gsap.from('.cta-banner', {
+                scrollTrigger: { trigger: '.cta-banner', start: 'top 85%' },
+                y: 30, opacity: 0, duration: 1, ease: 'power3.out'
             });
 
             ScrollTrigger.refresh();
         };
     </script>
 
+    <!-- ════════════ CURSOR ════════════ -->
     <script>
-        // ─── CURSOR LOGIC ───
-        const cursor = document.getElementById('cursor');
+        const cursor = document.getElementById('ink-cursor');
+        if (cursor && window.matchMedia('(hover: hover)').matches) {
+            gsap.set(cursor, { xPercent: -50, yPercent: -50 });
 
-        // Initialize centering via GSAP to avoid conflict with CSS transform
-        gsap.set(cursor, { xPercent: -50, yPercent: -50 });
-
-        const moveCursor = (e) => {
-            gsap.to(cursor, {
-                x: e.clientX,
-                y: e.clientY,
-                duration: 0.1,
-                ease: 'power2.out'
+            window.addEventListener('mousemove', (e) => {
+                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.08, ease: 'power2.out' });
             });
-        };
-        window.addEventListener('mousemove', moveCursor);
 
-        // Hover Detection
-        const hoverTargets = document.querySelectorAll('a, button, .section-card, .general-token, .social-btn, .game-tag, .style-item, .battle-item, .armory-item, .comm-link');
-        hoverTargets.forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
-        });
-
-        // Click "Pulse"
-        window.addEventListener('click', () => {
-            gsap.fromTo(cursor,
-                { scale: 0.8 },
-                { scale: 1.5, duration: 0.1, yoyo: true, repeat: 1 }
-            );
-        });
+            const hoverTargets = document.querySelectorAll('a, button, .war-scroll, .general-token, .banner, .battle-row, .armory-item, .comm-link');
+            hoverTargets.forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+            });
+        }
     </script>
 
-    <!-- ════════════ P5.JS (Subtle Ink) ════════════ -->
+    <!-- ════════════ P5.JS (Ink Wash / 水墨) ════════════ -->
     <script>
         const sketch = (p) => {
             let inkDrops = [];
 
-            class Drop {
+            class InkDrop {
                 constructor(x, y, size) {
-                    this.x = x; this.y = y; this.size = size;
-                    this.life = 255;
-                    this.vx = p.random(-0.5, 0.5);
-                    this.vy = p.random(1, 3);
+                    this.x = x; this.y = y;
+                    this.size = size;
+                    this.life = 200;
+                    this.vx = p.random(-0.3, 0.3);
+                    this.vy = p.random(0.5, 2);
+                    this.spread = p.random(0.98, 0.995);
                 }
                 update() {
-                    this.x += this.vx; this.y += this.vy;
-                    this.life -= 2;
-                    this.size *= 0.99;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vy *= 0.99;
+                    this.life -= 1.5;
+                    this.size *= this.spread;
                 }
                 draw() {
-                    p.fill(80, 0, 0, this.life * 0.4); // Dark Blood
-                    p.circle(this.x, this.y, this.size);
+                    // Black ink with brown tint
+                    const alpha = (this.life / 200) * 60;
+                    p.fill(20, 12, 5, alpha);
+                    p.noStroke();
+                    // Irregular ink blob shape
+                    p.push();
+                    p.translate(this.x, this.y);
+                    p.beginShape();
+                    for (let a = 0; a < p.TWO_PI; a += 0.3) {
+                        const r = this.size * (0.7 + 0.3 * p.noise(a * 2, p.frameCount * 0.01));
+                        p.vertex(p.cos(a) * r, p.sin(a) * r);
+                    }
+                    p.endShape(p.CLOSE);
+                    p.pop();
                 }
             }
 
             p.setup = () => {
                 let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
                 cnv.parent('p5-container');
-                p.noStroke();
             };
 
             p.draw = () => {
                 p.clear();
 
-                // Mouse Interaction
+                // Mouse trail - ink drops
                 if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
-                    if (p.frameCount % 2 === 0) {
-                         inkDrops.push(new Drop(p.mouseX + p.random(-10,10), p.mouseY + p.random(-10,10), p.random(10, 30)));
+                    if (p.frameCount % 3 === 0) {
+                        inkDrops.push(new InkDrop(
+                            p.mouseX + p.random(-8, 8),
+                            p.mouseY + p.random(-8, 8),
+                            p.random(5, 15)
+                        ));
                     }
                 }
 
-                // Random background drips
-                if(p.frameCount % 20 === 0) {
-                     inkDrops.push(new Drop(p.random(p.width), -20, p.random(20, 60)));
+                // Ambient falling ink splatter
+                if (p.frameCount % 40 === 0) {
+                    inkDrops.push(new InkDrop(
+                        p.random(p.width), -10,
+                        p.random(15, 40)
+                    ));
                 }
 
+                // Cap array to prevent unbounded memory growth
+                if (inkDrops.length > 200) inkDrops.splice(0, inkDrops.length - 200);
+
                 for (let i = inkDrops.length - 1; i >= 0; i--) {
-                    let d = inkDrops[i];
-                    d.update();
-                    d.draw();
-                    if (d.life <= 0 || d.size < 1) inkDrops.splice(i, 1);
+                    inkDrops[i].update();
+                    inkDrops[i].draw();
+                    if (inkDrops[i].life <= 0 || inkDrops[i].size < 0.5) {
+                        inkDrops.splice(i, 1);
+                    }
                 }
             };
+
             p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
         };
         new p5(sketch);
