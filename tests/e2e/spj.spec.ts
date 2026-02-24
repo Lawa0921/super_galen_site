@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Parchment Tavern)', () => {
+test.describe('SPJ Guild Page (Authentic Tavern)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -12,31 +12,30 @@ test.describe('SPJ Guild Page (Parchment Tavern)', () => {
     await page.waitForTimeout(2000);
   });
 
-  test('should display Character Sprite', async ({ page }) => {
+  test('should display Door Overlay initially', async ({ page }) => {
+    await expect(page.locator('#door-overlay')).toBeVisible();
+    await expect(page.locator('.door-hint')).toHaveText('CLICK TO ENTER');
+  });
+
+  test('should Enter Tavern on Click', async ({ page }) => {
+    // Click door
+    await page.click('#door-overlay');
+    await page.waitForTimeout(2500); // Wait for zoom animation
+
+    // Check UI visibility
+    await expect(page.locator('#ui-layer')).toHaveCSS('opacity', '1');
     await expect(page.locator('.char-container')).toBeVisible();
   });
 
-  test('should display Dialogue', async ({ page }) => {
-    await expect(page.locator('.dialogue-box')).toBeVisible();
-    await page.mouse.wheel(0, 100);
-    await page.waitForTimeout(1000);
-    await expect(page.locator('#dialogue-text')).toContainText('嘿');
-  });
-
-  test('should open Parchment on Book Interaction (Simulated)', async ({ page }) => {
-    // We can't easily click the 3D book in headless without coordinate guessing,
-    // but we can call the exposed global function
-    await page.evaluate("window.openScroll()");
-    await page.waitForTimeout(1000);
-
-    await expect(page.locator('#quest-parchment')).toBeVisible();
-    await expect(page.locator('.parchment-header')).toHaveText('QUEST LOG');
-    await expect(page.locator('.quest-title').first()).toContainText('Text Town');
-  });
-
   test('should display Footer Socials at end', async ({ page }) => {
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+    // Enter first
+    await page.click('#door-overlay');
     await page.waitForTimeout(2000);
+
+    // Scroll
+    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+    await page.waitForTimeout(1000);
+
     await expect(page.locator('#footer-socials')).toHaveCSS('opacity', '1');
   });
 });

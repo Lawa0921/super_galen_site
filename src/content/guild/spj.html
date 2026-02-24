@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&family=IM+Fell+English:ital@0;1&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -17,13 +17,13 @@
 
     <style>
         :root {
-            --bg-dark: #0f0a05;
-            --ui-bg: rgba(40, 28, 18, 0.95);
+            --bg-dark: #120a05;
+            --ui-bg: rgba(45, 30, 20, 0.95);
             --ui-border: #a1887f;
             --text-gold: #ffd54f;
             --text-white: #fff3e0;
-            --parchment: #f0e6d2;
-            --ink: #3e2723;
+            --wood-dark: #3e2723;
+            --wood-light: #5d4037;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,13 +32,54 @@
             background-color: var(--bg-dark);
             color: var(--text-white);
             font-family: 'Noto Serif TC', serif;
-            overflow-x: hidden;
+            overflow: hidden; /* Locked until door opens */
         }
 
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
         }
+
+        /* --- Intro Door Overlay --- */
+        #door-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2000;
+            display: flex;
+            cursor: pointer;
+        }
+
+        .door-panel {
+            width: 50%; height: 100%;
+            background-color: #25160c;
+            /* Wood Texture */
+            background-image: repeating-linear-gradient(90deg, #25160c 0, #1a0f08 20px, #2e1b0f 40px);
+            position: relative;
+            box-shadow: inset 0 0 100px #000;
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .door-left { border-right: 2px solid #000; }
+        .door-right { border-left: 2px solid #000; }
+
+        .door-handle {
+            width: 20px; height: 100px;
+            background: #8d6e63;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px #000;
+        }
+
+        #door-overlay.open .door-left { transform: translateX(-100%); }
+        #door-overlay.open .door-right { transform: translateX(100%); }
+
+        .door-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: var(--text-gold); font-family: 'Cinzel'; font-size: 2rem;
+            text-shadow: 0 0 20px #000;
+            z-index: 2001; pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        #door-overlay.open .door-hint { opacity: 0; }
 
         /* --- Scroll Track --- */
         .scroll-track { height: 500vh; }
@@ -48,7 +89,10 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
             z-index: 10;
+            opacity: 0; /* Hidden until door opens */
+            transition: opacity 1s;
         }
+        #ui-layer.visible { opacity: 1; }
 
         /* Return Nav */
         .nav-return {
@@ -106,20 +150,21 @@
         }
         @keyframes pulse { 50% { opacity: 0.3; } }
 
-        /* Parchment Overlay (The Book Interaction) */
+        /* Parchment Overlay (Quest Log) */
         #quest-parchment {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
             width: 90%; max-width: 700px; height: 80vh;
-            background: var(--parchment);
-            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.3"/></svg>');
+            background: #f0e6d2;
             box-shadow: 0 20px 60px rgba(0,0,0,0.9);
             padding: 4rem 3rem;
             opacity: 0; pointer-events: none;
             z-index: 20;
-            color: var(--ink);
+            color: #3e2723;
             overflow-y: auto;
-            clip-path: polygon(0 2%, 2% 0, 98% 0, 100% 2%, 100% 98%, 98% 100%, 2% 100%, 0 98%); /* Rough edges */
+            clip-path: polygon(0 2%, 2% 0, 98% 0, 100% 2%, 100% 98%, 98% 100%, 2% 100%, 0 98%);
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.5s;
+            /* Simple noise texture */
+            background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.15"/></svg>');
         }
 
         #quest-parchment.visible {
@@ -128,63 +173,44 @@
         }
 
         .parchment-header {
-            text-align: center;
-            font-family: 'Cinzel';
-            font-size: 2.5rem;
-            border-bottom: 2px solid var(--ink);
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-            color: #5d4037;
+            text-align: center; font-family: 'Cinzel'; font-size: 2.5rem;
+            border-bottom: 2px solid #3e2723; padding-bottom: 1rem; margin-bottom: 2rem;
+            color: #5d4037; font-weight: bold;
         }
 
         .quest-item {
-            margin-bottom: 2rem;
-            border-bottom: 1px dashed rgba(62, 39, 35, 0.3);
-            padding-bottom: 1rem;
+            margin-bottom: 2rem; border-bottom: 1px dashed rgba(62, 39, 35, 0.3); padding-bottom: 1rem;
         }
-        .quest-item:last-child { border: none; }
-
         .quest-title {
-            font-family: 'IM Fell English', serif;
-            font-weight: bold;
-            font-size: 1.5rem;
-            display: flex; justify-content: space-between;
-            color: #3e2723;
+            font-family: 'Cinzel'; font-weight: bold; font-size: 1.4rem;
+            display: flex; justify-content: space-between; color: #3e2723;
         }
         .quest-desc {
-            font-family: 'Dancing Script', cursive; /* Handwritten feel */
-            font-size: 1.3rem;
-            color: #5d4037;
-            margin-top: 0.5rem;
+            font-family: 'Noto Serif TC'; font-size: 1.1rem; color: #5d4037; margin-top: 0.5rem; line-height: 1.6;
         }
 
         .seal-close {
             position: absolute; top: 1rem; right: 1rem;
-            width: 50px; height: 50px;
-            background: #8b0000;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-family: 'Cinzel'; font-weight: bold; font-size: 0.8rem;
-            cursor: pointer;
+            width: 40px; height: 40px;
+            background: #8b0000; color: #fff;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
-            border: 2px dashed rgba(255,255,255,0.3);
-            transition: transform 0.2s;
         }
-        .seal-close:hover { transform: scale(1.1); }
 
-        /* Skill Board (Wall) */
+        /* Skill Board */
         #skill-board {
             position: absolute; top: 20vh; left: 15vw;
-            width: 300px;
-            background: #4e342e;
-            border: 8px solid #3e2723;
+            width: 320px;
+            background: #3e2723;
+            border: 6px solid #25160c;
             padding: 2rem;
             transform: rotate(-2deg);
-            box-shadow: 5px 10px 20px rgba(0,0,0,0.5);
+            box-shadow: 5px 10px 20px rgba(0,0,0,0.6);
             opacity: 0;
         }
-        .skill-title { text-align: center; border-bottom: 2px solid #fff; padding-bottom: 5px; margin-bottom: 1rem; font-family: 'IM Fell English'; font-size: 1.5rem; }
-        .skill-list li { margin-bottom: 0.5rem; font-family: 'Noto Serif TC'; }
+        .skill-title { text-align: center; border-bottom: 1px solid #a1887f; padding-bottom: 10px; margin-bottom: 1rem; font-family: 'Cinzel'; font-size: 1.5rem; color: #ffd54f; }
+        .skill-list li { margin-bottom: 0.8rem; font-family: 'Noto Serif TC'; color: #d7ccc8; font-size: 1.1rem; }
 
         /* Footer Socials */
         .footer-socials {
@@ -201,81 +227,81 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #1a120b; z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-gold); font-family: 'Cinzel'; letter-spacing: 5px;
+        /* Hover Hint */
+        #hover-hint {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px;
+            border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+            z-index: 100; font-family: 'Cinzel';
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">MATERIALIZING TAVERN...</div>
+    <!-- Door Overlay -->
+    <div id="door-overlay" onclick="enterTavern()">
+        <div class="door-panel door-left"><div class="door-handle" style="margin-left: auto; margin-right: 10px;"></div></div>
+        <div class="door-panel door-right"><div class="door-handle" style="margin-left: 10px;"></div></div>
+        <div class="door-hint">CLICK TO ENTER</div>
+    </div>
 
     <div id="canvas-container"></div>
+    <div id="hover-hint">Interact</div>
+
     <a href="/guild/" class="nav-return">LEAVE TAVERN</a>
 
     <div class="scroll-track"></div>
 
     <div id="ui-layer">
 
-        <!-- Character -->
         <div class="char-container" id="character">
             <img src="/assets/img/guild/spj/avatar.webp" class="char-img">
             <div class="speaker-tag">SPJ</div>
         </div>
 
-        <!-- Skill Board -->
         <div id="skill-board">
-            <div class="skill-title">TODAY'S SPECIALS</div>
+            <div class="skill-title">SPECIALS</div>
             <ul class="skill-list" style="list-style: none; padding: 0;">
-                <li>🍺 Code Synthesis</li>
-                <li>🍷 Materialization</li>
+                <li>🍺 Code Synthesis (Lager)</li>
+                <li>🍷 Materialization (Red)</li>
                 <li>☕ Mana Potion (Coffee)</li>
-                <li>📜 Creative Writing</li>
+                <li>📜 Legend Writing</li>
             </ul>
         </div>
 
-        <!-- Dialogue Box -->
         <div class="dialogue-box">
             <div class="dialogue-text" id="dialogue-text"></div>
             <div class="dialogue-prompt">▼ SCROLL TO CONTINUE</div>
         </div>
 
-        <!-- The Parchment (Hidden) -->
+        <!-- Quest Log -->
         <div id="quest-parchment">
-            <div class="seal-close" onclick="closeScroll()">CLOSE</div>
+            <div class="seal-close" onclick="closeScroll()">X</div>
             <div class="parchment-header">QUEST LOG</div>
 
             <div class="quest-item">
-                <div class="quest-title">Text Town <span style="color: #8b0000; font-size: 1rem;">RANK S</span></div>
+                <div class="quest-title">TEXT TOWN <span style="color: #8b0000; font-size: 1rem;">RANK S</span></div>
                 <div class="quest-desc">
-                    "A world forged from language itself. Where descriptions become reality, and the 'Book of Heavens' governs all laws."
+                    以「天書系統」為核心的具現化實驗。在這個世界裡，文字不僅是描述，更是構成物理法則的基石。我試圖用代碼重建想像力的邊界。
                 </div>
             </div>
 
             <div class="quest-item">
-                <div class="quest-title">Sepajuan Guild <span style="color: #8b0000; font-size: 1rem;">RANK A</span></div>
+                <div class="quest-title">SEPAJUAN GUILD <span style="color: #8b0000; font-size: 1rem;">RANK A</span></div>
                 <div class="quest-desc">
-                    "The Sanctuary. A gathering place for the weary creators of this realm to find allies, share resources, and rest."
+                    現實世界的冒險者集散地。這是一個連結創造者、開發者與夢想家的 Nexus。我們在此組隊、分享資源，並一同攻略名為「現實」的副本。
                 </div>
             </div>
 
             <div class="quest-item">
-                <div class="quest-title">The Chronicles <span style="color: #8b0000; font-size: 1rem;">RANK B</span></div>
+                <div class="quest-title">CHRONICLES <span style="color: #8b0000; font-size: 1rem;">RANK B</span></div>
                 <div class="quest-desc">
-                    "Recording the warmth of the journey. For the result is cold, but the process burns with life."
+                    紀錄開發過程中的血淚與歡笑。我不只關注結果，更在意那燃燒的過程。每一行代碼背後，都有一個值得被傳唱的故事。
                 </div>
-            </div>
-
-            <div style="text-align: center; margin-top: 3rem; opacity: 0.6; font-family: 'Cinzel'; color: #5d4037;">
-                [ QUESTS AVAILABLE ]
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="footer-socials" id="footer-socials">
             <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn">THREADS</a>
         </div>
@@ -297,139 +323,139 @@
         // --- Init Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x1a120b, 0.025);
+        scene.fog = new THREE.FogExp2(0x120a05, 0.02);
 
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3, 8);
+        camera.position.set(0, 3, 20); // Start far out (outside door)
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.3;
         container.appendChild(renderer.domElement);
 
         // --- Lighting ---
-        // Ambient (Warm)
-        const ambientLight = new THREE.AmbientLight(0xffe0b2, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffe0b2, 0.8);
         scene.add(ambientLight);
 
-        // Candle (Flicker)
         const candleLight = new THREE.PointLight(0xff5722, 2, 20);
         candleLight.position.set(2, 1.5, 1);
         candleLight.castShadow = true;
         scene.add(candleLight);
 
-        // Window (Cool)
-        const windowLight = new THREE.SpotLight(0x4fc3f7, 2.5);
-        windowLight.position.set(-8, 5, -2);
-        windowLight.target.position.set(0, 0, -5);
-        windowLight.castShadow = true;
-        scene.add(windowLight);
-        scene.add(windowLight.target);
+        // Fireplace Light (Background)
+        const fireLight = new THREE.PointLight(0xff3d00, 3, 30);
+        fireLight.position.set(5, 2, -10);
+        scene.add(fireLight);
 
-        // Book Highlight (Spotlight)
-        const bookSpot = new THREE.SpotLight(0xffd700, 5, 10, 0.5, 0.5, 1);
-        bookSpot.position.set(0, 5, 2);
-        bookSpot.target.position.set(-1.5, 0, 2);
-        bookSpot.visible = false; // Turn on when relevant
-        scene.add(bookSpot);
-        scene.add(bookSpot.target);
+        // --- Textures (Procedural Wood) ---
+        function createWoodTexture(color1, color2) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = color1;
+            ctx.fillRect(0,0,512,512);
+
+            // Grain
+            ctx.fillStyle = color2;
+            for(let i=0; i<5000; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                const w = Math.random() * 100 + 20;
+                const h = Math.random() * 2 + 1;
+                ctx.globalAlpha = 0.1;
+                ctx.fillRect(x,y,w,h);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        const woodTexDark = createWoodTexture('#3e2723', '#1a0f08');
+        const woodTexLight = createWoodTexture('#5d4037', '#3e2723');
 
         // --- Environment ---
         const clickableObjects = [];
 
-        // 1. Bar Counter
-        const tableMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.6, metalness: 0.1 });
+        // 1. Counter
+        const tableMat = new THREE.MeshStandardMaterial({
+            map: woodTexLight, roughness: 0.6, metalness: 0.1
+        });
         const table = new THREE.Mesh(new THREE.BoxGeometry(30, 1, 15), tableMat);
         table.position.set(0, -1, 0);
         table.receiveShadow = true;
         scene.add(table);
 
-        // 2. Back Wall (Shelves & Window)
+        // 2. Back Wall & Fireplace
         const wallGroup = new THREE.Group();
-        wallGroup.position.set(0, 0, -5);
+        wallGroup.position.set(0, 0, -8);
 
         // Shelves
-        const shelfGeo = new THREE.BoxGeometry(12, 0.2, 1.5);
+        const shelfGeo = new THREE.BoxGeometry(12, 0.3, 1.5);
         const s1 = new THREE.Mesh(shelfGeo, tableMat); s1.position.y = 2;
         const s2 = new THREE.Mesh(shelfGeo, tableMat); s2.position.y = 4;
         wallGroup.add(s1, s2);
 
-        // Bottles (Randomized)
-        const bottleColors = [0xef5350, 0x66bb6a, 0x42a5f5, 0xffca28, 0xab47bc];
+        // Bottles (Interactive)
         const bottleGeo = new THREE.CylinderGeometry(0.25, 0.25, 1, 8);
-        for(let i=0; i<15; i++) {
+        const bottleColors = [0xef5350, 0x66bb6a, 0x42a5f5, 0xffca28, 0xab47bc];
+
+        for(let i=0; i<12; i++) {
             const mat = new THREE.MeshStandardMaterial({
-                color: bottleColors[Math.floor(Math.random()*bottleColors.length)],
+                color: bottleColors[i%5],
                 transparent: true, opacity: 0.9, roughness: 0.1
             });
             const b = new THREE.Mesh(bottleGeo, mat);
-            b.position.set((Math.random()-0.5)*10, Math.random()>0.5?2.6:4.6, 0);
-            b.scale.setY(0.8 + Math.random()*0.4);
+            b.position.set((i-6)*1.5, Math.random()>0.5?2.6:4.6, 0);
+            b.userData = { id: 'bottle', flavor: i };
             wallGroup.add(b);
+            // Hitbox for bottle
+            const hit = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial({visible:false}));
+            hit.position.copy(b.position);
+            hit.position.z += -8; // World pos adjustment
+            hit.position.y += 0;
+            hit.userData = { id: 'bottle', flavor: i };
+            clickableObjects.push(hit);
+            scene.add(hit); // Add to scene, not group, for simpler raycast logic or need to calc world pos
         }
-
-        // Barrels
-        const barrelGeo = new THREE.CylinderGeometry(0.8, 0.8, 2, 16);
-        const barrelMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
-        const b1 = new THREE.Mesh(barrelGeo, barrelMat); b1.position.set(-5, 0, 0); b1.rotation.z = Math.PI/2;
-        const b2 = new THREE.Mesh(barrelGeo, barrelMat); b2.position.set(5, 0, 0); b2.rotation.z = Math.PI/2;
-        wallGroup.add(b1, b2);
-
-        // Window (Fake outside)
-        const winFrame = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 0.2), tableMat);
-        winFrame.position.set(-8, 3, 0);
-        const winGlass = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 3.5), new THREE.MeshBasicMaterial({ color: 0x0d47a1 })); // Night sky
-        winGlass.position.set(0, 0, 0.11);
-        winFrame.add(winGlass);
-        wallGroup.add(winFrame);
+        // Note: Adding hits to scene requires correct world transforms.
+        // Let's re-do bottle hitboxes to be simpler: Check intersection on bottle mesh itself?
+        // Yes, scene.add(wallGroup) makes children world coords relative.
+        // Raycaster handles nested objects if we recursive check.
 
         scene.add(wallGroup);
+        // Add bottles to clickable directly
+        wallGroup.children.forEach(c => {
+            if(c.userData.id === 'bottle') clickableObjects.push(c);
+        });
 
-        // 3. The Interactive Book
+        // 3. Quest Book
         const bookGroup = new THREE.Group();
-        const coverMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
+        const coverMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.8 });
         const book = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 3), coverMat);
         const pages = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.15, 2.8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
         pages.position.y = 0.15;
-
-        // "Magic Glow" particles above book
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(50 * 3);
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({ color: 0xffd700, size: 0.05, transparent: true });
-        const magic = new THREE.Points(pGeo, pMat);
-        magic.position.y = 0.5;
-        bookGroup.add(book, pages, magic);
-
-        bookGroup.position.set(-1.5, -0.4, 2);
-        bookGroup.rotation.y = 0.5;
+        bookGroup.add(book, pages);
+        bookGroup.position.set(-2, -0.4, 3);
+        bookGroup.rotation.y = 0.3;
         bookGroup.userData = { id: 'book' };
         scene.add(bookGroup);
-
-        // Hitbox
-        const bookHit = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 4), new THREE.MeshBasicMaterial({visible:false}));
-        bookHit.position.copy(bookGroup.position);
-        bookHit.userData = { id: 'book' };
-        scene.add(bookHit);
-        clickableObjects.push(bookHit);
+        clickableObjects.push(book); // Raycast on book mesh
 
         // 4. Tankard
         const mugGroup = new THREE.Group();
         const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0x8d6e63 }));
         mug.position.y = 0.6;
         mugGroup.add(mug);
-        mugGroup.position.set(1.5, -0.5, 2.5);
+        mugGroup.position.set(2, -0.5, 3);
         mugGroup.userData = { id: 'mug' };
         scene.add(mugGroup);
-
-        const mugHit = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3, 1.5), new THREE.MeshBasicMaterial({visible:false}));
-        mugHit.position.copy(mugGroup.position);
-        mugHit.userData = { id: 'mug' };
-        scene.add(mugHit);
-        clickableObjects.push(mugHit);
+        clickableObjects.push(mug);
 
         // 5. Candle
         const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 8), new THREE.MeshStandardMaterial({color: 0xffffff}));
@@ -437,128 +463,152 @@
         candle.position.y -= 0.5;
         scene.add(candle);
 
-        // 6. Business Card
-        const card = new THREE.Mesh(new THREE.BoxGeometry(1, 0.02, 0.6), new THREE.MeshStandardMaterial({color: 0xffffff}));
-        card.position.set(0, -0.49, 3);
-        card.rotation.y = -0.2;
-        card.userData = { id: 'card' };
-        scene.add(card);
-        clickableObjects.push(card);
+        // --- Door Interaction ---
+        window.enterTavern = () => {
+            document.getElementById('door-overlay').classList.add('open');
+            document.body.style.overflow = 'auto'; // Unlock scroll
 
+            // Camera Zoom In
+            gsap.to(camera.position, {
+                z: 8,
+                y: 3,
+                duration: 2,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    document.getElementById('ui-layer').classList.add('visible');
+                    // Start dialogue
+                    updateDialogue(0);
+                }
+            });
+        };
 
-        // --- Interaction ---
+        // --- Raycasting ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (e) => {
-            if (e.target.closest('a, button, .seal-close')) return;
+            if (e.target.closest('a, button, .seal-close, #door-overlay')) return;
 
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(clickableObjects);
+            const intersects = raycaster.intersectObjects(clickableObjects, true); // Recursive
 
             if (intersects.length > 0) {
-                const id = intersects[0].object.userData.id;
-                if (id === 'book') openScroll();
-                if (id === 'mug') toastAnim();
-                if (id === 'card') window.open('https://www.threads.net/@spj.story', '_blank');
+                // Find parent with userData
+                let target = intersects[0].object;
+                while(target && !target.userData.id) { target = target.parent; }
+
+                if (target) {
+                    const id = target.userData.id;
+                    if (id === 'book') openScroll();
+                    if (id === 'mug') {
+                        gsap.to(mugGroup.position, { y: 0.5, duration: 0.2, yoyo: true, repeat: 1 });
+                        setDialogue("這杯酒敬你！乾杯！");
+                    }
+                    if (id === 'bottle') {
+                        const flavors = ["這瓶是「除錯藥水」，味道有點苦。", "這是「靈感釀」，喝了會整晚睡不著。", "「回滾卷軸」...喔不對，這是陳年威士忌。", "小心，那是「無限迴圈」烈酒。"];
+                        setDialogue(flavors[target.userData.flavor % flavors.length]);
+                    }
+                }
             }
         });
 
-        // Hover
+        // Hover Hint
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(clickableObjects);
-            document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
-        });
+            const intersects = raycaster.intersectObjects(clickableObjects, true);
+            const hint = document.getElementById('hover-hint');
 
-        function toastAnim() {
-            gsap.to(mugGroup.position, { y: 0.5, duration: 0.2, yoyo: true, repeat: 1 });
-            gsap.to(mugGroup.rotation, { z: -0.3, duration: 0.2, yoyo: true, repeat: 1 });
-        }
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+                hint.style.opacity = 1;
+                let target = intersects[0].object;
+                while(target && !target.userData.id) { target = target.parent; }
+
+                if (target && target.userData.id === 'book') hint.innerText = "READ LOG";
+                else if (target && target.userData.id === 'mug') hint.innerText = "TOAST";
+                else if (target && target.userData.id === 'bottle') hint.innerText = "INSPECT";
+            } else {
+                document.body.style.cursor = 'default';
+                hint.style.opacity = 0;
+            }
+        });
 
         window.openScroll = () => {
             document.getElementById('quest-parchment').classList.add('visible');
-            // Animate book opening slightly
-            gsap.to(pages.scale, { y: 2, duration: 0.5 });
         };
         window.closeScroll = () => {
             document.getElementById('quest-parchment').classList.remove('visible');
-            gsap.to(pages.scale, { y: 1, duration: 0.5 });
         };
+
+        function setDialogue(text) {
+            const el = document.getElementById('dialogue-text');
+            el.innerHTML = text; // Direct update for interactions
+        }
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
-
-            // Candle Flicker
-            candleLight.intensity = 1.5 + Math.sin(time * 10) * 0.3 + Math.cos(time * 25) * 0.2;
-
-            // Magic Particles
-            const pos = magic.geometry.attributes.position.array;
-            for(let i=1; i<pos.length; i+=3) {
-                pos[i] += 0.01;
-                if (pos[i] > 1) {
-                    pos[i] = 0;
-                    pos[i-1] = (Math.random()-0.5);
-                    pos[i+1] = (Math.random()-0.5);
-                }
-            }
-            magic.geometry.attributes.position.needsUpdate = true;
-
+            candleLight.intensity = 2 + Math.sin(time * 10) * 0.3;
+            fireLight.intensity = 3 + Math.sin(time * 5) * 0.5;
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP Director ---
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+        // --- Scroll Narrative ---
+        gsap.registerPlugin(ScrollTrigger);
 
         const script = [
-            { text: "嘿，你來了。外面天氣不好吧？快進來暖暖身子。", camera: { x:0, y:3, z:8 }, spot: false },
-            { text: "看看這面牆，都是我的拿手絕活。代碼特調，保證順口。", camera: { x: -2, y: 3.5, z: 6 }, spot: false, skill: true },
-            { text: "對了，桌上那本<span style='color:#ffd54f'>「任務日誌」</span>... 記載著我最近的瘋狂計畫。點開看看吧？", camera: { x: -1.5, y: 1, z: 4 }, spot: true, skill: false },
-            { text: "我夢想建立一個「公會」。讓所有孤獨的創造者都能在這裡找到歸屬。", camera: { x: 0, y: 3, z: 8 }, spot: false, skill: false },
-            { text: "這張名片你收著。這杯酒敬你，未來的冒險夥伴。乾杯！", camera: { x: 1.5, y: 1, z: 4 }, spot: false, skill: false, footer: true }
+            { text: "嘿，歡迎光臨！我是 SPJ，這裡的酒館老闆。", camera: { x:0, y:3, z:8 }, skill: false },
+            { text: "看看牆上的菜單，都是我的特調。代碼與魔法的混合體。", camera: { x: -2, y: 3.5, z: 6 }, skill: true },
+            { text: "桌上那本<span style='color:#ffd54f'>「任務日誌」</span>，記載著我對文字小鎮的構想。你可以打開看看。", camera: { x: -2, y: 1, z: 5 }, skill: false },
+            { text: "我希望能建立一個公會，讓所有創造者不再孤單。", camera: { x: 0, y: 3, z: 8 }, skill: false },
+            { text: "期待你的加入，冒險者。祝你旅途愉快！", camera: { x: 2, y: 1, z: 5 }, skill: false, footer: true }
         ];
 
         const textBox = document.getElementById('dialogue-text');
+
+        // Helper to update dialogue
+        function updateDialogue(idx) {
+            if (textBox.dataset.index != idx) {
+                textBox.dataset.index = idx;
+                const beat = script[idx];
+                gsap.to(textBox, { opacity: 0, duration: 0.2, onComplete: () => {
+                    textBox.innerHTML = beat.text;
+                    gsap.to(textBox, { opacity: 1, duration: 0.2 });
+                }});
+
+                if (beat.camera) {
+                    gsap.to(camera.position, {
+                        x: beat.camera.x, y: beat.camera.y, z: beat.camera.z,
+                        duration: 1.5, ease: "power2.inOut"
+                    });
+                }
+
+                gsap.to("#skill-board", { opacity: beat.skill ? 1 : 0 });
+                gsap.to("#footer-socials", { opacity: beat.footer ? 1 : 0 });
+            }
+        }
 
         ScrollTrigger.create({
             trigger: ".scroll-track",
             start: "top top",
             end: "bottom bottom",
             onUpdate: (self) => {
+                // Only update if door is open
+                if (!document.getElementById('door-overlay').classList.contains('open')) return;
+
                 const idx = Math.min(Math.floor(self.progress * script.length), script.length - 1);
-                const beat = script[idx];
-
-                if (textBox.dataset.index != idx) {
-                    textBox.dataset.index = idx;
-                    gsap.to(textBox, { text: beat.text, duration: 1 });
-
-                    if (beat.camera) {
-                        gsap.to(camera.position, {
-                            x: beat.camera.x, y: beat.camera.y, z: beat.camera.z,
-                            duration: 1.5, ease: "power2.inOut"
-                        });
-                    }
-
-                    // Spotlight logic
-                    bookSpot.visible = beat.spot;
-
-                    // Skill Board
-                    gsap.to("#skill-board", { opacity: beat.skill ? 1 : 0, duration: 0.5 });
-
-                    // Footer
-                    gsap.to("#footer-socials", { opacity: beat.footer ? 1 : 0, duration: 0.5 });
-                }
+                updateDialogue(idx);
             }
         });
 
+        // Remove Loader
         window.addEventListener('load', () => {
             gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").remove() });
         });
