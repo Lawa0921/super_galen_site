@@ -21,6 +21,7 @@
             --accent-sage: #88a096;
             --accent-clay: #e0c9a6;
             --glass-panel: rgba(255, 255, 255, 0.85);
+            --fire-glow: #ff9d5c;
         }
 
         * {
@@ -45,7 +46,7 @@
             height: 100vh;
             z-index: -1;
             /* Gradient Sky */
-            background: linear-gradient(to top, #e6f3ff 0%, #fdfbf7 60%, #fff 100%);
+            background: linear-gradient(to top, #e6f3ff 0%, #fdfbf7 60%, #1a1a2e 100%); /* Night sky at top */
         }
 
         /* Loader */
@@ -163,8 +164,8 @@
         .scroll-wrapper {
             position: relative;
             width: 100%;
-            /* Length of the climb */
-            height: 500vh;
+            /* Length of the climb - Taller for finale */
+            height: 600vh;
         }
 
         .section {
@@ -199,6 +200,9 @@
         .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 10%; }
         .section:nth-child(4) { top: 300vh; justify-content: flex-start; padding-left: 10%; }
         .section:nth-child(5) { top: 400vh; }
+        /* Finale Section: Campfire */
+        .section:nth-child(6) { top: 500vh; align-items: flex-end; padding-bottom: 10vh; }
+
 
         /* Typography */
         h1 {
@@ -344,12 +348,28 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
 
+        /* Tooltip for 3D Anchors */
+        #anchor-tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 20;
+            transform: translate(-50%, -150%);
+        }
+
         /* Mobile */
         @media (max-width: 768px) {
             .section { padding: 1rem; justify-content: center !important; }
             .card { padding: 2rem; margin: 0 !important; width: 100%; }
             h1 { font-size: 2rem; }
             h2 { font-size: 1.5rem; }
+            /* Adjust cliff position on mobile via JS logic if needed */
         }
 
     </style>
@@ -364,6 +384,7 @@
 
     <!-- 3D Canvas -->
     <div id="canvas-container"></div>
+    <div id="anchor-tooltip">Anchor Point</div>
 
     <!-- HUD -->
     <div class="hud-overlay">
@@ -391,11 +412,8 @@
                     我是 Zaira，還在探索自己的人生路上。<br>
                     如果人生是一場沒有終點的攀登，那我就是那個在途中不斷實驗、記錄風景的登山者。
                 </p>
-                <p>
-                    興趣多元廣泛，喜歡<span class="highlight">寫字、畫畫、唱歌</span>、偶爾<span class="highlight">爬爬山</span>。對我來說，這個世界就是一個巨大的實驗室，任何有趣、特別的事物，我都想親手試一試！
-                </p>
                 <div style="margin-top: 1rem;">
-                    <span style="font-size: 0.8rem; color: #aaa; letter-spacing: 1px;">CURRENT STATUS: EXPLORING</span>
+                    <span style="font-size: 0.8rem; color: #aaa; letter-spacing: 1px;">CURRENT STATUS: ASCENDING</span>
                 </div>
             </div>
         </div>
@@ -461,9 +479,6 @@
                 <p>
                     為了記錄這些稍縱即逝的靈光，我在 Medium 寫下關於語言學習、個人成長與歌詞翻譯的筆記。也開啟了 Podcast 頻道<span class="highlight">「在意實驗室｜ Zai Lab」</span>，雖然目前還不知道它最終會長成什麼樣子，但正如其名——這是一場充滿可能性的實驗🧪
                 </p>
-                <p>
-                    我也熱衷於舉辦活動、參加工作坊，甚至擔任學校大型典禮的司儀。只要能與人產生連結，我都樂在其中。
-                </p>
             </div>
         </div>
 
@@ -494,6 +509,9 @@
             </div>
         </div>
 
+        <!-- 6. The Summit (Empty div for scroll space to see the fire) -->
+        <div class="section"></div>
+
     </div>
 
     <!-- Scripts -->
@@ -511,20 +529,22 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // --- Config ---
         const config = {
             cliffColor: 0xfdfbf7, // Match BG
-            cliffHighlight: 0xffffff,
             ropeColor: 0x9fb8ad, // Sage
-            fogColor: 0xfdfbf7
+            anchorColor: 0xe0c9a6, // Clay
+            fireColor: 0xff4500
         };
 
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.Fog(config.fogColor, 10, 50);
+        // Fog starts white, fades to dark blue at top?
+        // Let's keep it simple fog for now
+        scene.fog = new THREE.Fog(config.cliffColor, 15, 60);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(0, 0, 20);
@@ -534,125 +554,169 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
+        // --- Raycaster for Interaction ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('anchor-tooltip');
+        let intersectedAnchor = null;
+
         // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(10, 20, 10);
         scene.add(dirLight);
 
-        const pointLight = new THREE.PointLight(0xe0c9a6, 0.5, 50); // Warm accent
-        pointLight.position.set(-5, 10, 5);
-        scene.add(pointLight);
-
-
-        // --- Procedural Cliff (Vertical Plane with Noise) ---
-        // We need a tall vertical strip
-        const cliffHeight = 120; // Enough for the climb
+        // --- Procedural Cliff ---
+        const cliffHeight = 150;
         const cliffWidth = 60;
-        const cliffGeo = new THREE.PlaneGeometry(cliffWidth, cliffHeight, 40, 80);
+        const cliffGeo = new THREE.PlaneGeometry(cliffWidth, cliffHeight, 40, 100);
 
-        // Displace vertices for low poly rock look
         const posAttribute = cliffGeo.attributes.position;
-        // Simple noise logic (using Math.sin/cos for determinism without external lib dependency if possible,
-        // but let's just use simple random bumps since we want "Low Poly")
-
         for (let i = 0; i < posAttribute.count; i++) {
             const x = posAttribute.getX(i);
             const y = posAttribute.getY(i);
             let z = posAttribute.getZ(i);
 
-            // Large bumps
-            z += Math.sin(x * 0.2) * 2;
-            z += Math.cos(y * 0.1) * 3;
-
-            // Detail bumps
+            // Noise function replacement (simple randomness)
+            z += Math.sin(x * 0.3) * 2;
+            z += Math.cos(y * 0.15) * 3;
             z += (Math.random() - 0.5) * 1.5;
 
             posAttribute.setZ(i, z);
         }
-
         cliffGeo.computeVertexNormals();
 
         const cliffMat = new THREE.MeshStandardMaterial({
             color: config.cliffColor,
-            roughness: 0.8,
-            metalness: 0.1,
+            roughness: 0.9,
             flatShading: true,
             side: THREE.DoubleSide
         });
 
         const cliff = new THREE.Mesh(cliffGeo, cliffMat);
-        cliff.position.z = -10; // Behind camera
-        cliff.position.y = cliffHeight / 2 - 20; // Start lower
+        cliff.position.z = -12;
+        cliff.position.y = cliffHeight / 2 - 20;
         scene.add(cliff);
 
-
-        // --- The Climbing Rope (Connecting the journey) ---
-        // A spline that weaves up the cliff
-        const ropePoints = [];
-        const ropeSteps = 50;
-        for(let i=0; i<=ropeSteps; i++) {
-            const t = i / ropeSteps;
-            const y = t * cliffHeight - 20; // Match cliff range roughly
-            const x = Math.sin(t * 10) * 5; // Weave left/right
-            const z = -8 + Math.cos(t * 20) * 1; // Slight depth weave close to cliff
-            ropePoints.push(new THREE.Vector3(x, y, z));
-        }
-
-        const ropeCurve = new THREE.CatmullRomCurve3(ropePoints);
-        const ropeGeo = new THREE.TubeGeometry(ropeCurve, 100, 0.1, 8, false);
-        const ropeMat = new THREE.MeshStandardMaterial({ color: config.ropeColor });
-        const rope = new THREE.Mesh(ropeGeo, ropeMat);
-        scene.add(rope);
-
-        // --- Floating Particles (Atmosphere) ---
-        const particleCount = 200;
-        const particleGeo = new THREE.BufferGeometry();
-        const particlePos = [];
-
-        for(let i=0; i<particleCount; i++) {
-            particlePos.push(
-                (Math.random() - 0.5) * 40, // x
-                (Math.random() - 0.5) * cliffHeight + 20, // y (spread along height)
-                (Math.random() - 0.5) * 20 // z
-            );
-        }
-        particleGeo.setAttribute('position', new THREE.Float32BufferAttribute(particlePos, 3));
-
-        const particleMat = new THREE.PointsMaterial({
-            color: 0x88a096,
-            size: 0.15,
-            transparent: true,
-            opacity: 0.6
+        // --- Interactive Anchors (Nodes) ---
+        const anchorsGroup = new THREE.Group();
+        const anchorGeo = new THREE.IcosahedronGeometry(0.8, 0);
+        const anchorMat = new THREE.MeshStandardMaterial({
+            color: config.anchorColor,
+            emissive: config.anchorColor,
+            emissiveIntensity: 0.2,
+            wireframe: true
         });
 
-        const particles = new THREE.Points(particleGeo, particleMat);
-        scene.add(particles);
+        // Positions roughly matching content sections
+        const anchorPositions = [
+            { y: 5, label: "Basecamp" },
+            { y: 35, label: "Language Nexus" },
+            { y: 65, label: "Travel Points" },
+            { y: 95, label: "Broadcast Tower" },
+            { y: 120, label: "Summit Camp" }
+        ];
+
+        anchorPositions.forEach((pos, i) => {
+            const anchor = new THREE.Mesh(anchorGeo, anchorMat.clone());
+            anchor.position.set(
+                (i % 2 === 0 ? -6 : 6) + (Math.random()-0.5)*2, // Alternating sides
+                pos.y,
+                -8 // Stick out from cliff
+            );
+            anchor.userData = {
+                label: pos.label,
+                baseScale: 1,
+                id: i
+            };
+            anchorsGroup.add(anchor);
+
+            // Add a subtle pulse ring
+            const ringGeo = new THREE.TorusGeometry(1.2, 0.05, 8, 32);
+            const ring = new THREE.Mesh(ringGeo, anchorMat);
+            ring.rotation.x = Math.PI/2;
+            anchor.add(ring);
+            anchor.userData.ring = ring;
+        });
+        scene.add(anchorsGroup);
 
 
-        // --- Interaction Logic ---
+        // --- The Summit (Campsite) ---
+        const summitGroup = new THREE.Group();
+        summitGroup.position.set(0, 130, -10); // Top of cliff
 
-        // Mouse Parallax Variables
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
+        // 1. Tent (Low Poly Pyramid)
+        const tentGeo = new THREE.ConeGeometry(4, 5, 4);
+        const tentMat = new THREE.MeshStandardMaterial({ color: 0xe0c9a6, flatShading: true });
+        const tent = new THREE.Mesh(tentGeo, tentMat);
+        tent.position.set(-5, 2.5, 0);
+        tent.rotation.y = Math.PI / 4;
+        summitGroup.add(tent);
 
+        // 2. Campfire
+        const fireGroup = new THREE.Group();
+        fireGroup.position.set(2, 0, 2);
+
+        // Logs
+        const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 2);
+        const logMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+        for(let i=0; i<3; i++) {
+            const log = new THREE.Mesh(logGeo, logMat);
+            log.rotation.z = Math.PI / 2;
+            log.rotation.y = (i / 3) * Math.PI;
+            fireGroup.add(log);
+        }
+
+        // Fire Light
+        const fireLight = new THREE.PointLight(0xff4500, 2, 20);
+        fireLight.position.y = 2;
+        fireGroup.add(fireLight);
+
+        // Fire Particles
+        const firePartGeo = new THREE.BufferGeometry();
+        const firePartCount = 30;
+        const firePos = new Float32Array(firePartCount * 3);
+        const fireSpeeds = [];
+
+        for(let i=0; i<firePartCount; i++) {
+            firePos[i*3] = (Math.random()-0.5);
+            firePos[i*3+1] = Math.random() * 2;
+            firePos[i*3+2] = (Math.random()-0.5);
+            fireSpeeds.push(0.05 + Math.random() * 0.1);
+        }
+        firePartGeo.setAttribute('position', new THREE.BufferAttribute(firePos, 3));
+
+        const firePartMat = new THREE.PointsMaterial({
+            color: 0xffaa00,
+            size: 0.3,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+        const fireParticles = new THREE.Points(firePartGeo, firePartMat);
+        fireGroup.add(fireParticles);
+
+        summitGroup.add(fireGroup);
+        scene.add(summitGroup);
+
+
+        // --- Logic ---
+
+        // Mouse Move for Parallax + Raycasting
         window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Move tooltip
+            tooltip.style.left = e.clientX + 'px';
+            tooltip.style.top = e.clientY + 'px';
         });
 
         // Scroll Logic
-        let scrollY = 0;
-        let maxScroll = document.body.scrollHeight - window.innerHeight;
-
-        // GSAP ScrollTrigger
         gsap.registerPlugin(ScrollTrigger);
 
-        // Initial Reveal
         window.onload = () => {
             const loader = document.getElementById('loader');
             gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.style.display = 'none' });
@@ -662,7 +726,7 @@
             cards.forEach((card, i) => {
                 gsap.to(card, {
                     scrollTrigger: {
-                        trigger: card.parentElement, // Trigger by section wrapper
+                        trigger: card.parentElement,
                         start: "top 80%",
                         end: "top 30%",
                         toggleActions: "play none none reverse"
@@ -675,51 +739,78 @@
             });
         };
 
-        // Animation Loop
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // 1. Scroll Position
-            // Map scroll percentage to Y height
-            // We want to climb up. So as we scroll DOWN (y increases), camera Y increases.
-            // maxScroll -> cliffHeight roughly
+            // 1. Camera Ascent
             const scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight || 1);
-            const targetCamY = scrollPct * (cliffHeight - 30); // Climb up to top
-
-            // Smooth Camera Y
+            // Height mapping: 0 -> 0, 100% -> Summit (130)
+            const targetCamY = scrollPct * 135;
             camera.position.y += (targetCamY - camera.position.y) * 0.05;
 
-            // 2. Mouse Parallax (Look Around)
-            // Add slight offset based on mouse
-            targetX = mouseX * 2;
-            targetY = mouseY * 2;
+            // 2. Parallax
+            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
+            camera.lookAt(0, camera.position.y + 5, -15); // Look slightly up
 
-            camera.position.x += (targetX - camera.position.x) * 0.05;
-            // Add subtle LookAt
-            camera.lookAt(0, camera.position.y, -10); // Look at cliff wall at current height
+            // 3. Anchor Animation
+            anchorsGroup.children.forEach(anchor => {
+                anchor.rotation.y += 0.01;
+                anchor.rotation.z += 0.01;
 
-            // 3. Particles Float
-            // Make them drift slowly
-            const positions = particles.geometry.attributes.position.array;
-            for(let i=0; i<particleCount; i++) {
-                // Y index is i*3 + 1
-                positions[i*3 + 1] += Math.sin(time + i) * 0.01;
-            }
-            particles.geometry.attributes.position.needsUpdate = true;
+                // Pulse Ring
+                if(anchor.userData.ring) {
+                    const s = 1 + Math.sin(time * 3 + anchor.userData.id) * 0.2;
+                    anchor.userData.ring.scale.set(s,s,s);
+                }
+            });
 
-            // 4. Rope Pulse
-            // Subtle breathing effect on rope or just static?
-            // Static is better for "Safety Rope" metaphor.
+            // 4. Raycasting for Anchors
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(anchorsGroup.children);
 
-            // Hide scroll hint on scroll
-            if(window.scrollY > 50) {
-                document.getElementById('scroll-hint').style.opacity = 0;
+            if (intersects.length > 0) {
+                if (intersectedAnchor != intersects[0].object) {
+                    // Hover In
+                    intersectedAnchor = intersects[0].object;
+                    document.body.style.cursor = 'pointer';
+                    tooltip.innerText = intersectedAnchor.userData.label;
+                    tooltip.style.opacity = 1;
+
+                    gsap.to(intersectedAnchor.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.3 });
+                    gsap.to(intersectedAnchor.material, { emissiveIntensity: 1, duration: 0.3 });
+                }
             } else {
-                document.getElementById('scroll-hint').style.opacity = 0.6;
+                if (intersectedAnchor) {
+                    // Hover Out
+                    document.body.style.cursor = 'default';
+                    tooltip.style.opacity = 0;
+
+                    gsap.to(intersectedAnchor.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
+                    gsap.to(intersectedAnchor.material, { emissiveIntensity: 0.2, duration: 0.3 });
+
+                    intersectedAnchor = null;
+                }
             }
+
+            // 5. Fire Animation
+            const positions = fireParticles.geometry.attributes.position.array;
+            for(let i=0; i<firePartCount; i++) {
+                // y += speed
+                positions[i*3 + 1] += fireSpeeds[i];
+                // reset if too high
+                if(positions[i*3 + 1] > 4) {
+                    positions[i*3 + 1] = 0;
+                    positions[i*3] = (Math.random()-0.5); // reset x
+                    positions[i*3+2] = (Math.random()-0.5); // reset z
+                }
+            }
+            fireParticles.geometry.attributes.position.needsUpdate = true;
+
+            // Flicker light
+            fireLight.intensity = 2 + Math.sin(time * 10) * 0.5 + Math.random() * 0.5;
 
             renderer.render(scene, camera);
         }
@@ -731,8 +822,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Update max scroll
-            maxScroll = document.body.scrollHeight - window.innerHeight;
         });
 
     </script>
