@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SPJ Guild Page (Authentic Tavern)', () => {
+test.describe('SPJ Guild Page (High-Vis Tavern)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
@@ -12,30 +12,26 @@ test.describe('SPJ Guild Page (Authentic Tavern)', () => {
     await page.waitForTimeout(2000);
   });
 
-  test('should display Door Overlay initially', async ({ page }) => {
-    await expect(page.locator('#door-overlay')).toBeVisible();
-    await expect(page.locator('.door-hint')).toHaveText('CLICK TO ENTER');
+  test('should display Cinematic Intro', async ({ page }) => {
+    await expect(page.locator('#intro-overlay')).toBeVisible();
+    await expect(page.locator('.intro-text')).toHaveText('CLICK TO ENTER THE TAVERN');
   });
 
-  test('should Enter Tavern on Click', async ({ page }) => {
-    // Click door
-    await page.click('#door-overlay');
-    await page.waitForTimeout(2500); // Wait for zoom animation
+  test('should Enter and Show Indicator', async ({ page }) => {
+    await page.click('#intro-overlay');
+    await page.waitForTimeout(2500); // Wait for zoom
 
-    // Check UI visibility
-    await expect(page.locator('#ui-layer')).toHaveCSS('opacity', '1');
-    await expect(page.locator('.char-container')).toBeVisible();
+    await expect(page.locator('#book-indicator')).toHaveCSS('opacity', '1');
+    await expect(page.locator('#book-indicator')).toHaveText('CLICK ME!');
   });
 
-  test('should display Footer Socials at end', async ({ page }) => {
-    // Enter first
-    await page.click('#door-overlay');
-    await page.waitForTimeout(2000);
-
-    // Scroll
-    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)");
+  test('should Open Quest Parchment', async ({ page }) => {
+    await page.evaluate("window.openScroll()");
     await page.waitForTimeout(1000);
+    await expect(page.locator('#quest-parchment')).toBeVisible();
+  });
 
-    await expect(page.locator('#footer-socials')).toHaveCSS('opacity', '1');
+  test('should have Three.js canvas', async ({ page }) => {
+    await expect(page.locator('#canvas-container canvas')).toBeVisible();
   });
 });
