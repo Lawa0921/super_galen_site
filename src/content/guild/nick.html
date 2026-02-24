@@ -1,80 +1,112 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="scroll-smooth">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NICK | AI NEXUS</title>
-    <meta name="description" content="AI Automation Architect. System Status: Online. Protocols: n8n, GPT, Vibe Coding.">
-    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <title>Nick | Automation Architect</title>
+    <meta name="description" content="Nick - Automation Specialist, Vibe Coding Expert, and n8n Workflow Architect. Building systems that think.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Cyberpunk Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
-    <!-- Three.js Global -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        mono: ['Share Tech Mono', 'monospace'],
+                    },
+                    colors: {
+                        neon: {
+                            blue: '#00f3ff',
+                            purple: '#bc13fe',
+                            green: '#0aff00',
+                            red: '#ff003c'
+                        },
+                        cyber: {
+                            black: '#050505',
+                            dark: '#0a0a0f',
+                            slate: '#1a1a2e'
+                        }
+                    },
+                    animation: {
+                        'glitch': 'glitch 1s linear infinite',
+                        'scan': 'scan 4s linear infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
+                        },
+                        scan: {
+                            '0%': { backgroundPosition: '0 -100vh' },
+                            '100%': { backgroundPosition: '0 100vh' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        :root {
-            --neon-green: #00ff41;
-            --neon-blue: #00f3ff;
-            --neon-red: #ff003c;
-            --cyber-black: #050505;
-            --glass-bg: rgba(10, 20, 30, 0.6);
-        }
-
+        /* Base Styles */
         body {
-            margin: 0;
+            background-color: #050505;
+            color: #ffffff;
             overflow-x: hidden;
-            background-color: var(--cyber-black);
-            color: #fff;
-            font-family: 'Share Tech Mono', monospace;
+            font-family: 'Rajdhani', sans-serif;
         }
 
-        /* Hide scrollbar for immersive feel */
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* WebGL Canvas */
+        #webgl {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none; /* Allow clicks to pass through */
+        }
+
+        /* Scrollbar */
         ::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f3ff;
+            border-radius: 3px;
         }
 
-        .font-cyber {
-            font-family: 'Orbitron', sans-serif;
+        /* Text Effects */
+        .text-glow-blue {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.7), 0 0 20px rgba(0, 243, 255, 0.5);
         }
-
-        .text-neon-green {
-            color: var(--neon-green);
-            text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
-        }
-
-        .text-neon-blue {
-            color: var(--neon-blue);
-            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
-        }
-
-        .text-neon-red {
-            color: var(--neon-red);
-            text-shadow: 0 0 5px var(--neon-red), 0 0 10px var(--neon-red);
-        }
-
-        .border-neon-green {
-            border-color: var(--neon-green);
-            box-shadow: 0 0 5px var(--neon-green), inset 0 0 5px var(--neon-green);
-        }
-
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+        .text-glow-purple {
+            text-shadow: 0 0 10px rgba(188, 19, 254, 0.7), 0 0 20px rgba(188, 19, 254, 0.5);
         }
 
         .glitch-text {
             position: relative;
         }
-
         .glitch-text::before,
         .glitch-text::after {
             content: attr(data-text);
@@ -84,600 +116,522 @@
             width: 100%;
             height: 100%;
         }
-
         .glitch-text::before {
             left: 2px;
-            text-shadow: -1px 0 red;
+            text-shadow: -1px 0 #ff003c;
             clip: rect(24px, 550px, 90px, 0);
             animation: glitch-anim-2 3s infinite linear alternate-reverse;
         }
-
         .glitch-text::after {
             left: -2px;
-            text-shadow: -1px 0 blue;
+            text-shadow: -1px 0 #00f3ff;
             clip: rect(85px, 550px, 140px, 0);
             animation: glitch-anim 2.5s infinite linear alternate-reverse;
         }
 
         @keyframes glitch-anim {
-            0% { clip: rect(12px, 9999px, 32px, 0); }
-            20% { clip: rect(84px, 9999px, 10px, 0); }
-            40% { clip: rect(4px, 9999px, 96px, 0); }
-            60% { clip: rect(55px, 9999px, 32px, 0); }
-            80% { clip: rect(32px, 9999px, 5px, 0); }
-            100% { clip: rect(64px, 9999px, 78px, 0); }
+            0% { clip: rect(10px, 9999px, 31px, 0); }
+            20% { clip: rect(65px, 9999px, 89px, 0); }
+            40% { clip: rect(18px, 9999px, 49px, 0); }
+            60% { clip: rect(12px, 9999px, 94px, 0); }
+            80% { clip: rect(54px, 9999px, 23px, 0); }
+            100% { clip: rect(8px, 9999px, 76px, 0); }
         }
-
         @keyframes glitch-anim-2 {
-            0% { clip: rect(65px, 9999px, 100px, 0); }
-            20% { clip: rect(12px, 9999px, 32px, 0); }
-            40% { clip: rect(88px, 9999px, 12px, 0); }
-            60% { clip: rect(2px, 9999px, 64px, 0); }
-            80% { clip: rect(32px, 9999px, 5px, 0); }
-            100% { clip: rect(54px, 9999px, 84px, 0); }
+            0% { clip: rect(29px, 9999px, 86px, 0); }
+            20% { clip: rect(44px, 9999px, 11px, 0); }
+            40% { clip: rect(78px, 9999px, 34px, 0); }
+            60% { clip: rect(15px, 9999px, 67px, 0); }
+            80% { clip: rect(9px, 9999px, 2px, 0); }
+            100% { clip: rect(56px, 9999px, 39px, 0); }
         }
 
-        #canvas-container {
+        /* Tech Borders */
+        .tech-border {
+            position: relative;
+            background: rgba(10, 10, 15, 0.8);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            backdrop-filter: blur(10px);
+            clip-path: polygon(
+                0 0,
+                100% 0,
+                100% calc(100% - 20px),
+                calc(100% - 20px) 100%,
+                0 100%
+            );
+        }
+        .tech-border::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, transparent 50%, rgba(0, 243, 255, 0.5) 50%);
+        }
+
+        /* Floating Animation */
+        .float {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Loading Overlay */
+        #loader {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1;
-        }
-
-        .section-spacer {
-            min-height: 100vh;
+            background: #050505;
+            z-index: 9999;
             display: flex;
-            align-items: center;
             justify-content: center;
-            position: relative;
-            z-index: 10;
-            pointer-events: none;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease-out;
         }
 
-        .pointer-events-auto {
-            pointer-events: auto;
+        .loader-bar {
+            width: 200px;
+            height: 4px;
+            background: #1a1a2e;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .loader-progress {
+            width: 0%;
+            height: 100%;
+            background: #00f3ff;
+            transition: width 0.2s;
+            box-shadow: 0 0 10px #00f3ff;
         }
     </style>
 </head>
-<body>
+<body class="antialiased">
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div class="font-orbitron text-4xl text-neon-blue tracking-widest animate-pulse">SYSTEM INITIALIZING</div>
+        <div class="loader-bar">
+            <div class="loader-progress" id="progress-bar"></div>
+        </div>
+        <div class="mt-4 font-mono text-xs text-gray-500" id="loader-text">Loading Assets...</div>
+    </div>
 
     <!-- 3D Background -->
-    <div id="canvas-container"></div>
+    <canvas id="webgl"></canvas>
 
-    <!-- Fixed HUD Elements -->
-    <div class="fixed top-4 left-4 z-50 mix-blend-difference pointer-events-auto">
-        <a href="/guild" class="flex items-center gap-2 text-neon-green hover:text-white transition-colors group">
-            <div class="w-10 h-10 border border-neon-green flex items-center justify-center bg-black/80">
-                <i class="fa-solid fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
-            </div>
-            <div class="hidden md:block">
-                <div class="text-[10px] opacity-70">RETURN TO</div>
-                <div class="font-cyber tracking-widest">GUILD_BASE</div>
-            </div>
-        </a>
-    </div>
+    <!-- Navigation / HUD -->
+    <nav class="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-center pointer-events-none">
+        <div class="pointer-events-auto">
+            <a href="/guild" class="flex items-center gap-2 group">
+                <div class="w-10 h-10 border border-neon-blue flex items-center justify-center bg-black/50 backdrop-blur group-hover:bg-neon-blue/20 transition-all">
+                    <i class="fa-solid fa-arrow-left text-neon-blue"></i>
+                </div>
+                <span class="font-orbitron text-neon-blue opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">RETURN TO GUILD</span>
+            </a>
+        </div>
 
-    <div class="fixed top-4 right-4 z-40 text-right hidden md:block mix-blend-difference">
-        <div class="text-[10px] text-neon-green opacity-70">SYSTEM STATUS</div>
-        <div class="font-cyber text-xl animate-pulse">ONLINE</div>
-        <div class="text-[10px] opacity-50 mt-1" id="time-display">00:00:00</div>
-    </div>
+        <div class="pointer-events-auto flex gap-4">
+            <a href="https://znstudio216.com/" target="_blank" class="w-10 h-10 border border-neon-purple flex items-center justify-center bg-black/50 backdrop-blur hover:bg-neon-purple/20 transition-all text-neon-purple">
+                <i class="fa-solid fa-globe"></i>
+            </a>
+            <a href="https://www.threads.net/@nickai216" target="_blank" class="w-10 h-10 border border-white flex items-center justify-center bg-black/50 backdrop-blur hover:bg-white/20 transition-all text-white">
+                <i class="fa-brands fa-threads"></i>
+            </a>
+             <a href="https://www.instagram.com/nickai216/" target="_blank" class="w-10 h-10 border border-pink-500 flex items-center justify-center bg-black/50 backdrop-blur hover:bg-pink-500/20 transition-all text-pink-500">
+                <i class="fa-brands fa-instagram"></i>
+            </a>
+        </div>
+    </nav>
 
-    <div class="fixed bottom-4 left-4 z-40 text-[10px] text-neon-green opacity-50 hidden md:block mix-blend-difference">
-        COORD: <span id="scroll-coord">0000</span><br>
-        FPS: <span id="fps-display">60</span>
-    </div>
+    <!-- Main Content -->
+    <main class="relative z-10">
 
-    <!-- Main Content Flow -->
-    <main class="relative">
+        <!-- Hero Section -->
+        <section class="min-h-screen flex flex-col justify-center items-center relative" id="hero">
+            <div class="container mx-auto px-4 text-center z-20">
+                <div class="relative inline-block mb-8 group pointer-events-auto">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                    <img src="/assets/img/guild/nick/avatar.webp" alt="Nick Avatar" class="relative w-40 h-40 md:w-56 md:h-56 rounded-full border-4 border-black object-cover grayscale hover:grayscale-0 transition-all duration-500">
+                </div>
 
-        <!-- SECTION 1: HERO (The Core) -->
-        <section class="section-spacer" id="sec-hero">
-            <div class="text-center pointer-events-auto mix-blend-screen px-4">
-                <div class="text-neon-green text-sm tracking-[0.5em] mb-4 opacity-0" id="hero-subtitle">SYSTEM INITIALIZED</div>
-                <h1 class="text-6xl md:text-8xl font-black font-cyber text-white mb-2 glitch-text opacity-0" data-text="NICK" id="hero-title">NICK</h1>
-                <div class="h-[1px] w-0 bg-white mx-auto my-4" id="hero-line"></div>
-                <div class="text-neon-blue text-xl md:text-2xl tracking-widest font-bold opacity-0" id="hero-role">AI AUTOMATION ARCHITECT</div>
+                <h1 class="font-orbitron text-5xl md:text-8xl font-black mb-4 glitch-text" data-text="NICK">NICK</h1>
+                <h2 class="font-rajdhani text-2xl md:text-4xl text-neon-blue tracking-widest mb-8 uppercase">Automation Architect <span class="text-white mx-2">|</span> Vibe Coding Expert</h2>
+
+                <div class="flex flex-wrap justify-center gap-4 font-mono text-sm pointer-events-auto">
+                    <span class="px-4 py-2 border border-neon-blue bg-neon-blue/10 text-neon-blue rounded">n8n Level 2 Certified</span>
+                    <span class="px-4 py-2 border border-neon-purple bg-neon-purple/10 text-neon-purple rounded">30+ Line Bots</span>
+                    <span class="px-4 py-2 border border-neon-green bg-neon-green/10 text-neon-green rounded">Soochow Univ. Lecturer</span>
+                </div>
+
+                <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+                    <i class="fa-solid fa-chevron-down text-neon-blue text-2xl"></i>
+                </div>
             </div>
         </section>
 
-        <!-- SECTION 2: BIO (Data Stream) -->
-        <section class="section-spacer" id="sec-bio">
-            <div class="glass-panel p-8 md:p-12 max-w-4xl mx-4 w-full grid grid-cols-1 md:grid-cols-3 gap-8 pointer-events-auto transform translate-y-20 opacity-0" id="bio-panel">
-                <div class="md:col-span-1 flex flex-col items-center justify-center border-r border-white/10 pr-0 md:pr-8">
-                    <div class="relative w-48 h-48 mb-6 group">
-                        <div class="absolute inset-0 rounded-full border-2 border-neon-green animate-spin-slow opacity-50"></div>
-                        <div class="absolute inset-0 rounded-full border border-neon-blue animate-reverse-spin opacity-50 scale-110"></div>
-                        <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-full h-full object-cover rounded-full grayscale group-hover:grayscale-0 transition-all duration-500">
-                    </div>
-                    <div class="w-full">
-                        <div class="flex justify-between text-xs text-gray-400 mb-1"><span>LEVEL</span><span>PRO</span></div>
-                        <div class="w-full bg-gray-800 h-1"><div class="bg-neon-green h-1 w-[95%]"></div></div>
-                    </div>
-                </div>
-                <div class="md:col-span-2">
-                    <h2 class="text-2xl font-cyber text-neon-green mb-6 flex items-center gap-3">
-                        <i class="fa-solid fa-terminal text-sm"></i>
-                        USER_PROFILE
-                    </h2>
-                    <p class="text-gray-300 mb-6 leading-relaxed text-sm md:text-base">
-                        &gt; Origin: Environment Monitoring Engineer.<br>
-                        &gt; Awakening: 2023 (GPT Era).<br>
-                        &gt; Current Status: Building the future of automation.<br>
-                        <br>
-                        I don't just write code; I design <span class="text-white font-bold">digital ecosystems</span>.
-                        From a single prompt to a complex <span class="text-neon-blue">n8n</span> workflow,
-                        I transform manual chaos into automated precision.
-                        Creator of <span class="text-neon-green">30+ Line Bots</span> and <span class="text-neon-green">33+ Active Workflows</span>.
+        <!-- About Section -->
+        <section class="min-h-screen flex items-center py-20 relative" id="about">
+            <div class="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+                <div class="tech-border p-8 md:p-12 pointer-events-auto" data-aos="fade-right">
+                    <h3 class="font-orbitron text-3xl text-neon-blue mb-6 border-b border-neon-blue/30 pb-2">ORIGIN PROTOCOL</h3>
+                    <p class="font-rajdhani text-lg leading-relaxed text-gray-300 mb-6">
+                        Previously an <span class="text-white font-bold">Environmental Monitoring Engineer</span>, I pivoted to AI in 2023 when GPT emerged. By late 2023, I had architected a complete monitoring management system using AI—long before "Vibe Coding" was a buzzword.
                     </p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="border border-white/20 p-2 text-center rounded hover:bg-white/5 transition">
-                            <div class="text-2xl font-bold text-white counter" data-target="30">0</div>
-                            <div class="text-[10px] text-gray-500 tracking-widest">ACTIVE BOTS</div>
-                        </div>
-                        <div class="border border-white/20 p-2 text-center rounded hover:bg-white/5 transition">
-                            <div class="text-2xl font-bold text-white counter" data-target="33">0</div>
-                            <div class="text-[10px] text-gray-500 tracking-widest">WORKFLOWS</div>
-                        </div>
+                    <p class="font-rajdhani text-lg leading-relaxed text-gray-300">
+                        My journey evolved from building small toys to mastering <span class="text-neon-purple font-bold">n8n</span> workflows. Today, I've deployed over <span class="text-neon-green font-bold">33 active workflows</span> and manage automation infrastructures for modern enterprises.
+                    </p>
+                </div>
+                <div class="hidden md:block h-full relative" id="about-visuals">
+                    <!-- Placeholder for 3D interactive element or visual -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-50">
+                        <i class="fa-solid fa-network-wired text-9xl text-neon-blue animate-pulse"></i>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 3: SKILLS (The Grid) -->
-        <section class="section-spacer" id="sec-skills">
-            <div class="w-full max-w-6xl px-4 pointer-events-auto py-20">
-                <h2 class="text-4xl font-cyber text-center mb-12 text-neon-blue glitch-text" data-text="PROTOCOL_STACK">PROTOCOL_STACK</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Skill Card 1 -->
-                    <div class="glass-panel p-6 hover:border-neon-green transition-all duration-300 group skill-card opacity-0 translate-y-10">
-                        <i class="fa-solid fa-network-wired text-4xl text-neon-green mb-4 group-hover:scale-110 transition-transform block"></i>
-                        <h3 class="font-bold text-lg mb-2">n8n_CORE</h3>
-                        <p class="text-xs text-gray-400">Advanced Workflow Orchestration. Webhook integration, data transformation, and API chaining.</p>
-                    </div>
-                    <!-- Skill Card 2 -->
-                    <div class="glass-panel p-6 hover:border-neon-blue transition-all duration-300 group skill-card opacity-0 translate-y-10" style="transition-delay: 0.1s">
-                        <i class="fa-solid fa-brain text-4xl text-neon-blue mb-4 group-hover:scale-110 transition-transform block"></i>
-                        <h3 class="font-bold text-lg mb-2">LLM_INTEGRATION</h3>
-                        <p class="text-xs text-gray-400">GPT-4, Claude, Gemini. Prompt Engineering & Context Management.</p>
-                    </div>
-                    <!-- Skill Card 3 -->
-                    <div class="glass-panel p-6 hover:border-purple-500 transition-all duration-300 group skill-card opacity-0 translate-y-10" style="transition-delay: 0.2s">
-                        <i class="fa-solid fa-code text-4xl text-purple-500 mb-4 group-hover:scale-110 transition-transform block"></i>
-                        <h3 class="font-bold text-lg mb-2">VIBE_CODING</h3>
-                        <p class="text-xs text-gray-400">Rapid Prototyping. Building functional systems at the speed of thought.</p>
-                    </div>
-                    <!-- Skill Card 4 -->
-                    <div class="glass-panel p-6 hover:border-yellow-500 transition-all duration-300 group skill-card opacity-0 translate-y-10" style="transition-delay: 0.3s">
-                        <i class="fa-brands fa-line text-4xl text-yellow-500 mb-4 group-hover:scale-110 transition-transform block"></i>
-                        <h3 class="font-bold text-lg mb-2">BOT_ARCHITECTURE</h3>
-                        <p class="text-xs text-gray-400">Line Messaging API. Interactive user experiences and automated responses.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <!-- Projects Section -->
+        <section class="min-h-screen py-20 relative" id="projects">
+            <div class="container mx-auto px-4">
+                <h3 class="font-orbitron text-4xl md:text-6xl text-center mb-16 text-white"><span class="text-neon-purple">PROJECT</span> DATABASE</h3>
 
-        <!-- SECTION 4: PROJECTS (Holographic Windows) -->
-        <section class="section-spacer" id="sec-projects">
-            <div class="relative w-full max-w-5xl mx-auto pointer-events-auto z-10 px-4 py-20">
-                <div class="text-center mb-20">
-                    <div class="text-neon-red text-sm tracking-[0.5em] mb-2">ACCESSING ARCHIVES</div>
-                    <h2 class="text-4xl md:text-6xl font-cyber text-white">MISSION_LOGS</h2>
-                </div>
-
-                <div class="space-y-32">
+                <div class="grid md:grid-cols-3 gap-8">
                     <!-- Project 1 -->
-                    <div class="glass-panel p-1 flex flex-col md:flex-row gap-0 group project-card opacity-0 translate-x-[-50px]">
-                        <div class="md:w-1/2 overflow-hidden relative h-64 md:h-auto">
-                            <div class="absolute inset-0 bg-neon-green/20 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <img src="/assets/img/guild/nick/n8n_workflow.webp" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" alt="n8n">
+                    <div class="tech-border p-6 group hover:bg-white/5 transition-all pointer-events-auto transform hover:-translate-y-2">
+                        <div class="h-48 mb-4 overflow-hidden relative">
+                             <div class="absolute inset-0 bg-neon-blue/10 group-hover:bg-transparent transition-all z-10"></div>
+                             <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage System" class="w-full h-full object-cover">
                         </div>
-                        <div class="md:w-1/2 p-8 flex flex-col justify-center">
-                            <div class="text-neon-green font-mono text-xs mb-2">SYSTEM_01</div>
-                            <h3 class="text-2xl font-bold mb-4">n8n Workflow Engine</h3>
-                            <p class="text-gray-400 text-sm mb-6">Complex automation pipelines handling thousands of executions. From data scraping to intelligent routing.</p>
-                            <div class="flex gap-2">
-                                <span class="text-[10px] border border-white/20 px-2 py-1">AUTOMATION</span>
-                                <span class="text-[10px] border border-white/20 px-2 py-1">BACKEND</span>
-                            </div>
-                        </div>
+                        <h4 class="font-orbitron text-xl text-neon-blue mb-2">Sewage Design System</h4>
+                        <p class="font-mono text-xs text-gray-400 mb-4">VIBE CODING // INDUSTRIAL</p>
+                        <p class="font-rajdhani text-gray-300 text-sm">Automated design generation for wastewater treatment facilities.</p>
                     </div>
 
                     <!-- Project 2 -->
-                    <div class="glass-panel p-1 flex flex-col md:flex-row-reverse gap-0 group project-card opacity-0 translate-x-[50px]">
-                        <div class="md:w-1/2 overflow-hidden relative h-64 md:h-auto">
-                            <div class="absolute inset-0 bg-neon-blue/20 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <img src="/assets/img/guild/nick/project_sewage.webp" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" alt="Sewage">
+                    <div class="tech-border p-6 group hover:bg-white/5 transition-all pointer-events-auto transform hover:-translate-y-2">
+                        <div class="h-48 mb-4 overflow-hidden relative">
+                             <div class="absolute inset-0 bg-neon-purple/10 group-hover:bg-transparent transition-all z-10"></div>
+                             <!-- Fallback image or generated pattern -->
+                             <div class="w-full h-full bg-gray-900 flex items-center justify-center border border-gray-800">
+                                <i class="fa-solid fa-file-invoice-dollar text-4xl text-gray-600"></i>
+                             </div>
                         </div>
-                        <div class="md:w-1/2 p-8 flex flex-col justify-center text-left md:text-right">
-                            <div class="text-neon-blue font-mono text-xs mb-2">SYSTEM_02</div>
-                            <h3 class="text-2xl font-bold mb-4">Sewage Design System</h3>
-                            <p class="text-gray-400 text-sm mb-6">A Vibe Coding masterpiece. Automated engineering calculations and reporting for environmental infrastructure.</p>
-                            <div class="flex gap-2 md:justify-end">
-                                <span class="text-[10px] border border-white/20 px-2 py-1">VIBE_CODING</span>
-                                <span class="text-[10px] border border-white/20 px-2 py-1">ENGINEERING</span>
-                            </div>
-                        </div>
+                        <h4 class="font-orbitron text-xl text-neon-purple mb-2">Quotation System</h4>
+                        <p class="font-mono text-xs text-gray-400 mb-4">AUTOMATION // BUSINESS</p>
+                        <p class="font-rajdhani text-gray-300 text-sm">Streamlined quote generation and client management workflow.</p>
                     </div>
 
                     <!-- Project 3 -->
-                    <div class="glass-panel p-1 flex flex-col md:flex-row gap-0 group project-card opacity-0 translate-x-[-50px]">
-                        <div class="md:w-1/2 overflow-hidden relative h-64 md:h-auto">
-                            <div class="absolute inset-0 bg-neon-red/20 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <img src="/assets/img/guild/nick/zn_studio_card.webp" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" alt="Card">
+                    <div class="tech-border p-6 group hover:bg-white/5 transition-all pointer-events-auto transform hover:-translate-y-2">
+                        <div class="h-48 mb-4 overflow-hidden relative">
+                             <div class="absolute inset-0 bg-neon-green/10 group-hover:bg-transparent transition-all z-10"></div>
+                             <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n Workflows" class="w-full h-full object-cover">
                         </div>
-                        <div class="md:w-1/2 p-8 flex flex-col justify-center">
-                            <div class="text-neon-red font-mono text-xs mb-2">SYSTEM_03</div>
-                            <h3 class="text-2xl font-bold mb-4">AI Templates & Products</h3>
-                            <p class="text-gray-400 text-sm mb-6">Commercial grade AI tools. 5-in-1 Holiday Pack, Video Subtitle Cloud, and Thread AI Guides.</p>
-                            <div class="flex gap-2">
-                                <span class="text-[10px] border border-white/20 px-2 py-1">COMMERCIAL</span>
-                                <span class="text-[10px] border border-white/20 px-2 py-1">PRODUCT</span>
-                            </div>
+                        <h4 class="font-orbitron text-xl text-neon-green mb-2">n8n Automation Suite</h4>
+                        <p class="font-mono text-xs text-gray-400 mb-4">WORKFLOW // INTEGRATION</p>
+                        <p class="font-rajdhani text-gray-300 text-sm">33+ Active workflows handling complex business logic and integrations.</p>
+                    </div>
+                </div>
+
+                <div class="mt-12 text-center pointer-events-auto">
+                    <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-block px-8 py-3 border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black font-orbitron tracking-widest transition-all">
+                        ACCESS FULL ARCHIVE
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Personal / Teaching Section -->
+        <section class="min-h-screen py-20 relative flex items-center" id="teaching">
+             <div class="container mx-auto px-4">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="order-2 md:order-1 relative h-64 md:h-96 w-full pointer-events-auto group">
+                         <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching at Soochow" class="w-full h-full object-cover rounded border border-gray-700 opacity-80 group-hover:opacity-100 transition-all">
+                         <div class="absolute bottom-0 left-0 bg-black/80 p-2 font-mono text-xs text-neon-green border-t border-r border-neon-green">
+                            LOC: SOOCHOW_UNIV // VIBE_CODING_CLASS
+                         </div>
+                    </div>
+                    <div class="order-1 md:order-2 tech-border p-8 pointer-events-auto">
+                        <h3 class="font-orbitron text-3xl text-neon-green mb-6">KNOWLEDGE TRANSFER</h3>
+                        <ul class="space-y-4 font-rajdhani text-lg text-gray-300">
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-check text-neon-green mt-1"></i>
+                                <span>Invited Lecturer at <strong class="text-white">Soochow University</strong> for Vibe Coding curriculum.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-check text-neon-green mt-1"></i>
+                                <span>Official <strong class="text-white">n8n Level 2</strong> Community Certification.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="fa-solid fa-check text-neon-green mt-1"></i>
+                                <span>Developed <strong class="text-white">AI Psychology Tests</strong> & Personalized Anniversary Sites.</span>
+                            </li>
+                        </ul>
+                        <div class="mt-8 flex gap-4">
+                             <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="px-6 py-2 bg-neon-green/10 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black transition-all font-mono text-sm">
+                                VIEW CERTIFICATES
+                             </a>
                         </div>
                     </div>
                 </div>
-            </div>
+             </div>
         </section>
 
-        <!-- SECTION 5: CONTACT (The Singularity) -->
-        <section class="section-spacer relative" id="sec-contact">
-            <div class="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
-                <div class="w-[500px] h-[500px] bg-neon-green/5 rounded-full blur-3xl animate-pulse"></div>
+        <!-- Contact Section -->
+        <section class="min-h-[50vh] flex flex-col justify-center items-center relative pb-20" id="contact">
+            <h3 class="font-orbitron text-4xl mb-12 glitch-text" data-text="INITIATE CONNECTION">INITIATE CONNECTION</h3>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pointer-events-auto z-10">
+                <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="flex flex-col items-center gap-2 group">
+                    <div class="w-16 h-16 rounded-full border border-green-500 flex items-center justify-center bg-black hover:bg-green-500 transition-all text-green-500 group-hover:text-black">
+                        <i class="fa-brands fa-line text-2xl"></i>
+                    </div>
+                    <span class="font-mono text-xs text-gray-400 group-hover:text-green-500">LINE OA</span>
+                </a>
+
+                <a href="https://www.threads.net/@nickai216" target="_blank" class="flex flex-col items-center gap-2 group">
+                    <div class="w-16 h-16 rounded-full border border-white flex items-center justify-center bg-black hover:bg-white transition-all text-white group-hover:text-black">
+                        <i class="fa-brands fa-threads text-2xl"></i>
+                    </div>
+                    <span class="font-mono text-xs text-gray-400 group-hover:text-white">THREADS</span>
+                </a>
+
+                <a href="https://portaly.cc/zn.studio" target="_blank" class="flex flex-col items-center gap-2 group">
+                    <div class="w-16 h-16 rounded-full border border-orange-500 flex items-center justify-center bg-black hover:bg-orange-500 transition-all text-orange-500 group-hover:text-black">
+                        <i class="fa-solid fa-link text-2xl"></i>
+                    </div>
+                    <span class="font-mono text-xs text-gray-400 group-hover:text-orange-500">PORTALY</span>
+                </a>
+
+                <a href="https://znstudio216.com/" target="_blank" class="flex flex-col items-center gap-2 group">
+                    <div class="w-16 h-16 rounded-full border border-neon-blue flex items-center justify-center bg-black hover:bg-neon-blue transition-all text-neon-blue group-hover:text-black">
+                        <i class="fa-solid fa-laptop-code text-2xl"></i>
+                    </div>
+                    <span class="font-mono text-xs text-gray-400 group-hover:text-neon-blue">STUDIO</span>
+                </a>
             </div>
 
-            <div class="glass-panel p-8 md:p-12 text-center max-w-2xl w-full mx-4 pointer-events-auto z-10 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-green to-transparent"></div>
-                <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-green to-transparent"></div>
-
-                <h2 class="text-4xl md:text-5xl font-cyber mb-8 text-white">INITIALIZE_LINK</h2>
-                <p class="text-gray-400 mb-12">System ready for new parameters. Send your query.</p>
-
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <a href="https://znstudio216.com/" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
-                        <i class="fa-solid fa-globe text-2xl group-hover:scale-125 transition-transform text-white"></i>
-                        <span class="text-xs tracking-widest">WEBSITE</span>
-                    </a>
-                    <a href="https://portaly.cc/zn.studio" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
-                        <i class="fa-solid fa-link text-2xl group-hover:scale-125 transition-transform text-white"></i>
-                        <span class="text-xs tracking-widest">PORTALY</span>
-                    </a>
-                    <a href="https://www.threads.net/@nickai216" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
-                        <i class="fa-brands fa-threads text-2xl group-hover:scale-125 transition-transform text-white"></i>
-                        <span class="text-xs tracking-widest">THREADS</span>
-                    </a>
-                    <a href="https://www.instagram.com/nickai216/" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
-                        <i class="fa-brands fa-instagram text-2xl group-hover:scale-125 transition-transform text-white"></i>
-                        <span class="text-xs tracking-widest">INSTAGRAM</span>
-                    </a>
-                    <a href="https://nickleo051216.github.io/nick-n8n" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
-                        <i class="fa-solid fa-code-branch text-2xl group-hover:scale-125 transition-transform text-white"></i>
-                        <span class="text-xs tracking-widest">GIT_REPO</span>
-                    </a>
-                    <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="p-4 border border-white/10 hover:border-[#00c300] hover:bg-[#00c300]/10 transition-all group flex flex-col items-center gap-2">
-                        <i class="fa-brands fa-line text-2xl group-hover:scale-125 transition-transform text-[#00c300]"></i>
-                        <span class="text-xs tracking-widest">COMMUNITY</span>
-                    </a>
-                </div>
-            </div>
+            <footer class="absolute bottom-4 w-full text-center">
+                 <p class="font-mono text-xs text-gray-600">© 2024 NICK. ALL SYSTEMS OPERATIONAL.</p>
+            </footer>
         </section>
-
-        <div class="h-24"></div>
 
     </main>
 
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
     <script>
-        // === TEXT SCRAMBLE EFFECT ===
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+        // --- Loader Logic ---
+        window.addEventListener('load', () => {
+            const progressBar = document.getElementById('progress-bar');
+            const loader = document.getElementById('loader');
 
-        function scrambleText(element, finalString, duration = 1000) {
-            let iterations = 0;
-            const interval = setInterval(() => {
-                element.innerText = finalString
-                    .split("")
-                    .map((letter, index) => {
-                        if (index < iterations) {
-                            return finalString[index];
-                        }
-                        return letters[Math.floor(Math.random() * letters.length)];
-                    })
-                    .join("");
+            progressBar.style.width = '100%';
 
-                if (iterations >= finalString.length) {
-                    clearInterval(interval);
-                    element.innerText = finalString; // Ensure clean end
-                }
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    initAnimations();
+                }, 500);
+            }, 800);
+        });
 
-                iterations += 1 / (duration / 50 / finalString.length); // Adjust speed based on length
-            }, 50);
-        }
-
-        // Trigger scramble on load for Hero Title
+        // Safety timeout for loader
         setTimeout(() => {
-            const title = document.getElementById('hero-title');
-            if(title) scrambleText(title, "NICK", 1500);
+            const loader = document.getElementById('loader');
+            if (loader && loader.style.display !== 'none') {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        }, 5000);
 
-            const sub = document.getElementById('hero-subtitle');
-            if(sub) scrambleText(sub, "SYSTEM INITIALIZED", 2000);
-        }, 500);
-
-
-        // === CLOCK ===
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
-            const timeDisplay = document.getElementById('time-display');
-            if (timeDisplay) timeDisplay.innerText = timeString;
-        }
-        setInterval(updateTime, 1000);
-        updateTime();
-
-        // === SCROLL SYNC ===
-        gsap.registerPlugin(ScrollTrigger);
-
-        // === THREE.JS SCENE ===
-        const container = document.getElementById('canvas-container');
+        // --- Three.js Scene Setup ---
+        const canvas = document.querySelector('#webgl');
         const scene = new THREE.Scene();
-        // Fog for depth
-        scene.fog = new THREE.FogExp2(0x050505, 0.08);
+        scene.fog = new THREE.FogExp2(0x050505, 0.002); // Distance fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 8;
-        camera.position.y = 2;
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
 
-        // --- OBJECTS ---
+        // --- Tunnel Geometry (Hyperloop) ---
+        // Creating a tunnel using InstancedMesh for performance
+        const segments = 100;
+        const radius = 4;
+        const length = 200;
 
-        // 1. The Core (Torus Knot)
-        const coreGeometry = new THREE.TorusKnotGeometry(1.5, 0.4, 150, 20);
-        const coreMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff41,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.15
-        });
-        const core = new THREE.Mesh(coreGeometry, coreMaterial);
-        scene.add(core);
-
-        // Inner solid core
-        const innerCoreGeo = new THREE.IcosahedronGeometry(0.8, 1);
-        const innerCoreMat = new THREE.MeshBasicMaterial({
+        // Hexagonal Ring
+        const geometry = new THREE.TorusGeometry(radius, 0.1, 2, 6);
+        const material = new THREE.MeshBasicMaterial({
             color: 0x00f3ff,
             wireframe: true,
             transparent: true,
-            opacity: 0.5
+            opacity: 0.3
         });
-        const innerCore = new THREE.Mesh(innerCoreGeo, innerCoreMat);
-        scene.add(innerCore);
 
-        // 2. Data Storm (Particles)
-        const particlesCount = 3000;
-        const posArray = new Float32Array(particlesCount * 3);
-        const colorArray = new Float32Array(particlesCount * 3);
+        const tunnel = new THREE.InstancedMesh(geometry, material, segments);
 
-        for(let i = 0; i < particlesCount * 3; i+=3) {
-            // Sphere distribution
-            const r = 4 + Math.random() * 30; // Wider spread
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
+        const dummy = new THREE.Object3D();
 
-            posArray[i] = r * Math.sin(phi) * Math.cos(theta); // x
-            posArray[i+1] = r * Math.sin(phi) * Math.sin(theta); // y
-            posArray[i+2] = r * Math.cos(phi); // z
-
-            // Colors: mix of green and blue
-            const isGreen = Math.random() > 0.5;
-            colorArray[i] = isGreen ? 0.0 : 0.0; // R
-            colorArray[i+1] = isGreen ? 1.0 : 0.95; // G
-            colorArray[i+2] = isGreen ? 0.25 : 1.0; // B
+        for (let i = 0; i < segments; i++) {
+            const z = -i * (length / segments);
+            dummy.position.set(0, 0, z);
+            // Rotate each ring slightly to create a spiral effect
+            dummy.rotation.z = i * 0.1;
+            dummy.updateMatrix();
+            tunnel.setMatrixAt(i, dummy.matrix);
         }
 
-        const particlesGeometry = new THREE.BufferGeometry();
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+        scene.add(tunnel);
 
+        // --- Particles (Data Flow) ---
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 20; // Spread x, y, z
+        }
+
+        // Stretch the particles along Z axis to simulate speed
+        for(let i = 0; i < particlesCount; i++) {
+             posArray[i * 3 + 2] = (Math.random() - 0.5) * 200 - 50;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         const particlesMaterial = new THREE.PointsMaterial({
             size: 0.05,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending,
+            color: 0xbc13fe,
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
         });
 
-        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particles);
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
 
-        // 3. Floating Rings (Cyber effect)
-        const ringGeo = new THREE.TorusGeometry(8, 0.05, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.3 });
-        const ring1 = new THREE.Mesh(ringGeo, ringMat);
-        ring1.rotation.x = Math.PI / 2;
-        scene.add(ring1);
+        // --- Camera Movement ---
+        camera.position.z = 5;
 
-        const ring2 = ring1.clone();
-        ring2.rotation.x = Math.PI / 2;
-        ring2.rotation.y = 0.5;
-        ring2.scale.set(1.5, 1.5, 1.5);
-        scene.add(ring2);
-
-
-        // --- ANIMATION LOOP ---
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
-        });
-
-        const clock = new THREE.Clock();
+        // --- Animation Loop ---
+        let time = 0;
+        let speed = 0.05;
+        let scrollY = 0;
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            time += 0.01;
 
-            // Core Animation
-            core.rotation.x += 0.005;
-            core.rotation.y += 0.01;
+            // Rotate tunnel slightly
+            tunnel.rotation.z = time * 0.1;
 
-            // Pulse effect
-            const scale = 1 + Math.sin(time * 2) * 0.05;
-            core.scale.set(scale, scale, scale);
-
-            innerCore.rotation.y -= 0.02;
-
-            // Particle Rotation
-            particles.rotation.y += 0.001;
-
-            // Rings
-            ring1.rotation.z += 0.001;
-            ring2.rotation.z -= 0.001;
-
-            // Mouse Parallax (Smooth)
-            targetX = mouseX;
-            targetY = mouseY;
-            // Apply slight rotation to scene based on mouse
-            scene.rotation.y += (targetX - scene.rotation.y) * 0.05;
-            scene.rotation.x += (targetY - scene.rotation.x) * 0.05;
-
-            // FPS Counter update (rough)
-            if (Math.random() > 0.95) {
-                const fpsEl = document.getElementById('fps-display');
-                if (fpsEl) fpsEl.innerText = "60";
+            // Move particles to simulate speed
+            particlesMesh.position.z += speed;
+            if (particlesMesh.position.z > 20) {
+                particlesMesh.position.z = -50;
             }
+
+            // Camera follow scroll
+            // Map scroll Y to camera Z position
+            const targetZ = -scrollY * 0.05 + 5;
+            camera.position.z += (targetZ - camera.position.z) * 0.1;
+
+            // Subtle mouse parallax (if desired, can be added here)
 
             renderer.render(scene, camera);
         }
+
         animate();
 
-        // --- GSAP SCROLL ANIMATIONS ---
-
-        // 1. Camera Fly-through
-        // Map scroll to Z position
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // 0% -> 25% (Hero to Bio): Zoom in slightly
-        tl.to(camera.position, { z: 4, y: 0.5, ease: "none" }, 0);
-
-        // 25% -> 50% (Bio to Skills): Rotate camera around core
-        tl.to(camera.rotation, { z: 0.2, ease: "none" }, 0.25);
-        tl.to(camera.position, { z: 0, x: 2, ease: "none" }, 0.25);
-
-        // 50% -> 75% (Skills to Projects): Dive into the stream (speed effect)
-        // Move camera significantly forward through the particle field
-        tl.to(camera.position, { z: -15, x: 0, ease: "power2.in" }, 0.5);
-        tl.to(camera.rotation, { z: 0, ease: "none" }, 0.5);
-
-        // Increase particle "streak" feel by scaling Y
-        // Note: BufferGeometry updates are expensive, so we simulate by scaling the container or using camera FOV
-        tl.to(camera, { fov: 90, ease: "power1.in" }, 0.5);
-
-        // 75% -> 100% (Projects to Contact): Implosion
-        tl.to(camera.position, { z: -25, ease: "none" }, 0.75);
-        tl.to(camera, { fov: 60, ease: "power2.out" }, 0.85); // Reset FOV for stability
-
-        // Update Coord Display
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                const progress = Math.round(self.progress * 1000);
-                const el = document.getElementById('scroll-coord');
-                if (el) el.innerText = progress.toString().padStart(4, '0');
-
-                // Update camera projection matrix after FOV change
-                camera.updateProjectionMatrix();
-            }
-        });
-
-
-        // 2. DOM Elements Reveal
-
-        // Hero
-        gsap.to("#hero-subtitle", { opacity: 1, duration: 1, delay: 0.5 });
-        gsap.to("#hero-title", { opacity: 1, duration: 1, delay: 0.8 });
-        gsap.fromTo("#hero-line", { width: 0 }, { width: "100px", duration: 1, delay: 1 });
-        gsap.to("#hero-role", { opacity: 1, duration: 1, delay: 1.2 });
-
-        // Bio Panel
-        gsap.to("#bio-panel", {
-            scrollTrigger: {
-                trigger: "#sec-bio",
-                start: "top 70%",
-            },
-            opacity: 1,
-            y: 0,
-            duration: 1,
-            ease: "power3.out"
-        });
-
-        // Skills
-        gsap.utils.toArray('.skill-card').forEach((card, i) => {
-            gsap.to(card, {
-                scrollTrigger: {
-                    trigger: "#sec-skills",
-                    start: "top 80%",
-                },
-                opacity: 1,
-                y: 0,
-                duration: 0.6,
-                delay: i * 0.1,
-                ease: "back.out(1.7)"
-            });
-        });
-
-        // Projects - Slide in
-        gsap.utils.toArray('.project-card').forEach((card, i) => {
-            gsap.to(card, {
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top 85%",
-                },
-                opacity: 1,
-                x: 0,
-                duration: 0.8,
-                ease: "power2.out"
-            });
-        });
-
-        // Counter Animation
-        gsap.utils.toArray('.counter').forEach(counter => {
-            const target = parseInt(counter.getAttribute('data-target'));
-            gsap.to(counter, {
-                scrollTrigger: {
-                    trigger: "#sec-bio",
-                    start: "top 70%",
-                    once: true
-                },
-                innerText: target,
-                duration: 2,
-                snap: { innerText: 1 },
-                ease: "power2.out"
-            });
-        });
-
-        // Handle Resize
+        // --- Resize Handler ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         });
+
+        // --- GSAP Scroll Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        function initAnimations() {
+            // Update scrollY variable for Three.js loop
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            // Hero Text Glitch In
+            gsap.from("#hero h1", {
+                duration: 1.5,
+                y: 100,
+                opacity: 0,
+                ease: "power4.out",
+                delay: 0.5
+            });
+
+            gsap.from("#hero h2", {
+                duration: 1.5,
+                y: 50,
+                opacity: 0,
+                ease: "power4.out",
+                delay: 0.8
+            });
+
+            // Section Reveal Animations
+            const sections = document.querySelectorAll('section:not(#hero)');
+            sections.forEach(section => {
+                gsap.from(section.children, {
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 80%",
+                        end: "bottom 20%",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2
+                });
+            });
+
+            // Tech Border Animation
+            gsap.utils.toArray('.tech-border').forEach(border => {
+                gsap.from(border, {
+                    scrollTrigger: {
+                        trigger: border,
+                        start: "top 85%",
+                    },
+                    scale: 0.95,
+                    opacity: 0,
+                    duration: 0.8,
+                    ease: "back.out(1.7)"
+                });
+            });
+
+            // Dynamic Camera Speed Burst on scroll
+            ScrollTrigger.create({
+                onUpdate: (self) => {
+                    // Increase particle speed based on scroll velocity
+                    speed = 0.05 + Math.abs(self.getVelocity()) * 0.0005;
+                    // Clamp speed
+                    if (speed > 2) speed = 2;
+                }
+            });
+        }
 
     </script>
 </body>
