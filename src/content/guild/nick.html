@@ -1,629 +1,626 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nick | Automation Architect</title>
-    <meta name="description" content="AI & Automation Engineer specializing in n8n, Vibe Coding, and System Design.">
-    <meta property="og:title" content="Nick | Automation Architect">
-    <meta property="og:description" content="Explore the neural network of Nick's automation projects.">
-    <meta property="og:image" content="/assets/img/guild/nick/profile.webp">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
-
-    <!-- Icons -->
+    <title>Nick | AI Automation Architect</title>
+    <meta name="description" content="AI x Automation: Your Exclusive AI Guide. Specializing in n8n, GPT, Claude, and workflow automation.">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- Tailwind (Utility) -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --color-bg: #05050a;
-            --color-primary: #00f3ff; /* Cyan */
-            --color-secondary: #bd00ff; /* Purple */
-            --color-text: #e0e0e0;
-            --color-grid: rgba(0, 243, 255, 0.1);
+            --n8n-bg: #222222;
+            --n8n-grid: #333333;
+            --node-trigger: #1dbb42;
+            --node-action: #2d9cdb;
+            --node-switch: #f2994a;
+            --node-set: #9b51e0;
+            --node-output: #eb5757;
+            --wire-color: #555555;
+            --wire-active: #ffffff;
         }
 
         body {
-            margin: 0;
+            background-color: var(--n8n-bg);
+            color: #ffffff;
+            font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
-            background-color: var(--color-bg);
-            color: var(--color-text);
-            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--color-bg);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--color-primary);
-            border-radius: 3px;
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Three.js Canvas */
-        #neural-canvas {
+        /* Grid Background */
+        .grid-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: -1;
-            opacity: 0.8;
+            background-image:
+                linear-gradient(var(--n8n-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--n8n-grid) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.3;
+            z-index: -2;
+            pointer-events: none;
         }
 
-        /* Content Layer */
-        #content-layer {
-            position: relative;
-            z-index: 10;
-            padding-bottom: 10vh;
-        }
-
-        /* Typography */
-        h1, h2, h3 {
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        .font-mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        /* Glitch Effect */
-        .glitch-text {
-            position: relative;
-            color: var(--color-primary);
-        }
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
+        /* 3D Canvas */
+        #canvas-container {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--color-bg);
-        }
-        .glitch-text::before {
-            left: 2px;
-            text-shadow: -1px 0 #ff00c1;
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim-1 5s infinite linear alternate-reverse;
-        }
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -1px 0 #00fff9;
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim-2 5s infinite linear alternate-reverse;
+            z-index: -1;
+            pointer-events: none;
         }
 
-        @keyframes glitch-anim-1 {
-            0% { clip: rect(30px, 9999px, 10px, 0); }
-            20% { clip: rect(60px, 9999px, 80px, 0); }
-            40% { clip: rect(10px, 9999px, 50px, 0); }
-            60% { clip: rect(80px, 9999px, 20px, 0); }
-            80% { clip: rect(40px, 9999px, 90px, 0); }
-            100% { clip: rect(20px, 9999px, 60px, 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(60px, 9999px, 40px, 0); }
-            20% { clip: rect(10px, 9999px, 20px, 0); }
-            40% { clip: rect(50px, 9999px, 90px, 0); }
-            60% { clip: rect(20px, 9999px, 10px, 0); }
-            80% { clip: rect(90px, 9999px, 60px, 0); }
-            100% { clip: rect(40px, 9999px, 30px, 0); }
-        }
-
-        /* Cards */
-        .glass-panel {
-            background: rgba(10, 10, 15, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-        }
-        .glass-panel:hover {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
-        }
-
-        /* Project Grid */
-        .project-card {
+        /* Node Styling */
+        .node-card {
+            background: #2d2d2d;
+            border-radius: 12px;
+            border: 1px solid #444;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
-            overflow: hidden;
-            aspect-ratio: 16/9;
-        }
-        .project-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-        .project-card:hover img {
-            transform: scale(1.05);
-        }
-        .project-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 1.5rem;
-        }
-        .project-card:hover .project-overlay {
-            opacity: 1;
+            z-index: 10;
         }
 
-        /* Stats */
-        .stat-counter {
-            font-size: 3rem;
+        .node-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+            border-color: #666;
+        }
+
+        .node-header {
+            padding: 12px 20px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             font-weight: 700;
-            color: var(--color-primary);
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
-        }
-
-        /* Back Button */
-        .back-btn {
-            position: fixed;
-            top: 2rem;
-            left: 2rem;
-            z-index: 50;
-            color: var(--color-primary);
-            border: 1px solid var(--color-primary);
-            padding: 0.5rem 1rem;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
+            font-size: 0.9rem;
             text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .back-btn:hover {
-            background: var(--color-primary);
-            color: #000;
-            box-shadow: 0 0 15px var(--color-primary);
+            letter-spacing: 1px;
         }
 
-        /* Social Links */
-        .social-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 50px;
-            height: 50px;
-            border: 1px solid rgba(255,255,255,0.2);
+        .node-body {
+            padding: 24px;
+        }
+
+        /* Connector Dots */
+        .node-dot {
+            width: 12px;
+            height: 12px;
+            background: #fff;
             border-radius: 50%;
-            color: var(--color-text);
-            transition: all 0.3s;
-            margin: 0 0.5rem;
-            text-decoration: none;
-            font-size: 1.2rem;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 2px solid #2d2d2d;
+            z-index: 20;
         }
-        .social-link:hover {
-            border-color: var(--color-primary);
-            color: var(--color-primary);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
-            transform: translateY(-3px);
+        .node-dot.top { top: -6px; }
+        .node-dot.bottom { bottom: -6px; }
+
+        /* SVG Connections Container */
+        #svg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Will be updated via JS */
+            z-index: 0;
+            pointer-events: none;
         }
 
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .back-btn {
-                top: auto;
-                bottom: 2rem;
-                left: 50%;
-                transform: translateX(-50%);
-                width: auto;
-            }
-            h1 { font-size: 3rem !important; }
-            .stat-counter { font-size: 2.5rem; }
+        path.connector {
+            fill: none;
+            stroke: var(--wire-color);
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+
+        path.connector-active {
+            fill: none;
+            stroke: var(--node-trigger); /* Animated Color */
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+        }
+
+        /* Utility */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .tag {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.2);
         }
     </style>
 </head>
 <body>
 
-    <a href="/guild" class="back-btn">
-        <i class="fas fa-chevron-left"></i> Guild
-    </a>
+    <!-- Background Elements -->
+    <div class="grid-bg"></div>
+    <div id="canvas-container"></div>
+    <svg id="svg-container"></svg>
 
-    <canvas id="neural-canvas"></canvas>
-
-    <div id="content-layer">
-
-        <!-- Hero Section -->
-        <section class="min-h-screen flex flex-col justify-center items-center relative px-6 text-center">
-            <div class="relative z-10">
-                <div class="mb-4">
-                    <img src="/assets/img/guild/nick/profile.webp" alt="Nick Profile" class="w-32 h-32 md:w-48 md:h-48 rounded-full border-2 border-[var(--color-primary)] shadow-[0_0_30px_rgba(0,243,255,0.3)] mx-auto object-cover">
-                </div>
-                <h1 class="text-6xl md:text-8xl mb-2 glitch-text font-bold" data-text="NICK">NICK</h1>
-                <h2 class="text-xl md:text-2xl text-[var(--color-primary)] tracking-[0.3em] uppercase mb-8">Automation Architect</h2>
-
-                <div class="flex flex-wrap justify-center gap-4 mt-8 opacity-0 reveal-hero">
-                    <span class="px-4 py-1 border border-[var(--color-secondary)] text-[var(--color-secondary)] text-sm rounded-full bg-[rgba(189,0,255,0.1)]">AI Engineer</span>
-                    <span class="px-4 py-1 border border-[var(--color-primary)] text-[var(--color-primary)] text-sm rounded-full bg-[rgba(0,243,255,0.1)]">n8n Certified</span>
-                    <span class="px-4 py-1 border border-white/30 text-white/80 text-sm rounded-full">Vibe Coding</span>
-                </div>
+    <!-- Navigation (Simple Back) -->
+    <nav class="fixed top-6 left-6 z-50 mix-blend-difference">
+        <a href="/guild" class="flex items-center gap-2 text-white/80 hover:text-white transition-colors group">
+            <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-black/50 backdrop-blur group-hover:bg-white/10 transition-all">
+                <i class="fa-solid fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
             </div>
+            <span class="mono-font text-sm hidden md:inline opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">BACK_TO_GUILD</span>
+        </a>
+    </nav>
 
-            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-                <i class="fas fa-chevron-down text-[var(--color-primary)] text-2xl"></i>
-            </div>
-        </section>
+    <!-- Content Container -->
+    <div class="relative w-full max-w-4xl mx-auto py-20 px-4 flex flex-col items-center gap-24" id="flow-container">
 
-        <!-- Bio & Stats Section -->
-        <section class="py-20 px-6 max-w-6xl mx-auto">
-            <div class="grid md:grid-cols-2 gap-12 items-center">
-                <div class="glass-panel p-8 rounded-2xl reveal-section">
-                    <h3 class="text-2xl text-[var(--color-primary)] mb-6"><i class="fas fa-terminal mr-2"></i> SYSTEM LOG</h3>
-                    <div class="font-mono text-sm md:text-base leading-relaxed text-gray-300 space-y-4">
-                        <p>> USER_ID: <span class="text-white font-bold">Nick</span></p>
-                        <p>> ORIGIN: <span class="text-yellow-500">Environmental Project Engineer</span></p>
-                        <p>> TIMELINE_2023: <span class="text-green-400">GPT Integration / Vibe Coding.</span></p>
-                        <p>> STATUS: <span class="text-[var(--color-secondary)]">n8n Workflow Overload.</span></p>
-
-                        <div class="mt-6 border-l-2 border-[var(--color-primary)] pl-4 text-xs md:text-sm opacity-90">
-                            <p class="mb-2">我是 Nick。原本是做環境監測相關的專案工程師，2023年 GPT 出來的時候開始玩 AI。2023年底，就用 AI 做出了一套環境監測管理系統。</p>
-                            <p>之後陸陸續續做了許多小玩具，直到研究到 n8n 就開始瘋狂做工作流。現在已經累積快 30 個 Line Bot，33 個正在執行中的 n8n 工作流，也有在新的公司做了整整 3 套 Vibe Coding 系統。</p>
-                        </div>
-                    </div>
+        <!-- Node 1: Start / Trigger (Bio) -->
+        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-start">
+            <div class="node-header" style="background: var(--node-trigger);">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Webhook: Start</span>
                 </div>
-
-                <div class="grid grid-cols-2 gap-4 reveal-section">
-                    <div class="glass-panel p-6 rounded-xl text-center">
-                        <div class="stat-counter" data-target="30">0</div>
-                        <div class="text-sm uppercase tracking-widest text-gray-400 mt-2">Line Bots</div>
-                    </div>
-                    <div class="glass-panel p-6 rounded-xl text-center">
-                        <div class="stat-counter" data-target="33">0</div>
-                        <div class="text-sm uppercase tracking-widest text-gray-400 mt-2">Active Workflows</div>
-                    </div>
-                    <div class="glass-panel p-6 rounded-xl text-center">
-                        <div class="stat-counter" data-target="3">0</div>
-                        <div class="text-sm uppercase tracking-widest text-gray-400 mt-2">Vibe Systems</div>
-                    </div>
-                    <div class="glass-panel p-6 rounded-xl text-center">
-                        <div class="text-3xl font-bold text-[var(--color-secondary)] mt-2">LVL 2</div>
-                        <div class="text-sm uppercase tracking-widest text-gray-400 mt-3">n8n Certified</div>
+                <div class="text-xs bg-black/20 px-2 py-1 rounded">200 OK</div>
+            </div>
+            <div class="node-body flex flex-col md:flex-row gap-8 items-center md:items-start">
+                <div class="relative w-32 h-32 flex-shrink-0">
+                    <img src="/assets/img/guild/nick/avatar.webp" alt="Nick Avatar" class="w-full h-full object-cover rounded-full border-4 border-[#1dbb42] shadow-[0_0_20px_rgba(29,187,66,0.3)]">
+                    <div class="absolute bottom-0 right-0 bg-[#1dbb42] text-black text-xs font-bold px-2 py-1 rounded-full border-2 border-[#2d2d2d]">ACTIVE</div>
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h1 class="text-3xl font-bold mb-2 mono-font">Nick Chang</h1>
+                    <p class="text-[#1dbb42] font-bold mb-4 mono-font">AI Automation Architect</p>
+                    <p class="text-gray-300 leading-relaxed mb-4">
+                        我是 Nick，從環境監測專案工程師轉型為 AI 應用顧問。
+                        2023年 GPT 問世後便深耕 AI 領域，自主開發環境監測管理系統。
+                        目前已建立 <span class="text-white font-bold">30+ Line Bots</span> 與 <span class="text-white font-bold">33+ n8n 自動化工作流</span>。
+                        專注於為企業與個人打造自動化解決方案，是您專屬的「AI 引路人」。
+                    </p>
+                    <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+                        <span class="tag">#Automation</span>
+                        <span class="tag">#AI_Consultant</span>
+                        <span class="tag">#n8n_Expert</span>
+                        <span class="tag">#Vibe_Coding</span>
                     </div>
                 </div>
             </div>
-        </section>
+            <div class="node-dot bottom"></div>
+        </div>
 
-        <!-- Projects Grid -->
-        <section class="py-20 px-6 max-w-7xl mx-auto">
-            <h2 class="text-4xl mb-12 text-center reveal-section"><span class="text-[var(--color-primary)]">///</span> PROJECT MATRIX</h2>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                <!-- Project 1: Sewage System -->
-                <div class="glass-panel rounded-xl project-card reveal-section">
-                    <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage Design System">
-                    <div class="project-overlay">
-                        <h4 class="text-xl font-bold text-white">Sewage Design System</h4>
-                        <p class="text-sm text-gray-300 mt-1">Full-stack Vibe Coding implementation for industrial design.</p>
-                    </div>
+        <!-- Node 2: Process (Philosophy & Experience) -->
+        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-process-1">
+            <div class="node-dot top"></div>
+            <div class="node-header" style="background: var(--node-action);">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-code-branch"></i>
+                    <span>Function: Core_Philosophy</span>
                 </div>
-
-                <!-- Project 2: n8n Workflow -->
-                <div class="glass-panel rounded-xl project-card reveal-section">
-                    <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="Automation Workflows">
-                    <div class="project-overlay">
-                        <h4 class="text-xl font-bold text-white">Complex Automation</h4>
-                        <p class="text-sm text-gray-300 mt-1">33+ active n8n workflows powering business logic.</p>
-                    </div>
-                </div>
-
-                <!-- Project 3: Course Promo -->
-                <div class="glass-panel rounded-xl project-card reveal-section">
-                    <img src="/assets/img/guild/nick/n8n_course_promo.webp" alt="ZN Studio Course">
-                    <div class="project-overlay">
-                        <h4 class="text-xl font-bold text-white">ZN Studio x n8n</h4>
-                        <p class="text-sm text-gray-300 mt-1">Educational course on creative design & automation.</p>
-                    </div>
-                </div>
-
-                <!-- Project 4: Teaching -->
-                <div class="glass-panel rounded-xl project-card reveal-section">
-                    <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="University Lecture">
-                    <div class="project-overlay">
-                        <h4 class="text-xl font-bold text-white">Vibe Coding Lecturer</h4>
-                        <p class="text-sm text-gray-300 mt-1">Guest lecturer at Soochow University.</p>
-                    </div>
-                </div>
-
-                <!-- Project 5: Card -->
-                <div class="glass-panel rounded-xl project-card reveal-section">
-                    <img src="/assets/img/guild/nick/zn_studio_card.webp" alt="ZN Studio">
-                    <div class="project-overlay">
-                        <h4 class="text-xl font-bold text-white">ZN Studio</h4>
-                        <p class="text-sm text-gray-300 mt-1">Personal brand and portfolio hub.</p>
-                    </div>
-                </div>
-
-                 <!-- Project 6: Cert -->
-                 <div class="glass-panel rounded-xl project-card reveal-section">
-                    <img src="/assets/img/guild/nick/soochow_cert.webp" alt="Certificate">
-                    <div class="project-overlay">
-                        <h4 class="text-xl font-bold text-white">Appreciation</h4>
-                        <p class="text-sm text-gray-300 mt-1">Recognition for "AI First Course" workshop.</p>
-                    </div>
-                </div>
-
+                <div class="text-xs bg-black/20 px-2 py-1 rounded">EXECUTE</div>
             </div>
-
-            <!-- List of other projects -->
-            <div class="mt-12 grid md:grid-cols-2 gap-4 reveal-section">
-                 <div class="glass-panel p-6 rounded-lg flex items-center gap-4">
-                    <i class="fas fa-file-invoice-dollar text-2xl text-[var(--color-primary)]"></i>
-                    <div>
-                        <h4 class="font-bold">Quotation System</h4>
-                        <p class="text-xs text-gray-400">Automated Business Tool</p>
-                    </div>
-                 </div>
-                 <div class="glass-panel p-6 rounded-lg flex items-center gap-4">
-                    <i class="fas fa-briefcase text-2xl text-[var(--color-primary)]"></i>
-                    <div>
-                        <h4 class="font-bold">Business Management System</h4>
-                        <p class="text-xs text-gray-400">Enterprise Solution</p>
-                    </div>
-                 </div>
-                 <div class="glass-panel p-6 rounded-lg flex items-center gap-4">
-                    <i class="fas fa-brain text-2xl text-[var(--color-secondary)]"></i>
-                    <div>
-                        <h4 class="font-bold">AI Psych Test</h4>
-                        <p class="text-xs text-gray-400">Interactive Assessment</p>
-                    </div>
-                 </div>
-                 <div class="glass-panel p-6 rounded-lg flex items-center gap-4">
-                    <i class="fas fa-heart text-2xl text-pink-500"></i>
-                    <div>
-                        <h4 class="font-bold">Anniversary & Xmas Sites</h4>
-                        <p class="text-xs text-gray-400">Personal Projects</p>
-                    </div>
-                 </div>
+            <div class="node-body grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-[#3a3a3a] p-4 rounded-lg border border-white/5 hover:bg-[#444] transition-colors">
+                    <div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid fa-eye"></i></div>
+                    <h3 class="font-bold mb-2">精準洞察</h3>
+                    <p class="text-xs text-gray-400">不只聆聽，更精準掌握您的業務需求，將願景轉化為可執行的策略。</p>
+                </div>
+                <div class="bg-[#3a3a3a] p-4 rounded-lg border border-white/5 hover:bg-[#444] transition-colors">
+                    <div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid fa-bullseye"></i></div>
+                    <h3 class="font-bold mb-2">成果導向</h3>
+                    <p class="text-xs text-gray-400">承諾高品質原創解決方案，讓您的成功成為我們的最終目標。</p>
+                </div>
+                <div class="bg-[#3a3a3a] p-4 rounded-lg border border-white/5 hover:bg-[#444] transition-colors">
+                    <div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid fa-infinity"></i></div>
+                    <h3 class="font-bold mb-2">一站服務</h3>
+                    <p class="text-xs text-gray-400">從課程教學、工具導入到系統建置，提供全方位支援。</p>
+                </div>
             </div>
-        </section>
+            <div class="node-dot bottom"></div>
+        </div>
 
-        <!-- Footer / Contact -->
-        <footer class="py-20 px-6 text-center reveal-section">
-            <h2 class="text-3xl mb-8">ESTABLISH CONNECTION</h2>
-
-            <div class="flex flex-wrap justify-center gap-4 mb-12">
-                <a href="https://www.threads.net/@nickai216" target="_blank" class="social-link" title="Threads">
-                    <i class="fa-brands fa-threads"></i>
-                </a>
-                <a href="https://www.instagram.com/nickai216/" target="_blank" class="social-link" title="Instagram">
-                    <i class="fab fa-instagram"></i>
-                </a>
-                <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="social-link" title="Line Community">
-                    <i class="fab fa-line"></i>
-                </a>
-                <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="social-link" title="Portfolio Card">
-                    <i class="fas fa-id-card"></i>
-                </a>
-                <a href="https://znstudio216.com/" target="_blank" class="social-link" title="ZN Studio">
-                    <i class="fas fa-globe"></i>
-                </a>
-                <a href="https://portaly.cc/zn.studio" target="_blank" class="social-link" title="Portaly">
-                    <i class="fas fa-link"></i>
-                </a>
+        <!-- Node 3: Switch (Services & Products) -->
+        <div class="node-card w-full md:w-[700px] opacity-0 translate-y-10" id="node-switch">
+            <div class="node-dot top"></div>
+            <div class="node-header" style="background: var(--node-switch);">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-shuffle"></i>
+                    <span>Switch: Project_Router</span>
+                </div>
+                <div class="text-xs bg-black/20 px-2 py-1 rounded">ROUTING...</div>
             </div>
-
-            <div class="text-gray-500 text-sm font-mono">
-                <p>SYSTEM STATUS: ONLINE</p>
-                <p>&copy; 2024 NICK AUTOMATION ARCHITECT. ALL RIGHTS RESERVED.</p>
+            <div class="node-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Branch 1: Services -->
+                    <div class="border border-white/10 rounded-lg p-4">
+                        <h3 class="text-[#f2994a] font-bold mb-4 border-b border-white/10 pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-briefcase"></i> Services
+                        </h3>
+                        <ul class="space-y-3 text-sm text-gray-300">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
+                                <span><strong class="text-white">AI 生成式工具課程</strong><br>企業與個人培訓</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
+                                <span><strong class="text-white">n8n 課程集中營</strong><br>從零開始掌握自動化</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
+                                <span><strong class="text-white">AI 模擬考系統</strong><br>認證輔導與學習分析</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
+                                <span><strong class="text-white">Vibe Coding 開發</strong><br>報價系統、業務系統、污水處理設計系統</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- Branch 2: Products -->
+                    <div class="border border-white/10 rounded-lg p-4">
+                        <h3 class="text-[#f2994a] font-bold mb-4 border-b border-white/10 pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-box-open"></i> Products (Templates)
+                        </h3>
+                        <ul class="space-y-3 text-sm text-gray-300">
+                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
+                                <i class="fa-solid fa-file-code text-blue-400 mt-1"></i>
+                                <div>
+                                    <strong class="text-white group-hover:text-[#f2994a] transition">n8n 過年五合一模板包</strong>
+                                    <p class="text-xs text-gray-500">新聞摘要、行事曆、名片辨識、備份、Sora 2 影片</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
+                                <i class="fa-solid fa-robot text-blue-400 mt-1"></i>
+                                <div>
+                                    <strong class="text-white group-hover:text-[#f2994a] transition">Line Bot + Sheet 資料庫</strong>
+                                    <p class="text-xs text-gray-500">綁定 Google Sheet 關鍵字查詢</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
+                                <i class="fa-solid fa-closed-captioning text-blue-400 mt-1"></i>
+                                <div>
+                                    <strong class="text-white group-hover:text-[#f2994a] transition">影片字幕雲端回傳</strong>
+                                    <p class="text-xs text-gray-500">自動上傳影片、生成字幕並回傳 JSON</p>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
+                                <i class="fa-solid fa-book text-blue-400 mt-1"></i>
+                                <div>
+                                    <strong class="text-white group-hover:text-[#f2994a] transition">Threads AI 應用全攻略</strong>
+                                    <p class="text-xs text-gray-500">學習加速器大禮包</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-        </footer>
+            <div class="node-dot bottom"></div>
+        </div>
+
+        <!-- Node 4: Set (Skills / Stack) -->
+        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-skills">
+            <div class="node-dot top"></div>
+            <div class="node-header" style="background: var(--node-set);">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Set: Tech_Stack</span>
+                </div>
+                <div class="text-xs bg-black/20 px-2 py-1 rounded">VARIABLES</div>
+            </div>
+            <div class="node-body">
+                <div class="flex flex-wrap gap-4 justify-center">
+                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
+                        <i class="fa-solid fa-network-wired text-3xl text-[#ff6b6b]"></i>
+                        <span class="text-xs font-mono">n8n</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
+                        <i class="fa-solid fa-robot text-3xl text-[#10a37f]"></i>
+                        <span class="text-xs font-mono">GPT-4</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
+                        <i class="fa-solid fa-brain text-3xl text-[#d97757]"></i>
+                        <span class="text-xs font-mono">Claude</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
+                        <i class="fa-brands fa-google text-3xl text-[#4285f4]"></i>
+                        <span class="text-xs font-mono">Gemini</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
+                        <i class="fa-brands fa-line text-3xl text-[#00c300]"></i>
+                        <span class="text-xs font-mono">Line API</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
+                        <i class="fa-solid fa-code text-3xl text-[#fbbc04]"></i>
+                        <span class="text-xs font-mono">Apps Script</span>
+                    </div>
+                </div>
+                <div class="mt-6 border-t border-white/10 pt-4 text-center">
+                    <p class="text-sm text-gray-400">Also proficient in:</p>
+                    <div class="flex justify-center gap-2 mt-2">
+                        <span class="tag bg-[#9b51e0]/20 border-[#9b51e0]/50">Vibe Coding</span>
+                        <span class="tag bg-[#9b51e0]/20 border-[#9b51e0]/50">Make</span>
+                        <span class="tag bg-[#9b51e0]/20 border-[#9b51e0]/50">Python</span>
+                    </div>
+                </div>
+            </div>
+            <div class="node-dot bottom"></div>
+        </div>
+
+        <!-- Node 5: Output (Contact) -->
+        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-end">
+            <div class="node-dot top"></div>
+            <div class="node-header" style="background: var(--node-output);">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>HTTP Request: Connect</span>
+                </div>
+                <div class="text-xs bg-black/20 px-2 py-1 rounded">POST</div>
+            </div>
+            <div class="node-body text-center">
+                <h2 class="text-2xl font-bold mb-2">Ready to Automate?</h2>
+                <p class="text-gray-400 mb-6">歡迎與我聯繫，討論您的 AI 應用場景與自動化需求。</p>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <a href="https://znstudio216.com/" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
+                        <i class="fa-solid fa-globe text-2xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold">Website</span>
+                    </a>
+                    <a href="https://portaly.cc/zn.studio" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
+                        <i class="fa-solid fa-link text-2xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold">Portaly</span>
+                    </a>
+                    <a href="https://www.threads.net/@nickai216" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
+                        <i class="fa-brands fa-threads text-2xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold">Threads</span>
+                    </a>
+                    <a href="https://www.instagram.com/nickai216/" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
+                        <i class="fa-brands fa-instagram text-2xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold">Instagram</span>
+                    </a>
+                    <a href="https://nickleo051216.github.io/nick-n8n" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
+                        <i class="fa-solid fa-laptop-code text-2xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold">My Works</span>
+                    </a>
+                    <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group col-span-2 md:col-span-3">
+                        <i class="fa-brands fa-line text-2xl group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-bold">Join Line Community</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="h-24"></div> <!-- Spacer -->
+
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
     <script>
-        // --- Three.js Neural Grid ---
-        const initThreeJS = () => {
-            const canvas = document.getElementById('neural-canvas');
-            const scene = new THREE.Scene();
-            // Fog for depth
-            scene.fog = new THREE.FogExp2(0x05050a, 0.002);
+        // === 1. GSAP Node Animation & SVG Drawing ===
+        gsap.registerPlugin(ScrollTrigger);
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 30;
+        const nodes = document.querySelectorAll('.node-card');
+        const container = document.getElementById('flow-container');
+        const svgContainer = document.getElementById('svg-container');
 
-            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Adjust SVG height to match container
+        function resizeSVG() {
+            const height = container.scrollHeight + 200;
+            svgContainer.style.height = `${height}px`;
+            drawConnectors(); // Redraw on resize
+        }
+        window.addEventListener('resize', resizeSVG);
 
-            // Particles (Nodes)
-            const particleCount = 200;
-            const geometry = new THREE.IcosahedronGeometry(0.2, 1);
-            const material = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
-            const particles = new THREE.InstancedMesh(geometry, material, particleCount);
-
-            const dummy = new THREE.Object3D();
-            const positions = [];
-            const velocities = [];
-
-            for (let i = 0; i < particleCount; i++) {
-                const x = (Math.random() - 0.5) * 60;
-                const y = (Math.random() - 0.5) * 60;
-                const z = (Math.random() - 0.5) * 40;
-
-                dummy.position.set(x, y, z);
-                dummy.updateMatrix();
-                particles.setMatrixAt(i, dummy.matrix);
-
-                positions.push({x, y, z});
-                velocities.push({
-                    x: (Math.random() - 0.5) * 0.02,
-                    y: (Math.random() - 0.5) * 0.02,
-                    z: (Math.random() - 0.5) * 0.02
-                });
-            }
-            scene.add(particles);
-
-            // Connections (Lines)
-            const lineMaterial = new THREE.LineBasicMaterial({
-                color: 0xbd00ff,
-                transparent: true,
-                opacity: 0.15,
-                blending: THREE.AdditiveBlending
-            });
-
-            // Optimization: Pre-allocate buffer for maximum potential connections
-            const maxConnections = particleCount * particleCount;
-            const linePositions = new Float32Array(maxConnections * 3);
-            const lineGeometry = new THREE.BufferGeometry();
-            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-
-            const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-            scene.add(lines);
-
-            // Animation Loop
-            const animate = () => {
-                requestAnimationFrame(animate);
-
-                // Update particle positions
-                for (let i = 0; i < particleCount; i++) {
-                    positions[i].x += velocities[i].x;
-                    positions[i].y += velocities[i].y;
-                    positions[i].z += velocities[i].z;
-
-                    // Boundary bounce
-                    if (Math.abs(positions[i].x) > 30) velocities[i].x *= -1;
-                    if (Math.abs(positions[i].y) > 30) velocities[i].y *= -1;
-                    if (Math.abs(positions[i].z) > 20) velocities[i].z *= -1;
-
-                    dummy.position.set(positions[i].x, positions[i].y, positions[i].z);
-                    dummy.updateMatrix();
-                    particles.setMatrixAt(i, dummy.matrix);
-                }
-                particles.instanceMatrix.needsUpdate = true;
-
-                // Update Connections
-                const connectDistance = 8;
-                let vertexPos = 0;
-
-                // Optimized connection check
-                for (let i = 0; i < particleCount; i++) {
-                    for (let j = i + 1; j < particleCount; j++) {
-                        const dx = positions[i].x - positions[j].x;
-                        const dy = positions[i].y - positions[j].y;
-                        const dz = positions[i].z - positions[j].z;
-                        const distSq = dx*dx + dy*dy + dz*dz;
-
-                        if (distSq < connectDistance * connectDistance) {
-                            linePositions[vertexPos++] = positions[i].x;
-                            linePositions[vertexPos++] = positions[i].y;
-                            linePositions[vertexPos++] = positions[i].z;
-
-                            linePositions[vertexPos++] = positions[j].x;
-                            linePositions[vertexPos++] = positions[j].y;
-                            linePositions[vertexPos++] = positions[j].z;
-                        }
-                    }
-                }
-
-                lineGeometry.setDrawRange(0, vertexPos / 3);
-                lineGeometry.attributes.position.needsUpdate = true;
-
-                // Slight rotation
-                scene.rotation.y += 0.001;
-                scene.rotation.x += 0.0005;
-
-                renderer.render(scene, camera);
+        // Helper to get center of element relative to container
+        function getCenter(el) {
+            const rect = el.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2 - containerRect.left,
+                y: rect.top + rect.height / 2 - containerRect.top
             };
-            animate();
+        }
 
-            // Resize Handle
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+        // Helper to get specific connection point
+        function getPoint(el, type) {
+            const dot = el.querySelector(`.node-dot.${type}`);
+            if (!dot) return getCenter(el);
+            const rect = dot.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2 - containerRect.left,
+                y: rect.top + rect.height / 2 - containerRect.top
+            };
+        }
 
-            // Mouse Interaction (Parallax)
-            let mouseX = 0;
-            let mouseY = 0;
-            document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        function drawConnectors() {
+            svgContainer.innerHTML = ''; // Clear
 
-                // Subtle camera movement
-                gsap.to(camera.position, {
-                    x: mouseX * 2,
-                    y: mouseY * 2,
-                    duration: 1
-                });
-            });
-        };
+            // Define connections: Node -> Next Node
+            const connections = [
+                { from: 'node-start', to: 'node-process-1' },
+                { from: 'node-process-1', to: 'node-switch' },
+                { from: 'node-switch', to: 'node-skills' },
+                { from: 'node-skills', to: 'node-end' }
+            ];
 
-        // --- GSAP Animations ---
-        const initGSAP = () => {
-            gsap.registerPlugin(ScrollTrigger);
+            connections.forEach((conn, index) => {
+                const fromEl = document.getElementById(conn.from);
+                const toEl = document.getElementById(conn.to);
 
-            // Reveal Hero
-            gsap.to('.reveal-hero', {
-                opacity: 1,
-                y: 0,
-                duration: 1.5,
-                stagger: 0.2,
-                ease: 'power3.out'
-            });
+                if (!fromEl || !toEl) return;
 
-            // Section Reveals
-            gsap.utils.toArray('.reveal-section').forEach(section => {
-                gsap.from(section, {
+                const start = getPoint(fromEl, 'bottom');
+                const end = getPoint(toEl, 'top');
+
+                // Create Path
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+                // Bezier Curve Logic
+                const deltaY = end.y - start.y;
+                const cp1 = { x: start.x, y: start.y + deltaY * 0.5 };
+                const cp2 = { x: end.x, y: end.y - deltaY * 0.5 };
+
+                const d = `M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`;
+
+                path.setAttribute("d", d);
+                path.classList.add("connector");
+                svgContainer.appendChild(path);
+
+                // Create Active Overlay Path (for animation)
+                const activePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                activePath.setAttribute("d", d);
+                activePath.classList.add("connector-active");
+                // Initially hidden via dashoffset
+                svgContainer.appendChild(activePath);
+
+                // Animate Connector
+                gsap.to(activePath, {
+                    strokeDashoffset: 0,
                     scrollTrigger: {
-                        trigger: section,
-                        start: 'top 85%',
-                        toggleActions: 'play none none reverse'
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 1,
-                    ease: 'power2.out'
+                        trigger: fromEl,
+                        start: "top center",
+                        end: "bottom center",
+                        scrub: 1
+                    }
                 });
             });
+        }
 
-            // Number Counters
-            gsap.utils.toArray('.stat-counter').forEach(counter => {
-                const target = parseInt(counter.getAttribute('data-target'));
-                gsap.to(counter, {
+        // Initial setup
+        // Wait for layout
+        setTimeout(() => {
+            resizeSVG();
+
+            // Animate Nodes Appearance
+            nodes.forEach((node, i) => {
+                gsap.to(node, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "back.out(1.7)",
                     scrollTrigger: {
-                        trigger: counter,
-                        start: 'top 90%'
+                        trigger: node,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
                     },
-                    innerHTML: target,
-                    duration: 2,
-                    snap: { innerHTML: 1 },
-                    ease: 'power1.out'
+                    delay: i * 0.1 // Stagger slightly
                 });
             });
-        };
 
-        // Initialize
-        window.addEventListener('load', () => {
-            initThreeJS();
-            initGSAP();
+        }, 500);
+
+
+        // === 2. Three.js Background (Data Stream) ===
+        const scene = new THREE.Scene();
+        // No fog, keep it crisp
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Create particles moving in a "flow"
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 200;
+        const posArray = new Float32Array(particlesCount * 3);
+        const velocityArray = new Float32Array(particlesCount); // Speed for each particle
+
+        for(let i = 0; i < particlesCount * 3; i+=3) {
+            // Spread particles across the width but keep them flowing vertically
+            posArray[i] = (Math.random() - 0.5) * 15; // X
+            posArray[i+1] = (Math.random() - 0.5) * 20; // Y
+            posArray[i+2] = (Math.random() - 0.5) * 5 - 2; // Z depth
+
+            velocityArray[i/3] = 0.02 + Math.random() * 0.05;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        // Texture for particles (simple circle)
+        const loader = new THREE.TextureLoader();
+        // Create a programmatic circle texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const context = canvas.getContext('2d');
+        context.beginPath();
+        context.arc(16, 16, 15, 0, Math.PI * 2);
+        context.fillStyle = '#ffffff';
+        context.fill();
+        const particleTexture = new THREE.CanvasTexture(canvas);
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.15,
+            map: particleTexture,
+            transparent: true,
+            opacity: 0.6,
+            color: 0x2d9cdb, // Blue flow
+            blending: THREE.AdditiveBlending
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // Animation Loop
+        let mouseX = 0;
+        let mouseY = 0;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX / window.innerWidth - 0.5;
+            mouseY = event.clientY / window.innerHeight - 0.5;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update particles
+            const positions = particlesGeometry.attributes.position.array;
+
+            for(let i = 1; i < particlesCount * 3; i+=3) {
+                // Move down
+                positions[i] -= velocityArray[(i-1)/3];
+
+                // Reset if too low
+                if (positions[i] < -10) {
+                    positions[i] = 10;
+                }
+            }
+            particlesGeometry.attributes.position.needsUpdate = true;
+
+            // Subtle camera sway
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 0.5 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
