@@ -3,57 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nick | AI Automation Architect</title>
-    <meta name="description" content="AI x Automation: Your Exclusive AI Guide. Specializing in n8n, GPT, Claude, and workflow automation.">
+    <title>NICK | AI NEXUS</title>
+    <meta name="description" content="AI Automation Architect. System Status: Online. Protocols: n8n, GPT, Vibe Coding.">
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Cyberpunk Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Three.js Global -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <style>
         :root {
-            --n8n-bg: #222222;
-            --n8n-grid: #333333;
-            --node-trigger: #1dbb42;
-            --node-action: #2d9cdb;
-            --node-switch: #f2994a;
-            --node-set: #9b51e0;
-            --node-output: #eb5757;
-            --wire-color: #555555;
-            --wire-active: #ffffff;
+            --neon-green: #00ff41;
+            --neon-blue: #00f3ff;
+            --neon-red: #ff003c;
+            --cyber-black: #050505;
+            --glass-bg: rgba(10, 20, 30, 0.6);
         }
 
         body {
-            background-color: var(--n8n-bg);
-            color: #ffffff;
-            font-family: 'Noto Sans TC', sans-serif;
-            overflow-x: hidden;
             margin: 0;
+            overflow-x: hidden;
+            background-color: var(--cyber-black);
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
         }
 
-        .mono-font {
-            font-family: 'JetBrains Mono', monospace;
+        /* Hide scrollbar for immersive feel */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
         }
 
-        /* Grid Background */
-        .grid-bg {
-            position: fixed;
+        .font-cyber {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .text-neon-green {
+            color: var(--neon-green);
+            text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green);
+        }
+
+        .text-neon-blue {
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+        }
+
+        .text-neon-red {
+            color: var(--neon-red);
+            text-shadow: 0 0 5px var(--neon-red), 0 0 10px var(--neon-red);
+        }
+
+        .border-neon-green {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 5px var(--neon-green), inset 0 0 5px var(--neon-green);
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+        }
+
+        .glitch-text {
+            position: relative;
+        }
+
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-image:
-                linear-gradient(var(--n8n-grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--n8n-grid) 1px, transparent 1px);
-            background-size: 40px 40px;
-            opacity: 0.3;
-            z-index: -2;
-            pointer-events: none;
+            width: 100%;
+            height: 100%;
         }
 
-        /* 3D Canvas */
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 red;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 blue;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(12px, 9999px, 32px, 0); }
+            20% { clip: rect(84px, 9999px, 10px, 0); }
+            40% { clip: rect(4px, 9999px, 96px, 0); }
+            60% { clip: rect(55px, 9999px, 32px, 0); }
+            80% { clip: rect(32px, 9999px, 5px, 0); }
+            100% { clip: rect(64px, 9999px, 78px, 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            20% { clip: rect(12px, 9999px, 32px, 0); }
+            40% { clip: rect(88px, 9999px, 12px, 0); }
+            60% { clip: rect(2px, 9999px, 64px, 0); }
+            80% { clip: rect(32px, 9999px, 5px, 0); }
+            100% { clip: rect(54px, 9999px, 84px, 0); }
+        }
+
         #canvas-container {
             position: fixed;
             top: 0;
@@ -61,560 +124,553 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            pointer-events: none;
         }
 
-        /* Node Styling */
-        .node-card {
-            background: #2d2d2d;
-            border-radius: 12px;
-            border: 1px solid #444;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            z-index: 10;
-        }
-
-        .node-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.7);
-            border-color: #666;
-        }
-
-        .node-header {
-            padding: 12px 20px;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
+        .section-spacer {
+            min-height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            font-weight: 700;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .node-body {
-            padding: 24px;
-        }
-
-        /* Connector Dots */
-        .node-dot {
-            width: 12px;
-            height: 12px;
-            background: #fff;
-            border-radius: 50%;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 2px solid #2d2d2d;
-            z-index: 20;
-        }
-        .node-dot.top { top: -6px; }
-        .node-dot.bottom { bottom: -6px; }
-
-        /* SVG Connections Container */
-        #svg-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%; /* Will be updated via JS */
-            z-index: 0;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
             pointer-events: none;
         }
 
-        path.connector {
-            fill: none;
-            stroke: var(--wire-color);
-            stroke-width: 3;
-            stroke-linecap: round;
-        }
-
-        path.connector-active {
-            fill: none;
-            stroke: var(--node-trigger); /* Animated Color */
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-        }
-
-        /* Utility */
-        .glow-text {
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-
-        .tag {
-            background: rgba(255,255,255,0.1);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            border: 1px solid rgba(255,255,255,0.2);
+        .pointer-events-auto {
+            pointer-events: auto;
         }
     </style>
 </head>
 <body>
 
-    <!-- Background Elements -->
-    <div class="grid-bg"></div>
+    <!-- 3D Background -->
     <div id="canvas-container"></div>
-    <svg id="svg-container"></svg>
 
-    <!-- Navigation (Simple Back) -->
-    <nav class="fixed top-6 left-6 z-50 mix-blend-difference">
-        <a href="/guild" class="flex items-center gap-2 text-white/80 hover:text-white transition-colors group">
-            <div class="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-black/50 backdrop-blur group-hover:bg-white/10 transition-all">
+    <!-- Fixed HUD Elements -->
+    <div class="fixed top-4 left-4 z-50 mix-blend-difference pointer-events-auto">
+        <a href="/guild" class="flex items-center gap-2 text-neon-green hover:text-white transition-colors group">
+            <div class="w-10 h-10 border border-neon-green flex items-center justify-center bg-black/80">
                 <i class="fa-solid fa-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
             </div>
-            <span class="mono-font text-sm hidden md:inline opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">BACK_TO_GUILD</span>
+            <div class="hidden md:block">
+                <div class="text-[10px] opacity-70">RETURN TO</div>
+                <div class="font-cyber tracking-widest">GUILD_BASE</div>
+            </div>
         </a>
-    </nav>
-
-    <!-- Content Container -->
-    <div class="relative w-full max-w-4xl mx-auto py-20 px-4 flex flex-col items-center gap-24" id="flow-container">
-
-        <!-- Node 1: Start / Trigger (Bio) -->
-        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-start">
-            <div class="node-header" style="background: var(--node-trigger);">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-bolt"></i>
-                    <span>Webhook: Start</span>
-                </div>
-                <div class="text-xs bg-black/20 px-2 py-1 rounded">200 OK</div>
-            </div>
-            <div class="node-body flex flex-col md:flex-row gap-8 items-center md:items-start">
-                <div class="relative w-32 h-32 flex-shrink-0">
-                    <img src="/assets/img/guild/nick/avatar.webp" alt="Nick Avatar" class="w-full h-full object-cover rounded-full border-4 border-[#1dbb42] shadow-[0_0_20px_rgba(29,187,66,0.3)]">
-                    <div class="absolute bottom-0 right-0 bg-[#1dbb42] text-black text-xs font-bold px-2 py-1 rounded-full border-2 border-[#2d2d2d]">ACTIVE</div>
-                </div>
-                <div class="flex-1 text-center md:text-left">
-                    <h1 class="text-3xl font-bold mb-2 mono-font">Nick Chang</h1>
-                    <p class="text-[#1dbb42] font-bold mb-4 mono-font">AI Automation Architect</p>
-                    <p class="text-gray-300 leading-relaxed mb-4">
-                        我是 Nick，從環境監測專案工程師轉型為 AI 應用顧問。
-                        2023年 GPT 問世後便深耕 AI 領域，自主開發環境監測管理系統。
-                        目前已建立 <span class="text-white font-bold">30+ Line Bots</span> 與 <span class="text-white font-bold">33+ n8n 自動化工作流</span>。
-                        專注於為企業與個人打造自動化解決方案，是您專屬的「AI 引路人」。
-                    </p>
-                    <div class="flex flex-wrap gap-2 justify-center md:justify-start">
-                        <span class="tag">#Automation</span>
-                        <span class="tag">#AI_Consultant</span>
-                        <span class="tag">#n8n_Expert</span>
-                        <span class="tag">#Vibe_Coding</span>
-                    </div>
-                </div>
-            </div>
-            <div class="node-dot bottom"></div>
-        </div>
-
-        <!-- Node 2: Process (Philosophy & Experience) -->
-        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-process-1">
-            <div class="node-dot top"></div>
-            <div class="node-header" style="background: var(--node-action);">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-code-branch"></i>
-                    <span>Function: Core_Philosophy</span>
-                </div>
-                <div class="text-xs bg-black/20 px-2 py-1 rounded">EXECUTE</div>
-            </div>
-            <div class="node-body grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-[#3a3a3a] p-4 rounded-lg border border-white/5 hover:bg-[#444] transition-colors">
-                    <div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid fa-eye"></i></div>
-                    <h3 class="font-bold mb-2">精準洞察</h3>
-                    <p class="text-xs text-gray-400">不只聆聽，更精準掌握您的業務需求，將願景轉化為可執行的策略。</p>
-                </div>
-                <div class="bg-[#3a3a3a] p-4 rounded-lg border border-white/5 hover:bg-[#444] transition-colors">
-                    <div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid fa-bullseye"></i></div>
-                    <h3 class="font-bold mb-2">成果導向</h3>
-                    <p class="text-xs text-gray-400">承諾高品質原創解決方案，讓您的成功成為我們的最終目標。</p>
-                </div>
-                <div class="bg-[#3a3a3a] p-4 rounded-lg border border-white/5 hover:bg-[#444] transition-colors">
-                    <div class="text-[#2d9cdb] text-xl mb-2"><i class="fa-solid fa-infinity"></i></div>
-                    <h3 class="font-bold mb-2">一站服務</h3>
-                    <p class="text-xs text-gray-400">從課程教學、工具導入到系統建置，提供全方位支援。</p>
-                </div>
-            </div>
-            <div class="node-dot bottom"></div>
-        </div>
-
-        <!-- Node 3: Switch (Services & Products) -->
-        <div class="node-card w-full md:w-[700px] opacity-0 translate-y-10" id="node-switch">
-            <div class="node-dot top"></div>
-            <div class="node-header" style="background: var(--node-switch);">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-shuffle"></i>
-                    <span>Switch: Project_Router</span>
-                </div>
-                <div class="text-xs bg-black/20 px-2 py-1 rounded">ROUTING...</div>
-            </div>
-            <div class="node-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Branch 1: Services -->
-                    <div class="border border-white/10 rounded-lg p-4">
-                        <h3 class="text-[#f2994a] font-bold mb-4 border-b border-white/10 pb-2 flex items-center gap-2">
-                            <i class="fa-solid fa-briefcase"></i> Services
-                        </h3>
-                        <ul class="space-y-3 text-sm text-gray-300">
-                            <li class="flex items-start gap-2">
-                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
-                                <span><strong class="text-white">AI 生成式工具課程</strong><br>企業與個人培訓</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
-                                <span><strong class="text-white">n8n 課程集中營</strong><br>從零開始掌握自動化</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
-                                <span><strong class="text-white">AI 模擬考系統</strong><br>認證輔導與學習分析</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <i class="fa-solid fa-check text-green-500 mt-1"></i>
-                                <span><strong class="text-white">Vibe Coding 開發</strong><br>報價系統、業務系統、污水處理設計系統</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <!-- Branch 2: Products -->
-                    <div class="border border-white/10 rounded-lg p-4">
-                        <h3 class="text-[#f2994a] font-bold mb-4 border-b border-white/10 pb-2 flex items-center gap-2">
-                            <i class="fa-solid fa-box-open"></i> Products (Templates)
-                        </h3>
-                        <ul class="space-y-3 text-sm text-gray-300">
-                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
-                                <i class="fa-solid fa-file-code text-blue-400 mt-1"></i>
-                                <div>
-                                    <strong class="text-white group-hover:text-[#f2994a] transition">n8n 過年五合一模板包</strong>
-                                    <p class="text-xs text-gray-500">新聞摘要、行事曆、名片辨識、備份、Sora 2 影片</p>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
-                                <i class="fa-solid fa-robot text-blue-400 mt-1"></i>
-                                <div>
-                                    <strong class="text-white group-hover:text-[#f2994a] transition">Line Bot + Sheet 資料庫</strong>
-                                    <p class="text-xs text-gray-500">綁定 Google Sheet 關鍵字查詢</p>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
-                                <i class="fa-solid fa-closed-captioning text-blue-400 mt-1"></i>
-                                <div>
-                                    <strong class="text-white group-hover:text-[#f2994a] transition">影片字幕雲端回傳</strong>
-                                    <p class="text-xs text-gray-500">自動上傳影片、生成字幕並回傳 JSON</p>
-                                </div>
-                            </li>
-                            <li class="flex items-start gap-2 group cursor-pointer hover:bg-white/5 p-1 rounded transition">
-                                <i class="fa-solid fa-book text-blue-400 mt-1"></i>
-                                <div>
-                                    <strong class="text-white group-hover:text-[#f2994a] transition">Threads AI 應用全攻略</strong>
-                                    <p class="text-xs text-gray-500">學習加速器大禮包</p>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="node-dot bottom"></div>
-        </div>
-
-        <!-- Node 4: Set (Skills / Stack) -->
-        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-skills">
-            <div class="node-dot top"></div>
-            <div class="node-header" style="background: var(--node-set);">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group"></i>
-                    <span>Set: Tech_Stack</span>
-                </div>
-                <div class="text-xs bg-black/20 px-2 py-1 rounded">VARIABLES</div>
-            </div>
-            <div class="node-body">
-                <div class="flex flex-wrap gap-4 justify-center">
-                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
-                        <i class="fa-solid fa-network-wired text-3xl text-[#ff6b6b]"></i>
-                        <span class="text-xs font-mono">n8n</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
-                        <i class="fa-solid fa-robot text-3xl text-[#10a37f]"></i>
-                        <span class="text-xs font-mono">GPT-4</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
-                        <i class="fa-solid fa-brain text-3xl text-[#d97757]"></i>
-                        <span class="text-xs font-mono">Claude</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
-                        <i class="fa-brands fa-google text-3xl text-[#4285f4]"></i>
-                        <span class="text-xs font-mono">Gemini</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
-                        <i class="fa-brands fa-line text-3xl text-[#00c300]"></i>
-                        <span class="text-xs font-mono">Line API</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-2 p-3 bg-black/20 rounded-lg w-24 hover:bg-white/10 transition">
-                        <i class="fa-solid fa-code text-3xl text-[#fbbc04]"></i>
-                        <span class="text-xs font-mono">Apps Script</span>
-                    </div>
-                </div>
-                <div class="mt-6 border-t border-white/10 pt-4 text-center">
-                    <p class="text-sm text-gray-400">Also proficient in:</p>
-                    <div class="flex justify-center gap-2 mt-2">
-                        <span class="tag bg-[#9b51e0]/20 border-[#9b51e0]/50">Vibe Coding</span>
-                        <span class="tag bg-[#9b51e0]/20 border-[#9b51e0]/50">Make</span>
-                        <span class="tag bg-[#9b51e0]/20 border-[#9b51e0]/50">Python</span>
-                    </div>
-                </div>
-            </div>
-            <div class="node-dot bottom"></div>
-        </div>
-
-        <!-- Node 5: Output (Contact) -->
-        <div class="node-card w-full md:w-[600px] opacity-0 translate-y-10" id="node-end">
-            <div class="node-dot top"></div>
-            <div class="node-header" style="background: var(--node-output);">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>HTTP Request: Connect</span>
-                </div>
-                <div class="text-xs bg-black/20 px-2 py-1 rounded">POST</div>
-            </div>
-            <div class="node-body text-center">
-                <h2 class="text-2xl font-bold mb-2">Ready to Automate?</h2>
-                <p class="text-gray-400 mb-6">歡迎與我聯繫，討論您的 AI 應用場景與自動化需求。</p>
-
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <a href="https://znstudio216.com/" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
-                        <i class="fa-solid fa-globe text-2xl group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold">Website</span>
-                    </a>
-                    <a href="https://portaly.cc/zn.studio" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
-                        <i class="fa-solid fa-link text-2xl group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold">Portaly</span>
-                    </a>
-                    <a href="https://www.threads.net/@nickai216" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
-                        <i class="fa-brands fa-threads text-2xl group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold">Threads</span>
-                    </a>
-                    <a href="https://www.instagram.com/nickai216/" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
-                        <i class="fa-brands fa-instagram text-2xl group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold">Instagram</span>
-                    </a>
-                    <a href="https://nickleo051216.github.io/nick-n8n" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group">
-                        <i class="fa-solid fa-laptop-code text-2xl group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold">My Works</span>
-                    </a>
-                    <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="flex flex-col items-center gap-2 p-4 bg-[#3a3a3a] rounded hover:bg-[#eb5757] transition-colors group col-span-2 md:col-span-3">
-                        <i class="fa-brands fa-line text-2xl group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-bold">Join Line Community</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="h-24"></div> <!-- Spacer -->
-
     </div>
 
+    <div class="fixed top-4 right-4 z-40 text-right hidden md:block mix-blend-difference">
+        <div class="text-[10px] text-neon-green opacity-70">SYSTEM STATUS</div>
+        <div class="font-cyber text-xl animate-pulse">ONLINE</div>
+        <div class="text-[10px] opacity-50 mt-1" id="time-display">00:00:00</div>
+    </div>
+
+    <div class="fixed bottom-4 left-4 z-40 text-[10px] text-neon-green opacity-50 hidden md:block mix-blend-difference">
+        COORD: <span id="scroll-coord">0000</span><br>
+        FPS: <span id="fps-display">60</span>
+    </div>
+
+    <!-- Main Content Flow -->
+    <main class="relative">
+
+        <!-- SECTION 1: HERO (The Core) -->
+        <section class="section-spacer" id="sec-hero">
+            <div class="text-center pointer-events-auto mix-blend-screen px-4">
+                <div class="text-neon-green text-sm tracking-[0.5em] mb-4 opacity-0" id="hero-subtitle">SYSTEM INITIALIZED</div>
+                <h1 class="text-6xl md:text-8xl font-black font-cyber text-white mb-2 glitch-text opacity-0" data-text="NICK" id="hero-title">NICK</h1>
+                <div class="h-[1px] w-0 bg-white mx-auto my-4" id="hero-line"></div>
+                <div class="text-neon-blue text-xl md:text-2xl tracking-widest font-bold opacity-0" id="hero-role">AI AUTOMATION ARCHITECT</div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: BIO (Data Stream) -->
+        <section class="section-spacer" id="sec-bio">
+            <div class="glass-panel p-8 md:p-12 max-w-4xl mx-4 w-full grid grid-cols-1 md:grid-cols-3 gap-8 pointer-events-auto transform translate-y-20 opacity-0" id="bio-panel">
+                <div class="md:col-span-1 flex flex-col items-center justify-center border-r border-white/10 pr-0 md:pr-8">
+                    <div class="relative w-48 h-48 mb-6 group">
+                        <div class="absolute inset-0 rounded-full border-2 border-neon-green animate-spin-slow opacity-50"></div>
+                        <div class="absolute inset-0 rounded-full border border-neon-blue animate-reverse-spin opacity-50 scale-110"></div>
+                        <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-full h-full object-cover rounded-full grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                    <div class="w-full">
+                        <div class="flex justify-between text-xs text-gray-400 mb-1"><span>LEVEL</span><span>PRO</span></div>
+                        <div class="w-full bg-gray-800 h-1"><div class="bg-neon-green h-1 w-[95%]"></div></div>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <h2 class="text-2xl font-cyber text-neon-green mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-terminal text-sm"></i>
+                        USER_PROFILE
+                    </h2>
+                    <p class="text-gray-300 mb-6 leading-relaxed text-sm md:text-base">
+                        &gt; Origin: Environment Monitoring Engineer.<br>
+                        &gt; Awakening: 2023 (GPT Era).<br>
+                        &gt; Current Status: Building the future of automation.<br>
+                        <br>
+                        I don't just write code; I design <span class="text-white font-bold">digital ecosystems</span>.
+                        From a single prompt to a complex <span class="text-neon-blue">n8n</span> workflow,
+                        I transform manual chaos into automated precision.
+                        Creator of <span class="text-neon-green">30+ Line Bots</span> and <span class="text-neon-green">33+ Active Workflows</span>.
+                    </p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border border-white/20 p-2 text-center rounded hover:bg-white/5 transition">
+                            <div class="text-2xl font-bold text-white counter" data-target="30">0</div>
+                            <div class="text-[10px] text-gray-500 tracking-widest">ACTIVE BOTS</div>
+                        </div>
+                        <div class="border border-white/20 p-2 text-center rounded hover:bg-white/5 transition">
+                            <div class="text-2xl font-bold text-white counter" data-target="33">0</div>
+                            <div class="text-[10px] text-gray-500 tracking-widest">WORKFLOWS</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: SKILLS (The Grid) -->
+        <section class="section-spacer" id="sec-skills">
+            <div class="w-full max-w-6xl px-4 pointer-events-auto py-20">
+                <h2 class="text-4xl font-cyber text-center mb-12 text-neon-blue glitch-text" data-text="PROTOCOL_STACK">PROTOCOL_STACK</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Skill Card 1 -->
+                    <div class="glass-panel p-6 hover:border-neon-green transition-all duration-300 group skill-card opacity-0 translate-y-10">
+                        <i class="fa-solid fa-network-wired text-4xl text-neon-green mb-4 group-hover:scale-110 transition-transform block"></i>
+                        <h3 class="font-bold text-lg mb-2">n8n_CORE</h3>
+                        <p class="text-xs text-gray-400">Advanced Workflow Orchestration. Webhook integration, data transformation, and API chaining.</p>
+                    </div>
+                    <!-- Skill Card 2 -->
+                    <div class="glass-panel p-6 hover:border-neon-blue transition-all duration-300 group skill-card opacity-0 translate-y-10" style="transition-delay: 0.1s">
+                        <i class="fa-solid fa-brain text-4xl text-neon-blue mb-4 group-hover:scale-110 transition-transform block"></i>
+                        <h3 class="font-bold text-lg mb-2">LLM_INTEGRATION</h3>
+                        <p class="text-xs text-gray-400">GPT-4, Claude, Gemini. Prompt Engineering & Context Management.</p>
+                    </div>
+                    <!-- Skill Card 3 -->
+                    <div class="glass-panel p-6 hover:border-purple-500 transition-all duration-300 group skill-card opacity-0 translate-y-10" style="transition-delay: 0.2s">
+                        <i class="fa-solid fa-code text-4xl text-purple-500 mb-4 group-hover:scale-110 transition-transform block"></i>
+                        <h3 class="font-bold text-lg mb-2">VIBE_CODING</h3>
+                        <p class="text-xs text-gray-400">Rapid Prototyping. Building functional systems at the speed of thought.</p>
+                    </div>
+                    <!-- Skill Card 4 -->
+                    <div class="glass-panel p-6 hover:border-yellow-500 transition-all duration-300 group skill-card opacity-0 translate-y-10" style="transition-delay: 0.3s">
+                        <i class="fa-brands fa-line text-4xl text-yellow-500 mb-4 group-hover:scale-110 transition-transform block"></i>
+                        <h3 class="font-bold text-lg mb-2">BOT_ARCHITECTURE</h3>
+                        <p class="text-xs text-gray-400">Line Messaging API. Interactive user experiences and automated responses.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: PROJECTS (Holographic Windows) -->
+        <section class="section-spacer" id="sec-projects">
+            <div class="relative w-full max-w-5xl mx-auto pointer-events-auto z-10 px-4 py-20">
+                <div class="text-center mb-20">
+                    <div class="text-neon-red text-sm tracking-[0.5em] mb-2">ACCESSING ARCHIVES</div>
+                    <h2 class="text-4xl md:text-6xl font-cyber text-white">MISSION_LOGS</h2>
+                </div>
+
+                <div class="space-y-32">
+                    <!-- Project 1 -->
+                    <div class="glass-panel p-1 flex flex-col md:flex-row gap-0 group project-card opacity-0 translate-x-[-50px]">
+                        <div class="md:w-1/2 overflow-hidden relative h-64 md:h-auto">
+                            <div class="absolute inset-0 bg-neon-green/20 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <img src="/assets/img/guild/nick/n8n_workflow.webp" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" alt="n8n">
+                        </div>
+                        <div class="md:w-1/2 p-8 flex flex-col justify-center">
+                            <div class="text-neon-green font-mono text-xs mb-2">SYSTEM_01</div>
+                            <h3 class="text-2xl font-bold mb-4">n8n Workflow Engine</h3>
+                            <p class="text-gray-400 text-sm mb-6">Complex automation pipelines handling thousands of executions. From data scraping to intelligent routing.</p>
+                            <div class="flex gap-2">
+                                <span class="text-[10px] border border-white/20 px-2 py-1">AUTOMATION</span>
+                                <span class="text-[10px] border border-white/20 px-2 py-1">BACKEND</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="glass-panel p-1 flex flex-col md:flex-row-reverse gap-0 group project-card opacity-0 translate-x-[50px]">
+                        <div class="md:w-1/2 overflow-hidden relative h-64 md:h-auto">
+                            <div class="absolute inset-0 bg-neon-blue/20 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <img src="/assets/img/guild/nick/project_sewage.webp" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" alt="Sewage">
+                        </div>
+                        <div class="md:w-1/2 p-8 flex flex-col justify-center text-left md:text-right">
+                            <div class="text-neon-blue font-mono text-xs mb-2">SYSTEM_02</div>
+                            <h3 class="text-2xl font-bold mb-4">Sewage Design System</h3>
+                            <p class="text-gray-400 text-sm mb-6">A Vibe Coding masterpiece. Automated engineering calculations and reporting for environmental infrastructure.</p>
+                            <div class="flex gap-2 md:justify-end">
+                                <span class="text-[10px] border border-white/20 px-2 py-1">VIBE_CODING</span>
+                                <span class="text-[10px] border border-white/20 px-2 py-1">ENGINEERING</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 3 -->
+                    <div class="glass-panel p-1 flex flex-col md:flex-row gap-0 group project-card opacity-0 translate-x-[-50px]">
+                        <div class="md:w-1/2 overflow-hidden relative h-64 md:h-auto">
+                            <div class="absolute inset-0 bg-neon-red/20 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            <img src="/assets/img/guild/nick/zn_studio_card.webp" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" alt="Card">
+                        </div>
+                        <div class="md:w-1/2 p-8 flex flex-col justify-center">
+                            <div class="text-neon-red font-mono text-xs mb-2">SYSTEM_03</div>
+                            <h3 class="text-2xl font-bold mb-4">AI Templates & Products</h3>
+                            <p class="text-gray-400 text-sm mb-6">Commercial grade AI tools. 5-in-1 Holiday Pack, Video Subtitle Cloud, and Thread AI Guides.</p>
+                            <div class="flex gap-2">
+                                <span class="text-[10px] border border-white/20 px-2 py-1">COMMERCIAL</span>
+                                <span class="text-[10px] border border-white/20 px-2 py-1">PRODUCT</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: CONTACT (The Singularity) -->
+        <section class="section-spacer relative" id="sec-contact">
+            <div class="absolute inset-0 flex items-center justify-center z-0 pointer-events-none">
+                <div class="w-[500px] h-[500px] bg-neon-green/5 rounded-full blur-3xl animate-pulse"></div>
+            </div>
+
+            <div class="glass-panel p-8 md:p-12 text-center max-w-2xl w-full mx-4 pointer-events-auto z-10 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-green to-transparent"></div>
+                <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-neon-green to-transparent"></div>
+
+                <h2 class="text-4xl md:text-5xl font-cyber mb-8 text-white">INITIALIZE_LINK</h2>
+                <p class="text-gray-400 mb-12">System ready for new parameters. Send your query.</p>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <a href="https://znstudio216.com/" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-globe text-2xl group-hover:scale-125 transition-transform text-white"></i>
+                        <span class="text-xs tracking-widest">WEBSITE</span>
+                    </a>
+                    <a href="https://portaly.cc/zn.studio" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-link text-2xl group-hover:scale-125 transition-transform text-white"></i>
+                        <span class="text-xs tracking-widest">PORTALY</span>
+                    </a>
+                    <a href="https://www.threads.net/@nickai216" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
+                        <i class="fa-brands fa-threads text-2xl group-hover:scale-125 transition-transform text-white"></i>
+                        <span class="text-xs tracking-widest">THREADS</span>
+                    </a>
+                    <a href="https://www.instagram.com/nickai216/" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
+                        <i class="fa-brands fa-instagram text-2xl group-hover:scale-125 transition-transform text-white"></i>
+                        <span class="text-xs tracking-widest">INSTAGRAM</span>
+                    </a>
+                    <a href="https://nickleo051216.github.io/nick-n8n" target="_blank" class="p-4 border border-white/10 hover:border-neon-green hover:bg-neon-green/10 transition-all group flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-code-branch text-2xl group-hover:scale-125 transition-transform text-white"></i>
+                        <span class="text-xs tracking-widest">GIT_REPO</span>
+                    </a>
+                    <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="p-4 border border-white/10 hover:border-[#00c300] hover:bg-[#00c300]/10 transition-all group flex flex-col items-center gap-2">
+                        <i class="fa-brands fa-line text-2xl group-hover:scale-125 transition-transform text-[#00c300]"></i>
+                        <span class="text-xs tracking-widest">COMMUNITY</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <div class="h-24"></div>
+
+    </main>
+
     <script>
-        // === 1. GSAP Node Animation & SVG Drawing ===
-        gsap.registerPlugin(ScrollTrigger);
+        // === TEXT SCRAMBLE EFFECT ===
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
 
-        const nodes = document.querySelectorAll('.node-card');
-        const container = document.getElementById('flow-container');
-        const svgContainer = document.getElementById('svg-container');
+        function scrambleText(element, finalString, duration = 1000) {
+            let iterations = 0;
+            const interval = setInterval(() => {
+                element.innerText = finalString
+                    .split("")
+                    .map((letter, index) => {
+                        if (index < iterations) {
+                            return finalString[index];
+                        }
+                        return letters[Math.floor(Math.random() * letters.length)];
+                    })
+                    .join("");
 
-        // Adjust SVG height to match container
-        function resizeSVG() {
-            const height = container.scrollHeight + 200;
-            svgContainer.style.height = `${height}px`;
-            drawConnectors(); // Redraw on resize
-        }
-        window.addEventListener('resize', resizeSVG);
+                if (iterations >= finalString.length) {
+                    clearInterval(interval);
+                    element.innerText = finalString; // Ensure clean end
+                }
 
-        // Helper to get center of element relative to container
-        function getCenter(el) {
-            const rect = el.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
-            return {
-                x: rect.left + rect.width / 2 - containerRect.left,
-                y: rect.top + rect.height / 2 - containerRect.top
-            };
-        }
-
-        // Helper to get specific connection point
-        function getPoint(el, type) {
-            const dot = el.querySelector(`.node-dot.${type}`);
-            if (!dot) return getCenter(el);
-            const rect = dot.getBoundingClientRect();
-            const containerRect = container.getBoundingClientRect();
-            return {
-                x: rect.left + rect.width / 2 - containerRect.left,
-                y: rect.top + rect.height / 2 - containerRect.top
-            };
+                iterations += 1 / (duration / 50 / finalString.length); // Adjust speed based on length
+            }, 50);
         }
 
-        function drawConnectors() {
-            svgContainer.innerHTML = ''; // Clear
-
-            // Define connections: Node -> Next Node
-            const connections = [
-                { from: 'node-start', to: 'node-process-1' },
-                { from: 'node-process-1', to: 'node-switch' },
-                { from: 'node-switch', to: 'node-skills' },
-                { from: 'node-skills', to: 'node-end' }
-            ];
-
-            connections.forEach((conn, index) => {
-                const fromEl = document.getElementById(conn.from);
-                const toEl = document.getElementById(conn.to);
-
-                if (!fromEl || !toEl) return;
-
-                const start = getPoint(fromEl, 'bottom');
-                const end = getPoint(toEl, 'top');
-
-                // Create Path
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-
-                // Bezier Curve Logic
-                const deltaY = end.y - start.y;
-                const cp1 = { x: start.x, y: start.y + deltaY * 0.5 };
-                const cp2 = { x: end.x, y: end.y - deltaY * 0.5 };
-
-                const d = `M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`;
-
-                path.setAttribute("d", d);
-                path.classList.add("connector");
-                svgContainer.appendChild(path);
-
-                // Create Active Overlay Path (for animation)
-                const activePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                activePath.setAttribute("d", d);
-                activePath.classList.add("connector-active");
-                // Initially hidden via dashoffset
-                svgContainer.appendChild(activePath);
-
-                // Animate Connector
-                gsap.to(activePath, {
-                    strokeDashoffset: 0,
-                    scrollTrigger: {
-                        trigger: fromEl,
-                        start: "top center",
-                        end: "bottom center",
-                        scrub: 1
-                    }
-                });
-            });
-        }
-
-        // Initial setup
-        // Wait for layout
+        // Trigger scramble on load for Hero Title
         setTimeout(() => {
-            resizeSVG();
+            const title = document.getElementById('hero-title');
+            if(title) scrambleText(title, "NICK", 1500);
 
-            // Animate Nodes Appearance
-            nodes.forEach((node, i) => {
-                gsap.to(node, {
-                    opacity: 1,
-                    y: 0,
-                    duration: 0.8,
-                    ease: "back.out(1.7)",
-                    scrollTrigger: {
-                        trigger: node,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    },
-                    delay: i * 0.1 // Stagger slightly
-                });
-            });
-
+            const sub = document.getElementById('hero-subtitle');
+            if(sub) scrambleText(sub, "SYSTEM INITIALIZED", 2000);
         }, 500);
 
 
-        // === 2. Three.js Background (Data Stream) ===
+        // === CLOCK ===
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour12: false });
+            const timeDisplay = document.getElementById('time-display');
+            if (timeDisplay) timeDisplay.innerText = timeString;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // === SCROLL SYNC ===
+        gsap.registerPlugin(ScrollTrigger);
+
+        // === THREE.JS SCENE ===
+        const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // No fog, keep it crisp
+        // Fog for depth
+        scene.fog = new THREE.FogExp2(0x050505, 0.08);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
+        camera.position.z = 8;
+        camera.position.y = 2;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
 
-        // Create particles moving in a "flow"
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 200;
+        // --- OBJECTS ---
+
+        // 1. The Core (Torus Knot)
+        const coreGeometry = new THREE.TorusKnotGeometry(1.5, 0.4, 150, 20);
+        const coreMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00ff41,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15
+        });
+        const core = new THREE.Mesh(coreGeometry, coreMaterial);
+        scene.add(core);
+
+        // Inner solid core
+        const innerCoreGeo = new THREE.IcosahedronGeometry(0.8, 1);
+        const innerCoreMat = new THREE.MeshBasicMaterial({
+            color: 0x00f3ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5
+        });
+        const innerCore = new THREE.Mesh(innerCoreGeo, innerCoreMat);
+        scene.add(innerCore);
+
+        // 2. Data Storm (Particles)
+        const particlesCount = 3000;
         const posArray = new Float32Array(particlesCount * 3);
-        const velocityArray = new Float32Array(particlesCount); // Speed for each particle
+        const colorArray = new Float32Array(particlesCount * 3);
 
         for(let i = 0; i < particlesCount * 3; i+=3) {
-            // Spread particles across the width but keep them flowing vertically
-            posArray[i] = (Math.random() - 0.5) * 15; // X
-            posArray[i+1] = (Math.random() - 0.5) * 20; // Y
-            posArray[i+2] = (Math.random() - 0.5) * 5 - 2; // Z depth
+            // Sphere distribution
+            const r = 4 + Math.random() * 30; // Wider spread
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
 
-            velocityArray[i/3] = 0.02 + Math.random() * 0.05;
+            posArray[i] = r * Math.sin(phi) * Math.cos(theta); // x
+            posArray[i+1] = r * Math.sin(phi) * Math.sin(theta); // y
+            posArray[i+2] = r * Math.cos(phi); // z
+
+            // Colors: mix of green and blue
+            const isGreen = Math.random() > 0.5;
+            colorArray[i] = isGreen ? 0.0 : 0.0; // R
+            colorArray[i+1] = isGreen ? 1.0 : 0.95; // G
+            colorArray[i+2] = isGreen ? 0.25 : 1.0; // B
         }
 
+        const particlesGeometry = new THREE.BufferGeometry();
         particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-        // Texture for particles (simple circle)
-        const loader = new THREE.TextureLoader();
-        // Create a programmatic circle texture
-        const canvas = document.createElement('canvas');
-        canvas.width = 32;
-        canvas.height = 32;
-        const context = canvas.getContext('2d');
-        context.beginPath();
-        context.arc(16, 16, 15, 0, Math.PI * 2);
-        context.fillStyle = '#ffffff';
-        context.fill();
-        const particleTexture = new THREE.CanvasTexture(canvas);
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
         const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.15,
-            map: particleTexture,
+            size: 0.05,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
             transparent: true,
-            opacity: 0.6,
-            color: 0x2d9cdb, // Blue flow
-            blending: THREE.AdditiveBlending
+            opacity: 0.8
         });
 
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particles);
 
-        // Animation Loop
+        // 3. Floating Rings (Cyber effect)
+        const ringGeo = new THREE.TorusGeometry(8, 0.05, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.3 });
+        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+        ring1.rotation.x = Math.PI / 2;
+        scene.add(ring1);
+
+        const ring2 = ring1.clone();
+        ring2.rotation.x = Math.PI / 2;
+        ring2.rotation.y = 0.5;
+        ring2.scale.set(1.5, 1.5, 1.5);
+        scene.add(ring2);
+
+
+        // --- ANIMATION LOOP ---
         let mouseX = 0;
         let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
 
-        document.addEventListener('mousemove', (event) => {
-            mouseX = event.clientX / window.innerWidth - 0.5;
-            mouseY = event.clientY / window.innerHeight - 0.5;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
         });
+
+        const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
 
-            // Update particles
-            const positions = particlesGeometry.attributes.position.array;
+            // Core Animation
+            core.rotation.x += 0.005;
+            core.rotation.y += 0.01;
 
-            for(let i = 1; i < particlesCount * 3; i+=3) {
-                // Move down
-                positions[i] -= velocityArray[(i-1)/3];
+            // Pulse effect
+            const scale = 1 + Math.sin(time * 2) * 0.05;
+            core.scale.set(scale, scale, scale);
 
-                // Reset if too low
-                if (positions[i] < -10) {
-                    positions[i] = 10;
-                }
+            innerCore.rotation.y -= 0.02;
+
+            // Particle Rotation
+            particles.rotation.y += 0.001;
+
+            // Rings
+            ring1.rotation.z += 0.001;
+            ring2.rotation.z -= 0.001;
+
+            // Mouse Parallax (Smooth)
+            targetX = mouseX;
+            targetY = mouseY;
+            // Apply slight rotation to scene based on mouse
+            scene.rotation.y += (targetX - scene.rotation.y) * 0.05;
+            scene.rotation.x += (targetY - scene.rotation.x) * 0.05;
+
+            // FPS Counter update (rough)
+            if (Math.random() > 0.95) {
+                const fpsEl = document.getElementById('fps-display');
+                if (fpsEl) fpsEl.innerText = "60";
             }
-            particlesGeometry.attributes.position.needsUpdate = true;
-
-            // Subtle camera sway
-            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY * 0.5 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
 
             renderer.render(scene, camera);
         }
-
         animate();
+
+        // --- GSAP SCROLL ANIMATIONS ---
+
+        // 1. Camera Fly-through
+        // Map scroll to Z position
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // 0% -> 25% (Hero to Bio): Zoom in slightly
+        tl.to(camera.position, { z: 4, y: 0.5, ease: "none" }, 0);
+
+        // 25% -> 50% (Bio to Skills): Rotate camera around core
+        tl.to(camera.rotation, { z: 0.2, ease: "none" }, 0.25);
+        tl.to(camera.position, { z: 0, x: 2, ease: "none" }, 0.25);
+
+        // 50% -> 75% (Skills to Projects): Dive into the stream (speed effect)
+        // Move camera significantly forward through the particle field
+        tl.to(camera.position, { z: -15, x: 0, ease: "power2.in" }, 0.5);
+        tl.to(camera.rotation, { z: 0, ease: "none" }, 0.5);
+
+        // Increase particle "streak" feel by scaling Y
+        // Note: BufferGeometry updates are expensive, so we simulate by scaling the container or using camera FOV
+        tl.to(camera, { fov: 90, ease: "power1.in" }, 0.5);
+
+        // 75% -> 100% (Projects to Contact): Implosion
+        tl.to(camera.position, { z: -25, ease: "none" }, 0.75);
+        tl.to(camera, { fov: 60, ease: "power2.out" }, 0.85); // Reset FOV for stability
+
+        // Update Coord Display
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                const progress = Math.round(self.progress * 1000);
+                const el = document.getElementById('scroll-coord');
+                if (el) el.innerText = progress.toString().padStart(4, '0');
+
+                // Update camera projection matrix after FOV change
+                camera.updateProjectionMatrix();
+            }
+        });
+
+
+        // 2. DOM Elements Reveal
+
+        // Hero
+        gsap.to("#hero-subtitle", { opacity: 1, duration: 1, delay: 0.5 });
+        gsap.to("#hero-title", { opacity: 1, duration: 1, delay: 0.8 });
+        gsap.fromTo("#hero-line", { width: 0 }, { width: "100px", duration: 1, delay: 1 });
+        gsap.to("#hero-role", { opacity: 1, duration: 1, delay: 1.2 });
+
+        // Bio Panel
+        gsap.to("#bio-panel", {
+            scrollTrigger: {
+                trigger: "#sec-bio",
+                start: "top 70%",
+            },
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: "power3.out"
+        });
+
+        // Skills
+        gsap.utils.toArray('.skill-card').forEach((card, i) => {
+            gsap.to(card, {
+                scrollTrigger: {
+                    trigger: "#sec-skills",
+                    start: "top 80%",
+                },
+                opacity: 1,
+                y: 0,
+                duration: 0.6,
+                delay: i * 0.1,
+                ease: "back.out(1.7)"
+            });
+        });
+
+        // Projects - Slide in
+        gsap.utils.toArray('.project-card').forEach((card, i) => {
+            gsap.to(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                },
+                opacity: 1,
+                x: 0,
+                duration: 0.8,
+                ease: "power2.out"
+            });
+        });
+
+        // Counter Animation
+        gsap.utils.toArray('.counter').forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            gsap.to(counter, {
+                scrollTrigger: {
+                    trigger: "#sec-bio",
+                    start: "top 70%",
+                    once: true
+                },
+                innerText: target,
+                duration: 2,
+                snap: { innerText: 1 },
+                ease: "power2.out"
+            });
+        });
 
         // Handle Resize
         window.addEventListener('resize', () => {
