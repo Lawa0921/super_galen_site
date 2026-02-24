@@ -893,27 +893,34 @@
 
         // Cards Animation
         const cards = document.querySelectorAll('.hud-card');
-        cards.forEach((card) => {
-            // Ensure initial state
-            gsap.set(card, { opacity: 0, transform: "translateZ(-50px) rotateX(10deg)" });
 
+        // Use a simpler, more robust trigger logic
+        ScrollTrigger.defaults({
+            markers: false
+        });
+
+        cards.forEach((card) => {
             // Create a timeline for each card's entry
+            // Using fromTo ensures consistent starting state without separate gsap.set
             const tl = gsap.timeline({
                 scrollTrigger: {
-                    trigger: card, // Use card as trigger for precision
-                    start: "top 85%", // Start when card is near bottom of screen
-                    end: "bottom 15%", // End when card leaves top area
-                    toggleActions: "play reverse play reverse"
+                    trigger: card,
+                    start: "top 95%", // Trigger earlier (when top hits bottom of viewport)
+                    end: "bottom 5%", // Keep active until it leaves top
+                    toggleActions: "play none none reverse" // Don't hide when scrolling down past it
                 }
             });
 
-            // 1. Card Pops in
-            tl.to(card, {
-                opacity: 1,
-                transform: "translateZ(0) rotateX(0deg)",
-                duration: 0.6,
-                ease: "back.out(1.5)"
-            });
+            // 1. Card Pops in (from hidden state)
+            tl.fromTo(card,
+                { opacity: 0, transform: "translateZ(-50px) rotateX(10deg)" },
+                {
+                    opacity: 1,
+                    transform: "translateZ(0) rotateX(0deg)",
+                    duration: 0.8,
+                    ease: "back.out(1.2)"
+                }
+            );
 
             // 2. Staggered Items (Stats/Equip)
             const items = card.querySelectorAll('.stat-item, .equip-slot, .social-link');
@@ -924,7 +931,7 @@
                     stagger: 0.05,
                     duration: 0.4,
                     ease: "power2.out"
-                }, "-=0.3");
+                }, "-=0.4");
             }
 
             // 3. Progress Bars (Grow)
@@ -935,8 +942,13 @@
                     duration: 1,
                     ease: "power2.out",
                     stagger: 0.1
-                }, "-=0.3");
+                }, "-=0.4");
             }
+        });
+
+        // Force refresh after load to ensure correct positions
+        window.addEventListener('load', () => {
+            ScrollTrigger.refresh();
         });
 
         // Hero Title Glitch Intro
