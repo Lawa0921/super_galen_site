@@ -894,11 +894,15 @@
         // Cards Animation
         const cards = document.querySelectorAll('.hud-card');
         cards.forEach((card) => {
+            // Ensure initial state
+            gsap.set(card, { opacity: 0, transform: "translateZ(-50px) rotateX(10deg)" });
+
             // Create a timeline for each card's entry
             const tl = gsap.timeline({
                 scrollTrigger: {
-                    trigger: card.parentElement,
-                    start: "top center+=100",
+                    trigger: card, // Use card as trigger for precision
+                    start: "top 85%", // Start when card is near bottom of screen
+                    end: "bottom 15%", // End when card leaves top area
                     toggleActions: "play reverse play reverse"
                 }
             });
