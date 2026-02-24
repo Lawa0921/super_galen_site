@@ -34,7 +34,6 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
             overflow-x: hidden;
             scroll-behavior: smooth;
         }
@@ -48,7 +47,6 @@
             color: #fff;
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
-            overflow-y: auto;
         }
 
         /* Animations */
@@ -950,6 +948,12 @@
         window.addEventListener('load', () => {
             ScrollTrigger.refresh();
         });
+
+        // Safety fallback: if ScrollTrigger isn't detecting scroll, check the body height
+        // and force a recalculation after a short delay
+        setTimeout(() => {
+            ScrollTrigger.refresh();
+        }, 1000);
 
         // Hero Title Glitch Intro
         const heroTitle = document.querySelector('h1');
