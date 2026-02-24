@@ -199,9 +199,13 @@
         .section:nth-child(2) { top: 100vh; justify-content: flex-start; padding-left: 10%; }
         .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 10%; }
         .section:nth-child(4) { top: 300vh; justify-content: flex-start; padding-left: 10%; }
-        .section:nth-child(5) { top: 400vh; }
         /* Finale Section: Campfire */
-        .section:nth-child(6) { top: 500vh; align-items: flex-end; padding-bottom: 10vh; }
+        /* Make sure it's at the very end of scroll */
+        .section:nth-child(5) {
+            top: 500vh;
+            align-items: flex-start; /* Push content card up slightly so it doesn't cover fire */
+            padding-top: 10vh;
+        }
 
 
         /* Typography */
@@ -482,9 +486,9 @@
             </div>
         </div>
 
-        <!-- 5. Connect -->
+        <!-- 5. Connect (The Summit) -->
         <div class="section">
-            <div class="card" style="text-align: center;">
+            <div class="card" style="text-align: center; margin-bottom: 20vh;"> <!-- Push up to reveal fire -->
                 <h3>Final Report</h3>
                 <h2>歡迎來到營地</h2>
                 <p>
@@ -509,9 +513,6 @@
             </div>
         </div>
 
-        <!-- 6. The Summit (Empty div for scroll space to see the fire) -->
-        <div class="section"></div>
-
     </div>
 
     <!-- Scripts -->
@@ -535,15 +536,15 @@
         const config = {
             cliffColor: 0xfdfbf7, // Match BG
             ropeColor: 0x9fb8ad, // Sage
-            anchorColor: 0xe0c9a6, // Clay
-            fireColor: 0xff4500
+            anchorColor: 0x5d6d7e, // Steel/Blue
+            fireColor: 0xff4500,
+            summitRockColor: 0xe0e0e0
         };
 
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         // Fog starts white, fades to dark blue at top?
-        // Let's keep it simple fog for now
         scene.fog = new THREE.Fog(config.cliffColor, 15, 60);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -600,100 +601,163 @@
         cliff.position.y = cliffHeight / 2 - 20;
         scene.add(cliff);
 
-        // --- Interactive Anchors (Nodes) ---
+        // --- Interactive Anchors (Carabiners/Pitons) ---
         const anchorsGroup = new THREE.Group();
-        const anchorGeo = new THREE.IcosahedronGeometry(0.8, 0);
-        const anchorMat = new THREE.MeshStandardMaterial({
+
+        // Carabiner Geometry (Torus)
+        const carabinerGeo = new THREE.TorusGeometry(0.5, 0.1, 8, 20);
+        // Piton Geometry (Cone)
+        const pitonGeo = new THREE.ConeGeometry(0.1, 1, 6);
+
+        const metalMat = new THREE.MeshStandardMaterial({
             color: config.anchorColor,
-            emissive: config.anchorColor,
-            emissiveIntensity: 0.2,
-            wireframe: true
+            metalness: 0.8,
+            roughness: 0.2
+        });
+        const highlightMat = new THREE.MeshStandardMaterial({
+            color: 0xffaa00,
+            emissive: 0xffaa00,
+            emissiveIntensity: 0.5
         });
 
         // Positions roughly matching content sections
         const anchorPositions = [
-            { y: 5, label: "Basecamp" },
-            { y: 35, label: "Language Nexus" },
-            { y: 65, label: "Travel Points" },
-            { y: 95, label: "Broadcast Tower" },
-            { y: 120, label: "Summit Camp" }
+            { y: 5, label: "Basecamp Checkpoint" },
+            { y: 35, label: "Language Anchor" },
+            { y: 65, label: "Travel Anchor" },
+            { y: 95, label: "Broadcast Relay" }
         ];
 
         anchorPositions.forEach((pos, i) => {
-            const anchor = new THREE.Mesh(anchorGeo, anchorMat.clone());
-            anchor.position.set(
+            const group = new THREE.Group();
+            group.position.set(
                 (i % 2 === 0 ? -6 : 6) + (Math.random()-0.5)*2, // Alternating sides
                 pos.y,
-                -8 // Stick out from cliff
+                -10 // Stick into cliff (cliff is at -12 z, with bumps up to -10)
             );
-            anchor.userData = {
+
+            // Piton (Stuck in wall)
+            const piton = new THREE.Mesh(pitonGeo, metalMat);
+            piton.rotation.x = Math.PI / 2; // Stick out
+            piton.position.z = -0.5;
+            group.add(piton);
+
+            // Carabiner (Hanging)
+            const carabiner = new THREE.Mesh(carabinerGeo, metalMat.clone()); // Clone for independent highlight
+            carabiner.rotation.z = Math.PI / 8;
+            group.add(carabiner);
+
+            group.userData = {
                 label: pos.label,
                 baseScale: 1,
-                id: i
+                id: i,
+                targetMesh: carabiner // Highlight this part
             };
-            anchorsGroup.add(anchor);
-
-            // Add a subtle pulse ring
-            const ringGeo = new THREE.TorusGeometry(1.2, 0.05, 8, 32);
-            const ring = new THREE.Mesh(ringGeo, anchorMat);
-            ring.rotation.x = Math.PI/2;
-            anchor.add(ring);
-            anchor.userData.ring = ring;
+            anchorsGroup.add(group);
         });
         scene.add(anchorsGroup);
 
 
-        // --- The Summit (Campsite) ---
+        // --- The Summit (Grounded Platform) ---
         const summitGroup = new THREE.Group();
         summitGroup.position.set(0, 130, -10); // Top of cliff
 
-        // 1. Tent (Low Poly Pyramid)
-        const tentGeo = new THREE.ConeGeometry(4, 5, 4);
-        const tentMat = new THREE.MeshStandardMaterial({ color: 0xe0c9a6, flatShading: true });
-        const tent = new THREE.Mesh(tentGeo, tentMat);
-        tent.position.set(-5, 2.5, 0);
-        tent.rotation.y = Math.PI / 4;
-        summitGroup.add(tent);
+        // 1. Summit Platform (Flat Rock)
+        // A flattened box or cylinder sticking out
+        const platformGeo = new THREE.CylinderGeometry(15, 12, 5, 8);
+        const platformMat = new THREE.MeshStandardMaterial({
+            color: 0xd0d0d0, // Grey rock
+            flatShading: true,
+            roughness: 0.9
+        });
+        const platform = new THREE.Mesh(platformGeo, platformMat);
+        platform.position.y = -2.5; // Top surface at y=0
+        summitGroup.add(platform);
 
-        // 2. Campfire
+        // 2. Tent (Refined Low Poly)
+        const tentGroup = new THREE.Group();
+        tentGroup.position.set(-3, 0, 2);
+
+        // Tent Body
+        const tentBodyGeo = new THREE.ConeGeometry(3, 4, 4, 1, true); // Open bottom
+        const tentMat = new THREE.MeshStandardMaterial({ color: 0xe0c9a6, flatShading: true, side: THREE.DoubleSide });
+        const tentBody = new THREE.Mesh(tentBodyGeo, tentMat);
+        tentBody.position.y = 2;
+        tentBody.rotation.y = Math.PI / 4;
+        tentBody.scale.z = 0.8; // Flatten slightly
+        tentGroup.add(tentBody);
+
+        // Tent Poles
+        const poleGeo = new THREE.CylinderGeometry(0.05, 0.05, 5);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const pole1 = new THREE.Mesh(poleGeo, poleMat);
+        pole1.rotation.z = 0.5;
+        pole1.position.y = 2;
+        pole1.position.x = -0.8;
+        const pole2 = new THREE.Mesh(poleGeo, poleMat);
+        pole2.rotation.z = -0.5;
+        pole2.position.y = 2;
+        pole2.position.x = 0.8;
+        tentGroup.add(pole1);
+        tentGroup.add(pole2);
+
+        summitGroup.add(tentGroup);
+
+        // 3. Campfire (Enhanced)
         const fireGroup = new THREE.Group();
-        fireGroup.position.set(2, 0, 2);
+        fireGroup.position.set(4, 0, 2);
 
-        // Logs
-        const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 2);
+        // Logs (Star pattern)
+        const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 2.5);
         const logMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-        for(let i=0; i<3; i++) {
+        for(let i=0; i<5; i++) {
             const log = new THREE.Mesh(logGeo, logMat);
             log.rotation.z = Math.PI / 2;
-            log.rotation.y = (i / 3) * Math.PI;
+            log.rotation.x = Math.PI / 8; // Tilt up
+            log.rotation.y = (i / 5) * Math.PI * 2;
             fireGroup.add(log);
         }
 
+        // Stones circle
+        const stoneGeo = new THREE.DodecahedronGeometry(0.4);
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+        for(let i=0; i<8; i++) {
+            const stone = new THREE.Mesh(stoneGeo, stoneMat);
+            const angle = (i/8)*Math.PI*2;
+            stone.position.set(Math.cos(angle)*1.5, 0.2, Math.sin(angle)*1.5);
+            fireGroup.add(stone);
+        }
+
         // Fire Light
-        const fireLight = new THREE.PointLight(0xff4500, 2, 20);
-        fireLight.position.y = 2;
+        const fireLight = new THREE.PointLight(0xff4500, 2, 15);
+        fireLight.position.y = 1.5;
         fireGroup.add(fireLight);
 
-        // Fire Particles
+        // Fire Particles (System)
         const firePartGeo = new THREE.BufferGeometry();
-        const firePartCount = 30;
+        const firePartCount = 60;
         const firePos = new Float32Array(firePartCount * 3);
         const fireSpeeds = [];
+        const fireSizes = [];
 
         for(let i=0; i<firePartCount; i++) {
-            firePos[i*3] = (Math.random()-0.5);
+            firePos[i*3] = (Math.random()-0.5) * 0.8;
             firePos[i*3+1] = Math.random() * 2;
-            firePos[i*3+2] = (Math.random()-0.5);
-            fireSpeeds.push(0.05 + Math.random() * 0.1);
+            firePos[i*3+2] = (Math.random()-0.5) * 0.8;
+            fireSpeeds.push(0.04 + Math.random() * 0.08);
+            fireSizes.push(0.2 + Math.random() * 0.3);
         }
         firePartGeo.setAttribute('position', new THREE.BufferAttribute(firePos, 3));
+        firePartGeo.setAttribute('size', new THREE.Float32BufferAttribute(fireSizes, 1)); // Custom size attr (needs shader or simple size)
 
+        // Simple PointsMaterial with size attenuation is easiest
         const firePartMat = new THREE.PointsMaterial({
             color: 0xffaa00,
             size: 0.3,
             transparent: true,
             opacity: 0.8,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
         });
         const fireParticles = new THREE.Points(firePartGeo, firePartMat);
         fireGroup.add(fireParticles);
@@ -747,40 +811,53 @@
 
             // 1. Camera Ascent
             const scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight || 1);
-            // Height mapping: 0 -> 0, 100% -> Summit (130)
-            const targetCamY = scrollPct * 135;
+            // Height mapping: 0 -> 0, 100% -> Summit (130) + extra to look down at fire
+            // Target Y: Summit is at 130. We want camera to rise to ~135
+            const targetCamY = scrollPct * 138;
             camera.position.y += (targetCamY - camera.position.y) * 0.05;
 
             // 2. Parallax
             camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
-            camera.lookAt(0, camera.position.y + 5, -15); // Look slightly up
+            // Look target adjustment near summit
+            let lookTargetY = camera.position.y + 5;
+            let lookTargetZ = -15;
 
-            // 3. Anchor Animation
-            anchorsGroup.children.forEach(anchor => {
-                anchor.rotation.y += 0.01;
-                anchor.rotation.z += 0.01;
+            // If near summit (scroll > 90%), look slightly down at the fire
+            if(scrollPct > 0.9) {
+                lookTargetY = 132; // Fire height roughly
+                lookTargetZ = -10;
+            }
 
-                // Pulse Ring
-                if(anchor.userData.ring) {
-                    const s = 1 + Math.sin(time * 3 + anchor.userData.id) * 0.2;
-                    anchor.userData.ring.scale.set(s,s,s);
-                }
+            camera.lookAt(0, lookTargetY, lookTargetZ);
+
+            // 3. Anchor Animation (Carabiners swing?)
+            anchorsGroup.children.forEach(group => {
+                // Sway carabiner
+                const carabiner = group.children[1];
+                carabiner.rotation.z = Math.PI/8 + Math.sin(time * 2 + group.userData.id) * 0.1;
             });
 
             // 4. Raycasting for Anchors
+            // We need to raycast against the CHILDREN (meshes) of the groups
+            const meshesToCheck = [];
+            anchorsGroup.children.forEach(g => meshesToCheck.push(g.children[1])); // Only carabiner
+
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(anchorsGroup.children);
+            const intersects = raycaster.intersectObjects(meshesToCheck);
 
             if (intersects.length > 0) {
-                if (intersectedAnchor != intersects[0].object) {
+                const hitMesh = intersects[0].object;
+                const parentGroup = hitMesh.parent;
+
+                if (intersectedAnchor != parentGroup) {
                     // Hover In
-                    intersectedAnchor = intersects[0].object;
+                    intersectedAnchor = parentGroup;
                     document.body.style.cursor = 'pointer';
-                    tooltip.innerText = intersectedAnchor.userData.label;
+                    tooltip.innerText = parentGroup.userData.label;
                     tooltip.style.opacity = 1;
 
-                    gsap.to(intersectedAnchor.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.3 });
-                    gsap.to(intersectedAnchor.material, { emissiveIntensity: 1, duration: 0.3 });
+                    gsap.to(hitMesh.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 0.3 });
+                    gsap.to(hitMesh.material, { color: 0xffaa00, duration: 0.3 }); // Highlight color
                 }
             } else {
                 if (intersectedAnchor) {
@@ -788,8 +865,9 @@
                     document.body.style.cursor = 'default';
                     tooltip.style.opacity = 0;
 
-                    gsap.to(intersectedAnchor.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
-                    gsap.to(intersectedAnchor.material, { emissiveIntensity: 0.2, duration: 0.3 });
+                    const hitMesh = intersectedAnchor.userData.targetMesh;
+                    gsap.to(hitMesh.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
+                    gsap.to(hitMesh.material, { color: config.anchorColor, duration: 0.3 });
 
                     intersectedAnchor = null;
                 }
@@ -801,10 +879,10 @@
                 // y += speed
                 positions[i*3 + 1] += fireSpeeds[i];
                 // reset if too high
-                if(positions[i*3 + 1] > 4) {
+                if(positions[i*3 + 1] > 3.5) {
                     positions[i*3 + 1] = 0;
-                    positions[i*3] = (Math.random()-0.5); // reset x
-                    positions[i*3+2] = (Math.random()-0.5); // reset z
+                    positions[i*3] = (Math.random()-0.5) * 0.8; // reset x
+                    positions[i*3+2] = (Math.random()-0.5) * 0.8; // reset z
                 }
             }
             fireParticles.geometry.attributes.position.needsUpdate = true;
