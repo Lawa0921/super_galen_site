@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Nunito:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Nunito:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -31,10 +31,10 @@
         :root {
             /* Palette: Editorial Chic */
             --c-bg: #F9F8F6;       /* Editorial White */
-            --c-text: #2C2C2C;     /* Deep Charcoal */
-            --c-accent: #78C0A8;   /* Muted Green */
-            --c-warm: #E2B57B;     /* Champagne Gold */
-            --c-cool: #87CEEB;     /* Airy Blue */
+            --c-text: #1a1a1a;     /* Deepest Charcoal */
+            --c-accent: #6aa890;   /* Stronger Sage Green */
+            --c-warm: #d4a362;     /* Darker Champagne */
+            --c-cool: #6fb5d6;     /* Muted Blue */
 
             --f-serif: 'Noto Serif TC', serif;
             --f-display: 'Playfair Display', serif;
@@ -42,6 +42,9 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { font-size: 18px; } /* Base scale up */
+        @media(max-width: 768px) { html { font-size: 16px; } }
 
         body {
             background-color: var(--c-bg);
@@ -55,12 +58,12 @@
         /* --- Global Layers --- */
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; pointer-events: none; opacity: 0.6;
+            z-index: 0; pointer-events: none; opacity: 0.5; /* Reduced for legibility */
         }
 
         #noise-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 1; pointer-events: none; opacity: 0.05;
+            z-index: 1; pointer-events: none; opacity: 0.04;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
         }
 
@@ -70,62 +73,88 @@
         /* --- Sections --- */
         .section {
             min-height: 100vh;
-            padding: 8rem 2rem;
+            padding: 6rem 2rem;
             display: flex; flex-direction: column; justify-content: center;
             position: relative;
         }
 
         .container {
-            max-width: 1200px; width: 100%; margin: 0 auto;
+            max-width: 1300px; width: 100%; margin: 0 auto;
             position: relative;
         }
 
         /* --- Typography --- */
+        .reveal-text { overflow: hidden; display: block; }
+        .reveal-inner { display: block; transform: translateY(100%); }
+
         h1 {
             font-family: var(--f-display);
-            font-size: clamp(4rem, 10vw, 8rem);
+            font-size: clamp(4rem, 13vw, 10rem); /* Massive */
             font-weight: 400;
-            line-height: 1;
+            line-height: 0.9;
             margin-bottom: 2rem;
-            letter-spacing: -0.03em;
+            letter-spacing: -0.04em;
             color: var(--c-text);
-            will-change: transform; /* For magnetic effect */
+            will-change: transform;
         }
 
         .sub-heading {
             font-family: var(--f-sans);
-            font-weight: 700;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 0.9rem;
+            letter-spacing: 0.15em;
+            font-size: 1rem;
             margin-bottom: 1.5rem;
             color: var(--c-accent);
             display: flex; align-items: center; gap: 1rem;
         }
         .sub-heading::before {
-            content: ''; width: 40px; height: 1px; background: var(--c-accent);
+            content: ''; width: 60px; height: 2px; background: var(--c-accent);
         }
 
         p.lead {
-            font-size: clamp(1.2rem, 3vw, 1.8rem);
-            font-weight: 300;
-            max-width: 35ch;
-            line-height: 1.4;
-            margin-bottom: 4rem;
+            font-size: clamp(1.3rem, 4vw, 2rem); /* Larger */
+            font-weight: 400; /* Bolder */
+            max-width: 40ch;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+            color: #000; /* Max contrast */
         }
 
         /* --- Components --- */
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: var(--f-sans); font-weight: 700; font-size: 0.9rem;
+            font-family: var(--f-sans); font-weight: 900; font-size: 1rem;
             color: var(--c-text); text-decoration: none;
             display: flex; align-items: center; gap: 0.5rem;
             pointer-events: auto; opacity: 0;
+            background: rgba(255,255,255,0.8);
+            padding: 0.5rem 1rem; border-radius: 50px;
+            backdrop-filter: blur(5px);
         }
-        .nav-line { width: 0px; height: 1px; background: var(--c-text); transition: width 0.3s; }
-        .nav-fixed:hover .nav-line { width: 20px; }
+        .nav-line { width: 10px; height: 2px; background: var(--c-text); transition: width 0.3s; }
+        .nav-fixed:hover .nav-line { width: 30px; }
 
-        /* Liquid Image Container */
+        /* Liquid Avatar in Hero */
+        .hero-layout {
+            display: grid; grid-template-columns: 1fr; gap: 2rem;
+            align-items: center; min-height: 60vh;
+        }
+        @media(min-width: 900px) {
+            .hero-layout { grid-template-columns: 1.2fr 0.8fr; }
+        }
+
+        .avatar-liquid-wrapper {
+            width: 100%; aspect-ratio: 1 / 1;
+            max-width: 500px;
+            position: relative;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        .avatar-liquid-wrapper canvas { width: 100%; height: 100%; border-radius: 50%; }
+
+        /* Distortion Image (Scene) */
         .distortion-wrapper {
             width: 100%; height: 70vh;
             margin: 4rem 0;
@@ -133,43 +162,44 @@
             overflow: hidden;
             border-radius: 4px;
         }
-        .distortion-wrapper canvas {
-            display: block; width: 100%; height: 100%;
-        }
+        .distortion-wrapper canvas { display: block; width: 100%; height: 100%; }
 
         /* Methodology */
         .method-section {
             display: grid; grid-template-columns: 1fr; gap: 4rem;
             align-items: start; min-height: 150vh;
         }
-        @media(min-width: 900px) { .method-section { grid-template-columns: 0.8fr 1.2fr; } }
+        @media(min-width: 900px) { .method-section { grid-template-columns: 0.7fr 1.3fr; } }
 
         .method-nav {
-            position: sticky; top: 20vh;
-            display: flex; flex-direction: column; gap: 2rem;
+            position: sticky; top: 15vh;
+            display: flex; flex-direction: column; gap: 1.5rem;
         }
         .method-step {
-            font-family: var(--f-sans); font-size: 2rem; font-weight: 700;
-            color: rgba(0,0,0,0.2); transition: color 0.3s, transform 0.3s;
+            font-family: var(--f-sans); font-size: 2.5rem; font-weight: 700;
+            color: rgba(0,0,0,0.15); transition: color 0.3s, transform 0.3s;
             cursor: pointer;
         }
         .method-step.active { color: var(--c-text); transform: translateX(20px); }
 
-        .method-content { padding-top: 10vh; }
+        .method-content { padding-top: 5vh; }
         .method-card {
-            background: white; padding: 4rem; margin-bottom: 4rem;
-            border-radius: 2px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.05);
-            opacity: 0.5; transition: opacity 0.5s;
+            background: rgba(255, 255, 255, 0.8); /* More opacity */
+            backdrop-filter: blur(20px);
+            padding: 4rem; margin-bottom: 4rem;
+            border-radius: 4px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.08); /* Softer shadow */
+            opacity: 0.3; transition: opacity 0.5s, transform 0.5s;
+            border: 1px solid rgba(0,0,0,0.05);
         }
-        .method-card.active { opacity: 1; }
+        .method-card.active { opacity: 1; transform: scale(1.02); }
 
-        /* Social Icons (Magnetic) */
+        /* Social Icons */
         .social-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 60px; height: 60px;
-            border-radius: 50%; border: 1px solid var(--c-text);
-            color: var(--c-text); font-size: 1.5rem;
+            width: 80px; height: 80px;
+            border-radius: 50%; border: 2px solid var(--c-text);
+            color: var(--c-text); font-size: 2rem;
             margin: 0 1rem; text-decoration: none;
             transition: color 0.3s, background 0.3s;
         }
@@ -177,14 +207,28 @@
 
         /* Analyst Log */
         .log-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem; margin-top: 4rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 3rem; margin-top: 4rem;
         }
         .log-item {
-            border-top: 1px solid var(--c-accent); padding-top: 2rem;
+            background: white; padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
         }
+        .log-item:hover { transform: translateY(-5px); }
         .log-date {
-            font-family: var(--f-sans); font-size: 0.8rem; color: var(--c-accent); display: block; margin-bottom: 1rem;
+            font-family: var(--f-sans); font-size: 0.9rem; font-weight: 700; color: var(--c-accent); display: block; margin-bottom: 1rem;
+        }
+
+        /* Mobile Tweaks */
+        @media(max-width: 900px) {
+            .section { padding: 4rem 1.5rem; }
+            h1 { font-size: 4rem; }
+            .hero-layout { display: flex; flex-direction: column-reverse; }
+            .avatar-liquid-wrapper { max-width: 300px; margin-bottom: 2rem; }
+            .method-nav { display: none; } /* Hide pinned nav on mobile */
+            .method-section { display: block; }
+            .method-card { opacity: 1; margin-bottom: 2rem; padding: 2rem; }
         }
 
     </style>
@@ -200,37 +244,54 @@
 
     <div class="scroller">
 
-        <!-- 1. Hero -->
-        <section class="section" style="justify-content: flex-end; padding-bottom: 10vh;">
+        <!-- 1. Hero: Bold & Liquid -->
+        <section class="section">
             <div class="container interactive-layer">
-                <div class="sub-heading reveal-text"><span class="reveal-inner">HUMAN STATE ANALYST</span></div>
+                <div class="hero-layout">
 
-                <h1 class="magnetic-target">THE OBSERVATION<br>OF QUIET SOULS.</h1>
+                    <!-- Text Side -->
+                    <div>
+                        <div class="sub-heading reveal-text"><span class="reveal-inner">HUMAN STATE ANALYST</span></div>
 
-                <div style="margin-top: 4rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 2rem;">
-                    <p class="lead reveal-text">
-                        <span class="reveal-inner">
-                            人體狀態觀察分析師。<br>
-                            康樂股長，魔人揪揪。<br>
-                            氫氫敲醒你的心靈。
-                        </span>
-                    </p>
-                    <div class="reveal-text" style="text-align: right;">
-                        <span class="reveal-inner" style="font-family: var(--f-sans); font-size: 0.9rem; color: var(--c-accent);">
-                            SCROLL TO ANALYZE ↓
-                        </span>
+                        <h1 class="magnetic-target">
+                            THE<br>OBSERVER.
+                        </h1>
+
+                        <p class="lead reveal-text">
+                            <span class="reveal-inner">
+                                人體狀態觀察分析師。<br>
+                                康樂股長，魔人揪揪。<br>
+                                <span style="color: var(--c-accent); font-weight: 700;">"Hydrogen knocking on your soul."</span>
+                            </span>
+                        </p>
+
+                        <div class="reveal-text">
+                            <span class="reveal-inner" style="font-family: var(--f-sans); font-weight: 700; font-size: 1rem; color: var(--c-text); border-bottom: 2px solid var(--c-text); padding-bottom: 5px;">
+                                SCROLL TO ANALYZE ↓
+                            </span>
+                        </div>
                     </div>
+
+                    <!-- Visual Side (Liquid Avatar) -->
+                    <div style="display: flex; justify-content: center; align-items: center;">
+                        <div class="avatar-liquid-wrapper" id="liquid-avatar">
+                            <!-- WebGL Injected -->
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
 
         <!-- 2. Philosophy -->
-        <section class="section" style="padding: 0;">
+        <section class="section">
             <div class="container interactive-layer">
-                <div style="padding: 4rem 0;">
+                <div style="background: white; padding: 4rem; box-shadow: 0 20px 60px rgba(0,0,0,0.05);">
                     <div class="sub-heading">CORE PHILOSOPHY</div>
-                    <h2 style="font-family: var(--f-display); font-size: 4rem; margin-bottom: 2rem;">SAFE HAVEN</h2>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; max-width: 900px;">
+                    <h2 style="font-family: var(--f-display); font-size: clamp(3rem, 6vw, 5rem); margin-bottom: 2rem; line-height: 1.1;">
+                        SAFE HAVEN<br><span style="color: var(--c-accent); font-style: italic;">PROTOCOL.</span>
+                    </h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4rem;">
                         <p>這是一個可以停下來、坐一下的地方。有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。</p>
                         <p>不是為了任何目的，也不需要報名或承諾。如果你剛好想參與、想一起感受，就可以私訊我。</p>
                     </div>
@@ -239,14 +300,14 @@
         </section>
 
         <!-- 3. Resonance Archive (Liquid Image) -->
-        <section class="section">
+        <section class="section" style="padding: 0;">
             <div class="container interactive-layer">
-                <div class="sub-heading">RESONANCE ARCHIVE</div>
                 <div class="distortion-wrapper" id="liquid-image">
                     <!-- WebGL Canvas injected here -->
                 </div>
-                <div style="text-align: right; font-family: var(--f-sans); font-size: 0.9rem; margin-top: 1rem;">
-                    FIG 01. GATHERING MOMENT // INTERACTIVE
+                <div style="padding: 2rem; text-align: right;">
+                    <div class="sub-heading" style="justify-content: flex-end;">RESONANCE ARCHIVE</div>
+                    <p>FIG 01. GATHERING MOMENT // INTERACTIVE</p>
                 </div>
             </div>
         </section>
@@ -268,18 +329,18 @@
                     <div class="method-content">
 
                         <div class="method-card" id="m1">
-                            <h3 style="font-family: var(--f-display); font-size: 2.5rem; margin-bottom: 1rem;">The Silent Observer</h3>
-                            <p>無聲地觀察每個人的狀態與需求。在熱鬧的背後，往往藏著最需要被看見的靈魂。我不看鏡頭，我看見空間與氛圍。</p>
+                            <h3 style="font-family: var(--f-display); font-size: 3rem; margin-bottom: 1.5rem;">The Silent Observer</h3>
+                            <p style="font-size: 1.2rem;">無聲地觀察每個人的狀態與需求。在熱鬧的背後，往往藏著最需要被看見的靈魂。我不看鏡頭，我看見空間與氛圍。</p>
                         </div>
 
                         <div class="method-card" id="m2">
-                            <h3 style="font-family: var(--f-display); font-size: 2.5rem; margin-bottom: 1rem;">Frequency Tuning</h3>
-                            <p>解構情緒，調配出最適合當下的氛圍。如同氫原子輕輕撞擊，喚醒沉睡的靈魂。讓每個人都能找到屬於自己的舒適頻率。</p>
+                            <h3 style="font-family: var(--f-display); font-size: 3rem; margin-bottom: 1.5rem;">Frequency Tuning</h3>
+                            <p style="font-size: 1.2rem;">解構情緒，調配出最適合當下的氛圍。如同氫原子輕輕撞擊，喚醒沉睡的靈魂。讓每個人都能找到屬於自己的舒適頻率。</p>
                         </div>
 
                         <div class="method-card" id="m3">
-                            <h3 style="font-family: var(--f-display); font-size: 2.5rem; margin-bottom: 1rem;">Connection Protocol</h3>
-                            <p>魔人揪揪出動！將孤單的靈魂串連起來。創造一個沒有壓力、自由進出的聚會空間。這裡只留一個空間給願意的人。</p>
+                            <h3 style="font-family: var(--f-display); font-size: 3rem; margin-bottom: 1.5rem;">Connection Protocol</h3>
+                            <p style="font-size: 1.2rem;">魔人揪揪出動！將孤單的靈魂串連起來。創造一個沒有壓力、自由進出的聚會空間。這裡只留一個空間給願意的人。</p>
                         </div>
 
                     </div>
@@ -288,21 +349,24 @@
             </div>
         </section>
 
-        <!-- 5. Analyst's Log (New) -->
+        <!-- 5. Analyst's Log -->
         <section class="section">
             <div class="container interactive-layer">
                 <div class="sub-heading">ANALYST'S LOG</div>
                 <div class="log-grid">
                     <div class="log-item">
                         <span class="log-date">ENTRY 001: SAFETY</span>
+                        <h4 style="font-family: var(--f-display); font-size: 1.5rem; margin-bottom: 1rem;">Atmosphere Check</h4>
                         <p>一個累的人看到頁面，會不會想停下來？文字與氛圍有沒有柔軟、溫暖？空間感與留白夠不夠？</p>
                     </div>
                     <div class="log-item">
                         <span class="log-date">ENTRY 002: FREEDOM</span>
+                        <h4 style="font-family: var(--f-display); font-size: 1.5rem; margin-bottom: 1rem;">Voluntary Basis</h4>
                         <p>每個人都可以自由選擇。沒有強迫，只有邀請。這就是避風港的核心價值。</p>
                     </div>
                     <div class="log-item">
                         <span class="log-date">ENTRY 003: WARMTH</span>
+                        <h4 style="font-family: var(--f-display); font-size: 1.5rem; margin-bottom: 1rem;">Fuel Source</h4>
                         <p>喜歡可愛人事物星人。熱情、船、與人相處的感覺。這是我靈魂的燃料。</p>
                     </div>
                 </div>
@@ -312,7 +376,7 @@
         <!-- 6. Footer -->
         <section class="section" style="text-align: center;">
             <div class="container interactive-layer">
-                <h2 style="font-family: var(--f-display); font-size: 3rem; margin-bottom: 3rem;">Ready to Sync?</h2>
+                <h2 style="font-family: var(--f-display); font-size: 4rem; margin-bottom: 4rem;">Ready to Sync?</h2>
 
                 <div style="display: flex; justify-content: center; margin-bottom: 4rem;">
                     <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link magnetic-btn">
@@ -323,7 +387,7 @@
                     </a>
                 </div>
 
-                <div style="opacity: 0.5; font-family: var(--f-sans); font-size: 0.8rem;">
+                <div style="opacity: 0.6; font-family: var(--f-sans); font-size: 0.9rem; letter-spacing: 0.05em;">
                     SAFETY PROTOCOL: FREEDOM OF CHOICE ACTIVE.<br>
                     ALL INTERACTIONS ARE VOLUNTARY.
                 </div>
@@ -346,40 +410,42 @@
         // 1. Hero Reveal
         const tl = gsap.timeline({ defaults: { ease: "power4.out", duration: 1.5 } });
         tl.to('.nav-fixed', { opacity: 1, duration: 1 })
-          .to('.reveal-inner', { y: '0%', stagger: 0.15 }, "-=0.5");
+          .to('.reveal-inner', { y: '0%', stagger: 0.1 }, "-=0.5");
 
-        // 2. Magnetic Effect (Title & Buttons)
-        window.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth) - 0.5;
-            const y = (e.clientY / window.innerHeight) - 0.5;
+        // 2. Magnetic Effect (Disable on Touch)
+        if (window.matchMedia("(hover: hover)").matches) {
+            window.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth) - 0.5;
+                const y = (e.clientY / window.innerHeight) - 0.5;
 
-            // Update WebGL Mouse
-            mouse.x = e.clientX / window.innerWidth;
-            mouse.y = 1.0 - (e.clientY / window.innerHeight);
+                // Update WebGL Mouse
+                mouse.x = e.clientX / window.innerWidth;
+                mouse.y = 1.0 - (e.clientY / window.innerHeight);
 
-            // Magnetic Text
-            gsap.to('.magnetic-target', { x: x * 30, y: y * 30, duration: 1, ease: "power2.out" });
+                // Magnetic Text
+                gsap.to('.magnetic-target', { x: x * 40, y: y * 40, duration: 1, ease: "power2.out" });
 
-            // Magnetic Buttons (Close range)
-            document.querySelectorAll('.magnetic-btn').forEach(btn => {
-                const rect = btn.getBoundingClientRect();
-                const centerX = rect.left + rect.width/2;
-                const centerY = rect.top + rect.height/2;
-                const dist = Math.hypot(e.clientX - centerX, e.clientY - centerY);
+                // Magnetic Buttons
+                document.querySelectorAll('.magnetic-btn').forEach(btn => {
+                    const rect = btn.getBoundingClientRect();
+                    const centerX = rect.left + rect.width/2;
+                    const centerY = rect.top + rect.height/2;
+                    const dist = Math.hypot(e.clientX - centerX, e.clientY - centerY);
 
-                if(dist < 100) {
-                    gsap.to(btn, {
-                        x: (e.clientX - centerX) * 0.3,
-                        y: (e.clientY - centerY) * 0.3,
-                        duration: 0.5
-                    });
-                } else {
-                    gsap.to(btn, { x: 0, y: 0, duration: 0.5 });
-                }
+                    if(dist < 120) {
+                        gsap.to(btn, {
+                            x: (e.clientX - centerX) * 0.3,
+                            y: (e.clientY - centerY) * 0.3,
+                            duration: 0.5
+                        });
+                    } else {
+                        gsap.to(btn, { x: 0, y: 0, duration: 0.5 });
+                    }
+                });
             });
-        });
+        }
 
-        // 3. Methodology Pinning
+        // 3. Methodology Pinning (Desktop Only)
         if (window.innerWidth > 900) {
             ScrollTrigger.create({
                 trigger: ".method-section",
@@ -390,6 +456,7 @@
             });
         }
 
+        // Active Step Highlighting
         const cards = document.querySelectorAll('.method-card');
         const steps = document.querySelectorAll('.method-step');
 
@@ -433,10 +500,7 @@
 
         const bgMaterial = new THREE.ShaderMaterial({
             uniforms: bgUniforms,
-            vertexShader: `
-                varying vec2 vUv;
-                void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
-            `,
+            vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
             fragmentShader: `
                 uniform float time;
                 uniform vec2 mouse;
@@ -445,17 +509,13 @@
                 varying vec2 vUv;
 
                 void main() {
-                    // Fluid motion
                     float t = time * 0.2;
                     float flow = sin(vUv.x * 4.0 + t) * 0.2 + cos(vUv.y * 3.0 + t) * 0.2;
-
-                    // Mouse influence
                     float dist = distance(vUv, mouse);
-                    float ripple = smoothstep(0.5, 0.0, dist) * 0.2;
+                    float ripple = smoothstep(0.5, 0.0, dist) * 0.15;
 
                     float mixFactor = vUv.y + flow + ripple;
                     vec3 finalColor = mix(colorA, colorB, clamp(mixFactor, 0.0, 1.0));
-
                     gl_FragColor = vec4(finalColor, 1.0);
                 }
             `
@@ -465,128 +525,102 @@
         scene.add(plane);
 
 
-        // --- Three.js 2: Liquid Image Distortion ---
-        // We create a separate scene/renderer for the image div to keep it localized
-        const imgContainer = document.getElementById('liquid-image');
+        // --- Three.js 2: Liquid Texture Effect (Reusable) ---
+        function createLiquidEffect(containerId, imgPath) {
+            const el = document.getElementById(containerId);
+            if(!el) return;
 
-        // Wait for container layout
-        setTimeout(() => {
-            initLiquidImage();
-        }, 100);
+            const w = el.clientWidth;
+            const h = el.clientHeight;
+            const lScene = new THREE.Scene();
+            const lCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const lRenderer = new THREE.WebGLRenderer({ alpha: true });
+            lRenderer.setSize(w, h);
+            el.appendChild(lRenderer.domElement);
 
-        function initLiquidImage() {
-            if(!imgContainer) return;
-            const w = imgContainer.clientWidth;
-            const h = imgContainer.clientHeight;
-
-            const imgScene = new THREE.Scene();
-            const imgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            const imgRenderer = new THREE.WebGLRenderer({ alpha: true });
-            imgRenderer.setSize(w, h);
-            imgContainer.appendChild(imgRenderer.domElement);
-
-            // Texture
-            const loader = new THREE.TextureLoader();
-            const texture = loader.load('/assets/img/guild/nekopapaya/scene.webp');
-
-            const imgUniforms = {
+            const texture = new THREE.TextureLoader().load(imgPath);
+            const uniforms = {
                 uTexture: { value: texture },
                 uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-                uVelo: { value: 0.0 }, // velocity of mouse
+                uVelo: { value: 0.0 },
                 uTime: { value: 0 }
             };
 
-            const imgMaterial = new THREE.ShaderMaterial({
-                uniforms: imgUniforms,
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
-                `,
+            const material = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
                 fragmentShader: `
                     uniform sampler2D uTexture;
                     uniform vec2 uMouse;
                     uniform float uVelo;
                     uniform float uTime;
                     varying vec2 vUv;
-
                     void main() {
                         vec2 uv = vUv;
-
-                        // Distance from mouse
                         float dist = distance(uv, uMouse);
-
-                        // Ripple effect based on distance and velocity
-                        float ripple = sin(dist * 20.0 - uTime * 2.0) * 0.02 * uVelo * smoothstep(0.5, 0.0, dist);
-
+                        float ripple = sin(dist * 20.0 - uTime * 3.0) * 0.02 * uVelo * smoothstep(0.5, 0.0, dist);
                         uv += ripple;
-
-                        vec4 color = texture2D(uTexture, uv);
-                        gl_FragColor = color;
+                        gl_FragColor = texture2D(uTexture, uv);
                     }
                 `
             });
 
-            const imgPlane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), imgMaterial);
-            imgScene.add(imgPlane);
+            lScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
 
-            // Interaction for this canvas
             let currentMouse = new THREE.Vector2(0.5, 0.5);
             let targetMouse = new THREE.Vector2(0.5, 0.5);
             let velo = 0;
 
-            imgContainer.addEventListener('mousemove', (e) => {
-                const rect = imgContainer.getBoundingClientRect();
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
                 targetMouse.x = (e.clientX - rect.left) / rect.width;
                 targetMouse.y = 1.0 - (e.clientY - rect.top) / rect.height;
-                velo = 1.0; // Trigger ripple on move
+                velo = 1.5;
             });
+            el.addEventListener('mouseleave', () => velo = 0);
 
-            imgContainer.addEventListener('mouseleave', () => {
-                velo = 0;
-            });
-
-            // Animation Loop for Image
-            function animateImage() {
-                requestAnimationFrame(animateImage);
-
-                // Lerp mouse
+            // Return tick function
+            return () => {
                 currentMouse.lerp(targetMouse, 0.1);
-                imgUniforms.uMouse.value = currentMouse;
-
-                // Decay velocity
+                uniforms.uMouse.value = currentMouse;
                 velo *= 0.95;
-                imgUniforms.uVelo.value = velo;
-                imgUniforms.uTime.value += 0.05;
-
-                imgRenderer.render(imgScene, imgCamera);
-            }
-            animateImage();
+                uniforms.uVelo.value = velo;
+                uniforms.uTime.value += 0.05;
+                lRenderer.render(lScene, lCamera);
+            };
         }
+
+        // Init Liquid Effects
+        // 1. Avatar (Hero)
+        const updateAvatar = createLiquidEffect('liquid-avatar', '/assets/img/guild/nekopapaya/avatar.webp');
+        // 2. Archive (Scene)
+        const updateScene = createLiquidEffect('liquid-image', '/assets/img/guild/nekopapaya/scene.webp');
 
 
         // --- Main Animation Loop ---
         const clock = new THREE.Clock();
         const palettes = [
             { a: new THREE.Color(0xF9F8F6), b: new THREE.Color(0xE8E2D9) },
-            { a: new THREE.Color(0xE8F6F3), b: new THREE.Color(0x78C0A8) },
-            { a: new THREE.Color(0xEBF5FB), b: new THREE.Color(0x87CEEB) },
-            { a: new THREE.Color(0xFCF3CF), b: new THREE.Color(0xE2B57B) }
+            { a: new THREE.Color(0xE8F6F3), b: new THREE.Color(0x6aa890) },
+            { a: new THREE.Color(0xEBF5FB), b: new THREE.Color(0x6fb5d6) },
+            { a: new THREE.Color(0xFCF3CF), b: new THREE.Color(0xd4a362) }
         ];
 
         function animateMain() {
             requestAnimationFrame(animateMain);
             const time = clock.getElapsedTime();
 
-            // BG Shader updates
+            // Background
             bgUniforms.time.value = time;
-
             const targetA = palettes[targetColorIndex % palettes.length].a;
             const targetB = palettes[targetColorIndex % palettes.length].b;
-
             bgUniforms.colorA.value.lerp(targetA, 0.02);
             bgUniforms.colorB.value.lerp(targetB, 0.02);
-
             renderer.render(scene, camera);
+
+            // Sub-renderers
+            if(updateAvatar) updateAvatar();
+            if(updateScene) updateScene();
         }
         animateMain();
 
