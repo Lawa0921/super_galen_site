@@ -71,7 +71,7 @@
 <body class="antialiased selection:bg-cyan-500 selection:text-white">
 
     <!-- Loading Overlay -->
-    <div id="loader" class="fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-1000">
+    <div id="loader" class="fixed inset-0 z-50 bg-black flex items-center justify-center transition-opacity duration-1000 pointer-events-none">
         <div class="text-xs tracking-[0.3em] font-bold animate-pulse text-cyan-500">CALIBRATING SHUTTER...</div>
     </div>
 
@@ -92,12 +92,12 @@
         <!-- Hero Section -->
         <section class="min-h-screen flex flex-col justify-center items-center px-6 relative">
             <div class="text-center space-y-6 max-w-4xl mx-auto">
-                <p class="text-xs md:text-sm tracking-[0.3em] text-cyan-400 reveal-text">STUDENT | CREATOR | RIDER</p>
-                <h1 class="text-5xl md:text-8xl font-black tracking-tighter leading-none mix-blend-overlay reveal-text">
+                <p class="text-xs md:text-sm tracking-[0.3em] text-cyan-400 reveal-text opacity-0 translate-y-12">STUDENT | CREATOR | RIDER</p>
+                <h1 class="text-5xl md:text-8xl font-black tracking-tighter leading-none mix-blend-overlay reveal-text opacity-0 translate-y-12">
                     FOCUS &<br>
                     <span class="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">VELOCITY</span>
                 </h1>
-                <p class="max-w-md mx-auto text-sm md:text-base text-gray-400 leading-relaxed reveal-text font-light tracking-wide pt-4">
+                <p class="max-w-md mx-auto text-sm md:text-base text-gray-400 leading-relaxed reveal-text opacity-0 translate-y-12 font-light tracking-wide pt-4">
                     Exploring life through different focal lengths at high speed.
                 </p>
             </div>
@@ -113,15 +113,19 @@
             <div class="container mx-auto grid md:grid-cols-2 gap-12 items-center">
                 <div class="order-2 md:order-1 relative group">
                     <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/20 to-purple-500/20 rounded-lg blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    <img src="/assets/img/guild/mian/avatar.webp" alt="Through the Lens" class="relative glass-panel p-2 w-full max-w-md mx-auto aspect-[4/5] object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
+                    <!-- Added width/height/loading/onerror for robustness -->
+                    <img src="/assets/img/guild/mian/avatar.webp" width="640" height="800" loading="lazy"
+                         alt="Through the Lens"
+                         class="relative glass-panel p-2 w-full max-w-md mx-auto aspect-[4/5] object-cover grayscale group-hover:grayscale-0 transition-all duration-700 bg-gray-900 reveal-content opacity-0 translate-y-8"
+                         onerror="this.style.display='none'">
                     <div class="absolute -bottom-4 -right-4 text-6xl font-black text-white/5 select-none z-[-1]">01</div>
                 </div>
                 <div class="order-1 md:order-2 space-y-8 pl-0 md:pl-12">
-                    <div class="space-y-2">
+                    <div class="space-y-2 reveal-content opacity-0 translate-y-8">
                         <span class="text-xs tracking-[0.2em] text-cyan-400/80">01 / OPTICS</span>
                         <h2 class="text-4xl md:text-6xl font-bold tracking-tight">The Lens</h2>
                     </div>
-                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group">
+                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group reveal-content opacity-0 translate-y-8">
                         <div class="absolute top-0 left-0 w-1 h-full bg-cyan-500/50 transform origin-top scale-y-0 group-hover:scale-y-100 transition-transform duration-500"></div>
                         <p class="text-gray-100 leading-relaxed text-justify font-light tracking-wide">
                             我是 Mian，一名努力探索人生可能的大二學生。目前在相機店打工，每天接觸各式各樣的鏡頭與器材。
@@ -130,7 +134,7 @@
                             這份工作讓我學會從不同的焦距觀察世界。無論是 35mm 街拍的親密感，還是 85mm 人像的壓縮感，每一顆鏡頭都在訴說不同的故事。我對攝影美學的理解，正如光圈與快門的組合，是在無數次嘗試中找到最完美的平衡。
                         </p>
                     </div>
-                    <div class="flex gap-4 text-xs tracking-widest text-gray-500">
+                    <div class="flex gap-4 text-xs tracking-widest text-gray-500 reveal-content opacity-0 translate-y-8">
                         <span>#SONY</span>
                         <span>#FUJIFILM</span>
                         <span>#35MM</span>
@@ -143,11 +147,11 @@
         <section class="min-h-screen flex items-center py-24 px-6 relative" id="craft">
             <div class="container mx-auto grid md:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8 pr-0 md:pr-12 relative z-10">
-                    <div class="space-y-2 text-right md:text-left">
+                    <div class="space-y-2 text-right md:text-left reveal-content opacity-0 translate-y-8">
                         <span class="text-xs tracking-[0.2em] text-orange-400/80">02 / CRAFT</span>
                         <h2 class="text-4xl md:text-6xl font-bold tracking-tight">The Workshop</h2>
                     </div>
-                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group">
+                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group reveal-content opacity-0 translate-y-8">
                         <div class="absolute top-0 right-0 md:left-0 w-1 h-full bg-orange-500/50 transform origin-bottom scale-y-0 group-hover:scale-y-100 transition-transform duration-500"></div>
                         <p class="text-gray-100 leading-relaxed text-justify font-light tracking-wide">
                             工作之餘，我沉迷於 1/64 模型車的微縮世界。在那方寸之間，我親手改裝每一台小車，從噴漆上色到細節調整，打造獨一無二的作品。
@@ -158,9 +162,11 @@
                     </div>
                     <div class="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[12rem] font-black text-white/[0.02] pointer-events-none">1/64</div>
                 </div>
-                 <div class="relative h-[400px] w-full glass-panel flex items-center justify-center overflow-hidden group">
-                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1594787318286-3d835c1d207f?q=80&w=1000&auto=format&fit=crop')] bg-cover bg-center opacity-40 group-hover:scale-105 transition-transform duration-700"></div>
-                    <div class="relative z-10 text-center">
+                 <!-- Using local image for reliability -->
+                 <div class="relative h-[400px] w-full glass-panel flex items-center justify-center overflow-hidden group reveal-content opacity-0 translate-y-8 bg-gray-900">
+                    <div class="absolute inset-0 bg-cover bg-center opacity-40 group-hover:scale-105 transition-transform duration-700"
+                         style="background-image: url('/assets/img/guild/mian/workshop.webp');"></div>
+                    <div class="relative z-10 text-center pointer-events-none">
                         <i class="fa-solid fa-screwdriver-wrench text-4xl mb-4 text-orange-400"></i>
                         <h3 class="text-xl font-bold tracking-widest">CUSTOMIZATION</h3>
                         <p class="text-xs text-gray-400 mt-2">PRECISION & PATIENCE</p>
@@ -172,19 +178,19 @@
         <!-- Section 3: The Journey (Ride) -->
         <section class="min-h-screen flex items-center py-24 px-6 relative" id="ride">
              <div class="container mx-auto grid md:grid-cols-2 gap-12 items-center">
-                <div class="order-2 md:order-1 relative group h-[500px] glass-panel overflow-hidden">
-                     <img src="/assets/img/guild/mian/bike.webp" alt="The Ride" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
-                     <div class="absolute bottom-0 left-0 p-8 bg-gradient-to-t from-black to-transparent w-full">
+                <div class="order-2 md:order-1 relative group h-[500px] glass-panel overflow-hidden reveal-content opacity-0 translate-y-8 bg-gray-900">
+                     <img src="/assets/img/guild/mian/bike.webp" loading="lazy" alt="The Ride" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" onerror="this.style.display='none'">
+                     <div class="absolute bottom-0 left-0 p-8 bg-gradient-to-t from-black to-transparent w-full pointer-events-none">
                         <div class="text-xs tracking-widest text-emerald-400 mb-1">STATUS</div>
                         <div class="text-2xl font-bold">FREEDOM</div>
                      </div>
                 </div>
                 <div class="order-1 md:order-2 space-y-8 pl-0 md:pl-12">
-                    <div class="space-y-2">
+                    <div class="space-y-2 reveal-content opacity-0 translate-y-8">
                         <span class="text-xs tracking-[0.2em] text-emerald-400/80">03 / FREEDOM</span>
                         <h2 class="text-4xl md:text-6xl font-bold tracking-tight">The Journey</h2>
                     </div>
-                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group">
+                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group reveal-content opacity-0 translate-y-8">
                         <div class="absolute bottom-0 left-0 w-full h-1 bg-emerald-500/50 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                         <p class="text-gray-100 leading-relaxed text-justify font-light tracking-wide">
                             除了靜態的模型，我也嚮往自由。放假時，我最喜歡騎著我的小摩托到處亂晃，在風中感受城市的脈動與自然的氣息。
@@ -200,7 +206,7 @@
          <!-- Section 4: The Aesthetic (Style & Footer) -->
         <section class="min-h-[80vh] flex flex-col justify-center items-center py-24 px-6 relative" id="style">
             <div class="max-w-3xl mx-auto text-center space-y-12">
-                <div class="space-y-4">
+                <div class="space-y-4 reveal-content opacity-0 translate-y-8">
                     <span class="text-xs tracking-[0.2em] text-purple-400/80">04 / AESTHETIC</span>
                     <h2 class="text-4xl md:text-6xl font-bold tracking-tight">Style & Vision</h2>
                     <p class="text-gray-400 leading-relaxed max-w-xl mx-auto">
@@ -208,7 +214,7 @@
                     </p>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal-content opacity-0 translate-y-8">
                     <a href="https://www.instagram.com/zero_w9453/" target="_blank" class="glass-panel p-6 flex flex-col items-center gap-3 group hover:bg-white/10">
                         <i class="fa-brands fa-instagram text-2xl group-hover:text-pink-500 transition-colors"></i>
                         <span class="text-xs tracking-widest">INSTAGRAM</span>
@@ -227,14 +233,14 @@
                     </div>
                 </div>
 
-                <div class="pt-12 border-t border-white/10 w-full">
+                <div class="pt-12 border-t border-white/10 w-full reveal-content opacity-0 translate-y-8">
                     <a href="/guild/" class="inline-block px-8 py-3 glass-panel hover:bg-white text-white hover:text-black transition-colors duration-300 text-sm tracking-[0.2em] font-bold">
                         BACK TO GUILD
                     </a>
                 </div>
             </div>
 
-            <footer class="absolute bottom-6 text-[10px] text-gray-600 tracking-widest uppercase">
+            <footer class="absolute bottom-6 text-[10px] text-gray-600 tracking-widest uppercase reveal-content opacity-0 translate-y-8">
                 &copy; 2024 Mian Portfolio. Design by Guild.
             </footer>
         </section>
@@ -242,46 +248,64 @@
     </main>
 
     <script>
-        // Loading Sequence
-        window.addEventListener('load', () => {
+        // Loading Sequence with Failsafe
+        // We define hideLoader globally so it can be called by either event or timeout
+        const hideLoader = () => {
             const loader = document.getElementById('loader');
+            if (!loader || loader.style.opacity === '0') return; // Already hidden
+
+            loader.style.opacity = '0';
             setTimeout(() => {
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                    initAnimations();
-                }, 1000);
-            }, 1500);
+                loader.style.display = 'none';
+                initAnimations();
+            }, 1000);
+        };
+
+        window.addEventListener('load', () => {
+            // Standard load: wait a bit for effect, then hide
+            setTimeout(hideLoader, 1500);
         });
+
+        // Failsafe: If window.load doesn't fire within 4 seconds, force hide
+        setTimeout(() => {
+            console.warn('Forcing loader hide due to timeout');
+            hideLoader();
+        }, 4000);
 
         // GSAP Animations
         gsap.registerPlugin(ScrollTrigger);
 
         function initAnimations() {
-            // Hero Reveal
-            gsap.from('.reveal-text', {
-                y: 50,
-                opacity: 0,
+            // Hero Reveal: Use to() from current state (opacity-0 in HTML)
+            gsap.to('.reveal-text', {
+                y: 0,
+                opacity: 1,
                 duration: 1.5,
                 stagger: 0.2,
                 ease: "power3.out"
             });
 
-            // Section Reveals
+            // Section Reveals: Use fromTo for robustness
             document.querySelectorAll('section').forEach(section => {
                 if(section.id) { // Skip hero
-                    gsap.from(section.querySelectorAll('.glass-panel, h2, span, img'), {
-                        scrollTrigger: {
-                            trigger: section,
-                            start: "top 80%",
-                            toggleActions: "play none none reverse"
-                        },
-                        y: 30,
-                        opacity: 0,
-                        duration: 0.8,
-                        stagger: 0.1,
-                        ease: "power2.out"
-                    });
+                    const elements = section.querySelectorAll('.reveal-content');
+                    if (elements.length > 0) {
+                        gsap.fromTo(elements,
+                            { y: 30, opacity: 0 },
+                            {
+                                y: 0,
+                                opacity: 1,
+                                duration: 0.8,
+                                stagger: 0.1,
+                                ease: "power2.out",
+                                scrollTrigger: {
+                                    trigger: section,
+                                    start: "top 80%",
+                                    toggleActions: "play none none reverse"
+                                }
+                            }
+                        );
+                    }
                 }
             });
         }
