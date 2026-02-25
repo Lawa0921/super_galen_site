@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nick | AI Core</title>
-    <meta name="description" content="Nick - Automation Architect. Building intelligent systems that think and execute.">
+    <title>Nick | SYSTEM_OVERRIDE</title>
+    <meta name="description" content="Nick - Automation Architect. WARNING: High-velocity workflows detected.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Chakra+Petch:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -21,19 +21,34 @@
             theme: {
                 extend: {
                     fontFamily: {
+                        glitch: ['Rubik Glitch', 'display'],
+                        tech: ['Chakra Petch', 'sans-serif'],
                         mono: ['Share Tech Mono', 'monospace'],
-                        sans: ['Rajdhani', 'sans-serif'],
                     },
                     colors: {
-                        core: {
-                            bg: '#0f172a',
-                            cyan: '#06b6d4',
-                            blue: '#3b82f6',
-                            orange: '#f97316'
+                        acid: {
+                            green: '#ccff00',
+                            pink: '#ff0055',
+                            cyan: '#00f3ff',
+                            black: '#0a0a0a',
+                            dark: '#050505'
                         }
                     },
                     animation: {
-                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'flash': 'flash 0.2s infinite',
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        },
+                        flash: {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: 0 }
+                        }
                     }
                 }
             }
@@ -42,10 +57,11 @@
 
     <style>
         body {
-            background-color: #0f172a;
-            color: #e2e8f0;
+            background-color: #050505;
+            color: #ffffff;
             overflow-x: hidden;
-            font-family: 'Rajdhani', sans-serif;
+            font-family: 'Chakra Petch', sans-serif;
+            cursor: crosshair;
         }
 
         #webgl {
@@ -57,297 +73,313 @@
             z-index: -1;
         }
 
-        /* Glassmorphism HUD */
-        .hud-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(6, 182, 212, 0.3);
+        /* Glitch Text Effect */
+        .glitch-text {
             position: relative;
+            color: white;
         }
-
-        .hud-panel::before {
-            content: '';
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
             position: absolute;
-            top: -1px; left: -1px;
-            width: 10px; height: 10px;
-            border-top: 2px solid #06b6d4;
-            border-left: 2px solid #06b6d4;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050505;
         }
-        .hud-panel::after {
-            content: '';
-            position: absolute;
-            bottom: -1px; right: -1px;
-            width: 10px; height: 10px;
-            border-bottom: 2px solid #06b6d4;
-            border-right: 2px solid #06b6d4;
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 #ff0055;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
         }
-
-        /* Typing Effect Cursor */
-        .typing::after {
-            content: '_';
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink { 50% { opacity: 0; } }
-
-        /* Terminal Log */
-        .terminal-line {
-            opacity: 0;
-            transform: translateX(-10px);
-            animation: logEntry 0.3s forwards;
-        }
-        @keyframes logEntry {
-            to { opacity: 1; transform: translateX(0); }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -2px 0 #00f3ff;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
         }
 
-        /* Scanline Overlay */
-        .scanlines {
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 31px, 0); }
+            20% { clip: rect(65px, 9999px, 89px, 0); }
+            40% { clip: rect(18px, 9999px, 49px, 0); }
+            60% { clip: rect(12px, 9999px, 94px, 0); }
+            80% { clip: rect(54px, 9999px, 23px, 0); }
+            100% { clip: rect(8px, 9999px, 76px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(29px, 9999px, 86px, 0); }
+            20% { clip: rect(44px, 9999px, 11px, 0); }
+            40% { clip: rect(78px, 9999px, 34px, 0); }
+            60% { clip: rect(15px, 9999px, 67px, 0); }
+            80% { clip: rect(9px, 9999px, 2px, 0); }
+            100% { clip: rect(56px, 9999px, 39px, 0); }
+        }
+
+        /* Brutalist Card */
+        .brutal-card {
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #333;
+            position: relative;
+            transition: all 0.1s;
+        }
+        .brutal-card:hover {
+            border-color: #ccff00;
+            transform: translate(-4px, -4px);
+            box-shadow: 8px 8px 0 #ccff00;
+        }
+
+        /* CRT Scanline */
+        .crt-overlay {
             position: fixed;
-            top: 0; left: 0; w: 100%; h: 100%;
-            background: linear-gradient(
-                to bottom,
-                rgba(255,255,255,0),
-                rgba(255,255,255,0) 50%,
-                rgba(0,0,0,0.1) 50%,
-                rgba(0,0,0,0.1)
-            );
-            background-size: 100% 4px;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
             pointer-events: none;
-            z-index: 50;
-            opacity: 0.3;
+            z-index: 100;
+        }
+
+        .scramble-text {
+            font-family: 'Share Tech Mono', monospace;
         }
     </style>
 </head>
-<body class="antialiased selection:bg-core-cyan selection:text-black">
+<body class="antialiased selection:bg-acid-green selection:text-black">
 
-    <div class="scanlines"></div>
+    <div class="crt-overlay"></div>
 
     <!-- WebGL Background -->
     <canvas id="webgl"></canvas>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full z-40 p-6 flex justify-between items-center mix-blend-difference pointer-events-none">
+    <nav class="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-center mix-blend-difference pointer-events-none">
         <div class="pointer-events-auto">
-            <a href="/guild" class="flex items-center gap-2 text-core-cyan hover:text-white transition-colors">
-                <i class="fa-solid fa-chevron-left"></i>
-                <span class="font-mono text-sm tracking-widest">RETURN_GUILD</span>
+            <a href="/guild" class="flex items-center gap-2 group">
+                <div class="bg-acid-green text-black px-2 py-1 font-bold font-mono text-xs group-hover:bg-white transition-colors">
+                    &lt; ESC
+                </div>
+                <span class="font-mono text-xs text-acid-green tracking-widest group-hover:text-white">ABORT_SESSION</span>
             </a>
         </div>
         <div class="pointer-events-auto flex gap-4">
-             <a href="https://znstudio216.com/" target="_blank" class="text-gray-400 hover:text-core-cyan transition-colors"><i class="fa-solid fa-globe"></i></a>
-             <a href="https://www.threads.net/@nickai216" target="_blank" class="text-gray-400 hover:text-white transition-colors"><i class="fa-brands fa-threads"></i></a>
+             <a href="https://znstudio216.com/" target="_blank" class="text-white hover:text-acid-pink transition-colors text-xl"><i class="fa-solid fa-globe"></i></a>
+             <a href="https://www.threads.net/@nickai216" target="_blank" class="text-white hover:text-acid-green transition-colors text-xl"><i class="fa-brands fa-threads"></i></a>
         </div>
     </nav>
 
-    <!-- Terminal Sidebar (Desktop Only) -->
-    <div class="fixed left-6 bottom-6 w-64 hidden lg:block z-30 pointer-events-none">
-        <div class="font-mono text-[10px] text-core-cyan/70 space-y-1" id="system-log">
-            <div class="terminal-line">>> SYSTEM_INIT... OK</div>
-            <div class="terminal-line">>> CONNECTING_NEURAL_NET... OK</div>
-        </div>
-    </div>
-
     <!-- Main Content -->
-    <main class="relative z-10 w-full max-w-6xl mx-auto px-4 md:px-8 py-20 flex flex-col gap-32">
+    <main class="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 py-20 flex flex-col gap-40">
 
         <!-- Hero Section -->
-        <section class="min-h-[80vh] flex items-center justify-center md:justify-start relative" id="hero">
-            <div class="max-w-2xl">
-                <div class="font-mono text-core-cyan text-sm mb-4 tracking-[0.2em] typing">INITIALIZING_PROFILE</div>
-                <h1 class="text-6xl md:text-9xl font-bold mb-6 leading-none">
-                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">NICK</span>
-                    <span class="block text-4xl md:text-6xl text-core-blue mt-2">AI ARCHITECT</span>
-                </h1>
+        <section class="min-h-[90vh] flex flex-col justify-center items-start relative" id="hero">
 
-                <div class="hud-panel p-6 md:p-8 backdrop-blur-md max-w-lg mt-8 transform hover:scale-[1.02] transition-transform duration-300">
-                    <div class="flex gap-6 items-center">
-                        <div class="relative w-24 h-24 shrink-0">
-                            <div class="absolute inset-0 border-2 border-core-cyan rounded-full animate-spin-slow border-t-transparent"></div>
-                            <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-full h-full rounded-full object-cover p-1 opacity-90">
+            <div class="absolute top-1/4 right-0 md:right-20 pointer-events-none opacity-20 md:opacity-100">
+                 <div class="border-4 border-acid-green w-64 h-64 md:w-96 md:h-96 rounded-full flex items-center justify-center animate-spin-slow">
+                    <div class="border-2 border-dashed border-acid-pink w-48 h-48 md:w-72 md:h-72 rounded-full"></div>
+                 </div>
+            </div>
+
+            <div class="relative z-10">
+                <div class="bg-acid-pink text-black inline-block px-2 py-1 font-mono text-xs font-bold mb-4 transform -rotate-2">
+                    WARNING: SYSTEM UNSTABLE
+                </div>
+
+                <h1 class="text-7xl md:text-[10rem] font-black leading-none mb-2 glitch-text mix-blend-difference" data-text="NICK">
+                    NICK
+                </h1>
+                <h2 class="text-2xl md:text-5xl font-bold font-tech text-acid-green mb-8 uppercase tracking-tighter">
+                    Automation <span class="text-white">_Warlord</span>
+                </h2>
+
+                <div class="brutal-card p-6 max-w-xl backdrop-blur-md bg-black/80">
+                    <div class="flex flex-col md:flex-row gap-6 items-start">
+                        <div class="w-24 h-24 shrink-0 border-2 border-white relative overflow-hidden group">
+                             <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-full h-full object-cover grayscale contrast-150 group-hover:grayscale-0 transition-all">
+                             <div class="absolute inset-0 bg-acid-green/20 mix-blend-overlay"></div>
                         </div>
-                        <div class="space-y-2">
-                            <div class="flex gap-2 text-xs font-mono text-gray-400">
-                                <span class="bg-core-blue/20 text-core-blue px-2 py-0.5 border border-core-blue/30">LEVEL_2_CERTIFIED</span>
-                                <span class="bg-core-orange/20 text-core-orange px-2 py-0.5 border border-core-orange/30">VIBE_CODING</span>
-                            </div>
-                            <p class="text-sm md:text-base font-light text-gray-300">
-                                Transforming manual chaos into intelligent automation.
-                                <br>From <span class="text-white">Environmental Engineer</span> to <span class="text-core-cyan">AI System Builder</span>.
+                        <div class="space-y-4">
+                            <p class="font-mono text-sm leading-relaxed text-gray-300">
+                                <span class="text-acid-pink font-bold">>> ORIGIN:</span> Environmental Engineer.<br>
+                                <span class="text-acid-cyan font-bold">>> CURRENT_STATE:</span> Automating reality with extreme prejudice.<br>
+                                I build systems that don't just run; they dominate.
                             </p>
+                            <div class="flex flex-wrap gap-2 text-[10px] font-bold font-mono">
+                                <span class="bg-white/10 px-2 py-1 border border-white/20">N8N_MASTER</span>
+                                <span class="bg-white/10 px-2 py-1 border border-white/20">VIBE_CODING</span>
+                                <span class="bg-white/10 px-2 py-1 border border-white/20">LVL.2_CERTIFIED</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Scroll Indicator -->
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 animate-bounce">
-                <span class="font-mono text-[10px] tracking-widest">SCROLL_TO_ACCESS</span>
-                <i class="fa-solid fa-chevron-down text-xs"></i>
+            <div class="absolute bottom-10 left-0 font-mono text-xs text-gray-500 animate-pulse">
+                SCROLL_VELOCITY_REQUIRED >>
             </div>
         </section>
 
-        <!-- Stats / Methodology Grid -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats">
-            <div class="hud-panel p-6">
-                <h3 class="font-mono text-core-cyan text-xs mb-2">>> ACTIVE_NODES</h3>
-                <div class="text-4xl font-bold text-white mb-1 counter" data-target="33">0</div>
-                <p class="text-sm text-gray-400">Running n8n Workflows</p>
+        <!-- Stats / Chaos Grid -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4" id="stats">
+            <div class="col-span-2 md:col-span-1 border-t-4 border-acid-green p-4 bg-black/50">
+                <h3 class="font-mono text-acid-green text-xs mb-1">ACTIVE_WORKFLOWS</h3>
+                <div class="text-5xl font-black text-white glitch-text" data-text="33">33</div>
             </div>
-            <div class="hud-panel p-6">
-                <h3 class="font-mono text-core-blue text-xs mb-2">>> DEPLOYED_AGENTS</h3>
-                <div class="text-4xl font-bold text-white mb-1 counter" data-target="30">0</div>
-                <p class="text-sm text-gray-400">Line Bots & Assistants</p>
+            <div class="col-span-2 md:col-span-1 border-t-4 border-acid-pink p-4 bg-black/50">
+                <h3 class="font-mono text-acid-pink text-xs mb-1">LINE_BOTS</h3>
+                <div class="text-5xl font-black text-white glitch-text" data-text="30">30</div>
             </div>
-            <div class="hud-panel p-6">
-                <h3 class="font-mono text-core-orange text-xs mb-2">>> CORE_SYSTEMS</h3>
-                <div class="text-4xl font-bold text-white mb-1 counter" data-target="3">0</div>
-                <p class="text-sm text-gray-400">Enterprise Vibe Coding Suites</p>
+            <div class="col-span-2 border-t-4 border-acid-cyan p-4 bg-black/50">
+                <h3 class="font-mono text-acid-cyan text-xs mb-1">SYSTEM_STATUS</h3>
+                <div class="text-2xl md:text-4xl font-bold text-white uppercase scramble-text">
+                    OPTIMIZING_REALITY...
+                </div>
             </div>
         </section>
 
-        <!-- Project Database -->
+        <!-- Project Archive -->
         <section class="relative" id="projects">
-            <div class="flex items-center gap-4 mb-12">
-                <div class="h-[1px] bg-core-cyan flex-grow opacity-30"></div>
-                <h2 class="font-mono text-2xl md:text-4xl text-white tracking-wider">PROJECT_DATABASE</h2>
-                <div class="h-[1px] bg-core-cyan flex-grow opacity-30"></div>
+            <div class="mb-12 border-b-2 border-white pb-4 flex justify-between items-end">
+                <h2 class="text-4xl md:text-6xl font-black uppercase tracking-tighter">DEPLOYED_SYSTEMS</h2>
+                <span class="font-mono text-xs bg-white text-black px-2 py-1 font-bold animate-flash">LIVE</span>
             </div>
 
-            <div class="space-y-24">
+            <div class="space-y-32">
                 <!-- Project 1 -->
-                <div class="group grid md:grid-cols-2 gap-8 items-center project-item">
-                    <div class="order-2 md:order-1 space-y-4">
-                        <div class="font-mono text-core-cyan text-xs">ID: SEWAGE_AI // SYSTEM_01</div>
-                        <h3 class="text-3xl font-bold text-white group-hover:text-core-cyan transition-colors">Sewage Design System</h3>
-                        <p class="text-gray-400 leading-relaxed">
-                            An automated blueprint generation system for wastewater treatment facilities.
-                            Leverages LLMs to interpret requirements and generate CAD-ready specifications instantly.
-                        </p>
-                        <ul class="flex flex-wrap gap-2 text-xs font-mono text-gray-500">
-                            <li class="border border-gray-700 px-2 py-1">PYTHON</li>
-                            <li class="border border-gray-700 px-2 py-1">OPENAI</li>
-                            <li class="border border-gray-700 px-2 py-1">AUTOMATION</li>
-                        </ul>
-                    </div>
-                    <div class="order-1 md:order-2 hud-panel p-2 overflow-hidden relative group-hover:border-core-cyan transition-colors duration-500">
-                        <div class="absolute inset-0 bg-core-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 z-10 mix-blend-overlay"></div>
-                        <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage AI" class="w-full h-64 object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500">
+                <div class="group relative">
+                    <div class="absolute -inset-4 bg-acid-green/10 skew-y-2 group-hover:skew-y-0 transition-transform duration-500"></div>
+                    <div class="relative grid md:grid-cols-2 gap-8 items-center">
+                        <div class="border-2 border-acid-green bg-black p-1 relative overflow-hidden h-64 md:h-80 group-hover:rotate-1 transition-transform duration-300">
+                             <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage AI" class="w-full h-full object-cover filter contrast-125 sepia-[0.5] group-hover:sepia-0 transition-all">
+                             <div class="absolute bottom-0 left-0 bg-acid-green text-black px-4 py-1 font-bold font-mono text-lg">
+                                CASE_01
+                             </div>
+                        </div>
+                        <div class="space-y-4">
+                            <h3 class="text-4xl md:text-5xl font-bold uppercase text-white group-hover:text-acid-green transition-colors">
+                                Sewage_Design_AI
+                            </h3>
+                            <p class="font-mono text-gray-400 text-sm md:text-base border-l-2 border-gray-700 pl-4">
+                                Automated CAD blueprint generation for industrial wastewater.
+                                <span class="text-white block mt-2">LLM-Driven Logic // Instant Output</span>
+                            </p>
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 bg-acid-green"></div>
+                                <div class="w-3 h-3 bg-acid-green opacity-50"></div>
+                                <div class="w-3 h-3 bg-acid-green opacity-25"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Project 2 -->
-                <div class="group grid md:grid-cols-2 gap-8 items-center project-item">
-                    <div class="order-2 md:order-2 space-y-4 md:text-right">
-                        <div class="font-mono text-core-blue text-xs">ID: WORKFLOW_SUITE // SYSTEM_02</div>
-                        <h3 class="text-3xl font-bold text-white group-hover:text-core-blue transition-colors">Enterprise Automation</h3>
-                        <p class="text-gray-400 leading-relaxed">
-                            A suite of 33+ active n8n workflows handling everything from Quotation Generation to CRM synchronization.
-                            Replacing manual data entry with intelligent event-driven architecture.
-                        </p>
-                        <ul class="flex flex-wrap gap-2 text-xs font-mono text-gray-500 justify-end">
-                            <li class="border border-gray-700 px-2 py-1">N8N</li>
-                            <li class="border border-gray-700 px-2 py-1">WEBHOOKS</li>
-                            <li class="border border-gray-700 px-2 py-1">INTEGRATION</li>
-                        </ul>
-                    </div>
-                    <div class="order-1 md:order-1 hud-panel p-2 overflow-hidden relative group-hover:border-core-blue transition-colors duration-500">
-                        <div class="absolute inset-0 bg-core-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 z-10 mix-blend-overlay"></div>
-                        <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n Automation" class="w-full h-64 object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500">
+                <div class="group relative">
+                    <div class="absolute -inset-4 bg-acid-pink/10 -skew-y-2 group-hover:skew-y-0 transition-transform duration-500"></div>
+                    <div class="relative grid md:grid-cols-2 gap-8 items-center">
+                        <div class="order-2 md:order-1 space-y-4 md:text-right">
+                            <h3 class="text-4xl md:text-5xl font-bold uppercase text-white group-hover:text-acid-pink transition-colors">
+                                N8N_Megastructure
+                            </h3>
+                            <p class="font-mono text-gray-400 text-sm md:text-base border-r-2 border-gray-700 pr-4">
+                                Enterprise-grade automation suite. 33+ workflows synchronizing
+                                business reality in real-time.
+                                <span class="text-white block mt-2">Zero Latency // Max Efficiency</span>
+                            </p>
+                            <div class="flex gap-2 justify-end">
+                                <div class="w-3 h-3 bg-acid-pink"></div>
+                                <div class="w-3 h-3 bg-acid-pink opacity-50"></div>
+                                <div class="w-3 h-3 bg-acid-pink opacity-25"></div>
+                            </div>
+                        </div>
+                        <div class="order-1 md:order-2 border-2 border-acid-pink bg-black p-1 relative overflow-hidden h-64 md:h-80 group-hover:-rotate-1 transition-transform duration-300">
+                             <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n" class="w-full h-full object-cover filter contrast-125 sepia-[0.5] group-hover:sepia-0 transition-all">
+                             <div class="absolute bottom-0 right-0 bg-acid-pink text-black px-4 py-1 font-bold font-mono text-lg">
+                                CASE_02
+                             </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Project 3 -->
-                <div class="group grid md:grid-cols-2 gap-8 items-center project-item">
-                    <div class="order-2 md:order-1 space-y-4">
-                        <div class="font-mono text-core-orange text-xs">ID: KNOWLEDGE_TRANSFER // SYSTEM_03</div>
-                        <h3 class="text-3xl font-bold text-white group-hover:text-core-orange transition-colors">Vibe Coding Education</h3>
-                        <p class="text-gray-400 leading-relaxed">
-                            Invited lecturer at <span class="text-white">Soochow University</span>. Teaching the next generation how to build
-                            software through natural language prompting and automation logic.
-                        </p>
-                        <div class="mt-4">
-                             <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="inline-flex items-center gap-2 text-core-orange text-sm font-mono border-b border-core-orange/50 hover:border-core-orange pb-1 transition-all">
-                                VIEW CERTIFICATES <i class="fa-solid fa-arrow-right"></i>
+                <div class="group relative">
+                    <div class="absolute -inset-4 bg-acid-cyan/10 skew-y-2 group-hover:skew-y-0 transition-transform duration-500"></div>
+                    <div class="relative grid md:grid-cols-2 gap-8 items-center">
+                         <div class="border-2 border-acid-cyan bg-black p-1 relative overflow-hidden h-64 md:h-80 group-hover:rotate-1 transition-transform duration-300">
+                             <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-full object-cover filter contrast-125 sepia-[0.5] group-hover:sepia-0 transition-all">
+                             <div class="absolute bottom-0 left-0 bg-acid-cyan text-black px-4 py-1 font-bold font-mono text-lg">
+                                CASE_03
+                             </div>
+                        </div>
+                        <div class="space-y-4">
+                            <h3 class="text-4xl md:text-5xl font-bold uppercase text-white group-hover:text-acid-cyan transition-colors">
+                                Soochow_Protocol
+                            </h3>
+                            <p class="font-mono text-gray-400 text-sm md:text-base border-l-2 border-gray-700 pl-4">
+                                Injecting Vibe Coding knowledge into the university curriculum.
+                                <span class="text-white block mt-2">Lecturer Mode // Activated</span>
+                            </p>
+                            <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="inline-block mt-4 text-acid-cyan font-bold font-mono hover:bg-acid-cyan hover:text-black px-2 transition-colors">
+                                >> VERIFY_CREDENTIALS
                             </a>
                         </div>
                     </div>
-                    <div class="order-1 md:order-2 hud-panel p-2 overflow-hidden relative group-hover:border-core-orange transition-colors duration-500">
-                         <div class="absolute inset-0 bg-core-orange/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 z-10 mix-blend-overlay"></div>
-                         <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-64 object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500">
-                    </div>
                 </div>
 
-                <!-- Personal Projects (Side Quests) -->
-                <div class="md:col-span-2 mt-16">
-                    <div class="flex items-center gap-4 mb-8 opacity-50">
-                         <div class="h-[1px] bg-gray-600 flex-grow"></div>
-                         <h3 class="font-mono text-sm text-gray-400">>> PERSONAL_ARCHIVES // SIDE_QUESTS</h3>
-                         <div class="h-[1px] bg-gray-600 flex-grow"></div>
+                <!-- Side Quests -->
+                 <div class="grid md:grid-cols-2 gap-8 mt-20">
+                    <div class="brutal-card p-8 bg-black">
+                        <div class="text-acid-pink font-mono text-xs font-bold mb-2">>> SIDE_QUEST_A</div>
+                        <h4 class="text-2xl font-bold uppercase mb-4">Love_Algorithm</h4>
+                        <p class="text-gray-400 text-sm mb-4">Anniversary & Xmas sites generated for my partner. Custom logic, pure dedication.</p>
+                        <div class="h-1 w-full bg-gray-800"><div class="h-full bg-acid-pink w-3/4"></div></div>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="hud-panel p-6 hover:bg-white/5 transition-all group">
-                             <div class="flex justify-between items-start mb-4">
-                                <i class="fa-solid fa-heart text-pink-500 text-xl group-hover:scale-110 transition-transform"></i>
-                                <span class="font-mono text-[10px] text-gray-500">RELATIONSHIP_MODULE</span>
-                             </div>
-                             <h4 class="text-xl font-bold mb-2 text-white">Anniversary & Xmas Sites</h4>
-                             <p class="text-sm text-gray-400 mb-4">Personalized web experiences built for my partner, featuring interactive memories and custom logic.</p>
-                             <div class="flex gap-2">
-                                <span class="text-[10px] border border-pink-500/30 text-pink-500 px-2 py-0.5">REACT</span>
-                                <span class="text-[10px] border border-pink-500/30 text-pink-500 px-2 py-0.5">GSAP</span>
-                             </div>
-                        </div>
-
-                        <div class="hud-panel p-6 hover:bg-white/5 transition-all group">
-                             <div class="flex justify-between items-start mb-4">
-                                <i class="fa-solid fa-brain text-purple-500 text-xl group-hover:scale-110 transition-transform"></i>
-                                <span class="font-mono text-[10px] text-gray-500">ANALYSIS_MODULE</span>
-                             </div>
-                             <h4 class="text-xl font-bold mb-2 text-white">AI Psychology Test</h4>
-                             <p class="text-sm text-gray-400 mb-4">An interactive assessment tool powered by LLMs to analyze personality traits through conversation.</p>
-                             <div class="flex gap-2">
-                                <span class="text-[10px] border border-purple-500/30 text-purple-500 px-2 py-0.5">OPENAI</span>
-                                <span class="text-[10px] border border-purple-500/30 text-purple-500 px-2 py-0.5">N8N</span>
-                             </div>
-                        </div>
+                    <div class="brutal-card p-8 bg-black">
+                        <div class="text-acid-green font-mono text-xs font-bold mb-2">>> SIDE_QUEST_B</div>
+                        <h4 class="text-2xl font-bold uppercase mb-4">Psycho_Analyzer</h4>
+                        <p class="text-gray-400 text-sm mb-4">AI-driven psychology test. Probing the human mind with LLMs.</p>
+                        <div class="h-1 w-full bg-gray-800"><div class="h-full bg-acid-green w-1/2"></div></div>
                     </div>
-                </div>
+                 </div>
+
             </div>
 
-            <div class="mt-20 text-center">
-                 <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-block px-8 py-4 border border-core-cyan text-core-cyan font-mono hover:bg-core-cyan hover:text-black transition-all duration-300 tracking-widest text-sm">
-                    ACCESS_FULL_ARCHIVE_>>
+            <div class="mt-24 text-center">
+                 <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-block px-12 py-6 bg-white text-black font-black text-xl hover:bg-acid-green hover:scale-105 transition-all uppercase tracking-tighter">
+                    Unlock_Full_Archive
                  </a>
             </div>
         </section>
 
-        <!-- Contact Terminal -->
-        <section class="min-h-[50vh] flex flex-col items-center justify-center relative pb-20" id="contact">
-            <div class="hud-panel p-8 md:p-12 w-full max-w-3xl text-center">
-                <h2 class="text-3xl md:text-5xl font-bold mb-8">INITIATE_CONNECTION</h2>
+        <!-- Contact Footer -->
+        <section class="min-h-[60vh] flex flex-col items-center justify-center relative pb-20" id="contact">
+            <h2 class="text-5xl md:text-8xl font-black mb-12 uppercase text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-800">
+                Jack_In
+            </h2>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
-                        <i class="fa-brands fa-line text-4xl text-gray-500 group-hover:text-[#06c755] transition-colors"></i>
-                        <span class="font-mono text-xs text-gray-400">LINE_OA</span>
-                    </a>
-                    <a href="https://www.threads.net/@nickai216" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
-                        <i class="fa-brands fa-threads text-4xl text-gray-500 group-hover:text-white transition-colors"></i>
-                        <span class="font-mono text-xs text-gray-400">THREADS</span>
-                    </a>
-                    <a href="https://portaly.cc/zn.studio" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
-                        <i class="fa-solid fa-link text-4xl text-gray-500 group-hover:text-core-orange transition-colors"></i>
-                        <span class="font-mono text-xs text-gray-400">PORTALY</span>
-                    </a>
-                    <a href="https://znstudio216.com/" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
-                        <i class="fa-solid fa-laptop-code text-4xl text-gray-500 group-hover:text-core-blue transition-colors"></i>
-                        <span class="font-mono text-xs text-gray-400">STUDIO</span>
-                    </a>
-                </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-4">
+                <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
+                    <i class="fa-brands fa-line text-4xl group-hover:text-[#06c755] transition-colors"></i>
+                    <span class="font-mono font-bold text-xs uppercase">Line_OA</span>
+                </a>
+                <a href="https://www.threads.net/@nickai216" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
+                    <i class="fa-brands fa-threads text-4xl group-hover:text-white transition-colors"></i>
+                    <span class="font-mono font-bold text-xs uppercase">Threads</span>
+                </a>
+                <a href="https://portaly.cc/zn.studio" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
+                    <i class="fa-solid fa-link text-4xl group-hover:text-acid-pink transition-colors"></i>
+                    <span class="font-mono font-bold text-xs uppercase">Portaly</span>
+                </a>
+                <a href="https://znstudio216.com/" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
+                    <i class="fa-solid fa-laptop-code text-4xl group-hover:text-acid-cyan transition-colors"></i>
+                    <span class="font-mono font-bold text-xs uppercase">Studio</span>
+                </a>
             </div>
 
-            <footer class="absolute bottom-4 text-center w-full font-mono text-[10px] text-gray-600">
-                SYSTEM STATUS: OPTIMAL // © 2024 NICK
+            <footer class="absolute bottom-4 w-full text-center border-t border-gray-900 pt-4">
+                 <p class="font-mono text-[10px] text-gray-600">
+                    MADE WITH <i class="fa-solid fa-heart text-red-900"></i> BY NICK'S AUTOMATION FORGE
+                 </p>
             </footer>
         </section>
 
@@ -359,131 +391,93 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
-        // --- Three.js Scene: "AI Neural Net" ---
+        // --- Three.js Scene: "Warp Storm" ---
         const canvas = document.querySelector('#webgl');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f172a); // Slate-900
-        scene.fog = new THREE.FogExp2(0x0f172a, 0.002);
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x050505, 0.02); // Heavy fog
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: false }); // False for gritty look
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        // 1. Particle System (Nodes)
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 1500;
-        const posArray = new Float32Array(particlesCount * 3);
-        const originalPos = new Float32Array(particlesCount * 3); // Store for return logic
+        // Create Debris Field (InstancedMesh)
+        const debrisCount = 1000;
+        const debrisGeometry = new THREE.BoxGeometry(0.1, 0.1, 2); // Long streaks
+        const debrisMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+        });
 
-        for(let i = 0; i < particlesCount * 3; i++) {
-            // Sphere distribution
-            posArray[i] = (Math.random() - 0.5) * 100;
-            originalPos[i] = posArray[i];
+        const debris = new THREE.InstancedMesh(debrisGeometry, debrisMaterial, debrisCount);
+
+        const dummy = new THREE.Object3D();
+        const speeds = [];
+
+        for (let i = 0; i < debrisCount; i++) {
+            dummy.position.set(
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 100
+            );
+            dummy.rotation.z = Math.random() * Math.PI;
+            dummy.updateMatrix();
+            debris.setMatrixAt(i, dummy.matrix);
+
+            // Random speed for each particle
+            speeds.push(0.5 + Math.random());
         }
 
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        scene.add(debris);
 
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.15,
-            color: 0x06b6d4, // Cyan
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
-        });
+        // --- Post-Processing / Glitch Logic (Simulated via Camera Shake) ---
+        // True post-processing is heavy, we'll simulate chaos with camera movement
 
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
-
-        // 2. Interactive Lines (Connections)
-        // We will create a subset of particles for line drawing to save performance
-        const connectionDistance = 15;
-        const maxConnections = 1000; // Max segments
-        const lineGeo = new THREE.BufferGeometry();
-        const linePos = new Float32Array(maxConnections * 6); // 2 points * 3 coords
-        lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
-
-        const lineMat = new THREE.LineBasicMaterial({
-            color: 0x3b82f6, // Blue
-            transparent: true,
-            opacity: 0.15,
-            blending: THREE.AdditiveBlending
-        });
-
-        const linesMesh = new THREE.LineSegments(lineGeo, lineMat);
-        scene.add(linesMesh);
-
-        // Interaction State
-        const mouse = new THREE.Vector2();
-        let targetX = 0;
-        let targetY = 0;
-
-        document.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        const clock = new THREE.Clock();
+        let time = 0;
+        let scrollVelocity = 0;
 
         function animate() {
             requestAnimationFrame(animate);
-            const elapsedTime = clock.getElapsedTime();
+            time += 0.01;
 
-            // Mouse Interaction (Rotation)
-            targetX = mouse.x * 0.5;
-            targetY = mouse.y * 0.5;
+            // Move debris towards camera
+            for (let i = 0; i < debrisCount; i++) {
+                debris.getMatrixAt(i, dummy.matrix);
+                dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
 
-            particlesMesh.rotation.x += 0.05 * (targetY - particlesMesh.rotation.x);
-            particlesMesh.rotation.y += 0.05 * (targetX - particlesMesh.rotation.y);
+                // Move z
+                dummy.position.z += speeds[i] + (scrollVelocity * 2);
 
-            // Sync lines rotation with particles
-            linesMesh.rotation.copy(particlesMesh.rotation);
-
-            // Update Particle Positions (Pulse)
-            const positions = particlesMesh.geometry.attributes.position.array;
-            for(let i = 0; i < particlesCount; i++) {
-                const i3 = i * 3;
-                // Add subtle breathing motion
-                positions[i3 + 1] = originalPos[i3 + 1] + Math.sin(elapsedTime + originalPos[i3]) * 0.5;
-            }
-            particlesMesh.geometry.attributes.position.needsUpdate = true;
-
-            // Re-calculate Lines (Dynamic Neural Net)
-            // Only use the first 100 particles for connections to keep performance high
-            let vertexIndex = 0;
-            const connectionLimit = 100;
-
-            for (let i = 0; i < connectionLimit; i++) {
-                for (let j = i + 1; j < connectionLimit; j++) {
-                    const dx = positions[i*3] - positions[j*3];
-                    const dy = positions[i*3+1] - positions[j*3+1];
-                    const dz = positions[i*3+2] - positions[j*3+2];
-                    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-
-                    if (dist < connectionDistance) {
-                        // Point A
-                        linePos[vertexIndex++] = positions[i*3];
-                        linePos[vertexIndex++] = positions[i*3+1];
-                        linePos[vertexIndex++] = positions[i*3+2];
-                        // Point B
-                        linePos[vertexIndex++] = positions[j*3];
-                        linePos[vertexIndex++] = positions[j*3+1];
-                        linePos[vertexIndex++] = positions[j*3+2];
-
-                        if (vertexIndex >= maxConnections * 6) break;
-                    }
+                if (dummy.position.z > 10) {
+                    dummy.position.z = -100;
+                    dummy.position.x = (Math.random() - 0.5) * 50;
+                    dummy.position.y = (Math.random() - 0.5) * 50;
                 }
-                if (vertexIndex >= maxConnections * 6) break;
-            }
 
-            linesMesh.geometry.setDrawRange(0, vertexIndex / 3);
-            linesMesh.geometry.attributes.position.needsUpdate = true;
+                // Color Pulse based on scroll speed (Simulated via scale for performance)
+                if (scrollVelocity > 0.5) {
+                    dummy.scale.z = 5; // Stretch more on speed
+                } else {
+                    dummy.scale.z = 1;
+                }
+
+                dummy.updateMatrix();
+                debris.setMatrixAt(i, dummy.matrix);
+            }
+            debris.instanceMatrix.needsUpdate = true;
+
+            // Camera Shake on Scroll
+            camera.position.x = (Math.random() - 0.5) * scrollVelocity * 0.5;
+            camera.position.y = (Math.random() - 0.5) * scrollVelocity * 0.5;
+            camera.rotation.z = (Math.random() - 0.5) * scrollVelocity * 0.1;
+
+            // Dampen velocity
+            scrollVelocity *= 0.95;
 
             renderer.render(scene, camera);
         }
-
         animate();
 
         window.addEventListener('resize', () => {
@@ -492,61 +486,51 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP & UI Logic ---
+        // --- GSAP & Interactions ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // System Log Logic
-        const logContainer = document.getElementById('system-log');
-        const logs = [
-            "SCANNING_USER_INPUT...",
-            "ANALYZING_PROJECT_DATA...",
-            "OPTIMIZING_RENDER_PIPELINE...",
-            "FETCHING_EXTERNAL_ASSETS...",
-            "CALCULATING_LAYOUT_MATRIX..."
-        ];
-
+        // Track Scroll Velocity for 3D effect
         ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
             onUpdate: (self) => {
-                // Add a log line periodically based on scroll progress
-                if (Math.random() > 0.95) {
-                    const msg = logs[Math.floor(Math.random() * logs.length)];
-                    const div = document.createElement('div');
-                    div.className = "terminal-line";
-                    div.innerText = `>> ${msg} [${Math.round(self.progress * 100)}%]`;
-                    logContainer.prepend(div);
-                    if (logContainer.children.length > 5) logContainer.lastChild.remove();
-                }
+                const vel = Math.abs(self.getVelocity());
+                // Normalize slightly
+                scrollVelocity += vel * 0.0005;
             }
         });
 
-        // Animate Sections
-        gsap.utils.toArray('.hud-panel').forEach(panel => {
-            gsap.from(panel, {
-                scrollTrigger: {
-                    trigger: panel,
-                    start: "top 90%",
-                },
-                y: 30,
-                opacity: 0,
-                duration: 0.6,
-                ease: "power2.out"
+        // Scramble Text Effect
+        const scrambleElements = document.querySelectorAll('.scramble-text');
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+
+        scrambleElements.forEach(el => {
+            const originalText = el.innerText;
+            el.addEventListener('mouseenter', () => {
+                let iteration = 0;
+                const interval = setInterval(() => {
+                    el.innerText = originalText.split('')
+                        .map((letter, index) => {
+                            if(index < iteration) return originalText[index];
+                            return chars[Math.floor(Math.random() * 26)];
+                        })
+                        .join('');
+
+                    if(iteration >= originalText.length) clearInterval(interval);
+                    iteration += 1/3;
+                }, 30);
             });
         });
 
-        // Counter Animation
-        gsap.utils.toArray('.counter').forEach(counter => {
-            const target = parseInt(counter.getAttribute('data-target'));
-            gsap.to(counter, {
+        // Brutal Reveal Animations
+        gsap.utils.toArray('.brutal-card').forEach(card => {
+            gsap.from(card, {
                 scrollTrigger: {
-                    trigger: counter,
-                    start: "top 85%",
+                    trigger: card,
+                    start: "top 90%",
                 },
-                innerHTML: target,
-                duration: 2,
-                snap: { innerHTML: 1 }
+                x: -50,
+                opacity: 0,
+                duration: 0.1, // Snap in fast
+                delay: Math.random() * 0.2
             });
         });
 
