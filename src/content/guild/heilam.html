@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HEILAM | CYBER_GARDEN</title>
+    <title>Heilam's Sketchbook | Guild Hall</title>
     <!-- GSAP Global -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -21,34 +23,56 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Zen+Maru+Gothic:wght@300;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Indie+Flower&family=Zen+Maru+Gothic:wght@300;500;700;900&display=swap');
 
         :root {
-            --neon-green: #39ff14;
-            --dark-green: #002b0e;
-            --black: #050505;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: rgba(57, 255, 20, 0.3);
+            --paper-bg: #F9F5EC;
+            --ink-black: #2F2F2F;
+            --emerald: #50C878;
+            --grass-light: #90EE90;
+            --sky-blue: #ADD8E6;
+            --watercolor-green: rgba(80, 200, 120, 0.4);
         }
 
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
-            background-color: var(--black);
-            color: #fff;
-            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: var(--paper-bg);
+            color: var(--ink-black);
+            font-family: 'Zen Maru Gothic', 'Indie Flower', sans-serif;
             overflow-x: hidden;
+            /* Paper Texture Overlay via CSS Noise */
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.5;
         }
 
         /* Canvas Layers */
-        #canvas-container {
+        #three-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: 0;
+            /* pointer-events: none; allow interaction if needed */
+        }
+
+        #p5-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Above Three.js, below content */
             pointer-events: none;
         }
 
@@ -58,557 +82,563 @@
             top: 2rem;
             left: 2rem;
             z-index: 100;
-            color: var(--neon-green);
+            color: var(--ink-black);
             text-decoration: none;
-            font-family: 'Syncopate', sans-serif;
+            font-family: 'Indie Flower', cursive;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            mix-blend-mode: difference;
+            font-size: 1.2rem;
+            border-bottom: 2px solid var(--emerald);
+            transition: all 0.3s ease;
         }
 
-        /* Scroll Content */
+        .nav-back:hover {
+            color: var(--emerald);
+            transform: rotate(-2deg) scale(1.1);
+        }
+
+        /* Content Layout (Comic Style) */
         .content-scroll {
             position: relative;
             z-index: 10;
             width: 100%;
+            padding-bottom: 10rem;
         }
 
-        .section {
-            min-height: 100vh;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 4rem 2rem;
-            box-sizing: border-box;
+        .comic-panel {
             position: relative;
-        }
-
-        /* Typography (Explosive Style) */
-        h1.mega-title {
-            font-family: 'Syncopate', sans-serif;
-            font-weight: 700;
-            font-size: clamp(4rem, 15vw, 12rem);
-            line-height: 0.8;
-            color: transparent;
-            -webkit-text-stroke: 2px var(--neon-green);
-            text-transform: uppercase;
-            position: relative;
-            z-index: 2;
-            pointer-events: none;
-            mix-blend-mode: exclusion;
-        }
-
-        h1.mega-title span {
-            display: block;
-        }
-
-        .glitch-text {
-            position: relative;
-        }
-
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0.8;
-        }
-
-        .glitch-text::before {
-            color: #ff00ff;
-            z-index: -1;
-            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-            transform: translate(-2px, -2px);
-            animation: glitch-anim-1 2s infinite linear alternate-reverse;
-        }
-
-        .glitch-text::after {
-            color: #00ffff;
-            z-index: -2;
-            clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
-            transform: translate(2px, 2px);
-            animation: glitch-anim-2 2s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim-1 {
-            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px,0); }
-            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px,0); }
-            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px,0); }
-            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px,0); }
-            80% { clip-path: inset(10% 0 60% 0); transform: translate(-2px,0); }
-            100% { clip-path: inset(30% 0 30% 0); transform: translate(2px,0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip-path: inset(10% 0 60% 0); transform: translate(2px,0); }
-            20% { clip-path: inset(30% 0 20% 0); transform: translate(-2px,0); }
-            40% { clip-path: inset(10% 0 80% 0); transform: translate(2px,0); }
-            60% { clip-path: inset(70% 0 10% 0); transform: translate(-2px,0); }
-            80% { clip-path: inset(50% 0 30% 0); transform: translate(2px,0); }
-            100% { clip-path: inset(0 0 70% 0); transform: translate(-2px,0); }
-        }
-
-        /* Layout Elements */
-        .bio-box {
-            border: 1px solid var(--border);
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
+            width: 90%;
+            max-width: 800px;
+            margin: 4rem auto;
+            background: #fff;
+            border: 3px solid var(--ink-black);
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
             padding: 2rem;
-            max-width: 500px;
-            margin-top: 2rem;
-            position: relative;
-        }
-
-        .bio-box::before {
-            content: '';
-            position: absolute;
-            top: -5px; left: -5px;
-            width: 20px; height: 20px;
-            border-top: 2px solid var(--neon-green);
-            border-left: 2px solid var(--neon-green);
-        }
-
-        .bio-box::after {
-            content: '';
-            position: absolute;
-            bottom: -5px; right: -5px;
-            width: 20px; height: 20px;
-            border-bottom: 2px solid var(--neon-green);
-            border-right: 2px solid var(--neon-green);
-        }
-
-        h2.section-title {
-            font-family: 'Syncopate', sans-serif;
-            font-size: 2rem;
-            color: var(--neon-green);
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-        }
-
-        p.text-body {
-            font-size: 1rem;
-            line-height: 1.8;
-            color: #ddd;
-            margin-bottom: 1rem;
-        }
-
-        .highlight {
-            color: var(--neon-green);
-            font-weight: 700;
-            text-shadow: 0 0 10px var(--neon-green);
-        }
-
-        /* Horizontal Scroll Section */
-        #h-scroll-container {
-            width: 400%; /* 4 sections wide */
-            height: 100vh;
-            display: flex;
-            flex-wrap: nowrap;
-        }
-
-        .h-panel {
-            width: 100vw;
-            height: 100vh;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            padding: 0 5vw;
             box-sizing: border-box;
-        }
-
-        /* Images */
-        .img-container {
-            width: 400px;
-            height: 500px; /* Portrait */
-            position: relative;
+            transform: rotate(1deg); /* Slight irregularity */
+            transition: transform 0.3s ease;
             overflow: hidden;
-            border: 1px solid var(--neon-green);
-            margin: 0 2rem;
         }
 
-        .img-container img {
+        .comic-panel:hover {
+            transform: rotate(0deg) scale(1.02);
+            box-shadow: 15px 15px 0 var(--watercolor-green);
+        }
+
+        .comic-panel.align-right {
+            margin-left: auto;
+            margin-right: 5%;
+            transform: rotate(-1deg);
+        }
+
+        .comic-panel.align-left {
+            margin-right: auto;
+            margin-left: 5%;
+            transform: rotate(2deg);
+        }
+
+        /* Typography */
+        h1.hand-title {
+            font-family: 'Indie Flower', cursive;
+            font-size: 5rem;
+            line-height: 0.9;
+            margin: 0;
+            text-align: center;
+            color: var(--emerald);
+            text-shadow: 3px 3px 0 var(--ink-black);
+            transform: rotate(-3deg);
+        }
+
+        h2.panel-title {
+            font-family: 'Indie Flower', cursive;
+            font-size: 2.5rem;
+            margin-top: 0;
+            border-bottom: 2px dashed var(--emerald);
+            display: inline-block;
+            color: var(--ink-black);
+        }
+
+        p.hand-text {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            font-weight: 500;
+        }
+
+        .highlight-marker {
+            background: linear-gradient(120deg, var(--watercolor-green) 0%, var(--watercolor-green) 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 88%;
+            padding: 0 5px;
+            font-weight: 700;
+        }
+
+        /* Images (Polaroid Style) */
+        .polaroid {
+            background: #fff;
+            padding: 10px 10px 40px 10px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+            transform: rotate(3deg);
+            width: 250px;
+            margin: 1rem auto;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .polaroid img {
             width: 100%;
-            height: 100%;
+            height: 250px;
             object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
-            transition: all 0.5s ease;
+            filter: sepia(0.2) contrast(1.1);
+            border: 1px solid #ddd;
         }
 
-        .img-container:hover img {
-            filter: grayscale(0%) contrast(1);
-            transform: scale(1.1);
+        .polaroid:hover {
+            transform: rotate(0deg) scale(1.1) z-index(10);
+            box-shadow: 10px 20px 30px rgba(0,0,0,0.3);
+            z-index: 20;
+            position: relative;
         }
 
-        /* Floating Elements */
-        .floating-turtle {
+        .polaroid-caption {
+            text-align: center;
+            font-family: 'Indie Flower', cursive;
+            color: #555;
+            margin-top: 10px;
+            font-size: 1.2rem;
+        }
+
+        /* Speech Bubble */
+        .speech-bubble {
+            position: relative;
+            background: #fff;
+            border-radius: .4em;
+            padding: 2rem;
+            border: 2px solid var(--ink-black);
+            margin-bottom: 2rem;
+        }
+
+        .speech-bubble:after {
+            content: '';
             position: absolute;
-            font-size: 10rem;
-            color: var(--neon-green);
-            opacity: 0.1;
-            z-index: 0;
+            bottom: 0;
+            left: 20%;
+            width: 0;
+            height: 0;
+            border: 20px solid transparent;
+            border-top-color: var(--ink-black);
+            border-bottom: 0;
+            border-left: 0;
+            margin-left: -10px;
+            margin-bottom: -20px;
+        }
+
+        /* Floating Elements (CSS Animation) */
+        .floating-ink {
+            position: absolute;
+            font-size: 3rem;
+            color: var(--emerald);
+            opacity: 0.6;
+            animation: float 6s ease-in-out infinite;
             pointer-events: none;
-            filter: blur(2px);
+            z-index: 5;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
         }
 
         /* Footer */
-        .footer-glitch {
+        .footer-hand {
             text-align: center;
+            font-family: 'Indie Flower', cursive;
             margin-top: 4rem;
-            font-family: 'Syncopate', sans-serif;
             font-size: 1.5rem;
-            color: var(--neon-green);
         }
 
-        .social-bar {
-            display: flex;
-            gap: 2rem;
-            margin-top: 2rem;
-            font-size: 2rem;
-        }
-
-        .social-link {
-            color: #fff;
+        .social-sketch {
+            font-size: 2.5rem;
+            margin: 0 1rem;
+            color: var(--ink-black);
             transition: color 0.3s;
         }
-        .social-link:hover {
-            color: var(--neon-green);
-            text-shadow: 0 0 20px var(--neon-green);
+
+        .social-sketch:hover {
+            color: var(--emerald);
         }
 
         /* Loader */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
+            background: var(--paper-bg);
             z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: var(--neon-green);
-            font-family: 'Syncopate', sans-serif;
+            color: var(--ink-black);
+            font-family: 'Indie Flower', cursive;
             font-size: 2rem;
-            letter-spacing: 5px;
+        }
+
+        /* Flex Container for Polaroid Grid */
+        .polaroid-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">INITIALIZING SYSTEM...</div>
+    <div id="loader">
+        <i class="fas fa-pencil-alt fa-spin" style="margin-right: 10px;"></i> Sketching World...
+    </div>
 
-    <a href="/guild/" class="nav-back">&lt; GUILD HALL</a>
-    <div id="canvas-container"></div>
+    <a href="/guild/" class="nav-back"><i class="fas fa-chevron-left"></i> Guild</a>
+
+    <div id="three-canvas"></div>
+    <div id="p5-canvas"></div>
 
     <div class="content-scroll">
 
-        <!-- Hero: Huge Type -->
-        <div class="section" id="hero">
-            <h1 class="mega-title glitch-text" data-text="HEILAM">
-                <span>HEI</span>
-                <span>LAM</span>
-            </h1>
-            <div class="bio-box">
-                <p class="text-body" style="font-family: 'Syncopate'; font-size: 0.8rem; margin-bottom: 0;">
-                    // CLASS: MUSICIAN<br>
-                    // LOC: TOKYO, JP<br>
-                    // STATUS: DREAMING
+        <!-- Hero: The Title Page -->
+        <div class="section" style="height: 100vh; display: flex; align-items: center; justify-content: center; position: relative;">
+            <div style="z-index: 10; text-align: center;">
+                <div class="polaroid" style="transform: rotate(-5deg); margin-bottom: 2rem;">
+                    <img src="/assets/img/guild/heilam/avatar.webp" alt="Heilam Sketch">
+                </div>
+                <h1 class="hand-title">Heilam's Sketchbook</h1>
+                <p class="hand-text" style="font-size: 1.5rem; margin-top: 1rem;">
+                    // Musician // Japan // <i class="fas fa-otter"></i> Turtle
                 </p>
+                <i class="fas fa-arrow-down floating-ink" style="bottom: 2rem; left: 50%; color: var(--ink-black);"></i>
             </div>
         </div>
 
-        <!-- Section 1: Introduction (Centered) -->
-        <div class="section" id="intro">
-            <div class="bio-box" style="max-width: 800px; text-align: center;">
-                <h2 class="section-title">ORIGIN_DATA</h2>
-                <p class="text-body" style="font-size: 1.2rem;">
-                    我是 <span class="highlight">Heilam</span>，一個在日本生活的香港音樂人。<br>
-                    大學唸古典聲樂，曾經以合唱團成員在歐亞各地巡演。
+        <!-- Panel 1: Origin -->
+        <div class="comic-panel align-left" id="panel-origin">
+            <h2 class="panel-title">Chapter 1: The Origin</h2>
+            <div class="speech-bubble" style="margin-top: 2rem;">
+                <p class="hand-text">
+                    我是 <span class="highlight-marker">Heilam</span>，一個在日本生活的香港音樂人。<br>
+                    大學唸 <span class="highlight-marker">古典聲樂</span>，曾經以合唱團成員在歐亞各地巡演，也是一個在劇場活躍的表演者。
                 </p>
-                <div class="img-container" style="width: 200px; height: 200px; margin: 2rem auto; border-radius: 50%;">
-                    <img src="/assets/img/guild/heilam/avatar.webp" alt="Avatar">
+            </div>
+            <p class="hand-text" style="color: #666; font-size: 0.9rem; text-align: right;">
+                *Sketch of a concert hall...*
+            </p>
+        </div>
+
+        <!-- Panel 2: The Shift -->
+        <div class="comic-panel align-right" id="panel-shift">
+            <h2 class="panel-title">Chapter 2: The Shift</h2>
+            <p class="hand-text">
+                後來因為感歎 <span class="highlight-marker">人生苦短</span>，想在世界末日前想完成自己在日本唸音樂的夢想。
+            </p>
+            <p class="hand-text">
+                毅然決然放棄在香港正在準備起步的表演事業，來到日本的專門學校修讀了 <span class="highlight-marker">流行唱歌</span>。
+            </p>
+            <div class="polaroid-grid">
+                 <div class="polaroid">
+                    <img src="/assets/img/guild/heilam/photo1.webp" alt="Japan Streets">
+                    <div class="polaroid-caption">New Life in Tokyo</div>
                 </div>
             </div>
         </div>
 
-        <!-- Horizontal Scroll Section (Pinned) -->
-        <div id="h-scroll-wrapper" style="width: 100%; overflow: hidden; height: 100vh;">
-            <div id="h-scroll-container">
-
-                <!-- Panel 1: The Shift -->
-                <div class="h-panel">
-                    <div style="flex: 1; padding: 4rem;">
-                        <h2 class="section-title" style="font-size: 4rem; line-height: 1;">THE<br>SHIFT</h2>
-                    </div>
-                    <div class="img-container">
-                        <img src="/assets/img/guild/heilam/photo1.webp" alt="Japan Life">
-                    </div>
-                    <div class="bio-box" style="margin-left: 2rem;">
-                        <p class="text-body">
-                            感歎 <span class="highlight">人生苦短</span>，想在世界末日前想完成自己在日本唸音樂的夢想。
-                        </p>
-                        <p class="text-body">
-                            毅然決然放棄在香港正在準備起步的表演事業，來到日本的專門學校修讀了流行唱歌。
-                        </p>
-                    </div>
+        <!-- Panel 3: Current -->
+        <div class="comic-panel align-left" id="panel-current">
+            <h2 class="panel-title">Chapter 3: Current Jam</h2>
+            <p class="hand-text">
+                現在會做 <span class="highlight-marker">街頭演出</span>、錄音指導、鍵盤手之類的~<br>
+                每一個人生階段都在不同的音樂和文化藝術中度過✨
+            </p>
+             <div class="polaroid-grid">
+                 <div class="polaroid" style="transform: rotate(2deg);">
+                    <img src="/assets/img/guild/heilam/photo2.webp" alt="Performance">
+                    <div class="polaroid-caption">Live & Loud</div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Panel 2: Current Life -->
-                <div class="h-panel">
-                    <div class="bio-box" style="margin-right: 2rem;">
-                        <h2 class="section-title">CURRENT_STATE</h2>
-                        <p class="text-body">
-                            現在會做 <span class="highlight">街頭演出</span>、錄音指導、鍵盤手之類的~<br>
-                            每一個人生階段都在不同的音樂和文化藝術中度過✨
-                        </p>
-                    </div>
-                     <div class="img-container">
-                        <img src="/assets/img/guild/heilam/photo2.webp" alt="Works">
-                    </div>
-                </div>
+        <!-- Panel 4: Dream -->
+        <div class="comic-panel align-right" style="border-color: var(--emerald); background: #f0fff0;" id="panel-dream">
+            <h2 class="panel-title" style="color: var(--emerald);">Final Chapter: The Dream</h2>
+            <p class="hand-text" style="font-size: 1.3rem;">
+                最近新的夢想是希望每一個人都可以擁有<br>
+                <span class="highlight-marker" style="font-size: 2rem;">健康的聲音</span>
+            </p>
+            <p class="hand-text">
+                比起變的有名，更享受每一次有不認識的人聽到我的聲音而駐足停留...
+                那種偷偷的快感！
+            </p>
+            <div style="text-align: center; margin-top: 3rem;">
+                <h3 style="font-family: 'Indie Flower';">Find me here:</h3>
+                <a href="https://www.threads.net/@heilamt_music_turtledaihub" target="_blank" class="social-sketch"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/heilamt_music_turtledaihub/" target="_blank" class="social-sketch"><i class="fab fa-instagram"></i></a>
+            </div>
 
-                <!-- Panel 3: Dream -->
-                <div class="h-panel">
-                     <i class="fas fa-heart-pulse floating-turtle" style="top: 20%; left: 10%;"></i>
-                     <div class="bio-box" style="max-width: 600px; text-align: center;">
-                        <h2 class="section-title">NEW_DREAM</h2>
-                        <p class="text-body" style="font-size: 1.5rem;">
-                            希望每一個人都可以擁有<span class="highlight">健康的聲音</span>。
-                        </p>
-                        <p class="text-body">
-                            比起變的有名，更享受每一次有不認識的人聽到我的聲音而駐足停留...
-                        </p>
-                    </div>
-                </div>
-
-                 <!-- Panel 4: Footer -->
-                <div class="h-panel">
-                    <div style="text-align: center;">
-                        <h1 class="mega-title" style="font-size: 5rem;">CONTACT</h1>
-                        <div class="social-bar" style="justify-content: center;">
-                            <a href="https://www.threads.net/@heilamt_music_turtledaihub" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                            <a href="https://www.instagram.com/heilamt_music_turtledaihub/" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
-                        </div>
-                        <div class="footer-glitch" style="font-size: 0.8rem; margin-top: 2rem;">
-                             MADE WITH <i class="fa-solid fa-heart highlight"></i> BY SUPERGALEN'S DUNGEON
-                        </div>
-                    </div>
-                </div>
-
+             <div class="footer-hand" style="font-size: 0.8rem; margin-top: 2rem; color: #888;">
+                MADE WITH <i class="fa-solid fa-heart" style="color: var(--emerald);"></i> BY SUPERGALEN'S DUNGEON
             </div>
         </div>
 
     </div>
 
-    <!-- Script -->
+    <!-- p5.js Ink Script -->
+    <script>
+        const sketch = (p) => {
+            let inkDrops = [];
+
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-canvas');
+                p.clear();
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Draw Drops
+                for (let i = inkDrops.length - 1; i >= 0; i--) {
+                    inkDrops[i].update();
+                    inkDrops[i].display();
+                    if (inkDrops[i].isDead()) {
+                        inkDrops.splice(i, 1);
+                    }
+                }
+            };
+
+            p.mouseMoved = () => {
+                // Add ink drops on mouse move
+                if (p.random(1) < 0.5) {
+                    inkDrops.push(new InkDrop(p.mouseX, p.mouseY));
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class InkDrop {
+                constructor(x, y) {
+                    this.pos = p.createVector(x, y);
+                    this.vel = p.createVector(p.random(-1, 1), p.random(1, 3)); // Fall down like dripping ink
+                    this.acc = p.createVector(0, 0.05);
+                    this.size = p.random(2, 8);
+                    this.life = 255;
+                    this.color = p.color(47, 47, 47); // Ink Black
+                }
+
+                update() {
+                    this.vel.add(this.acc);
+                    this.pos.add(this.vel);
+                    this.life -= 5;
+                    this.size *= 0.95; // Shrink
+                }
+
+                display() {
+                    p.noStroke();
+                    this.color.setAlpha(this.life);
+                    p.fill(this.color);
+                    p.ellipse(this.pos.x, this.pos.y, this.size);
+                }
+
+                isDead() {
+                    return this.life < 0;
+                }
+            }
+        };
+
+        new p5(sketch);
+    </script>
+
+    <!-- Three.js Sketch Script -->
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
         // --- Loader ---
         window.addEventListener('load', () => {
             const loader = document.getElementById('loader');
             gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.style.display = 'none' });
-
-            // GSAP Horizontal Scroll
-            const container = document.getElementById('h-scroll-container');
-            const wrapper = document.getElementById('h-scroll-wrapper');
-
-            if(container && wrapper) {
-                gsap.to(container, {
-                    x: () => -(container.scrollWidth - document.documentElement.clientWidth) + "px",
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: wrapper,
-                        pin: true,
-                        scrub: 1,
-                        end: () => "+=" + container.scrollWidth,
-                        invalidateOnRefresh: true
-                    }
-                });
-            }
         });
 
-        // --- Three.js Setup (Neon Cyber Garden) ---
-        const container = document.getElementById('canvas-container');
+        // --- Scene Setup ---
+        const container = document.getElementById('three-canvas');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.03); // Deep black fog
+        scene.background = new THREE.Color(0xF9F5EC); // Match paper bg
+        // scene.fog = new THREE.FogExp2(0xF9F5EC, 0.02); // Fade to paper
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 2, 10);
+        camera.position.set(0, 5, 15);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false }); // Antialias off for post-processing performance
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (BLOOM) ---
-        const renderScene = new RenderPass(scene, camera);
+        // --- Custom "Wiggle" Material (The Sketch Look) ---
+        // We use LineSegments but we will displace vertices in the loop for simplicity without custom shader complexity
+        // For a more robust "Sketch", we use EdgesGeometry.
 
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 2.0; // High bloom for neon effect
-        bloomPass.radius = 0.5;
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x2F2F2F,
+            opacity: 0.8,
+            transparent: true,
+            linewidth: 2 // Note: WebGL linewidth is often limited to 1
+        });
 
         // --- Objects ---
+        const sketchObjects = []; // To store objects for animation
 
-        // 1. Digital Grass (Instanced LineSegments)
-        // Creating a field of vertical lines that sway
-        const grassCount = 2000;
-        const grassGeo = new THREE.BufferGeometry();
-
-        // Simple line: (0,0,0) to (0,1,0)
-        const linePositions = new Float32Array([0, 0, 0, 0, 1.5, 0]);
-        grassGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-
-        const grassMat = new THREE.LineBasicMaterial({ color: 0x39ff14, transparent: true, opacity: 0.6 });
-
-        const grassField = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
-        const dummy = new THREE.Object3D();
-
-        const grassData = []; // Store phase/speed for animation
-
-        for(let i=0; i<grassCount; i++) {
-            const x = (Math.random() - 0.5) * 60;
-            const z = (Math.random() - 0.5) * 60 - 10; // Bias towards back
-
-            dummy.position.set(x, -2, z);
-
-            // Random scale (height)
-            const s = Math.random() * 2 + 0.5;
-            dummy.scale.set(1, s, 1);
-
-            dummy.updateMatrix();
-            grassField.setMatrixAt(i, dummy.matrix);
-
-            grassData.push({
-                x: x, z: z, s: s,
-                phase: Math.random() * Math.PI * 2,
-                speed: Math.random() * 2 + 1
-            });
-        }
-        scene.add(grassField);
-
-        // 2. Cyber Turtles (Floating Icosahedrons - "Shells")
+        // 1. The Turtle (Built from primitives)
         const turtleGroup = new THREE.Group();
+
+        // Shell (Icosahedron)
+        const shellGeo = new THREE.IcosahedronGeometry(4, 1);
+        const shellEdges = new THREE.EdgesGeometry(shellGeo); // Outline only
+        const shell = new THREE.LineSegments(shellEdges, lineMaterial);
+        turtleGroup.add(shell);
+
+        // Head
+        const headGeo = new THREE.SphereGeometry(1.5, 8, 8);
+        const headEdges = new THREE.EdgesGeometry(headGeo);
+        const head = new THREE.LineSegments(headEdges, lineMaterial);
+        head.position.set(0, 1, 4.5);
+        turtleGroup.add(head);
+
+        // Limbs (Boxes)
+        const limbGeo = new THREE.BoxGeometry(1.5, 0.5, 3);
+        const limbEdges = new THREE.EdgesGeometry(limbGeo);
+
+        const fl = new THREE.LineSegments(limbEdges, lineMaterial);
+        fl.position.set(3.5, -1, 2);
+        fl.rotation.y = -0.5;
+        turtleGroup.add(fl);
+
+        const fr = new THREE.LineSegments(limbEdges, lineMaterial);
+        fr.position.set(-3.5, -1, 2);
+        fr.rotation.y = 0.5;
+        turtleGroup.add(fr);
+
+        const bl = new THREE.LineSegments(limbEdges, lineMaterial);
+        bl.position.set(3.5, -1, -3);
+        bl.rotation.y = 0.5;
+        turtleGroup.add(bl);
+
+        const br = new THREE.LineSegments(limbEdges, lineMaterial);
+        br.position.set(-3.5, -1, -3);
+        br.rotation.y = -0.5;
+        turtleGroup.add(br);
+
         scene.add(turtleGroup);
 
-        const shellGeo = new THREE.IcosahedronGeometry(1, 1); // Hexagonal look
-        const shellMat = new THREE.MeshBasicMaterial({
-            color: 0x39ff14,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.3
-        });
+        // 2. Floating "Sketch Clouds"
+        const cloudGroup = new THREE.Group();
+        const cloudGeo = new THREE.SphereGeometry(1, 4, 4); // Low poly
+        const cloudEdges = new THREE.EdgesGeometry(cloudGeo);
 
-        // Add a "Core" to the turtle
-        const coreGeo = new THREE.SphereGeometry(0.3, 8, 8);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-
-        const turtles = [];
-        for(let i=0; i<8; i++) {
-            const tGroup = new THREE.Group();
-
-            const shell = new THREE.Mesh(shellGeo, shellMat);
-            tGroup.add(shell);
-
-            const core = new THREE.Mesh(coreGeo, coreMat);
-            tGroup.add(core);
-
-            tGroup.position.set(
+        for(let i=0; i<10; i++) {
+            const cloud = new THREE.LineSegments(cloudEdges, lineMaterial);
+            cloud.position.set(
                 (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 20,
-                (Math.random() - 0.5) * 30 - 10
+                (Math.random() - 0.5) * 20 + 10,
+                (Math.random() - 0.5) * 20 - 10
             );
+            cloud.scale.set(Math.random()*2+1, Math.random()*1+0.5, Math.random()*2+1);
+            cloudGroup.add(cloud);
 
-            turtleGroup.add(tGroup);
-            turtles.push({
-                mesh: tGroup,
-                rotSpeed: (Math.random() - 0.5) * 0.02,
-                floatSpeed: Math.random() * 0.01 + 0.005,
-                floatOffset: Math.random() * 10
-            });
+            // Store original positions for wiggle
+            cloud.userData = {
+                originalY: cloud.position.y,
+                speed: Math.random() * 0.02,
+                offset: Math.random() * Math.PI
+            };
         }
+        scene.add(cloudGroup);
 
-        // --- Interaction ---
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
-
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
+        // 3. Inner Color (Hidden initially, revealed on scroll?)
+        // Let's add a solid mesh inside the turtle shell that is emerald green, but wireframe over it.
+        const shellSolidMat = new THREE.MeshBasicMaterial({ color: 0x50C878, transparent: true, opacity: 0.0 }); // Start invisible
+        const shellSolid = new THREE.Mesh(shellGeo, shellSolidMat);
+        shellSolid.scale.set(0.98, 0.98, 0.98); // Slightly smaller to avoid z-fight with lines
+        turtleGroup.add(shellSolid);
 
         // --- Animation Loop ---
-        const clock = new THREE.Clock();
-
         function animate() {
-            // requestAnimationFrame(animate); // Managed by loop below
+            requestAnimationFrame(animate);
 
-            const time = clock.getElapsedTime();
+            const time = Date.now() * 0.001;
 
-            // 1. Animate Grass (Wind Effect)
-            for(let i=0; i<grassCount; i++) {
-                const d = grassData[i];
+            // Turtle Float
+            turtleGroup.position.y = Math.sin(time) * 0.5;
+            turtleGroup.rotation.y = Math.sin(time * 0.2) * 0.1; // Gentle sway
 
-                // Sway based on noise/sine
-                const sway = Math.sin(time * d.speed + d.phase) * 0.2;
-                const swayZ = Math.cos(time * d.speed * 0.7 + d.phase) * 0.2;
-
-                // React to mouse (Repulsion)
-                // Simplified: Just push away if close to center line (camera lookat)
-                // Actually difficult with InstancedMesh without ShaderMaterial or rewriting matrices every frame
-                // We will rewrite matrices for the "Explosive" feel, performance be damned (it's only 2000 lines)
-
-                dummy.position.set(d.x, -2, d.z);
-                dummy.scale.set(1, d.s, 1);
-
-                // Apply rotation (sway)
-                dummy.rotation.z = sway;
-                dummy.rotation.x = swayZ;
-
-                dummy.updateMatrix();
-                grassField.setMatrixAt(i, dummy.matrix);
-            }
-            grassField.instanceMatrix.needsUpdate = true;
-
-            // 2. Animate Turtles
-            turtles.forEach(t => {
-                t.mesh.rotation.x += t.rotSpeed;
-                t.mesh.rotation.y += t.rotSpeed;
-                t.mesh.position.y += Math.sin(time + t.floatOffset) * t.floatSpeed;
+            // Clouds Float
+            cloudGroup.children.forEach(cloud => {
+                cloud.position.x += cloud.userData.speed;
+                if(cloud.position.x > 30) cloud.position.x = -30;
             });
 
-            // 3. Camera Movement (Mouse Parallax)
-            targetX = mouseX * 2; // Range -2 to 2
-            targetY = mouseY * 2;
+            // "Boiling Line" Effect (Wiggle camera slightly to simulate hand-held or redraw?)
+            // Modifying vertices of EdgesGeometry is expensive.
+            // Cheaper trick: Jitter the camera position extremely slightly or the object scale
+            // turtleGroup.scale.setScalar(1 + Math.sin(time * 50) * 0.002);
 
-            camera.position.x += (targetX - camera.position.x) * 0.05;
-            camera.position.y += (targetY + 2 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, -10);
-
-            composer.render();
-            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
         }
         animate();
+
+        // --- GSAP Scroll Interactions ---
+        // 1. Rotate the turtle based on scroll
+        gsap.to(turtleGroup.rotation, {
+            x: Math.PI / 4, // Tilt up
+            y: Math.PI,     // Turn around
+            scrollTrigger: {
+                trigger: ".content-scroll",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // 2. Colorize the Turtle (The "Magic Ink" effect)
+        gsap.to(shellSolidMat, {
+            opacity: 0.8,
+            scrollTrigger: {
+                trigger: "#panel-current", // Color in when reaching "Current" chapter
+                start: "top center",
+                end: "bottom center",
+                scrub: 1
+            }
+        });
+
+        // 3. Comic Panels Entry
+        const panels = document.querySelectorAll('.comic-panel');
+        panels.forEach(panel => {
+            gsap.from(panel, {
+                y: 100,
+                opacity: 0,
+                rotation: 5, // Exaggerate the comic drop
+                duration: 0.8,
+                ease: "back.out(1.5)",
+                scrollTrigger: {
+                    trigger: panel,
+                    start: "top 80%"
+                }
+            });
+        });
 
         // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
