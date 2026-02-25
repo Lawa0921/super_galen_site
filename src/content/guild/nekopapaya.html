@@ -28,12 +28,13 @@
 
     <style>
         :root {
-            /* Palette: Cozy Haven */
-            --c-bg: #F4F1EC;       /* Cream */
-            --c-text: #4a4a4a;     /* Soft Grey */
-            --c-accent: #8FA891;   /* Sage Green */
-            --c-blue: #8AB6D6;     /* Soft Blue */
-            --c-warm: #EAC435;     /* Lamp Yellow */
+            /* Palette: Enriched Haven */
+            --c-bg: #F4F1EC;
+            --c-text: #4a4a4a;
+            --c-accent: #8FA891;
+            --c-blue: #8AB6D6;
+            --c-warm: #EAC435;
+            --c-wood: #D7B698;
 
             --f-en: 'Nunito', sans-serif;
             --f-zh: 'Noto Sans TC', sans-serif;
@@ -49,82 +50,75 @@
             line-height: 1.7;
         }
 
-        /* --- Layers --- */
-        #webgl-container {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; pointer-events: none;
-        }
-
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
         .scroller { position: relative; z-index: 10; pointer-events: none; }
         .interactive-layer { pointer-events: auto; }
 
+        /* --- Tooltip UI --- */
+        #tooltip {
+            position: fixed; pointer-events: none; opacity: 0;
+            background: rgba(255,255,255,0.9); padding: 0.5rem 1rem;
+            border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            font-family: var(--f-en); font-weight: 700; color: var(--c-accent);
+            transform: translate(-50%, -150%); transition: opacity 0.3s;
+            z-index: 100;
+        }
+
         /* --- Sections --- */
         .section {
-            height: 100vh;
+            height: 120vh; /* More space */
             display: flex; flex-direction: column; justify-content: center;
-            padding: 2rem;
-            position: relative;
+            padding: 2rem; position: relative;
         }
 
         .content-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(15px);
-            padding: 3rem;
-            border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-            max-width: 500px;
-            transform: translateY(50px); opacity: 0; /* Init state */
-            border: 2px solid white;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+            max-width: 450px;
+            border: 2px solid rgba(255,255,255,0.8);
+            transition: transform 0.3s;
         }
+        .content-card:hover { transform: translateY(-5px); }
 
-        /* Positioning variations */
         .pos-left { margin-right: auto; margin-left: 5vw; }
         .pos-right { margin-left: auto; margin-right: 5vw; }
         .pos-center { margin: 0 auto; text-align: center; }
+        .pos-top-left { margin-right: auto; margin-left: 10vw; margin-bottom: auto; margin-top: 15vh; }
 
-        /* --- Typography --- */
-        h1 {
-            font-family: var(--f-en); font-weight: 900; font-size: 3.5rem;
-            line-height: 1.1; color: var(--c-text); margin-bottom: 1rem;
-        }
-        h2 {
-            font-family: var(--f-en); font-weight: 700; font-size: 1rem;
-            text-transform: uppercase; letter-spacing: 0.1em;
-            color: var(--c-accent); margin-bottom: 1.5rem;
-        }
-        p { font-size: 1.1rem; color: #666; margin-bottom: 1.5rem; }
+        h1 { font-family: var(--f-en); font-weight: 900; font-size: 3rem; line-height: 1.1; margin-bottom: 0.5rem; }
+        h2 { font-family: var(--f-en); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-accent); margin-bottom: 1rem; }
+        h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--c-text); }
+        p { font-size: 1rem; color: #666; margin-bottom: 1rem; }
 
         .tag {
-            display: inline-block; padding: 0.3rem 0.8rem;
-            background: var(--c-bg); border-radius: 50px;
-            font-size: 0.9rem; font-weight: 700; color: var(--c-accent);
-            margin-right: 0.5rem;
+            display: inline-block; padding: 0.3rem 0.8rem; background: white;
+            border-radius: 50px; font-size: 0.8rem; font-weight: 700; color: var(--c-accent);
+            margin-right: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* --- Navigation --- */
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: var(--f-en); font-weight: 900;
-            color: var(--c-text); text-decoration: none;
+            font-family: var(--f-en); font-weight: 900; color: var(--c-text); text-decoration: none;
             padding: 0.5rem 1.2rem; background: white; border-radius: 50px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05); pointer-events: auto;
         }
 
-        /* --- Social Links --- */
         .social-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 60px; height: 60px; border-radius: 50%; background: var(--c-bg);
-            color: var(--c-text); font-size: 1.5rem; margin: 0 0.5rem;
-            transition: transform 0.2s, background 0.2s, color 0.2s;
-            text-decoration: none;
+            width: 50px; height: 50px; border-radius: 50%; background: white;
+            color: var(--c-text); font-size: 1.2rem; margin: 0 0.5rem;
+            transition: transform 0.2s, background 0.2s, color 0.2s; text-decoration: none;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.05);
         }
         .social-link:hover { transform: scale(1.1); background: var(--c-accent); color: white; }
 
-        /* --- RWD --- */
         @media(max-width: 768px) {
-            .content-card { padding: 2rem; margin: 0 auto !important; width: 100%; }
-            h1 { font-size: 2.5rem; }
-            .section { justify-content: flex-end; padding-bottom: 10vh; }
+            .content-card { margin: 0 auto !important; width: 100%; max-width: 100%; padding: 1.5rem; }
+            h1 { font-size: 2.2rem; }
+            .section { height: auto; min-height: 80vh; padding: 4rem 1.5rem; }
         }
 
     </style>
@@ -132,87 +126,89 @@
 <body>
 
     <a href="/guild" class="nav-fixed">← GUILD</a>
-
+    <div id="tooltip"></div>
     <div id="webgl-container"></div>
 
     <div class="scroller">
 
-        <!-- 1. Hero: The Room -->
+        <!-- 1. Hero: Overview -->
         <section class="section">
             <div class="content-card pos-left interactive-layer gs-reveal">
-                <h1>NEKOPAPAYA</h1>
-                <p style="font-weight: 500; color: var(--c-accent);">Human State Analyst</p>
-                <p>
-                    人體狀態觀察分析師。<br>
-                    康樂股長，魔人揪揪。<br>
-                    "Hydrogen knocking on your soul."
-                </p>
-                <div>
-                    <span class="tag">#SafeHaven</span>
-                    <span class="tag">#Observation</span>
-                    <span class="tag">#Joy</span>
+                <span class="tag">#SafeHaven</span>
+                <span class="tag">#Analyst</span>
+                <h1 style="margin-top: 1rem;">NEKOPAPAYA</h1>
+                <p>人體狀態觀察分析師 | 康樂股長</p>
+                <p style="font-style: italic; color: var(--c-accent);">"Hydrogen knocking on your soul."</p>
+                <div style="font-size: 0.9rem; color: #888;">
+                    <i class="fa-solid fa-computer-mouse"></i> Scroll & Explore the Room
                 </div>
             </div>
         </section>
 
-        <!-- 2. The Analyst's Desk -->
+        <!-- 2. Desk: Methodology -->
         <section class="section">
-            <div class="content-card pos-right interactive-layer gs-reveal">
-                <h2>METHODOLOGY</h2>
-                <h1>The Analysis.</h1>
-                <p>
-                    <strong>Observe:</strong> 無聲地觀察每個人的狀態與需求。在熱鬧的背後，看見靈魂的頻率。<br><br>
-                    <strong>Tune:</strong> 解構情緒，如同氫原子輕輕撞擊，調配出最適合當下的氛圍。
-                </p>
+            <div class="content-card pos-right interactive-layer gs-reveal" style="max-width: 400px;">
+                <h2>THE LAB</h2>
+                <h1>Analysis.</h1>
+                <h3>Observe & Tune</h3>
+                <p>無聲地觀察每個人的狀態與需求。就像科學家在實驗室調配配方，我調配的是「氛圍」。</p>
+                <div style="background: rgba(255,255,255,0.5); padding: 1rem; border-radius: 8px;">
+                    <strong style="color: var(--c-blue);">Toolkit:</strong><br>
+                    Listening, Empathy, Vibe Check.
+                </div>
             </div>
         </section>
 
-        <!-- 3. The Cozy Corner -->
+        <!-- 3. Bookshelf: Memories -->
         <section class="section">
             <div class="content-card pos-left interactive-layer gs-reveal">
-                <h2>CORE PHILOSOPHY</h2>
-                <h1>Safe Haven.</h1>
-                <p>
-                    這裡是一個可以停下來、坐一下的地方。<br>
-                    有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。
-                </p>
-                <p style="font-size: 0.9rem; color: var(--c-accent);">
-                    * Safety Protocol: 每個人都可以自由選擇，沒有強迫，只有邀請。
-                </p>
+                <h2>ARCHIVE</h2>
+                <h1>Library of Souls.</h1>
+                <p>每一個相遇都是一本書。我收集著大家的故事，將它們安放在這個空間裡。</p>
+                <p>這裡不只是避風港，也是記憶的圖書館。</p>
             </div>
         </section>
 
-        <!-- 4. Connection -->
+        <!-- 4. Lounge: The Safe Zone -->
+        <section class="section">
+            <div class="content-card pos-right interactive-layer gs-reveal">
+                <h2>THE HAVEN</h2>
+                <h1>Rest Here.</h1>
+                <p>這裡是一個可以停下來、坐一下的地方。沒有強迫，只有邀請。</p>
+                <p>喜歡可愛人事物、熱情、船。這就是我靈魂的燃料。</p>
+            </div>
+        </section>
+
+        <!-- 5. Corkboard: Connect -->
         <section class="section">
             <div class="content-card pos-center interactive-layer gs-reveal">
-                <h2>READY TO SYNC?</h2>
+                <h2>CHANNEL OPEN</h2>
                 <h1>Connect.</h1>
-                <p>如果你剛好想參與、想一起感受，就可以私訊我。</p>
+                <p>魔人揪揪出動！如果你剛好想參與、想一起感受，就可以私訊我。</p>
                 <div style="margin-top: 2rem;">
                     <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
                 </div>
+                <p style="font-size: 0.8rem; margin-top: 1rem; opacity: 0.6;">Safety Protocol: Voluntary Basis Only.</p>
             </div>
         </section>
 
     </div>
 
-    <!-- SCRIPT: The Cozy Room -->
+    <!-- SCRIPT -->
     <script type="module">
         import * as THREE from 'three';
 
         // --- Setup ---
         const container = document.getElementById('webgl-container');
+        const tooltip = document.getElementById('tooltip');
         const scene = new THREE.Scene();
-        // scene.background = new THREE.Color(0xF4F1EC); // Let CSS handle BG
-        scene.fog = new THREE.Fog(0xF4F1EC, 8, 20);
+        scene.fog = new THREE.Fog(0xF4F1EC, 10, 25);
 
-        // Isometric Camera Setup
+        // Isometric Camera
         const aspect = window.innerWidth / window.innerHeight;
-        const d = 10;
+        const d = 12;
         const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-
-        // Initial Camera Position (High Angle)
         camera.position.set(20, 20, 20);
         camera.lookAt(0, 0, 0);
 
@@ -223,219 +219,215 @@
         renderer.shadowMap.type = THREE.SoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Lights ---
+        // Lights
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xFFE4C4, 0.8); // Warm sunlight
-        dirLight.position.set(10, 20, 10);
+        const dirLight = new THREE.DirectionalLight(0xFFE4C4, 0.8);
+        dirLight.position.set(10, 20, 5);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        // --- The Room (Objects) ---
-        const roomGroup = new THREE.Group();
-        scene.add(roomGroup);
+        // --- Assets (Materials) ---
+        const matWood = new THREE.MeshStandardMaterial({ color: 0xD7B698, roughness: 0.8 });
+        const matWall = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.9 });
+        const matDark = new THREE.MeshStandardMaterial({ color: 0x4A4A4A, roughness: 0.8 });
+        const matAccent = new THREE.MeshStandardMaterial({ color: 0x8FA891, roughness: 0.8 });
+        const matBlue = new THREE.MeshStandardMaterial({ color: 0x8AB6D6, roughness: 0.6 });
+        const matYellow = new THREE.MeshStandardMaterial({ color: 0xEAC435, roughness: 0.6 });
+        const matPaper = new THREE.MeshStandardMaterial({ color: 0xFFF8DC, roughness: 0.9 });
 
-        // Materials
-        const woodMat = new THREE.MeshStandardMaterial({ color: 0xD7B698, roughness: 0.8 });
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.9 });
-        const greenMat = new THREE.MeshStandardMaterial({ color: 0x8FA891, roughness: 0.8 });
-        const blueMat = new THREE.MeshStandardMaterial({ color: 0x8AB6D6, roughness: 0.5 });
-        const darkMat = new THREE.MeshStandardMaterial({ color: 0x4A4A4A, roughness: 0.8 });
-        const glowMat = new THREE.MeshBasicMaterial({ color: 0x8AB6D6 });
+        // --- Scene Builder ---
+        const room = new THREE.Group();
+        scene.add(room);
 
-        // 1. Floor
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(12, 0.5, 12), woodMat);
-        floor.position.y = -0.25;
-        floor.receiveShadow = true;
-        roomGroup.add(floor);
+        // 1. Structure
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(14, 0.5, 14), matWood);
+        floor.position.y = -0.25; floor.receiveShadow = true; room.add(floor);
+        const wall1 = new THREE.Mesh(new THREE.BoxGeometry(14, 8, 0.5), matWall);
+        wall1.position.set(0, 4, -7.25); wall1.receiveShadow = true; room.add(wall1);
+        const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 8, 14), matWall);
+        wall2.position.set(-7.25, 4, 0); wall2.receiveShadow = true; room.add(wall2);
 
-        // 2. Walls (Corner)
-        const wall1 = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 0.5), wallMat);
-        wall1.position.set(0, 4, -6.25);
-        wall1.receiveShadow = true;
-        roomGroup.add(wall1);
+        // Window (Light Shaft)
+        const winGeo = new THREE.BoxGeometry(0.2, 3, 2);
+        const winFrame = new THREE.Mesh(winGeo, matWood);
+        winFrame.position.set(-7, 5, -2); room.add(winFrame);
+        // Fake light shaft mesh
+        const shaftGeo = new THREE.ConeGeometry(2, 8, 4, 1, true);
+        const shaftMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+        const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+        shaft.position.set(-5, 3, -2); shaft.rotation.z = -Math.PI/3; room.add(shaft);
 
-        const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 8, 12), wallMat);
-        wall2.position.set(-6.25, 4, 0);
-        wall2.receiveShadow = true;
-        roomGroup.add(wall2);
-
-        // 3. Desk (Analyst Area)
-        const deskGroup = new THREE.Group();
-        deskGroup.position.set(-3, 0, -3);
-        roomGroup.add(deskGroup);
-
-        // Photo Frame (Avatar) on Desk
+        // 2. Desk Area (Analyst)
+        const desk = new THREE.Group(); desk.position.set(-4, 0, -4); room.add(desk);
+        const deskTop = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 2.5), matWood);
+        deskTop.position.y = 1.5; deskTop.castShadow = true; deskTop.receiveShadow = true; desk.add(deskTop);
+        // Legs
+        [[-1.8,1], [1.8,1], [-1.8,-1], [1.8,-1]].forEach(pos => {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,1.5), matDark);
+            leg.position.set(pos[0], 0.75, pos[1]); desk.add(leg);
+        });
+        // Props: Monitor
+        const mon = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 0.1), matDark);
+        mon.position.set(0, 2.4, -0.5); desk.add(mon);
+        mon.userData = { name: "The Analyst", desc: "Processing Vibes..." };
+        // Props: Photo Frame
         const photoGeo = new THREE.PlaneGeometry(0.8, 0.8);
         const photoTex = new THREE.TextureLoader().load('/assets/img/guild/nekopapaya/avatar.webp');
-        const photoMat = new THREE.MeshBasicMaterial({ map: photoTex });
-        const photoFrame = new THREE.Mesh(photoGeo, photoMat);
-        photoFrame.position.set(1.2, 1.8, -0.8);
-        photoFrame.rotation.x = -0.1;
-        photoFrame.rotation.y = -0.2;
-        deskGroup.add(photoFrame);
-        // Frame border
-        const borderGeo = new THREE.BoxGeometry(0.9, 0.9, 0.05);
-        const borderMesh = new THREE.Mesh(borderGeo, new THREE.MeshStandardMaterial({ color: 0xFFFFFF }));
-        borderMesh.position.set(1.2, 1.8, -0.85);
-        borderMesh.rotation.x = -0.1;
-        borderMesh.rotation.y = -0.2;
-        deskGroup.add(borderMesh);
+        const photoFrame = new THREE.Mesh(photoGeo, new THREE.MeshBasicMaterial({ map: photoTex }));
+        photoFrame.position.set(1.2, 1.8, -0.8); photoFrame.rotation.set(-0.1, -0.2, 0); desk.add(photoFrame);
 
-        const deskTop = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 2.5), woodMat);
-        deskTop.position.y = 1.5; deskTop.castShadow = true;
-        deskGroup.add(deskTop);
+        // 3. Bookshelf (Collector)
+        const shelf = new THREE.Group(); shelf.position.set(0, 0, -6.5); room.add(shelf);
+        const shelfBody = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 1), matWood);
+        shelfBody.position.y = 2.5; shelfBody.castShadow = true; shelf.add(shelfBody);
+        // Procedural Books
+        const bookColors = [matAccent, matBlue, matYellow, matDark];
+        for(let i=0; i<15; i++) {
+            const bMat = bookColors[Math.floor(Math.random()*bookColors.length)];
+            const book = new THREE.Mesh(new THREE.BoxGeometry(0.2, Math.random()*0.4+0.6, 0.8), bMat);
+            book.position.set( (i-7)*0.22, Math.random()*3 + 1, 0.2 );
+            book.userData = { name: "Story", desc: "A collected memory." };
+            shelf.add(book);
+        }
 
-        // Legs
-        const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.5);
-        const leg1 = new THREE.Mesh(legGeo, darkMat); leg1.position.set(-1.8, 0.75, 1); deskGroup.add(leg1);
-        const leg2 = new THREE.Mesh(legGeo, darkMat); leg2.position.set(1.8, 0.75, 1); deskGroup.add(leg2);
-        const leg3 = new THREE.Mesh(legGeo, darkMat); leg3.position.set(-1.8, 0.75, -1); deskGroup.add(leg3);
-        const leg4 = new THREE.Mesh(legGeo, darkMat); leg4.position.set(1.8, 0.75, -1); deskGroup.add(leg4);
+        // 4. Lounge (Haven)
+        const lounge = new THREE.Group(); lounge.position.set(3, 0, 3); room.add(lounge);
+        // Rug
+        const rug = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.05, 32), matAccent);
+        rug.position.y = 0.05; lounge.add(rug);
+        // Beanbag
+        const beanGeo = new THREE.SphereGeometry(1, 16, 16);
+        const beanbag = new THREE.Mesh(beanGeo, matBlue);
+        beanbag.position.set(0, 0.8, 0); beanbag.scale.y = 0.6; beanbag.castShadow = true;
+        beanbag.userData = { name: "Relax", desc: "Take a seat." };
+        lounge.add(beanbag);
+        // Coffee Table
+        const table = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.5, 16), matWood);
+        table.position.set(-1.5, 0.25, 1); table.castShadow = true; lounge.add(table);
+        // Mug
+        const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.3, 12), matYellow);
+        mug.position.set(-1.5, 0.65, 1); mug.userData = { name: "Warmth", desc: "Hot Tea." };
+        lounge.add(mug);
 
-        // Monitor
-        const monitorBase = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 0.5), darkMat);
-        monitorBase.position.set(0, 1.6, -0.5);
-        deskGroup.add(monitorBase);
-        const monitorStem = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.1), darkMat);
-        monitorStem.position.set(0, 1.8, -0.5);
-        deskGroup.add(monitorStem);
-        const monitorScreen = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 0.1), darkMat);
-        monitorScreen.position.set(0, 2.4, -0.5);
-        deskGroup.add(monitorScreen);
-        const screenGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1), glowMat);
-        screenGlow.position.set(0, 2.4, -0.44);
-        deskGroup.add(screenGlow);
+        // 5. Corkboard (Connect)
+        const boardGroup = new THREE.Group(); boardGroup.position.set(-6.9, 4, 2); room.add(boardGroup);
+        const board = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3, 4), matWood);
+        boardGroup.add(board);
+        // Notes
+        const noteGeo = new THREE.BoxGeometry(0.15, 0.5, 0.5);
+        for(let i=0; i<5; i++) {
+            const note = new THREE.Mesh(noteGeo, i%2==0 ? matYellow : matPaper);
+            note.position.set(0.05, (Math.random()-0.5)*2, (Math.random()-0.5)*3);
+            note.userData = { name: "Plan", desc: "Joy Event Idea." };
+            boardGroup.add(note);
+        }
 
-        // 4. Haven Area (Rug + Plant)
-        const rug = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.1, 32), greenMat);
-        rug.position.set(2, 0.05, 2);
-        rug.receiveShadow = true;
-        roomGroup.add(rug);
-
-        // Floating Lamp (Magic)
-        const lampGroup = new THREE.Group();
-        lampGroup.position.set(3, 4, 3);
-        roomGroup.add(lampGroup);
-        const lampOrb = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFFE4C4 }));
-        lampGroup.add(lampOrb);
-        const lampLight = new THREE.PointLight(0xFFE4C4, 1, 10);
-        lampGroup.add(lampLight);
-
-        // 5. Hydrogen Bubbles (Souls)
+        // 6. Floating Bubbles
         const bubbles = [];
-        const bubbleGeo = new THREE.SphereGeometry(0.3, 16, 16);
-        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x8AB6D6, transparent: true, opacity: 0.6 });
-
-        for(let i=0; i<8; i++) {
+        const bubbleGeo = new THREE.SphereGeometry(0.2, 8, 8);
+        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x8AB6D6, transparent: true, opacity: 0.5 });
+        for(let i=0; i<10; i++) {
             const b = new THREE.Mesh(bubbleGeo, bubbleMat);
-            b.position.set(
-                (Math.random() - 0.5) * 8,
-                Math.random() * 5 + 1,
-                (Math.random() - 0.5) * 8
-            );
-            b.userData = { speed: Math.random() * 0.01 + 0.005, offset: Math.random() * 10 };
-            roomGroup.add(b);
+            b.position.set((Math.random()-0.5)*10, Math.random()*6+1, (Math.random()-0.5)*10);
+            b.userData = { speed: Math.random()*0.02, offset: Math.random()*10 };
+            room.add(b);
             bubbles.push(b);
         }
 
 
-        // --- Animation Loop (Scroll Logic) ---
+        // --- Interaction (Scroll & Click) ---
         let scrollY = 0;
-        let targetCamPos = new THREE.Vector3(15, 15, 15);
-        let targetCamZoom = 1;
-        let targetLookAt = new THREE.Vector3(0, 0, 0);
+        let targetCamPos = new THREE.Vector3(20, 20, 20);
+        let targetZoom = 1;
+        let targetLookAt = new THREE.Vector3(0,0,0);
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2(-1, -1);
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
-            const h = window.innerHeight;
-            const progress = scrollY / (document.body.scrollHeight - h); // 0 to 1
+            const progress = scrollY / (document.body.scrollHeight - window.innerHeight);
 
-            // Keyframes
-            if (progress < 0.1) {
-                // 1. Hero: Wide View
-                targetCamPos.set(15, 15, 15);
-                targetCamZoom = 1;
-                targetLookAt.set(0, 0, 0);
-            } else if (progress < 0.4) {
-                // 2. Desk: Zoom in
-                targetCamPos.set(-5, 10, 5); // Side view
-                targetCamZoom = 2;
-                targetLookAt.set(-3, 2, -3); // Look at desk
-            } else if (progress < 0.7) {
-                // 3. Haven: Top view
-                targetCamPos.set(5, 15, 5);
-                targetCamZoom = 1.8;
-                targetLookAt.set(2, 0, 2); // Look at rug
-            } else {
-                // 4. Connect: Pull back
-                targetCamPos.set(20, 20, 20);
-                targetCamZoom = 0.8;
-                targetLookAt.set(0, 0, 0);
+            if(progress < 0.1) { // Hero
+                targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0);
+            } else if(progress < 0.35) { // Desk
+                targetCamPos.set(-5, 10, 5); targetZoom = 2; targetLookAt.set(-4, 2, -4);
+            } else if(progress < 0.6) { // Shelf
+                targetCamPos.set(5, 8, -5); targetZoom = 2; targetLookAt.set(0, 3, -6.5);
+            } else if(progress < 0.85) { // Lounge
+                targetCamPos.set(5, 10, 5); targetZoom = 2; targetLookAt.set(3, 1, 3);
+            } else { // Board
+                targetCamPos.set(-10, 10, 10); targetZoom = 2; targetLookAt.set(-6.9, 4, 2);
             }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Tooltip movement
+            tooltip.style.left = e.clientX + 'px';
+            tooltip.style.top = e.clientY + 'px';
         });
 
         // Loop
         function animate() {
             requestAnimationFrame(animate);
 
-            // Lerp Camera
+            // Camera
             camera.position.lerp(targetCamPos, 0.05);
-            camera.zoom += (targetCamZoom - camera.zoom) * 0.05;
-            camera.updateProjectionMatrix(); // Important for zoom
-
-            // Lerp LookAt (manual orbit controls-ish)
-            const currentLook = new THREE.Vector3();
-            camera.getWorldDirection(currentLook);
-            // This is hard to tween smoothly with LookAt.
-            // Better: Tween a separate vector, then lookAt that vector.
-            // Since we don't have a stored lookAt vector in camera, we use the global one.
-            // Actually, OrbitControls usually handles this. Let's do simple lerp on the target point.
-
-            // Using a dummy object for lookAt target
-            if(!window.camTarget) {
-                window.camTarget = new THREE.Vector3(0,0,0);
-            }
+            camera.zoom += (targetZoom - camera.zoom) * 0.05;
+            camera.updateProjectionMatrix();
+            if(!window.camTarget) window.camTarget = new THREE.Vector3(0,0,0);
             window.camTarget.lerp(targetLookAt, 0.05);
             camera.lookAt(window.camTarget);
 
-            // Animate Bubbles
+            // Bubbles
             const time = Date.now() * 0.001;
             bubbles.forEach(b => {
                 b.position.y += Math.sin(time + b.userData.offset) * 0.01;
-                b.position.x += Math.cos(time * 0.5 + b.userData.offset) * 0.005;
             });
 
-            // Animate Lamp
-            lampGroup.position.y = 4 + Math.sin(time * 2) * 0.2;
+            // Raycasting
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(room.children, true);
+            let hit = null;
+
+            for(let i=0; i<intersects.length; i++) {
+                if(intersects[i].object.userData.name) {
+                    hit = intersects[i].object;
+                    break;
+                }
+            }
+
+            if(hit) {
+                document.body.style.cursor = 'pointer';
+                tooltip.style.opacity = 1;
+                tooltip.innerHTML = `${hit.userData.name}<br><span style='font-size:0.8em;font-weight:400'>${hit.userData.desc}</span>`;
+            } else {
+                document.body.style.cursor = 'default';
+                tooltip.style.opacity = 0;
+            }
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP Reveals ---
+        // GSAP
         gsap.registerPlugin(ScrollTrigger);
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.to(elem, {
                 y: 0, opacity: 1, duration: 1, ease: "power2.out",
-                scrollTrigger: {
-                    trigger: elem,
-                    start: "top 80%",
-                    toggleActions: "play reverse play reverse"
-                }
+                scrollTrigger: { trigger: elem, start: "top 80%", toggleActions: "play reverse play reverse" }
             });
         });
 
-        // Resize
         window.addEventListener('resize', () => {
             const aspect = window.innerWidth / window.innerHeight;
-            camera.left = -d * aspect;
-            camera.right = d * aspect;
-            camera.top = d;
-            camera.bottom = -d;
+            camera.left = -d * aspect; camera.right = d * aspect;
+            camera.top = d; camera.bottom = -d;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
