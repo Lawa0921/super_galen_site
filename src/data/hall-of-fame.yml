@@ -814,6 +814,18 @@ members:
       - id: "composer"
         label: "詞曲創作"
 
+  - id: "spj"
+    name: "塞趴卷 SPJ"
+    avatar: "/assets/img/guild/spj/avatar.webp"
+    page: "/guild/spj.html"
+    tags:
+      - id: "materialization_alchemist"
+        label: "具現化系鍊金術師"
+      - id: "text_town_architect"
+        label: "文字小鎮架構師"
+      - id: "guild_master"
+        label: "冒險公會會長"
+
   - id: "tyou"
     name: "秋桑 Tyou"
     avatar: "/assets/img/guild/tyou/pot.webp"
