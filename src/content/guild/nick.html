@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nick | Automation Architect</title>
-    <meta name="description" content="Nick - Building intelligent workflows that scale. Expert in n8n, Vibe Coding, and Automation Systems.">
+    <title>Nick | AI Core</title>
+    <meta name="description" content="Nick - Automation Architect. Building intelligent systems that think and execute.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -21,27 +21,19 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Space Grotesk', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
+                        mono: ['Share Tech Mono', 'monospace'],
+                        sans: ['Rajdhani', 'sans-serif'],
                     },
                     colors: {
-                        n8n: {
-                            orange: '#ff6d5a',
-                            blue: '#408eea',
-                            green: '#25b864',
-                            dark: '#1c1c21',
-                            panel: '#2d2d35',
-                            canvas: '#15151a'
+                        core: {
+                            bg: '#0f172a',
+                            cyan: '#06b6d4',
+                            blue: '#3b82f6',
+                            orange: '#f97316'
                         }
                     },
                     animation: {
-                        'pulse-flow': 'pulseFlow 2s infinite linear',
-                    },
-                    keyframes: {
-                        pulseFlow: {
-                            '0%': { strokeDashoffset: '20' },
-                            '100%': { strokeDashoffset: '0' }
-                        }
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     }
                 }
             }
@@ -49,20 +41,13 @@
     </script>
 
     <style>
-        /* Base Styles */
         body {
-            background-color: #15151a;
-            color: #ffffff;
+            background-color: #0f172a;
+            color: #e2e8f0;
             overflow-x: hidden;
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Rajdhani', sans-serif;
         }
 
-        /* Smooth Scroll */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* WebGL Canvas */
         #webgl {
             position: fixed;
             top: 0;
@@ -72,403 +57,301 @@
             z-index: -1;
         }
 
-        /* Node Card Styles */
-        .node-card {
-            background: rgba(45, 45, 53, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            border-radius: 12px;
+        /* Glassmorphism HUD */
+        .hud-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(6, 182, 212, 0.3);
             position: relative;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .node-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .node-header {
-            border-radius: 12px 12px 0 0;
-            padding: 12px 20px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .node-input-dot, .node-output-dot {
-            width: 12px;
-            height: 12px;
-            background: #fff;
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 2px solid #2d2d35;
-            z-index: 20;
-        }
-        .node-input-dot { left: -6px; background: #25b864; box-shadow: 0 0 10px #25b864; } /* Green for Input */
-        .node-output-dot { right: -6px; background: #ff6d5a; box-shadow: 0 0 10px #ff6d5a; } /* Orange for Output */
-
-        /* Connection Lines */
-        .connector-line {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 4px;
-            height: 100%;
-            background: #2d2d35;
-            transform: translateX(-50%);
-            z-index: 0;
-            border-radius: 4px;
-        }
-
-        .connector-line::after {
+        .hud-panel::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, #25b864 0%, #408eea 50%, #ff6d5a 100%);
+            top: -1px; left: -1px;
+            width: 10px; height: 10px;
+            border-top: 2px solid #06b6d4;
+            border-left: 2px solid #06b6d4;
+        }
+        .hud-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 10px; height: 10px;
+            border-bottom: 2px solid #06b6d4;
+            border-right: 2px solid #06b6d4;
+        }
+
+        /* Typing Effect Cursor */
+        .typing::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Terminal Log */
+        .terminal-line {
+            opacity: 0;
+            transform: translateX(-10px);
+            animation: logEntry 0.3s forwards;
+        }
+        @keyframes logEntry {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Scanline Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; w: 100%; h: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.1) 50%,
+                rgba(0,0,0,0.1)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
             opacity: 0.3;
-            border-radius: 4px;
-        }
-
-        .connector-pulse {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 4px;
-            height: 40px;
-            background: #fff;
-            border-radius: 4px;
-            transform: translateX(-50%);
-            filter: blur(2px);
-            animation: drop 2s infinite linear;
-        }
-
-        @keyframes drop {
-            0% { top: -10%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 110%; opacity: 0; }
-        }
-
-        /* Glitch Text */
-        .glitch-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .glitch-wrapper::before,
-        .glitch-wrapper::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #15151a;
-        }
-        .glitch-wrapper::before {
-            left: 2px;
-            text-shadow: -1px 0 #ff003c;
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim 5s infinite linear alternate-reverse;
-        }
-        .glitch-wrapper::after {
-            left: -2px;
-            text-shadow: -1px 0 #00f3ff;
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim-2 5s infinite linear alternate-reverse;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #15151a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2d2d35;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #408eea;
         }
     </style>
 </head>
-<body class="antialiased selection:bg-n8n-orange selection:text-white">
+<body class="antialiased selection:bg-core-cyan selection:text-black">
 
-    <!-- Loading Screen -->
-    <div id="loader" class="fixed inset-0 z-[9999] bg-[#15151a] flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="flex items-center gap-4 mb-4">
-            <i class="fa-solid fa-circle-nodes text-4xl text-n8n-orange animate-spin-slow"></i>
-            <h1 class="font-mono text-2xl font-bold tracking-widest text-white">INITIALIZING<span class="animate-pulse">...</span></h1>
-        </div>
-        <div class="w-64 h-1 bg-n8n-panel rounded-full overflow-hidden">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-n8n-green to-n8n-orange w-0 transition-all duration-300"></div>
-        </div>
-        <p class="mt-2 font-mono text-xs text-gray-500">Loading Workflow Modules</p>
-    </div>
+    <div class="scanlines"></div>
 
-    <!-- 3D Background -->
+    <!-- WebGL Background -->
     <canvas id="webgl"></canvas>
 
-    <!-- Navigation / HUD -->
-    <nav class="fixed top-0 left-0 w-full z-50 p-4 md:p-6 flex justify-between items-center pointer-events-none mix-blend-difference">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-40 p-6 flex justify-between items-center mix-blend-difference pointer-events-none">
         <div class="pointer-events-auto">
-            <a href="/guild" class="flex items-center gap-3 group">
-                <div class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center group-hover:bg-n8n-orange group-hover:border-n8n-orange transition-all">
-                    <i class="fa-solid fa-arrow-left text-white text-sm"></i>
-                </div>
-                <span class="font-mono text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">BACK_TO_GUILD</span>
+            <a href="/guild" class="flex items-center gap-2 text-core-cyan hover:text-white transition-colors">
+                <i class="fa-solid fa-chevron-left"></i>
+                <span class="font-mono text-sm tracking-widest">RETURN_GUILD</span>
             </a>
         </div>
-
-        <div class="pointer-events-auto flex gap-3">
-            <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-n8n-panel/80 backdrop-blur rounded-full border border-gray-700 text-xs font-mono text-gray-400 mr-4">
-                <span class="w-2 h-2 rounded-full bg-n8n-green animate-pulse"></span>
-                SYSTEM: ONLINE
-            </div>
-
-            <a href="https://znstudio216.com/" target="_blank" class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center hover:bg-n8n-blue hover:border-n8n-blue transition-all text-white">
-                <i class="fa-solid fa-globe"></i>
-            </a>
-            <a href="https://www.threads.net/@nickai216" target="_blank" class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center hover:bg-white hover:text-black hover:border-white transition-all text-white">
-                <i class="fa-brands fa-threads"></i>
-            </a>
-             <a href="https://www.instagram.com/nickai216/" target="_blank" class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center hover:bg-pink-500 hover:border-pink-500 transition-all text-white">
-                <i class="fa-brands fa-instagram"></i>
-            </a>
+        <div class="pointer-events-auto flex gap-4">
+             <a href="https://znstudio216.com/" target="_blank" class="text-gray-400 hover:text-core-cyan transition-colors"><i class="fa-solid fa-globe"></i></a>
+             <a href="https://www.threads.net/@nickai216" target="_blank" class="text-gray-400 hover:text-white transition-colors"><i class="fa-brands fa-threads"></i></a>
         </div>
     </nav>
 
-    <!-- Main Content Container with Connector Line -->
-    <div class="relative max-w-5xl mx-auto px-4 py-20 min-h-screen flex flex-col gap-32">
+    <!-- Terminal Sidebar (Desktop Only) -->
+    <div class="fixed left-6 bottom-6 w-64 hidden lg:block z-30 pointer-events-none">
+        <div class="font-mono text-[10px] text-core-cyan/70 space-y-1" id="system-log">
+            <div class="terminal-line">>> SYSTEM_INIT... OK</div>
+            <div class="terminal-line">>> CONNECTING_NEURAL_NET... OK</div>
+        </div>
+    </div>
 
-        <!-- The Central Connector Line -->
-        <div class="connector-line hidden md:block"></div>
-        <div class="connector-pulse hidden md:block" style="animation-delay: 0s;"></div>
-        <div class="connector-pulse hidden md:block" style="animation-delay: 1.5s;"></div>
+    <!-- Main Content -->
+    <main class="relative z-10 w-full max-w-6xl mx-auto px-4 md:px-8 py-20 flex flex-col gap-32">
 
-        <!-- Hero Node (Trigger) -->
-        <section class="relative z-10 w-full md:w-2/3 mx-auto mt-20" id="hero">
-            <div class="node-card">
-                <div class="node-header bg-gradient-to-r from-n8n-green/20 to-n8n-green/5 text-n8n-green border-b border-n8n-green/20">
-                    <i class="fa-solid fa-bolt"></i> WEBHOOK: START_TRIGGER
-                    <div class="ml-auto text-xs opacity-50 font-normal">ID: node_init_01</div>
-                </div>
-                <div class="p-8 md:p-12 text-center relative">
-                    <div class="node-output-dot hidden md:block" style="top: 100%; left: 50%; transform: translate(-50%, -50%);"></div>
+        <!-- Hero Section -->
+        <section class="min-h-[80vh] flex items-center justify-center md:justify-start relative" id="hero">
+            <div class="max-w-2xl">
+                <div class="font-mono text-core-cyan text-sm mb-4 tracking-[0.2em] typing">INITIALIZING_PROFILE</div>
+                <h1 class="text-6xl md:text-9xl font-bold mb-6 leading-none">
+                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">NICK</span>
+                    <span class="block text-4xl md:text-6xl text-core-blue mt-2">AI ARCHITECT</span>
+                </h1>
 
-                    <div class="relative inline-block mb-12 group">
-                        <div class="absolute -inset-1 bg-gradient-to-r from-n8n-green to-n8n-blue rounded-full blur opacity-30 group-hover:opacity-75 transition duration-500"></div>
-                        <img src="/assets/img/guild/nick/avatar.webp" alt="Nick Avatar" class="relative w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-n8n-panel object-cover">
-                        <div class="absolute bottom-2 right-2 w-8 h-8 bg-n8n-green rounded-full border-4 border-n8n-panel flex items-center justify-center">
-                            <i class="fa-solid fa-check text-black text-xs"></i>
+                <div class="hud-panel p-6 md:p-8 backdrop-blur-md max-w-lg mt-8 transform hover:scale-[1.02] transition-transform duration-300">
+                    <div class="flex gap-6 items-center">
+                        <div class="relative w-24 h-24 shrink-0">
+                            <div class="absolute inset-0 border-2 border-core-cyan rounded-full animate-spin-slow border-t-transparent"></div>
+                            <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-full h-full rounded-full object-cover p-1 opacity-90">
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex gap-2 text-xs font-mono text-gray-400">
+                                <span class="bg-core-blue/20 text-core-blue px-2 py-0.5 border border-core-blue/30">LEVEL_2_CERTIFIED</span>
+                                <span class="bg-core-orange/20 text-core-orange px-2 py-0.5 border border-core-orange/30">VIBE_CODING</span>
+                            </div>
+                            <p class="text-sm md:text-base font-light text-gray-300">
+                                Transforming manual chaos into intelligent automation.
+                                <br>From <span class="text-white">Environmental Engineer</span> to <span class="text-core-cyan">AI System Builder</span>.
+                            </p>
                         </div>
                     </div>
-
-                    <h1 class="font-sans text-5xl md:text-7xl font-bold mb-4 glitch-wrapper" data-text="NICK">NICK</h1>
-                    <p class="font-mono text-n8n-blue text-sm md:text-lg mb-6">&lt;AutomationArchitect /&gt;</p>
-
-                    <div class="flex flex-wrap justify-center gap-3">
-                        <span class="px-3 py-1 rounded bg-n8n-green/10 text-n8n-green border border-n8n-green/20 text-xs font-mono">
-                            <i class="fa-solid fa-award mr-1"></i> n8n Level 2
-                        </span>
-                        <span class="px-3 py-1 rounded bg-n8n-orange/10 text-n8n-orange border border-n8n-orange/20 text-xs font-mono">
-                            <i class="fa-solid fa-robot mr-1"></i> 30+ Bots
-                        </span>
-                        <span class="px-3 py-1 rounded bg-n8n-blue/10 text-n8n-blue border border-n8n-blue/20 text-xs font-mono">
-                            <i class="fa-solid fa-chalkboard-user mr-1"></i> Lecturer
-                        </span>
-                    </div>
                 </div>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 animate-bounce">
+                <span class="font-mono text-[10px] tracking-widest">SCROLL_TO_ACCESS</span>
+                <i class="fa-solid fa-chevron-down text-xs"></i>
             </div>
         </section>
 
-        <!-- About Node (Process) -->
-        <section class="relative z-10 w-full md:w-3/4 mr-auto" id="about">
-            <div class="node-card transform md:-translate-x-8">
-                <div class="node-header bg-gradient-to-r from-n8n-blue/20 to-n8n-blue/5 text-n8n-blue border-b border-n8n-blue/20">
-                    <i class="fa-solid fa-microchip"></i> FUNCTION: PROCESS_DATA
-                    <div class="ml-auto text-xs opacity-50 font-normal">ID: node_bio_02</div>
-                </div>
-                <div class="p-8 md:p-10 relative">
-                    <div class="node-input-dot hidden md:block" style="top: 0%; left: 50%; transform: translate(-50%, -50%);"></div>
-                    <div class="node-output-dot hidden md:block" style="top: 100%; left: 50%; transform: translate(-50%, -50%);"></div>
-
-                    <div class="grid md:grid-cols-2 gap-8 items-center">
-                        <div class="space-y-4 text-gray-300 font-light leading-relaxed">
-                            <p>
-                                <strong class="text-white">Input:</strong> Environmental Engineer.<br>
-                                <strong class="text-white">Transformation:</strong> Discovery of GPT-4 in 2023.
-                            </p>
-                            <p>
-                                I didn't just "use" AI; I built systems with it. Before "Vibe Coding" was a trend, I engineered a complete <span class="text-n8n-green font-medium">Environmental Monitoring System</span> powered by LLMs.
-                            </p>
-                            <p>
-                                Now, my stack is purely automated. From n8n workflows that run businesses to AI agents that handle complex logic. I turn manual chaos into streamlined, self-driving code.
-                            </p>
-                        </div>
-                        <div class="bg-n8n-canvas rounded-lg p-4 font-mono text-xs text-gray-400 border border-gray-800 shadow-inner">
-                            <div class="flex gap-2 mb-2">
-                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                            </div>
-                            <div class="space-y-1">
-                                <p><span class="text-n8n-orange">const</span> <span class="text-n8n-blue">engineer</span> = {</p>
-                                <p class="pl-4">status: <span class="text-n8n-green">"Active"</span>,</p>
-                                <p class="pl-4">stack: [<span class="text-n8n-orange">"n8n"</span>, <span class="text-n8n-orange">"Python"</span>, <span class="text-n8n-orange">"LLMs"</span>],</p>
-                                <p class="pl-4">current_task: <span class="text-n8n-green">"Optimizing Reality"</span></p>
-                                <p>}</p>
-                                <p class="text-gray-600">// Output: High Efficiency</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Stats / Methodology Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats">
+            <div class="hud-panel p-6">
+                <h3 class="font-mono text-core-cyan text-xs mb-2">>> ACTIVE_NODES</h3>
+                <div class="text-4xl font-bold text-white mb-1 counter" data-target="33">0</div>
+                <p class="text-sm text-gray-400">Running n8n Workflows</p>
+            </div>
+            <div class="hud-panel p-6">
+                <h3 class="font-mono text-core-blue text-xs mb-2">>> DEPLOYED_AGENTS</h3>
+                <div class="text-4xl font-bold text-white mb-1 counter" data-target="30">0</div>
+                <p class="text-sm text-gray-400">Line Bots & Assistants</p>
+            </div>
+            <div class="hud-panel p-6">
+                <h3 class="font-mono text-core-orange text-xs mb-2">>> CORE_SYSTEMS</h3>
+                <div class="text-4xl font-bold text-white mb-1 counter" data-target="3">0</div>
+                <p class="text-sm text-gray-400">Enterprise Vibe Coding Suites</p>
             </div>
         </section>
 
-        <!-- Projects Node (Switch) -->
-        <section class="relative z-10 w-full" id="projects">
-            <!-- Header Node -->
-            <div class="node-card w-full md:w-1/2 mx-auto mb-8 text-center">
-                <div class="node-header bg-gradient-to-r from-n8n-orange/20 to-n8n-orange/5 text-n8n-orange border-b border-n8n-orange/20 justify-center">
-                    <i class="fa-solid fa-code-branch"></i> SWITCH: PROJECT_ROUTER
-                </div>
-                <div class="node-input-dot hidden md:block" style="top: 0%; left: 50%; transform: translate(-50%, -50%);"></div>
-                <div class="node-output-dot hidden md:block" style="top: 100%; left: 50%; transform: translate(-50%, -50%);"></div>
+        <!-- Project Database -->
+        <section class="relative" id="projects">
+            <div class="flex items-center gap-4 mb-12">
+                <div class="h-[1px] bg-core-cyan flex-grow opacity-30"></div>
+                <h2 class="font-mono text-2xl md:text-4xl text-white tracking-wider">PROJECT_DATABASE</h2>
+                <div class="h-[1px] bg-core-cyan flex-grow opacity-30"></div>
             </div>
 
-            <!-- Project Grid -->
-            <div class="grid md:grid-cols-3 gap-6">
+            <div class="space-y-24">
                 <!-- Project 1 -->
-                <a href="#" class="node-card group cursor-pointer hover:border-n8n-orange/50">
-                    <div class="node-header bg-n8n-canvas text-gray-400 text-xs border-b border-gray-800">
-                        <span>CASE_01: SEWAGE_DESIGN</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square ml-auto group-hover:text-n8n-orange transition-colors"></i>
+                <div class="group grid md:grid-cols-2 gap-8 items-center project-item">
+                    <div class="order-2 md:order-1 space-y-4">
+                        <div class="font-mono text-core-cyan text-xs">ID: SEWAGE_AI // SYSTEM_01</div>
+                        <h3 class="text-3xl font-bold text-white group-hover:text-core-cyan transition-colors">Sewage Design System</h3>
+                        <p class="text-gray-400 leading-relaxed">
+                            An automated blueprint generation system for wastewater treatment facilities.
+                            Leverages LLMs to interpret requirements and generate CAD-ready specifications instantly.
+                        </p>
+                        <ul class="flex flex-wrap gap-2 text-xs font-mono text-gray-500">
+                            <li class="border border-gray-700 px-2 py-1">PYTHON</li>
+                            <li class="border border-gray-700 px-2 py-1">OPENAI</li>
+                            <li class="border border-gray-700 px-2 py-1">AUTOMATION</li>
+                        </ul>
                     </div>
-                    <div class="relative h-40 overflow-hidden">
-                        <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage System" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-all"></div>
+                    <div class="order-1 md:order-2 hud-panel p-2 overflow-hidden relative group-hover:border-core-cyan transition-colors duration-500">
+                        <div class="absolute inset-0 bg-core-cyan/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 z-10 mix-blend-overlay"></div>
+                        <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage AI" class="w-full h-64 object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500">
                     </div>
-                    <div class="p-4">
-                        <h3 class="font-bold text-lg mb-2 group-hover:text-n8n-orange transition-colors">Sewage AI System</h3>
-                        <p class="text-sm text-gray-400 mb-3">Automated blueprint generation for wastewater facilities.</p>
-                        <div class="flex gap-2">
-                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Industrial</span>
-                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">VibeCoding</span>
-                        </div>
-                    </div>
-                </a>
+                </div>
 
                 <!-- Project 2 -->
-                <a href="#" class="node-card group cursor-pointer hover:border-n8n-orange/50">
-                    <div class="node-header bg-n8n-canvas text-gray-400 text-xs border-b border-gray-800">
-                        <span>CASE_02: WORKFLOW_SUITE</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square ml-auto group-hover:text-n8n-orange transition-colors"></i>
+                <div class="group grid md:grid-cols-2 gap-8 items-center project-item">
+                    <div class="order-2 md:order-2 space-y-4 md:text-right">
+                        <div class="font-mono text-core-blue text-xs">ID: WORKFLOW_SUITE // SYSTEM_02</div>
+                        <h3 class="text-3xl font-bold text-white group-hover:text-core-blue transition-colors">Enterprise Automation</h3>
+                        <p class="text-gray-400 leading-relaxed">
+                            A suite of 33+ active n8n workflows handling everything from Quotation Generation to CRM synchronization.
+                            Replacing manual data entry with intelligent event-driven architecture.
+                        </p>
+                        <ul class="flex flex-wrap gap-2 text-xs font-mono text-gray-500 justify-end">
+                            <li class="border border-gray-700 px-2 py-1">N8N</li>
+                            <li class="border border-gray-700 px-2 py-1">WEBHOOKS</li>
+                            <li class="border border-gray-700 px-2 py-1">INTEGRATION</li>
+                        </ul>
                     </div>
-                    <div class="relative h-40 overflow-hidden">
-                        <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n Workflows" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-all"></div>
+                    <div class="order-1 md:order-1 hud-panel p-2 overflow-hidden relative group-hover:border-core-blue transition-colors duration-500">
+                        <div class="absolute inset-0 bg-core-blue/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 z-10 mix-blend-overlay"></div>
+                        <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n Automation" class="w-full h-64 object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500">
                     </div>
-                    <div class="p-4">
-                        <h3 class="font-bold text-lg mb-2 group-hover:text-n8n-orange transition-colors">33+ Active Flows</h3>
-                        <p class="text-sm text-gray-400 mb-3">Enterprise-grade automation covering Line Bots to CRM syncs.</p>
-                        <div class="flex gap-2">
-                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">n8n</span>
-                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Integration</span>
-                        </div>
-                    </div>
-                </a>
+                </div>
 
                 <!-- Project 3 -->
-                <a href="#" class="node-card group cursor-pointer hover:border-n8n-orange/50">
-                    <div class="node-header bg-n8n-canvas text-gray-400 text-xs border-b border-gray-800">
-                        <span>CASE_03: EDUCATION</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square ml-auto group-hover:text-n8n-orange transition-colors"></i>
-                    </div>
-                    <div class="relative h-40 overflow-hidden">
-                        <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-all"></div>
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-bold text-lg mb-2 group-hover:text-n8n-orange transition-colors">Soochow Lecturer</h3>
-                        <p class="text-sm text-gray-400 mb-3">Teaching Vibe Coding and Automation to the next generation.</p>
-                        <div class="flex gap-2">
-                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Education</span>
-                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Speaker</span>
+                <div class="group grid md:grid-cols-2 gap-8 items-center project-item">
+                    <div class="order-2 md:order-1 space-y-4">
+                        <div class="font-mono text-core-orange text-xs">ID: KNOWLEDGE_TRANSFER // SYSTEM_03</div>
+                        <h3 class="text-3xl font-bold text-white group-hover:text-core-orange transition-colors">Vibe Coding Education</h3>
+                        <p class="text-gray-400 leading-relaxed">
+                            Invited lecturer at <span class="text-white">Soochow University</span>. Teaching the next generation how to build
+                            software through natural language prompting and automation logic.
+                        </p>
+                        <div class="mt-4">
+                             <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="inline-flex items-center gap-2 text-core-orange text-sm font-mono border-b border-core-orange/50 hover:border-core-orange pb-1 transition-all">
+                                VIEW CERTIFICATES <i class="fa-solid fa-arrow-right"></i>
+                            </a>
                         </div>
                     </div>
-                </a>
+                    <div class="order-1 md:order-2 hud-panel p-2 overflow-hidden relative group-hover:border-core-orange transition-colors duration-500">
+                         <div class="absolute inset-0 bg-core-orange/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 z-10 mix-blend-overlay"></div>
+                         <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-64 object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500">
+                    </div>
+                </div>
+
+                <!-- Personal Projects (Side Quests) -->
+                <div class="md:col-span-2 mt-16">
+                    <div class="flex items-center gap-4 mb-8 opacity-50">
+                         <div class="h-[1px] bg-gray-600 flex-grow"></div>
+                         <h3 class="font-mono text-sm text-gray-400">>> PERSONAL_ARCHIVES // SIDE_QUESTS</h3>
+                         <div class="h-[1px] bg-gray-600 flex-grow"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="hud-panel p-6 hover:bg-white/5 transition-all group">
+                             <div class="flex justify-between items-start mb-4">
+                                <i class="fa-solid fa-heart text-pink-500 text-xl group-hover:scale-110 transition-transform"></i>
+                                <span class="font-mono text-[10px] text-gray-500">RELATIONSHIP_MODULE</span>
+                             </div>
+                             <h4 class="text-xl font-bold mb-2 text-white">Anniversary & Xmas Sites</h4>
+                             <p class="text-sm text-gray-400 mb-4">Personalized web experiences built for my partner, featuring interactive memories and custom logic.</p>
+                             <div class="flex gap-2">
+                                <span class="text-[10px] border border-pink-500/30 text-pink-500 px-2 py-0.5">REACT</span>
+                                <span class="text-[10px] border border-pink-500/30 text-pink-500 px-2 py-0.5">GSAP</span>
+                             </div>
+                        </div>
+
+                        <div class="hud-panel p-6 hover:bg-white/5 transition-all group">
+                             <div class="flex justify-between items-start mb-4">
+                                <i class="fa-solid fa-brain text-purple-500 text-xl group-hover:scale-110 transition-transform"></i>
+                                <span class="font-mono text-[10px] text-gray-500">ANALYSIS_MODULE</span>
+                             </div>
+                             <h4 class="text-xl font-bold mb-2 text-white">AI Psychology Test</h4>
+                             <p class="text-sm text-gray-400 mb-4">An interactive assessment tool powered by LLMs to analyze personality traits through conversation.</p>
+                             <div class="flex gap-2">
+                                <span class="text-[10px] border border-purple-500/30 text-purple-500 px-2 py-0.5">OPENAI</span>
+                                <span class="text-[10px] border border-purple-500/30 text-purple-500 px-2 py-0.5">N8N</span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="mt-8 text-center">
-                <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 bg-n8n-panel hover:bg-n8n-orange border border-gray-600 hover:border-n8n-orange text-white rounded-lg transition-all font-mono text-sm group">
-                    <i class="fa-solid fa-database"></i> ACCESS_FULL_DATABASE
-                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                </a>
+            <div class="mt-20 text-center">
+                 <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-block px-8 py-4 border border-core-cyan text-core-cyan font-mono hover:bg-core-cyan hover:text-black transition-all duration-300 tracking-widest text-sm">
+                    ACCESS_FULL_ARCHIVE_>>
+                 </a>
             </div>
         </section>
 
-        <!-- Contact Node (HTTP Request) -->
-        <section class="relative z-10 w-full md:w-2/3 mx-auto pb-20" id="contact">
-            <div class="node-card">
-                 <div class="node-header bg-gradient-to-r from-purple-500/20 to-purple-500/5 text-purple-400 border-b border-purple-500/20">
-                    <i class="fa-solid fa-paper-plane"></i> HTTP_REQUEST: SEND_MESSAGE
-                    <div class="ml-auto text-xs opacity-50 font-normal">ID: node_end_99</div>
-                </div>
-                <div class="p-8 md:p-12 text-center relative">
-                    <div class="node-input-dot hidden md:block" style="top: 0%; left: 50%; transform: translate(-50%, -50%);"></div>
+        <!-- Contact Terminal -->
+        <section class="min-h-[50vh] flex flex-col items-center justify-center relative pb-20" id="contact">
+            <div class="hud-panel p-8 md:p-12 w-full max-w-3xl text-center">
+                <h2 class="text-3xl md:text-5xl font-bold mb-8">INITIATE_CONNECTION</h2>
 
-                    <h2 class="text-3xl font-bold mb-8">Ready to Automate?</h2>
-
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-n8n-green/30">
-                            <div class="w-12 h-12 rounded-full bg-[#06c755] flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform">
-                                <i class="fa-brands fa-line"></i>
-                            </div>
-                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">LINE OA</span>
-                        </a>
-
-                        <a href="https://www.threads.net/@nickai216" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-white/30">
-                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black text-xl shadow-lg group-hover:scale-110 transition-transform">
-                                <i class="fa-brands fa-threads"></i>
-                            </div>
-                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">THREADS</span>
-                        </a>
-
-                        <a href="https://portaly.cc/zn.studio" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-orange-500/30">
-                            <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-link"></i>
-                            </div>
-                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">PORTALY</span>
-                        </a>
-
-                        <a href="https://znstudio216.com/" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-n8n-blue/30">
-                            <div class="w-12 h-12 rounded-full bg-n8n-blue flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-laptop-code"></i>
-                            </div>
-                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">STUDIO</span>
-                        </a>
-                    </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
+                        <i class="fa-brands fa-line text-4xl text-gray-500 group-hover:text-[#06c755] transition-colors"></i>
+                        <span class="font-mono text-xs text-gray-400">LINE_OA</span>
+                    </a>
+                    <a href="https://www.threads.net/@nickai216" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
+                        <i class="fa-brands fa-threads text-4xl text-gray-500 group-hover:text-white transition-colors"></i>
+                        <span class="font-mono text-xs text-gray-400">THREADS</span>
+                    </a>
+                    <a href="https://portaly.cc/zn.studio" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
+                        <i class="fa-solid fa-link text-4xl text-gray-500 group-hover:text-core-orange transition-colors"></i>
+                        <span class="font-mono text-xs text-gray-400">PORTALY</span>
+                    </a>
+                    <a href="https://znstudio216.com/" target="_blank" class="group flex flex-col items-center gap-4 p-4 hover:bg-white/5 transition-all rounded">
+                        <i class="fa-solid fa-laptop-code text-4xl text-gray-500 group-hover:text-core-blue transition-colors"></i>
+                        <span class="font-mono text-xs text-gray-400">STUDIO</span>
+                    </a>
                 </div>
             </div>
 
-             <footer class="mt-12 text-center opacity-40 font-mono text-xs">
-                <p>STATUS: 200 OK // LATENCY: 12ms</p>
-                <p class="mt-2">© 2024 NICK. ALL WORKFLOWS ACTIVE.</p>
+            <footer class="absolute bottom-4 text-center w-full font-mono text-[10px] text-gray-600">
+                SYSTEM STATUS: OPTIMAL // © 2024 NICK
             </footer>
         </section>
 
-    </div>
+    </main>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -476,227 +359,197 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
-        // --- Loader Logic ---
-        window.addEventListener('load', () => {
-            const progressBar = document.getElementById('progress-bar');
-            const loader = document.getElementById('loader');
-
-            progressBar.style.width = '100%';
-
-            setTimeout(() => {
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                    initAnimations();
-                }, 500);
-            }, 800);
-        });
-
-        setTimeout(() => {
-            const loader = document.getElementById('loader');
-            if (loader && getComputedStyle(loader).display !== 'none') {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 500);
-            }
-        }, 5000);
-
-        // --- Three.js Scene: "Data Cable" ---
+        // --- Three.js Scene: "AI Neural Net" ---
         const canvas = document.querySelector('#webgl');
         const scene = new THREE.Scene();
-        // Dark background color matching body
-        scene.background = new THREE.Color(0x15151a);
-        scene.fog = new THREE.Fog(0x15151a, 10, 50);
+        scene.background = new THREE.Color(0x0f172a); // Slate-900
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
+        camera.position.z = 30;
 
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        // Create the "Cable Bundle"
-        const curvePoints = [];
-        for (let i = 0; i < 50; i++) {
-            curvePoints.push(new THREE.Vector3(
-                Math.sin(i * 0.2) * 5,
-                Math.cos(i * 0.1) * 5 + i * 2, // Ascending spiral
-                Math.cos(i * 0.2) * 5 - i * 5  // Moving away in Z
-            ));
+        // 1. Particle System (Nodes)
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 1500;
+        const posArray = new Float32Array(particlesCount * 3);
+        const originalPos = new Float32Array(particlesCount * 3); // Store for return logic
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            // Sphere distribution
+            posArray[i] = (Math.random() - 0.5) * 100;
+            originalPos[i] = posArray[i];
         }
 
-        // This is a straight infinite-looking path for better control
-        const path = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0, -20, 0),
-            new THREE.Vector3(0, 0, -20),
-            new THREE.Vector3(5, 10, -50),
-            new THREE.Vector3(-5, 20, -100),
-            new THREE.Vector3(0, 30, -150)
-        ]);
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
-        // Custom Shader Material for "Data Flow"
-        const flowVertexShader = `
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
-
-        const flowFragmentShader = `
-            uniform float time;
-            uniform vec3 color;
-            varying vec2 vUv;
-
-            void main() {
-                // Create moving pulses
-                float pulse = step(0.9, sin(vUv.x * 20.0 + time * 5.0)); // Fast movement along U
-
-                // Base glow
-                float glow = 0.2 + 0.8 * pulse;
-
-                vec3 finalColor = color * glow;
-
-                // Add scanlines
-                float scan = sin(vUv.y * 50.0) * 0.1;
-
-                gl_FragColor = vec4(finalColor + scan, 0.3); // Semi-transparent
-            }
-        `;
-
-        const tubeGeometry = new THREE.TubeGeometry(path, 100, 1, 8, false);
-        const tubeMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                color: { value: new THREE.Color(0x00f3ff) } // Neon Cyan
-            },
-            vertexShader: flowVertexShader,
-            fragmentShader: flowFragmentShader,
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.15,
+            color: 0x06b6d4, // Cyan
             transparent: true,
-            side: THREE.DoubleSide,
-            depthWrite: false,
+            opacity: 0.8,
             blending: THREE.AdditiveBlending
         });
 
-        const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-        scene.add(tube);
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
 
-        // Add a second intertwining tube (Orange)
-        const path2 = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(2, -20, 2),
-            new THREE.Vector3(-2, 0, -18),
-            new THREE.Vector3(3, 10, -48),
-            new THREE.Vector3(-7, 20, -98),
-            new THREE.Vector3(2, 30, -148)
-        ]);
-        const tubeMaterial2 = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                color: { value: new THREE.Color(0xff0055) } // Neon Pink/Red
-            },
-            vertexShader: flowVertexShader,
-            fragmentShader: flowFragmentShader,
+        // 2. Interactive Lines (Connections)
+        // We will create a subset of particles for line drawing to save performance
+        const connectionDistance = 15;
+        const maxConnections = 1000; // Max segments
+        const lineGeo = new THREE.BufferGeometry();
+        const linePos = new Float32Array(maxConnections * 6); // 2 points * 3 coords
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0x3b82f6, // Blue
             transparent: true,
-            side: THREE.DoubleSide,
-            depthWrite: false,
+            opacity: 0.15,
             blending: THREE.AdditiveBlending
         });
-        const tube2 = new THREE.Mesh(new THREE.TubeGeometry(path2, 100, 0.5, 8, false), tubeMaterial2);
-        scene.add(tube2);
 
-        // Floating "Data Nodes" (Cubes)
-        const nodeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x25b864, wireframe: true });
-        const nodes = new THREE.Group();
+        const linesMesh = new THREE.LineSegments(lineGeo, lineMat);
+        scene.add(linesMesh);
 
-        for(let i=0; i<30; i++) {
-            const mesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
-            // Position along the path roughly
-            const point = path.getPoint(i/30);
-            mesh.position.set(point.x + (Math.random()-0.5)*10, point.y + (Math.random()-0.5)*10, point.z);
-            mesh.rotation.set(Math.random(), Math.random(), Math.random());
-            nodes.add(mesh);
-        }
-        scene.add(nodes);
+        // Interaction State
+        const mouse = new THREE.Vector2();
+        let targetX = 0;
+        let targetY = 0;
 
-        // --- Camera & Animation ---
-        camera.position.set(0, 0, 10);
+        document.addEventListener('mousemove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
 
-        let time = 0;
-        let scrollY = 0;
+        const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            time += 0.01;
+            const elapsedTime = clock.getElapsedTime();
 
-            // Update Shader Uniforms
-            tubeMaterial.uniforms.time.value = time;
-            tubeMaterial2.uniforms.time.value = time + 2.0;
+            // Mouse Interaction (Rotation)
+            targetX = mouse.x * 0.5;
+            targetY = mouse.y * 0.5;
 
-            // Rotate Nodes
-            nodes.rotation.y = time * 0.1;
-            nodes.children.forEach(child => {
-                child.rotation.x += 0.01;
-            });
+            particlesMesh.rotation.x += 0.05 * (targetY - particlesMesh.rotation.x);
+            particlesMesh.rotation.y += 0.05 * (targetX - particlesMesh.rotation.y);
 
-            // Camera movement based on scroll
-            // Move camera ALONG the path
-            const scrollPercent = scrollY / (document.body.scrollHeight - window.innerHeight);
-            const loopTime = (scrollPercent * 0.9) + 0.05; // Stay within 5% to 95% of path
+            // Sync lines rotation with particles
+            linesMesh.rotation.copy(particlesMesh.rotation);
 
-            const pos = path.getPointAt(loopTime);
-            const lookAt = path.getPointAt(Math.min(loopTime + 0.1, 1));
+            // Update Particle Positions (Pulse)
+            const positions = particlesMesh.geometry.attributes.position.array;
+            for(let i = 0; i < particlesCount; i++) {
+                const i3 = i * 3;
+                // Add subtle breathing motion
+                positions[i3 + 1] = originalPos[i3 + 1] + Math.sin(elapsedTime + originalPos[i3]) * 0.5;
+            }
+            particlesMesh.geometry.attributes.position.needsUpdate = true;
 
-            // Smooth lerp
-            camera.position.lerp(pos, 0.1);
-            camera.lookAt(lookAt);
+            // Re-calculate Lines (Dynamic Neural Net)
+            // Only use the first 100 particles for connections to keep performance high
+            let vertexIndex = 0;
+            const connectionLimit = 100;
+
+            for (let i = 0; i < connectionLimit; i++) {
+                for (let j = i + 1; j < connectionLimit; j++) {
+                    const dx = positions[i*3] - positions[j*3];
+                    const dy = positions[i*3+1] - positions[j*3+1];
+                    const dz = positions[i*3+2] - positions[j*3+2];
+                    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                    if (dist < connectionDistance) {
+                        // Point A
+                        linePos[vertexIndex++] = positions[i*3];
+                        linePos[vertexIndex++] = positions[i*3+1];
+                        linePos[vertexIndex++] = positions[i*3+2];
+                        // Point B
+                        linePos[vertexIndex++] = positions[j*3];
+                        linePos[vertexIndex++] = positions[j*3+1];
+                        linePos[vertexIndex++] = positions[j*3+2];
+
+                        if (vertexIndex >= maxConnections * 6) break;
+                    }
+                }
+                if (vertexIndex >= maxConnections * 6) break;
+            }
+
+            linesMesh.geometry.setDrawRange(0, vertexIndex / 3);
+            linesMesh.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
+
         animate();
 
-        // Handle Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-        });
-
-        // --- GSAP Animations ---
+        // --- GSAP & UI Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        function initAnimations() {
-            // Animate Cards In
-            gsap.utils.toArray('.node-card').forEach((card, i) => {
-                gsap.from(card, {
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 0.8,
-                    ease: "power2.out"
-                });
-            });
+        // System Log Logic
+        const logContainer = document.getElementById('system-log');
+        const logs = [
+            "SCANNING_USER_INPUT...",
+            "ANALYZING_PROJECT_DATA...",
+            "OPTIMIZING_RENDER_PIPELINE...",
+            "FETCHING_EXTERNAL_ASSETS...",
+            "CALCULATING_LAYOUT_MATRIX..."
+        ];
 
-            // Animate Connector Line Height
-            // On mobile we might hide it, but on desktop it grows
-            if (window.innerWidth > 768) {
-                gsap.from(".connector-line", {
-                    scrollTrigger: {
-                        trigger: "body",
-                        start: "top top",
-                        end: "bottom bottom",
-                        scrub: 1
-                    },
-                    height: "0%"
-                });
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                // Add a log line periodically based on scroll progress
+                if (Math.random() > 0.95) {
+                    const msg = logs[Math.floor(Math.random() * logs.length)];
+                    const div = document.createElement('div');
+                    div.className = "terminal-line";
+                    div.innerText = `>> ${msg} [${Math.round(self.progress * 100)}%]`;
+                    logContainer.prepend(div);
+                    if (logContainer.children.length > 5) logContainer.lastChild.remove();
+                }
             }
-        }
+        });
+
+        // Animate Sections
+        gsap.utils.toArray('.hud-panel').forEach(panel => {
+            gsap.from(panel, {
+                scrollTrigger: {
+                    trigger: panel,
+                    start: "top 90%",
+                },
+                y: 30,
+                opacity: 0,
+                duration: 0.6,
+                ease: "power2.out"
+            });
+        });
+
+        // Counter Animation
+        gsap.utils.toArray('.counter').forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            gsap.to(counter, {
+                scrollTrigger: {
+                    trigger: counter,
+                    start: "top 85%",
+                },
+                innerHTML: target,
+                duration: 2,
+                snap: { innerHTML: 1 }
+            });
+        });
+
     </script>
 </body>
 </html>
