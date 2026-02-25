@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bèbè Liu | The Adventure Map 🗺️</title>
-    <meta name="description" content="Bèbè Liu - Illustrator, Designer, & Life Explorer.">
+    <title>Bèbè Liu | The Graphic Design Journey 🎨</title>
+    <meta name="description" content="Bèbè Liu - Graphic Designer, Illustrator, & Life Explorer.">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;500;600&family=Noto+Sans+TC:wght@300;400;500;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-color: #e0f7fa;
-            --text-primary: #263238;
-            --text-secondary: #546e7a;
-            --accent-color: #ff7043; /* Orange for adventure */
-            --glass-panel: rgba(255, 255, 255, 0.9);
-            --card-border: rgba(255, 255, 255, 0.5);
+            /* Palette: Vibrant, Flat, Graphic Design */
+            --bg-color: #fffdf5; /* Warm paper */
+            --ink-black: #1a1a1a;
+            --pop-orange: #ff6b35;
+            --pop-cyan: #00b4d8;
+            --pop-yellow: #fdec00;
+            --pop-pink: #f72585;
+            --grid-line: rgba(26, 26, 26, 0.05);
         }
 
         * {
@@ -31,20 +33,34 @@
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-primary);
+            color: var(--ink-black);
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
         }
 
-        /* Canvas */
-        #canvas-container {
+        /* P5 Canvas Container */
+        #p5-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            background: linear-gradient(to bottom, #81d4fa 0%, #e0f7fa 100%);
+            opacity: 0.6; /* Let content pop */
+        }
+
+        /* Grid Background Pattern (CSS) */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
         }
 
         /* Loader */
@@ -54,193 +70,216 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #fff;
+            background: var(--bg-color);
             z-index: 1000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: 'Fredoka', sans-serif;
+            font-family: 'Montserrat', sans-serif;
         }
 
-        .loader-text {
-            font-size: 1.5rem;
-            color: var(--accent-color);
-            margin-bottom: 1rem;
-            letter-spacing: 1px;
-            font-weight: 600;
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--pop-cyan);
+            border-top: 4px solid var(--pop-pink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .loader-bar {
-            width: 200px;
-            height: 6px;
-            background: #eee;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .loader-progress {
-            width: 0%;
-            height: 100%;
-            background: var(--accent-color);
-            transition: width 0.3s;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Scroll Layout */
         .scroll-wrapper {
             position: relative;
             width: 100%;
-            height: 600vh; /* Long scroll journey */
+            /* Length determines pacing */
+            height: 500vh;
         }
 
         .section {
             position: absolute;
             width: 100%;
             min-height: 100vh;
-            display: flex;
             padding: 2rem;
-            pointer-events: none;
-            justify-content: center;
+            display: flex;
+            justify-content: center; /* Default center */
             align-items: center;
+            pointer-events: none;
         }
 
         /* Section Positioning */
-        .section:nth-child(1) { top: 0; }
-        .section:nth-child(2) { top: 100vh; justify-content: flex-start; padding-left: 10%; }
-        .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 10%; }
-        .section:nth-child(4) { top: 300vh; justify-content: center; } /* Wide card */
-        .section:nth-child(5) { top: 400vh; justify-content: flex-start; padding-left: 10%; }
-        .section:nth-child(6) { top: 500vh; justify-content: center; padding-bottom: 10vh;}
-
-        /* Cards */
-        .card {
-            background: var(--glass-panel);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2.5rem;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border: 2px solid #fff;
-            pointer-events: auto;
-            opacity: 0;
-            transform: translateY(50px) scale(0.95);
-        }
-
-        .card.wide {
-            max-width: 800px;
-        }
+        .section:nth-child(1) { top: 0; z-index: 2; }
+        .section:nth-child(2) { top: 100vh; justify-content: flex-start; padding-left: 5vw; z-index: 2; }
+        .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 5vw; z-index: 2; }
+        .section:nth-child(4) { top: 300vh; justify-content: center; z-index: 2; }
+        .section:nth-child(5) { top: 400vh; justify-content: center; z-index: 2; }
 
         /* Typography */
         h1 {
-            font-family: 'Fredoka', sans-serif;
-            font-size: 3rem;
-            color: var(--accent-color);
-            margin-bottom: 0.5rem;
-            line-height: 1.2;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: clamp(3rem, 8vw, 6rem);
+            color: var(--ink-black);
+            line-height: 0.9;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 span.highlight {
+            color: var(--pop-orange);
+            display: inline-block; /* Allow transforms */
         }
 
         h2 {
-            font-family: 'Fredoka', sans-serif;
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(120deg, var(--pop-cyan) 0%, var(--pop-pink) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
         }
 
         h3 {
             font-family: 'Fredoka', sans-serif;
             font-size: 1.2rem;
-            color: #00bcd4;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 0.5rem;
+            color: var(--ink-black);
+            background: var(--pop-yellow);
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            transform: rotate(-2deg);
+            margin-bottom: 1rem;
+            border: 2px solid var(--ink-black);
+            box-shadow: 4px 4px 0 var(--ink-black);
         }
 
         p {
             font-size: 1.1rem;
             line-height: 1.8;
-            color: var(--text-secondary);
+            color: #333;
             margin-bottom: 1.5rem;
+            font-weight: 500;
         }
 
-        /* Avatar */
-        .avatar-container {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 2rem;
+        /* Cards / Panels */
+        .panel {
+            background: #fff;
+            border: 3px solid var(--ink-black);
+            box-shadow: 10px 10px 0 var(--ink-black); /* Brutalist shadow */
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            pointer-events: auto;
             position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 12px 12px 0 var(--pop-pink);
+        }
+
+        .panel.wide {
+            max-width: 900px;
+        }
+
+        /* Avatar Styling */
+        .avatar-wrapper {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 2rem;
         }
 
         .avatar-img {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
             object-fit: cover;
-            border: 5px solid #fff;
-            box-shadow: 0 8px 20px rgba(255, 112, 67, 0.3);
+            border-radius: 50%;
+            border: 4px solid var(--ink-black);
             position: relative;
             z-index: 2;
+            background: #fff;
         }
 
-        .avatar-blob {
+        .avatar-bg {
             position: absolute;
-            top: -10%;
-            left: -10%;
-            width: 120%;
-            height: 120%;
-            background: var(--accent-color);
+            top: 10px;
+            left: 10px;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
+            background: var(--pop-cyan);
+            border: 4px solid var(--ink-black);
             z-index: 1;
-            opacity: 0.3;
-            animation: blob-pulse 3s infinite ease-in-out;
-        }
-
-        @keyframes blob-pulse {
-            0% { transform: scale(1); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-            50% { transform: scale(1.1); border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
-            100% { transform: scale(1); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
         }
 
         /* Tags */
         .tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 0.8rem;
             margin-bottom: 1.5rem;
+            justify-content: center;
         }
 
         .tag {
-            background: #e1f5fe;
-            color: #0288d1;
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
             font-size: 0.9rem;
-            font-weight: 500;
+            color: var(--ink-black);
+            border: 2px solid var(--ink-black);
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            background: #fff;
+            transition: all 0.2s;
         }
 
-        /* Grid */
-        .grid-2 {
+        .tag:nth-child(1):hover { background: var(--pop-orange); }
+        .tag:nth-child(2):hover { background: var(--pop-cyan); }
+        .tag:nth-child(3):hover { background: var(--pop-yellow); }
+        .tag:nth-child(4):hover { background: var(--pop-pink); }
+
+        /* Grid Layouts */
+        .grid-cards {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
         }
 
-        .activity-item {
-            background: rgba(255,255,255,0.5);
-            padding: 1rem;
-            border-radius: 12px;
+        .mini-card {
+            border: 2px solid var(--ink-black);
+            padding: 1.5rem;
             text-align: center;
+            background: #fff;
+            transition: transform 0.2s;
         }
 
-        .activity-icon {
-            font-size: 1.5rem;
-            color: var(--accent-color);
+        .mini-card:hover {
+            transform: scale(1.05) rotate(1deg);
+            background: var(--pop-yellow);
+        }
+
+        .mini-card i {
+            font-size: 2rem;
             margin-bottom: 0.5rem;
+            color: var(--ink-black);
+        }
+
+        .mini-card h4 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
         }
 
         /* Socials */
-        .social-links {
+        .social-row {
             display: flex;
             justify-content: center;
             gap: 1.5rem;
@@ -248,175 +287,195 @@
         }
 
         .social-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: #fff;
-            color: var(--text-primary);
+            width: 60px;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            border: 3px solid var(--ink-black);
+            border-radius: 50%; /* Circle */
+            font-size: 1.8rem;
+            color: var(--ink-black);
+            background: #fff;
+            box-shadow: 4px 4px 0 var(--ink-black);
+            transition: all 0.2s;
             text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .social-btn:hover {
-            transform: translateY(-5px) rotate(10deg);
-            background: var(--accent-color);
-            color: #fff;
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 var(--pop-orange);
+            background: var(--pop-yellow);
         }
 
-        /* Mobile */
-        @media (max-width: 768px) {
-            h1 { font-size: 2.2rem; }
-            .section { padding: 1rem; justify-content: center !important; }
-            .card { padding: 1.5rem; max-width: 100%; margin: 0; }
-            .grid-2 { grid-template-columns: 1fr; }
-        }
-
-        /* HUD */
+        /* HUD Overlay */
         .hud {
             position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 10;
-            background: rgba(255,255,255,0.8);
+            bottom: 20px;
+            right: 20px;
             padding: 10px 20px;
-            border-radius: 30px;
-            font-family: 'Fredoka', sans-serif;
-            font-weight: 600;
-            color: var(--text-primary);
-            backdrop-filter: blur(5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: var(--ink-black);
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            z-index: 100;
             display: flex;
             align-items: center;
             gap: 10px;
+            border: 2px solid #fff;
         }
+
+        /* Scroll Indicator */
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--ink-black);
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .section { padding: 1rem; justify-content: center !important; }
+            .panel { padding: 2rem; margin: 0; max-width: 100%; box-shadow: 6px 6px 0 var(--ink-black); }
+            h1 { font-size: 3.5rem; }
+        }
+
     </style>
 </head>
 <body>
 
+    <!-- Loader -->
     <div id="loader">
-        <div class="loader-text">PACKING GEAR...</div>
-        <div class="loader-bar"><div class="loader-progress" id="progress"></div></div>
+        <div class="loader-spinner"></div>
+        <div style="margin-top: 1rem; font-weight: 700; letter-spacing: 2px;">LOADING ARTWORK</div>
     </div>
 
-    <div id="canvas-container"></div>
+    <!-- Background Grid -->
+    <div class="bg-grid"></div>
 
+    <!-- P5 Canvas -->
+    <div id="p5-container"></div>
+
+    <!-- HUD -->
     <div class="hud">
-        <i class="fa-solid fa-compass fa-spin" style="--fa-animation-duration: 3s;"></i>
-        <span>EXPLORING</span>
+        <i class="fa-solid fa-pen-nib"></i>
+        <span>DESIGN MODE: ON</span>
     </div>
 
     <div class="scroll-wrapper">
 
-        <!-- 1. Intro -->
+        <!-- 1. Hero -->
         <div class="section">
-            <div class="card" style="text-align: center;">
-                <div class="avatar-container">
-                    <div class="avatar-blob"></div>
+            <div style="text-align: center; position: relative;">
+                <div class="avatar-wrapper">
+                    <div class="avatar-bg"></div>
                     <img src="/assets/img/guild/bebe_liu/avatar.jpg" alt="Bèbè Liu" class="avatar-img">
                 </div>
-                <h3>Hello World!</h3>
-                <h1>我是 Bèbè Liu</h1>
-                <p>自由接案者 | 生活體驗家</p>
-                <div class="tags" style="justify-content: center;">
+                <h3>HELLO WORLD</h3>
+                <h1>I AM <span class="highlight">Bèbè</span></h1>
+                <p style="font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+                    Graphic Designer / Illustrator / Life Gamer
+                </p>
+
+                <div class="tags">
                     <span class="tag">#平面設計</span>
                     <span class="tag">#網頁設計</span>
                     <span class="tag">#插畫</span>
                     <span class="tag">#自媒體</span>
                 </div>
-                <p style="font-size: 0.9rem; color: #888;">
-                    <i class="fa-solid fa-gamepad"></i> 正在地球 Online 賺取遊戲金幣中 💰
-                </p>
+
+                <div class="scroll-hint">SCROLL TO EXPLORE <br> <i class="fa-solid fa-arrow-down"></i></div>
             </div>
         </div>
 
-        <!-- 2. The Artist -->
+        <!-- 2. The Artist (Left) -->
         <div class="section">
-            <div class="card">
-                <h3>The Creator</h3>
-                <h2>關於畫畫與心流</h2>
+            <div class="panel">
+                <h3>THE ARTIST</h3>
+                <h2>畫畫與心流</h2>
                 <p>
-                    喜歡畫畫，曾跑遍台北各大市集擺攤畫似顏繪，也舉辦過小型的畫展。
+                    我是 Bèbè Liu，一位自由工作者。<br>
+                    平時以平面/網頁設計/插畫/自媒體來賺取在地球的遊戲金幣💰
                 </p>
                 <p>
-                    <strong style="color: var(--accent-color);">「能讓人廢寢忘食地持續做著，就會是我一直持續做的事。」</strong>
+                    曾經跑遍台北各大市集擺攤畫似顏繪，也舉辦過小型的畫展。<br>
+                    <strong style="background: var(--pop-yellow); padding: 0 4px;">「能讓人廢寢忘食地持續做著，就會是我一直持續做的事。」</strong>
                 </p>
-                <p>
-                    畫畫帶給我的心流體驗，是支持我創作的最大動力。重質不重量，我只想把握每一個當下，創造出讓人會心一笑的作品。
-                </p>
+                <p>重質不重量，把握每一個當下。</p>
             </div>
         </div>
 
-        <!-- 3. The Explorer -->
+        <!-- 3. The Explorer (Right) -->
         <div class="section">
-            <div class="card">
-                <h3>The Adventurer</h3>
-                <h2>擁抱未知</h2>
+            <div class="panel">
+                <h3>THE EXPLORER</h3>
+                <h2>冒險與探索</h2>
                 <p>
                     喜歡冒險與探索，害怕未知又期待它帶給我的驚喜，我想人生也是如此。
                 </p>
                 <p>
-                    熱愛閱讀，也喜歡與人深度談話，對世界感到好奇。旅行能帶給我生命力，讓我不論幾歲都能閃閃發光 ✨
+                    熱愛閱讀，也喜歡與人深度談話，對世界感到好奇。<br>
+                    旅行能帶給我生命力，不論幾歲都能閃閃發光 ✨
                 </p>
             </div>
         </div>
 
         <!-- 4. Outdoors (Grid) -->
         <div class="section">
-            <div class="card wide">
-                <h3>The Great Outdoors</h3>
-                <h2>山與海的呼喚</h2>
-                <p>喜歡山與海的戶外活動，不發動態的日子都在好好生活。</p>
-                <div class="grid-2">
-                    <div class="activity-item">
-                        <div class="activity-icon"><i class="fa-solid fa-mountain"></i></div>
-                        <h4>Mountain</h4>
-                        <p style="font-size: 0.8rem; margin:0;">爬山、露營、野營</p>
+            <div class="panel wide">
+                <h3>OUTDOOR LIFE</h3>
+                <h2>山海之間</h2>
+                <p style="text-align: center; margin-bottom: 2rem;">
+                    喜歡山與海的戶外活動：爬山、露營、野營、SUP、衝浪、潛水。<br>
+                    生活體驗家｜不發動態的日子都在好好生活。
+                </p>
+                <div class="grid-cards">
+                    <div class="mini-card">
+                        <i class="fa-solid fa-mountain-sun"></i>
+                        <h4>MOUNTAIN</h4>
+                        <p style="font-size: 0.8rem; margin:0;">Climbing / Camping</p>
                     </div>
-                    <div class="activity-item">
-                        <div class="activity-icon"><i class="fa-solid fa-water"></i></div>
-                        <h4>Ocean</h4>
-                        <p style="font-size: 0.8rem; margin:0;">SUP、衝浪、潛水</p>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-water"></i>
+                        <h4>OCEAN</h4>
+                        <p style="font-size: 0.8rem; margin:0;">Surfing / Diving / SUP</p>
                     </div>
-                    <div class="activity-item">
-                        <div class="activity-icon"><i class="fa-solid fa-camera-retro"></i></div>
-                        <h4>Create</h4>
-                        <p style="font-size: 0.8rem; margin:0;">拍照、剪短影音</p>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-paintbrush"></i>
+                        <h4>CREATE</h4>
+                        <p style="font-size: 0.8rem; margin:0;">Photo / Video / Art</p>
                     </div>
-                    <div class="activity-item">
-                        <div class="activity-icon"><i class="fa-solid fa-dog"></i></div>
-                        <h4>Life</h4>
-                        <p style="font-size: 0.8rem; margin:0;">玩玩狗勾 🐶</p>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-dog"></i>
+                        <h4>LIFE</h4>
+                        <p style="font-size: 0.8rem; margin:0;">Dog Lover</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 5. Philosophy -->
+        <!-- 5. Connect -->
         <div class="section">
-            <div class="card">
-                <h3>Game of Life</h3>
-                <h2>遊戲人生</h2>
+            <div class="panel" style="text-align: center;">
+                <h3>CONNECT</h3>
+                <h2>一起遊戲人生！</h2>
                 <p>
-                    繼續抱持著熱情，在地球上實行遊戲人生。
+                    繼續抱持著熱情，在地球上實行遊戲人生。<br>
+                    如果你也喜歡我的作品，或者想一起去探索世界，歡迎追蹤我！
                 </p>
-                <p>
-                    我是一個拍照、剪片、偶爾畫畫的創作者。我想把這個世界的美好，透過我的眼睛和手，傳遞給每一個遇見的人。
-                </p>
-            </div>
-        </div>
-
-        <!-- 6. Connect -->
-        <div class="section">
-            <div class="card" style="text-align: center;">
-                <h3>Connect</h3>
-                <h2>一起冒險吧！</h2>
-                <p>如果你也喜歡我的作品，或者想一起去探索世界，歡迎追蹤我！</p>
-                <div class="social-links">
+                <div class="social-row">
                     <a href="https://www.threads.com/@kewpiebay" target="_blank" class="social-btn" title="Threads">
                         <i class="fa-brands fa-threads"></i>
                     </a>
@@ -432,312 +491,207 @@
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    <script>
+        // --- GSAP & P5 Integration ---
+
+        // Use Global mode for P5 or Instance mode? Instance is safer.
+        const s = (p) => {
+            let canvas;
+            let width, height;
+
+            // Animation States driven by Scroll
+            let scrollY = 0;
+            let targetScrollY = 0;
+
+            // Map / Terrain Lines
+            let lines = [];
+            const numLines = 20;
+
+            // Colors
+            const cOrange = p.color('#ff6b35');
+            const cCyan = p.color('#00b4d8');
+            const cYellow = p.color('#fdec00');
+            const cPink = p.color('#f72585');
+            const cDark = p.color('#1a1a1a');
+
+            p.setup = () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas = p.createCanvas(width, height);
+                canvas.parent('p5-container');
+
+                // Initialize lines
+                for(let i = 0; i < numLines; i++) {
+                    lines.push({
+                        y: p.map(i, 0, numLines, height * 0.2, height * 0.8),
+                        offset: i * 100, // Noise offset
+                        color: (i % 2 === 0) ? cCyan : cOrange
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Lerp scroll for smoothness
+                targetScrollY = window.scrollY;
+                scrollY = p.lerp(scrollY, targetScrollY, 0.1);
+
+                // Scroll Progress (0 to 1 roughly)
+                const maxScroll = document.body.scrollHeight - window.innerHeight;
+                const progress = scrollY / maxScroll;
+
+                // Draw Background shapes based on scroll
+                // Section 1: Calm lines
+                // Section 2: Peaks (Mountains)
+                // Section 3: Waves (Ocean)
+
+                p.noFill();
+                p.strokeWeight(2);
+
+                // Determine "Mode" based on scroll progress
+                // 0-0.3: Sketchy Lines
+                // 0.3-0.6: Sharp Peaks (Mountain)
+                // 0.6-1.0: Flowing Waves (Ocean)
+
+                let amplitude, freq, speed;
+
+                if (progress < 0.3) {
+                    // Sketchy
+                    p.stroke(cDark);
+                    amplitude = 20 + progress * 100;
+                    freq = 0.005;
+                    speed = 0.01;
+                } else if (progress < 0.6) {
+                    // Mountains
+                    p.stroke(cOrange);
+                    amplitude = 100 + (progress - 0.3) * 200; // Grow
+                    freq = 0.01; // Sharp
+                    speed = 0.02;
+                } else {
+                    // Ocean
+                    p.stroke(cCyan);
+                    amplitude = 150;
+                    freq = 0.003; // Smooth
+                    speed = 0.03;
+                }
+
+                // Mouse interaction influence
+                let mouseInfluenceX = p.map(p.mouseX, 0, width, -50, 50);
+
+                lines.forEach((line, index) => {
+                    p.beginShape();
+                    for (let x = 0; x <= width; x += 20) {
+                        // Calculate Y with noise
+                        // Use scrollY to "move" through the noise field
+                        let noiseVal = p.noise(
+                            x * freq,
+                            (line.offset + p.frameCount * speed) * 0.5,
+                            progress * 2 // Morph noise structure
+                        );
+
+                        // Add some mouse distortion
+                        let d = p.dist(x, line.y, p.mouseX, p.mouseY);
+                        let mousePush = 0;
+                        if(d < 200) {
+                            mousePush = p.map(d, 0, 200, 50, 0) * p.sin(p.frameCount * 0.1);
+                        }
+
+                        let y = line.y + (noiseVal - 0.5) * amplitude + mousePush;
+
+                        // Add vertical parallax
+                        y -= scrollY * 0.2; // Move up slowly
+
+                        // Wrap around if off screen top/bottom?
+                        // Simpler: Just stick to center area
+
+                        p.vertex(x, y);
+                    }
+                    p.endShape();
+                });
+
+                // Draw decorative shapes (Geometric Design Elements)
+                drawDecorations(progress);
+            };
+
+            function drawDecorations(progress) {
+                p.push();
+                p.translate(width/2, height/2);
+
+                // Rotating geometric shape in background
+                p.noFill();
+                p.stroke(cPink);
+                p.strokeWeight(1);
+
+                // Scale based on scroll
+                let scale = 1 + progress * 2;
+                p.scale(scale);
+                p.rotate(p.frameCount * 0.005 + progress * Math.PI);
+
+                if (progress > 0.5) {
+                    p.ellipse(0, 0, 400, 400); // Ocean Circle
+                } else {
+                    p.rectMode(p.CENTER);
+                    p.rect(0, 0, 400, 400); // Mountain Square
+                }
+
+                p.pop();
             }
-        }
-    </script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { SimplexNoise } from 'three/addons/math/SimplexNoise.js'; // Note: SimplexNoise might not be in standard addons in 0.160, checking docs or using custom implementation.
-        // Actually SimplexNoise is often just a separate lib or found in math utils.
-        // Let's use basic Math.sin/cos for procedural generation to avoid dependency issues.
-
-        // --- Config ---
-        const config = {
-            skyColorTop: 0x81d4fa,
-            skyColorBottom: 0xe0f7fa,
-            mountainColor: 0x8d6e63, // Earthy
-            forestColor: 0x66bb6a, // Green
-            waterColor: 0x29b6f6, // Blue
-            sandColor: 0xffe0b2, // Sand
+            p.windowResized = () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                p.resizeCanvas(width, height);
+            };
         };
 
-        // --- Setup ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.Fog(config.skyColorBottom, 20, 100);
+        new p5(s);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // --- Lights ---
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
-        scene.add(hemiLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(50, 100, 50);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
-
-        // --- World Generation ---
-
-        // 1. Path (Curve)
-        // We want a path that goes: High Mountain -> Forest Valley -> River -> Ocean Beach
-        const points = [
-            new THREE.Vector3(0, 30, 0),    // Start (High)
-            new THREE.Vector3(10, 20, 50),  // Descent
-            new THREE.Vector3(-5, 5, 100),  // Forest
-            new THREE.Vector3(5, 2, 150),   // River bank
-            new THREE.Vector3(0, 1, 220),   // Beach
-            new THREE.Vector3(0, 1, 300)    // Ocean view
-        ];
-        const pathCurve = new THREE.CatmullRomCurve3(points);
-
-        // Visual Path (Road/Trail)
-        const tubeGeo = new THREE.TubeGeometry(pathCurve, 100, 0.5, 8, false);
-        const tubeMat = new THREE.MeshStandardMaterial({ color: 0xd7ccc8, roughness: 1 }); // Dirt road
-        const tube = new THREE.Mesh(tubeGeo, tubeMat);
-        scene.add(tube);
-
-
-        // 2. Terrain Chunks
-        // We'll create custom meshes for different biomes along the path
-
-        function createLowPolyTerrain(width, length, color, heightFunc, zOffset) {
-            const segW = 20;
-            const segL = 40;
-            const geo = new THREE.PlaneGeometry(width, length, segW, segL);
-            const pos = geo.attributes.position;
-
-            for(let i=0; i<pos.count; i++){
-                const x = pos.getX(i);
-                const y = pos.getY(i); // This is actually Z in world space before rotation
-
-                // Height generation
-                let z = heightFunc(x, y);
-
-                pos.setZ(i, z);
-            }
-            geo.computeVertexNormals();
-
-            const mat = new THREE.MeshStandardMaterial({
-                color: color,
-                flatShading: true,
-                roughness: 0.8
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.position.z = zOffset + length/2;
-            return mesh;
-        }
-
-        // Biome 1: Mountains (Z: 0 to 60)
-        const mountainMesh = createLowPolyTerrain(100, 80, config.mountainColor, (x, y) => {
-            // High peaks on sides, path in middle
-            const distFromCenter = Math.abs(x);
-            let h = (Math.random() * 2) + Math.pow(distFromCenter, 1.5) * 0.2;
-            return h;
-        }, -10);
-        mountainMesh.position.y = 15; // Lift up
-        scene.add(mountainMesh);
-
-        // Biome 2: Forest (Z: 60 to 140)
-        const forestMesh = createLowPolyTerrain(100, 80, config.forestColor, (x, y) => {
-            // Rolling hills
-            return Math.sin(x * 0.2) * 2 + Math.cos(y * 0.2) * 2 + Math.random();
-        }, 70);
-        forestMesh.position.y = 2;
-        scene.add(forestMesh);
-
-        // Biome 3: Water/Beach (Z: 140 to 300)
-        const beachMesh = createLowPolyTerrain(100, 160, config.sandColor, (x, y) => {
-            return Math.random() * 0.5; // Flat sand
-        }, 150);
-        beachMesh.position.y = 0;
-        scene.add(beachMesh);
-
-        // Water Plane
-        const waterGeo = new THREE.PlaneGeometry(200, 200);
-        const waterMat = new THREE.MeshStandardMaterial({
-            color: config.waterColor,
-            transparent: true,
-            opacity: 0.8,
-            roughness: 0.1
-        });
-        const water = new THREE.Mesh(waterGeo, waterMat);
-        water.rotation.x = -Math.PI / 2;
-        water.position.set(0, 0.5, 250);
-        scene.add(water);
-
-        // --- Props (Decorations) ---
-
-        // Tree Function
-        function createTree(x, z) {
-            const group = new THREE.Group();
-            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.5, 6);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = 0.75;
-
-            const leavesGeo = new THREE.ConeGeometry(1.5, 3, 6);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, flatShading: true });
-            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-            leaves.position.y = 2.5;
-
-            group.add(trunk);
-            group.add(leaves);
-            group.position.set(x, 0, z);
-
-            // Random Scale
-            const s = 0.8 + Math.random()*0.5;
-            group.scale.set(s,s,s);
-            return group;
-        }
-
-        // Add Trees to Forest
-        for(let i=0; i<30; i++) {
-            const x = (Math.random() - 0.5) * 60;
-            // Clear path
-            if(Math.abs(x) < 5) continue;
-            const z = 70 + Math.random() * 80;
-            const tree = createTree(x, z);
-            // Adjust Y based on biome approximation (or just Raycast, but approximation is faster)
-            tree.position.y = 2 + Math.sin(x * 0.2) * 2; // Match forest terrain roughly
-            scene.add(tree);
-        }
-
-        // Add Rocks to Mountain
-        function createRock(x, z) {
-            const geo = new THREE.DodecahedronGeometry(Math.random() + 0.5);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x757575, flatShading: true });
-            const rock = new THREE.Mesh(geo, mat);
-            rock.position.set(x, 15 + Math.pow(Math.abs(x), 1.5)*0.2, z);
-            return rock;
-        }
-        for(let i=0; i<20; i++) {
-            const x = (Math.random() - 0.5) * 50;
-            if(Math.abs(x) < 4) continue;
-            const z = Math.random() * 60;
-            scene.add(createRock(x, z));
-        }
-
-        // Campfire Prop (Section 2)
-        const campfireGroup = new THREE.Group();
-        campfireGroup.position.set(5, 4, 100);
-        // Logs
-        const logGeo = new THREE.CylinderGeometry(0.1, 0.1, 1);
-        const logMat = new THREE.MeshStandardMaterial({ color: 0x4e342e });
-        const log1 = new THREE.Mesh(logGeo, logMat); log1.rotation.z = Math.PI/2;
-        const log2 = new THREE.Mesh(logGeo, logMat); log2.rotation.x = Math.PI/2;
-        campfireGroup.add(log1, log2);
-        // Fire Light
-        const fireLight = new THREE.PointLight(0xff5722, 2, 10);
-        fireLight.position.y = 1;
-        campfireGroup.add(fireLight);
-        scene.add(campfireGroup);
-
-        // Surfboard Prop (Section 4)
-        const boardGeo = new THREE.BoxGeometry(1, 3, 0.2);
-        const boardMat = new THREE.MeshStandardMaterial({ color: 0xffeb3b });
-        const board = new THREE.Mesh(boardGeo, boardMat);
-        board.position.set(-3, 1, 220);
-        board.rotation.x = -Math.PI/4;
-        board.rotation.y = Math.PI/8;
-        scene.add(board);
-
-        // --- Particles (Explosive Effect) ---
-        // Fireflies in forest
-        const particlesGeo = new THREE.BufferGeometry();
-        const pCount = 100;
-        const pPos = new Float32Array(pCount * 3);
-        for(let i=0; i<pCount; i++) {
-            pPos[i*3] = (Math.random()-0.5) * 40;
-            pPos[i*3+1] = 2 + Math.random() * 5;
-            pPos[i*3+2] = 80 + Math.random() * 60; // Forest area
-        }
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const particlesMat = new THREE.PointsMaterial({ color: 0xffeb3b, size: 0.3, transparent: true, opacity: 0.8 });
-        const fireflies = new THREE.Points(particlesGeo, particlesMat);
-        scene.add(fireflies);
-
-
-        // --- Animation Logic ---
-
+        // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Loader
         window.onload = () => {
-            gsap.to("#progress", { width: "100%", duration: 1, ease: "power2.out", onComplete: () => {
-                gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").style.display = "none" });
+            // Hide Loader
+            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => {
+                document.getElementById("loader").style.display = "none";
             }});
-        };
 
-        // Scroll Content Reveal
-        const sections = document.querySelectorAll('.card');
-        sections.forEach((card) => {
-            gsap.to(card, {
-                scrollTrigger: {
-                    trigger: card.parentElement,
-                    start: "top 75%",
-                    end: "top 25%",
-                    toggleActions: "play none none reverse"
-                },
-                opacity: 1,
-                y: 0,
-                duration: 0.8,
-                ease: "back.out(1.7)"
+            // Animate Panels
+            const panels = document.querySelectorAll('.panel');
+            panels.forEach((panel) => {
+                gsap.fromTo(panel,
+                    { opacity: 0, y: 100, rotation: 5 },
+                    {
+                        scrollTrigger: {
+                            trigger: panel,
+                            start: "top 80%",
+                            end: "top 30%",
+                            toggleActions: "play none none reverse"
+                        },
+                        opacity: 1,
+                        y: 0,
+                        rotation: 0,
+                        duration: 0.8,
+                        ease: "back.out(1.7)"
+                    }
+                );
             });
-        });
 
-        // Main Loop
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-
-            // 1. Camera Movement along Path
-            const scrollMax = document.body.scrollHeight - window.innerHeight;
-            const scrollY = window.scrollY;
-            const scrollPct = Math.max(0, Math.min(1, scrollY / scrollMax));
-
-            // Get point on curve
-            const camPos = pathCurve.getPointAt(scrollPct);
-            const lookPos = pathCurve.getPointAt(Math.min(1, scrollPct + 0.05)); // Look slightly ahead
-
-            // Camera smoothing
-            camera.position.lerp(new THREE.Vector3(camPos.x, camPos.y + 2, camPos.z), 0.1);
-
-            // LookAt smoothing
-            const targetLook = new THREE.Vector3(lookPos.x, lookPos.y, lookPos.z);
-            // We can just lookAt directly for now, or use a dummy object for smoothing if needed
-            camera.lookAt(targetLook);
-
-
-            // 2. Animations
-            // Fireflies float
-            const pArr = fireflies.geometry.attributes.position.array;
-            for(let i=0; i<pCount; i++) {
-                pArr[i*3+1] += Math.sin(time + i) * 0.02;
-            }
-            fireflies.geometry.attributes.position.needsUpdate = true;
-
-            // Campfire flicker
-            fireLight.intensity = 2 + Math.sin(time * 10) * 0.5;
-
-            // Surfboard bobbing
-            board.position.y = 1 + Math.sin(time) * 0.1;
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+            // Animate Mini Cards Stagger
+            gsap.from(".mini-card", {
+                scrollTrigger: {
+                    trigger: ".grid-cards",
+                    start: "top 80%"
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.5,
+                stagger: 0.1,
+                ease: "power2.out"
+            });
+        };
 
     </script>
 </body>
