@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房產小蜜 Ava | 影音說書人</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+TC:wght@300;400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+    </script>
+
+    <style>
+        :root {
+            /* Warm Editorial Palette */
+            --c-bg: #f9f5eb;       /* Cream/Warm Beige */
+            --c-text: #2c2c2c;     /* Dark Charcoal */
+            --c-accent: #d4af37;   /* Classic Gold */
+            --c-primary: #8a1c1c;  /* Deep Wine Red */
+            --c-light: #ffffff;    /* Paper White */
+
+            --f-display: 'Playfair Display', serif;
+            --f-body: 'Noto Serif TC', serif;
+            --f-ui: 'Lato', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-body);
+            overflow-x: hidden;
+            /* No custom cursor, keep it natural/editorial */
+        }
+
+        /* --- Layers --- */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+        #p5-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; opacity: 0.6; mix-blend-mode: screen; }
+
+        /* --- UI Elements --- */
+        .nav-header {
+            position: fixed; top: 0; left: 0; width: 100%; padding: 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; box-sizing: border-box;
+            mix-blend-mode: exclusion; /* Ensures visibility on light/dark */
+            color: #fff; /* Blend mode flips this to dark on light bg */
+        }
+
+        .back-btn {
+            font-family: var(--f-ui); font-weight: 700; letter-spacing: 2px;
+            text-decoration: none; color: inherit; text-transform: uppercase;
+            font-size: 0.9rem; border-bottom: 1px solid transparent; transition: 0.3s;
+        }
+        .back-btn:hover { border-bottom-color: currentColor; }
+
+        .brand-logo {
+            font-family: var(--f-display); font-style: italic; font-weight: 700; font-size: 1.5rem;
+        }
+
+        /* --- Layout --- */
+        .scroller { position: relative; z-index: 10; padding-bottom: 20vh; }
+
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 4rem; box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Typography Styles */
+        h1 {
+            font-family: var(--f-display); font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.9; margin: 0; color: var(--c-text);
+            position: relative; z-index: 2;
+        }
+        h2 {
+            font-family: var(--f-ui); font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+            text-transform: uppercase; letter-spacing: 4px; color: var(--c-primary);
+            margin-bottom: 1rem; font-weight: 700;
+        }
+        h3 {
+            font-family: var(--f-display); font-size: 2rem; color: var(--c-primary); margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.1rem; line-height: 1.8; color: #555; max-width: 600px;
+            margin-top: 1rem; font-weight: 300;
+        }
+        .highlight { color: var(--c-primary); font-weight: 600; font-style: italic; }
+
+        /* Content Blocks */
+        .content-block {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 3rem; margin-top: 2rem;
+            border-left: 4px solid var(--c-primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            max-width: 600px;
+            transform: translateX(-50px); opacity: 0; /* Init for animation */
+        }
+
+        .hero-img-container {
+            position: absolute; right: 10%; top: 50%; transform: translateY(-50%);
+            width: 30vw; height: 40vw; max-width: 400px; max-height: 500px;
+            z-index: 1; opacity: 0; /* Init */
+        }
+        .hero-img {
+            width: 100%; height: 100%; object-fit: cover;
+            box-shadow: 20px 20px 0 var(--c-primary);
+            filter: sepia(0.2) contrast(1.1);
+        }
+
+        /* Photo Accent */
+        .photo-accent {
+            position: absolute; width: 250px; z-index: 0;
+            border: 10px solid #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: rotate(-5deg); transition: transform 0.5s ease;
+        }
+        .photo-accent:hover { transform: rotate(0deg) scale(1.05); z-index: 5; }
+        .photo-accent img { width: 100%; display: block; filter: grayscale(20%); }
+
+        /* Timeline Styles */
+        .timeline-container {
+            position: relative; max-width: 800px; margin: 4rem auto 0;
+            padding-left: 2rem;
+        }
+        .timeline-line {
+            position: absolute; left: 0; top: 0; width: 2px; height: 100%;
+            background: rgba(138, 28, 28, 0.2);
+            transform-origin: top;
+        }
+        .timeline-progress {
+            position: absolute; left: 0; top: 0; width: 2px; height: 0%;
+            background: var(--c-primary);
+        }
+        .timeline-item {
+            position: relative; padding-bottom: 4rem; padding-left: 2rem;
+            opacity: 0; transform: translateY(20px);
+        }
+        .timeline-dot {
+            position: absolute; left: -2.4rem; top: 0; width: 12px; height: 12px;
+            border-radius: 50%; background: var(--c-bg);
+            border: 2px solid var(--c-primary);
+            z-index: 2;
+        }
+        .timeline-year {
+            font-family: var(--f-ui); font-weight: 700; color: var(--c-accent);
+            font-size: 0.9rem; letter-spacing: 2px; margin-bottom: 0.5rem;
+        }
+        .timeline-role {
+            font-family: var(--f-display); font-size: 1.5rem; color: var(--c-text);
+            font-style: italic; margin-bottom: 0.5rem;
+        }
+
+        /* Skill Tags */
+        .skill-cloud {
+            display: flex; flex-wrap: wrap; gap: 1rem; max-width: 600px; margin-top: 2rem;
+        }
+        .skill-tag {
+            padding: 0.5rem 1.5rem; border-radius: 50px;
+            font-size: 0.9rem; font-family: var(--f-ui); letter-spacing: 1px;
+            background: rgba(255,255,255,0.6); border: 1px solid #ddd;
+            color: #888; transition: 0.3s;
+        }
+        .skill-tag.active {
+            background: var(--c-primary); color: #fff; border-color: var(--c-primary);
+            transform: scale(1.1); box-shadow: 0 5px 15px rgba(138, 28, 28, 0.3);
+        }
+
+        /* Service Cards */
+        .services-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem; margin-top: 4rem; width: 100%; max-width: 1000px;
+        }
+        .service-card {
+            background: rgba(255,255,255,0.9); padding: 2rem;
+            border-top: 4px solid var(--c-accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: 0.3s; opacity: 0; transform: translateY(30px);
+        }
+        .service-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .card-icon { font-size: 2.5rem; color: var(--c-primary); margin-bottom: 1.5rem; }
+        .card-title { font-family: var(--f-display); font-size: 1.4rem; margin-bottom: 1rem; color: var(--c-text); }
+        .card-desc { font-size: 0.95rem; color: #666; line-height: 1.6; }
+
+        /* Section Specifics */
+        #sec-hero { align-items: flex-start; }
+        #sec-biker { align-items: flex-end; text-align: right; }
+        #sec-biker .content-block { border-left: none; border-right: 4px solid var(--c-primary); transform: translateX(50px); }
+
+        #sec-timeline { align-items: center; justify-content: flex-start; padding-top: 8rem; }
+
+        #sec-travel { align-items: center; text-align: center; }
+        #sec-travel .content-block { border: none; border-top: 4px solid var(--c-accent); transform: translateY(50px); }
+
+        #sec-work { align-items: center; }
+
+        /* Footer */
+        .footer-cta {
+            text-align: center; margin-top: 4rem;
+        }
+        .social-row {
+            display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; font-size: 2rem;
+        }
+        .social-link { color: var(--c-text); transition: 0.3s; }
+        .social-link:hover { color: var(--c-primary); transform: scale(1.1); }
+
+        /* Loader */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .loader-line {
+            width: 0%; height: 2px; background: var(--c-primary);
+        }
+
+        @media (max-width: 768px) {
+            section { padding: 1.5rem; min-height: auto; margin-bottom: 4rem; }
+            h1 { font-size: 2.5rem; line-height: 1.1; }
+            .hero-img-container { position: relative; width: 100%; height: 300px; right: auto; top: auto; transform: none; margin-bottom: 1.5rem; order: -1; }
+            .content-block { max-width: 100%; transform: none !important; opacity: 1 !important; padding: 1.5rem; }
+            #sec-biker { align-items: flex-start; text-align: left; }
+            #sec-biker .content-block { border-right: none; border-left: 4px solid var(--c-primary); }
+            /* Adjust timeline for mobile so dots aren't cut off */
+            .timeline-container { padding-left: 0.5rem; }
+            .timeline-item { padding-left: 3rem; }
+            .timeline-dot { left: 0.5rem; width: 10px; height: 10px; }
+            .timeline-line { left: 1rem; }
+
+            .services-grid { grid-template-columns: 1fr; }
+            .photo-accent { display: none; } /* Hide accents on mobile for cleaner layout */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="loader-line"></div></div>
+
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <header class="nav-header">
+        <a href="/guild" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Gallery</a>
+        <div class="brand-logo">Ava.</div>
+    </header>
+
+    <div class="scroller">
+
+        <!-- 1. Hero -->
+        <section id="sec-hero">
+            <div class="hero-img-container reveal-img">
+                <img src="/assets/img/guild/ava/avatar.webp" alt="Ava" class="hero-img">
+            </div>
+            <div style="z-index: 2; position: relative;">
+                <h2 class="reveal-text">The Visual Storyteller</h2>
+                <h1 class="reveal-text">房產小蜜<br><span style="color:var(--c-primary); font-style:italic;">AVA</span></h1>
+                <div class="content-block reveal-block">
+                    <p>「從追風騎士到影音說書人」</p>
+                    <p>以前我一個人騎車看風景；現在，我載著孩子，用他們的高度重新認識這片土地。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Biker Past -->
+        <section id="sec-biker">
+            <!-- Accent Photo -->
+            <div class="photo-accent" style="left: 10%; bottom: 20%; transform: rotate(5deg);">
+                <img src="/assets/img/guild/ava/riding_family.webp" alt="Riding Family">
+            </div>
+
+            <div style="z-index: 2; position: relative; max-width: 800px;">
+                <h2 class="reveal-text">Chapter I. The Rider</h2>
+                <h1 class="reveal-text">曾經的<br><span style="color:var(--c-accent)">熱血</span></h1>
+                <div class="content-block reveal-block">
+                    <p>以前的我是個<span class="highlight">重機女騎士</span>，享受時速 100 公里的自由。那份對速度的渴望，如今轉化為對影像節奏的掌控。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.5 Career Journey (New) -->
+        <section id="sec-timeline">
+            <div style="z-index: 2; position: relative; width: 100%; max-width: 800px;">
+                <h2 class="reveal-text" style="text-align: center;">My Journey</h2>
+                <h1 class="reveal-text" style="text-align: center; margin-bottom: 2rem;">跳痛人生<br><span style="color:var(--c-primary)">做中學</span></h1>
+
+                <div class="timeline-container">
+                    <div class="timeline-line"><div class="timeline-progress"></div></div>
+
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">THE BEGINNING</div>
+                        <div class="timeline-role">飲料店老闆</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">學會了堅持與與人互動的溫度。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">EXPLORATION</div>
+                        <div class="timeline-role">民宿管家 & Uber</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">聽遍了來自四面八方的故事，學會了服務的細節。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">ADMINISTRATION</div>
+                        <div class="timeline-role">7年 行政資歷</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">磨練了細心與耐心，將繁雜的事務條理化。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-year">NOW</div>
+                        <div class="timeline-role">房產小蜜</div>
+                        <p style="margin-top:0.5rem; font-size:1rem;">結合所有經歷，用影像為每一間房子說故事。</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 4rem; text-align: center;">
+                    <p style="text-align: center; margin: 0 auto;">我還有一堆現在用不到的證照...</p>
+                    <div class="skill-cloud" style="margin: 1rem auto; justify-content: center;">
+                        <span class="skill-tag">美髮丙級</span>
+                        <span class="skill-tag">美容丙級</span>
+                        <span class="skill-tag">中餐烹調</span>
+                        <span class="skill-tag">西餐烹調</span>
+                        <span class="skill-tag active"><i class="fa-solid fa-house"></i> 不動產營業員</span>
+                        <span class="skill-tag active"><i class="fa-solid fa-helicopter"></i> 空拍機證照</span>
+                        <span class="skill-tag active"><i class="fa-solid fa-key"></i> 租賃管理</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Family & Travel -->
+        <section id="sec-travel">
+             <!-- Accent Photos -->
+            <div class="photo-accent" style="right: 15%; top: 20%; transform: rotate(-3deg); width: 200px;">
+                <img src="/assets/img/guild/ava/gallery_03.webp" alt="Travel Memory">
+            </div>
+            <div class="photo-accent" style="left: 15%; bottom: 10%; transform: rotate(4deg); width: 220px;">
+                <img src="/assets/img/guild/ava/gallery_08.webp" alt="Travel Memory">
+            </div>
+
+            <div style="z-index: 2; position: relative;">
+                <h2 class="reveal-text">Chapter II. The Mother</h2>
+                <h1 class="reveal-text">現在的<br><span style="color:var(--c-primary)">溫度</span></h1>
+                <div class="content-block reveal-block">
+                    <p>結婚生子後，我換了一種速度看世界。與兩個寶貝組成<span class="highlight">「親子探險隊」</span>，戴上藍牙對講機穿梭田中小巷。</p>
+                    <p>「媽媽你看！」孩子的視角成了我的新地圖。這些微旅行的點滴，比任何大片都更珍貴。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Work (Expanded) -->
+        <section id="sec-work">
+            <div style="z-index: 2; position: relative; width: 100%; display:flex; flex-direction:column; align-items:center;">
+                <h2 class="reveal-text">Chapter III. The Professional</h2>
+                <h1 class="reveal-text">看見<br><span style="color:var(--c-accent)">價值</span></h1>
+
+                <p style="text-align: center; max-width: 700px; margin-bottom: 2rem;">
+                    專注於<span class="highlight">彰化田中一帶</span>，我不追求高大上的器材大片，<br>我擅長用<span class="highlight">手機攝影</span>捕捉當下的溫度，讓物件自己「說話」。
+                </p>
+
+                <div class="services-grid">
+                    <div class="service-card reveal-card">
+                        <div class="card-icon"><i class="fa-solid fa-house-chimney-window"></i></div>
+                        <div class="card-title">房產影音</div>
+                        <div class="card-desc">不僅僅是空間的展示，更是生活感的傳遞。透過運鏡與光影，帶出房子的靈魂與未來的想像。</div>
+                    </div>
+
+                    <div class="service-card reveal-card">
+                        <div class="card-icon"><i class="fa-solid fa-helicopter"></i></div>
+                        <div class="card-title">空拍視角</div>
+                        <div class="card-desc">換個高度看世界。用上帝視角展現基地優勢、周邊環境與地貌之美，讓視野更開闊。</div>
+                    </div>
+
+                    <div class="service-card reveal-card">
+                        <div class="card-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                        <div class="card-title">人物訪談</div>
+                        <div class="card-desc">每個人都有屬於自己的故事。不同行業的朋友，讓我用影像紀錄你的專業與價值。</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 5. Footer -->
+        <section id="sec-contact" style="align-items: center; justify-content: center; min-height: 80vh;">
+            <div class="footer-cta reveal-block">
+                <h2 style="margin-bottom: 2rem;">Let's Create Together</h2>
+                <h1 style="font-size: 4rem; color: var(--c-primary);">拍攝找小蜜<br>你委託我就拍</h1>
+
+                <div class="social-row">
+                    <a href="https://www.threads.net/@ava332266" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/chhsr_bee" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+
+                <p style="margin-top: 4rem; font-size: 0.8rem; color: #aaa;">
+                    Made with <i class="fa-solid fa-heart" style="color:var(--c-primary)"></i> by SuperGalen's Dungeon
+                </p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- P5.js Light Leaks -->
+    <script>
+        const sketch = (p) => {
+            let blobs = [];
+
+            class Blob {
+                constructor() {
+                    this.x = p.random(p.width);
+                    this.y = p.random(p.height);
+                    this.vx = p.random(-0.5, 0.5);
+                    this.vy = p.random(-0.5, 0.5);
+                    this.r = p.random(200, 500);
+                    // Warm colors: Red, Orange, Gold
+                    let colors = [
+                        p.color(138, 28, 28, 20),   // Wine Red
+                        p.color(212, 175, 55, 30),  // Gold
+                        p.color(255, 100, 50, 20)   // Warm Orange
+                    ];
+                    this.c = p.random(colors);
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if(this.x < -this.r) this.x = p.width + this.r;
+                    if(this.x > p.width + this.r) this.x = -this.r;
+                    if(this.y < -this.r) this.y = p.height + this.r;
+                    if(this.y > p.height + this.r) this.y = -this.r;
+                }
+                display() {
+                    p.noStroke();
+                    p.fill(this.c);
+                    p.circle(this.x, this.y, this.r);
+                }
+            }
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                for(let i=0; i<8; i++) blobs.push(new Blob());
+            };
+
+            p.draw = () => {
+                p.clear();
+                blobs.forEach(b => {
+                    b.update();
+                    b.display();
+                });
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+        new p5(sketch);
+    </script>
+
+    <!-- Three.js Floating Gallery -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Scene Setup
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xfbf7f2);
+        scene.fog = new THREE.Fog(0xfbf7f2, 5, 25);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 10;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization
+        container.appendChild(renderer.domElement);
+
+        // --- Texture Loading ---
+        const textureLoader = new THREE.TextureLoader();
+        const texturePaths = [];
+        // Generate paths for gallery_01 to gallery_23
+        for(let i=1; i<=23; i++) {
+            texturePaths.push(`/assets/img/guild/ava/gallery_${String(i).padStart(2, '0')}.webp`);
+        }
+
+        // Load textures asynchronously
+        const textures = texturePaths.map(path => textureLoader.load(path));
+
+        // --- Objects: Floating Elements ---
+        const galleryGroup = new THREE.Group();
+        scene.add(galleryGroup);
+
+        const planeCount = 30; // Increased count
+        const planes = [];
+
+        // Base geometries - we will scale them based on texture later
+        const baseGeometry = new THREE.PlaneGeometry(1, 1);
+
+        for (let i = 0; i < planeCount; i++) {
+            // Pick a random texture
+            const texture = textures[i % textures.length];
+
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.85,
+            });
+
+            const mesh = new THREE.Mesh(baseGeometry, material);
+
+            // Randomize Scale (Portrait vs Landscape simulation)
+            // We can't know the exact aspect ratio without checking image dimensions,
+            // but we can vary size.
+            // Better: Force a slightly vertical aspect ratio for most,
+            // or use square and let texture contain/cover?
+            // Default PlaneGeometry is 1x1. Let's scale it up.
+            const s = 3 + Math.random() * 2;
+            mesh.scale.set(s, s * 1.2, 1); // Slight portrait bias
+
+            mesh.position.x = (Math.random() - 0.5) * 20;
+            mesh.position.y = -i * 3 + 10; // Spread vertically
+            mesh.position.z = (Math.random() - 0.5) * 12 - 4;
+
+            mesh.rotation.z = (Math.random() - 0.5) * 0.5;
+            mesh.rotation.y = (Math.random() - 0.5) * 0.5;
+
+            // Wireframe Border (Gold Frame)
+            const edges = new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1));
+            const frame = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xd4af37, opacity: 0.4, transparent: true }));
+            // Frame needs to scale with mesh, but if we add it as child, it scales automatically
+            mesh.add(frame);
+
+            galleryGroup.add(mesh);
+            planes.push({ mesh, speed: Math.random() * 0.005 + 0.002 });
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            planes.forEach((p, i) => {
+                p.mesh.rotation.z += Math.sin(Date.now() * 0.001 + i) * 0.0005;
+                p.mesh.position.y += Math.sin(Date.now() * 0.001 + i) * 0.002;
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Scroll Interaction (GSAP) ---
+        gsap.to(camera.position, {
+            y: -planeCount * 2, // Adjust travel distance based on density
+            ease: "none",
+            scrollTrigger: {
+                trigger: ".scroller",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.5
+            }
+        });
+
+        planes.forEach((p, i) => {
+            gsap.to(p.mesh.rotation, {
+                x: Math.PI / 4,
+                scrollTrigger: {
+                    trigger: ".scroller",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+    </script>
+
+    <!-- Main Logic & Loader -->
+    <script>
+        // --- Loader Logic ---
+        const loader = document.getElementById('loader');
+        const loaderLine = document.querySelector('.loader-line');
+
+        // Simulate progress or wait for resources
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress > 90) progress = 90;
+            loaderLine.style.width = progress + '%';
+        }, 100);
+
+        function removeLoader() {
+            clearInterval(interval);
+            loaderLine.style.width = '100%';
+
+            gsap.to(loader, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    loader.style.display = 'none';
+                    initScrollTrigger(); // Start animations only after load
+                }
+            });
+        }
+
+        // Wait for Fonts & Minimum Timeout
+        Promise.all([
+            document.fonts.ready,
+            new Promise(resolve => setTimeout(resolve, 1500)) // Min wait for effect
+        ]).then(() => {
+            removeLoader();
+        }).catch(() => {
+            // Fallback if fonts fail
+            removeLoader();
+        });
+
+        // --- ScrollTrigger Initialization ---
+        function initScrollTrigger() {
+            // Reveal Text
+            gsap.utils.toArray('.reveal-text').forEach(elem => {
+                gsap.fromTo(elem,
+                    { y: 50, opacity: 0 },
+                    {
+                        y: 0, opacity: 1,
+                        duration: 1.2,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 85%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+            });
+
+            // Reveal Block
+            gsap.utils.toArray('.reveal-block').forEach(elem => {
+                gsap.fromTo(elem,
+                    { x: -50, opacity: 0 },
+                    {
+                        x: 0, opacity: 1,
+                        duration: 1,
+                        ease: "power2.out",
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 80%"
+                        }
+                    }
+                );
+            });
+
+            // Reveal Image
+            gsap.utils.toArray('.reveal-img').forEach(elem => {
+                gsap.fromTo(elem,
+                    { scale: 0.8, opacity: 0, rotation: 5 },
+                    {
+                        scale: 1, opacity: 1, rotation: 0,
+                        duration: 1.5,
+                        ease: "expo.out",
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 70%"
+                        }
+                    }
+                );
+            });
+
+            // Timeline Items
+            gsap.utils.toArray('.timeline-item').forEach((elem, i) => {
+                gsap.fromTo(elem,
+                    { opacity: 0, x: -20 },
+                    {
+                        opacity: 1, x: 0,
+                        duration: 0.8,
+                        delay: i * 0.2, // Stagger effect
+                        scrollTrigger: {
+                            trigger: elem,
+                            start: "top 85%"
+                        }
+                    }
+                );
+            });
+
+            // Timeline Line Progress
+            gsap.to('.timeline-progress', {
+                height: '100%',
+                scrollTrigger: {
+                    trigger: '.timeline-container',
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: 1
+                }
+            });
+
+            // Service Cards
+            gsap.utils.toArray('.reveal-card').forEach((elem, i) => {
+                gsap.fromTo(elem,
+                    { y: 50, opacity: 0 },
+                    {
+                        y: 0, opacity: 1,
+                        duration: 0.8,
+                        delay: i * 0.1,
+                        scrollTrigger: {
+                            trigger: '.services-grid', // Trigger on container
+                            start: "top 80%"
+                        }
+                    }
+                );
+            });
+
+            ScrollTrigger.refresh();
+        }
+
+    </script>
+</body>
+</html>

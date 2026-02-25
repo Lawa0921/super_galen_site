@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michael Lai | The Data Nebula</title>
+    <meta name="description" content="Michael Lai - 數據分析師 | 自動化專家 | 數據與藝術的碰撞">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;700;900&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            /* Palette: Explosive Contrast */
+            --c-bg: #F8FAFC;       /* Off-White */
+            --c-text: #0F172A;     /* Deep Ink */
+            --c-primary: #3B82A0;  /* Data Blue */
+            --c-secondary: #64748B;/* Muted Slate */
+            --c-accent: #F97316;   /* Nuclear Orange */
+            --c-glass: rgba(255, 255, 255, 0.7);
+
+            --f-main: 'Inter', sans-serif;
+            --f-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--f-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- Global Layout --- */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0; pointer-events: none; /* Mouse interactions handled via global listener */
+        }
+
+        .scroller { position: relative; z-index: 10; pointer-events: none; }
+        .interactive-layer { pointer-events: auto; } /* Specific interactive elements */
+
+        .section {
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1400px; width: 100%; margin: 0 auto;
+            position: relative;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-size: clamp(4rem, 10vw, 9rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 0.9;
+            color: var(--c-text);
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.8), -2px -2px 0px rgba(255,255,255,0.8);
+            position: relative;
+            z-index: 2;
+        }
+
+        h2 { font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 700; letter-spacing: -0.03em; margin-bottom: 2rem; }
+
+        .tag {
+            font-family: var(--f-mono);
+            font-size: 0.85rem;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: inline-block;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--c-accent);
+        }
+
+        p {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.2rem; color: var(--c-secondary);
+            max-width: 60ch; margin-bottom: 2rem;
+        }
+
+        .highlight { color: var(--c-primary); font-weight: 700; }
+
+        /* --- Components --- */
+        .glass-card {
+            background: var(--c-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.8);
+            padding: 3rem;
+            border-radius: 2px;
+            box-shadow: 0 20px 50px rgba(59, 130, 160, 0.1);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card:hover { transform: scale(1.02); background: rgba(255,255,255,0.9); }
+
+        .btn-massive {
+            display: inline-flex; align-items: center; gap: 1rem;
+            font-family: var(--f-mono); font-size: 1.2rem; font-weight: 700;
+            color: var(--c-text); text-decoration: none;
+            padding: 1.5rem 3rem;
+            border: 2px solid var(--c-text);
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+            background: transparent;
+        }
+        .btn-massive:hover {
+            background: var(--c-text); color: white;
+            box-shadow: 10px 10px 0 var(--c-accent);
+            transform: translate(-5px, -5px);
+        }
+
+        .grid-3 {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+        }
+        @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+
+        /* --- Nav --- */
+        .nav-fixed {
+            position: fixed; top: 2rem; left: 2rem; z-index: 50;
+            font-family: var(--f-mono); font-weight: 700;
+            color: var(--c-text); text-decoration: none;
+            padding: 0.5rem 1rem; background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(10px); pointer-events: auto;
+        }
+
+        /* --- Timeline (Content Expansion) --- */
+        .timeline-container {
+            border-left: 2px solid var(--c-secondary);
+            margin-left: 2rem;
+            padding-left: 2rem;
+        }
+        .timeline-item { position: relative; margin-bottom: 3rem; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -2.6rem; top: 0.5rem;
+            width: 1rem; height: 1rem; background: var(--c-bg);
+            border: 2px solid var(--c-accent); border-radius: 50%;
+        }
+        .timeline-date {
+            font-family: var(--f-mono); color: var(--c-accent); font-size: 0.9rem; margin-bottom: 0.5rem; display: block;
+        }
+
+        /* --- The Code Vault (Interactive) --- */
+        .code-block {
+            background: #1e293b; color: #a5b4fc; padding: 2rem;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
+            border-radius: 4px; border: 1px solid #334155;
+            position: relative; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: border-color 0.3s, transform 0.3s; cursor: pointer;
+        }
+        .code-block:hover { border-color: var(--c-accent); transform: translateY(-5px); }
+        .code-line { display: block; margin-bottom: 0.5rem; opacity: 0; transform: translateX(-10px); }
+        .code-comment { color: #64748b; font-style: italic; }
+        .code-keyword { color: #c084fc; }
+        .code-func { color: #38bdf8; }
+        .code-string { color: #4ade80; }
+
+        .code-output {
+            margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #334155;
+            color: var(--c-accent); display: none;
+        }
+
+        /* --- Project Card (Content Expansion) --- */
+        .project-grid {
+            display: grid; grid-template-columns: 1fr; gap: 4rem; margin-top: 4rem;
+        }
+        .project-card {
+            display: grid; grid-template-columns: 1fr; gap: 2rem;
+            align-items: center;
+        }
+        @media (min-width: 900px) {
+            .project-card { grid-template-columns: 1fr 1fr; }
+            /* Zig-zag layout */
+            .project-card:nth-child(odd) .project-visual { order: 1; }
+            .project-card:nth-child(odd) .project-info { order: 2; }
+
+            .project-card:nth-child(even) .project-visual { order: 2; }
+            .project-card:nth-child(even) .project-info { order: 1; }
+        }
+        .project-visual {
+            background: #e2e8f0; height: 300px; width: 100%; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--f-mono); color: var(--c-secondary); font-size: 2rem;
+            position: relative; overflow: hidden;
+        }
+        .project-visual::after {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+            background-size: 200% 200%;
+            animation: shine 3s infinite linear;
+        }
+        @keyframes shine { 0% { background-position: 100% 100%; } 100% { background-position: 0% 0%; } }
+
+        /* ===== BIOMETRIC AVATAR SYSTEM ===== */
+        .avatar-frame {
+            position: relative;
+            display: block;
+            width: 100%;
+            max-width: 380px;
+            cursor: crosshair;
+        }
+
+        /* CRT scanline texture */
+        .avatar-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.045) 0px,
+                rgba(0,0,0,0.045) 1px,
+                transparent 1px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* Holographic tint overlay (appears on hover) */
+        .avatar-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg,
+                rgba(59,130,160,0.2) 0%,
+                transparent 50%,
+                rgba(249,115,22,0.14) 100%
+            );
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .avatar-frame:hover::after { opacity: 1; }
+
+        /* Photo */
+        .av-photo {
+            width: 100%;
+            display: block;
+            position: relative;
+            z-index: 1;
+            filter: contrast(1.05) saturate(1.08);
+        }
+        /* Glitch on hover — fires every 4s while hovering */
+        .avatar-frame:hover .av-photo {
+            animation: av-glitch 4s linear infinite;
+        }
+        @keyframes av-glitch {
+            0%   { transform: none; filter: contrast(1.05) saturate(1.08); }
+            1%   { transform: translateX(-5px) scaleX(1.01); filter: hue-rotate(-32deg) saturate(2.2) contrast(1.25); }
+            2%   { transform: translateX(6px) scaleX(0.99); filter: hue-rotate(32deg) saturate(2.2) contrast(1.15); }
+            3%   { transform: translateX(-3px); filter: hue-rotate(-12deg) saturate(1.4); }
+            4%   { transform: none; filter: contrast(1.05) saturate(1.08); }
+            100% { transform: none; filter: contrast(1.05) saturate(1.08); }
+        }
+
+        /* Sweep scan beam */
+        .av-scan-beam {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(59,130,160,0.4) 10%,
+                rgba(59,130,160,1) 50%,
+                rgba(59,130,160,0.4) 90%,
+                transparent 100%
+            );
+            box-shadow:
+                0 0 8px rgba(59,130,160,1),
+                0 0 22px rgba(59,130,160,0.65),
+                0 -12px 20px rgba(59,130,160,0.12),
+                0  12px 20px rgba(59,130,160,0.12);
+            animation: av-scan 4s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+        @keyframes av-scan {
+            0%   { top: 0; opacity: 0; }
+            4%   { opacity: 1; }
+            60%  { top: 100%; opacity: 0.9; }
+            62%  { opacity: 0; }
+            100% { top: 0; opacity: 0; }
+        }
+
+        /* Corner brackets */
+        .av-bracket {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            z-index: 6;
+            transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .av-bracket::before,
+        .av-bracket::after {
+            content: '';
+            position: absolute;
+            background: var(--c-accent);
+        }
+        .ab-tl { top: 0; left: 0; }
+        .ab-tl::before { top: 0; left: 0; width: 100%; height: 2px; }
+        .ab-tl::after  { top: 0; left: 0; width: 2px; height: 100%; }
+        .ab-tr { top: 0; right: 0; }
+        .ab-tr::before { top: 0; right: 0; width: 100%; height: 2px; }
+        .ab-tr::after  { top: 0; right: 0; width: 2px; height: 100%; }
+        .ab-bl { bottom: 0; left: 0; }
+        .ab-bl::before { bottom: 0; left: 0; width: 100%; height: 2px; }
+        .ab-bl::after  { bottom: 0; left: 0; width: 2px; height: 100%; }
+        .ab-br { bottom: 0; right: 0; }
+        .ab-br::before { bottom: 0; right: 0; width: 100%; height: 2px; }
+        .ab-br::after  { bottom: 0; right: 0; width: 2px; height: 100%; }
+
+        /* Hover: brackets spring outward — transform instead of position to avoid layout reflow */
+        .avatar-frame:hover .ab-tl { transform: translate(-10px, -10px); }
+        .avatar-frame:hover .ab-tr { transform: translate(10px, -10px); }
+        .avatar-frame:hover .ab-bl { transform: translate(-10px, 10px); }
+        .avatar-frame:hover .ab-br { transform: translate(10px, 10px); }
+
+        /* Data readout labels */
+        .av-data {
+            position: absolute;
+            font-family: var(--f-mono);
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            z-index: 7;
+            padding: 2px 8px;
+            pointer-events: none;
+            white-space: nowrap;
+            transition: color 0.3s, background 0.3s;
+        }
+        .av-data-top {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--c-primary);
+            background: rgba(248,250,252,0.88);
+        }
+        .av-data-bot {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--c-primary);
+            background: rgba(248,250,252,0.88);
+        }
+        .avatar-frame:hover .av-data-top,
+        .avatar-frame:hover .av-data-bot {
+            color: white;
+            background: rgba(15,23,42,0.88);
+        }
+
+        /* "■ IDENTIFIED" banner (slides up on hover) */
+        .av-identified {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(249,115,22,0.94);
+            color: white;
+            font-family: var(--f-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 0.4rem 0;
+            letter-spacing: 0.3em;
+            z-index: 7;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: opacity 0.4s, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+        .avatar-frame:hover .av-identified {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .footer-link {
+            font-size: 4rem; color: var(--c-secondary); margin: 0 1rem;
+            transition: color 0.3s, transform 0.3s, text-shadow 0.3s; display: inline-block;
+        }
+        .footer-link:hover { color: var(--c-accent); transform: scale(1.1) rotate(-5deg); text-shadow: 5px 5px 0 rgba(0,0,0,0.1); }
+
+    </style>
+</head>
+<body>
+
+    <a href="/guild" class="nav-fixed">← GUILD_NEBULA</a>
+
+    <div id="webgl-container"></div>
+
+    <div class="scroller">
+
+        <!-- 1. Hero: The Big Bang -->
+        <section class="section">
+            <div class="container interactive-layer" style="text-align: center;">
+                <div class="gs-reveal" style="background: rgba(248, 250, 252, 0.6); padding: 3rem; backdrop-filter: blur(8px); border-radius: 4px; display: inline-block;">
+                    <span class="tag">System Initialize: Kinetic</span>
+                    <h1 style="text-shadow: none;">DATA<br><span style="color: transparent; -webkit-text-stroke: 2px var(--c-text);">EXPLOSION</span></h1>
+                    <p style="margin: 2rem auto; font-size: 1.5rem;">
+                        我是 Michael Lai。<br>
+                        拒絕平庸的數據架構師。在混亂中引爆價值。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. The Core (About) -->
+        <section class="section" id="about">
+            <div class="container interactive-layer">
+                <div class="glass-card gs-reveal" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 4rem; align-items: center;">
+
+                    <div style="position: relative; padding: 0.75rem;">
+                        <div class="avatar-frame" id="avatarFrame">
+                            <!-- Sweep scan beam -->
+                            <div class="av-scan-beam"></div>
+                            <!-- Corner brackets -->
+                            <div class="av-bracket ab-tl"></div>
+                            <div class="av-bracket ab-tr"></div>
+                            <div class="av-bracket ab-bl"></div>
+                            <div class="av-bracket ab-br"></div>
+                            <!-- Data readout labels -->
+                            <div class="av-data av-data-top" id="avDataTop">SYS.IDENT: M.LAI</div>
+                            <div class="av-data av-data-bot" id="avDataBot">&#9679; ONLINE</div>
+                            <!-- Photo -->
+                            <img src="/assets/img/guild/michael/avatar.webp" alt="Michael" class="av-photo" loading="lazy">
+                            <!-- Identified banner -->
+                            <div class="av-identified">&#9632; IDENTIFIED</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="tag">Origin Story</span>
+                        <h2>From Chaos to <span class="highlight">Structure</span></h2>
+                        <p>
+                            半路出家意味著我不受傳統束縛。
+                            我將數據視為一種<span class="highlight">原力 (Force)</span>。
+                            不僅僅是分析過去，更是用自動化代碼 (Source Code) 與生成式 AI，預測並構建未來。
+                        </p>
+
+                        <!-- Timeline Injection -->
+                        <div class="timeline-container" style="margin-top: 3rem;">
+                            <div class="timeline-item">
+                                <span class="timeline-date">PHASE 1: THE OBSERVER</span>
+                                <h4>Cross-Cultural Analysis</h4>
+                                <p style="font-size: 1rem; margin-bottom: 0;">以敏銳的觀察力，學習各國文化的底層邏輯與差異。</p>
+                            </div>
+                            <div class="timeline-item">
+                                <span class="timeline-date">PHASE 2: THE BUILDER</span>
+                                <h4>Data Analyst & Automation</h4>
+                                <p style="font-size: 1rem; margin-bottom: 0;">掌握 Python/SQL，將觀察轉化為可執行的自動化腳本。</p>
+                            </div>
+                            <div class="timeline-item" style="margin-bottom: 0;">
+                                <span class="timeline-date">PHASE 3: THE ARCHITECT</span>
+                                <h4>AI Synthesis & Expert Path</h4>
+                                <p style="font-size: 1rem; margin-bottom: 0;">整合 Generative AI，創造全新的數據敘事體驗。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.2 Methodology (New Content) -->
+        <section class="section" style="padding: 2rem 2rem;">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="text-align: center; margin-bottom: 3rem;">
+                    <span class="tag">The Process</span>
+                    <h2>Data <span class="highlight">Ecosystem</span></h2>
+                </div>
+
+                <div class="grid-3" style="text-align: center;">
+                    <div class="glass-card gs-reveal">
+                        <i class="fa-solid fa-magnifying-glass-chart" style="font-size: 2.5rem; color: var(--c-primary); margin-bottom: 1rem;"></i>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">DISCOVER</h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 0;">深入業務場景，挖掘潛在的數據價值與斷點。</p>
+                    </div>
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.1s;">
+                        <i class="fa-solid fa-flask" style="font-size: 2.5rem; color: var(--c-accent); margin-bottom: 1rem;"></i>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">SYNTHESIZE</h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 0;">運用工具與邏輯，將雜訊轉化為可執行的信號。</p>
+                    </div>
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.2s;">
+                        <i class="fa-solid fa-rocket" style="font-size: 2.5rem; color: var(--c-text); margin-bottom: 1rem;"></i>
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">DEPLOY</h3>
+                        <p style="font-size: 0.9rem; margin-bottom: 0;">建立自動化閉環，讓洞見即時落地。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.3 The Code Vault (New Content) -->
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="grid-3" style="align-items: center;">
+
+                    <div style="grid-column: span 1;" class="gs-reveal">
+                        <span class="tag">Technical Logic</span>
+                        <h2 style="font-size: 3rem; margin-bottom: 1.5rem;">The <span class="highlight">Code</span> Vault</h2>
+                        <p style="font-size: 1rem;">
+                            我不僅僅是分析師，我是構建者。<br>
+                            透過 Python 自動化腳本，我將重複性工作壓縮至零。<br>
+                            點擊代碼塊以執行模擬。
+                        </p>
+                    </div>
+
+                    <div style="grid-column: span 2;">
+                        <div class="code-block gs-reveal" onclick="runSimulation(this)">
+                            <div class="code-line"><span class="code-keyword">def</span> <span class="code-func">optimize_workflow</span>(data):</div>
+                            <div class="code-line">&nbsp;&nbsp;<span class="code-comment"># Remove inefficiencies</span></div>
+                            <div class="code-line">&nbsp;&nbsp;clean_data = data.<span class="code-func">filter</span>(noise=<span class="code-keyword">None</span>)</div>
+                            <div class="code-line">&nbsp;&nbsp;<span class="code-keyword">if</span> clean_data.<span class="code-func">is_ready</span>():</div>
+                            <div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> <span class="code-string">"Insight_Generated"</span></div>
+                            <div class="code-output">> SYSTEM: WORKFLOW OPTIMIZED. TIME SAVED: 99%</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.4 Philosophy Quote -->
+        <section class="section" style="padding: 6rem 2rem; background: rgba(59, 130, 160, 0.05);">
+            <div class="container interactive-layer" style="text-align: center;">
+                <div class="gs-reveal">
+                    <i class="fa-solid fa-quote-left" style="font-size: 3rem; color: var(--c-secondary); opacity: 0.3; margin-bottom: 2rem;"></i>
+                    <h2 style="font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 300; font-family: var(--f-main); line-height: 1.4;">
+                        "Data is not just numbers. It is the <span class="highlight">raw material of truth</span> waiting to be sculpted."
+                    </h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.5 New Section: Projects (Detailed) -->
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="text-align: center;">
+                    <span class="tag">Operational Data</span>
+                    <h2>Key <span class="highlight">Protocols</span></h2>
+                </div>
+
+                <div class="project-grid">
+
+                    <!-- Project 1 -->
+                    <div class="glass-card project-card gs-reveal">
+                        <div class="project-visual">
+                            <i class="fa-solid fa-network-wired" style="font-size: 5rem; color: #cbd5e1;"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3 style="font-family: var(--f-mono);">CONCEPT: DATA STORYTELLING</h3>
+                            <p style="font-size: 1rem; margin-top: 1rem;">
+                                利用 AI 工具生成輔助素材，將抽象的分析結果轉化為視覺化的故事板。
+                                讓數據報告不再枯燥，而是充滿說服力的敘事。
+                            </p>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Generative AI</span>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Visualization</span>
+                        </div>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="glass-card project-card gs-reveal">
+                        <div class="project-visual">
+                            <i class="fa-solid fa-gears" style="font-size: 5rem; color: #cbd5e1;"></i>
+                        </div>
+                        <div class="project-info">
+                            <h3 style="font-family: var(--f-mono);">CONCEPT: AUTOMATION</h3>
+                            <p style="font-size: 1rem; margin-top: 1rem;">
+                                構建高效率的數據處理流程。從原始數據清洗到報表更新，
+                                致力於減少重複性勞動，實現流程自動化。
+                            </p>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Workflow</span>
+                            <span class="tag" style="border: none; background: #e2e8f0; color: var(--c-text); padding: 0.2rem 0.5rem;">Scripting</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 2.6 Toolkit (New Content) -->
+        <section class="section" style="padding: 2rem 2rem;">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="margin-bottom: 2rem;">
+                    <span class="tag">Arsenal</span>
+                    <h2>Tech <span class="highlight">Stack</span></h2>
+                </div>
+                <div class="gs-reveal" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Python</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">SQL</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Visualization</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Generative AI</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Automation</span>
+                    <span class="btn-massive" style="font-size: 1rem; padding: 0.8rem 1.5rem; border-width: 1px;">Data Analysis</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. The Constellation (Interests) -->
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="gs-reveal" style="margin-bottom: 3rem;">
+                    <span class="tag">Energy Sources</span>
+                    <h2>Kinetic <span class="highlight">Variables</span></h2>
+                </div>
+
+                <div class="grid-3">
+
+                    <!-- Automation -->
+                    <div class="glass-card gs-reveal">
+                        <i class="fa-solid fa-code" style="font-size: 3rem; color: var(--c-primary); margin-bottom: 1.5rem;"></i>
+                        <h3 style="font-family: var(--f-mono);">Source Code</h3>
+                        <p style="font-size: 1rem; margin-top: 1rem;">
+                            將繁瑣流程轉化為優雅的腳本。
+                            追求極致的效率與 "Zero-Touch" 自動化閉環。
+                        </p>
+                    </div>
+
+                    <!-- AI -->
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.1s;">
+                        <i class="fa-solid fa-brain" style="font-size: 3rem; color: var(--c-accent); margin-bottom: 1.5rem;"></i>
+                        <h3 style="font-family: var(--f-mono);">AI Synthesis</h3>
+                        <p style="font-size: 1rem; margin-top: 1rem;">
+                            利用 AI 生成未知。
+                            探索人腦邏輯與機器創造力的共生邊界。
+                        </p>
+                    </div>
+
+                    <!-- Life -->
+                    <div class="glass-card gs-reveal" style="transition-delay: 0.2s;">
+                        <i class="fa-solid fa-bolt" style="font-size: 3rem; color: var(--c-text); margin-bottom: 1.5rem;"></i>
+                        <h3 style="font-family: var(--f-mono);">Kinetic Life</h3>
+                        <p style="font-size: 1rem; margin-top: 1rem;">
+                            貓咪教會我觀察 (Observation)。
+                            籃球教會我動能 (Flow)。
+                            生活本身就是一場巨大的數據運算。
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Footer -->
+        <section class="section" style="min-height: 80vh;">
+            <div class="container interactive-layer" style="text-align: center;">
+                <div class="gs-reveal">
+                    <span class="tag">Link Start</span>
+                    <h2 style="font-size: 5rem;">Ready to <span class="highlight">Ignite?</span></h2>
+                    <p style="margin: 0 auto 3rem;">正在尋找數據分析相關機會</p>
+
+                    <div>
+                        <a href="https://www.threads.net/@michael_lwt" target="_blank" class="footer-link"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/michael_lwt/" target="_blank" class="footer-link"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                </div>
+
+                <div style="margin-top: 5rem; font-family: var(--f-mono); font-size: 0.8rem; color: var(--c-secondary); opacity: 0.6;">
+                    MADE WITH <i class="fa-solid fa-fire" style="color: var(--c-accent);"></i> BY SUPERGALEN'S DUNGEON
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- SCRIPT: The Particle Explosion -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xF8FAFC, 0.002); // Distance fog
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
+
+        const isMobile = window.innerWidth < 768;
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !isMobile });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 1.5));
+        container.appendChild(renderer.domElement);
+
+        // --- Particles: "The Brain" / "The Network" ---
+        const count = isMobile ? 1000 : 3000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const originalPositions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+
+        const color1 = new THREE.Color(0x3B82A0);
+        const color2 = new THREE.Color(0xF97316);
+
+        for(let i=0; i<count; i++) {
+            // Initial Shape: A Sphere/Brain-like Cloud
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            const r = 15 + Math.random() * 2; // Radius
+
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            positions[i*3] = x;
+            positions[i*3+1] = y;
+            positions[i*3+2] = z;
+
+            originalPositions[i*3] = x;
+            originalPositions[i*3+1] = y;
+            originalPositions[i*3+2] = z;
+
+            // Random colors
+            const mixedColor = color1.clone().lerp(color2, Math.random());
+            colors[i*3] = mixedColor.r;
+            colors[i*3+1] = mixedColor.g;
+            colors[i*3+2] = mixedColor.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.3,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            sizeAttenuation: true
+        });
+
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+        // --- Interaction State ---
+        const mouse = new THREE.Vector2(9999, 9999); // Off-screen initially
+        const mouseWorld = new THREE.Vector3(); // Projected mouse pos in 3D
+        let isExploding = false;
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        }, { passive: true });
+
+        // Click to "Shockwave"
+        window.addEventListener('mousedown', () => {
+            isExploding = true;
+            setTimeout(() => { isExploding = false; }, 200);
+        });
+
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+        let animationId;
+
+        // Optimized Mouse Projection (reused vectors)
+        const vec = new THREE.Vector3();
+        const dir = new THREE.Vector3();
+
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Project mouse to world depth (z=0 roughly)
+            vec.set(mouse.x, mouse.y, 0.5);
+            vec.unproject(camera);
+            dir.copy(vec).sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+
+            // Safety check for distance (avoid NaN)
+            if (isFinite(distance)) {
+                mouseWorld.copy(camera.position).add(dir.multiplyScalar(distance));
+            }
+
+            const positions = geometry.attributes.position.array;
+
+            // Influence factors
+            const scrollFactor = Math.min(window.scrollY * 0.05, 50);
+
+            // Optimization: Pre-calculate rotation
+            const angle = time * 0.1;
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+
+            for(let i=0; i<count; i++) {
+                const ix = i*3;
+                const iy = i*3+1;
+                const iz = i*3+2;
+
+                let x = positions[ix];
+                let y = positions[iy];
+                let z = positions[iz];
+
+                const ox = originalPositions[ix];
+                const oy = originalPositions[iy];
+                const oz = originalPositions[iz];
+
+                // 1. Base Motion: Rotate around Y
+                let rx = ox * cos - oz * sin;
+                let rz = ox * sin + oz * cos;
+
+                // Add Scroll Explosion (Push outward)
+                // Using approximate length for speed
+                const lenSq = rx*rx + oy*oy + rz*rz;
+                const len = Math.sqrt(lenSq);
+
+                const normX = rx/len || 0;
+                const normY = oy/len || 0;
+                const normZ = rz/len || 0;
+
+                // Target Position
+                let tx = rx + normX * scrollFactor * 1.5;
+                let ty = oy + normY * scrollFactor * 1.5;
+                let tz = rz + normZ * scrollFactor * 1.5;
+
+                // 2. Mouse Repulsion (only calculate if mouse has entered the window)
+                if (mouse.x !== 9999) {
+                    const dx = x - mouseWorld.x;
+                    const dy = y - mouseWorld.y;
+                    // Approximate distance check first
+                    if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+                        const distSq = dx*dx + dy*dy;
+                        if (distSq < 225) { // 15^2
+                             const dist = Math.sqrt(distSq);
+                             const force = (15 - dist) * 0.5;
+                             tx += (dx / dist) * force;
+                             ty += (dy / dist) * force;
+                        }
+                    }
+                }
+
+                // 3. Shockwave
+                if (isExploding) {
+                     tx += (Math.random()-0.5) * 10;
+                     ty += (Math.random()-0.5) * 10;
+                     tz += (Math.random()-0.5) * 10;
+                }
+
+                // Smoothly interpolate
+                positions[ix] += (tx - x) * 0.1;
+                positions[iy] += (ty - y) * 0.1;
+                positions[iz] += (tz - z) * 0.1;
+            }
+
+            geometry.attributes.position.needsUpdate = true;
+
+            // Rotate entire system slightly based on mouse
+            particleSystem.rotation.x += (mouse.y * 0.2 - particleSystem.rotation.x) * 0.05;
+            particleSystem.rotation.y += (mouse.x * 0.2 - particleSystem.rotation.y) * 0.05;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+
+        // Code Block Interaction
+        window.runSimulation = (el) => {
+            const output = el.querySelector('.code-output');
+            output.style.display = 'block';
+            output.innerText = "> EXECUTING...";
+
+            setTimeout(() => {
+                output.innerText = "> SYSTEM: WORKFLOW OPTIMIZED. TIME SAVED: 99%";
+                gsap.from(output, { opacity: 0, x: -10, duration: 0.3 });
+            }, 800);
+        };
+
+        // --- GSAP Reveals ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.gs-reveal').forEach(elem => {
+            gsap.from(elem, {
+                scrollTrigger: {
+                    trigger: elem,
+                    start: "top 85%",
+                },
+                y: 50,
+                scale: 0.9,
+                opacity: 0,
+                duration: 1,
+                ease: "back.out(1.7)" // Explosive entrance
+            });
+        });
+
+        // Typing Effect for Code
+        gsap.utils.toArray('.code-line').forEach((line, i) => {
+            gsap.to(line, {
+                opacity: 1,
+                x: 0,
+                duration: 0.5,
+                delay: i * 0.2,
+                scrollTrigger: {
+                    trigger: line.closest('.code-block'),
+                    start: "top 80%"
+                }
+            });
+        });
+
+        // Pause animation when tab is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                cancelAnimationFrame(animationId);
+                clock.stop();
+            } else {
+                clock.start();
+                animate();
+            }
+        });
+
+        // ── Avatar Biometric Scan Interaction ──
+        (function() {
+            const frame = document.getElementById('avatarFrame');
+            const topLabel = document.getElementById('avDataTop');
+            const botLabel = document.getElementById('avDataBot');
+            if (!frame || !topLabel || !botLabel) return;
+
+            let resetTimer;
+
+            frame.addEventListener('mouseenter', () => {
+                clearTimeout(resetTimer);
+                topLabel.textContent = 'SYS.SCAN: ACTIVE';
+                botLabel.textContent = '\u25b6 ANALYZING...';
+                setTimeout(() => {
+                    botLabel.textContent = '\u2713 VERIFIED';
+                }, 520);
+            });
+
+            frame.addEventListener('mouseleave', () => {
+                resetTimer = setTimeout(() => {
+                    topLabel.textContent = 'SYS.IDENT: M.LAI';
+                    botLabel.innerHTML = '&#9679; ONLINE';
+                }, 180);
+            });
+        })();
+
+        // Debounced resize
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 150);
+        });
+
+    </script>
+</body>
+</html>
