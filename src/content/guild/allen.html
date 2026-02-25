@@ -134,11 +134,11 @@
 
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
-            filter: grayscale(1) contrast(1.2);
-            transition: 0.5s;
+            filter: contrast(1.05) saturate(1.1);
+            transition: filter 0.4s;
         }
         .avatar-frame:hover .avatar-img {
-            filter: grayscale(0) contrast(1);
+            filter: contrast(1.1) saturate(1.2) brightness(1.05);
         }
         .avatar-frame::before {
             content: ''; position: absolute; inset: 0;
@@ -455,7 +455,7 @@
 
         /* --- Battalion Section --- */
         .flex-wrap-container { display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; }
-        .battalion-panel { flex: 1; min-width: 300px; }
+        .battalion-panel { flex: 1; min-width: 300px; box-sizing: border-box; }
         .battalion-panel-dashed { border: 1px dashed var(--c-yellow); }
 
         /* --- Subsection Headings --- */
@@ -640,9 +640,9 @@
 
                 <div class="flex-wrap-container">
                     <div class="gs-reveal glass-panel battalion-panel">
-                        <h3 class="subsection-heading-cyan">// UNIT STRENGTH: 30+</h3>
+                        <h3 class="subsection-heading-cyan">// UNIT STRENGTH: 37</h3>
                         <p class="body-text">
-                            工廠大大小小內有二三十位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
+                            工廠共有三十多位同仁，這不僅僅是員工，而是跟我一起衝鋒陷陣的戰鬥部隊。<br>
                             每天的日常就是在印桌遊，或是在開印的路上。<br>
                             產線就是我們的戰場，每一張卡牌、每一個配件，都是我們共同打造的彈藥。
                         </p>
@@ -671,7 +671,7 @@
                 <div class="gs-reveal glass-panel mb-2">
                     <p class="body-text-lg">
                         墨帥印刷，成立於 2017 年，座落在新北市中和區。<br>
-                        這不只是一座印刷廠——這是台灣桌遊產業的心臟。在多數廠商將生產線外移至中國大陸的年代，
+                        這不只是一座印刷廠——這是台灣桌遊界公認最專業的生產大廠。在多數廠商將生產線外移至中國大陸的年代，
                         墨帥選擇<span class="text-cyan">「根留台灣」</span>，成為少數堅持在地生產的桌遊印刷製造商。<br><br>
                         從一張白紙到一盒完整的桌遊，墨帥提供的不只是印刷，而是一條龍的夢想實現管線：
                         <span class="text-magenta">卡牌印製、指示物配件、彩盒包裝、倉儲後援、成本規劃，甚至群眾集資的出貨配送。</span>
@@ -740,7 +740,7 @@
                     <div class="service-card gs-reveal glass-panel">
                         <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-cyan)"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
                         <h3>Professional Printing</h3>
-                        <p>桌遊印刷 / 禮盒 / 包裝。工廠大大小小二三十位同仁，確保每一份產品的完美品質。</p>
+                        <p>桌遊印刷 / 禮盒 / 包裝。工廠三十多位同仁，確保每一份產品的完美品質。</p>
                     </div>
                     <div class="service-card gs-reveal glass-panel">
                         <svg class="card-icon-svg" viewBox="0 0 24 24" fill="var(--c-magenta)"><path d="M12 2L2 7l10 5 10-5L12 2z" opacity="1"/><path d="M2 12l10 5 10-5" fill="none" stroke="var(--c-magenta)" stroke-width="2"/><path d="M2 17l10 5 10-5" fill="none" stroke="var(--c-magenta)" stroke-width="2" opacity="0.6"/></svg>
@@ -823,7 +823,7 @@
                                 沒有華麗的文案，沒有包裝過的悲情——只有一個印刷廠負責人最真實的聲音：
                             </div>
                             <div class="phoenix-quote">
-                                「工廠倒了。但我不能倒。37 個員工的家庭在等我。」
+                                工廠倒了，但人不能倒。37 個員工的家庭還在等著。
                             </div>
                         </div>
                     </div>
@@ -856,7 +856,7 @@
                                 那是世界上最悅耳的樂章。
                             </div>
                             <div class="phoenix-quote">
-                                「機器在叫了。代表我們還活著。」
+                                機器重新運轉的那一刻，代表一切還活著。
                             </div>
                         </div>
                     </div>
@@ -869,9 +869,9 @@
                             <div class="phoenix-text">
                                 初步復工只是止血，真正的重建還需要更多資源。<br><br>
                                 我在嘖嘖平台發起《<span class="text-cyan">墨帥印刷災後重建計畫</span>》，
-                                目標再募集 400 萬台幣完備生產機台與設備。<br><br>
+                                目標募集 280 萬台幣完備生產機台與設備。<br><br>
                                 集資頁面的標題寫著：「2,500 款桌遊背後的生產力量，這次我們需要你一起幫忙！」<br>
-                                最終 <span class="text-cyan">737 位贊助人</span> 站了出來，用實際行動回應。
+                                最終累計 <span class="text-cyan">737 筆贊助</span>，用實際行動回應。
                             </div>
                         </div>
                     </div>
@@ -891,7 +891,7 @@
                                 <span class="text-green">停滯即是毀滅，唯有前進才能維持系統穩定。</span>
                             </div>
                             <div class="phoenix-quote">
-                                「負債是引擎，不是枷鎖。它逼我跑得更快。」
+                                負債不是枷鎖，而是推動前進的引擎。
                             </div>
                         </div>
                     </div>
@@ -905,10 +905,10 @@
 
             <div class="news-ticker-container" id="ruin-ticker">
                 <div class="news-ticker-content">
-                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房結構崩毀 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
+                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房後半部倒塌 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
                 </div>
                 <div class="news-ticker-content">
-                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房結構崩毀 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
+                     BREAKING: 2024.04.03 07:58 花蓮外海M7.1強震 /// 墨帥印刷五層樓廠房後半部倒塌 /// 37名員工家庭生計受影響 /// 財損初估逾1,000萬 /// 台灣桌遊產業鏈面臨斷裂 /// 2,500+款桌遊生產基地全面停擺 ///
                 </div>
             </div>
 
@@ -968,7 +968,7 @@
                 <h2 class="footer-title">CONNECT</h2>
                 <div class="social-links">
                     <a href="https://www.zeczec.com/projects/ink-play-reborn?srsltid=AfmBOooKh31siejt8SL6VMSuke9AtQJm7HEHwNUUsjMxXwrfB5ceWyC_" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5s-4 5-4 9.5a4 4 0 008 0c0-4.5-4-9.5-4-9.5zM8 19l1.5-2h5L16 19H8zm4-8a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg></a>
-                    <a href="https://www.threads.com/@gxallenlen" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12.6 2.4c2.4.1 4.3.8 5.6 2.2 1.1 1.1 1.8 2.7 2.1 4.5l-1.9.4c-.5-3.2-2.6-5-5.7-5.1-2.1 0-3.8.7-4.9 2.1-1 1.3-1.6 3.2-1.6 5.5s.5 4.2 1.6 5.5c1.1 1.4 2.8 2.1 4.9 2.1 1.8 0 3.2-.5 4.3-1.6 1.1-1.1 1.2-2.5.8-3.4a3.5 3.5 0 00-1.2-1.4c-.1 1.1-.5 2-1 2.7-.8 1-1.8 1.5-3.2 1.6-1.3 0-2.4-.4-3.1-1.3-.6-.7-1-1.7-1-2.8 0-2.2 1.5-3.6 3.9-3.6.3 0 .7 0 1 .1.3-1.7-.1-2.9-1.1-3.5-.7-.4-1.5-.6-2.4-.6-1.6 0-2.8.6-3.5 1.6l-1.4-.9C5.5 3.4 7.1 2.5 9.3 2.4h.3c1.1 0 2.1.2 3 .7 1 .6 1.6 1.5 2 2.7.6.1 1.2.3 1.7.5 1.1.4 2 1.1 2.7 2 .8 1.1 1.2 2.5 1.1 4h0c-.1 2-1 3.5-2.3 4.6-1.5 1.1-3.2 1.7-5.3 1.9-.4 0-.8.1-1.2.1-3 0-5.3-1-6.8-2.9C3.1 14.4 2.4 12 2.4 9.1v0c0-3 .7-5.3 2.1-6.9C6 .7 8.2-.1 11 0h.3l1.3.1v2.3z"/></svg></a>
+                    <a href="https://www.threads.com/@gxallenlen" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.003-11.69c-.242 0-.487.007-.739.021-1.836.103-2.98.946-2.916 2.143.067 1.256 1.452 1.839 2.784 1.767 1.224-.065 2.818-.543 3.086-3.71a10.5 10.5 0 0 0-2.215-.221z"/></svg></a>
                     <a href="https://www.instagram.com/gxallenlen/" target="_blank" class="social-btn"><svg class="icon-inline" viewBox="0 0 24 24" fill="currentColor"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2zm-.2 2A3.6 3.6 0 004 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6zm9.65 1.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zM12 7a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6z"/></svg></a>
                 </div>
                 <p class="footer-credits">

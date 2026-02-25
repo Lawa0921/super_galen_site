@@ -439,7 +439,7 @@ members:
         label: "國際志工體質"
       - id: "story_collector"
         label: "故事蒐集員"
- 
+
   - id: "sui"
     name: "8穗正韓"
     avatar: "/assets/img/guild/sui/avatar.webp"
@@ -451,7 +451,7 @@ members:
         label: "正韓選品"
       - id: "rational_aesthetic"
         label: "理性美學"
- 
+
   - id: "kevin"
     name: "凱文 Kevin"
     avatar: "/assets/img/guild/kevin/avatar.webp"
@@ -838,6 +838,42 @@ members:
       - id: "musician"
         label: "音樂人"
 
+  - id: "meizhuan"
+    name: "石專豆頁"
+    avatar: "/assets/img/guild/meizhuan/avatar.webp"
+    page: "/guild/meizhuan.html"
+    tags:
+      - id: "engineer"
+        label: "工程師"
+      - id: "biker"
+        label: "重機騎士"
+      - id: "otaku"
+        label: "宅宅"
+
+  - id: "ava"
+    name: "房產小蜜 Ava"
+    avatar: "/assets/img/guild/ava/avatar.webp"
+    page: "/guild/ava.html"
+    tags:
+      - id: "real_estate_secretary"
+        label: "房產小秘書"
+      - id: "biker_mom"
+        label: "重機媽咪"
+      - id: "mobile_photographer"
+        label: "手機攝影"
+
+  - id: "michael"
+    name: "Michael Lai"
+    avatar: "/assets/img/guild/michael/avatar.webp"
+    page: "/guild/michael.html"
+    tags:
+      - id: "kinetic_architect"
+        label: "動能架構師"
+      - id: "automation_ai"
+        label: "自動化煉金術"
+      - id: "feline_logic"
+        label: "貓系邏輯"
+
   - id: "allen"
     name: "少帥 Allen"
     avatar: "/assets/img/guild/allen/avatar.webp"
@@ -873,6 +909,7 @@ members:
         label: "夢境魔女"
       - id: "forever_20"
         label: "永遠 20 歲"
+
   - id: "zaira"
     name: "Zaira"
     avatar: "/assets/img/guild/zaira/avatar.webp"
@@ -884,3 +921,15 @@ members:
         label: "攀登者"
       - id: "podcast"
         label: "Podcast"
+
+  - id: "lubu"
+    name: "呂布"
+    avatar: "/assets/img/guild/lubu/avatar.webp"
+    page: "/guild/lubu.html"
+    tags:
+      - id: "vtuber"
+        label: "個人勢 VTuber"
+      - id: "warlord"
+        label: "最強武將"
+      - id: "indie_games"
+        label: "獨立遊戲"

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mian | Focus & Velocity</title>
+    <meta name="description" content="Portfolio of Mian - Student, Creator, Rider. Exploring life through lenses, models, and the open road.">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #F2F2F2;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        a { color: inherit; text-decoration: none; }
+        body {
+            background-color: #050505;
+            color: #F2F2F2;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        ::selection { background: #06b6d4; color: #fff; }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.9);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-panel:hover {
+            background: rgba(40, 40, 40, 0.95);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+        .text-gradient {
+            background: linear-gradient(to right, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Layout utilities */
+        .container { max-width: 1280px; margin: 0 auto; }
+        .min-h-screen { min-height: 100vh; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .justify-between { justify-content: space-between; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-10 { z-index: 10; }
+        .z-40 { z-index: 40; }
+        .z-50 { z-index: 50; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .overflow-hidden { overflow: hidden; }
+        .pointer-events-none { pointer-events: none; }
+        .pointer-events-auto { pointer-events: auto; }
+        .text-center { text-center: center; text-align: center; }
+        .text-right { text-align: right; }
+        .text-justify { text-align: justify; }
+        .select-none { user-select: none; }
+        .mix-blend-difference { mix-blend-mode: difference; }
+        .mix-blend-overlay { mix-blend-mode: overlay; }
+
+        /* Spacing */
+        .p-2 { padding: 0.5rem; }
+        .p-6 { padding: 1.5rem; }
+        .p-8 { padding: 2rem; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-24 { padding-top: 6rem; padding-bottom: 6rem; }
+        .pt-4 { padding-top: 1rem; }
+        .pt-12 { padding-top: 3rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-8 { gap: 2rem; }
+        .gap-12 { gap: 3rem; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .space-y-8 > * + * { margin-top: 2rem; }
+        .space-y-12 > * + * { margin-top: 3rem; }
+
+        /* Typography */
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-base { font-size: 1rem; line-height: 1.5rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+        .text-5xl { font-size: 3rem; line-height: 1; }
+        .font-light { font-weight: 300; }
+        .font-medium { font-weight: 500; }
+        .font-bold { font-weight: 700; }
+        .font-black { font-weight: 900; }
+        .tracking-tight { letter-spacing: -0.025em; }
+        .tracking-tighter { letter-spacing: -0.05em; }
+        .tracking-wide { letter-spacing: 0.025em; }
+        .tracking-widest { letter-spacing: 0.1em; }
+        .leading-none { line-height: 1; }
+        .leading-relaxed { line-height: 1.625; }
+        .uppercase { text-transform: uppercase; }
+
+        /* Colors */
+        .text-white { color: #fff; }
+        .text-black { color: #000; }
+        .text-gray-100 { color: #f3f4f6; }
+        .text-gray-300 { color: #d1d5db; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-500 { color: #6b7280; }
+        .text-gray-600 { color: #4b5563; }
+        .text-cyan-400 { color: #22d3ee; }
+        .text-cyan-500 { color: #06b6d4; }
+        .text-orange-400 { color: #fb923c; }
+        .text-emerald-400 { color: #34d399; }
+        .text-purple-400 { color: #c084fc; }
+        .text-red-600 { color: #dc2626; }
+        .bg-black { background-color: #000; }
+        .bg-white { background-color: #fff; }
+        .bg-gray-900 { background-color: #111827; }
+        .border-t { border-top: 1px solid; }
+        .border-white\/10 { border-color: rgba(255, 255, 255, 0.1); }
+
+        /* Image & Object */
+        .object-cover { object-fit: cover; }
+        .object-contain { object-fit: contain; }
+        .max-w-md { max-width: 28rem; }
+        .max-w-xl { max-width: 36rem; }
+        .max-w-3xl { max-width: 48rem; }
+        .max-w-4xl { max-width: 56rem; }
+        .max-w-lg { max-width: 32rem; }
+        .aspect-4-5 { aspect-ratio: 4/5; }
+
+        /* Transform & Animation */
+        .opacity-0 { opacity: 0; }
+        .translate-y-12 { transform: translateY(3rem); }
+        .translate-y-8 { transform: translateY(2rem); }
+        .transition-opacity { transition: opacity 0.3s; }
+        .transition-colors { transition: color 0.3s, background-color 0.3s; }
+        .transition-all { transition: all 0.3s; }
+        .duration-500 { transition-duration: 500ms; }
+        .duration-700 { transition-duration: 700ms; }
+        .duration-1000 { transition-duration: 1000ms; }
+        .opacity-80 { opacity: 0.8; }
+        .opacity-60 { opacity: 0.6; }
+        .opacity-50 { opacity: 0.5; }
+        .opacity-40 { opacity: 0.4; }
+
+        /* Grid */
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+        /* Hover effects */
+        .group:hover .group-hover-opacity-100 { opacity: 1; }
+        .group:hover .group-hover-scale-105 { transform: scale(1.05); }
+        .group:hover .group-hover-scale-y-100 { transform: scaleY(1); }
+        .group:hover .group-hover-scale-x-100 { transform: scaleX(1); }
+        .group:hover .group-hover-blur-glow { opacity: 1; }
+
+        /* Accent bars */
+        .accent-bar-y { transform: scaleY(0); transition: transform 0.5s; }
+        .accent-bar-x { transform: scaleX(0); transition: transform 0.5s; }
+        .group:hover .accent-bar-y { transform: scaleY(1); }
+        .group:hover .accent-bar-x { transform: scaleX(1); }
+
+        .hover-bg-white:hover { background-color: #fff; }
+        .hover-text-black:hover { color: #000; }
+        .hover-opacity-100:hover { opacity: 1; }
+        .hover-bg-white-10:hover { background: rgba(255, 255, 255, 0.1); }
+
+        /* Inline SVG icon sizing */
+        .icon-sm { width: 1.5rem; height: 1.5rem; }
+        .icon-lg { width: 2.25rem; height: 2.25rem; }
+        .icon-inline { display: inline-block; vertical-align: middle; }
+
+        /* Loader pulse */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(-25%) translateX(-50%); } 50% { transform: translateY(0) translateX(-50%); } }
+        .animate-bounce { animation: bounce 1s infinite; }
+
+        /* Drop shadow for hero */
+        .hero-glow { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5)); }
+
+        /* Background gradient overlays */
+        .bg-gradient-to-t { background: linear-gradient(to top, rgba(0,0,0,1), transparent); }
+        .bg-gradient-glow { background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(168,85,247,0.2)); }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .md-grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .md-text-6xl { font-size: 3.75rem; line-height: 1; }
+            .md-text-8xl { font-size: 6rem; line-height: 1; }
+            .md-text-sm { font-size: 0.875rem; }
+            .md-pl-12 { padding-left: 3rem; }
+            .md-pr-12 { padding-right: 3rem; }
+            .md-order-1 { order: 1; }
+            .md-order-2 { order: 2; }
+            .md-text-left { text-align: left; }
+            .md-flex { display: flex; }
+            .md-block { display: block; }
+        }
+
+        .hidden { display: none; }
+        @media (min-width: 768px) {
+            .md-flex { display: flex; }
+        }
+
+        /* Workshop image section */
+        .workshop-section { height: 400px; }
+        .workshop-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.4;
+            transition: transform 0.7s;
+        }
+        .group:hover .workshop-img { transform: scale(1.05); }
+
+        /* Bike section */
+        .bike-section { height: 500px; }
+        .bike-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            transition: all 0.7s;
+        }
+        .group:hover .bike-img { opacity: 1; transform: scale(1.05); }
+
+        /* Large background numbers */
+        .bg-number {
+            position: absolute;
+            font-size: 6rem;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.02);
+            z-index: -1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* Min height for style section */
+        .min-h-80vh { min-height: 80vh; }
+
+        /* Letter spacing utilities */
+        .ls-02em { letter-spacing: 0.2em; }
+        .ls-03em { letter-spacing: 0.3em; }
+
+        /* Pink hover for Instagram */
+        .hover-pink:hover svg { color: #ec4899; }
+        .hover-white:hover svg { color: #fff; }
+
+        /* Scroll indicator line */
+        .scroll-line { width: 1px; height: 2rem; background: rgba(6, 182, 212, 0.5); }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loader" class="fixed inset-0 z-50 bg-black flex items-center justify-center duration-1000 pointer-events-none" style="transition: opacity 1s;">
+        <div class="text-xs ls-03em font-bold animate-pulse text-cyan-500">CALIBRATING SHUTTER...</div>
+    </div>
+
+    <!-- Navigation (Minimal) -->
+    <nav class="fixed w-full z-40 p-6 flex justify-between items-center mix-blend-difference pointer-events-none" style="top:0;">
+        <a href="/guild/" class="pointer-events-auto text-sm font-bold ls-02em opacity-80 hover-opacity-100 transition-opacity">MIAN.</a>
+        <div class="hidden md-flex gap-8 text-xs tracking-widest opacity-60">
+            <span>LENS</span>
+            <span>CRAFT</span>
+            <span>RIDE</span>
+            <span>STYLE</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10">
+
+        <!-- Hero Section -->
+        <section class="min-h-screen flex flex-col justify-center items-center px-6 relative">
+            <div class="text-center space-y-6 max-w-4xl mx-auto">
+                <p class="text-xs md-text-sm ls-03em text-cyan-400 reveal-text opacity-0 translate-y-12">STUDENT | CREATOR | RIDER</p>
+                <h1 class="text-5xl md-text-8xl font-black tracking-tighter leading-none mix-blend-overlay reveal-text opacity-0 translate-y-12">
+                    FOCUS &<br>
+                    <span class="text-white hero-glow">VELOCITY</span>
+                </h1>
+                <p class="max-w-md mx-auto text-sm text-gray-400 leading-relaxed reveal-text opacity-0 translate-y-12 font-light tracking-wide pt-4">
+                    Exploring life through different focal lengths at high speed.
+                </p>
+            </div>
+
+            <div class="absolute animate-bounce flex flex-col items-center gap-2 opacity-50" style="bottom:3rem; left:50%; transform: translateX(-50%);">
+                <span class="text-cyan-500 ls-03em" style="font-size:10px;">SCROLL TO ACCELERATE</span>
+                <div class="scroll-line"></div>
+            </div>
+        </section>
+
+        <!-- Section 1: The Lens (Optics) -->
+        <section class="min-h-screen flex items-center py-24 px-6 relative" id="lens">
+            <div class="container mx-auto grid md-grid-cols-2 gap-12 items-center">
+                <div class="relative group" style="order:2;">
+                    <div class="absolute inset-0 bg-gradient-glow" style="border-radius:0.5rem; filter:blur(24px); opacity:0; transition:opacity 0.7s;"></div>
+                    <img src="/assets/img/guild/mian/avatar.webp" width="640" height="800" loading="lazy"
+                         alt="Mian 透過鏡頭觀察世界"
+                         class="relative glass-panel p-2 max-w-xs mx-auto transition-all duration-700 bg-gray-900 reveal-content opacity-0 translate-y-8"
+                         style="width:100%; height:auto;">
+                    <div class="bg-number" style="bottom:-1rem; right:-1rem;">01</div>
+                </div>
+                <div class="space-y-8 md-pl-12" style="order:1;">
+                    <div class="space-y-2 reveal-content opacity-0 translate-y-8">
+                        <span class="text-xs ls-02em text-cyan-400" style="opacity:0.8;">01 / OPTICS</span>
+                        <h2 class="text-4xl md-text-6xl font-bold tracking-tight">The Lens</h2>
+                    </div>
+                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group reveal-content opacity-0 translate-y-8">
+                        <div class="absolute accent-bar-y" style="top:0; left:0; width:4px; height:100%; background:rgba(6,182,212,0.5); transform-origin:top;"></div>
+                        <p class="text-gray-100 leading-relaxed text-justify font-light tracking-wide">
+                            我是 Mian，一名努力探索人生可能的大二學生。目前在相機店打工，每天接觸各式各樣的鏡頭與器材，從入門的 Kit 鏡到旗艦級定焦鏡頭，我都如數家珍。
+                        </p>
+                        <p class="text-gray-300 text-sm leading-relaxed text-justify">
+                            這份工作讓我學會從不同的焦距觀察世界。35mm 街拍帶來的臨場親密感，讓每一個路口轉角都成為故事的起點；85mm 人像壓縮出的柔美散景，則把每個瞬間凝結成一幅畫。我總是在想，鏡頭不只是光學元件，更是一種看待世界的態度。
+                        </p>
+                        <p class="text-gray-300 text-sm leading-relaxed text-justify">
+                            我對攝影美學的理解，正如光圈與快門的組合——是在無數次嘗試中找到最完美的平衡。從底片機的慢節奏到數位相機的高速連拍，每一次快門都是與世界的一次對話。未來希望能用影像記錄更多街頭巷尾的動人片段。
+                        </p>
+                    </div>
+                    <div class="flex gap-4 text-xs tracking-widest text-gray-500 reveal-content opacity-0 translate-y-8">
+                        <span>#SONY</span>
+                        <span>#FUJIFILM</span>
+                        <span>#35MM</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: The Workshop (Craft) -->
+        <section class="min-h-screen flex items-center py-24 px-6 relative" id="craft">
+            <div class="container mx-auto grid md-grid-cols-2 gap-12 items-center">
+                <div class="space-y-8 md-pr-12 relative z-10">
+                    <div class="space-y-2 text-right md-text-left reveal-content opacity-0 translate-y-8">
+                        <span class="text-xs ls-02em text-orange-400" style="opacity:0.8;">02 / CRAFT</span>
+                        <h2 class="text-4xl md-text-6xl font-bold tracking-tight">The Workshop</h2>
+                    </div>
+                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group reveal-content opacity-0 translate-y-8">
+                        <div class="absolute accent-bar-y" style="top:0; right:0; width:4px; height:100%; background:rgba(249,115,22,0.5); transform-origin:bottom;"></div>
+                        <p class="text-gray-100 leading-relaxed text-justify font-light tracking-wide">
+                            工作之餘，我沉迷於 1/64 模型車的微縮世界。在那方寸之間，我親手改裝每一台小車——從底漆打磨、噴漆上色到細節調整，打造獨一無二的作品。
+                        </p>
+                        <p class="text-gray-300 text-sm leading-relaxed text-justify">
+                            這不僅是模型，更是我對機械美學的致敬。每一台模型車的改裝過程都像是一場微型的藝術創作：挑選配色方案、研究真車的塗裝細節、用極細的畫筆勾勒出煞車卡鉗與排氣管的質感。最讓我著迷的，是將一台量產模型車蛻變成限量版概念車的那個瞬間。
+                        </p>
+                        <p class="text-gray-300 text-sm leading-relaxed text-justify">
+                            我也熱衷於參加車展，親眼感受實車的線條與靈魂，甚至在賽車遊戲中尋找那份極致的擬真感。從 Gran Turismo 到 Assetto Corsa，虛擬世界中的每一圈都是對真實賽道的致敬。每一個微小的零件調整，都是極大成就感的來源。
+                        </p>
+                    </div>
+                    <div class="bg-number pointer-events-none" style="top:50%; left:50%; transform:translate(-50%,-50%); font-size:12rem;">1/64</div>
+                </div>
+                <div class="relative workshop-section w-full glass-panel flex items-center justify-center overflow-hidden group reveal-content opacity-0 translate-y-8 bg-gray-900">
+                    <img src="/assets/img/guild/mian/workshop.webp" width="800" height="533" loading="lazy"
+                         alt="Mian 的模型車工作檯" class="workshop-img">
+                    <div class="relative z-10 text-center pointer-events-none">
+                        <i class="fa-solid fa-screwdriver-wrench" style="font-size:2.25rem; margin-bottom:1rem; color:#fb923c;"></i>
+                        <h3 class="text-xl font-bold tracking-widest">CUSTOMIZATION</h3>
+                        <p class="text-xs text-gray-400" style="margin-top:0.5rem;">PRECISION & PATIENCE</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: The Journey (Ride) -->
+        <section class="min-h-screen flex items-center py-24 px-6 relative" id="ride">
+             <div class="container mx-auto grid md-grid-cols-2 gap-12 items-center">
+                <div class="relative group bike-section glass-panel overflow-hidden reveal-content opacity-0 translate-y-8 bg-gray-900" style="order:2;">
+                     <img src="/assets/img/guild/mian/bike.webp" width="960" height="640" loading="lazy" alt="Mian 的摩托車旅程" class="bike-img">
+                     <div class="absolute w-full pointer-events-none bg-gradient-to-t" style="bottom:0; left:0; padding:2rem;">
+                        <div class="text-xs tracking-widest text-emerald-400 mb-1">STATUS</div>
+                        <div class="text-2xl font-bold">FREEDOM</div>
+                     </div>
+                </div>
+                <div class="space-y-8 md-pl-12" style="order:1;">
+                    <div class="space-y-2 reveal-content opacity-0 translate-y-8">
+                        <span class="text-xs ls-02em text-emerald-400" style="opacity:0.8;">03 / FREEDOM</span>
+                        <h2 class="text-4xl md-text-6xl font-bold tracking-tight">The Journey</h2>
+                    </div>
+                    <div class="glass-panel p-8 space-y-4 relative overflow-hidden group reveal-content opacity-0 translate-y-8">
+                        <div class="absolute accent-bar-x" style="bottom:0; left:0; width:100%; height:4px; background:rgba(52,211,153,0.5); transform-origin:left;"></div>
+                        <p class="text-gray-100 leading-relaxed text-justify font-light tracking-wide">
+                            除了靜態的模型世界，我也嚮往真實的風與速度。放假時，我最喜歡騎著我的小摩托到處亂晃，在風中感受城市的脈動與自然的氣息。
+                        </p>
+                        <p class="text-gray-300 text-sm leading-relaxed text-justify">
+                            公路是我另一個書桌。在移動中思考，在速度中沉澱。清晨的山路、傍晚的海岸線、深夜的城市快速道路——每一條路線都有不同的故事在等待。引擎的低鳴聲是最好的背景音樂，讓腦海中的雜念一一散去。
+                        </p>
+                        <p class="text-gray-300 text-sm leading-relaxed text-justify">
+                            每一次的騎行都是一場小型的冒險，讓我暫時逃離日常的喧囂，找回生活的節奏。目的地不重要，重要的是那段在路上的過程——轉過一個彎道，就可能遇見一片從未見過的風景。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+         <!-- Section 4: The Aesthetic (Style & Footer) -->
+        <section class="min-h-80vh flex flex-col justify-center items-center py-24 px-6 relative" id="style">
+            <div class="max-w-3xl mx-auto text-center space-y-12">
+                <div class="space-y-4 reveal-content opacity-0 translate-y-8">
+                    <span class="text-xs ls-02em text-purple-400" style="opacity:0.8;">04 / AESTHETIC</span>
+                    <h2 class="text-4xl md-text-6xl font-bold tracking-tight">Style & Vision</h2>
+                    <p class="text-gray-400 leading-relaxed max-w-xl mx-auto">
+                        最近開始鑽研穿搭，試著把對車子改裝的那種審美眼光，應用到自己的生活風格上。從配色邏輯到材質搭配，改裝模型車培養出的品味，意外地在穿搭領域找到了共鳴。
+                    </p>
+                    <p class="text-gray-400 leading-relaxed max-w-xl mx-auto">
+                        我還在尋找未來的精確定位，但希望能透過<span class="text-white font-medium">攝影、模型與旅行</span>，拼湊出最精彩的青春地圖。每一個興趣都是人生藍圖的一小塊拼圖，而我正在享受把它們拼湊在一起的過程。
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 reveal-content opacity-0 translate-y-8 max-w-lg mx-auto">
+                    <a href="https://www.instagram.com/zero_w9453/" target="_blank" rel="noopener noreferrer" class="glass-panel p-6 flex flex-col items-center gap-3 group hover-bg-white-10">
+                        <i class="fa-brands fa-instagram" style="font-size:1.5rem;"></i>
+                        <span class="text-xs tracking-widest">INSTAGRAM</span>
+                    </a>
+                    <a href="https://www.threads.net/@zero_w9453" target="_blank" rel="noopener noreferrer" class="glass-panel p-6 flex flex-col items-center gap-3 group hover-bg-white-10">
+                        <i class="fa-brands fa-threads" style="font-size:1.5rem;"></i>
+                        <span class="text-xs tracking-widest">THREADS</span>
+                    </a>
+                </div>
+
+                <div class="pt-12 border-t border-white\/10 w-full reveal-content opacity-0 translate-y-8">
+                    <a href="/guild/" class="glass-panel hover-bg-white text-white hover-text-black transition-colors" style="display:inline-block; padding:0.75rem 2rem; font-size:0.875rem; letter-spacing:0.2em; font-weight:700;">
+                        BACK TO GUILD
+                    </a>
+                </div>
+            </div>
+
+            <footer class="absolute text-gray-600 tracking-widest uppercase reveal-content opacity-0 translate-y-8" style="bottom:1.5rem; font-size:10px;">
+                MADE WITH <i class="fa-solid fa-heart" style="color:#dc2626; margin:0 4px;"></i> BY SUPERGALEN'S DUNGEON
+            </footer>
+        </section>
+
+    </main>
+
+    <script>
+        // Wait for deferred scripts to load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Loading Sequence with Failsafe
+            const hideLoader = () => {
+                const loader = document.getElementById('loader');
+                if (!loader || loader.style.opacity === '0') return;
+
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    if (typeof initAnimations === 'function') initAnimations();
+                }, 1000);
+            };
+
+            window.addEventListener('load', () => {
+                setTimeout(hideLoader, 1500);
+            });
+
+            // Failsafe: If window.load doesn't fire within 4 seconds, force hide
+            setTimeout(() => {
+                hideLoader();
+            }, 4000);
+        });
+
+        function initAnimations() {
+            // GSAP Animations
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero Reveal
+            gsap.to('.reveal-text', {
+                y: 0,
+                opacity: 1,
+                duration: 1.5,
+                stagger: 0.2,
+                ease: "power3.out"
+            });
+
+            // Section Reveals
+            document.querySelectorAll('section').forEach(section => {
+                if(section.id) {
+                    const elements = section.querySelectorAll('.reveal-content');
+                    if (elements.length > 0) {
+                        gsap.fromTo(elements,
+                            { y: 30, opacity: 0 },
+                            {
+                                y: 0,
+                                opacity: 1,
+                                duration: 0.8,
+                                stagger: 0.1,
+                                ease: "power2.out",
+                                scrollTrigger: {
+                                    trigger: section,
+                                    start: "top 80%",
+                                    toggleActions: "play none none reverse"
+                                }
+                            }
+                        );
+                    }
+                }
+            });
+        }
+
+        // Three.js Scene: Infinite Light Speed Tunnel
+        function initTunnel() {
+            if (typeof THREE === 'undefined') return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 0;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            // Tunnel Parameters
+            const STREAK_COUNT = 400;
+            const TUNNEL_RADIUS = 30;
+            const TUNNEL_LENGTH = 200;
+
+            const geometry = new THREE.BoxGeometry(0.1, 0.1, 5);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.5,
+                blending: THREE.AdditiveBlending
+            });
+
+            const mesh = new THREE.InstancedMesh(geometry, material, STREAK_COUNT);
+            scene.add(mesh);
+
+            const dummy = new THREE.Object3D();
+            const positions = [];
+            const speeds = [];
+
+            const colorPalette = [
+                new THREE.Color(0x00ffff),
+                new THREE.Color(0xff00ff),
+                new THREE.Color(0xffaa00),
+                new THREE.Color(0xffffff)
+            ];
+
+            // Initialize Instances
+            for (let i = 0; i < STREAK_COUNT; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 12 + Math.random() * TUNNEL_RADIUS;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                const z = (Math.random() - 0.5) * TUNNEL_LENGTH;
+
+                positions.push({ x, y, z });
+                speeds.push(0.2 + Math.random() * 0.5);
+
+                mesh.setColorAt(i, colorPalette[Math.floor(Math.random() * colorPalette.length)]);
+            }
+            mesh.instanceColor.needsUpdate = true;
+
+            // Mouse Interaction - use inline half calculations
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - window.innerWidth / 2) * 0.005;
+                mouseY = (event.clientY - window.innerHeight / 2) * 0.005;
+            });
+
+            // Scroll Velocity Logic
+            let scrollSpeed = 0;
+            let targetScrollSpeed = 0;
+
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    targetScrollSpeed = Math.min(Math.abs(self.getVelocity() / 300), 3.5);
+                }
+            });
+
+            // Animation Loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                targetScrollSpeed *= 0.95;
+                if (targetScrollSpeed < 0.05) targetScrollSpeed = 0.05;
+
+                scrollSpeed += (targetScrollSpeed - scrollSpeed) * 0.1;
+
+                // Camera follows mouse directly
+                camera.rotation.x += 0.05 * (-mouseY - camera.rotation.x);
+                camera.rotation.y += 0.05 * (-mouseX - camera.rotation.y);
+
+                for (let i = 0; i < STREAK_COUNT; i++) {
+                    const pos = positions[i];
+                    pos.z += speeds[i] * (1 + scrollSpeed * 10);
+
+                    if (pos.z > 20) {
+                        pos.z = -TUNNEL_LENGTH / 2 - Math.random() * 20;
+                    }
+
+                    dummy.position.set(pos.x, pos.y, pos.z);
+                    dummy.scale.set(1, 1, 1 + scrollSpeed * 5);
+                    dummy.updateMatrix();
+                    mesh.setMatrixAt(i, dummy.matrix);
+                }
+                mesh.instanceMatrix.needsUpdate = true;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Responsive
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Initialize tunnel when Three.js is loaded
+        if (document.readyState === 'complete') {
+            initTunnel();
+        } else {
+            window.addEventListener('load', initTunnel);
+        }
+    </script>
+</body>
+</html>
