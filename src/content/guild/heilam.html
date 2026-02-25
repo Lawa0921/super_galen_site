@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heilam | Guild Hall</title>
+    <!-- GSAP Global -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js"
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@300;500;700&family=Noto+Sans+TC:wght@300;500;700&display=swap');
+
+        :root {
+            --emerald: #50C878;
+            --grass: #7CFC00;
+            --deep-green: #004225;
+            --sea-foam: #93E9BE;
+            --text-light: #f0fff0;
+            --glass-bg: rgba(0, 40, 20, 0.6);
+            --neon-accent: #39FF14;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            background-color: #051005;
+            color: var(--text-light);
+            font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Canvas Layers */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Above Three.js, below content */
+            pointer-events: none;
+        }
+
+        /* Navigation */
+        .nav-back {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            color: var(--emerald);
+            text-decoration: none;
+            font-weight: 700;
+            border: 1px solid var(--emerald);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .nav-back:hover {
+            background: var(--emerald);
+            color: #000;
+            box-shadow: 0 0 20px var(--emerald);
+        }
+
+        /* Content Structure */
+        .content-scroll {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .section {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 1rem;
+            box-sizing: border-box;
+            perspective: 1000px;
+        }
+
+        /* Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(80, 200, 120, 0.3);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transform-style: preserve-3d;
+            opacity: 0;
+            transform: translateY(50px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--emerald), var(--grass));
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 3.5rem;
+            color: var(--grass);
+            margin: 0 0 1rem 0;
+            text-shadow: 0 0 20px rgba(124, 252, 0, 0.4);
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            color: var(--sea-foam);
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--emerald);
+            display: inline-block;
+            padding-bottom: 0.5rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #e0e0e0;
+        }
+
+        .highlight {
+            color: var(--emerald);
+            font-weight: 700;
+        }
+
+        .japanese-text {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Avatar */
+        .avatar-frame {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 2rem;
+            position: relative;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--emerald), var(--grass));
+            animation: pulse-border 3s infinite;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #051005;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(80, 200, 120, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(80, 200, 120, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(80, 200, 120, 0); }
+        }
+
+        /* Photo Grid */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .photo-item {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--deep-green);
+            transition: transform 0.3s ease;
+        }
+
+        .photo-item:hover {
+            transform: scale(1.05);
+            border-color: var(--grass);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Social Links */
+        .social-links {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .social-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--emerald);
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            border: 1px solid var(--emerald);
+        }
+
+        .social-btn:hover {
+            background: var(--emerald);
+            color: #000;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(80, 200, 120, 0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .glass-card { padding: 2rem; width: 85%; }
+            .nav-back { top: 1rem; left: 1rem; padding: 0.6rem 1.2rem; font-size: 0.9rem; }
+        }
+
+        /* Loading Overlay */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--emerald);
+            font-family: 'Orbitron', sans-serif;
+            transition: opacity 1s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">LOADING WORLD...</div>
+
+    <a href="/guild/" class="nav-back"><i class="fas fa-arrow-left"></i> Guild</a>
+
+    <div id="canvas-container"></div>
+    <div id="p5-container"></div>
+
+    <div class="content-scroll">
+
+        <!-- Hero -->
+        <div class="section" id="hero">
+            <div class="glass-card text-center" style="text-align: center;">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/heilam/avatar.webp" alt="Heilam" class="avatar-img">
+                </div>
+                <h1>Heilam</h1>
+                <p class="japanese-text">音楽の旅人 // 亀の友達</p>
+                <p>
+                    <i class="fas fa-music"></i> Vocalist | <i class="fas fa-location-dot"></i> Tokyo, Japan | <i class="fas fa-otter"></i> Turtle Lover
+                </p>
+                <p>
+                    "在世界末日前，完成自己的音樂夢想。"
+                </p>
+            </div>
+        </div>
+
+        <!-- Origin -->
+        <div class="section" id="origin">
+            <div class="glass-card">
+                <h2>Origin Story</h2>
+                <p>
+                    我是 <span class="highlight">Heilam</span>，一個在日本生活的香港音樂人。
+                </p>
+                <p>
+                    大學唸 <span class="highlight">古典聲樂</span>，曾經以合唱團成員在歐亞各地巡演，也是一個在劇場活躍的表演者。
+                </p>
+                <p>
+                    那時候的生活充滿了舞台的光與影，但心中總有一個聲音在呼喚著遠方。
+                </p>
+            </div>
+        </div>
+
+        <!-- Journey -->
+        <div class="section" id="journey">
+            <div class="glass-card">
+                <h2>The Shift</h2>
+                <p>
+                    後來因為感歎 <span class="highlight">人生苦短</span>，想在世界末日前想完成自己在日本唸音樂的夢想。
+                </p>
+                <p>
+                    毅然決然放棄在香港正在準備起步的表演事業，來到日本的專門學校修讀了 <span class="highlight">流行唱歌</span>。
+                </p>
+                <p>
+                    這是一次冒險，也是一次重生。從古典到流行，從香港到東京。
+                </p>
+            </div>
+        </div>
+
+        <!-- Current -->
+        <div class="section" id="current">
+            <div class="glass-card">
+                <h2>Life in Japan</h2>
+                <p>
+                    現在會做 <span class="highlight">街頭演出</span>、錄音指導、鍵盤手之類的~
+                </p>
+                <p>
+                    每一個人生階段都在不同的音樂和文化藝術中度過✨
+                </p>
+                <div class="photo-grid">
+                    <div class="photo-item">
+                        <img src="/assets/img/guild/heilam/photo1.webp" alt="Performance">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Works -->
+        <div class="section" id="works">
+            <div class="glass-card">
+                <h2>My Works</h2>
+                <p>
+                    這幾年有發表一下自己的作品，出過 <span class="highlight">兩支單曲</span>、一張EP、還有在朋友們的音樂裡面亮相。
+                </p>
+                <div class="photo-grid">
+                     <div class="photo-item">
+                        <img src="/assets/img/guild/heilam/photo2.webp" alt="Music">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dream -->
+        <div class="section" id="dream">
+            <div class="glass-card">
+                <h2>New Dream</h2>
+                <p>
+                    最近新的夢想是希望每一個人都可以擁有 <span class="highlight">健康的聲音</span>，所以想朝聲音健康方面研究下去。
+                </p>
+                <p>
+                    <i class="fas fa-heart" style="color: var(--emerald);"></i> 人生最喜歡的就是唱歌了！
+                </p>
+            </div>
+        </div>
+
+        <!-- Philosophy -->
+        <div class="section" id="philosophy">
+            <div class="glass-card" style="text-align: center;">
+                <h2>Hidden Joy</h2>
+                <p>
+                    比起變的有名，更享受每一次有不認識的人聽到我的聲音而駐足停留...
+                </p>
+                <p>
+                    還有在不被人所知的情況下，透過歌詞抒發自己的感受那種 <span class="highlight">偷偷的快感！</span>
+                </p>
+                <div class="social-links">
+                    <a href="https://www.threads.net/@heilamt_music_turtledaihub" target="_blank" class="social-btn" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/heilamt_music_turtledaihub/" target="_blank" class="social-btn" title="Instagram"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- p5.js Overlay Script -->
+    <script>
+        // Using Instance Mode for p5.js to avoid global namespace pollution
+        const sketch = (p) => {
+            let particles = [];
+
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.clear(); // Transparent background
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Add new particles on mouse move
+                if (p.movedX !== 0 || p.movedY !== 0) {
+                    particles.push(new Particle(p.mouseX, p.mouseY));
+                }
+
+                // Update and draw particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].show();
+                    if (particles[i].finished()) {
+                        particles.splice(i, 1);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class Particle {
+                constructor(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = p.random(-1, 1);
+                    this.vy = p.random(-1, 1);
+                    this.alpha = 255;
+                    this.size = p.random(5, 15);
+                    this.color = p.color(124, 252, 0); // Grass Green
+                }
+
+                finished() {
+                    return this.alpha < 0;
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.alpha -= 5;
+                    this.size -= 0.1;
+                }
+
+                show() {
+                    p.noStroke();
+                    this.color.setAlpha(this.alpha);
+                    p.fill(this.color);
+                    p.ellipse(this.x, this.y, this.size);
+                }
+            }
+        };
+
+        new p5(sketch);
+    </script>
+
+    <!-- Three.js & GSAP Script -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Loader ---
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+                initAnimations();
+            }, 1000);
+        });
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Dark green fog for depth
+        scene.fog = new THREE.FogExp2(0x051005, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 20);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x50C878, 2);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // --- Objects ---
+
+        // 1. Procedural Grass/Terrain
+        // Using InstancedMesh for grass blades would be heavy, let's use a displaced plane for "Rolling Hills"
+        const geometry = new THREE.PlaneGeometry(200, 200, 64, 64);
+
+        // Custom Displacement
+        const count = geometry.attributes.position.count;
+        const positions = geometry.attributes.position;
+        for (let i = 0; i < count; i++) {
+            const x = positions.getX(i);
+            const y = positions.getY(i); // This is Z in plane logic usually, but let's check rotation
+            // We will rotate X by -PI/2, so Y becomes Z (depth) and Z becomes Y (height)
+            // But before rotation, Z is 0.
+            // Let's modify Z (which will be height)
+            const z = Math.sin(x * 0.1) * 2 + Math.cos(y * 0.1) * 2;
+            geometry.attributes.position.setZ(i, z);
+        }
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x004225,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const terrain = new THREE.Mesh(geometry, material);
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.position.y = -5;
+        scene.add(terrain);
+
+        // 2. Floating "Turtles"
+        const turtleGroup = new THREE.Group();
+        scene.add(turtleGroup);
+
+        function createTurtle() {
+            const group = new THREE.Group();
+
+            // Shell
+            const shellGeo = new THREE.SphereGeometry(1, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+            const shellMat = new THREE.MeshStandardMaterial({ color: 0x50C878, roughness: 0.5 });
+            const shell = new THREE.Mesh(shellGeo, shellMat);
+            shell.scale.y = 0.5;
+            group.add(shell);
+
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0x7CFC00 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.set(0, 0.2, 1.2);
+            group.add(head);
+
+            // Fins
+            const finGeo = new THREE.BoxGeometry(0.6, 0.1, 0.4);
+            const fl = new THREE.Mesh(finGeo, headMat);
+            fl.position.set(0.8, 0, 0.5);
+            fl.rotation.y = -0.5;
+            group.add(fl);
+
+            const fr = new THREE.Mesh(finGeo, headMat);
+            fr.position.set(-0.8, 0, 0.5);
+            fr.rotation.y = 0.5;
+            group.add(fr);
+
+            return group;
+        }
+
+        for (let i = 0; i < 15; i++) {
+            const turtle = createTurtle();
+            turtle.position.set(
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 20 + 5,
+                (Math.random() - 0.5) * 40 - 10
+            );
+            turtle.rotation.y = Math.random() * Math.PI * 2;
+            turtle.userData = {
+                speed: 0.01 + Math.random() * 0.02,
+                bobOffset: Math.random() * Math.PI
+            };
+            turtleGroup.add(turtle);
+        }
+
+        // 3. Floating "Music Notes" (Particles)
+        const particleCount = 200;
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlePositions = new Float32Array(particleCount * 3);
+
+        for(let i=0; i<particleCount; i++) {
+            particlePositions[i*3] = (Math.random() - 0.5) * 50;
+            particlePositions[i*3+1] = (Math.random() - 0.5) * 50;
+            particlePositions[i*3+2] = (Math.random() - 0.5) * 50;
+        }
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+        const particleMat = new THREE.PointsMaterial({
+            color: 0x39FF14,
+            size: 0.2,
+            transparent: true,
+            opacity: 0.8
+        });
+        const particleSystem = new THREE.Points(particlesGeo, particleMat);
+        scene.add(particleSystem);
+
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const time = clock.getElapsedTime();
+
+            // Animate Terrain (Pseudo-movement)
+            // terrain.position.z = (time * 2) % 10;
+
+            // Animate Turtles
+            turtleGroup.children.forEach(turtle => {
+                turtle.position.z += turtle.userData.speed;
+                turtle.position.y += Math.sin(time + turtle.userData.bobOffset) * 0.01;
+
+                // Reset position
+                if (turtle.position.z > 20) turtle.position.z = -30;
+            });
+
+            // Animate Particles
+            particleSystem.rotation.y = time * 0.05;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- GSAP Interactions ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        function initAnimations() {
+            // 1. Content Reveal
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                gsap.to(card, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 85%',
+                        toggleActions: 'play none none reverse'
+                    }
+                });
+            });
+
+            // 2. Camera Flight (Scroll-driven)
+            // We want the camera to move deeper into the scene as we scroll
+            gsap.to(camera.position, {
+                z: -30,
+                y: 10,
+                scrollTrigger: {
+                    trigger: '.content-scroll',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                }
+            });
+
+            // Rotate camera slightly
+            gsap.to(camera.rotation, {
+                x: -0.2, // Look down slightly
+                scrollTrigger: {
+                    trigger: '.content-scroll',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                }
+            });
+        }
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

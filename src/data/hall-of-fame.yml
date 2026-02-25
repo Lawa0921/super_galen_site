@@ -933,3 +933,15 @@ members:
         label: "最強武將"
       - id: "indie_games"
         label: "獨立遊戲"
+
+  - id: "heilam"
+    name: "Heilam"
+    avatar: "/assets/img/guild/heilam/avatar.webp"
+    page: "/guild/heilam.html"
+    tags:
+      - id: "musician"
+        label: "音樂人"
+      - id: "japan_life"
+        label: "旅日生活"
+      - id: "turtle_lover"
+        label: "龜龜愛好者"
