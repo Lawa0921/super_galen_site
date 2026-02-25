@@ -439,7 +439,7 @@ members:
         label: "國際志工體質"
       - id: "story_collector"
         label: "故事蒐集員"
- 
+
   - id: "sui"
     name: "8穗正韓"
     avatar: "/assets/img/guild/sui/avatar.webp"
@@ -451,7 +451,7 @@ members:
         label: "正韓選品"
       - id: "rational_aesthetic"
         label: "理性美學"
- 
+
   - id: "kevin"
     name: "凱文 Kevin"
     avatar: "/assets/img/guild/kevin/avatar.webp"
@@ -837,6 +837,18 @@ members:
         label: "爵士鼓"
       - id: "musician"
         label: "音樂人"
+
+  - id: "meizhuan"
+    name: "石專豆頁"
+    avatar: "/assets/img/guild/meizhuan/avatar.webp"
+    page: "/guild/meizhuan.html"
+    tags:
+      - id: "engineer"
+        label: "工程師"
+      - id: "biker"
+        label: "重機騎士"
+      - id: "otaku"
+        label: "宅宅"
 
   - id: "ava"
     name: "房產小蜜 Ava"
