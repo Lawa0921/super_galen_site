@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zai Lab | The Ascent ⛰️</title>
+    <meta name="description" content="Zaira's Experimental Lab - A Journey of Climbing, Culture, and Connection.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #fdfbf7;
+            --text-primary: #2c3e50;
+            --text-secondary: #5d6d7e;
+            --accent-sage: #88a096;
+            --accent-clay: #e0c9a6;
+            --glass-panel: rgba(255, 255, 255, 0.85);
+            --fire-glow: #ff9d5c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Fixed Background Canvas */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            /* Gradient Sky */
+            background: linear-gradient(to top, #e6f3ff 0%, #fdfbf7 60%, #1a1a2e 100%); /* Night sky at top */
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .loader-text {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--accent-sage);
+            letter-spacing: 2px;
+        }
+
+        .loader-line {
+            width: 150px;
+            height: 2px;
+            background: #eee;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--accent-sage);
+            animation: load 2s ease-in-out infinite;
+        }
+
+        @keyframes load {
+            0% { width: 0%; left: 0; }
+            50% { width: 60%; left: 20%; }
+            100% { width: 100%; left: 100%; }
+        }
+
+        /* UI Overlay */
+        .hud-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-brand {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hud-brand span {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border: 1px solid var(--accent-sage);
+            border-radius: 20px;
+            color: var(--accent-sage);
+            font-family: sans-serif;
+            font-weight: 400;
+        }
+
+        .hud-scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.6;
+            animation: bounce 2s infinite;
+        }
+
+        .hud-scroll-hint span {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .hud-scroll-hint i {
+            font-size: 1rem;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* Content Layout */
+        .scroll-wrapper {
+            position: relative;
+            width: 100%;
+            /* Length of the climb - Taller for finale */
+            height: 600vh;
+        }
+
+        .section {
+            position: absolute;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            pointer-events: none; /* Let scroll pass */
+        }
+
+        .card {
+            background: var(--glass-panel);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.6);
+            pointer-events: auto; /* Enable interaction */
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        /* Layout Positions */
+        .section:nth-child(1) { top: 0; }
+        .section:nth-child(2) { top: 100vh; justify-content: flex-start; padding-left: 10%; }
+        .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 10%; }
+        .section:nth-child(4) { top: 300vh; justify-content: flex-start; padding-left: 10%; }
+        /* Finale Section: Campfire */
+        /* Make sure it's at the very end of scroll */
+        .section:nth-child(5) {
+            top: 500vh;
+            align-items: flex-start; /* Push content card up slightly so it doesn't cover fire */
+            padding-top: 10vh;
+        }
+
+
+        /* Typography */
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, var(--accent-sage), transparent);
+        }
+
+        h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-sage);
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+        }
+
+        p {
+            font-size: 1.05rem;
+            line-height: 1.9;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .highlight {
+            color: #4a6fa5;
+            font-weight: 500;
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 1px;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: rgba(163, 196, 243, 0.3);
+            z-index: -1;
+        }
+
+        /* Avatar */
+        .avatar-frame {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 2rem;
+            border: 4px solid #fff;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* List Styling */
+        .exp-list {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .exp-item {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .exp-item::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--accent-sage);
+            font-size: 1.5rem;
+            line-height: 1.5rem;
+            top: -2px;
+        }
+
+        .exp-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .exp-desc {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+        }
+
+        /* Social Grid */
+        .social-grid {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #fff;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            text-decoration: none;
+            border: 1px solid #eee;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-sage);
+            color: var(--accent-sage);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Tooltip for 3D Anchors */
+        #anchor-tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 20;
+            transform: translate(-50%, -150%);
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .section { padding: 1rem; justify-content: center !important; }
+            .card { padding: 2rem; margin: 0 !important; width: 100%; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            /* Adjust cliff position on mobile via JS logic if needed */
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-text">PREPARING ASCENT</div>
+        <div class="loader-line"><div class="loader-progress"></div></div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+    <div id="anchor-tooltip">Anchor Point</div>
+
+    <!-- HUD -->
+    <div class="hud-overlay">
+        <div class="hud-brand">
+            ZAI LAB <span>EXP.001</span>
+        </div>
+        <div class="hud-scroll-hint" id="scroll-hint">
+            <span>Scroll to Climb</span>
+            <i class="fa-solid fa-chevron-down"></i>
+        </div>
+    </div>
+
+    <!-- Content Sections -->
+    <div class="scroll-wrapper">
+
+        <!-- 1. Intro -->
+        <div class="section">
+            <div class="card" style="text-align: center;">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/zaira/avatar.webp" alt="Zaira">
+                </div>
+                <h3>The Basecamp</h3>
+                <h1>Zaira 的實驗室</h1>
+                <p>
+                    我是 Zaira，還在探索自己的人生路上。<br>
+                    如果人生是一場沒有終點的攀登，那我就是那個在途中不斷實驗、記錄風景的登山者。
+                </p>
+                <div style="margin-top: 1rem;">
+                    <span style="font-size: 0.8rem; color: #aaa; letter-spacing: 1px;">CURRENT STATUS: ASCENDING</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Languages (Keys) -->
+        <div class="section">
+            <div class="card">
+                <h3>Experiment I: Connection</h3>
+                <h2>解鎖世界的鑰匙</h2>
+                <p>
+                    語言與文化不僅是溝通的工具，更是我和世界產生深層連結的橋樑。每一個單字、每一種語法，都代表著一種全新的思考方式。
+                </p>
+                <ul class="exp-list">
+                    <li class="exp-item">
+                        <span class="exp-title">英語 (English)</span>
+                        <span class="exp-desc">通往世界的基礎頻率，連結知識與觀點的通道。</span>
+                    </li>
+                    <li class="exp-item">
+                        <span class="exp-title">義大利語 (Italiano)</span>
+                        <span class="exp-desc">在羅馬的一年交換時光，讓我學會了用熱情與手勢說話。</span>
+                    </li>
+                    <li class="exp-item">
+                        <span class="exp-title">西班牙語 (Español) 🔓</span>
+                        <span class="exp-desc">目前正在努力解鎖的新地圖，期待能聽懂更多熱情的靈魂。</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 3. Travels (Footprints) -->
+        <div class="section">
+            <div class="card">
+                <h3>Experiment II: Field Work</h3>
+                <h2>跨越經緯的足跡</h2>
+                <p>
+                    走出舒適圈，是實驗室最核心的守則。我將自己投擲到不同的文化土壤中，觀察並記錄生命的各種可能性。
+                </p>
+                <ul class="exp-list">
+                    <li class="exp-item">
+                        <span class="exp-title">坦尚尼亞 (Tanzania)</span>
+                        <span class="exp-desc">參與志工計劃與服務學習。在紅土大地上，我看見了純粹的笑容與力量。</span>
+                    </li>
+                    <li class="exp-item">
+                        <span class="exp-title">羅馬，義大利 (Rome, Italy)</span>
+                        <span class="exp-desc">交換學生的一年。在古蹟與咖啡香之間，學會了「Dolce Far Niente」（無所事事的甜美）。</span>
+                    </li>
+                    <li class="exp-item">
+                        <span class="exp-title">捷克 (Czech Republic)</span>
+                        <span class="exp-desc">半年的華語教學實習。我的學生來自烏克蘭、義大利、斯洛伐克和印尼，小小的教室彷彿是世界的縮影。</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 4. Podcast & Creative -->
+        <div class="section">
+            <div class="card">
+                <h3>Experiment III: Transmission</h3>
+                <h2>頻率與共鳴</h2>
+                <p>
+                    我非常喜歡與人交流，聆聽每個人背後的故事與經驗，這對我來說是有趣且珍貴的過程。
+                </p>
+                <p>
+                    為了記錄這些稍縱即逝的靈光，我在 Medium 寫下關於語言學習、個人成長與歌詞翻譯的筆記。也開啟了 Podcast 頻道<span class="highlight">「在意實驗室｜ Zai Lab」</span>，雖然目前還不知道它最終會長成什麼樣子，但正如其名——這是一場充滿可能性的實驗🧪
+                </p>
+            </div>
+        </div>
+
+        <!-- 5. Connect (The Summit) -->
+        <div class="section">
+            <div class="card" style="text-align: center; margin-bottom: 20vh;"> <!-- Push up to reveal fire -->
+                <h3>Final Report</h3>
+                <h2>歡迎來到營地</h2>
+                <p>
+                    這座實驗室永遠歡迎新的訪客。非常喜歡和別人聊聊，知道別人背後的故事和不同的經驗讓我覺得很有趣！
+                </p>
+                <p>歡迎大家來交流，一起分享攀登途中的風景✨</p>
+
+                <div class="social-grid">
+                    <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-link" title="Medium">
+                        <i class="fa-brands fa-medium"></i>
+                    </a>
+                    <a href="https://player.soundon.fm/p/0b85eda0-363a-4873-a101-ebb9f9fed4d8" target="_blank" class="social-link" title="Podcast">
+                        <i class="fa-solid fa-microphone-lines"></i>
+                    </a>
+                    <a href="https://www.instagram.com/zailab_zaira_forzaaa/" target="_blank" class="social-link" title="Instagram">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    <a href="https://www.threads.net/@zailab_zaira_forzaaa" target="_blank" class="social-link" title="Threads">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // --- Config ---
+        const config = {
+            cliffColor: 0xfdfbf7, // Match BG
+            ropeColor: 0x9fb8ad, // Sage
+            anchorColor: 0x5d6d7e, // Steel/Blue
+            fireColor: 0xff4500,
+            summitRockColor: 0xe0e0e0
+        };
+
+        // --- Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Fog starts white, fades to dark blue at top?
+        scene.fog = new THREE.Fog(config.cliffColor, 15, 60);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 20);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Raycaster for Interaction ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('anchor-tooltip');
+        let intersectedAnchor = null;
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // --- Procedural Cliff ---
+        const cliffHeight = 150;
+        const cliffWidth = 60;
+        const cliffGeo = new THREE.PlaneGeometry(cliffWidth, cliffHeight, 40, 100);
+
+        const posAttribute = cliffGeo.attributes.position;
+        // Keep a seed-like consistency for bumpiness
+        for (let i = 0; i < posAttribute.count; i++) {
+            const x = posAttribute.getX(i);
+            const y = posAttribute.getY(i);
+            let z = posAttribute.getZ(i);
+
+            // Noise function replacement (simple randomness)
+            z += Math.sin(x * 0.3) * 2;
+            z += Math.cos(y * 0.15) * 3;
+            z += (Math.random() - 0.5) * 1.5;
+
+            posAttribute.setZ(i, z);
+        }
+        cliffGeo.computeVertexNormals();
+
+        const cliffMat = new THREE.MeshStandardMaterial({
+            color: config.cliffColor,
+            roughness: 0.9,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+
+        const cliff = new THREE.Mesh(cliffGeo, cliffMat);
+        cliff.position.z = -12;
+        cliff.position.y = cliffHeight / 2 - 20;
+        scene.add(cliff);
+
+        // --- Interactive Anchors (High Detail) ---
+        const anchorsGroup = new THREE.Group();
+
+        // Detailed Piton: Hex head + Spike + Eyelet
+        const pitonHeadGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 6);
+        const pitonBodyGeo = new THREE.ConeGeometry(0.15, 1.2, 8);
+        const pitonEyeletGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 16);
+
+        // Detailed Carabiner: Body (Torus) + Gate (Cylinder)
+        const carabinerBodyGeo = new THREE.TorusGeometry(0.6, 0.08, 8, 24, Math.PI * 1.8); // Open loop
+        const carabinerGateGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2);
+
+        const metalMat = new THREE.MeshStandardMaterial({
+            color: config.anchorColor,
+            metalness: 0.7,
+            roughness: 0.3
+        });
+
+        const highlightMat = new THREE.MeshStandardMaterial({
+            color: 0xffaa00,
+            emissive: 0xffaa00,
+            emissiveIntensity: 0.5
+        });
+
+        // Positions
+        const anchorPositions = [
+            { y: 5, label: "Basecamp Checkpoint" },
+            { y: 35, label: "Language Anchor" },
+            { y: 65, label: "Travel Anchor" },
+            { y: 95, label: "Broadcast Relay" }
+        ];
+
+        anchorPositions.forEach((pos, i) => {
+            const group = new THREE.Group();
+            group.position.set(
+                (i % 2 === 0 ? -6 : 6) + (Math.random()-0.5)*2, // Alternating sides
+                pos.y,
+                -10
+            );
+
+            // Construct Piton
+            const pitonGroup = new THREE.Group();
+            const head = new THREE.Mesh(pitonHeadGeo, metalMat);
+            head.rotation.x = Math.PI / 2;
+            const body = new THREE.Mesh(pitonBodyGeo, metalMat);
+            body.rotation.x = Math.PI / 2;
+            body.position.z = -0.6;
+            const eyelet = new THREE.Mesh(pitonEyeletGeo, metalMat);
+            eyelet.position.z = 0.2;
+
+            pitonGroup.add(head);
+            pitonGroup.add(body);
+            pitonGroup.add(eyelet);
+            pitonGroup.position.z = -0.2; // Stick into rock
+            group.add(pitonGroup);
+
+            // Construct Carabiner
+            const carabinerGroup = new THREE.Group();
+            const cBody = new THREE.Mesh(carabinerBodyGeo, metalMat.clone());
+            const cGate = new THREE.Mesh(carabinerGateGeo, new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 })); // Silver gate
+            cGate.position.set(0.5, 0.1, 0); // Position across opening
+            cGate.rotation.z = -0.2;
+
+            carabinerGroup.add(cBody);
+            carabinerGroup.add(cGate);
+            carabinerGroup.position.y = -0.8; // Hang below eyelet
+            carabinerGroup.rotation.y = Math.PI / 2; // Face out
+
+            group.add(carabinerGroup);
+
+            group.userData = {
+                label: pos.label,
+                baseScale: 1,
+                id: i,
+                targetMesh: cBody // Highlight main carabiner ring
+            };
+            anchorsGroup.add(group);
+        });
+        scene.add(anchorsGroup);
+
+
+        // --- The Summit (Rugged Platform) ---
+        const summitGroup = new THREE.Group();
+        summitGroup.position.set(0, 130, -10); // Top of cliff
+
+        // 1. Summit Platform (Rugged Plane)
+        // Use PlaneGeometry with displacement to match cliff
+        const platGeo = new THREE.PlaneGeometry(30, 30, 20, 20);
+        const platPos = platGeo.attributes.position;
+        for(let i=0; i<platPos.count; i++) {
+            const z = platPos.getZ(i);
+            // Add noise similar to cliff
+            const noise = (Math.random() - 0.5) * 1.5; // Match cliff noise scale
+            platPos.setZ(i, z + noise);
+        }
+        platGeo.computeVertexNormals();
+        const platMat = new THREE.MeshStandardMaterial({
+            color: config.cliffColor, // Match cliff
+            roughness: 0.9,
+            flatShading: true,
+            side: THREE.DoubleSide
+        });
+        const platform = new THREE.Mesh(platGeo, platMat);
+        platform.rotation.x = -Math.PI / 2; // Flat
+        platform.position.y = -0.5;
+        summitGroup.add(platform);
+
+        // 2. Tent (Refined Low Poly)
+        const tentGroup = new THREE.Group();
+        tentGroup.position.set(-3, 0, 2);
+
+        // Tent Body
+        const tentBodyGeo = new THREE.ConeGeometry(3, 4, 4, 1, true); // Open bottom
+        const tentMat = new THREE.MeshStandardMaterial({ color: 0xe0c9a6, flatShading: true, side: THREE.DoubleSide });
+        const tentBody = new THREE.Mesh(tentBodyGeo, tentMat);
+        tentBody.position.y = 2;
+        tentBody.rotation.y = Math.PI / 4;
+        tentBody.scale.z = 0.8; // Flatten slightly
+        tentGroup.add(tentBody);
+
+        // Tent Poles
+        const poleGeo = new THREE.CylinderGeometry(0.05, 0.05, 5);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const pole1 = new THREE.Mesh(poleGeo, poleMat);
+        pole1.rotation.z = 0.5;
+        pole1.position.y = 2;
+        pole1.position.x = -0.8;
+        const pole2 = new THREE.Mesh(poleGeo, poleMat);
+        pole2.rotation.z = -0.5;
+        pole2.position.y = 2;
+        pole2.position.x = 0.8;
+        tentGroup.add(pole1);
+        tentGroup.add(pole2);
+
+        summitGroup.add(tentGroup);
+
+        // 3. Campfire (Enhanced)
+        const fireGroup = new THREE.Group();
+        fireGroup.position.set(4, 0, 2);
+
+        // Logs (Star pattern)
+        const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 2.5);
+        const logMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+        for(let i=0; i<5; i++) {
+            const log = new THREE.Mesh(logGeo, logMat);
+            log.rotation.z = Math.PI / 2;
+            log.rotation.x = Math.PI / 8; // Tilt up
+            log.rotation.y = (i / 5) * Math.PI * 2;
+            fireGroup.add(log);
+        }
+
+        // Stones circle
+        const stoneGeo = new THREE.DodecahedronGeometry(0.4);
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+        for(let i=0; i<8; i++) {
+            const stone = new THREE.Mesh(stoneGeo, stoneMat);
+            const angle = (i/8)*Math.PI*2;
+            stone.position.set(Math.cos(angle)*1.5, 0.2, Math.sin(angle)*1.5);
+            fireGroup.add(stone);
+        }
+
+        // Fire Light
+        const fireLight = new THREE.PointLight(0xff4500, 2, 15);
+        fireLight.position.y = 1.5;
+        fireGroup.add(fireLight);
+
+        // Fire Particles (System)
+        const firePartGeo = new THREE.BufferGeometry();
+        const firePartCount = 60;
+        const firePos = new Float32Array(firePartCount * 3);
+        const fireSpeeds = [];
+        const fireSizes = [];
+
+        for(let i=0; i<firePartCount; i++) {
+            firePos[i*3] = (Math.random()-0.5) * 0.8;
+            firePos[i*3+1] = Math.random() * 2;
+            firePos[i*3+2] = (Math.random()-0.5) * 0.8;
+            fireSpeeds.push(0.04 + Math.random() * 0.08);
+            fireSizes.push(0.2 + Math.random() * 0.3);
+        }
+        firePartGeo.setAttribute('position', new THREE.BufferAttribute(firePos, 3));
+
+        // Simple PointsMaterial with size attenuation is easiest
+        const firePartMat = new THREE.PointsMaterial({
+            color: 0xffaa00,
+            size: 0.3,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+        const fireParticles = new THREE.Points(firePartGeo, firePartMat);
+        fireGroup.add(fireParticles);
+
+        summitGroup.add(fireGroup);
+        scene.add(summitGroup);
+
+
+        // --- Logic ---
+
+        // Mouse Move for Parallax + Raycasting
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Move tooltip
+            tooltip.style.left = e.clientX + 'px';
+            tooltip.style.top = e.clientY + 'px';
+        });
+
+        // Scroll Logic
+        gsap.registerPlugin(ScrollTrigger);
+
+        window.onload = () => {
+            const loader = document.getElementById('loader');
+            gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.style.display = 'none' });
+
+            // Animate Sections
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, i) => {
+                gsap.to(card, {
+                    scrollTrigger: {
+                        trigger: card.parentElement,
+                        start: "top 80%",
+                        end: "top 30%",
+                        toggleActions: "play none none reverse"
+                    },
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power3.out"
+                });
+            });
+        };
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // 1. Camera Ascent
+            const scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight || 1);
+            // Height mapping: 0 -> 0, 100% -> Summit (130) + extra to look down at fire
+            // Target Y: Summit is at 130. We want camera to rise to ~135
+            const targetCamY = scrollPct * 138;
+            camera.position.y += (targetCamY - camera.position.y) * 0.05;
+
+            // 2. Parallax
+            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
+            // Look target adjustment near summit
+            let lookTargetY = camera.position.y + 5;
+            let lookTargetZ = -15;
+
+            // If near summit (scroll > 90%), look slightly down at the fire
+            if(scrollPct > 0.9) {
+                lookTargetY = 132; // Fire height roughly
+                lookTargetZ = -10;
+            }
+
+            camera.lookAt(0, lookTargetY, lookTargetZ);
+
+            // 3. Anchor Animation (Carabiners swing?)
+            anchorsGroup.children.forEach(group => {
+                // Sway carabiner group (which is child 1)
+                const carabinerGroup = group.children[1];
+                carabinerGroup.rotation.x = Math.sin(time * 2 + group.userData.id) * 0.1;
+            });
+
+            // 4. Raycasting for Anchors
+            // We need to raycast against the CHILDREN (meshes) of the carabiner groups
+            const meshesToCheck = [];
+            anchorsGroup.children.forEach(g => {
+                // Carabiner Group is children[1]
+                // Carabiner Body is children[1].children[0]
+                meshesToCheck.push(g.children[1].children[0]);
+            });
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(meshesToCheck);
+
+            if (intersects.length > 0) {
+                const hitMesh = intersects[0].object;
+                const topGroup = hitMesh.parent.parent; // carabiner -> carabinerGroup -> anchorGroup
+
+                if (intersectedAnchor != topGroup) {
+                    // Hover In
+                    intersectedAnchor = topGroup;
+                    document.body.style.cursor = 'pointer';
+                    tooltip.innerText = topGroup.userData.label;
+                    tooltip.style.opacity = 1;
+
+                    gsap.to(hitMesh.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 0.3 });
+                    // Use GSAP to tween color components individually to avoid replacing the THREE.Color object
+                    gsap.to(hitMesh.material.color, { r: 1, g: 0.66, b: 0, duration: 0.3 }); // Highlight color (Orange)
+                }
+            } else {
+                if (intersectedAnchor) {
+                    // Hover Out
+                    document.body.style.cursor = 'default';
+                    tooltip.style.opacity = 0;
+
+                    const hitMesh = intersectedAnchor.userData.targetMesh;
+                    gsap.to(hitMesh.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
+
+                    // Reset to original color (Steel/Blue: 0x5d6d7e -> r:0.36, g:0.42, b:0.49)
+                    const baseColor = new THREE.Color(config.anchorColor);
+                    gsap.to(hitMesh.material.color, { r: baseColor.r, g: baseColor.g, b: baseColor.b, duration: 0.3 });
+
+                    intersectedAnchor = null;
+                }
+            }
+
+            // 5. Fire Animation
+            const positions = fireParticles.geometry.attributes.position.array;
+            for(let i=0; i<firePartCount; i++) {
+                // y += speed
+                positions[i*3 + 1] += fireSpeeds[i];
+                // reset if too high
+                if(positions[i*3 + 1] > 3.5) {
+                    positions[i*3 + 1] = 0;
+                    positions[i*3] = (Math.random()-0.5) * 0.8; // reset x
+                    positions[i*3+2] = (Math.random()-0.5) * 0.8; // reset z
+                }
+            }
+            fireParticles.geometry.attributes.position.needsUpdate = true;
+
+            // Flicker light
+            fireLight.intensity = 2 + Math.sin(time * 10) * 0.5 + Math.random() * 0.5;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

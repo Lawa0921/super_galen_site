@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meizhuan | Guild Hall</title>
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+TC:wght@300;500;700&display=swap">
+    <!-- GSAP (core only, ScrollTrigger removed) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <style>
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-yellow: #ffee00;
+            --neon-purple: #bc13fe;
+            --neon-green: #39ff14;
+            --dark-bg: #020202;
+        }
+
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* ======== INTRO OVERLAY ======== */
+        #intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: #020202;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        /* Phase 1: content fades out, background stays */
+        #intro-overlay.dismissing .intro-content {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        /* Phase 2: background fades out */
+        #intro-overlay.dismissed {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        /* Scanline texture */
+        #intro-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 243, 255, 0.02) 2px,
+                rgba(0, 243, 255, 0.02) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Horizontal sweep line */
+        #intro-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            animation: intro-sweep 2s linear infinite;
+            z-index: 2;
+            opacity: 0.5;
+        }
+
+        @keyframes intro-sweep {
+            0% { top: -2px; }
+            100% { top: 100%; }
+        }
+
+        .intro-content {
+            position: relative;
+            z-index: 3;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Overlay background transition — slower, with blur */
+        #intro-overlay {
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Terminal lines */
+        .intro-terminal {
+            width: 100%;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 1.5px;
+            line-height: 2;
+            text-align: left;
+            color: var(--neon-cyan);
+            min-height: 140px;
+        }
+
+        .intro-terminal .term-line {
+            opacity: 0;
+            transform: translateX(-10px);
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .intro-terminal .term-line.visible {
+            opacity: 1;
+            transform: translateX(0);
+            transition: opacity 0.2s ease, transform 0.3s ease;
+        }
+
+        .intro-terminal .term-line .term-prefix {
+            color: var(--neon-green);
+        }
+
+        .intro-terminal .term-line .term-value {
+            color: #fff;
+        }
+
+        .intro-terminal .term-line .term-warn {
+            color: var(--neon-yellow);
+        }
+
+        .intro-terminal .term-line .term-ok {
+            color: var(--neon-green);
+        }
+
+        /* RPM Gauge */
+        #intro-rpm-gauge {
+            width: 220px;
+            height: 130px;
+        }
+
+        #intro-rpm-arc {
+            transition: stroke-dashoffset 0.15s ease;
+        }
+
+        /* Ignition prompt */
+        .intro-ignition {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--neon-pink);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .intro-ignition.visible {
+            opacity: 1;
+            animation: intro-pulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes intro-pulse {
+            0%, 100% { text-shadow: 0 0 5px var(--neon-pink); }
+            50% { text-shadow: 0 0 20px var(--neon-pink), 0 0 40px rgba(255,0,85,0.3); }
+        }
+
+        /* Speed lines burst on exit */
+        .intro-speedlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0;
+        }
+
+        .intro-speedlines.active {
+            opacity: 1;
+        }
+
+        .intro-speedlines .speedline {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 3px;
+            height: 0;
+            background: linear-gradient(to bottom, transparent, var(--neon-cyan));
+            transform-origin: top center;
+            opacity: 0;
+        }
+
+        .intro-speedlines.active .speedline {
+            animation: speedline-burst 0.8s ease-out forwards;
+        }
+
+        @keyframes speedline-burst {
+            0% { height: 0; opacity: 0.8; }
+            100% { height: 60vh; opacity: 0; }
+        }
+
+        /* Intro mobile */
+        @media (max-width: 768px) {
+            .intro-terminal {
+                font-size: 0.6rem;
+                letter-spacing: 1px;
+                min-height: 120px;
+            }
+            #intro-rpm-gauge {
+                width: 170px;
+                height: 100px;
+            }
+            .intro-ignition {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Main page content hidden until intro dismissed */
+        .content-scroll,
+        .nav-back,
+        #hud-container,
+        #hud-top-left {
+            opacity: 0;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.page-ready .content-scroll,
+        body.page-ready .nav-back,
+        body.page-ready #hud-container,
+        body.page-ready #hud-top-left {
+            opacity: 1;
+        }
+
+        /* ======== END INTRO OVERLAY ======== */
+
+        /* Animations */
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .animate-blink {
+            animation: blink 1s infinite;
+        }
+
+        /* Canvas Layers */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* HUD Overlay (SVG) */
+        #hud-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 300px;
+            height: 300px;
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #hud-top-left {
+            position: fixed;
+            top: 6rem;
+            left: 2rem;
+            z-index: 90;
+            pointer-events: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            line-height: 1.5;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        /* Navigation */
+        .nav-back {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            border: 1px solid var(--neon-cyan);
+            padding: 0.8rem 1.5rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(5px);
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            white-space: nowrap;
+        }
+
+        .nav-back:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        /* Content Structure */
+        .content-scroll {
+            position: relative;
+            z-index: 20;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section {
+            position: relative;
+            width: 100%;
+            min-height: 80vh;
+            height: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            padding: 4rem 0;
+            box-sizing: border-box;
+        }
+
+        /* Hero section stays full viewport */
+        #section-hero {
+            min-height: 100vh;
+        }
+
+        /* Alignment Utilities */
+        .align-left {
+            justify-content: flex-start;
+            padding-left: 10%;
+        }
+
+        .align-right {
+            justify-content: flex-end;
+            padding-right: 10%;
+        }
+
+        .align-left-more {
+            justify-content: flex-start;
+            padding-left: 15%;
+        }
+
+        .align-right-more {
+            justify-content: flex-end;
+            padding-right: 15%;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-neon-cyan { color: var(--neon-cyan); }
+        .text-neon-pink { color: var(--neon-pink); }
+        .text-neon-yellow { color: var(--neon-yellow); }
+        .text-neon-green { color: var(--neon-green); }
+        .text-gray-aaa { color: #aaa; }
+        .text-gray-888 { color: #888; }
+
+        .mt-1 { margin-top: 1rem; }
+        .mt-2 { margin-top: 2rem; }
+        .mb-1 { margin-bottom: 1rem; }
+        .mb-05 { margin-bottom: 0.5rem; }
+        .my-1 { margin: 1rem 0; }
+
+        .font-sm { font-size: 0.8rem; }
+        .font-md { font-size: 0.9rem; }
+        .font-lg { font-size: 1.2rem; }
+        .font-xl { font-size: 2.5rem; }
+        .font-xxl { font-size: 3rem; }
+
+        /* Card Styling - visible by default, GSAP will control animation */
+        .hud-card {
+            pointer-events: auto;
+            background: linear-gradient(135deg, rgba(10,10,20,0.95), rgba(0,0,0,0.9));
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 2.5rem;
+            max-width: 550px;
+            width: 90%;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0, 243, 255, 0.05);
+            transform-style: preserve-3d;
+            clip-path: polygon(
+                20px 0, 100% 0,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                0 100%, 0 20px
+            );
+        }
+
+        /* GSAP will add this class to set initial hidden state */
+        .hud-card.gsap-init {
+            opacity: 0;
+            transform: translateZ(-50px) rotateX(10deg);
+        }
+
+        .hud-card.final-card {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 50px rgba(255,0,85,0.3);
+        }
+
+        .hud-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 1px solid var(--neon-cyan);
+            clip-path: polygon(
+                20px 0, 100% 0,
+                100% calc(100% - 20px), calc(100% - 20px) 100%,
+                0 100%, 0 20px
+            );
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .hud-card.final-card::before {
+            border-color: var(--neon-pink);
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            letter-spacing: 5px;
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        h3 {
+            color: var(--neon-yellow);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            border-bottom: 2px solid var(--neon-yellow);
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--neon-cyan);
+            font-size: 1rem;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+        }
+
+        p {
+            line-height: 1.8;
+            color: #ccc;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        .highlight {
+            color: var(--neon-pink);
+            font-weight: 700;
+        }
+
+        /* Avatar */
+        .avatar-container {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 1.5rem auto;
+            position: relative;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            clip-path: polygon(30% 0, 100% 0, 100% 70%, 70% 100%, 0 100%, 0 30%);
+            transition: all 0.5s ease;
+        }
+
+        .avatar-border {
+            position: absolute;
+            top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border: 2px solid var(--neon-cyan);
+            clip-path: polygon(30% 0, 100% 0, 100% 70%, 70% 100%, 0 100%, 0 30%);
+            z-index: -1;
+            opacity: 0.7;
+        }
+
+        /* Stats Grid */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.8rem;
+            border-left: 3px solid var(--neon-cyan);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(0, 243, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 0.3rem;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 0.9rem;
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+        }
+
+        /* Progress Bars (RPG Stats) */
+        .progress-container {
+            margin-bottom: 1rem;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+        }
+
+        .progress-bg {
+            background: rgba(255,255,255,0.1);
+            height: 6px;
+            width: 100%;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .w-40 { width: 40%; }
+        .w-50 { width: 50%; }
+        .w-55 { width: 55%; }
+        .w-60 { width: 60%; }
+        .w-65 { width: 65%; }
+        .w-70 { width: 70%; }
+        .w-80 { width: 80%; }
+        .bg-neon-purple { background: var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple); }
+        .bg-neon-pink { background: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); }
+        .bg-neon-green { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        .bg-neon-yellow { background: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
+
+        /* Equipment Grid */
+        .equip-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .equip-slot {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #aaa;
+            transition: all 0.3s ease;
+        }
+
+        .equip-slot:hover {
+            border-color: var(--neon-yellow);
+            color: #fff;
+        }
+
+        .equip-icon {
+            font-size: 1.2rem;
+            margin-bottom: 0.3rem;
+            color: var(--neon-yellow);
+        }
+
+        /* Quest Items */
+        .quest-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--neon-yellow);
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .quest-item:hover {
+            background: rgba(255, 238, 0, 0.05);
+            transform: translateX(5px);
+        }
+
+        .quest-item.quest-complete {
+            border-left-color: var(--neon-green);
+            opacity: 0.7;
+        }
+
+        .quest-item.quest-active {
+            border-left-color: var(--neon-cyan);
+        }
+
+        .quest-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 0.15rem;
+        }
+
+        .quest-content {
+            flex: 1;
+        }
+
+        .quest-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: #fff;
+            margin-bottom: 0.2rem;
+        }
+
+        .quest-desc {
+            font-size: 0.8rem;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .quest-reward {
+            font-size: 0.7rem;
+            color: var(--neon-yellow);
+            margin-top: 0.3rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Achievement Items */
+        .achievement-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+            margin-bottom: 0.6rem;
+        }
+
+        .achievement-item:hover {
+            background: rgba(188, 19, 254, 0.08);
+            border-color: var(--neon-purple);
+        }
+
+        .achievement-item.unlocked {
+            border-color: rgba(188, 19, 254, 0.4);
+        }
+
+        .achievement-item.locked {
+            opacity: 0.4;
+            filter: grayscale(50%);
+        }
+
+        .achievement-badge {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-purple);
+            clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+            flex-shrink: 0;
+        }
+
+        .achievement-info {
+            flex: 1;
+        }
+
+        .achievement-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--neon-purple);
+            margin-bottom: 0.2rem;
+        }
+
+        .achievement-desc {
+            font-size: 0.75rem;
+            color: #888;
+            line-height: 1.3;
+        }
+
+        /* Social Icons */
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        .social-link {
+            color: #fff;
+            font-size: 1.8rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .social-link:hover {
+            color: var(--neon-pink);
+            transform: scale(1.2);
+            text-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        /* Mobile specific adjustments (RWD) */
+        @media (max-width: 768px) {
+            .nav-back {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
+                top: 1.5rem;
+                left: 1.5rem;
+                background: rgba(0,0,0,0.8);
+                backdrop-filter: blur(8px);
+                z-index: 200;
+            }
+            .hud-card {
+                padding: 1.5rem;
+                width: 88%;
+                margin: 0 auto;
+                clip-path: polygon(
+                    10px 0, 100% 0,
+                    100% calc(100% - 10px), calc(100% - 10px) 100%,
+                    0 100%, 0 10px
+                );
+            }
+            .hud-card::before {
+                clip-path: polygon(
+                    10px 0, 100% 0,
+                    100% calc(100% - 10px), calc(100% - 10px) 100%,
+                    0 100%, 0 10px
+                );
+            }
+            .section {
+                min-height: auto;
+                height: auto;
+                padding: 3rem 0;
+                align-items: center;
+            }
+
+            #section-hero {
+                padding-top: 10rem;
+                min-height: 90vh;
+            }
+            #section-goal {
+                padding-bottom: 12rem;
+            }
+
+            /* Override explicit alignments for mobile */
+            body .section.align-left,
+            body .section.align-right,
+            body .section.align-left-more,
+            body .section.align-right-more {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+            .equip-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            #hud-container {
+                left: 50%;
+                right: auto;
+                bottom: 1rem;
+                transform: translateX(-50%) scale(0.65);
+                transform-origin: bottom center;
+                pointer-events: none;
+                opacity: 0.8;
+            }
+            #hud-top-left {
+                display: none;
+            }
+
+            p {
+                font-size: 1rem;
+                line-height: 1.6;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            h3 {
+                font-size: 1rem;
+                letter-spacing: 1px;
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            .hud-card {
+                padding: 1.25rem;
+                width: 90%;
+                box-sizing: border-box;
+            }
+
+            .equip-slot {
+                font-size: 0.65rem;
+                padding: 0.4rem;
+                word-break: break-all;
+            }
+
+            .quest-item {
+                padding: 0.6rem 0.8rem;
+            }
+
+            .achievement-item {
+                padding: 0.6rem;
+            }
+
+            .achievement-badge {
+                width: 34px;
+                height: 34px;
+                font-size: 1rem;
+            }
+        }
+
+    </style>
+</head>
+<body style="overflow: hidden;">
+
+    <!-- Engine Ignition Intro Overlay -->
+    <div id="intro-overlay">
+        <div class="intro-content">
+            <!-- RPM Gauge SVG -->
+            <svg id="intro-rpm-gauge" viewBox="0 0 220 130">
+                <defs>
+                    <filter id="rpm-glow">
+                        <feGaussianBlur stdDeviation="2" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <!-- Outer arc background -->
+                <path d="M 25 120 A 95 95 0 0 1 195 120" fill="none" stroke="rgba(0,243,255,0.15)" stroke-width="3"/>
+                <!-- RPM arc (dynamic) -->
+                <path id="intro-rpm-arc"
+                      d="M 25 120 A 95 95 0 0 1 195 120"
+                      fill="none"
+                      stroke="var(--neon-cyan)"
+                      stroke-width="6"
+                      stroke-linecap="round"
+                      filter="url(#rpm-glow)"
+                      stroke-dasharray="298"
+                      stroke-dashoffset="298"/>
+                <!-- RPM text -->
+                <text x="110" y="95" text-anchor="middle" fill="#fff" font-family="'Orbitron', sans-serif" font-size="36" font-weight="bold" id="intro-rpm-text">0</text>
+                <text x="110" y="118" text-anchor="middle" fill="var(--neon-cyan)" font-family="'Orbitron', sans-serif" font-size="10" letter-spacing="2">RPM x1000</text>
+                <!-- Redline zone indicator -->
+                <path d="M 170 32 A 95 95 0 0 1 195 120" fill="none" stroke="rgba(255,0,85,0.3)" stroke-width="6"/>
+            </svg>
+
+            <!-- Terminal boot text -->
+            <div class="intro-terminal">
+                <div class="term-line" data-delay="200"><span class="term-prefix">&gt; </span>SYSTEM BOOT <span class="term-ok">[INIT]</span></div>
+                <div class="term-line" data-delay="500"><span class="term-prefix">&gt; </span>RIDER_ID: <span class="term-value">MEIZHUAN</span></div>
+                <div class="term-line" data-delay="800"><span class="term-prefix">&gt; </span>CLASS: <span class="term-value">ENGINEER / BIKER / OTAKU</span></div>
+                <div class="term-line" data-delay="1100"><span class="term-prefix">&gt; </span>ENGINE: <span class="term-value">V-TWIN 650cc</span> <span class="term-ok">[READY]</span></div>
+                <div class="term-line" data-delay="1400"><span class="term-prefix">&gt; </span>NAV_ROUTE: <span class="term-value">NEON_HIGHWAY</span></div>
+                <div class="term-line" data-delay="1700"><span class="term-prefix">&gt; </span>DEST: <span class="term-warn">JAPAN</span></div>
+                <div class="term-line" data-delay="2000"><span class="term-prefix">&gt; </span>ALL SYSTEMS <span class="term-ok">[GREEN]</span></div>
+            </div>
+
+            <!-- Ignition prompt -->
+            <div class="intro-ignition" id="intro-ignition">
+                <i class="fas fa-key"></i> Click to Ignite
+            </div>
+        </div>
+
+        <!-- Speed lines for exit burst -->
+        <div class="intro-speedlines" id="intro-speedlines"></div>
+    </div>
+
+    <a href="/guild/" class="nav-back"><i class="fas fa-chevron-left"></i> Guild Hall</a>
+
+    <div id="canvas-container"></div>
+
+    <!-- Lightweight SVG HUD -->
+    <div id="hud-top-left">
+        <div>SYS: ONLINE</div>
+        <div>LOC: NEON_HIGHWAY</div>
+        <div>OBJ: REACH_JAPAN <span class="text-neon-pink animate-blink">&bull;</span></div>
+    </div>
+
+    <div id="hud-container">
+        <!-- Speedometer SVG -->
+        <svg width="250" height="250" viewBox="0 0 250 250">
+            <defs>
+                <filter id="glow">
+                    <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+            <!-- Outer Ring (Static) -->
+            <path d="M 45 205 A 110 110 0 1 1 205 205" fill="none" stroke="rgba(0, 243, 255, 0.2)" stroke-width="2" />
+            <!-- Speed Arc (Dynamic) -->
+            <path id="speed-arc" d="M 55 195 A 100 100 0 1 1 195 195"
+                  fill="none"
+                  stroke="#00f3ff"
+                  stroke-width="8"
+                  stroke-linecap="round"
+                  filter="url(#glow)"
+                  stroke-dasharray="471"
+                  stroke-dashoffset="471" />
+            <!-- Text Readout -->
+            <text x="125" y="140" text-anchor="middle" fill="#fff" font-family="'Orbitron', sans-serif" font-size="48" font-weight="bold" id="speed-text">0</text>
+            <text x="125" y="170" text-anchor="middle" fill="#00f3ff" font-family="'Orbitron', sans-serif" font-size="14" letter-spacing="2">KM/H</text>
+            <!-- Gear -->
+            <text x="180" y="100" text-anchor="middle" fill="#ffc800" font-family="'Orbitron', sans-serif" font-size="24" id="gear-text">N</text>
+        </svg>
+    </div>
+
+    <div class="content-scroll">
+
+        <!-- Hero Section -->
+        <div class="section" id="section-hero">
+            <div class="hud-card text-center">
+                <div class="avatar-container">
+                    <div class="avatar-border"></div>
+                    <img src="/assets/img/guild/meizhuan/avatar.webp" alt="Meizhuan" class="avatar-img" width="140" height="140" loading="lazy">
+                </div>
+                <h1>石專豆頁</h1>
+                <div class="subtitle">// ENGINEER // BIKER // OTAKU</div>
+                <p>
+                    "Full Throttle towards the Future."<br>
+                    在代碼與引擎聲中尋找節奏的騎士。
+                </p>
+                <div class="mt-2 font-sm text-neon-cyan">
+                    <i class="fas fa-arrow-down"></i> INITIATE SEQUENCE
+                </div>
+            </div>
+        </div>
+
+        <!-- Identity Section (Left Aligned) -->
+        <div class="section align-left" id="section-identity">
+            <div class="hud-card">
+                <h3><i class="fas fa-id-card"></i> IDENTITY_LOG</h3>
+                <p>
+                    電機工程系畢業，目前身處<span class="highlight">助理工程師</span>的練功房。
+                    正朝著真正的工程師之路疾馳，試圖解鎖更多技能樹。
+                </p>
+                <p class="font-md text-gray-aaa">
+                    從迴路到程式碼，從焊接到鍵盤，一步步將電機的基底轉化為軟體的力量。
+                    目標明確：成為能獨當一面的工程師。
+                </p>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Current Role</span>
+                        <span class="stat-value">Asst. Engineer</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Target Role</span>
+                        <span class="stat-value">Full Engineer</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Background</span>
+                        <span class="stat-value">EE Major</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Exp. Years</span>
+                        <span class="stat-value">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RPG Stats (Right Aligned) -->
+        <div class="section align-right" id="section-stats">
+            <div class="hud-card">
+                <h3><i class="fas fa-chart-bar"></i> ATTRIBUTE_MATRIX</h3>
+                <div class="progress-container">
+                    <div class="progress-label"><span>STR (Strength / Workout)</span><span>LV. 6</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-60"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>INT (Code / Logic)</span><span>LV. 7</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-70"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>AGI (Riding / Reflex)</span><span>LV. 8</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-80"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>VIT (Endurance)</span><span>LV. 5</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-50 bg-neon-green"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>WIS (Life Exp)</span><span>LV. 5</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-55 bg-neon-yellow"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>LUCK (Gacha / Drops)</span><span>LV. ???</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-40 bg-neon-purple"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills Section (Left Aligned) -->
+        <div class="section align-left" id="section-skills">
+            <div class="hud-card">
+                <h3><i class="fas fa-laptop-code"></i> SKILL_TREE</h3>
+                <p>
+                    持續自我升級中。正在鑽研 <span class="highlight">Python</span> 與 <span class="highlight">日語</span>，
+                    並嘗試開發屬於自己的獨立遊戲。
+                </p>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Language</span>
+                        <span class="stat-value">Python (Active)</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Lang. Aux</span>
+                        <span class="stat-value">Japanese (Loading)</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Project</span>
+                        <span class="stat-value">Indie Game Dev</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Engine</span>
+                        <span class="stat-value">Exploring...</span>
+                    </div>
+                </div>
+                <p class="mt-1 font-sm text-gray-888">// SKILL PROGRESS</p>
+                <div class="progress-container">
+                    <div class="progress-label"><span>Python</span><span>65%</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-65 bg-neon-green"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>Japanese (N5 &rarr; N4)</span><span>40%</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-40 bg-neon-pink"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>Game Dev</span><span>25%</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width:25%"></div></div>
+                </div>
+                <p class="mt-1 font-md text-gray-aaa">
+                    歡迎各路大神給予建議或方向，讓我們一起 Debug 人生。
+                </p>
+            </div>
+        </div>
+
+        <!-- Equipment Loadout (Right Aligned) -->
+        <div class="section align-right" id="section-equip">
+            <div class="hud-card">
+                <h3><i class="fas fa-briefcase"></i> EQUIPMENT_LOADOUT</h3>
+                <p class="mb-05 font-sm text-gray-888">// RIDER SLOT</p>
+                <div class="equip-grid">
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-motorcycle"></i></div>
+                        RENTAL BIKE
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-helmet-safety"></i></div>
+                        HELMET
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-map-location-dot"></i></div>
+                        LICENSE
+                    </div>
+                </div>
+
+                <p class="mt-1 mb-05 font-sm text-gray-888">// DEV SLOT</p>
+                <div class="equip-grid">
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-keyboard"></i></div>
+                        MECH KB
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-display"></i></div>
+                        DUAL MON
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fab fa-python"></i></div>
+                        VS CODE
+                    </div>
+                </div>
+
+                <p class="mt-1 mb-05 font-sm text-gray-888">// DAILY CARRY</p>
+                <div class="equip-grid">
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-headphones"></i></div>
+                        EARBUDS
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-mug-hot"></i></div>
+                        COFFEE
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-mobile-screen"></i></div>
+                        PHONE
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hobbies Section (Left Aligned) -->
+        <div class="section align-left-more" id="section-hobbies">
+            <div class="hud-card">
+                <h3><i class="fas fa-database"></i> INTEREST_DB</h3>
+                <p>
+                    平時是標準的 <span class="highlight">宅</span> 屬性，窩在家看動漫、打遊戲是標準充電方式。
+                    但若有朋友邀約，隨時切換至 <span class="highlight">Outdoor Mode</span> 出門走走。
+                </p>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Mode</span>
+                        <span class="stat-value">Otaku / Biker</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Focus</span>
+                        <span class="stat-value">Anime & Gaming</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Fav Genre</span>
+                        <span class="stat-value">Isekai / Mecha</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Game Type</span>
+                        <span class="stat-value">RPG / Action</span>
+                    </div>
+                </div>
+                <p class="mt-1 font-md text-gray-aaa">
+                    「如果人生是一款遊戲，那我正在努力刷經驗值。」
+                </p>
+            </div>
+        </div>
+
+        <!-- Personal / Maintenance Log (Right Aligned) -->
+        <div class="section align-right-more" id="section-personal">
+            <div class="hud-card">
+                <h3><i class="fas fa-wrench"></i> MAINTENANCE_LOG</h3>
+                <p>
+                    <span class="highlight">STATUS:</span> 喜好吃美食，但也煩惱體重。
+                </p>
+                <p>
+                    目前已啟動 <span class="highlight">強制運動協議</span>，並同步執行
+                    <span class="highlight text-neon-yellow">戒菸程序 (Purging Nicotine)</span>
+                    以優化機體性能。
+                </p>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Diet Protocol</span>
+                        <span class="stat-value">Exercise: ON</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Health Check</span>
+                        <span class="stat-value">Smoking: OFF</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Sleep Cycle</span>
+                        <span class="stat-value">Optimizing...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Energy Source</span>
+                        <span class="stat-value">Coffee &#9749;</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quest Log (Left Aligned) - NEW -->
+        <div class="section align-left" id="section-quest">
+            <div class="hud-card">
+                <h3><i class="fas fa-scroll"></i> QUEST_LOG</h3>
+                <p class="font-sm text-gray-888 mb-05">// ACTIVE QUESTS</p>
+
+                <div class="quest-item quest-active">
+                    <div class="quest-icon text-neon-cyan"><i class="fas fa-code"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Path of the Engineer</div>
+                        <div class="quest-desc">從助理工程師升級為正式工程師，掌握核心開發技能。</div>
+                        <div class="quest-reward">REWARD: +500 EXP, Title &quot;Full Engineer&quot;</div>
+                    </div>
+                </div>
+
+                <div class="quest-item quest-active">
+                    <div class="quest-icon text-neon-cyan"><i class="fas fa-language"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Nihongo Challenge</div>
+                        <div class="quest-desc">日語學習計畫：通過 JLPT N4，邁向 N3 的旅程。</div>
+                        <div class="quest-reward">REWARD: +300 EXP, Unlock &quot;Japan Route&quot;</div>
+                    </div>
+                </div>
+
+                <div class="quest-item quest-active">
+                    <div class="quest-icon text-neon-cyan"><i class="fas fa-gamepad"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Indie Dev: First Build</div>
+                        <div class="quest-desc">完成第一款獨立遊戲的原型開發，從零到一的創作旅程。</div>
+                        <div class="quest-reward">REWARD: +800 EXP, Item &quot;Creator's Badge&quot;</div>
+                    </div>
+                </div>
+
+                <p class="font-sm text-gray-888 mb-05 mt-1">// COMPLETED</p>
+
+                <div class="quest-item quest-complete">
+                    <div class="quest-icon text-neon-green"><i class="fas fa-check-circle"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Rider's License</div>
+                        <div class="quest-desc">取得重型機車駕照。</div>
+                        <div class="quest-reward">COMPLETE &mdash; Unlocked: Heavy Bike Access</div>
+                    </div>
+                </div>
+
+                <div class="quest-item quest-complete">
+                    <div class="quest-icon text-neon-green"><i class="fas fa-check-circle"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">EE Graduation</div>
+                        <div class="quest-desc">電機工程系順利畢業。</div>
+                        <div class="quest-reward">COMPLETE &mdash; Unlocked: Engineer Path</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievements (Right Aligned) - NEW -->
+        <div class="section align-right" id="section-achievements">
+            <div class="hud-card">
+                <h3><i class="fas fa-trophy"></i> ACHIEVEMENT_HALL</h3>
+                <p class="font-sm text-gray-888 mb-05">// UNLOCKED</p>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-green"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">Scholar's Mark</div>
+                        <div class="achievement-desc">電機工程系畢業，完成學業主線任務。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-cyan"><i class="fas fa-motorcycle"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">Road Warrior</div>
+                        <div class="achievement-desc">取得重型機車駕照，解鎖雙輪旅行的自由。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-yellow"><i class="fas fa-briefcase"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">First Deploy</div>
+                        <div class="achievement-desc">成為助理工程師，踏入職場戰場。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-pink"><i class="fas fa-heart"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">Nicotine Purge: Init</div>
+                        <div class="achievement-desc">正式啟動戒菸程序，為了更好的自己。</div>
+                    </div>
+                </div>
+
+                <p class="font-sm text-gray-888 mb-05 mt-1">// LOCKED</p>
+
+                <div class="achievement-item locked">
+                    <div class="achievement-badge"><i class="fas fa-lock"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">??? Full Engineer ???</div>
+                        <div class="achievement-desc">晉升為正式工程師。條件未達成。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item locked">
+                    <div class="achievement-badge"><i class="fas fa-lock"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">??? Japan Route Clear ???</div>
+                        <div class="achievement-desc">完成日本重機之旅。條件未達成。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goal Section (Finale) -->
+        <div class="section" id="section-goal">
+            <div class="hud-card final-card text-center">
+                <i class="fas fa-motorcycle font-xxl text-neon-pink mb-1" style="display:block"></i>
+                <h1 class="font-xl text-neon-pink">DREAM_ROUTE</h1>
+                <p class="highlight font-lg my-1">
+                    DESTINATION: JAPAN
+                </p>
+                <p>
+                    擁有重機駕照，雖暫時選擇租車體驗各種車款，但騎士魂燃燒依舊。
+                    終極目標是去日本體驗重機旅行，並給家人更好的生活。
+                </p>
+                <p class="font-md text-gray-aaa">
+                    「無論是程式碼還是公路，終點從來不是目標，旅途本身才是。」
+                </p>
+                <div class="social-links">
+                    <a href="https://www.threads.net/@meizhuan" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/meizhuan/" target="_blank" class="social-link"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Engine Ignition Intro Script -->
+    <script>
+    (function() {
+        const overlay = document.getElementById('intro-overlay');
+        if (!overlay) return;
+
+        const termLines = overlay.querySelectorAll('.term-line');
+        const ignitionPrompt = document.getElementById('intro-ignition');
+        const rpmArc = document.getElementById('intro-rpm-arc');
+        const rpmText = document.getElementById('intro-rpm-text');
+        const speedlinesContainer = document.getElementById('intro-speedlines');
+        const maxRpmDash = 298;
+        let dismissed = false;
+        let autoTimer = null;
+
+        // Generate speed lines for burst effect
+        const lineCount = 24;
+        for (let i = 0; i < lineCount; i++) {
+            const line = document.createElement('div');
+            line.className = 'speedline';
+            const angle = (i / lineCount) * 360;
+            const delay = Math.random() * 0.15;
+            line.style.transform = 'rotate(' + angle + 'deg)';
+            line.style.animationDelay = delay + 's';
+            speedlinesContainer.appendChild(line);
+        }
+
+        // Phase 1: Terminal text reveal
+        termLines.forEach(function(line) {
+            var delay = parseInt(line.getAttribute('data-delay') || '0', 10);
+            setTimeout(function() {
+                if (!dismissed) line.classList.add('visible');
+            }, delay);
+        });
+
+        // Phase 2: RPM rev-up animation (starts at 2.2s)
+        var rpmStart = 2200;
+        var rpmDuration = 1800;
+        var rpmStartTime = null;
+
+        function animateRpm(timestamp) {
+            if (dismissed) return;
+            if (!rpmStartTime) rpmStartTime = timestamp;
+            var elapsed = timestamp - rpmStartTime;
+            var progress = Math.min(elapsed / rpmDuration, 1);
+
+            // Easing: ease-in-out with slight overshoot
+            var eased = progress < 0.5
+                ? 2 * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            var rpm = Math.floor(eased * 9.5);
+            rpmText.textContent = rpm.toFixed(0);
+            rpmArc.style.strokeDashoffset = maxRpmDash - (eased * 0.85 * maxRpmDash);
+
+            // Change color at high RPM
+            if (eased > 0.7) {
+                rpmArc.style.stroke = '#ff0055';
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(animateRpm);
+            }
+        }
+
+        setTimeout(function() {
+            if (!dismissed) requestAnimationFrame(animateRpm);
+        }, rpmStart);
+
+        // Phase 3: Show ignition prompt (at 2.5s)
+        setTimeout(function() {
+            if (!dismissed && ignitionPrompt) {
+                ignitionPrompt.classList.add('visible');
+            }
+        }, 2500);
+
+        // Dismiss function — two-phase cross-fade transition
+        function dismissIntro() {
+            if (dismissed) return;
+            dismissed = true;
+
+            // Phase 1: Speed lines burst + intro content fades out
+            speedlinesContainer.classList.add('active');
+            overlay.classList.add('dismissing');
+
+            // Phase 2: Overlay bg dissolves + main page content fades in simultaneously
+            setTimeout(function() {
+                overlay.classList.add('dismissed');
+                document.body.classList.add('page-ready');
+                document.body.style.overflow = '';
+            }, 600);
+        }
+
+        // Click to dismiss
+        overlay.addEventListener('click', dismissIntro);
+
+        // Keyboard dismiss (Enter or Space)
+        document.addEventListener('keydown', function onKey(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                dismissIntro();
+                document.removeEventListener('keydown', onKey);
+            }
+        });
+    })();
+    </script>
+
+    <!-- Three.js & Animation Logic -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020202, 0.001);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 3, 10);
+        camera.lookAt(0, 3, -100);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        // --- Objects ---
+
+        // 1. Grid Floor
+        const gridSize = 2000;
+        const gridDivisions = 40;
+        const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x00f3ff, 0x111111);
+        gridHelper.position.y = -5;
+        scene.add(gridHelper);
+
+        // 2. Gates (InstancedMesh for performance)
+        const gateCount = 15;
+        const gateGeometry = new THREE.TorusGeometry(30, 0.5, 6, 4);
+        const gateMaterial = new THREE.MeshBasicMaterial({
+            color: 0x00f3ff,
+            transparent: true,
+            opacity: 0.3,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const gates = new THREE.InstancedMesh(gateGeometry, gateMaterial, gateCount);
+        const dummy = new THREE.Object3D();
+        const gateSpacing = 200;
+
+        for (let i = 0; i < gateCount; i++) {
+            dummy.position.set(0, 5, -i * gateSpacing);
+            dummy.rotation.z = Math.PI / 4;
+            dummy.updateMatrix();
+            gates.setMatrixAt(i, dummy.matrix);
+        }
+        scene.add(gates);
+
+        // 3. Sun
+        const sunGeo = new THREE.CircleGeometry(80, 32);
+        const sunMat = new THREE.MeshBasicMaterial({
+            color: 0xff0055, transparent: true, opacity: 0.8,
+            blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        sun.position.set(0, 40, -1000);
+        scene.add(sun);
+
+        const sunGlowGeo = new THREE.CircleGeometry(120, 32);
+        const sunGlowMat = new THREE.MeshBasicMaterial({
+            color: 0xff0055, transparent: true, opacity: 0.2,
+            blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
+        sunGlow.position.set(0, 40, -1001);
+        scene.add(sunGlow);
+
+        // --- Speed state (replaces ScrollTrigger) ---
+        const state = { baseSpeed: 0.5, scrollBoost: 0, currentSpeed: 0.5 };
+        let lastScrollY = window.scrollY;
+        let lastScrollTime = performance.now();
+
+        window.addEventListener('scroll', () => {
+            const now = performance.now();
+            const dt = now - lastScrollTime;
+            if (dt > 0) {
+                const velocity = Math.abs(window.scrollY - lastScrollY) / dt * 1000;
+                state.scrollBoost = Math.min(velocity * 0.005, 10);
+            }
+            lastScrollY = window.scrollY;
+            lastScrollTime = now;
+        }, { passive: true });
+
+        // --- Card animations (IntersectionObserver + GSAP) ---
+        const cards = document.querySelectorAll('.hud-card');
+        cards.forEach(card => card.classList.add('gsap-init'));
+
+        const cardObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const card = entry.target;
+
+                gsap.to(card, {
+                    opacity: 1,
+                    transform: "translateZ(0) rotateX(0deg)",
+                    duration: 0.8,
+                    ease: "back.out(1.2)"
+                });
+
+                const items = card.querySelectorAll('.stat-item, .equip-slot, .social-link, .quest-item, .achievement-item');
+                if (items.length > 0) {
+                    gsap.fromTo(items,
+                        { y: 20, opacity: 0 },
+                        { y: 0, opacity: 1, stagger: 0.06, duration: 0.5, delay: 0.3, ease: "power2.out" }
+                    );
+                }
+
+                const bars = card.querySelectorAll('.progress-fill');
+                if (bars.length > 0) {
+                    gsap.from(bars, {
+                        width: "0%", duration: 1, delay: 0.4, ease: "power2.out", stagger: 0.1
+                    });
+                }
+
+                cardObserver.unobserve(card);
+            });
+        }, { threshold: 0.1, rootMargin: "0px 0px -5% 0px" });
+
+        cards.forEach(card => cardObserver.observe(card));
+
+        // --- Hero Title Glitch ---
+        const heroTitle = document.querySelector('#section-hero h1');
+        if (heroTitle) {
+            gsap.fromTo(heroTitle,
+                { opacity: 0, scale: 0.8, textShadow: "0 0 0px #000" },
+                { opacity: 1, scale: 1, textShadow: "0 0 20px var(--neon-cyan)", duration: 1, ease: "elastic.out(1, 0.5)" }
+            );
+            gsap.to(heroTitle, {
+                skewX: 20, duration: 0.1, repeat: -1, yoyo: true, repeatDelay: 5, ease: "steps(1)"
+            });
+        }
+
+        // --- HUD ---
+        const speedText = document.getElementById('speed-text');
+        const gearText = document.getElementById('gear-text');
+        const speedArc = document.getElementById('speed-arc');
+        const maxDash = 471;
+        const gearThresholds = [140, 120, 100, 70, 40, 10];
+        const gearLabels = ["6", "5", "4", "3", "2", "1"];
+        let prevGear = "N";
+        let prevKmhFloor = 0;
+
+        function updateHUD(kmh) {
+            const floored = Math.floor(kmh);
+            if (floored !== prevKmhFloor) {
+                speedText.textContent = floored;
+                prevKmhFloor = floored;
+            }
+
+            let gear = "N";
+            for (let i = 0; i < gearThresholds.length; i++) {
+                if (kmh > gearThresholds[i]) { gear = gearLabels[i]; break; }
+            }
+            if (gear !== prevGear) {
+                gearText.textContent = gear;
+                prevGear = gear;
+            }
+
+            speedArc.style.strokeDashoffset = maxDash - (kmh / 160) * maxDash;
+            speedArc.style.stroke = kmh > 130 ? "#ff0055" : "#00f3ff";
+        }
+
+        // --- Mouse tracking (throttled) ---
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        window.addEventListener('pointermove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        }, { passive: true });
+
+        // --- Animation loop (pauses when tab hidden) ---
+        const gridResetZ = gridSize / gridDivisions;
+        const gateResetZ = -(gateCount * gateSpacing) + 20;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Skip rendering when tab is not visible
+            if (document.hidden) return;
+
+            // Physics
+            state.scrollBoost *= 0.96;
+            state.currentSpeed += (state.baseSpeed + state.scrollBoost - state.currentSpeed) * 0.05;
+
+            let kmh = 60 + (state.currentSpeed * 6);
+            if (kmh > 150) kmh = 150;
+
+            // Move Grid
+            gridHelper.position.z += state.currentSpeed;
+            if (gridHelper.position.z >= gridResetZ) gridHelper.position.z = 0;
+
+            // Move Gates
+            for (let i = 0; i < gateCount; i++) {
+                gates.getMatrixAt(i, dummy.matrix);
+                dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+                dummy.position.z += state.currentSpeed;
+                if (dummy.position.z > 20) {
+                    dummy.position.z = gateResetZ;
+                    dummy.rotation.z = (Math.PI / 4) + (Math.random() * 0.2);
+                }
+                dummy.updateMatrix();
+                gates.setMatrixAt(i, dummy.matrix);
+            }
+            gates.instanceMatrix.needsUpdate = true;
+
+            // Camera Sway
+            const targetX = (mouseX / window.innerWidth - 0.5) * 5;
+            const targetY = (mouseY / window.innerHeight - 0.5) * 2 + 3;
+            camera.position.x += (targetX - camera.position.x) * 0.05;
+            camera.position.y += (targetY - camera.position.y) * 0.05;
+            camera.rotation.z = -(targetX - camera.position.x) * 0.05;
+
+            renderer.render(scene, camera);
+            updateHUD(kmh);
+        }
+
+        animate();
+
+        // Resize (debounced)
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 150);
+        });
+    </script>
+</body>
+</html>

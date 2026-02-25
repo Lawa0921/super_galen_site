@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yumebi Emu | Lucid Dream</title>
+    <meta name="description" content="Yumebi Emu - ASMR Creator & Eternal 20-year-old Idol. Dream Magic, Tarot, and soothing whispers.">
+
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preload" as="image" href="/assets/img/guild/yumebi_emu/avatar.webp">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #1a0b1f; /* Lighter Deep Purple */
+            --text-primary: #fff;
+            --accent-pink: #ff69b4; /* Hot Pink */
+            --accent-purple: #9370db; /* Medium Purple */
+            --accent-gold: #ffd700; /* Gold for Magic */
+            --accent-cyan: #00ffff; /* Cyan for Digital */
+            --glass-bg: rgba(20, 10, 30, 0.6); /* Darker, tinted */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            width: 100%;
+            cursor: none; /* Custom cursor handling */
+            /* Force hidden x-overflow */
+            overflow-x: hidden;
+            /* Initially hidden y-overflow for Dream Gate */
+            overflow-y: hidden;
+        }
+
+        /* Custom Cursor */
+        #cursor-follower {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid var(--accent-pink);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            will-change: transform;
+            box-shadow: 0 0 10px var(--accent-pink);
+        }
+        #cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 4px; height: 4px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            will-change: transform;
+        }
+
+        /* Flash Overlay */
+        #flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        /* --- DREAM GATE OVERLAY --- */
+        #dream-gate {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0510; /* Very Dark Purple */
+            z-index: 20000; /* Highest */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1.5s ease-out;
+            cursor: pointer;
+        }
+
+        .candle-container {
+            position: relative;
+            width: 60px; height: 150px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .candle-flame {
+            width: 20px; height: 40px;
+            background: radial-gradient(circle at 50% 80%, #fff, #ffd700 40%, #ff69b4 80%, transparent 100%);
+            border-radius: 50% 50% 20% 20%;
+            box-shadow: 0 0 20px #ff69b4, 0 0 40px #ffd700;
+            animation: flame-flicker 0.1s infinite alternate, flame-sway 2s ease-in-out infinite alternate;
+            transform-origin: bottom center;
+            opacity: 0.9;
+        }
+
+        .candle-wick {
+            width: 4px; height: 10px;
+            background: #333;
+            border-radius: 2px;
+            margin-top: -5px;
+        }
+
+        .candle-body {
+            width: 40px; height: 100px;
+            background: linear-gradient(to bottom, #f0f0f0, #ddd);
+            border-radius: 5px;
+            box-shadow: inset 0 -10px 20px rgba(0,0,0,0.1), 0 0 10px rgba(255, 105, 180, 0.2);
+        }
+
+        @keyframes flame-flicker {
+            0% { transform: scale(1) skewX(0deg); opacity: 0.9; }
+            50% { transform: scale(0.95, 1.05) skewX(1deg); opacity: 0.8; }
+            100% { transform: scale(1.05, 0.95) skewX(-1deg); opacity: 1; }
+        }
+
+        @keyframes flame-sway {
+            0% { transform: rotate(-2deg); }
+            100% { transform: rotate(2deg); }
+        }
+
+        .dream-text {
+            margin-top: 2rem;
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            color: var(--accent-gold);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0; /* Hidden until loaded */
+            transition: opacity 1s;
+            text-shadow: 0 0 10px var(--accent-gold);
+        }
+
+        .dream-sub {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transition: opacity 1s 0.5s;
+        }
+
+        h1, h2, h3, .cinzel-font { font-family: 'Cinzel', serif; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* --- WebGL Containers --- */
+        #three-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 2s ease;
+            pointer-events: none;
+        }
+
+        /* CSS Fog Layer */
+        #fog-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(147, 112, 219, 0.1), transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(255, 105, 180, 0.1), transparent 40%);
+            filter: blur(50px);
+            opacity: 0.6;
+            contain: strict;
+        }
+
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            font-size: 1.2rem; color: var(--accent-pink);
+            text-decoration: none; font-family: 'Orbitron';
+            font-weight: 900;
+            border: 2px solid var(--accent-pink);
+            padding: 0.5rem 1.5rem;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            border-radius: 20px;
+            transition: 0.3s;
+            box-shadow: 0 0 15px rgba(255,105,180,0.3);
+            cursor: pointer;
+            opacity: 0; /* Hidden until dream enter */
+            transform: translateY(-20px);
+        }
+        .nav-back:hover {
+            background: var(--accent-pink);
+            color: #fff;
+            box-shadow: 0 0 30px var(--accent-pink);
+        }
+
+        /* --- Sections --- */
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- Typography --- */
+        .hero-title {
+            font-size: clamp(4rem, 15vw, 10rem);
+            font-weight: 900;
+            background: linear-gradient(to bottom, #fff, var(--accent-pink), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            line-height: 1;
+            filter: drop-shadow(0 0 20px rgba(255, 105, 180, 0.8));
+            margin-bottom: 2rem;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.05em;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            color: var(--accent-gold);
+            letter-spacing: 0.5em;
+            text-align: center;
+            text-shadow: 0 0 15px var(--accent-gold);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Components: Smoky/Magical Panels --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            padding: 4rem;
+            border-radius: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        /* Magical Smoke Border */
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 42px;
+            background: linear-gradient(45deg, transparent, var(--accent-pink), transparent, var(--accent-purple), transparent);
+            background-size: 200% 200%;
+            z-index: -1;
+            animation: smoke-border 6s linear infinite;
+            filter: blur(10px);
+            opacity: 0.5; /* Reduced for less noise */
+            will-change: background-position;
+        }
+
+        /* Inner Smoke Fog */
+        .glass-panel::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255,105,180,0.05), transparent 70%);
+            border-radius: 40px;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        @keyframes smoke-border {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+        }
+        .glass-panel:hover::before {
+            opacity: 0.8;
+            filter: blur(15px);
+        }
+
+        /* --- Sensory Focus: Dream Bubbles --- */
+        .sensory-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4rem;
+            margin-top: 4rem;
+        }
+
+        .bubble-card {
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.5s ease;
+        }
+
+        .bubble-mask {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .bubble-mask img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scale(1.1);
+            transition: 0.8s ease;
+            filter: brightness(0.9) saturate(1.2);
+        }
+
+        .bubble-glow {
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.5), 0 0 20px var(--accent-pink);
+            pointer-events: none;
+            opacity: 0.6;
+            transition: 0.5s;
+        }
+
+        .bubble-label {
+            position: absolute;
+            bottom: -3rem; width: 100%;
+            text-align: center;
+            font-family: 'Cinzel';
+            font-size: 1.5rem;
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px var(--accent-gold);
+            opacity: 0.8;
+        }
+
+        .bubble-card:hover {
+            transform: translateY(-10px) scale(1.05);
+        }
+        .bubble-card:hover img {
+            transform: scale(1.2) rotate(5deg);
+            filter: brightness(1.1);
+        }
+        .bubble-card:hover .bubble-glow {
+            opacity: 1;
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.8), 0 0 40px var(--accent-pink);
+        }
+
+        /* --- Profile Avatar --- */
+        .profile-wrapper {
+            position: relative;
+            width: 300px; height: 300px;
+            margin: 0 auto 3rem;
+        }
+        .profile-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent-pink);
+            box-shadow: 0 0 40px rgba(255, 105, 180, 0.4);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Floating particles CSS for profile */
+        .sparkle {
+            position: absolute;
+            width: 10px; height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            filter: blur(2px);
+            animation: float-sparkle 3s infinite;
+        }
+        @keyframes float-sparkle {
+            0% { transform: translate(0,0) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(20px, -50px) scale(1.5); opacity: 0; }
+        }
+
+        /* --- Social Links --- */
+        .social-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--accent-pink);
+            display: flex; justify-content: center; align-items: center;
+            color: #fff;
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: 0.3s;
+            backdrop-filter: blur(5px);
+            cursor: pointer;
+        }
+        .social-link:hover {
+            background: var(--accent-pink);
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px var(--accent-pink);
+        }
+
+        /* --- Content Layout --- */
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        @media(max-width: 900px) {
+            .two-col-grid { grid-template-columns: 1fr; gap: 2rem; }
+        }
+
+        /* --- Summon Hint (Center) --- */
+        .hint-touch {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            cursor: pointer;
+            padding: 2rem;
+        }
+
+        .hint-touch.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .hint-text {
+            color: var(--accent-gold);
+            font-family: 'Cinzel';
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px var(--accent-gold);
+            letter-spacing: 0.2em;
+            margin-bottom: 1.5rem;
+            animation: pulse-text 2s infinite;
+        }
+
+        @keyframes pulse-text {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; text-shadow: 0 0 20px var(--accent-gold); }
+        }
+
+        /* --- Devil Egg Summon Button --- */
+        .devil-egg {
+            position: relative;
+            display: inline-block;
+            font-size: 5rem;
+            color: var(--accent-pink);
+            cursor: pointer;
+            filter: drop-shadow(0 0 15px var(--accent-pink)) drop-shadow(0 0 30px rgba(148, 0, 60, 0.6));
+            animation: egg-breathe 2.5s ease-in-out infinite;
+            transition: filter 0.3s, color 0.3s;
+        }
+
+        .devil-egg .devil-horns {
+            position: absolute;
+            top: -0.4em; left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.5em;
+            color: var(--accent-gold);
+            filter: drop-shadow(0 0 5px var(--accent-gold));
+            pointer-events: none;
+        }
+
+        .hint-touch:hover .devil-egg {
+            color: #fff;
+            filter: drop-shadow(0 0 25px var(--accent-pink)) drop-shadow(0 0 50px rgba(148, 0, 60, 0.8));
+        }
+
+        .hint-touch.summoned .devil-egg {
+            animation: none;
+            opacity: 0;
+            transform: scale(1.5) translateY(-8px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .hint-touch.summoned .hint-text {
+            animation: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* Single combined animation: scale + float via transform only (no layout reflow) */
+        @keyframes egg-breathe {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.08) translateY(-8px); }
+        }
+
+        /* --- Gallery Finale --- */
+        #gallery {
+            min-height: 120vh; /* Shorter to bring button into view */
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Let interactions fall through to canvas initially */
+        }
+
+        /* Children inherit pointer-events: none from #gallery.
+           .hint-touch.visible and .gallery-content.active
+           explicitly set pointer-events: auto when needed. */
+
+        .gallery-content {
+            opacity: 0;
+            transition: opacity 1s, transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic Pop */
+            transform: translate(-50%, -50%) scale(0.5); /* Start small */
+            pointer-events: none;
+
+            /* Fixed Aspect Ratio for stability */
+            width: 90%;
+            max-width: 600px;
+            aspect-ratio: 4/5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            position: absolute;
+            top: 50%; left: 50%;
+            text-align: center;
+            /* BACKGROUND IMAGE ON FINAL CARD */
+            background: linear-gradient(rgba(20, 10, 30, 0.9), rgba(20, 10, 30, 0.8)), url('/assets/img/guild/yumebi_emu/avatar.webp');
+            background-size: cover;
+            background-position: center;
+
+            border: 2px solid var(--accent-gold); /* Gold border for summoning */
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3), inset 0 0 50px rgba(255, 105, 180, 0.2);
+            border-radius: 20px;
+            z-index: 50;
+        }
+
+        .gallery-content.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .glow-text {
+            color: var(--accent-pink);
+            text-shadow: 0 0 10px var(--accent-pink);
+        }
+
+        /* Floating Runes Background */
+        .floating-rune {
+            position: fixed;
+            color: rgba(255, 105, 180, 0.1);
+            font-family: 'Cinzel';
+            font-size: 2rem;
+            pointer-events: none;
+            z-index: -1;
+            animation: float-rune 10s infinite linear;
+        }
+        @keyframes float-rune {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            50% { opacity: 0.2; }
+            100% { transform: translateY(-100px) rotate(45deg); opacity: 0; }
+        }
+
+        /* --- Hero --- */
+        .hero-quote {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            color: #fff;
+            font-style: italic;
+            text-shadow: 0 2px 5px #000;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        .hero-scroll-hint {
+            position: absolute;
+            bottom: 50px;
+            animation: bounce 2s infinite;
+        }
+        .hero-scroll-hint i {
+            color: var(--accent-pink);
+            font-size: 2rem;
+            filter: drop-shadow(0 0 10px var(--accent-pink));
+        }
+
+        /* --- Identity --- */
+        .identity-panel {
+            max-width: 1000px;
+        }
+        .identity-avatar-col {
+            text-align: center;
+        }
+        .identity-name {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .identity-subtitle {
+            color: var(--accent-gold);
+            letter-spacing: 0.2em;
+            font-size: 0.9rem;
+        }
+        .grimoire-title {
+            font-size: 2rem;
+            color: var(--accent-pink);
+            margin-bottom: 1.5rem;
+        }
+        .lore-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #eee;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .lore-text--spaced {
+            margin-bottom: 2rem;
+        }
+        .magic-highlight {
+            color: var(--accent-gold);
+        }
+        .tag-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .skill-tag {
+            border: 1px solid var(--accent-purple);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .sparkle--1 { top: 20%; left: 10%; animation-delay: 0s; }
+        .sparkle--2 { top: 80%; right: 20%; animation-delay: 1s; }
+        .sparkle--3 { top: 10%; right: 10%; animation-delay: 2s; }
+
+        /* --- Sensory --- */
+        .section-heading {
+            text-align: center;
+            font-size: 3rem;
+            color: var(--accent-pink);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px var(--accent-pink);
+        }
+        .bubble-card--offset {
+            margin-top: 3rem;
+        }
+
+        /* --- Manifesto --- */
+        .manifesto-container {
+            max-width: 800px;
+            text-align: center;
+        }
+        .manifesto-icon-wrap {
+            margin-bottom: 2rem;
+        }
+        .manifesto-icon {
+            font-size: 3rem;
+            color: #ffd700;
+            opacity: 0.8;
+            animation: float-sparkle 4s infinite;
+            filter: drop-shadow(0 0 10px #ffd700);
+        }
+        .manifesto-title {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+        .manifesto-panel {
+            padding: 3rem;
+        }
+        .manifesto-quote {
+            font-size: 1.2rem;
+            line-height: 2;
+            font-style: italic;
+            color: #fff;
+        }
+        .manifesto-divider {
+            border: 0;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            margin: 2rem 0;
+        }
+        .manifesto-body {
+            font-size: 1.1rem;
+            color: #ddd;
+        }
+
+        /* --- Gallery / Final Card --- */
+        .final-card-title {
+            font-size: 1.8rem;
+            color: var(--accent-pink);
+            margin-bottom: 1rem;
+        }
+        .social-container--spaced {
+            margin: 2rem 0;
+        }
+        .digital-card-link-wrap {
+            margin-top: 2rem;
+        }
+        .digital-card-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--accent-cyan);
+            font-size: 1.2rem;
+        }
+        .final-footer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .heart-icon {
+            color: var(--accent-pink);
+        }
+        .footer-link {
+            color: #aaa;
+        }
+
+        /* --- Trail Sparkle (base; dynamic values set in JS) --- */
+        .trail-sparkle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 1;
+            transition: opacity 1s, transform 1s;
+        }
+
+        /* Mobile Adjustments */
+        @media(max-width: 768px) {
+            section { padding: 3rem 1rem; }
+            .hero-title { font-size: 3rem; }
+            .hero-subtitle { letter-spacing: 0.2em; font-size: 1.2rem; }
+            .hero-quote { font-size: 1.2rem; }
+            .glass-panel { padding: 1.5rem; border-radius: 20px; }
+            .glass-panel::before { border-radius: 22px; }
+            .identity-panel { max-width: 100%; }
+            .identity-name { font-size: 1.8rem; }
+            .grimoire-title { font-size: 1.5rem; }
+            .lore-text { font-size: 1rem; }
+            .profile-wrapper { width: 200px; height: 200px; }
+            .sensory-grid { gap: 2rem; margin-top: 2rem; }
+            .bubble-card { width: 180px; height: 180px; }
+            .bubble-card--offset { margin-top: 0; }
+            .bubble-label { font-size: 1.2rem; bottom: -2.5rem; }
+            .section-heading { font-size: 2rem; }
+            .manifesto-container { max-width: 100%; }
+            .manifesto-title { font-size: 1.8rem; }
+            .manifesto-panel { padding: 1.5rem; }
+            .manifesto-quote { font-size: 1rem; }
+            .manifesto-body { font-size: 0.95rem; }
+            .gallery-content { aspect-ratio: unset; height: auto; max-height: 85vh; padding: 1.5rem; }
+            .final-card-title { font-size: 1.4rem; }
+            .social-link { width: 42px; height: 42px; font-size: 1.2rem; }
+            .social-container { gap: 1rem; }
+            .nav-back { top: 1rem; left: 1rem; font-size: 1rem; padding: 0.4rem 1rem; }
+            .tag-container { justify-content: center; }
+        }
+
+        @media(max-width: 400px) {
+            section { padding: 2rem 0.75rem; }
+            .hero-title { font-size: 2.2rem; }
+            .hero-subtitle { letter-spacing: 0.1em; font-size: 1rem; }
+            .glass-panel { padding: 1rem; }
+            .profile-wrapper { width: 160px; height: 160px; }
+            .bubble-card { width: 140px; height: 140px; }
+            .sensory-grid { gap: 1.5rem; }
+            .identity-name { font-size: 1.5rem; }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="dream-gate">
+        <div class="candle-container">
+            <div class="candle-flame"></div>
+            <div class="candle-wick"></div>
+            <div class="candle-body"></div>
+        </div>
+        <div class="dream-text">ENTER DREAM</div>
+        <div class="dream-sub">Waiting for Magic...</div>
+    </div>
+
+    <div id="flash-overlay"></div>
+    <div id="cursor-follower"></div>
+    <div id="cursor-dot"></div>
+    <div id="fog-layer"></div>
+    <a href="/guild/" class="nav-back">GUILD</a>
+    <div id="three-container"></div>
+
+    <main>
+        <!-- Hero -->
+        <section id="hero">
+            <div class="container identity-avatar-col">
+                <h2 class="hero-subtitle gs-reveal">LUCID DREAMER</h2>
+                <h1 class="hero-title gs-reveal" data-text="YUMEBI EMU">YUMEBI EMU</h1>
+                <p class="hero-quote gs-reveal">
+                    "Eternal 20-year-old Idol"
+                </p>
+            </div>
+
+            <div class="hero-scroll-hint">
+                <i class="fa-solid fa-gem"></i>
+            </div>
+        </section>
+
+        <!-- Identity / Grimoire -->
+        <section id="identity">
+            <div class="glass-panel container gs-reveal identity-panel">
+                <div class="two-col-grid">
+                    <!-- Left: Avatar -->
+                    <div class="identity-avatar-col">
+                        <div class="profile-wrapper">
+                            <img src="/assets/img/guild/yumebi_emu/avatar.webp" alt="Yumebi Emu" class="profile-img">
+                            <div class="sparkle sparkle--1"></div>
+                            <div class="sparkle sparkle--2"></div>
+                            <div class="sparkle sparkle--3"></div>
+                        </div>
+                        <h2 class="identity-name">夢寐愛姆</h2>
+                        <p class="identity-subtitle">YUMEBI EMU</p>
+                    </div>
+
+                    <!-- Right: Lore & Bio (UPDATED based on Self-Intro) -->
+                    <div>
+                        <h3 class="cinzel-font grimoire-title">Grimoire of Emu</h3>
+                        <p class="lore-text">
+                            施展 <span class="magic-highlight">[Time Freeze]</span> 魔法，讓我成為了永遠 20 歲的偶像。
+                            很謝謝你注意到我，可以叫我愛姆！
+                        </p>
+                        <p class="lore-text lore-text--spaced">
+                            雖然觀眾常說我有 <span class="glow-text">"天然呆" (Natural Airhead)</span> 屬性，
+                            但我堅信這是高深魔法的副作用——其實我很聰明的！(真的！)
+                            透過 <span class="glow-text">ASMR 夢境魔法</span>，我將失眠者通通哄睡，陪伴所有孤獨的靈魂度過漫漫長夜。
+                        </p>
+
+                        <div class="tag-container">
+                            <span class="skill-tag">
+                                <i class="fa-solid fa-moon"></i> ASMR Magic
+                            </span>
+                            <span class="skill-tag">
+                                <i class="fa-solid fa-wand-sparkles"></i> Tarot Reading
+                            </span>
+                            <span class="skill-tag">
+                                <i class="fa-solid fa-utensils"></i> Cooking
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sensory Focus: Dream Bubbles -->
+        <section id="sensory">
+            <div class="container">
+                <h2 class="section-heading">DREAM FRAGMENTS</h2>
+                <div class="sensory-grid">
+                    <div class="bubble-card gs-card">
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_eyes.webp" alt="Eyes" loading="lazy"></div>
+                        <div class="bubble-glow"></div>
+                        <span class="bubble-label">GAZE</span>
+                    </div>
+                    <div class="bubble-card gs-card bubble-card--offset">
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_nose.webp" alt="Breath" loading="lazy"></div>
+                        <div class="bubble-glow"></div>
+                        <span class="bubble-label">BREATH</span>
+                    </div>
+                    <div class="bubble-card gs-card">
+                        <div class="bubble-mask"><img src="/assets/img/guild/yumebi_emu/focus_lips.webp" alt="Lips" loading="lazy"></div>
+                        <div class="bubble-glow"></div>
+                        <span class="bubble-label">WHISPER</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Manifesto / Philosophy -->
+        <section id="manifesto">
+            <div class="container gs-reveal manifesto-container">
+                <div class="manifesto-icon-wrap">
+                    <i class="fa-regular fa-sun manifesto-icon"></i>
+                </div>
+                <h2 class="manifesto-title">WINTER SUN</h2>
+                <div class="glass-panel manifesto-panel">
+                    <p class="manifesto-quote">
+                        "想成為像照亮冬天的太陽般溫暖親切的人。"
+                    </p>
+                    <hr class="manifesto-divider">
+                    <p class="manifesto-body">
+                        常駐於 YouTube 直播，努力經營個人 IP。<br>
+                        無論是閒聊日常，還是分享塔羅與料理，<br>
+                        我都希望能用這份溫暖，融化你心中的冰雪。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery (3D Scene) -->
+        <section id="gallery">
+            <!-- Devil Egg Summon -->
+            <div class="hint-touch" id="hint-touch">
+                <div class="hint-text">TOUCH THE EGG</div>
+                <div class="devil-egg" id="devil-egg">
+                    <span class="devil-horns"><i class="fa-solid fa-fire"></i></span>
+                    <i class="fa-solid fa-egg"></i>
+                </div>
+            </div>
+
+            <!-- Final Overlay Content (Hidden until crystalized) -->
+            <div class="gallery-content container glass-panel" id="final-card">
+                <p class="final-card-title">Sweet Dreams...</p>
+
+                <!-- MOVED SOCIAL LINKS HERE -->
+                <div class="social-container social-container--spaced">
+                     <a href="https://www.youtube.com/@Yumebi_Emu" class="social-link" target="_blank"><i class="fa-brands fa-youtube"></i></a>
+                     <a href="https://www.youtube.com/@eemumu0621" class="social-link" target="_blank"><i class="fa-solid fa-microphone-lines"></i></a>
+                     <a href="https://www.twitch.tv/yumebiemu" class="social-link" target="_blank"><i class="fa-brands fa-twitch"></i></a>
+                     <a href="https://www.threads.net/@yumebi_emu" class="social-link" target="_blank"><i class="fa-brands fa-threads"></i></a>
+                     <a href="https://www.instagram.com/yumebi_emu/" class="social-link" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                     <a href="https://discord.com/invite/twEj2UkKWj" class="social-link" target="_blank"><i class="fa-brands fa-discord"></i></a>
+                     <a href="https://www.hivebee.com.tw/user1d611745829147/Subscribe" class="social-link" target="_blank"><i class="fa-solid fa-star"></i></a>
+                     <a href="https://www.facebook.com/people/Lucid-Dream-%E8%BF%B7%E8%81%B2%E5%A4%A2%E5%AF%90/100076087878147/?ref=pages_you_manage" class="social-link" target="_blank"><i class="fa-brands fa-facebook"></i></a>
+                </div>
+
+                <div class="digital-card-link-wrap">
+                    <a href="https://lit.link/zh-tw/vtb_YumebiEmu_asmr" class="digital-card-link" target="_blank">DIGITAL CARD</a>
+                </div>
+                <footer class="final-footer">
+                    Made with <span class="heart-icon">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a>
+                </footer>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Three.js Gem Heart Script -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Custom Cursor Logic
+        const cursor = document.getElementById('cursor-follower');
+        const dot = document.getElementById('cursor-dot');
+        const flashOverlay = document.getElementById('flash-overlay');
+
+        // --- DREAM GATE LOGIC ---
+        const dreamGate = document.getElementById('dream-gate');
+        const dreamText = document.querySelector('.dream-text');
+        const dreamSub = document.querySelector('.dream-sub');
+        const threeContainer = document.getElementById('three-container');
+        const navBack = document.querySelector('.nav-back');
+
+        let isDreamEntered = false;
+
+        // Interaction for Gate
+        dreamGate.addEventListener('click', () => {
+            if(!isDreamEntered) {
+                isDreamEntered = true;
+
+                // Fade out Gate
+                gsap.to(dreamGate, {opacity: 0, duration: 1.5, pointerEvents: 'none'});
+
+                // Reveal Scene
+                gsap.to(threeContainer, {opacity: 1, duration: 2});
+
+                // Show Nav
+                gsap.to(navBack, {opacity: 1, y: 0, duration: 0.5, delay: 1});
+
+                // Unlock Scroll (Y) - Unlock both body and html to ensure compatibility
+                document.body.style.overflowY = 'auto';
+                document.documentElement.style.overflowY = 'auto';
+
+                // Refresh ScrollTrigger after unlocking body
+                ScrollTrigger.refresh();
+
+                // Trigger initial GSAP reveals
+                gsap.utils.toArray('.gs-reveal').forEach((elem, i) => {
+                    gsap.fromTo(elem, {opacity:0, y:30}, {opacity:1, y:0, duration:1, delay:1 + (i*0.1)});
+                });
+            }
+        });
+
+        // Raycaster Setup
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let mouseMovedSinceLastCheck = false;
+        let lastCursorStyle = 'none';
+        let lastSparkleTime = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            const cx = e.clientX, cy = e.clientY;
+            cursor.style.transform = `translate(${cx - 10}px, ${cy - 10}px)`;
+            dot.style.transform = `translate(${cx - 2}px, ${cy - 2}px)`;
+
+            // Normalize mouse for Raycaster
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            mouseMovedSinceLastCheck = true;
+
+            // Add sparkle trail (throttled: 80ms + 20% chance)
+            const now = performance.now();
+            if(now - lastSparkleTime > 80 && Math.random() > 0.8) {
+                lastSparkleTime = now;
+                createTrailSparkle(e.clientX, e.clientY);
+            }
+        });
+
+        function createTrailSparkle(x, y) {
+            const el = document.createElement('div');
+            el.className = 'trail-sparkle';
+            el.textContent = '★';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.color = Math.random() > 0.5 ? '#FF69B4' : '#00FFFF';
+            el.style.fontSize = (Math.random() * 10 + 5) + 'px';
+            document.body.appendChild(el);
+
+            requestAnimationFrame(() => {
+                el.style.opacity = '0';
+                el.style.transform = `translate(${(Math.random()-0.5)*30}px, ${10+Math.random()*20}px)`;
+            });
+
+            setTimeout(() => { el.remove(); }, 1000);
+        }
+
+        // Setup
+        const scene = new THREE.Scene();
+        // Fog for depth
+        scene.fog = new THREE.FogExp2(0x1a0b1f, 0.005);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        // PERFORMANCE: Strict Limit pixel ratio
+        renderer.setPixelRatio(1);
+        threeContainer.appendChild(renderer.domElement);
+
+        // Loading Manager
+        const loadingManager = new THREE.LoadingManager();
+        loadingManager.onLoad = () => {
+            // Reveal text when assets ready
+            gsap.to(dreamText, {opacity: 1, duration: 1});
+            gsap.to(dreamSub, {opacity: 1, delay: 0.5, duration: 1});
+            dreamSub.innerText = "Click to Enter";
+        };
+        loadingManager.onError = (url) => {
+            console.error('Error loading:', url);
+            dreamSub.innerText = "Dream Fragment Missing...";
+            gsap.to(dreamText, {opacity: 1, duration: 1});
+            gsap.to(dreamSub, {opacity: 1, delay: 0.5, duration: 1});
+        };
+
+        // --- MAGIC CIRCLE ---
+        const magicCanvas = document.createElement('canvas');
+        magicCanvas.width = 512; magicCanvas.height = 512;
+        const ctx = magicCanvas.getContext('2d');
+        ctx.scale(0.5, 0.5);
+
+        // --- SIMPLIFIED COLORS ---
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 20;
+        ctx.strokeStyle = '#9370db';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.arc(512, 512, 400, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(512, 512, 360, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.shadowColor = '#FF69B4';
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = '#9370db';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        for(let i=0; i<5; i++) {
+            const angle = (i * 4 * Math.PI) / 5 - Math.PI/2;
+            const x = 512 + 360 * Math.cos(angle);
+            const y = 512 + 360 * Math.sin(angle);
+            if(i===0) ctx.moveTo(x,y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.font = 'bold 60px "Cinzel", serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 10;
+        const runes = ['★', 'D', 'R', 'E', 'A', 'M', '★', 'A', 'S', 'M', 'R'];
+        for(let i=0; i<runes.length; i++) {
+            const angle = (i / runes.length) * Math.PI * 2;
+            const x = 512 + 380 * Math.cos(angle);
+            const y = 512 + 380 * Math.sin(angle);
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle + Math.PI/2);
+            ctx.fillText(runes[i], 0, 0);
+            ctx.restore();
+        }
+
+        const magicTex = new THREE.CanvasTexture(magicCanvas);
+        magicTex.anisotropy = 4;
+
+        const magicPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(40, 40),
+            new THREE.MeshBasicMaterial({
+                map: magicTex,
+                transparent: true,
+                opacity: 0.1,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        magicPlane.position.z = -5;
+        scene.add(magicPlane);
+
+        // Ring
+        const magicRingCanvas = document.createElement('canvas');
+        magicRingCanvas.width = 256; magicRingCanvas.height = 256;
+        const rCtx = magicRingCanvas.getContext('2d');
+        rCtx.scale(0.5, 0.5);
+        rCtx.strokeStyle = '#fff';
+        rCtx.lineWidth = 2;
+        rCtx.shadowColor = '#FF69B4';
+        rCtx.shadowBlur = 10;
+
+        rCtx.translate(256, 256);
+        for(let i=0; i<8; i++) {
+             rCtx.rotate(Math.PI / 4);
+             rCtx.strokeRect(-150, -150, 300, 300);
+        }
+
+        const ringTex = new THREE.CanvasTexture(magicRingCanvas);
+        const ringPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(30, 30),
+            new THREE.MeshBasicMaterial({
+                map: ringTex,
+                transparent: true,
+                opacity: 0.05,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        ringPlane.position.z = -4;
+        scene.add(ringPlane);
+
+        // --- NEBULA / FOG ---
+        const cloudCanvas = document.createElement('canvas');
+        cloudCanvas.width = 64; cloudCanvas.height = 64;
+        const cCtx = cloudCanvas.getContext('2d');
+        const grd = cCtx.createRadialGradient(32,32,0, 32,32,32);
+        grd.addColorStop(0, 'rgba(147, 112, 219, 0.2)');
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        cCtx.fillStyle = grd;
+        cCtx.fillRect(0,0,64,64);
+
+        const cloudTex = new THREE.CanvasTexture(cloudCanvas);
+        const cloudMat = new THREE.SpriteMaterial({
+            map: cloudTex,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const clouds = [];
+        for(let i=0; i<8; i++) {
+            const m = cloudMat.clone();
+            const cloud = new THREE.Sprite(m);
+            cloud.position.set((Math.random()-0.5)*60, (Math.random()-0.5)*60, -20 + Math.random()*10);
+            cloud.scale.set(30, 30, 1);
+            cloud.userData = { speed: (Math.random()*0.01) + 0.005 };
+            scene.add(cloud);
+            clouds.push(cloud);
+        }
+
+        // --- GEM HEART ---
+        const heartGroup = new THREE.Group();
+        heartGroup.position.z = -10;
+        scene.add(heartGroup);
+
+        const loader = new THREE.TextureLoader(loadingManager);
+        const textureUrls = [
+            '/assets/img/guild/yumebi_emu/avatar.webp',
+            '/assets/img/guild/yumebi_emu/work1.webp',
+            '/assets/img/guild/yumebi_emu/work2.webp',
+            '/assets/img/guild/yumebi_emu/work3.webp',
+            '/assets/img/guild/yumebi_emu/work5.webp'
+        ];
+
+        const textures = textureUrls.map(url => {
+            const t = loader.load(url);
+            t.colorSpace = THREE.SRGBColorSpace;
+            t.center.set(0.5, 0.5);
+            return t;
+        });
+
+        // 1. Create Heart Shape
+        const x = 0, y = 0;
+        const heartShape = new THREE.Shape();
+        heartShape.moveTo( x + 5, y + 5 );
+        heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
+        heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
+        heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
+        heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
+        heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
+        heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
+
+        // 3. Voronoi/Shattering simulation
+        const baseGeo = new THREE.ShapeGeometry(heartShape, 6);
+        baseGeo.center();
+        baseGeo.scale(1, -1, 1);
+        baseGeo.scale(0.8, 0.8, 1);
+
+        const pos = baseGeo.attributes.position;
+        const index = baseGeo.index;
+        const shards = [];
+
+        // Gem Material - Back to Basic for visibility
+        const gemMat = new THREE.MeshBasicMaterial({
+            color: 0xff1493, // Deep Pink
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide
+        });
+
+        // Image Material
+        const picMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            map: textures[0],
+            transparent: true,
+            opacity: 0.5
+        });
+
+        // Loop triangles
+        const cnt = index ? index.count : pos.count;
+        for(let i=0; i<cnt; i+=3) {
+            let a, b, c;
+            if(index) {
+                a = index.getX(i); b = index.getX(i+1); c = index.getX(i+2);
+            } else {
+                a = i; b = i+1; c = i+2;
+            }
+
+            const v1 = new THREE.Vector3().fromBufferAttribute(pos, a);
+            const v2 = new THREE.Vector3().fromBufferAttribute(pos, b);
+            const v3 = new THREE.Vector3().fromBufferAttribute(pos, c);
+
+            const center = new THREE.Vector3().add(v1).add(v2).add(v3).divideScalar(3);
+
+            const triangleShape = new THREE.Shape();
+            triangleShape.moveTo(v1.x, v1.y);
+            triangleShape.lineTo(v2.x, v2.y);
+            triangleShape.lineTo(v3.x, v3.y);
+            triangleShape.lineTo(v1.x, v1.y);
+
+            const shardGeo = new THREE.ExtrudeGeometry(triangleShape, {
+                depth: 0.1,
+                bevelEnabled: true,
+                bevelSize: 0.05,
+                bevelThickness: 0.05,
+                bevelSegments: 1
+            });
+
+            const uvAttr = shardGeo.attributes.uv;
+            const posAttr = shardGeo.attributes.position;
+            for(let j=0; j<uvAttr.count; j++) {
+                const x = posAttr.getX(j);
+                const y = posAttr.getY(j);
+                uvAttr.setXY(j, (x/20) + 0.5, (y/20) + 0.5);
+            }
+
+            shardGeo.translate(-center.x, -center.y, -center.z);
+
+            const mesh = new THREE.Mesh(shardGeo, [picMat, gemMat]);
+
+            mesh.position.copy(center);
+
+            mesh.userData = {
+                homePos: center.clone(),
+                orbitOffset: center.clone().multiplyScalar(Math.random() * 1.2 + 0.3).add(new THREE.Vector3((Math.random()-0.5)*12, (Math.random()-0.5)*12, (Math.random()-0.5)*12)),
+                rotSpeed: (Math.random()-0.5) * 0.012,
+                driftPhase: Math.random() * Math.PI * 2
+            };
+
+            mesh.position.add(mesh.userData.orbitOffset);
+            mesh.rotation.x = Math.random() * Math.PI;
+            mesh.rotation.y = Math.random() * Math.PI;
+
+            heartGroup.add(mesh);
+            shards.push(mesh);
+        }
+
+        // --- PARTICLES ---
+        const sparkleCanvas = document.createElement('canvas');
+        sparkleCanvas.width = 32; sparkleCanvas.height = 32;
+        const sCtx = sparkleCanvas.getContext('2d');
+        const sGrd = sCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        sGrd.addColorStop(0, 'rgba(255,255,255,1)');
+        sGrd.addColorStop(0.3, 'rgba(255,105,180,0.8)');
+        sGrd.addColorStop(1, 'rgba(0,0,0,0)');
+        sCtx.fillStyle = sGrd;
+        sCtx.fillRect(0, 0, 32, 32);
+
+        const sparkleTex = new THREE.CanvasTexture(sparkleCanvas);
+        const partGeo = new THREE.BufferGeometry();
+        const pCnt = 80;
+        const pPos = new Float32Array(pCnt * 3);
+        const pSizes = new Float32Array(pCnt);
+        for(let i=0; i<pCnt*3; i+=3) {
+            pPos[i] = (Math.random()-0.5)*80;
+            pPos[i+1] = (Math.random()-0.5)*80;
+            pPos[i+2] = (Math.random()-0.5)*50;
+            pSizes[i/3] = Math.random() * 1.5;
+        }
+        partGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        partGeo.setAttribute('size', new THREE.BufferAttribute(pSizes, 1));
+
+        const partMat = new THREE.PointsMaterial({
+            color: 0xff69b4,
+            size: 0.5,
+            map: sparkleTex,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const particles = new THREE.Points(partGeo, partMat);
+        scene.add(particles);
+
+        // --- INTERACTION (SEPARATED: crystal toggle vs summon) ---
+        let isCrystalized = false;
+        let isSummoned = false;
+        let scrollProgress = 0;
+        let currentTexIdx = 0;
+        let isSummoning = false;
+        let magicBaseRotation = 0; // Scroll-driven base, render loop adds spin on top
+
+        const hintTouch = document.getElementById('hint-touch');
+        const finalCard = document.getElementById('final-card');
+
+        gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                scrollProgress = self.progress;
+                camera.position.z = 30 - (scrollProgress * 20);
+
+                // Show egg when gallery section is in view (~70%)
+                if(scrollProgress > 0.7 && !isSummoned && !isSummoning) {
+                    hintTouch.classList.add('visible');
+                } else if(!isSummoned && !isSummoning) {
+                    hintTouch.classList.remove('visible');
+                }
+
+                if(!isSummoned && !isSummoning) {
+                    const targetOpacity = 0.1 + (scrollProgress * 0.3);
+                    magicPlane.material.opacity = targetOpacity;
+                    ringPlane.material.opacity = targetOpacity * 0.5;
+                }
+
+                heartGroup.rotation.y = scrollProgress * Math.PI * 4;
+                // Store base rotation from scroll; render loop adds continuous spin
+                magicBaseRotation = -scrollProgress * Math.PI * 2;
+            }
+        });
+
+        // --- CLICK HANDLERS (separated) ---
+
+        // Invisible hit sphere around heart for easier shard clicking
+        const heartHitSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(12, 8, 8),
+            new THREE.MeshBasicMaterial({ visible: false })
+        );
+        heartGroup.add(heartHitSphere);
+
+        // 1) Hint area click → summon final card (whole area is clickable)
+        hintTouch.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!isSummoning && !isSummoned) {
+                startSummonSequence();
+            }
+        });
+
+        // 2) Background click → toggle crystal only
+        window.addEventListener('click', (e) => {
+            if (e.target.closest('#dream-gate') || e.target.closest('a') || e.target.closest('.bubble-card') || e.target.closest('.hint-touch') || e.target.closest('.gallery-content')) return;
+            if (isSummoning) return;
+
+            // Toggle crystal: hit invisible sphere around heart group
+            raycaster.setFromCamera(mouse, camera);
+            const hitArea = raycaster.intersectObjects([heartHitSphere]);
+            if (hitArea.length > 0) {
+                toggleCrystal(!isCrystalized);
+            }
+        });
+
+        // --- SUMMON: soul gem → final card ---
+        function startSummonSequence() {
+            isSummoning = true;
+            // Hide egg via CSS class (no GSAP/CSS animation conflict)
+            hintTouch.classList.add('summoned');
+
+            const circleAnim = { speed: 0.005, opacity: magicPlane.material.opacity };
+
+            gsap.to(circleAnim, {
+                speed: 0.1,
+                opacity: 1,
+                duration: 2,
+                ease: "power2.in",
+                onUpdate: () => {
+                    magicPlane.rotation.z -= circleAnim.speed;
+                    magicPlane.material.opacity = circleAnim.opacity;
+                    ringPlane.rotation.z += circleAnim.speed;
+                    ringPlane.material.opacity = circleAnim.opacity * 0.5;
+                },
+                onComplete: () => {
+                    gsap.fromTo(flashOverlay, {opacity: 1}, {opacity: 0, duration: 1});
+                    finalCard.classList.add('active');
+                    gsap.to(magicPlane.material, {opacity: 0.2, duration: 1});
+                    gsap.to(ringPlane.material, {opacity: 0.1, duration: 1});
+                    hintTouch.classList.remove('visible');
+                    hintTouch.style.pointerEvents = 'none';
+                    isSummoning = false;
+                    isSummoned = true;
+                }
+            });
+        }
+
+        // --- CRYSTAL: shard assembly toggle (visual only, no card) ---
+        function toggleCrystal(assemble) {
+            isCrystalized = assemble;
+
+            if(assemble) {
+                shards.forEach(m => {
+                    gsap.to(m.position, {
+                        x: m.userData.homePos.x,
+                        y: m.userData.homePos.y,
+                        z: m.userData.homePos.z,
+                        duration: 1,
+                        ease: "elastic.out(1, 0.5)"
+                    });
+                    gsap.to(m.rotation, {x:0, y:0, z:0, duration: 1});
+                });
+                gsap.to(picMat, {opacity: 1.0, duration: 1});
+                gsap.to(gemMat, {opacity: 0.9, duration: 1});
+            } else {
+                shards.forEach(m => {
+                    gsap.to(m.position, {
+                        x: m.userData.homePos.x + m.userData.orbitOffset.x,
+                        y: m.userData.homePos.y + m.userData.orbitOffset.y,
+                        z: m.userData.homePos.z + m.userData.orbitOffset.z,
+                        duration: 1.5,
+                        ease: "power2.inOut"
+                    });
+                    gsap.to(m.rotation, {
+                        x: Math.random() * Math.PI * 2,
+                        y: Math.random() * Math.PI * 2,
+                        duration: 1.5
+                    });
+                });
+                gsap.to(picMat, {opacity: 0.5, duration: 1});
+                gsap.to(gemMat, {opacity: 0.6, duration: 1});
+            }
+        }
+
+        let frameCount = 0;
+        gsap.ticker.add(() => {
+            frameCount++;
+            const t = Date.now() * 0.001;
+
+            if(!isCrystalized) {
+                shards.forEach(m => {
+                    m.rotation.z += m.userData.rotSpeed;
+                    m.position.y += Math.sin(t + m.userData.driftPhase) * 0.003;
+                });
+            } else {
+                 heartGroup.position.y = Math.sin(t) * 0.5;
+            }
+
+            let angle = Math.abs(heartGroup.rotation.y % (Math.PI*2));
+            let idx = Math.floor(angle / (Math.PI/3));
+            if(idx !== currentTexIdx) {
+                currentTexIdx = idx;
+                const t = textures[idx % textures.length];
+                picMat.map = t;
+                picMat.needsUpdate = true;
+
+                const flashColor = {r: 10, g: 10, b: 10};
+                gsap.to(picMat.color, {
+                    r: flashColor.r, g: flashColor.g, b: flashColor.b,
+                    duration: 0.1,
+                    yoyo: true,
+                    repeat: 1,
+                    onComplete: () => {
+                        picMat.color.setHex(0xffffff);
+                    }
+                });
+
+                const shakeIntensity = isCrystalized ? 0.2 : 2;
+                gsap.to(heartGroup.position, {
+                    x: heartGroup.position.x + (Math.random()-0.5)*shakeIntensity,
+                    y: heartGroup.position.y + (Math.random()-0.5)*shakeIntensity,
+                    duration: 0.05,
+                    yoyo: true,
+                    repeat: 1
+                });
+            }
+
+            // Magic circle: scroll base + continuous spin (no conflict)
+            if(!isSummoning) {
+                 magicPlane.rotation.z = magicBaseRotation - t * 0.3;
+                 ringPlane.rotation.z = -magicBaseRotation + t * 0.2;
+            }
+
+            // Hover detection: only when mouse moved (skip raycaster when idle)
+            if(mouseMovedSinceLastCheck) {
+                mouseMovedSinceLastCheck = false;
+                raycaster.setFromCamera(mouse, camera);
+                const shardHover = raycaster.intersectObjects(shards);
+                const newCursor = shardHover.length > 0 ? 'pointer' : 'none';
+                if(newCursor !== lastCursorStyle) {
+                    lastCursorStyle = newCursor;
+                    document.body.style.cursor = newCursor;
+                }
+            }
+
+            // Mouse parallax: tilt heartGroup based on cursor position
+            heartGroup.rotation.x += (mouse.y * 0.15 - heartGroup.rotation.x) * 0.05;
+            heartGroup.position.x += (mouse.x * 2 - heartGroup.position.x) * 0.05;
+
+            clouds.forEach(c => {
+                c.material.rotation += c.userData.speed;
+                c.scale.setScalar(30 + Math.sin(t * c.userData.speed * 10)*5);
+            });
+
+            particles.rotation.y += 0.002;
+            if(frameCount % 3 === 0) {
+                const positions = particles.geometry.attributes.position.array;
+                for(let i=1; i<positions.length; i+=3) {
+                    positions[i] += Math.sin(t + positions[i-1]) * 0.15;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        });
+
+        function createFloatingRunes() {
+            const symbols = ['★', '☾', '☀', '✦', '✧', '⚝'];
+            for(let i=0; i<15; i++) {
+                const rune = document.createElement('div');
+                rune.className = 'floating-rune';
+                rune.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                rune.style.left = Math.random() * 100 + 'vw';
+                rune.style.top = Math.random() * 100 + 'vh';
+                rune.style.animationDelay = Math.random() * 10 + 's';
+                rune.style.fontSize = (Math.random() * 2 + 1) + 'rem';
+                document.body.appendChild(rune);
+            }
+        }
+        createFloatingRunes();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

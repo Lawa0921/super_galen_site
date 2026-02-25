@@ -1,0 +1,2949 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis — The Guide of Souls</title>
+    <meta name="description" content="小米絲 (Mis) — 靈魂引渡者。前世天堂鳥，今生人妻 VTuber。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+    <style>
+        /* ═══════════════════════════════════════
+           ROOT VARIABLES & RESET
+           ═══════════════════════════════════════ */
+        :root {
+            --c-bg: #050505;
+            --c-bg-card: rgba(5, 5, 5, 0.6);
+            --c-text: #e0e0e0;
+            --c-text-dim: #888;
+            --c-soul: #6a0dad;
+            --c-soul-glow: rgba(106, 13, 173, 0.5);
+            --c-gold: #c5a059;
+            --c-gold-dim: rgba(197, 160, 89, 0.1);
+            --c-gold-border: rgba(197, 160, 89, 0.3);
+            --c-necrotic: #00d4aa;
+            --c-void: #1a0520;
+            --c-border: rgba(255, 255, 255, 0.1);
+            --c-border-hover: rgba(255, 255, 255, 0.2);
+
+            --f-header: 'Cinzel', serif;
+            --f-sub: 'Playfair Display', serif;
+            --f-body: 'Noto Serif TC', serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: radial-gradient(ellipse at 50% 30%, #0d0510 0%, #050505 50%, #000000 100%);
+            color: var(--c-text);
+            font-family: var(--f-body);
+            overflow-x: hidden;
+        }
+
+        /* ═══════════════════════════════════════
+           CANVAS LAYERS
+           ═══════════════════════════════════════ */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            mix-blend-mode: screen;
+            opacity: 0.7;
+        }
+
+        /* ═══════════════════════════════════════
+           VEIL SHIMMER — ethereal horizontal line
+           ═══════════════════════════════════════ */
+        .veil-shimmer {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, var(--c-gold) 30%, transparent 50%, var(--c-soul) 70%, transparent 100%);
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+            animation: veil-pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes veil-pulse {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.15; }
+        }
+
+        /* ═══════════════════════════════════════
+           SCROLLER & SECTIONS
+           ═══════════════════════════════════════ */
+        .scroller {
+            position: relative;
+            z-index: 10;
+            padding-bottom: 10vh;
+        }
+
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 10%;
+            position: relative;
+        }
+
+        /* ═══════════════════════════════════════
+           ORNAMENTAL DIVIDER between sections
+           ═══════════════════════════════════════ */
+        .ornament {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 2rem 0;
+            opacity: 0.4;
+        }
+
+        .ornament-line {
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c-gold), transparent);
+        }
+
+        .ornament-diamond {
+            width: 8px;
+            height: 8px;
+            border: 1px solid var(--c-gold);
+            transform: rotate(45deg);
+        }
+
+        /* ═══════════════════════════════════════
+           TYPOGRAPHY
+           ═══════════════════════════════════════ */
+        h1, h2, h3 {
+            font-family: var(--f-header);
+            text-transform: uppercase;
+            font-weight: 400;
+        }
+
+        .hero-title {
+            font-size: 7rem;
+            line-height: 1;
+            letter-spacing: 0.2em;
+            color: var(--c-text);
+            position: relative;
+            animation: breathe 5s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.15); opacity: 0.85; }
+            50% { text-shadow: 0 0 50px rgba(255, 255, 255, 0.4), 0 0 80px var(--c-soul-glow); opacity: 1; }
+        }
+
+        .subtitle {
+            font-family: var(--f-sub);
+            color: var(--c-gold);
+            font-size: 1.2rem;
+            letter-spacing: 0.5em;
+            font-style: italic;
+            opacity: 0.8;
+            border-bottom: 1px solid var(--c-gold);
+            padding-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .subtitle--sm {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .subtitle--section {
+            font-size: 0.8rem;
+        }
+
+        .subtitle--hero-secondary {
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+
+        .tagline {
+            font-family: var(--f-body);
+            font-size: 1.5rem;
+            letter-spacing: 0.1em;
+            margin-top: 2rem;
+            opacity: 0;
+            color: var(--c-soul);
+            text-shadow: 0 0 15px var(--c-soul-glow);
+        }
+
+        .section-title {
+            font-size: 3rem;
+            margin: 2rem 0;
+            letter-spacing: 0.1em;
+        }
+
+        /* ═══════════════════════════════════════
+           TEXT HIGHLIGHT CLASSES
+           ═══════════════════════════════════════ */
+        .text-bold {
+            color: var(--c-text);
+            font-weight: bold;
+        }
+
+        .text-soul {
+            color: var(--c-soul);
+        }
+
+        .text-gold {
+            color: var(--c-gold);
+        }
+
+        .text-name-error {
+            color: var(--c-text);
+            border-bottom: 1px dashed white;
+        }
+
+        /* ═══════════════════════════════════════
+           BACK BUTTON
+           ═══════════════════════════════════════ */
+        .back-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            z-index: 100;
+            color: var(--c-text);
+            text-decoration: none;
+            font-family: var(--f-header);
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            opacity: 0;
+            transition: opacity 1.2s 0.6s ease, color 0.3s;
+        }
+
+        .back-btn.page-revealed {
+            opacity: 0.5;
+        }
+
+        .back-btn.page-revealed:hover {
+            opacity: 1;
+            color: var(--c-gold);
+        }
+
+        /* ═══════════════════════════════════════
+           CARDS — Grimoire Pages
+           ═══════════════════════════════════════ */
+        .card {
+            background: var(--c-bg-card);
+            border: 1px solid var(--c-border);
+            padding: 4rem;
+            max-width: 900px;
+            width: 100%;
+            position: relative;
+            margin-top: 2rem;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.5s, box-shadow 0.5s;
+        }
+
+        .card:hover {
+            border-color: var(--c-gold);
+            box-shadow: 0 0 40px var(--c-gold-dim);
+        }
+
+        /* Golden decorative corners */
+        .card::before,
+        .card::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border: 1px solid var(--c-gold);
+            transition: 0.6s ease;
+            opacity: 0.5;
+        }
+
+        .card::before {
+            top: -1px;
+            left: -1px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .card::after {
+            bottom: -1px;
+            right: -1px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .card:hover::before,
+        .card:hover::after {
+            width: 60px;
+            height: 60px;
+            opacity: 0.8;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--c-border);
+            padding-bottom: 2rem;
+        }
+
+        /* ═══════════════════════════════════════
+           STORY PARAGRAPHS
+           ═══════════════════════════════════════ */
+        .story-text {
+            font-size: 1.1rem;
+            line-height: 2;
+            max-width: 650px;
+            text-align: justify;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.8));
+            padding: 3rem;
+            border: 1px solid #333;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .story-text::before,
+        .story-text::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--c-gold);
+            transition: 0.5s;
+        }
+
+        .story-text::before {
+            top: -1px;
+            left: -1px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .story-text::after {
+            bottom: -1px;
+            right: -1px;
+            border-left: none;
+            border-top: none;
+        }
+
+        .story-text:hover::before,
+        .story-text:hover::after {
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+        }
+
+        /* ═══════════════════════════════════════
+           SOULBOUND (Couple Card)
+           ═══════════════════════════════════════ */
+        .soulbound-link {
+            display: flex; align-items: center; gap: 1.5rem;
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, rgba(138, 0, 0, 0.08), rgba(201, 168, 76, 0.05));
+            border: 1px solid rgba(201, 160, 89, 0.2);
+            text-decoration: none; color: var(--c-text);
+            transition: 0.4s; margin-top: 2rem;
+            max-width: 650px; width: 100%;
+        }
+        .soulbound-link:hover {
+            border-color: var(--c-gold);
+            background: linear-gradient(135deg, rgba(138, 0, 0, 0.15), rgba(201, 168, 76, 0.1));
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(201, 168, 76, 0.12);
+        }
+        .soulbound-link .sb-avatar {
+            width: 56px; height: 56px;
+            clip-path: polygon(50% 0%, 95% 12%, 100% 50%, 95% 88%, 50% 100%, 5% 88%, 0% 50%, 5% 12%);
+            object-fit: cover; flex-shrink: 0;
+        }
+        .soulbound-link .sb-info { flex: 1; }
+        .soulbound-link .sb-name {
+            font-family: var(--f-header); font-size: 1.1rem;
+            color: var(--c-gold); letter-spacing: 0.05em;
+        }
+        .soulbound-link .sb-desc {
+            font-size: 0.8rem; color: #888; margin-top: 0.2rem;
+        }
+        .soulbound-link .sb-arrow {
+            color: rgba(197, 160, 89, 0.3); font-size: 1rem; transition: 0.3s;
+        }
+        .soulbound-link:hover .sb-arrow { color: var(--c-gold); transform: translateX(4px); }
+
+        /* ═══════════════════════════════════════
+           AVATAR
+           ═══════════════════════════════════════ */
+        .avatar-frame {
+            width: 250px;
+            height: 250px;
+            position: relative;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            border: 1px solid var(--c-border-hover);
+            padding: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .avatar-frame::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border-radius: 50%;
+            border: 1px dashed var(--c-gold);
+            opacity: 0.3;
+            animation: spin 60s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            filter: grayscale(80%) contrast(120%);
+            transition: filter 0.8s ease;
+        }
+
+        .avatar-frame:hover .avatar-img {
+            filter: grayscale(0%) contrast(100%);
+        }
+
+        /* ═══════════════════════════════════════
+           CHRONICLES — ADDENDUM & CTA
+           ═══════════════════════════════════════ */
+        .chronicles-addendum {
+            font-size: 1.1rem;
+            line-height: 2;
+            max-width: 650px;
+            text-align: justify;
+            margin-top: -1rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.8));
+            padding: 3rem;
+            border: 1px solid #333;
+            border-top: none;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .novels-cta {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        /* ═══════════════════════════════════════
+           DUALITY — VOID vs LIGHT
+           ═══════════════════════════════════════ */
+        .duality-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .duality-void {
+            text-align: right;
+            border-right: 1px solid var(--c-border);
+            padding-right: 2rem;
+        }
+
+        .duality-light {
+            text-align: left;
+            padding-left: 2rem;
+        }
+
+        .duality-title--void {
+            color: var(--c-text);
+            margin-bottom: 1rem;
+        }
+
+        .duality-title--light {
+            color: var(--c-soul);
+            margin-bottom: 1rem;
+        }
+
+        .duality-content {
+            font-family: var(--f-body);
+            opacity: 0.8;
+            line-height: 1.8;
+        }
+
+        /* ═══════════════════════════════════════
+           BUTTONS
+           ═══════════════════════════════════════ */
+        .btn {
+            display: inline-block;
+            padding: 1rem 3rem;
+            border: 1px solid var(--c-text);
+            color: var(--c-text);
+            text-decoration: none;
+            font-family: var(--f-header);
+            letter-spacing: 0.2em;
+            transition: 0.5s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--c-soul);
+            transition: 0.5s;
+            z-index: -1;
+        }
+
+        .btn:hover {
+            border-color: var(--c-soul);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn:hover::before { left: 0; }
+
+        /* ═══════════════════════════════════════
+           SOUL CONNECTION — Unified Altar Footer
+           ═══════════════════════════════════════ */
+        .soul-connection {
+            margin-top: 3.5rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+
+        .soul-connection.revealed {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .soul-connection-header {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            justify-content: center;
+            margin-bottom: 2.2rem;
+        }
+
+        .soul-connection-line {
+            flex: 0 0 56px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.38));
+        }
+
+        .soul-connection-line--right {
+            background: linear-gradient(270deg, transparent, rgba(197, 160, 89, 0.38));
+        }
+
+        .soul-connection-label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.52rem;
+            letter-spacing: 0.52em;
+            color: var(--c-gold);
+            opacity: 0.65;
+            white-space: nowrap;
+        }
+
+        /* ── Soul Orbs ── */
+        .soul-orbs {
+            display: flex;
+            gap: 1.15rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        .soul-orb {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 1px solid rgba(197, 160, 89, 0.22);
+            background: radial-gradient(circle at center, rgba(106, 13, 173, 0.1), transparent 70%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: rgba(197, 160, 89, 0.45);
+            font-size: 1.1rem;
+            opacity: 0;
+            transform: scale(0.72) translateY(12px);
+            pointer-events: none;
+            transition: border-color 0.35s, box-shadow 0.35s, color 0.35s, background 0.35s;
+        }
+
+        .soul-orb.soul-revealed {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+            transition: opacity 0.55s, transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.35s, box-shadow 0.35s, color 0.35s, background 0.35s;
+        }
+
+        .soul-orb:hover {
+            border-color: rgba(197, 160, 89, 0.65);
+            box-shadow: 0 0 22px rgba(197, 160, 89, 0.22), inset 0 0 14px rgba(197, 160, 89, 0.06);
+            color: var(--c-gold);
+            background: radial-gradient(circle at center, rgba(197, 160, 89, 0.1), rgba(106, 13, 173, 0.06) 70%);
+        }
+
+        /* ── Altar Credit ── */
+        .altar-credit {
+            margin-top: 4rem;
+            padding-bottom: 4.5rem;
+            font-family: 'Cinzel', serif;
+            font-size: 0.62rem;
+            color: #333;
+            letter-spacing: 0.24em;
+            text-align: center;
+        }
+
+        .altar-heart {
+            color: var(--c-soul);
+            opacity: 0.5;
+        }
+
+        /* ═══════════════════════════════════════
+           SOUL DIVINATION — Tarot Cards
+           ═══════════════════════════════════════ */
+        .divination-altar {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            max-width: 900px;
+            margin-top: 2rem;
+            perspective: 1200px;
+        }
+
+        .divination-card {
+            width: 150px;
+            height: 230px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .divination-card:not(.flipped):hover {
+            transform: translateY(-10px);
+        }
+
+        .divination-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .divination-card.flipped .divination-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .divination-card-face {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            border: 1px solid var(--c-border);
+        }
+
+        .divination-card-front {
+            background: linear-gradient(135deg, #0a0015 0%, #1a0520 50%, #0a0015 100%);
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.1);
+        }
+
+        .divination-card-front::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 1px solid var(--c-gold-border);
+            pointer-events: none;
+        }
+
+        .divination-card-front-symbol {
+            font-size: 2.5rem;
+            color: var(--c-necrotic);
+            opacity: 0.6;
+            text-shadow: 0 0 15px var(--c-necrotic);
+        }
+
+        .divination-card-front-label {
+            font-family: var(--f-header);
+            font-size: 0.55rem;
+            letter-spacing: 0.3em;
+            color: var(--c-gold);
+            margin-top: 1rem;
+            opacity: 0.5;
+        }
+
+        .divination-card-back {
+            background: linear-gradient(135deg, #050505, #0d0510);
+            transform: rotateY(180deg);
+            border-color: var(--c-gold-border);
+        }
+
+        .divination-card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .divination-card-icon--past { color: var(--c-necrotic); }
+        .divination-card-icon--present { color: var(--c-soul); }
+        .divination-card-icon--fate { color: var(--c-gold); }
+        .divination-card-icon--soul { color: #fff; }
+        .divination-card-icon--blessing { color: var(--c-necrotic); }
+
+        .divination-card-name {
+            font-family: var(--f-header);
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            color: var(--c-gold);
+            margin-bottom: 0.8rem;
+        }
+
+        .divination-card-desc {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            text-align: center;
+            color: #f0f0f0;
+        }
+
+        .divination-card:not(.flipped):hover .divination-card-front {
+            box-shadow: 0 0 30px rgba(0, 212, 170, 0.3);
+            border-color: var(--c-necrotic);
+        }
+
+        .divination-hint {
+            font-family: var(--f-sub);
+            font-size: 0.85rem;
+            color: var(--c-text-dim);
+            font-style: italic;
+            margin-top: 1.5rem;
+        }
+
+        .divination-shuffle {
+            background: transparent;
+            border-color: var(--c-gold-border);
+            color: var(--c-gold);
+            padding: 0.8rem 2.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .divination-shuffle:hover {
+            border-color: var(--c-necrotic);
+            color: var(--c-necrotic);
+            text-shadow: 0 0 10px rgba(0, 212, 170, 0.3);
+        }
+
+        .divination-shuffle::before {
+            background: rgba(0, 212, 170, 0.1);
+        }
+
+        .divination-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--c-necrotic);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10;
+            animation: div-burst 0.8s ease-out forwards;
+        }
+
+        @keyframes div-burst {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* ═══════════════════════════════════════
+           SPIRIT ECHOES — Floating Memory Realm
+           ═══════════════════════════════════════ */
+        .spirit-echoes {
+            position: relative;
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 6rem 5%;
+        }
+
+        .spirit-stage {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            min-height: 450px;
+            transform-style: preserve-3d;
+            transition: transform 0.4s ease-out;
+        }
+
+        .spirit-mirror {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--c-border);
+            margin: 2rem auto;
+            box-shadow: 0 0 60px rgba(106, 13, 173, 0.3), 0 0 120px rgba(0, 212, 170, 0.08);
+            z-index: 2;
+            transition: border-color 0.5s, box-shadow 0.5s;
+        }
+
+        .spirit-mirror::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 50%;
+            border: 1px solid var(--c-gold-border);
+            opacity: 0;
+            animation: spirit-mirror-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes spirit-mirror-pulse {
+            0%, 100% { opacity: 0; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.06); }
+        }
+
+        .spirit-mirror:hover {
+            border-color: var(--c-gold);
+            box-shadow: 0 0 80px var(--c-gold-dim), 0 0 160px rgba(106, 13, 173, 0.2);
+        }
+
+        .spirit-mirror img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(30%) contrast(110%) brightness(0.9);
+            transition: filter 0.6s, transform 0.6s;
+        }
+
+        .spirit-mirror:hover img {
+            filter: sepia(0%) contrast(100%) brightness(1);
+            transform: scale(1.1);
+        }
+
+        .spirit-whisper {
+            position: absolute;
+            font-family: var(--f-sub);
+            font-style: italic;
+            font-size: 1rem;
+            color: var(--c-text-dim);
+            opacity: 0;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .spirit-whisper--gold { color: var(--c-gold); }
+        .spirit-whisper--soul { color: var(--c-necrotic); text-shadow: 0 0 15px rgba(0, 212, 170, 0.3); }
+
+        .spirit-rune {
+            position: absolute;
+            font-size: 2.2rem;
+            color: var(--c-necrotic);
+            opacity: 0;
+            text-shadow: 0 0 25px var(--c-necrotic);
+            pointer-events: none;
+        }
+
+        .spirit-wpos-1 { top: 8%; left: 0; }
+        .spirit-wpos-2 { top: 22%; right: 0; }
+        .spirit-wpos-3 { top: 0; left: 38%; }
+        .spirit-wpos-4 { bottom: 22%; left: 0; }
+        .spirit-wpos-5 { bottom: 8%; right: 0; }
+        .spirit-wpos-6 { bottom: 0; right: 38%; }
+        .spirit-wpos-7 { top: 48%; left: 3%; transform: translateY(-50%); }
+        .spirit-wpos-8 { top: 42%; right: 3%; }
+
+        /* ═══════════════════════════════════════
+           SUMMONING CIRCLE — Ritual
+           ═══════════════════════════════════════ */
+        .summoning-arena {
+            position: relative;
+            width: 360px;
+            height: 360px;
+            margin: 2rem auto;
+        }
+
+        .summoning-outer-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--c-border);
+            border-radius: 50%;
+            animation: spin 40s linear infinite;
+        }
+
+        .summoning-outer-ring::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 1px dashed var(--c-gold-border);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        .summoning-inner-ring {
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 70%;
+            height: 70%;
+            border: 1px solid var(--c-border);
+            border-radius: 50%;
+            animation: spin 25s linear infinite reverse;
+        }
+
+        .summoning-runes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .summoning-rune {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            font-size: 1.2rem;
+            color: var(--c-text-dim);
+            opacity: 0.3;
+            transition: opacity 0.5s, color 0.5s, text-shadow 0.5s;
+        }
+
+        .summoning-rune:nth-child(1) { transform: translate(-50%, -50%) rotate(0deg) translateY(-155px) rotate(0deg); }
+        .summoning-rune:nth-child(2) { transform: translate(-50%, -50%) rotate(45deg) translateY(-155px) rotate(-45deg); }
+        .summoning-rune:nth-child(3) { transform: translate(-50%, -50%) rotate(90deg) translateY(-155px) rotate(-90deg); }
+        .summoning-rune:nth-child(4) { transform: translate(-50%, -50%) rotate(135deg) translateY(-155px) rotate(-135deg); }
+        .summoning-rune:nth-child(5) { transform: translate(-50%, -50%) rotate(180deg) translateY(-155px) rotate(-180deg); }
+        .summoning-rune:nth-child(6) { transform: translate(-50%, -50%) rotate(225deg) translateY(-155px) rotate(-225deg); }
+        .summoning-rune:nth-child(7) { transform: translate(-50%, -50%) rotate(270deg) translateY(-155px) rotate(-270deg); }
+        .summoning-rune:nth-child(8) { transform: translate(-50%, -50%) rotate(315deg) translateY(-155px) rotate(-315deg); }
+
+        .summoning-rune.active {
+            opacity: 1;
+            color: var(--c-necrotic);
+            text-shadow: 0 0 10px var(--c-necrotic);
+        }
+
+        .summoning-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid var(--c-border);
+            background: radial-gradient(circle, #1a0520, #050505);
+            cursor: pointer;
+            z-index: 2;
+            transition: border-color 0.5s, box-shadow 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--f-header);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--c-text-dim);
+        }
+
+        .summoning-core:hover {
+            border-color: var(--c-gold);
+            box-shadow: 0 0 20px var(--c-gold-dim);
+        }
+
+        .summoning-charging .summoning-core {
+            border-color: var(--c-necrotic);
+            box-shadow: 0 0 30px rgba(0, 212, 170, 0.3);
+            color: var(--c-necrotic);
+        }
+
+        .summoning-charging .summoning-outer-ring {
+            animation-duration: 5s;
+            border-color: var(--c-necrotic);
+        }
+
+        .summoning-charging .summoning-inner-ring {
+            animation-duration: 3s;
+            border-color: var(--c-necrotic);
+        }
+
+        .summoning-progress {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            width: 100px;
+            height: 100px;
+            z-index: 1;
+        }
+
+        .summoning-progress-ring {
+            fill: none;
+            stroke: var(--c-necrotic);
+            stroke-width: 2;
+            stroke-dasharray: 314;
+            stroke-dashoffset: 314;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s;
+        }
+
+        .summoning-result {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .summoning-result.revealed {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .summoning-arena.completed .summoning-core {
+            opacity: 0;
+            transition: opacity 0.6s;
+        }
+
+        .summoning-result-image {
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--c-gold);
+            margin-bottom: 1rem;
+            box-shadow: 0 0 60px var(--c-gold-dim), 0 0 120px rgba(197, 160, 89, 0.25), 0 0 200px rgba(0, 212, 170, 0.1);
+            animation: summoned-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes summoned-pulse {
+            0%, 100% { box-shadow: 0 0 60px var(--c-gold-dim), 0 0 120px rgba(197, 160, 89, 0.25), 0 0 200px rgba(0, 212, 170, 0.1); }
+            50% { box-shadow: 0 0 80px var(--c-gold-dim), 0 0 150px rgba(197, 160, 89, 0.35), 0 0 250px rgba(0, 212, 170, 0.2); }
+        }
+
+        .summoning-result-text {
+            font-family: var(--f-body);
+            font-size: 1.3rem;
+            color: var(--c-soul);
+            text-shadow: 0 0 15px var(--c-soul-glow);
+        }
+
+        .summoning-result-sub {
+            font-family: var(--f-sub);
+            font-size: 0.85rem;
+            color: var(--c-gold);
+            font-style: italic;
+            margin-top: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .summoning-particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--c-necrotic);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .summoning-arena.completed .summoning-outer-ring,
+        .summoning-arena.completed .summoning-inner-ring {
+            opacity: 0;
+            transition: opacity 1.2s ease-out;
+        }
+
+        .summoning-arena.completed .summoning-runes {
+            opacity: 0;
+            transition: opacity 1s 0.3s ease-out;
+        }
+
+        .summoning-arena.completed .summoning-progress {
+            opacity: 0;
+            transition: opacity 0.8s ease-out;
+        }
+
+        .summoning-arena.completed .summoning-rune {
+            opacity: 0;
+        }
+
+        .summoning-arena.completed .summoning-core {
+            border-color: var(--c-gold);
+            box-shadow: 0 0 40px var(--c-gold-dim);
+            color: var(--c-gold);
+        }
+
+        .summoning-hint {
+            font-family: var(--f-sub);
+            font-size: 0.85rem;
+            color: var(--c-text-dim);
+            font-style: italic;
+            margin-top: 1rem;
+        }
+
+        /* ═══════════════════════════════════════
+           HERO BANNER
+           ═══════════════════════════════════════ */
+        .hero-section {
+            position: relative;
+        }
+
+        .hero-banner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('/assets/img/guild/mis/banner.jpg') center center / cover no-repeat;
+            opacity: 0.15;
+            pointer-events: none;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+        }
+
+        /* ═══════════════════════════════════════
+           DUALITY PORTRAITS
+           ═══════════════════════════════════════ */
+        .duality-portrait-frame {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 1.5rem;
+            border: 2px solid var(--c-border);
+            transition: border-color 0.5s, box-shadow 0.5s;
+        }
+
+        .duality-void .duality-portrait-frame {
+            margin-left: auto;
+            margin-right: 2rem;
+        }
+
+        .duality-light .duality-portrait-frame {
+            margin-left: 2rem;
+            margin-right: auto;
+        }
+
+        .duality-portrait-frame:hover {
+            border-color: var(--c-gold);
+            box-shadow: 0 0 20px var(--c-gold-dim);
+        }
+
+        .duality-portrait {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s, filter 0.5s;
+        }
+
+        .duality-void .duality-portrait {
+            filter: contrast(110%) brightness(0.9);
+            transform: scale(1.35);
+            transform-origin: center 30%;
+        }
+
+        .duality-void .duality-portrait-frame:hover .duality-portrait {
+            transform: scale(1.45);
+        }
+
+        .duality-light .duality-portrait {
+            filter: brightness(1.1) saturate(0.9);
+        }
+
+        .duality-portrait-frame:hover .duality-portrait {
+            transform: scale(1.1);
+        }
+
+        /* ═══════════════════════════════════════
+           SUMMONING ENHANCEMENTS
+           ═══════════════════════════════════════ */
+        .summoning-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, rgba(0, 212, 170, 0.6), rgba(106, 13, 173, 0.3), transparent 70%);
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        .summoning-flash.active {
+            animation: summon-flash 1.8s ease-out forwards;
+        }
+
+        @keyframes summon-flash {
+            0% { opacity: 1; }
+            30% { opacity: 0.6; }
+            100% { opacity: 0; }
+        }
+
+        .summoning-shockwave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--c-gold);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .summoning-shockwave.active {
+            animation: shockwave-expand 1.5s ease-out forwards;
+        }
+
+        .summoning-shockwave-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--c-necrotic);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .summoning-shockwave-inner.active {
+            animation: shockwave-expand 1.2s 0.1s ease-out forwards;
+        }
+
+        @keyframes shockwave-expand {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-width: 3px; }
+            50% { opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(30); opacity: 0; border-width: 0.5px; }
+        }
+
+        .summoning-section-wrap {
+            transition: transform 0.3s ease-out;
+        }
+
+        .summoning-section-wrap.shake {
+            animation: ritual-shake 0.6s ease-out;
+        }
+
+        @keyframes ritual-shake {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            10% { transform: translateX(-10px) translateY(-2px); }
+            20% { transform: translateX(8px) translateY(3px); }
+            30% { transform: translateX(-6px) translateY(-1px); }
+            40% { transform: translateX(5px) translateY(2px); }
+            50% { transform: translateX(-3px) translateY(-1px); }
+            60% { transform: translateX(2px) translateY(1px); }
+            70% { transform: translateX(-1px); }
+        }
+
+        /* ═══════════════════════════════════════
+           PROFILE & CHRONICLES ACCENTS
+           ═══════════════════════════════════════ */
+        .chronicles-accent {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            aspect-ratio: 1 / 1;
+            margin: 2rem auto 0;
+            overflow: hidden;
+            border: 1px solid var(--c-border);
+            opacity: 0.6;
+            transition: opacity 0.4s, border-color 0.4s;
+        }
+
+        .chronicles-accent:hover {
+            opacity: 1;
+            border-color: var(--c-gold);
+        }
+
+        .chronicles-accent img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(40%) brightness(0.8);
+            transition: filter 0.6s, transform 0.6s;
+        }
+
+        .chronicles-accent:hover img {
+            filter: grayscale(0%) brightness(1);
+            transform: scale(1.05);
+        }
+
+        .chronicles-accent-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem 0.8rem 0.6rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            font-family: var(--f-header);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--c-gold);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .chronicles-accent:hover .chronicles-accent-caption {
+            opacity: 1;
+        }
+
+        /* ═══════════════════════════════════════
+           EVOLUTION — Character Design
+           ═══════════════════════════════════════ */
+        .evolution-container {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .evolution-sketch-frame {
+            flex: 0 0 280px;
+            height: 500px;
+            overflow: hidden;
+            border: 1px solid var(--c-border);
+            position: relative;
+            transition: border-color 0.5s;
+        }
+
+        .evolution-sketch-frame:hover {
+            border-color: var(--c-gold);
+        }
+
+        .evolution-sketch-frame::before {
+            content: 'V3.0';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-family: var(--f-header);
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            color: var(--c-gold);
+            z-index: 2;
+            opacity: 0.6;
+        }
+
+        .evolution-sketch {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+            filter: sepia(20%) contrast(90%);
+            transition: filter 0.6s;
+        }
+
+        .evolution-sketch-frame:hover .evolution-sketch {
+            filter: sepia(0%) contrast(100%);
+        }
+
+        .evolution-info {
+            flex: 1;
+        }
+
+        .evolution-info h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        .evolution-detail {
+            font-size: 1rem;
+            line-height: 2;
+            opacity: 0.8;
+        }
+
+        .evolution-credits {
+            margin-top: 2rem;
+            font-family: var(--f-sub);
+            font-size: 0.85rem;
+            font-style: italic;
+            color: var(--c-gold);
+            opacity: 0.7;
+        }
+
+        /* ═══════════════════════════════════════
+           MOBILE RESPONSIVE
+           ═══════════════════════════════════════ */
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3.5rem; }
+            .section { padding: 4rem 5%; }
+            .card { padding: 2rem; }
+            .tagline { font-size: 1.1rem; }
+            .soul-orb { width: 44px; height: 44px; font-size: 0.95rem; }
+            .soul-orbs { gap: 0.85rem; }
+            .story-text { padding: 1.5rem; }
+            .chronicles-addendum { padding: 1.5rem; }
+            .section-title { font-size: 2rem; }
+
+            .duality-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .duality-void {
+                text-align: center;
+                border-right: none;
+                border-bottom: 1px solid var(--c-border);
+                padding-right: 0;
+                padding-bottom: 2rem;
+            }
+
+            .duality-light {
+                text-align: center;
+                padding-left: 0;
+            }
+
+            .avatar-frame {
+                width: 180px;
+                height: 180px;
+            }
+
+            .duality-void .duality-portrait-frame,
+            .duality-light .duality-portrait-frame {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .duality-portrait-frame {
+                width: 140px;
+                height: 140px;
+            }
+
+            .spirit-echoes {
+                padding: 4rem 5%;
+            }
+
+            .spirit-stage {
+                min-height: 350px;
+            }
+
+            .spirit-mirror {
+                width: 150px;
+                height: 150px;
+            }
+
+            .spirit-whisper {
+                font-size: 0.8rem;
+            }
+
+            .spirit-rune {
+                font-size: 1.8rem;
+            }
+
+            .chronicles-accent {
+                max-width: 250px;
+            }
+
+            .evolution-container {
+                flex-direction: column;
+            }
+
+            .evolution-sketch-frame {
+                flex: 0 0 auto;
+                width: 100%;
+                height: 400px;
+            }
+
+            .evolution-info h3 {
+                font-size: 1.4rem;
+                text-align: center;
+            }
+
+            .evolution-credits {
+                text-align: center;
+            }
+
+            .divination-card {
+                width: 120px;
+                height: 190px;
+            }
+
+            .divination-card-front-symbol {
+                font-size: 2rem;
+            }
+
+            .divination-card-desc {
+                font-size: 0.7rem;
+            }
+
+            .divination-altar {
+                gap: 1rem;
+            }
+
+            .summoning-arena {
+                width: 280px;
+                height: 280px;
+            }
+
+            .summoning-core {
+                width: 60px;
+                height: 60px;
+                font-size: 0.5rem;
+            }
+
+            .summoning-rune:nth-child(1) { transform: translate(-50%, -50%) rotate(0deg) translateY(-120px) rotate(0deg); }
+            .summoning-rune:nth-child(2) { transform: translate(-50%, -50%) rotate(45deg) translateY(-120px) rotate(-45deg); }
+            .summoning-rune:nth-child(3) { transform: translate(-50%, -50%) rotate(90deg) translateY(-120px) rotate(-90deg); }
+            .summoning-rune:nth-child(4) { transform: translate(-50%, -50%) rotate(135deg) translateY(-120px) rotate(-135deg); }
+            .summoning-rune:nth-child(5) { transform: translate(-50%, -50%) rotate(180deg) translateY(-120px) rotate(-180deg); }
+            .summoning-rune:nth-child(6) { transform: translate(-50%, -50%) rotate(225deg) translateY(-120px) rotate(-225deg); }
+            .summoning-rune:nth-child(7) { transform: translate(-50%, -50%) rotate(270deg) translateY(-120px) rotate(-270deg); }
+            .summoning-rune:nth-child(8) { transform: translate(-50%, -50%) rotate(315deg) translateY(-120px) rotate(-315deg); }
+
+            .summoning-result-image {
+                width: 180px;
+                height: 180px;
+            }
+        }
+
+        /* ═══════════════════════════════════════
+           INTRO VEIL — Soul Summoning Ritual
+           ═══════════════════════════════════════ */
+        #intro-veil {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            touch-action: none;
+            cursor: wait;
+        }
+
+        #intro-veil.is-lifting {
+            pointer-events: none;
+        }
+
+        /* Ritual content disperses before veil swap */
+        #intro-veil.is-lifting .intro-ritual {
+            opacity: 0;
+            transform: scale(1.08);
+            transition: opacity 0.4s ease, transform 0.5s ease;
+        }
+
+        #intro-veil.is-lifting .intro-status {
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        /* ── Veil Transition: Two-Layer System ──
+           Layer 1 (veil-fade, z-9998): solid black base that fades out.
+                Prevents page from flashing when veil is removed.
+           Layer 2 (veil-glow, z-9999): bright radial glow ON TOP.
+                Provides the visible transition event.
+                Its opacity is independent — NOT multiplied by the base. */
+        .veil-fade {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            pointer-events: none;
+            background: #000;
+            animation: base-fade 2s ease-in-out forwards;
+        }
+
+        .veil-glow {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 50%,
+                rgba(255, 248, 210, 0.92) 0%,
+                rgba(197, 160, 89, 0.65) 12%,
+                rgba(106, 13, 173, 0.38) 30%,
+                transparent 55%
+            );
+            transform-origin: center center;
+            animation: glow-pulse 1.8s ease-out forwards;
+        }
+
+        @keyframes base-fade {
+            0%   { opacity: 1; }
+            40%  { opacity: 0.55; }
+            100% { opacity: 0; }
+        }
+
+        @keyframes glow-pulse {
+            0%   { opacity: 0; transform: scale(0.08); }
+            15%  { opacity: 1; transform: scale(0.7); }
+            35%  { opacity: 0.85; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1.8); }
+        }
+
+        /* ── Ritual Circle ── */
+        .intro-ritual {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ritual-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .ritual-ring-outer {
+            fill: none;
+            stroke: #c5a059;
+            stroke-width: 0.6;
+            opacity: 0.55;
+            stroke-dasharray: 817;
+            stroke-dashoffset: 817;
+            animation: ring-draw 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .ritual-ring-inner {
+            fill: none;
+            stroke: #6a0dad;
+            stroke-width: 0.6;
+            opacity: 0.45;
+            stroke-dasharray: 629;
+            stroke-dashoffset: 629;
+            animation: ring-draw 1.5s 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes ring-draw {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .ritual-mark {
+            fill: #c5a059;
+            opacity: 0;
+            animation: mark-appear 0.35s ease-out forwards;
+        }
+        .ritual-mark:nth-child(3) { animation-delay: 1.05s; }
+        .ritual-mark:nth-child(4) { animation-delay: 1.15s; }
+        .ritual-mark:nth-child(5) { animation-delay: 1.25s; }
+        .ritual-mark:nth-child(6) { animation-delay: 1.35s; }
+
+        @keyframes mark-appear {
+            to { opacity: 0.5; }
+        }
+
+        /* ── Central Text ── */
+        .intro-center {
+            position: relative;
+            text-align: center;
+            z-index: 1;
+            user-select: none;
+        }
+
+        .intro-eyebrow {
+            font-family: 'Cinzel', serif;
+            font-size: 0.6rem;
+            letter-spacing: 0.35em;
+            color: #c5a059;
+            opacity: 0;
+            animation: intro-fade-up 0.7s 0.8s ease-out forwards;
+            margin-bottom: 0.4rem;
+        }
+
+        .intro-name {
+            font-family: 'Cinzel', serif;
+            font-size: 4.8rem;
+            letter-spacing: 0.35em;
+            line-height: 1;
+            text-shadow:
+                0 0 40px rgba(106, 13, 173, 0.7),
+                0 0 90px rgba(106, 13, 173, 0.3);
+        }
+
+        .intro-name span {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .intro-name span:nth-child(1) { animation: intro-fade-up 0.55s 1.05s ease-out forwards; }
+        .intro-name span:nth-child(2) { animation: intro-fade-up 0.55s 1.20s ease-out forwards; }
+        .intro-name span:nth-child(3) { animation: intro-fade-up 0.55s 1.35s ease-out forwards; }
+
+        .intro-tagline {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 0.8rem;
+            color: #6a0dad;
+            letter-spacing: 0.08em;
+            margin-top: 0.65rem;
+            opacity: 0;
+            text-shadow: 0 0 14px rgba(106, 13, 173, 0.9);
+            animation: intro-fade-up 0.7s 1.75s ease-out forwards;
+        }
+
+        .intro-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            margin-top: 0.65rem;
+            opacity: 0;
+            animation: intro-fade-in 0.5s 2.2s ease-out forwards;
+            color: #c5a059;
+            font-size: 0.6rem;
+        }
+
+        .intro-divider-line {
+            display: block;
+            width: 38px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #c5a059, transparent);
+        }
+
+        /* ── Status label ── */
+        .intro-status {
+            position: absolute;
+            bottom: 2.5rem;
+            font-family: 'Cinzel', serif;
+            font-size: 0.55rem;
+            letter-spacing: 0.45em;
+            color: #c5a059;
+            opacity: 0;
+            animation: intro-status-pulse 2.2s 0.6s ease-in-out infinite;
+        }
+
+        @keyframes intro-status-pulse {
+            0%, 100% { opacity: 0.12; }
+            50%       { opacity: 0.5; }
+        }
+
+        @keyframes intro-fade-up {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes intro-fade-in {
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ══ INTRO VEIL — Soul Summoning Ritual ══ -->
+    <div id="intro-veil" role="presentation" aria-hidden="true">
+        <div class="intro-ritual">
+            <svg class="ritual-svg" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer ring (gold): r=130, C≈817 -->
+                <circle class="ritual-ring-outer" cx="150" cy="150" r="130"/>
+                <!-- Inner ring (soul/purple): r=100, C≈629 -->
+                <circle class="ritual-ring-inner" cx="150" cy="150" r="100"/>
+                <!-- Cardinal point diamonds -->
+                <polygon class="ritual-mark" points="150,16 154,20 150,24 146,20"/>
+                <polygon class="ritual-mark" points="150,276 154,280 150,284 146,280"/>
+                <polygon class="ritual-mark" points="16,150 20,146 24,150 20,154"/>
+                <polygon class="ritual-mark" points="276,150 280,146 284,150 280,154"/>
+            </svg>
+            <div class="intro-center">
+                <div class="intro-eyebrow">THE GUIDE OF SOULS</div>
+                <div class="intro-name"><span>M</span><span>I</span><span>S</span></div>
+                <div class="intro-tagline">迷途的靈魂阿——跟著我吧。</div>
+                <div class="intro-divider">
+                    <span class="intro-divider-line"></span>
+                    <span>✦</span>
+                    <span class="intro-divider-line"></span>
+                </div>
+            </div>
+        </div>
+        <div class="intro-status">SUMMONING THE VEIL</div>
+    </div>
+
+    <a href="/guild" class="back-btn">&lt; BACK TO GUILD</a>
+
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+    <div class="veil-shimmer"></div>
+
+    <div class="scroller">
+        <!-- ════════════ HERO ════════════ -->
+        <section class="section hero-section">
+            <div class="hero-banner"></div>
+            <div class="subtitle">THE GUIDE OF SOULS</div>
+            <h1 class="hero-title">MIS</h1>
+            <div class="tagline">迷途的靈魂阿——跟著我吧。</div>
+            <div class="subtitle subtitle--hero-secondary">PARADISE BIRD // FALLEN ANGEL</div>
+        </section>
+
+        <!-- ornament -->
+        <div class="ornament">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+        </div>
+
+        <!-- ════════════ PROFILE ════════════ -->
+        <section class="section">
+            <div class="card">
+                <div class="avatar-frame">
+                    <img class="avatar-img" src="/assets/img/guild/mis/avatar.webp" alt="Mis">
+                </div>
+                <div class="card-header">
+                    <h2>The Origin</h2>
+                    <span class="subtitle subtitle--sm">ANGEL · REAPER · LILY</span>
+                </div>
+                <p class="story-text">
+                    我是 <span class="text-bold">小米絲 (Mis)</span>。<br>
+                    一位 <span class="text-soul">呆蠢可愛的人妻麻咪系 VTuber</span>，以百合與黑禮服為標誌。<br><br>
+                    前世是 <span class="text-soul">天堂鳥</span>，戴著瘟疫醫生的鳥嘴面具，手持一束白色百合，負責將亡者的靈魂引渡至彼岸。
+                    人們敬畏地稱呼我為「死神」。
+                </p>
+                <p class="story-text">
+                    因為對人類情感的好奇，我向神祈求降生為人，成為了那個 <span class="text-name-error">「錯誤 (Mis)」</span>。
+                    現在的我，是一枚容易沒電的人妻，偶爾還會拾起那段作為引渡者的記憶。
+                    平時喜歡和女兒 <span class="text-gold">小貓淵</span> 一起玩耍。
+                </p>
+
+                <a href="/guild/lubu" class="soulbound-link">
+                    <img src="/assets/img/guild/lubu/avatar.webp" alt="呂布" class="sb-avatar">
+                    <div class="sb-info">
+                        <div class="sb-name">呂布 — THE STRONGEST WARLORD</div>
+                        <div class="sb-desc">我的老公，被我從三國用克蘇魯之力拐來現代的最強武將。現在是陽台勢冷門遊戲直播主。</div>
+                    </div>
+                    <div class="sb-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                </a>
+            </div>
+        </section>
+
+        <!-- ornament -->
+        <div class="ornament">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+        </div>
+
+        <!-- ════════════ DIVINATION ════════════ -->
+        <section class="section">
+            <div class="subtitle">SOUL READING</div>
+            <h2 class="section-title">Divination</h2>
+            <div class="divination-hint">— 點擊卡牌，揭開靈魂的秘密 —</div>
+
+            <div class="divination-altar">
+                <div class="divination-card" data-card="past">
+                    <div class="divination-card-inner">
+                        <div class="divination-card-face divination-card-front">
+                            <div class="divination-card-front-symbol">☽</div>
+                            <div class="divination-card-front-label">REVEAL</div>
+                        </div>
+                        <div class="divination-card-face divination-card-back">
+                            <div class="divination-card-icon divination-card-icon--past"><i class="fa-solid fa-dove"></i></div>
+                            <div class="divination-card-name">前世 — PAST LIFE</div>
+                            <div class="divination-card-desc">天堂鳥。<br>戴著鳥嘴面具的引渡者，<br>手持白百合，帶走靈魂。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divination-card" data-card="present">
+                    <div class="divination-card-inner">
+                        <div class="divination-card-face divination-card-front">
+                            <div class="divination-card-front-symbol">✦</div>
+                            <div class="divination-card-front-label">REVEAL</div>
+                        </div>
+                        <div class="divination-card-face divination-card-back">
+                            <div class="divination-card-icon divination-card-icon--present"><i class="fa-solid fa-heart"></i></div>
+                            <div class="divination-card-name">今生 — PRESENT</div>
+                            <div class="divination-card-desc">人妻麻咪系 VTuber。<br>偶爾沒電、偶爾呆萌，<br>和小貓淵一起生活。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divination-card" data-card="fate">
+                    <div class="divination-card-inner">
+                        <div class="divination-card-face divination-card-front">
+                            <div class="divination-card-front-symbol">⚜</div>
+                            <div class="divination-card-front-label">REVEAL</div>
+                        </div>
+                        <div class="divination-card-face divination-card-back">
+                            <div class="divination-card-icon divination-card-icon--fate"><i class="fa-solid fa-scroll"></i></div>
+                            <div class="divination-card-name">命運 — FATE</div>
+                            <div class="divination-card-desc">「Mis」——<br>神賜予的錯誤之名。<br>墮落天使的烙印。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divination-card" data-card="soul">
+                    <div class="divination-card-inner">
+                        <div class="divination-card-face divination-card-front">
+                            <div class="divination-card-front-symbol">♰</div>
+                            <div class="divination-card-front-label">REVEAL</div>
+                        </div>
+                        <div class="divination-card-face divination-card-back">
+                            <div class="divination-card-icon divination-card-icon--soul"><i class="fa-solid fa-skull"></i></div>
+                            <div class="divination-card-name">靈魂 — SOUL</div>
+                            <div class="divination-card-desc">黑百合中沉睡的死神。<br>漆黑禮服、瘟疫面具，<br>留下花瓣，帶走亡魂。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divination-card" data-card="blessing">
+                    <div class="divination-card-inner">
+                        <div class="divination-card-face divination-card-front">
+                            <div class="divination-card-front-symbol">☾</div>
+                            <div class="divination-card-front-label">REVEAL</div>
+                        </div>
+                        <div class="divination-card-face divination-card-back">
+                            <div class="divination-card-icon divination-card-icon--blessing"><i class="fa-solid fa-star"></i></div>
+                            <div class="divination-card-name">祝福 — BLESSING</div>
+                            <div class="divination-card-desc divination-blessing-text">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn divination-shuffle">SHUFFLE</button>
+        </section>
+
+        <!-- ornament -->
+        <div class="ornament">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+        </div>
+
+        <!-- ════════════ CHRONICLES ════════════ -->
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Chronicles</h2>
+                    <span class="subtitle subtitle--section">WRITING &amp; CREATION</span>
+                </div>
+                <p class="story-text">
+                    除了直播，我也在 Penana 上撰寫小說。
+                    記錄著夢境、幻想與靈魂的故事。
+                    《天堂鳥》、《牧羊人》、《破碎的千語》......
+                    每一部作品都是我對這個世界與人性的觀察筆記。
+                </p>
+                <p class="chronicles-addendum">
+                    此外，我還負責 <span class="text-gold">「麻麻報報」</span> —— 與台灣天然災害資訊合作的專欄，守護著大家的平安。
+                </p>
+                <div class="chronicles-accent">
+                    <img src="/assets/img/guild/mis/dark-lily.jpg" alt="Mis — Dark Lily">
+                    <div class="chronicles-accent-caption">BLACK LILY</div>
+                </div>
+
+                <div class="novels-cta">
+                    <a href="https://www.penana.com/user/37037/" target="_blank" class="btn">READ NOVELS</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ornament -->
+        <div class="ornament">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+        </div>
+
+        <!-- ════════════ EVOLUTION ════════════ -->
+        <section class="section">
+            <div class="subtitle">CHARACTER DESIGN</div>
+            <h2 class="section-title">Evolution</h2>
+
+            <div class="evolution-container">
+                <div class="evolution-sketch-frame">
+                    <img class="evolution-sketch" src="/assets/img/guild/mis/char-v3-sketch.jpg" alt="Mis V3.0 Character Design">
+                </div>
+                <div class="evolution-info">
+                    <h3>Version 3.0</h3>
+                    <p class="evolution-detail">
+                        從最初的天堂鳥形象，經歷了數次蛻變。<br>
+                        如今的 Mis 保留了靈魂引渡者的優雅與莊嚴，<br>
+                        同時融入了人妻系的溫柔與可愛。<br><br>
+                        黑色禮服、白色百合、紫色靈魂之光——<br>
+                        每一個元素都訴說著她的故事。
+                    </p>
+                    <div class="evolution-credits">
+                        繪師 / 建模：@my2379195872052
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ornament -->
+        <div class="ornament">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+        </div>
+
+        <!-- ════════════ DUALITY ════════════ -->
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Duality</h2>
+                    <span class="subtitle subtitle--section">LIGHT &amp; VOID</span>
+                </div>
+                <div class="duality-grid">
+                    <div class="duality-void">
+                        <div class="duality-portrait-frame">
+                            <img class="duality-portrait" src="/assets/img/guild/mis/void-portrait.jpg" alt="The Void — 死神">
+                        </div>
+                        <h3 class="duality-title--void">The Void</h3>
+                        <div class="duality-content">
+                            一身漆黑的禮服。<br>
+                            戴著瘟疫醫生的面具。<br>
+                            留下百合，帶走靈魂。
+                        </div>
+                    </div>
+                    <div class="duality-light">
+                        <div class="duality-portrait-frame">
+                            <img class="duality-portrait" src="/assets/img/guild/mis/light-portrait.jpg" alt="The Light — 天使">
+                        </div>
+                        <h3 class="duality-title--light">The Light</h3>
+                        <div class="duality-content">
+                            Mis 是錯誤的意思。<br>
+                            卻也是神賜予我的名字。<br>
+                            偶爾有點呆萌的人妻屬性。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ornament -->
+        <div class="ornament">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+        </div>
+
+        <!-- ════════════ SPIRIT ECHOES ════════════ -->
+        <section class="section spirit-echoes">
+            <div class="subtitle">ECHOES OF THE PAST</div>
+            <h2 class="section-title">Spirit Echoes</h2>
+
+            <div class="spirit-stage">
+                <div class="spirit-whisper spirit-wpos-1">我曾經是天堂鳥</div>
+                <div class="spirit-whisper spirit-whisper--gold spirit-wpos-2">面具之下，是溫柔的笑容</div>
+                <div class="spirit-rune spirit-wpos-3">☽</div>
+
+                <div class="spirit-mirror">
+                    <img src="/assets/img/guild/mis/profile.jpg" alt="Mis — Spirit Mirror">
+                </div>
+
+                <div class="spirit-whisper spirit-wpos-4">百合花開在死亡之後</div>
+                <div class="spirit-whisper spirit-whisper--gold spirit-wpos-5">小貓淵是我的全世界</div>
+                <div class="spirit-rune spirit-wpos-6">✦</div>
+                <div class="spirit-whisper spirit-whisper--soul spirit-wpos-7">錯誤，也是恩賜</div>
+                <div class="spirit-whisper spirit-wpos-8">死亡不是結束，而是引渡</div>
+            </div>
+        </section>
+
+        <!-- ornament -->
+        <div class="ornament">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+        </div>
+
+        <!-- ════════════ SUMMONING ════════════ -->
+        <section class="section summoning-section-wrap">
+            <div class="subtitle">NECROMANTIC RITE</div>
+            <h2 class="section-title">Summoning</h2>
+            <div class="summoning-hint">— 長按核心，完成召喚儀式 —</div>
+
+            <div class="summoning-arena">
+                <div class="summoning-outer-ring"></div>
+                <div class="summoning-inner-ring"></div>
+                <div class="summoning-runes">
+                    <span class="summoning-rune">☽</span>
+                    <span class="summoning-rune">✦</span>
+                    <span class="summoning-rune">⚜</span>
+                    <span class="summoning-rune">♰</span>
+                    <span class="summoning-rune">☾</span>
+                    <span class="summoning-rune">✧</span>
+                    <span class="summoning-rune">⚝</span>
+                    <span class="summoning-rune">♱</span>
+                </div>
+                <svg class="summoning-progress" viewBox="0 0 100 100">
+                    <circle class="summoning-progress-ring" cx="50" cy="50" r="50" />
+                </svg>
+                <button class="summoning-core">HOLD</button>
+                <div class="summoning-shockwave"></div>
+                <div class="summoning-shockwave-inner"></div>
+                <div class="summoning-result">
+                    <img class="summoning-result-image" src="/assets/img/guild/mis/avatar.webp" alt="Mis Summoned">
+                    <div class="summoning-result-text">「迷途的靈魂阿——跟著我吧。」</div>
+                    <div class="summoning-result-sub">— Mis, The Guide of Souls</div>
+                </div>
+            </div>
+
+            <!-- ── Soul Connection — revealed after summoning ── -->
+            <div class="soul-connection" id="soulConnection">
+                <div class="soul-connection-header">
+                    <span class="soul-connection-line"></span>
+                    <span class="soul-connection-label">SOUL CONNECTION</span>
+                    <span class="soul-connection-line soul-connection-line--right"></span>
+                </div>
+                <div class="soul-orbs">
+                    <a href="https://www.youtube.com/@%E5%B0%8F%E7%B1%B3%E7%B5%B2MIS" target="_blank" class="soul-orb"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="https://www.twitch.tv/mis_0326" target="_blank" class="soul-orb"><i class="fa-brands fa-twitch"></i></a>
+                    <a href="https://x.com/utopia_mis" target="_blank" class="soul-orb"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.threads.com/@misgirlnotoperating" target="_blank" class="soul-orb"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/mis_suger0326/" target="_blank" class="soul-orb"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://discord.gg/rB2d6qQK64" target="_blank" class="soul-orb"><i class="fa-brands fa-discord"></i></a>
+                    <a href="https://www.tiktok.com/@misgirl0326" target="_blank" class="soul-orb"><i class="fa-brands fa-tiktok"></i></a>
+                    <a href="https://linkgoods.com/misutopia" target="_blank" class="soul-orb"><i class="fa-solid fa-link"></i></a>
+                </div>
+            </div>
+
+            <div class="altar-credit">
+                MADE WITH <i class="fa-solid fa-heart altar-heart"></i> BY SUPERGALEN'S DUNGEON
+            </div>
+        </section>
+        <div class="summoning-flash"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         P5.JS OVERLAY — Soul Mist
+         ═══════════════════════════════════════ -->
+    <script>
+        const sketch = (p) => {
+            const particles = [];
+            const MAX_PARTICLES = 120;
+
+            class MistParticle {
+                constructor(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = p.random(-0.8, 0.8);
+                    this.vy = p.random(-2, -0.3);
+                    this.life = 255;
+                    this.size = p.random(10, 35);
+                    this.growth = p.random(0.2, 0.6);
+                    this.hue = p.random(1) > 0.3 ? 'purple' : 'white';
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.life -= 2.5;
+                    this.size += this.growth;
+                }
+
+                show() {
+                    p.noStroke();
+                    if (this.hue === 'purple') {
+                        p.fill(150, 80, 255, this.life * 0.04);
+                        p.circle(this.x, this.y, this.size * 2.2);
+                        p.fill(180, 140, 255, this.life * 0.08);
+                        p.circle(this.x, this.y, this.size);
+                    } else {
+                        p.fill(200, 200, 255, this.life * 0.05);
+                        p.circle(this.x, this.y, this.size * 2);
+                        p.fill(240, 240, 255, this.life * 0.1);
+                        p.circle(this.x, this.y, this.size * 0.6);
+                    }
+                }
+            }
+
+            p.setup = () => {
+                const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+                cnv.parent('p5-container');
+                p.blendMode(p.SCREEN);
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                if (p.frameCount % 6 === 0 && particles.length < MAX_PARTICLES) {
+                    particles.push(new MistParticle(p.random(p.width), p.height + 20));
+                }
+
+                if (p.mouseX > 0 && p.mouseY > 0 && particles.length < MAX_PARTICLES) {
+                    particles.push(new MistParticle(p.mouseX + p.random(-20, 20), p.mouseY + p.random(-10, 10)));
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].show();
+                    if (particles[i].life <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+        new p5(sketch);
+    </script>
+
+    <!-- ═══════════════════════════════════════
+         INTERACTIVE ELEMENTS — Divination, Spirit Echoes, Summoning
+         ═══════════════════════════════════════ -->
+    <script>
+        /* ─── SOUL DIVINATION ─── */
+        const blessings = [
+            '「不要怕，我會在這裡。」',
+            '「就算是錯誤，也有存在的意義。」',
+            '「百合會再次盛開的。」',
+            '「迷途的靈魂，終會找到歸處。」',
+            '「記得好好吃飯、好好睡覺喔。」',
+            '「你比你想像的還要勇敢。」',
+            '「今天也辛苦了，來杯茶吧。」',
+            '「我的名字是錯誤，但遇見你不是。」'
+        ];
+
+        function getRandomBlessing() {
+            return blessings[Math.floor(Math.random() * blessings.length)];
+        }
+
+        document.querySelectorAll('.divination-card').forEach(card => {
+            if (card.dataset.card === 'blessing') {
+                card.querySelector('.divination-blessing-text').textContent = getRandomBlessing();
+            }
+
+            card.addEventListener('click', () => {
+                if (card.classList.contains('flipped')) return;
+                card.classList.add('flipped');
+
+                const rect = card.getBoundingClientRect();
+                for (let i = 0; i < 15; i++) {
+                    const p = document.createElement('div');
+                    p.classList.add('divination-particle');
+                    const angle = (Math.PI * 2 / 15) * i;
+                    const dist = 40 + Math.random() * 60;
+                    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+                    p.style.left = card.offsetWidth / 2 + 'px';
+                    p.style.top = card.offsetHeight / 2 + 'px';
+                    card.appendChild(p);
+                    setTimeout(() => p.remove(), 850);
+                }
+            });
+        });
+
+        document.querySelector('.divination-shuffle')?.addEventListener('click', () => {
+            const cards = document.querySelectorAll('.divination-card');
+            cards.forEach((card, i) => {
+                card.classList.remove('flipped');
+            });
+            const blessingText = document.querySelector('.divination-blessing-text');
+            if (blessingText) blessingText.textContent = getRandomBlessing();
+        });
+
+        /* ─── SPIRIT ECHOES — 3D Parallax Tilt ─── */
+        const spiritEchoes = document.querySelector('.spirit-echoes');
+        const spiritStage = document.querySelector('.spirit-stage');
+
+        if (spiritEchoes && spiritStage) {
+            spiritEchoes.addEventListener('mousemove', (e) => {
+                const rect = spiritStage.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const dx = (e.clientX - cx) / rect.width;
+                const dy = (e.clientY - cy) / rect.height;
+                spiritStage.style.transform = 'rotateY(' + (dx * 8) + 'deg) rotateX(' + (-dy * 5) + 'deg)';
+            });
+
+            spiritEchoes.addEventListener('mouseleave', () => {
+                spiritStage.style.transform = 'rotateY(0deg) rotateX(0deg)';
+            });
+        }
+
+        /* ─── SUMMONING CIRCLE ─── */
+        const arena = document.querySelector('.summoning-arena');
+        const summonCore = document.querySelector('.summoning-core');
+        const progressRing = document.querySelector('.summoning-progress-ring');
+        const summonResult = document.querySelector('.summoning-result');
+        const runes = document.querySelectorAll('.summoning-rune');
+
+        if (arena && summonCore && progressRing) {
+            let charging = false;
+            let progress = 0;
+            let chargeInterval = null;
+            let decayInterval = null;
+            const circumference = 2 * Math.PI * 50;
+
+            function startCharge() {
+                if (arena.classList.contains('completed')) return;
+                charging = true;
+                arena.classList.add('summoning-charging');
+                if (decayInterval) { clearInterval(decayInterval); decayInterval = null; }
+
+                chargeInterval = setInterval(() => {
+                    progress = Math.min(progress + 1.5, 100);
+
+                    const offset = circumference - (progress / 100) * circumference;
+                    progressRing.style.strokeDashoffset = offset;
+
+                    const runeIndex = Math.floor((progress / 100) * runes.length);
+                    runes.forEach((rune, i) => {
+                        if (i < runeIndex) rune.classList.add('active');
+                    });
+
+                    if (Math.random() < 0.3) spawnSummonParticle();
+
+                    if (progress >= 100) completeRitual();
+                }, 50);
+            }
+
+            function stopCharge() {
+                if (!charging) return; /* guard against mouseup+mouseleave double-call */
+                charging = false;
+                arena.classList.remove('summoning-charging');
+                if (chargeInterval) { clearInterval(chargeInterval); chargeInterval = null; }
+
+                /* Always clear any existing decayInterval before starting a new one */
+                if (decayInterval) { clearInterval(decayInterval); decayInterval = null; }
+
+                if (progress < 100 && progress > 0) {
+                    decayInterval = setInterval(() => {
+                        progress = Math.max(progress - 2, 0);
+                        const offset = circumference - (progress / 100) * circumference;
+                        progressRing.style.strokeDashoffset = offset;
+
+                        if (progress <= 0) {
+                            clearInterval(decayInterval);
+                            decayInterval = null;
+                            runes.forEach(r => r.classList.remove('active'));
+                        }
+                    }, 50);
+                }
+            }
+
+            function completeRitual() {
+                if (chargeInterval) { clearInterval(chargeInterval); chargeInterval = null; }
+                arena.classList.add('completed');
+                arena.classList.remove('summoning-charging');
+
+                /* Screen flash */
+                const flash = document.querySelector('.summoning-flash');
+                if (flash) flash.classList.add('active');
+
+                /* Shockwave rings */
+                const shock1 = arena.querySelector('.summoning-shockwave');
+                const shock2 = arena.querySelector('.summoning-shockwave-inner');
+                if (shock1) shock1.classList.add('active');
+                if (shock2) shock2.classList.add('active');
+
+                /* Screen shake */
+                const sectionWrap = document.querySelector('.summoning-section-wrap');
+                if (sectionWrap) {
+                    sectionWrap.classList.add('shake');
+                    sectionWrap.addEventListener('animationend', () => {
+                        sectionWrap.classList.remove('shake');
+                    }, { once: true });
+                }
+
+                /* More burst particles — 60 instead of 30 */
+                for (let i = 0; i < 60; i++) {
+                    setTimeout(() => spawnBurstParticle(), i * 20);
+                }
+
+                setTimeout(() => {
+                    if (summonResult) summonResult.classList.add('revealed');
+                }, 800);
+
+                /* Reveal soul-connection, then stagger each orb */
+                setTimeout(() => {
+                    const sc = document.getElementById('soulConnection');
+                    if (sc) sc.classList.add('revealed');
+                }, 1100);
+                document.querySelectorAll('.soul-orb').forEach((orb, i) => {
+                    setTimeout(() => orb.classList.add('soul-revealed'), 1400 + i * 90);
+                });
+
+                /* Clean up flash/shockwave classes */
+                setTimeout(() => {
+                    if (flash) flash.classList.remove('active');
+                    if (shock1) shock1.classList.remove('active');
+                    if (shock2) shock2.classList.remove('active');
+                }, 2000);
+            }
+
+            function spawnSummonParticle() {
+                const p = document.createElement('div');
+                p.classList.add('summoning-particle');
+                const cx = arena.offsetWidth / 2;
+                const cy = arena.offsetHeight / 2;
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 120 + Math.random() * 60;
+                const startX = cx + Math.cos(angle) * radius;
+                const startY = cy + Math.sin(angle) * radius;
+                const duration = 500 + Math.random() * 500;
+
+                p.style.left = startX + 'px';
+                p.style.top = startY + 'px';
+                arena.appendChild(p);
+
+                p.animate([
+                    { left: startX + 'px', top: startY + 'px', opacity: 1 },
+                    { left: cx + 'px', top: cy + 'px', opacity: 0 }
+                ], { duration: duration, easing: 'ease-in', fill: 'forwards' });
+
+                setTimeout(() => p.remove(), duration);
+            }
+
+            function spawnBurstParticle() {
+                const p = document.createElement('div');
+                p.classList.add('summoning-particle');
+                const cx = arena.offsetWidth / 2;
+                const cy = arena.offsetHeight / 2;
+                p.style.left = cx + 'px';
+                p.style.top = cy + 'px';
+                const rand = Math.random();
+                p.style.background = rand > 0.6 ? 'var(--c-necrotic)' : rand > 0.3 ? 'var(--c-gold)' : '#fff';
+                arena.appendChild(p);
+
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 100 + Math.random() * 180;
+                const endX = cx + Math.cos(angle) * dist;
+                const endY = cy + Math.sin(angle) * dist;
+                const duration = 700 + Math.random() * 600;
+                const startScale = 1.5 + Math.random() * 2.5;
+
+                p.animate([
+                    { left: cx + 'px', top: cy + 'px', opacity: 1, transform: 'scale(' + startScale + ')' },
+                    { left: endX + 'px', top: endY + 'px', opacity: 0, transform: 'scale(0)' }
+                ], { duration: duration, easing: 'ease-out', fill: 'forwards' });
+
+                setTimeout(() => p.remove(), duration);
+            }
+
+            summonCore.addEventListener('mousedown', startCharge);
+            summonCore.addEventListener('mouseup', stopCharge);
+            summonCore.addEventListener('mouseleave', stopCharge);
+            summonCore.addEventListener('touchstart', (e) => { e.preventDefault(); startCharge(); }, { passive: false });
+            summonCore.addEventListener('touchend', stopCharge);
+            summonCore.addEventListener('touchcancel', stopCharge);
+        }
+    </script>
+
+    <!-- ═══════════════════════════════════════
+         THREE.JS BACKGROUND — Necromantic Realm
+         ═══════════════════════════════════════ -->
+    <script type="module">
+        import * as THREE from 'https://esm.sh/three@0.160.0';
+        import { EffectComposer } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'https://esm.sh/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050a0a, 0.018);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 20);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        /* Post Processing — Ethereal Bloom */
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85
+        );
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.0;
+        bloomPass.radius = 0.6;
+        composer.addPass(bloomPass);
+
+        /* ─── 1. NECROTIC SOULS (Shader Particles) ─── */
+        const SOUL_COUNT = 400;
+        const soulGeo = new THREE.BufferGeometry();
+        const soulPos = new Float32Array(SOUL_COUNT * 3);
+        const soulSpeed = new Float32Array(SOUL_COUNT);
+        const soulPhase = new Float32Array(SOUL_COUNT);
+
+        for (let i = 0; i < SOUL_COUNT; i++) {
+            soulPos[i * 3]     = (Math.random() - 0.5) * 80;
+            soulPos[i * 3 + 1] = (Math.random() - 0.5) * 100 - 20;
+            soulPos[i * 3 + 2] = (Math.random() - 0.5) * 60;
+            soulSpeed[i] = Math.random() * 0.05 + 0.03;
+            soulPhase[i] = Math.random() * Math.PI * 2;
+        }
+
+        soulGeo.setAttribute('position', new THREE.BufferAttribute(soulPos, 3));
+        soulGeo.setAttribute('speed', new THREE.BufferAttribute(soulSpeed, 1));
+        soulGeo.setAttribute('phase', new THREE.BufferAttribute(soulPhase, 1));
+
+        const soulMat = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                color: { value: new THREE.Color(0x00d4aa) }
+            },
+            vertexShader: `
+                uniform float time;
+                attribute float speed;
+                attribute float phase;
+                varying float vAlpha;
+                void main() {
+                    vec3 pos = position;
+                    pos.y += mod(time * speed * 30.0, 100.0);
+                    if (pos.y > 50.0) pos.y -= 100.0;
+                    pos.x += sin(time * 0.8 + phase) * 3.0;
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    gl_PointSize = 150.0 / -mvPosition.z;
+                    gl_Position = projectionMatrix * mvPosition;
+                    vAlpha = 1.0 - smoothstep(10.0, 50.0, pos.y);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                varying float vAlpha;
+                void main() {
+                    vec2 center = gl_PointCoord - 0.5;
+                    center.y *= 2.0;
+                    float r = length(center);
+                    if (r > 0.5) discard;
+                    float glow = pow(1.0 - r * 2.0, 3.0);
+                    gl_FragColor = vec4(color, vAlpha * glow * 0.8);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        scene.add(new THREE.Points(soulGeo, soulMat));
+
+        /* ─── 2. WHITE LILY PETALS (InstancedMesh) ─── */
+        const petalShape = new THREE.Shape();
+        petalShape.moveTo(0, 0);
+        petalShape.bezierCurveTo(0.2, 0.2, 0.2, 0.8, 0, 1);
+        petalShape.bezierCurveTo(-0.2, 0.8, -0.2, 0.2, 0, 0);
+
+        const PETAL_COUNT = 200;
+        const petalGeo = new THREE.ShapeGeometry(petalShape);
+        const petalMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8
+        });
+        const petalMesh = new THREE.InstancedMesh(petalGeo, petalMat, PETAL_COUNT);
+        const dummy = new THREE.Object3D();
+        const petalData = [];
+
+        for (let i = 0; i < PETAL_COUNT; i++) {
+            const x = (Math.random() - 0.5) * 60;
+            const y = Math.random() * 80 - 40;
+            const z = (Math.random() - 0.5) * 40;
+            const scale = Math.random() * 0.5 + 0.3;
+
+            dummy.position.set(x, y, z);
+            dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            dummy.scale.setScalar(scale);
+            dummy.updateMatrix();
+            petalMesh.setMatrixAt(i, dummy.matrix);
+
+            petalData.push({
+                x, y, z, scale,
+                rx: dummy.rotation.x,
+                ry: dummy.rotation.y,
+                rz: dummy.rotation.z,
+                speed: Math.random() * 0.05 + 0.02,
+                spinX: Math.random() * 0.02,
+                spinY: Math.random() * 0.02,
+                baseX: x,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+        scene.add(petalMesh);
+
+        /* ─── 3. VOID CORE — Black Lily (Noise Sphere) ─── */
+        const coreGeo = new THREE.IcosahedronGeometry(4, 15);
+        const coreMat = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                colorA: { value: new THREE.Color(0x000000) },
+                colorB: { value: new THREE.Color(0x1a0520) }
+            },
+            vertexShader: `
+                uniform float time;
+                varying vec3 vNormal;
+                varying float vDisplace;
+
+                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
+                vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+                float snoise(vec3 v) {
+                    const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
+                    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+                    vec3 i = floor(v + dot(v, C.yyy));
+                    vec3 x0 = v - i + dot(i, C.xxx);
+                    vec3 g = step(x0.yzx, x0.xyz);
+                    vec3 l = 1.0 - g;
+                    vec3 i1 = min(g.xyz, l.zxy);
+                    vec3 i2 = max(g.xyz, l.zxy);
+                    vec3 x1 = x0 - i1 + C.xxx;
+                    vec3 x2 = x0 - i2 + C.yyy;
+                    vec3 x3 = x0 - D.yyy;
+                    i = mod289(i);
+                    vec4 p = permute(permute(permute(
+                        i.z + vec4(0.0, i1.z, i2.z, 1.0))
+                        + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+                        + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+                    float n_ = 0.142857142857;
+                    vec3 ns = n_ * D.wyz - D.xzx;
+                    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+                    vec4 x_ = floor(j * ns.z);
+                    vec4 y_ = floor(j - 7.0 * x_);
+                    vec4 x = x_ * ns.x + ns.yyyy;
+                    vec4 y = y_ * ns.x + ns.yyyy;
+                    vec4 h = 1.0 - abs(x) - abs(y);
+                    vec4 b0 = vec4(x.xy, y.xy);
+                    vec4 b1 = vec4(x.zw, y.zw);
+                    vec4 s0 = floor(b0) * 2.0 + 1.0;
+                    vec4 s1 = floor(b1) * 2.0 + 1.0;
+                    vec4 sh = -step(h, vec4(0.0));
+                    vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+                    vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+                    vec3 p0 = vec3(a0.xy, h.x);
+                    vec3 p1 = vec3(a0.zw, h.y);
+                    vec3 p2 = vec3(a1.xy, h.z);
+                    vec3 p3 = vec3(a1.zw, h.w);
+                    vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+                    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                    vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+                    m = m * m;
+                    return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+                }
+
+                void main() {
+                    vNormal = normal;
+                    float noiseVal = snoise(position * 0.5 + time * 0.5);
+                    vDisplace = noiseVal;
+                    vec3 newPos = position + normal * noiseVal * 1.5;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 colorA;
+                uniform vec3 colorB;
+                varying float vDisplace;
+                void main() {
+                    vec3 color = mix(colorA, colorB, vDisplace + 0.5);
+                    gl_FragColor = vec4(color, 0.95);
+                }
+            `,
+            transparent: true
+        });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
+
+        /* ─── ANIMATION LOOP ─── */
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            /* Souls */
+            soulMat.uniforms.time.value = t;
+
+            /* Petals */
+            for (let i = 0; i < PETAL_COUNT; i++) {
+                const pd = petalData[i];
+                pd.y -= pd.speed;
+                if (pd.y < -30) pd.y = 50;
+                pd.x = pd.baseX + Math.sin(t + pd.phase) * 3.0;
+                pd.rx += pd.spinX;
+                pd.ry += pd.spinY;
+
+                dummy.position.set(pd.x, pd.y, pd.z);
+                dummy.rotation.set(pd.rx, pd.ry, pd.rz);
+                dummy.scale.setScalar(pd.scale);
+                dummy.updateMatrix();
+                petalMesh.setMatrixAt(i, dummy.matrix);
+            }
+            petalMesh.instanceMatrix.needsUpdate = true;
+
+            /* Core */
+            coreMat.uniforms.time.value = t;
+            core.rotation.y = t * 0.1;
+            core.rotation.z = t * 0.05;
+
+            /* Camera float */
+            camera.position.y = 5 + Math.sin(t * 0.2) * 1.0;
+
+            composer.render();
+        }
+        animate();
+
+        /* ─── RESIZE ─── */
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        /* ─── GSAP SCROLL ANIMATIONS ─── */
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.card').forEach(card => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: 'top 85%',
+                    toggleActions: 'play none none reverse'
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1.5,
+                ease: 'power2.out'
+            });
+        });
+
+        gsap.utils.toArray('.ornament').forEach(orn => {
+            gsap.from(orn, {
+                scrollTrigger: {
+                    trigger: orn,
+                    start: 'top 90%',
+                    toggleActions: 'play none none reverse'
+                },
+                scaleX: 0,
+                opacity: 0,
+                duration: 1,
+                ease: 'power2.out'
+            });
+        });
+
+        /* Divination cards stagger */
+        gsap.utils.toArray('.divination-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: '.divination-altar',
+                    start: 'top 85%',
+                    toggleActions: 'play none none reverse'
+                },
+                y: 30,
+                rotationZ: -5 + Math.random() * 10,
+                opacity: 0,
+                duration: 0.8,
+                delay: i * 0.15,
+                ease: 'back.out(1.2)'
+            });
+        });
+
+        /* Summoning arena */
+        gsap.from('.summoning-arena', {
+            scrollTrigger: {
+                trigger: '.summoning-arena',
+                start: 'top 85%',
+                toggleActions: 'play none none reverse'
+            },
+            scale: 0.5,
+            opacity: 0,
+            duration: 1.5,
+            ease: 'power2.out'
+        });
+
+        /* Spirit echoes whispers + runes stagger */
+        gsap.utils.toArray('.spirit-whisper, .spirit-rune').forEach((el, i) => {
+            const isRune = el.classList.contains('spirit-rune');
+            gsap.to(el, {
+                scrollTrigger: {
+                    trigger: '.spirit-stage',
+                    start: 'top 80%',
+                    toggleActions: 'play none none reverse'
+                },
+                opacity: isRune ? 0.4 : 0.7,
+                duration: 1.5,
+                delay: i * 0.2,
+                ease: 'power2.out'
+            });
+        });
+
+        /* Spirit mirror entrance */
+        gsap.from('.spirit-mirror', {
+            scrollTrigger: {
+                trigger: '.spirit-stage',
+                start: 'top 85%',
+                toggleActions: 'play none none reverse'
+            },
+            scale: 0.6,
+            opacity: 0,
+            duration: 1.5,
+            ease: 'power2.out'
+        });
+
+        /* Evolution section */
+        gsap.from('.evolution-container', {
+            scrollTrigger: {
+                trigger: '.evolution-container',
+                start: 'top 85%',
+                toggleActions: 'play none none reverse'
+            },
+            x: -60,
+            opacity: 0,
+            duration: 1.2,
+            ease: 'power2.out'
+        });
+
+        /* Duality portraits */
+        gsap.from('.duality-void .duality-portrait-frame', {
+            scrollTrigger: {
+                trigger: '.duality-grid',
+                start: 'top 85%',
+                toggleActions: 'play none none reverse'
+            },
+            x: -30,
+            opacity: 0,
+            duration: 1,
+            ease: 'power2.out'
+        });
+
+        gsap.from('.duality-light .duality-portrait-frame', {
+            scrollTrigger: {
+                trigger: '.duality-grid',
+                start: 'top 85%',
+                toggleActions: 'play none none reverse'
+            },
+            x: 30,
+            opacity: 0,
+            duration: 1,
+            ease: 'power2.out'
+        });
+
+        /* Title reveal */
+        const tl = gsap.timeline();
+        tl.from('.hero-title', {
+            opacity: 0,
+            y: 20,
+            duration: 2,
+            delay: 0.5,
+            ease: 'power3.out'
+        })
+        .to('.tagline', {
+            opacity: 1,
+            duration: 2,
+            ease: 'power2.out'
+        }, '-=1.0');
+    </script>
+
+    <script>
+        /* ── Intro Veil Controller ── */
+        (function () {
+            var veil = document.getElementById('intro-veil');
+            if (!veil) return;
+
+            var lifted    = false;
+            var minDone   = false;
+            var pageReady = document.readyState === 'complete';
+
+            function revealPage() {
+                var backBtn = document.querySelector('.back-btn');
+                if (backBtn) backBtn.classList.add('page-revealed');
+            }
+
+            function lift() {
+                if (lifted) return;
+                if (!minDone || !pageReady) return;
+                lifted = true;
+
+                /* Phase 1: disperse ritual content inside the veil */
+                veil.classList.add('is-lifting');
+
+                /* Phase 2: after ritual fades (~450ms), replace veil with
+                   two independent layers:
+                   - veil-fade (z-9998): solid black base → prevents flash
+                   - veil-glow (z-9999): bright bloom ON TOP → visible transition */
+                setTimeout(function () {
+                    var fade = document.createElement('div');
+                    fade.className = 'veil-fade';
+                    document.body.appendChild(fade);
+
+                    var glow = document.createElement('div');
+                    glow.className = 'veil-glow';
+                    document.body.appendChild(glow);
+
+                    veil.remove();
+                    revealPage();
+
+                    fade.addEventListener('animationend', function () { fade.remove(); });
+                    glow.addEventListener('animationend', function () { glow.remove(); });
+                }, 450);
+            }
+
+            /* Minimum display time: 3 s (animation sequence runs ~2.5 s) */
+            setTimeout(function () { minDone = true; lift(); }, 3000);
+
+            if (!pageReady) {
+                window.addEventListener('load', function () { pageReady = true; lift(); });
+            }
+
+            /* Safety fallback: always remove at 6 s */
+            setTimeout(function () {
+                if (!lifted) { lifted = true; veil.remove(); revealPage(); }
+            }, 6000);
+        })();
+    </script>
+</body>
+</html>
