@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Cozy Haven</title>
+    <title>NEKOPAPAYA | The Illustrated Haven</title>
     <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
 
     <!-- Fonts -->
@@ -28,13 +28,12 @@
 
     <style>
         :root {
-            /* Palette: Enriched Haven */
+            /* Palette: Illustrated Minimalist */
             --c-bg: #F4F1EC;
-            --c-text: #4a4a4a;
-            --c-accent: #8FA891;
-            --c-blue: #8AB6D6;
-            --c-warm: #EAC435;
-            --c-wood: #D7B698;
+            --c-text: #2D3436;
+            --c-accent: #78C0A8;
+            --c-warm: #FDCB6E;
+            --c-stroke: #2D3436; /* Outline color */
 
             --f-en: 'Nunito', sans-serif;
             --f-zh: 'Noto Sans TC', sans-serif;
@@ -54,71 +53,76 @@
         .scroller { position: relative; z-index: 10; pointer-events: none; }
         .interactive-layer { pointer-events: auto; }
 
-        /* --- Tooltip UI --- */
+        /* --- Bubble Tooltip --- */
         #tooltip {
             position: fixed; pointer-events: none; opacity: 0;
-            background: rgba(255,255,255,0.9); padding: 0.5rem 1rem;
-            border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            font-family: var(--f-en); font-weight: 700; color: var(--c-accent);
-            transform: translate(-50%, -150%); transition: opacity 0.3s;
+            background: white; padding: 0.8rem 1.2rem;
+            border: 2px solid var(--c-stroke); border-radius: 12px;
+            box-shadow: 4px 4px 0px var(--c-stroke); /* Comic shadow */
+            font-family: var(--f-en); color: var(--c-text);
+            transform: translate(-50%, -150%); transition: opacity 0.2s, transform 0.2s;
             z-index: 100;
+        }
+        #tooltip::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            border-width: 8px 8px 0; border-style: solid;
+            border-color: var(--c-stroke) transparent transparent transparent;
         }
 
         /* --- Sections --- */
         .section {
-            height: 120vh; /* More space */
+            height: 120vh;
             display: flex; flex-direction: column; justify-content: center;
             padding: 2rem; position: relative;
         }
 
         .content-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
+            background: white;
             padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+            border-radius: 16px;
+            border: 2px solid var(--c-stroke);
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.05);
             max-width: 450px;
-            border: 2px solid rgba(255,255,255,0.8);
             transition: transform 0.3s;
         }
-        .content-card:hover { transform: translateY(-5px); }
+        .content-card:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px rgba(0,0,0,0.1); }
 
         .pos-left { margin-right: auto; margin-left: 5vw; }
         .pos-right { margin-left: auto; margin-right: 5vw; }
         .pos-center { margin: 0 auto; text-align: center; }
-        .pos-top-left { margin-right: auto; margin-left: 10vw; margin-bottom: auto; margin-top: 15vh; }
 
-        h1 { font-family: var(--f-en); font-weight: 900; font-size: 3rem; line-height: 1.1; margin-bottom: 0.5rem; }
-        h2 { font-family: var(--f-en); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-accent); margin-bottom: 1rem; }
-        h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--c-text); }
-        p { font-size: 1rem; color: #666; margin-bottom: 1rem; }
+        h1 { font-family: var(--f-en); font-weight: 900; font-size: 3rem; line-height: 1.1; margin-bottom: 0.5rem; color: var(--c-text); }
+        h2 { font-family: var(--f-en); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-accent); margin-bottom: 1rem; border-bottom: 2px dashed var(--c-accent); display: inline-block; }
+        h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        p { font-size: 1rem; color: #555; margin-bottom: 1rem; }
 
         .tag {
-            display: inline-block; padding: 0.3rem 0.8rem; background: white;
-            border-radius: 50px; font-size: 0.8rem; font-weight: 700; color: var(--c-accent);
-            margin-right: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: inline-block; padding: 0.3rem 0.8rem; background: var(--c-bg);
+            border: 1px solid var(--c-text); border-radius: 50px;
+            font-size: 0.8rem; font-weight: 700; margin-right: 0.5rem;
         }
 
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
             font-family: var(--f-en); font-weight: 900; color: var(--c-text); text-decoration: none;
-            padding: 0.5rem 1.2rem; background: white; border-radius: 50px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05); pointer-events: auto;
+            padding: 0.5rem 1.2rem; background: white; border: 2px solid var(--c-text); border-radius: 50px;
+            pointer-events: auto; transition: transform 0.2s;
         }
+        .nav-fixed:hover { transform: scale(1.05); }
 
         .social-link {
             display: inline-flex; align-items: center; justify-content: center;
             width: 50px; height: 50px; border-radius: 50%; background: white;
             color: var(--c-text); font-size: 1.2rem; margin: 0 0.5rem;
-            transition: transform 0.2s, background 0.2s, color 0.2s; text-decoration: none;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+            border: 2px solid var(--c-text);
+            transition: transform 0.2s, background 0.2s; text-decoration: none;
         }
-        .social-link:hover { transform: scale(1.1); background: var(--c-accent); color: white; }
+        .social-link:hover { transform: translateY(-3px); background: var(--c-accent); color: white; border-color: var(--c-text); }
 
         @media(max-width: 768px) {
             .content-card { margin: 0 auto !important; width: 100%; max-width: 100%; padding: 1.5rem; }
             h1 { font-size: 2.2rem; }
-            .section { height: auto; min-height: 80vh; padding: 4rem 1.5rem; }
+            .section { min-height: 80vh; padding: 4rem 1.5rem; }
         }
 
     </style>
@@ -131,65 +135,59 @@
 
     <div class="scroller">
 
-        <!-- 1. Hero: Overview -->
+        <!-- 1. Hero -->
         <section class="section">
             <div class="content-card pos-left interactive-layer gs-reveal">
-                <span class="tag">#SafeHaven</span>
-                <span class="tag">#Analyst</span>
+                <span class="tag">#Analyst</span> <span class="tag">#Haven</span>
                 <h1 style="margin-top: 1rem;">NEKOPAPAYA</h1>
                 <p>人體狀態觀察分析師 | 康樂股長</p>
                 <p style="font-style: italic; color: var(--c-accent);">"Hydrogen knocking on your soul."</p>
-                <div style="font-size: 0.9rem; color: #888;">
-                    <i class="fa-solid fa-computer-mouse"></i> Scroll & Explore the Room
+                <div style="font-size: 0.9rem; color: #888; margin-top: 1rem;">
+                    <i class="fa-solid fa-arrow-pointer"></i> Interact with the Room
                 </div>
             </div>
         </section>
 
-        <!-- 2. Desk: Methodology -->
+        <!-- 2. Desk -->
         <section class="section">
             <div class="content-card pos-right interactive-layer gs-reveal" style="max-width: 400px;">
-                <h2>THE LAB</h2>
-                <h1>Analysis.</h1>
-                <h3>Observe & Tune</h3>
+                <h2>METHODOLOGY</h2>
+                <h1>The Analysis.</h1>
                 <p>無聲地觀察每個人的狀態與需求。就像科學家在實驗室調配配方，我調配的是「氛圍」。</p>
-                <div style="background: rgba(255,255,255,0.5); padding: 1rem; border-radius: 8px;">
-                    <strong style="color: var(--c-blue);">Toolkit:</strong><br>
-                    Listening, Empathy, Vibe Check.
+                <div style="background: var(--c-bg); padding: 1rem; border-radius: 8px; border: 1px dashed var(--c-text);">
+                    <strong>Toolkit:</strong> Empathy, Observation, Vibe Check.
                 </div>
             </div>
         </section>
 
-        <!-- 3. Bookshelf: Memories -->
+        <!-- 3. Bookshelf -->
         <section class="section">
             <div class="content-card pos-left interactive-layer gs-reveal">
                 <h2>ARCHIVE</h2>
                 <h1>Library of Souls.</h1>
                 <p>每一個相遇都是一本書。我收集著大家的故事，將它們安放在這個空間裡。</p>
-                <p>這裡不只是避風港，也是記憶的圖書館。</p>
             </div>
         </section>
 
-        <!-- 4. Lounge: The Safe Zone -->
+        <!-- 4. Lounge -->
         <section class="section">
             <div class="content-card pos-right interactive-layer gs-reveal">
-                <h2>THE HAVEN</h2>
-                <h1>Rest Here.</h1>
+                <h2>CORE</h2>
+                <h1>Safe Haven.</h1>
                 <p>這裡是一個可以停下來、坐一下的地方。沒有強迫，只有邀請。</p>
-                <p>喜歡可愛人事物、熱情、船。這就是我靈魂的燃料。</p>
             </div>
         </section>
 
-        <!-- 5. Corkboard: Connect -->
+        <!-- 5. Connect -->
         <section class="section">
             <div class="content-card pos-center interactive-layer gs-reveal">
-                <h2>CHANNEL OPEN</h2>
+                <h2>SYNC</h2>
                 <h1>Connect.</h1>
                 <p>魔人揪揪出動！如果你剛好想參與、想一起感受，就可以私訊我。</p>
                 <div style="margin-top: 2rem;">
                     <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p style="font-size: 0.8rem; margin-top: 1rem; opacity: 0.6;">Safety Protocol: Voluntary Basis Only.</p>
             </div>
         </section>
 
@@ -203,24 +201,25 @@
         const container = document.getElementById('webgl-container');
         const tooltip = document.getElementById('tooltip');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.Fog(0xF4F1EC, 10, 25);
+        scene.background = new THREE.Color(0xF4F1EC);
 
         // Isometric Camera
         const aspect = window.innerWidth / window.innerHeight;
-        const d = 12;
+        const d = 11;
         const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
         camera.position.set(20, 20, 20);
         camera.lookAt(0, 0, 0);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        // Toon Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.SoftShadowMap;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
         // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xFFE4C4, 0.8);
         dirLight.position.set(10, 20, 5);
@@ -229,116 +228,179 @@
         dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        // --- Assets (Materials) ---
-        const matWood = new THREE.MeshStandardMaterial({ color: 0xD7B698, roughness: 0.8 });
-        const matWall = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.9 });
-        const matDark = new THREE.MeshStandardMaterial({ color: 0x4A4A4A, roughness: 0.8 });
-        const matAccent = new THREE.MeshStandardMaterial({ color: 0x8FA891, roughness: 0.8 });
-        const matBlue = new THREE.MeshStandardMaterial({ color: 0x8AB6D6, roughness: 0.6 });
-        const matYellow = new THREE.MeshStandardMaterial({ color: 0xEAC435, roughness: 0.6 });
-        const matPaper = new THREE.MeshStandardMaterial({ color: 0xFFF8DC, roughness: 0.9 });
+        // --- Toon Materials & Outline Helper ---
+        // Create a 3-step gradient map for toon shading
+        const format = ( renderer.capabilities.isWebGL2 ) ? THREE.RedFormat : THREE.LuminanceFormat;
+        const colors = new Uint8Array([0, 128, 255]);
+        const gradientMap = new THREE.DataTexture( colors, colors.length, 1, format );
+        gradientMap.needsUpdate = true;
+        gradientMap.minFilter = THREE.NearestFilter;
+        gradientMap.magFilter = THREE.NearestFilter;
+
+        function createToonMat(color) {
+            return new THREE.MeshToonMaterial({
+                color: color,
+                gradientMap: gradientMap
+            });
+        }
+
+        const matWood = createToonMat(0xE5CFA9);
+        const matWall = createToonMat(0xFFFFFF);
+        const matDark = createToonMat(0x2D3436);
+        const matAccent = createToonMat(0x78C0A8);
+        const matBlue = createToonMat(0x74B9FF);
+        const matYellow = createToonMat(0xFDCB6E);
+
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x2D3436, linewidth: 2 });
+
+        function addOutline(mesh, geo) {
+            const edges = new THREE.EdgesGeometry(geo, 15); // Threshold angle
+            const line = new THREE.LineSegments(edges, lineMat);
+            mesh.add(line);
+        }
 
         // --- Scene Builder ---
         const room = new THREE.Group();
         scene.add(room);
 
         // 1. Structure
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(14, 0.5, 14), matWood);
-        floor.position.y = -0.25; floor.receiveShadow = true; room.add(floor);
-        const wall1 = new THREE.Mesh(new THREE.BoxGeometry(14, 8, 0.5), matWall);
-        wall1.position.set(0, 4, -7.25); wall1.receiveShadow = true; room.add(wall1);
-        const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 8, 14), matWall);
-        wall2.position.set(-7.25, 4, 0); wall2.receiveShadow = true; room.add(wall2);
+        const floorGeo = new THREE.BoxGeometry(14, 0.5, 14);
+        const floor = new THREE.Mesh(floorGeo, matWood);
+        floor.position.y = -0.25; floor.receiveShadow = true;
+        addOutline(floor, floorGeo);
+        room.add(floor);
 
-        // Window (Light Shaft)
-        const winGeo = new THREE.BoxGeometry(0.2, 3, 2);
-        const winFrame = new THREE.Mesh(winGeo, matWood);
-        winFrame.position.set(-7, 5, -2); room.add(winFrame);
-        // Fake light shaft mesh
-        const shaftGeo = new THREE.ConeGeometry(2, 8, 4, 1, true);
-        const shaftMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
-        const shaft = new THREE.Mesh(shaftGeo, shaftMat);
-        shaft.position.set(-5, 3, -2); shaft.rotation.z = -Math.PI/3; room.add(shaft);
+        // Floor Grid Texture (Illustration Style)
+        const gridHelper = new THREE.GridHelper(14, 14, 0x000000, 0x000000);
+        gridHelper.position.y = 0.01;
+        gridHelper.material.opacity = 0.1;
+        gridHelper.material.transparent = true;
+        room.add(gridHelper);
 
-        // 2. Desk Area (Analyst)
+        const wallGeo1 = new THREE.BoxGeometry(14, 8, 0.5);
+        const wall1 = new THREE.Mesh(wallGeo1, matWall);
+        wall1.position.set(0, 4, -7.25); wall1.receiveShadow = true;
+        addOutline(wall1, wallGeo1);
+        room.add(wall1);
+
+        const wallGeo2 = new THREE.BoxGeometry(0.5, 8, 14);
+        const wall2 = new THREE.Mesh(wallGeo2, matWall);
+        wall2.position.set(-7.25, 4, 0); wall2.receiveShadow = true;
+        addOutline(wall2, wallGeo2);
+        room.add(wall2);
+
+        // Baseboards
+        const base1 = new THREE.Mesh(new THREE.BoxGeometry(14, 0.5, 0.6), matWall);
+        base1.position.set(0, 0.25, -7.2); room.add(base1);
+        const base2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 14), matWall);
+        base2.position.set(-7.2, 0.25, 0); room.add(base2);
+
+        // Window
+        const winGroup = new THREE.Group(); winGroup.position.set(-7, 5, -2); room.add(winGroup);
+        const winFrameGeo = new THREE.BoxGeometry(0.2, 3, 2);
+        const winFrame = new THREE.Mesh(winFrameGeo, matWood); addOutline(winFrame, winFrameGeo);
+        winGroup.add(winFrame);
+        // Sky Plane
+        const skyGeo = new THREE.PlaneGeometry(0.1, 2.5, 1.5);
+        const sky = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 1.5), matBlue);
+        sky.position.x = -0.1; winGroup.add(sky);
+
+        // 2. Desk (Rounded)
         const desk = new THREE.Group(); desk.position.set(-4, 0, -4); room.add(desk);
-        const deskTop = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 2.5), matWood);
-        deskTop.position.y = 1.5; deskTop.castShadow = true; deskTop.receiveShadow = true; desk.add(deskTop);
-        // Legs
-        [[-1.8,1], [1.8,1], [-1.8,-1], [1.8,-1]].forEach(pos => {
-            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,1.5), matDark);
-            leg.position.set(pos[0], 0.75, pos[1]); desk.add(leg);
-        });
-        // Props: Monitor
-        const mon = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 0.1), matDark);
-        mon.position.set(0, 2.4, -0.5); desk.add(mon);
-        mon.userData = { name: "The Analyst", desc: "Processing Vibes..." };
-        // Props: Photo Frame
+        const topGeo = new THREE.BoxGeometry(4, 0.2, 2.5);
+        const top = new THREE.Mesh(topGeo, matWood);
+        top.position.y = 1.5; top.castShadow = true; top.receiveShadow = true;
+        addOutline(top, topGeo);
+        desk.add(top);
+
+        // Drawers
+        const drawGeo = new THREE.BoxGeometry(1, 1.2, 2);
+        const draw = new THREE.Mesh(drawGeo, matWood);
+        draw.position.set(1.2, 0.6, 0); addOutline(draw, drawGeo); desk.add(draw);
+
+        // Leg
+        const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.5);
+        const leg = new THREE.Mesh(legGeo, matDark); leg.position.set(-1.5, 0.75, 0); desk.add(leg);
+
+        // Props
+        // Monitor
+        const monGeo = new THREE.BoxGeometry(2, 1.2, 0.2);
+        const mon = new THREE.Mesh(monGeo, matDark); mon.position.set(0, 2.4, -0.5);
+        addOutline(mon, monGeo); desk.add(mon);
+        mon.userData = { name: "PC", desc: "Analyzing Vibes" };
+
+        // Photo
         const photoGeo = new THREE.PlaneGeometry(0.8, 0.8);
         const photoTex = new THREE.TextureLoader().load('/assets/img/guild/nekopapaya/avatar.webp');
-        const photoFrame = new THREE.Mesh(photoGeo, new THREE.MeshBasicMaterial({ map: photoTex }));
-        photoFrame.position.set(1.2, 1.8, -0.8); photoFrame.rotation.set(-0.1, -0.2, 0); desk.add(photoFrame);
+        const photo = new THREE.Mesh(photoGeo, new THREE.MeshBasicMaterial({ map: photoTex }));
+        photo.position.set(1.2, 1.8, -0.8); photo.rotation.set(-0.1, -0.2, 0); desk.add(photo);
+        // Frame
+        const frameGeo = new THREE.BoxGeometry(0.9, 0.9, 0.05);
+        const frame = new THREE.Mesh(frameGeo, matWall);
+        frame.position.set(1.2, 1.8, -0.85); frame.rotation.set(-0.1, -0.2, 0);
+        addOutline(frame, frameGeo); desk.add(frame);
 
-        // 3. Bookshelf (Collector)
+        // 3. Bookshelf
         const shelf = new THREE.Group(); shelf.position.set(0, 0, -6.5); room.add(shelf);
-        const shelfBody = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 1), matWood);
-        shelfBody.position.y = 2.5; shelfBody.castShadow = true; shelf.add(shelfBody);
-        // Procedural Books
-        const bookColors = [matAccent, matBlue, matYellow, matDark];
-        for(let i=0; i<15; i++) {
-            const bMat = bookColors[Math.floor(Math.random()*bookColors.length)];
-            const book = new THREE.Mesh(new THREE.BoxGeometry(0.2, Math.random()*0.4+0.6, 0.8), bMat);
-            book.position.set( (i-7)*0.22, Math.random()*3 + 1, 0.2 );
-            book.userData = { name: "Story", desc: "A collected memory." };
-            shelf.add(book);
+        const bodyGeo = new THREE.BoxGeometry(4, 5, 1);
+        const body = new THREE.Mesh(bodyGeo, matWood);
+        body.position.y = 2.5; body.castShadow = true; addOutline(body, bodyGeo); shelf.add(body);
+
+        const bCols = [matAccent, matBlue, matYellow, matDark];
+        for(let i=0; i<12; i++) {
+            const bGeo = new THREE.BoxGeometry(0.2, Math.random()*0.5+0.5, 0.8);
+            const b = new THREE.Mesh(bGeo, bCols[i%4]);
+            b.position.set((i-6)*0.25, Math.random()*3+1, 0.2);
+            addOutline(b, bGeo);
+            b.userData = { name: "Book", desc: "A Story" };
+            shelf.add(b);
         }
 
-        // 4. Lounge (Haven)
+        // 4. Lounge
         const lounge = new THREE.Group(); lounge.position.set(3, 0, 3); room.add(lounge);
-        // Rug
         const rug = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.05, 32), matAccent);
-        rug.position.y = 0.05; lounge.add(rug);
-        // Beanbag
-        const beanGeo = new THREE.SphereGeometry(1, 16, 16);
-        const beanbag = new THREE.Mesh(beanGeo, matBlue);
-        beanbag.position.set(0, 0.8, 0); beanbag.scale.y = 0.6; beanbag.castShadow = true;
-        beanbag.userData = { name: "Relax", desc: "Take a seat." };
-        lounge.add(beanbag);
-        // Coffee Table
-        const table = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.5, 16), matWood);
-        table.position.set(-1.5, 0.25, 1); table.castShadow = true; lounge.add(table);
-        // Mug
-        const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.3, 12), matYellow);
-        mug.position.set(-1.5, 0.65, 1); mug.userData = { name: "Warmth", desc: "Hot Tea." };
-        lounge.add(mug);
+        rug.position.y = 0.05; rug.receiveShadow = true; lounge.add(rug);
+        // Beanbag (Icosahedron for low poly look)
+        const beanGeo = new THREE.IcosahedronGeometry(1, 1);
+        const bean = new THREE.Mesh(beanGeo, matBlue);
+        bean.position.set(0, 0.7, 0); bean.scale.y = 0.7; bean.castShadow = true;
+        addOutline(bean, beanGeo); bean.userData = { name: "Beanbag", desc: "Relaxation Zone" };
+        lounge.add(bean);
 
-        // 5. Corkboard (Connect)
-        const boardGroup = new THREE.Group(); boardGroup.position.set(-6.9, 4, 2); room.add(boardGroup);
-        const board = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3, 4), matWood);
-        boardGroup.add(board);
-        // Notes
-        const noteGeo = new THREE.BoxGeometry(0.15, 0.5, 0.5);
-        for(let i=0; i<5; i++) {
-            const note = new THREE.Mesh(noteGeo, i%2==0 ? matYellow : matPaper);
-            note.position.set(0.05, (Math.random()-0.5)*2, (Math.random()-0.5)*3);
-            note.userData = { name: "Plan", desc: "Joy Event Idea." };
-            boardGroup.add(note);
+        // 5. Hanging Mobile (Top Interaction)
+        const mobileGroup = new THREE.Group();
+        mobileGroup.position.set(0, 7, 0); room.add(mobileGroup);
+
+        // Center String
+        const stringMat = new THREE.LineBasicMaterial({ color: 0x000000 });
+        const stringGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-2,0)]);
+        const string = new THREE.Line(stringGeo, stringMat);
+        mobileGroup.add(string);
+
+        // Planets
+        const planets = [];
+        for(let i=0; i<3; i++) {
+            const pGroup = new THREE.Group();
+            pGroup.position.y = -2;
+            mobileGroup.add(pGroup);
+
+            const armGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(1.5,0,0)]);
+            const arm = new THREE.Line(armGeo, stringMat);
+            arm.rotation.y = (Math.PI * 2 / 3) * i;
+            pGroup.add(arm);
+
+            const shapeGeo = new THREE.IcosahedronGeometry(0.3, 0);
+            const shape = new THREE.Mesh(shapeGeo, i==0?matAccent:i==1?matYellow:matBlue);
+            shape.position.set(1.5 * Math.cos(arm.rotation.y), 0, -1.5 * Math.sin(arm.rotation.y));
+            addOutline(shape, shapeGeo);
+
+            shape.userData = { name: "Joy", desc: "Spinning..." };
+            pGroup.add(shape);
+            planets.push(pGroup);
         }
 
-        // 6. Floating Bubbles
-        const bubbles = [];
-        const bubbleGeo = new THREE.SphereGeometry(0.2, 8, 8);
-        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x8AB6D6, transparent: true, opacity: 0.5 });
-        for(let i=0; i<10; i++) {
-            const b = new THREE.Mesh(bubbleGeo, bubbleMat);
-            b.position.set((Math.random()-0.5)*10, Math.random()*6+1, (Math.random()-0.5)*10);
-            b.userData = { speed: Math.random()*0.02, offset: Math.random()*10 };
-            room.add(b);
-            bubbles.push(b);
-        }
 
-
-        // --- Interaction (Scroll & Click) ---
+        // --- Interaction ---
         let scrollY = 0;
         let targetCamPos = new THREE.Vector3(20, 20, 20);
         let targetZoom = 1;
@@ -350,29 +412,26 @@
             scrollY = window.scrollY;
             const progress = scrollY / (document.body.scrollHeight - window.innerHeight);
 
-            if(progress < 0.1) { // Hero
+            if(progress < 0.1) {
                 targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0);
-            } else if(progress < 0.35) { // Desk
+            } else if(progress < 0.35) {
                 targetCamPos.set(-5, 10, 5); targetZoom = 2; targetLookAt.set(-4, 2, -4);
-            } else if(progress < 0.6) { // Shelf
+            } else if(progress < 0.6) {
                 targetCamPos.set(5, 8, -5); targetZoom = 2; targetLookAt.set(0, 3, -6.5);
-            } else if(progress < 0.85) { // Lounge
+            } else if(progress < 0.85) {
                 targetCamPos.set(5, 10, 5); targetZoom = 2; targetLookAt.set(3, 1, 3);
-            } else { // Board
-                targetCamPos.set(-10, 10, 10); targetZoom = 2; targetLookAt.set(-6.9, 4, 2);
+            } else {
+                targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0);
             }
         });
 
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            // Tooltip movement
             tooltip.style.left = e.clientX + 'px';
             tooltip.style.top = e.clientY + 'px';
         });
 
-        // Loop
         function animate() {
             requestAnimationFrame(animate);
 
@@ -384,32 +443,38 @@
             window.camTarget.lerp(targetLookAt, 0.05);
             camera.lookAt(window.camTarget);
 
-            // Bubbles
-            const time = Date.now() * 0.001;
-            bubbles.forEach(b => {
-                b.position.y += Math.sin(time + b.userData.offset) * 0.01;
-            });
+            // Mobile Animation (Sway)
+            mobileGroup.rotation.y += 0.005 + mouse.x * 0.01;
+            mobileGroup.rotation.z = Math.sin(Date.now()*0.001) * 0.05;
 
             // Raycasting
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(room.children, true);
             let hit = null;
-
             for(let i=0; i<intersects.length; i++) {
-                if(intersects[i].object.userData.name) {
-                    hit = intersects[i].object;
-                    break;
-                }
+                if(intersects[i].object.userData.name) { hit = intersects[i].object; break; }
             }
 
             if(hit) {
                 document.body.style.cursor = 'pointer';
                 tooltip.style.opacity = 1;
-                tooltip.innerHTML = `${hit.userData.name}<br><span style='font-size:0.8em;font-weight:400'>${hit.userData.desc}</span>`;
+                tooltip.innerHTML = `<strong>${hit.userData.name}</strong><br>${hit.userData.desc}`;
+
+                // Pop effect
+                if (!hit.userData.originalScale) hit.userData.originalScale = hit.scale.clone();
+                const targetScale = hit.userData.originalScale.clone().multiplyScalar(1.1);
+                hit.scale.lerp(targetScale, 0.2);
             } else {
                 document.body.style.cursor = 'default';
                 tooltip.style.opacity = 0;
             }
+
+            // Reset all scales slowly
+            room.traverse(obj => {
+                if (obj.userData.originalScale && obj !== hit) {
+                    obj.scale.lerp(obj.userData.originalScale, 0.1);
+                }
+            });
 
             renderer.render(scene, camera);
         }
