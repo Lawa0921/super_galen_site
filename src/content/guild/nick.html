@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nick | Automation Architect</title>
-    <meta name="description" content="Nick - Automation Specialist, Vibe Coding Expert, and n8n Workflow Architect. Building systems that think.">
+    <meta name="description" content="Nick - Building intelligent workflows that scale. Expert in n8n, Vibe Coding, and Automation Systems.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -21,37 +21,26 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        orbitron: ['Orbitron', 'sans-serif'],
-                        rajdhani: ['Rajdhani', 'sans-serif'],
-                        mono: ['Share Tech Mono', 'monospace'],
+                        sans: ['Space Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        neon: {
-                            blue: '#00f3ff',
-                            purple: '#bc13fe',
-                            green: '#0aff00',
-                            red: '#ff003c'
-                        },
-                        cyber: {
-                            black: '#050505',
-                            dark: '#0a0a0f',
-                            slate: '#1a1a2e'
+                        n8n: {
+                            orange: '#ff6d5a',
+                            blue: '#408eea',
+                            green: '#25b864',
+                            dark: '#1c1c21',
+                            panel: '#2d2d35',
+                            canvas: '#15151a'
                         }
                     },
                     animation: {
-                        'glitch': 'glitch 1s linear infinite',
-                        'scan': 'scan 4s linear infinite',
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'pulse-flow': 'pulseFlow 2s infinite linear',
                     },
                     keyframes: {
-                        glitch: {
-                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
-                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
-                            '62%': { transform: 'translate(0,0) skew(5deg)' },
-                        },
-                        scan: {
-                            '0%': { backgroundPosition: '0 -100vh' },
-                            '100%': { backgroundPosition: '0 100vh' },
+                        pulseFlow: {
+                            '0%': { strokeDashoffset: '20' },
+                            '100%': { strokeDashoffset: '0' }
                         }
                     }
                 }
@@ -62,10 +51,10 @@
     <style>
         /* Base Styles */
         body {
-            background-color: #050505;
+            background-color: #15151a;
             color: #ffffff;
             overflow-x: hidden;
-            font-family: 'Rajdhani', sans-serif;
+            font-family: 'Space Grotesk', sans-serif;
         }
 
         /* Smooth Scroll */
@@ -81,350 +70,405 @@
             width: 100%;
             height: 100vh;
             z-index: -1;
-            pointer-events: none; /* Allow clicks to pass through */
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0a0a0f;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #00f3ff;
-            border-radius: 3px;
-        }
-
-        /* Text Effects */
-        .text-glow-blue {
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.7), 0 0 20px rgba(0, 243, 255, 0.5);
-        }
-        .text-glow-purple {
-            text-shadow: 0 0 10px rgba(188, 19, 254, 0.7), 0 0 20px rgba(188, 19, 254, 0.5);
-        }
-
-        .glitch-text {
+        /* Node Card Styles */
+        .node-card {
+            background: rgba(45, 45, 53, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
             position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        .glitch-text::before,
-        .glitch-text::after {
+
+        .node-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .node-header {
+            border-radius: 12px 12px 0 0;
+            padding: 12px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .node-input-dot, .node-output-dot {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 2px solid #2d2d35;
+            z-index: 20;
+        }
+        .node-input-dot { left: -6px; background: #25b864; box-shadow: 0 0 10px #25b864; } /* Green for Input */
+        .node-output-dot { right: -6px; background: #ff6d5a; box-shadow: 0 0 10px #ff6d5a; } /* Orange for Output */
+
+        /* Connection Lines */
+        .connector-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #2d2d35;
+            transform: translateX(-50%);
+            z-index: 0;
+            border-radius: 4px;
+        }
+
+        .connector-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, #25b864 0%, #408eea 50%, #ff6d5a 100%);
+            opacity: 0.3;
+            border-radius: 4px;
+        }
+
+        .connector-pulse {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 40px;
+            background: #fff;
+            border-radius: 4px;
+            transform: translateX(-50%);
+            filter: blur(2px);
+            animation: drop 2s infinite linear;
+        }
+
+        @keyframes drop {
+            0% { top: -10%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 110%; opacity: 0; }
+        }
+
+        /* Glitch Text */
+        .glitch-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .glitch-wrapper::before,
+        .glitch-wrapper::after {
             content: attr(data-text);
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            background: #15151a;
         }
-        .glitch-text::before {
+        .glitch-wrapper::before {
             left: 2px;
             text-shadow: -1px 0 #ff003c;
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
         }
-        .glitch-text::after {
+        .glitch-wrapper::after {
             left: -2px;
             text-shadow: -1px 0 #00f3ff;
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-2 5s infinite linear alternate-reverse;
         }
 
-        @keyframes glitch-anim {
-            0% { clip: rect(10px, 9999px, 31px, 0); }
-            20% { clip: rect(65px, 9999px, 89px, 0); }
-            40% { clip: rect(18px, 9999px, 49px, 0); }
-            60% { clip: rect(12px, 9999px, 94px, 0); }
-            80% { clip: rect(54px, 9999px, 23px, 0); }
-            100% { clip: rect(8px, 9999px, 76px, 0); }
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(29px, 9999px, 86px, 0); }
-            20% { clip: rect(44px, 9999px, 11px, 0); }
-            40% { clip: rect(78px, 9999px, 34px, 0); }
-            60% { clip: rect(15px, 9999px, 67px, 0); }
-            80% { clip: rect(9px, 9999px, 2px, 0); }
-            100% { clip: rect(56px, 9999px, 39px, 0); }
+        ::-webkit-scrollbar-track {
+            background: #15151a;
         }
-
-        /* Tech Borders */
-        .tech-border {
-            position: relative;
-            background: rgba(10, 10, 15, 0.8);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            backdrop-filter: blur(10px);
-            clip-path: polygon(
-                0 0,
-                100% 0,
-                100% calc(100% - 20px),
-                calc(100% - 20px) 100%,
-                0 100%
-            );
+        ::-webkit-scrollbar-thumb {
+            background: #2d2d35;
+            border-radius: 4px;
         }
-        .tech-border::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(135deg, transparent 50%, rgba(0, 243, 255, 0.5) 50%);
-        }
-
-        /* Floating Animation */
-        .float {
-            animation: float 6s ease-in-out infinite;
-        }
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
-        }
-
-        /* Loading Overlay */
-        #loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #050505;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            transition: opacity 0.5s ease-out;
-        }
-
-        .loader-bar {
-            width: 200px;
-            height: 4px;
-            background: #1a1a2e;
-            margin-top: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        .loader-progress {
-            width: 0%;
-            height: 100%;
-            background: #00f3ff;
-            transition: width 0.2s;
-            box-shadow: 0 0 10px #00f3ff;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #408eea;
         }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased selection:bg-n8n-orange selection:text-white">
 
     <!-- Loading Screen -->
-    <div id="loader">
-        <div class="font-orbitron text-4xl text-neon-blue tracking-widest animate-pulse">SYSTEM INITIALIZING</div>
-        <div class="loader-bar">
-            <div class="loader-progress" id="progress-bar"></div>
+    <div id="loader" class="fixed inset-0 z-[9999] bg-[#15151a] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="flex items-center gap-4 mb-4">
+            <i class="fa-solid fa-circle-nodes text-4xl text-n8n-orange animate-spin-slow"></i>
+            <h1 class="font-mono text-2xl font-bold tracking-widest text-white">INITIALIZING<span class="animate-pulse">...</span></h1>
         </div>
-        <div class="mt-4 font-mono text-xs text-gray-500" id="loader-text">Loading Assets...</div>
+        <div class="w-64 h-1 bg-n8n-panel rounded-full overflow-hidden">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-n8n-green to-n8n-orange w-0 transition-all duration-300"></div>
+        </div>
+        <p class="mt-2 font-mono text-xs text-gray-500">Loading Workflow Modules</p>
     </div>
 
     <!-- 3D Background -->
     <canvas id="webgl"></canvas>
 
     <!-- Navigation / HUD -->
-    <nav class="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-center pointer-events-none">
+    <nav class="fixed top-0 left-0 w-full z-50 p-4 md:p-6 flex justify-between items-center pointer-events-none mix-blend-difference">
         <div class="pointer-events-auto">
-            <a href="/guild" class="flex items-center gap-2 group">
-                <div class="w-10 h-10 border border-neon-blue flex items-center justify-center bg-black/50 backdrop-blur group-hover:bg-neon-blue/20 transition-all">
-                    <i class="fa-solid fa-arrow-left text-neon-blue"></i>
+            <a href="/guild" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center group-hover:bg-n8n-orange group-hover:border-n8n-orange transition-all">
+                    <i class="fa-solid fa-arrow-left text-white text-sm"></i>
                 </div>
-                <span class="font-orbitron text-neon-blue opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">RETURN TO GUILD</span>
+                <span class="font-mono text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">BACK_TO_GUILD</span>
             </a>
         </div>
 
-        <div class="pointer-events-auto flex gap-4">
-            <a href="https://znstudio216.com/" target="_blank" class="w-10 h-10 border border-neon-purple flex items-center justify-center bg-black/50 backdrop-blur hover:bg-neon-purple/20 transition-all text-neon-purple">
+        <div class="pointer-events-auto flex gap-3">
+            <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-n8n-panel/80 backdrop-blur rounded-full border border-gray-700 text-xs font-mono text-gray-400 mr-4">
+                <span class="w-2 h-2 rounded-full bg-n8n-green animate-pulse"></span>
+                SYSTEM: ONLINE
+            </div>
+
+            <a href="https://znstudio216.com/" target="_blank" class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center hover:bg-n8n-blue hover:border-n8n-blue transition-all text-white">
                 <i class="fa-solid fa-globe"></i>
             </a>
-            <a href="https://www.threads.net/@nickai216" target="_blank" class="w-10 h-10 border border-white flex items-center justify-center bg-black/50 backdrop-blur hover:bg-white/20 transition-all text-white">
+            <a href="https://www.threads.net/@nickai216" target="_blank" class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center hover:bg-white hover:text-black hover:border-white transition-all text-white">
                 <i class="fa-brands fa-threads"></i>
             </a>
-             <a href="https://www.instagram.com/nickai216/" target="_blank" class="w-10 h-10 border border-pink-500 flex items-center justify-center bg-black/50 backdrop-blur hover:bg-pink-500/20 transition-all text-pink-500">
+             <a href="https://www.instagram.com/nickai216/" target="_blank" class="w-10 h-10 rounded-lg bg-n8n-panel border border-gray-700 flex items-center justify-center hover:bg-pink-500 hover:border-pink-500 transition-all text-white">
                 <i class="fa-brands fa-instagram"></i>
             </a>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="relative z-10">
+    <!-- Main Content Container with Connector Line -->
+    <div class="relative max-w-5xl mx-auto px-4 py-20 min-h-screen flex flex-col gap-32">
 
-        <!-- Hero Section -->
-        <section class="min-h-screen flex flex-col justify-center items-center relative" id="hero">
-            <div class="container mx-auto px-4 text-center z-20">
-                <div class="relative inline-block mb-8 group pointer-events-auto">
-                    <div class="absolute -inset-1 bg-gradient-to-r from-neon-blue to-neon-purple rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                    <img src="/assets/img/guild/nick/avatar.webp" alt="Nick Avatar" class="relative w-40 h-40 md:w-56 md:h-56 rounded-full border-4 border-black object-cover grayscale hover:grayscale-0 transition-all duration-500">
+        <!-- The Central Connector Line -->
+        <div class="connector-line hidden md:block"></div>
+        <div class="connector-pulse hidden md:block" style="animation-delay: 0s;"></div>
+        <div class="connector-pulse hidden md:block" style="animation-delay: 1.5s;"></div>
+
+        <!-- Hero Node (Trigger) -->
+        <section class="relative z-10 w-full md:w-2/3 mx-auto mt-20" id="hero">
+            <div class="node-card">
+                <div class="node-header bg-gradient-to-r from-n8n-green/20 to-n8n-green/5 text-n8n-green border-b border-n8n-green/20">
+                    <i class="fa-solid fa-bolt"></i> WEBHOOK: START_TRIGGER
+                    <div class="ml-auto text-xs opacity-50 font-normal">ID: node_init_01</div>
                 </div>
+                <div class="p-8 md:p-12 text-center relative">
+                    <div class="node-output-dot hidden md:block" style="top: 100%; left: 50%; transform: translate(-50%, -50%);"></div>
 
-                <h1 class="font-orbitron text-5xl md:text-8xl font-black mb-4 glitch-text" data-text="NICK">NICK</h1>
-                <h2 class="font-rajdhani text-2xl md:text-4xl text-neon-blue tracking-widest mb-8 uppercase">Automation Architect <span class="text-white mx-2">|</span> Vibe Coding Expert</h2>
+                    <div class="relative inline-block mb-12 group">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-n8n-green to-n8n-blue rounded-full blur opacity-30 group-hover:opacity-75 transition duration-500"></div>
+                        <img src="/assets/img/guild/nick/avatar.webp" alt="Nick Avatar" class="relative w-32 h-32 md:w-48 md:h-48 rounded-full border-4 border-n8n-panel object-cover">
+                        <div class="absolute bottom-2 right-2 w-8 h-8 bg-n8n-green rounded-full border-4 border-n8n-panel flex items-center justify-center">
+                            <i class="fa-solid fa-check text-black text-xs"></i>
+                        </div>
+                    </div>
 
-                <div class="flex flex-wrap justify-center gap-4 font-mono text-sm pointer-events-auto">
-                    <span class="px-4 py-2 border border-neon-blue bg-neon-blue/10 text-neon-blue rounded">n8n Level 2 Certified</span>
-                    <span class="px-4 py-2 border border-neon-purple bg-neon-purple/10 text-neon-purple rounded">30+ Line Bots</span>
-                    <span class="px-4 py-2 border border-neon-green bg-neon-green/10 text-neon-green rounded">Soochow Univ. Lecturer</span>
-                </div>
+                    <h1 class="font-sans text-5xl md:text-7xl font-bold mb-4 glitch-wrapper" data-text="NICK">NICK</h1>
+                    <p class="font-mono text-n8n-blue text-sm md:text-lg mb-6">&lt;AutomationArchitect /&gt;</p>
 
-                <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-                    <i class="fa-solid fa-chevron-down text-neon-blue text-2xl"></i>
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <span class="px-3 py-1 rounded bg-n8n-green/10 text-n8n-green border border-n8n-green/20 text-xs font-mono">
+                            <i class="fa-solid fa-award mr-1"></i> n8n Level 2
+                        </span>
+                        <span class="px-3 py-1 rounded bg-n8n-orange/10 text-n8n-orange border border-n8n-orange/20 text-xs font-mono">
+                            <i class="fa-solid fa-robot mr-1"></i> 30+ Bots
+                        </span>
+                        <span class="px-3 py-1 rounded bg-n8n-blue/10 text-n8n-blue border border-n8n-blue/20 text-xs font-mono">
+                            <i class="fa-solid fa-chalkboard-user mr-1"></i> Lecturer
+                        </span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- About Section -->
-        <section class="min-h-screen flex items-center py-20 relative" id="about">
-            <div class="container mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
-                <div class="tech-border p-8 md:p-12 pointer-events-auto" data-aos="fade-right">
-                    <h3 class="font-orbitron text-3xl text-neon-blue mb-6 border-b border-neon-blue/30 pb-2">ORIGIN PROTOCOL</h3>
-                    <p class="font-rajdhani text-lg leading-relaxed text-gray-300 mb-6">
-                        Previously an <span class="text-white font-bold">Environmental Monitoring Engineer</span>, I pivoted to AI in 2023 when GPT emerged. By late 2023, I had architected a complete monitoring management system using AI—long before "Vibe Coding" was a buzzword.
-                    </p>
-                    <p class="font-rajdhani text-lg leading-relaxed text-gray-300">
-                        My journey evolved from building small toys to mastering <span class="text-neon-purple font-bold">n8n</span> workflows. Today, I've deployed over <span class="text-neon-green font-bold">33 active workflows</span> and manage automation infrastructures for modern enterprises.
-                    </p>
+        <!-- About Node (Process) -->
+        <section class="relative z-10 w-full md:w-3/4 mr-auto" id="about">
+            <div class="node-card transform md:-translate-x-8">
+                <div class="node-header bg-gradient-to-r from-n8n-blue/20 to-n8n-blue/5 text-n8n-blue border-b border-n8n-blue/20">
+                    <i class="fa-solid fa-microchip"></i> FUNCTION: PROCESS_DATA
+                    <div class="ml-auto text-xs opacity-50 font-normal">ID: node_bio_02</div>
                 </div>
-                <div class="hidden md:block h-full relative" id="about-visuals">
-                    <!-- Placeholder for 3D interactive element or visual -->
-                    <div class="absolute inset-0 flex items-center justify-center opacity-50">
-                        <i class="fa-solid fa-network-wired text-9xl text-neon-blue animate-pulse"></i>
+                <div class="p-8 md:p-10 relative">
+                    <div class="node-input-dot hidden md:block" style="top: 0%; left: 50%; transform: translate(-50%, -50%);"></div>
+                    <div class="node-output-dot hidden md:block" style="top: 100%; left: 50%; transform: translate(-50%, -50%);"></div>
+
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div class="space-y-4 text-gray-300 font-light leading-relaxed">
+                            <p>
+                                <strong class="text-white">Input:</strong> Environmental Engineer.<br>
+                                <strong class="text-white">Transformation:</strong> Discovery of GPT-4 in 2023.
+                            </p>
+                            <p>
+                                I didn't just "use" AI; I built systems with it. Before "Vibe Coding" was a trend, I engineered a complete <span class="text-n8n-green font-medium">Environmental Monitoring System</span> powered by LLMs.
+                            </p>
+                            <p>
+                                Now, my stack is purely automated. From n8n workflows that run businesses to AI agents that handle complex logic. I turn manual chaos into streamlined, self-driving code.
+                            </p>
+                        </div>
+                        <div class="bg-n8n-canvas rounded-lg p-4 font-mono text-xs text-gray-400 border border-gray-800 shadow-inner">
+                            <div class="flex gap-2 mb-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <div class="space-y-1">
+                                <p><span class="text-n8n-orange">const</span> <span class="text-n8n-blue">engineer</span> = {</p>
+                                <p class="pl-4">status: <span class="text-n8n-green">"Active"</span>,</p>
+                                <p class="pl-4">stack: [<span class="text-n8n-orange">"n8n"</span>, <span class="text-n8n-orange">"Python"</span>, <span class="text-n8n-orange">"LLMs"</span>],</p>
+                                <p class="pl-4">current_task: <span class="text-n8n-green">"Optimizing Reality"</span></p>
+                                <p>}</p>
+                                <p class="text-gray-600">// Output: High Efficiency</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Projects Section -->
-        <section class="min-h-screen py-20 relative" id="projects">
-            <div class="container mx-auto px-4">
-                <h3 class="font-orbitron text-4xl md:text-6xl text-center mb-16 text-white"><span class="text-neon-purple">PROJECT</span> DATABASE</h3>
-
-                <div class="grid md:grid-cols-3 gap-8">
-                    <!-- Project 1 -->
-                    <div class="tech-border p-6 group hover:bg-white/5 transition-all pointer-events-auto transform hover:-translate-y-2">
-                        <div class="h-48 mb-4 overflow-hidden relative">
-                             <div class="absolute inset-0 bg-neon-blue/10 group-hover:bg-transparent transition-all z-10"></div>
-                             <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage System" class="w-full h-full object-cover">
-                        </div>
-                        <h4 class="font-orbitron text-xl text-neon-blue mb-2">Sewage Design System</h4>
-                        <p class="font-mono text-xs text-gray-400 mb-4">VIBE CODING // INDUSTRIAL</p>
-                        <p class="font-rajdhani text-gray-300 text-sm">Automated design generation for wastewater treatment facilities.</p>
-                    </div>
-
-                    <!-- Project 2 -->
-                    <div class="tech-border p-6 group hover:bg-white/5 transition-all pointer-events-auto transform hover:-translate-y-2">
-                        <div class="h-48 mb-4 overflow-hidden relative">
-                             <div class="absolute inset-0 bg-neon-purple/10 group-hover:bg-transparent transition-all z-10"></div>
-                             <!-- Fallback image or generated pattern -->
-                             <div class="w-full h-full bg-gray-900 flex items-center justify-center border border-gray-800">
-                                <i class="fa-solid fa-file-invoice-dollar text-4xl text-gray-600"></i>
-                             </div>
-                        </div>
-                        <h4 class="font-orbitron text-xl text-neon-purple mb-2">Quotation System</h4>
-                        <p class="font-mono text-xs text-gray-400 mb-4">AUTOMATION // BUSINESS</p>
-                        <p class="font-rajdhani text-gray-300 text-sm">Streamlined quote generation and client management workflow.</p>
-                    </div>
-
-                    <!-- Project 3 -->
-                    <div class="tech-border p-6 group hover:bg-white/5 transition-all pointer-events-auto transform hover:-translate-y-2">
-                        <div class="h-48 mb-4 overflow-hidden relative">
-                             <div class="absolute inset-0 bg-neon-green/10 group-hover:bg-transparent transition-all z-10"></div>
-                             <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n Workflows" class="w-full h-full object-cover">
-                        </div>
-                        <h4 class="font-orbitron text-xl text-neon-green mb-2">n8n Automation Suite</h4>
-                        <p class="font-mono text-xs text-gray-400 mb-4">WORKFLOW // INTEGRATION</p>
-                        <p class="font-rajdhani text-gray-300 text-sm">33+ Active workflows handling complex business logic and integrations.</p>
-                    </div>
+        <!-- Projects Node (Switch) -->
+        <section class="relative z-10 w-full" id="projects">
+            <!-- Header Node -->
+            <div class="node-card w-full md:w-1/2 mx-auto mb-8 text-center">
+                <div class="node-header bg-gradient-to-r from-n8n-orange/20 to-n8n-orange/5 text-n8n-orange border-b border-n8n-orange/20 justify-center">
+                    <i class="fa-solid fa-code-branch"></i> SWITCH: PROJECT_ROUTER
                 </div>
-
-                <div class="mt-12 text-center pointer-events-auto">
-                    <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-block px-8 py-3 border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black font-orbitron tracking-widest transition-all">
-                        ACCESS FULL ARCHIVE
-                    </a>
-                </div>
+                <div class="node-input-dot hidden md:block" style="top: 0%; left: 50%; transform: translate(-50%, -50%);"></div>
+                <div class="node-output-dot hidden md:block" style="top: 100%; left: 50%; transform: translate(-50%, -50%);"></div>
             </div>
-        </section>
 
-        <!-- Personal / Teaching Section -->
-        <section class="min-h-screen py-20 relative flex items-center" id="teaching">
-             <div class="container mx-auto px-4">
-                <div class="grid md:grid-cols-2 gap-12 items-center">
-                    <div class="order-2 md:order-1 relative h-64 md:h-96 w-full pointer-events-auto group">
-                         <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching at Soochow" class="w-full h-full object-cover rounded border border-gray-700 opacity-80 group-hover:opacity-100 transition-all">
-                         <div class="absolute bottom-0 left-0 bg-black/80 p-2 font-mono text-xs text-neon-green border-t border-r border-neon-green">
-                            LOC: SOOCHOW_UNIV // VIBE_CODING_CLASS
-                         </div>
+            <!-- Project Grid -->
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Project 1 -->
+                <a href="#" class="node-card group cursor-pointer hover:border-n8n-orange/50">
+                    <div class="node-header bg-n8n-canvas text-gray-400 text-xs border-b border-gray-800">
+                        <span>CASE_01: SEWAGE_DESIGN</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square ml-auto group-hover:text-n8n-orange transition-colors"></i>
                     </div>
-                    <div class="order-1 md:order-2 tech-border p-8 pointer-events-auto">
-                        <h3 class="font-orbitron text-3xl text-neon-green mb-6">KNOWLEDGE TRANSFER</h3>
-                        <ul class="space-y-4 font-rajdhani text-lg text-gray-300">
-                            <li class="flex items-start gap-3">
-                                <i class="fa-solid fa-check text-neon-green mt-1"></i>
-                                <span>Invited Lecturer at <strong class="text-white">Soochow University</strong> for Vibe Coding curriculum.</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fa-solid fa-check text-neon-green mt-1"></i>
-                                <span>Official <strong class="text-white">n8n Level 2</strong> Community Certification.</span>
-                            </li>
-                            <li class="flex items-start gap-3">
-                                <i class="fa-solid fa-check text-neon-green mt-1"></i>
-                                <span>Developed <strong class="text-white">AI Psychology Tests</strong> & Personalized Anniversary Sites.</span>
-                            </li>
-                        </ul>
-                        <div class="mt-8 flex gap-4">
-                             <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="px-6 py-2 bg-neon-green/10 border border-neon-green text-neon-green hover:bg-neon-green hover:text-black transition-all font-mono text-sm">
-                                VIEW CERTIFICATES
-                             </a>
+                    <div class="relative h-40 overflow-hidden">
+                        <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage System" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-all"></div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2 group-hover:text-n8n-orange transition-colors">Sewage AI System</h3>
+                        <p class="text-sm text-gray-400 mb-3">Automated blueprint generation for wastewater facilities.</p>
+                        <div class="flex gap-2">
+                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Industrial</span>
+                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">VibeCoding</span>
                         </div>
                     </div>
-                </div>
-             </div>
-        </section>
-
-        <!-- Contact Section -->
-        <section class="min-h-[50vh] flex flex-col justify-center items-center relative pb-20" id="contact">
-            <h3 class="font-orbitron text-4xl mb-12 glitch-text" data-text="INITIATE CONNECTION">INITIATE CONNECTION</h3>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pointer-events-auto z-10">
-                <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="flex flex-col items-center gap-2 group">
-                    <div class="w-16 h-16 rounded-full border border-green-500 flex items-center justify-center bg-black hover:bg-green-500 transition-all text-green-500 group-hover:text-black">
-                        <i class="fa-brands fa-line text-2xl"></i>
-                    </div>
-                    <span class="font-mono text-xs text-gray-400 group-hover:text-green-500">LINE OA</span>
                 </a>
 
-                <a href="https://www.threads.net/@nickai216" target="_blank" class="flex flex-col items-center gap-2 group">
-                    <div class="w-16 h-16 rounded-full border border-white flex items-center justify-center bg-black hover:bg-white transition-all text-white group-hover:text-black">
-                        <i class="fa-brands fa-threads text-2xl"></i>
+                <!-- Project 2 -->
+                <a href="#" class="node-card group cursor-pointer hover:border-n8n-orange/50">
+                    <div class="node-header bg-n8n-canvas text-gray-400 text-xs border-b border-gray-800">
+                        <span>CASE_02: WORKFLOW_SUITE</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square ml-auto group-hover:text-n8n-orange transition-colors"></i>
                     </div>
-                    <span class="font-mono text-xs text-gray-400 group-hover:text-white">THREADS</span>
+                    <div class="relative h-40 overflow-hidden">
+                        <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n Workflows" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-all"></div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2 group-hover:text-n8n-orange transition-colors">33+ Active Flows</h3>
+                        <p class="text-sm text-gray-400 mb-3">Enterprise-grade automation covering Line Bots to CRM syncs.</p>
+                        <div class="flex gap-2">
+                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">n8n</span>
+                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Integration</span>
+                        </div>
+                    </div>
                 </a>
 
-                <a href="https://portaly.cc/zn.studio" target="_blank" class="flex flex-col items-center gap-2 group">
-                    <div class="w-16 h-16 rounded-full border border-orange-500 flex items-center justify-center bg-black hover:bg-orange-500 transition-all text-orange-500 group-hover:text-black">
-                        <i class="fa-solid fa-link text-2xl"></i>
+                <!-- Project 3 -->
+                <a href="#" class="node-card group cursor-pointer hover:border-n8n-orange/50">
+                    <div class="node-header bg-n8n-canvas text-gray-400 text-xs border-b border-gray-800">
+                        <span>CASE_03: EDUCATION</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square ml-auto group-hover:text-n8n-orange transition-colors"></i>
                     </div>
-                    <span class="font-mono text-xs text-gray-400 group-hover:text-orange-500">PORTALY</span>
-                </a>
-
-                <a href="https://znstudio216.com/" target="_blank" class="flex flex-col items-center gap-2 group">
-                    <div class="w-16 h-16 rounded-full border border-neon-blue flex items-center justify-center bg-black hover:bg-neon-blue transition-all text-neon-blue group-hover:text-black">
-                        <i class="fa-solid fa-laptop-code text-2xl"></i>
+                    <div class="relative h-40 overflow-hidden">
+                        <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-black/50 group-hover:bg-transparent transition-all"></div>
                     </div>
-                    <span class="font-mono text-xs text-gray-400 group-hover:text-neon-blue">STUDIO</span>
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2 group-hover:text-n8n-orange transition-colors">Soochow Lecturer</h3>
+                        <p class="text-sm text-gray-400 mb-3">Teaching Vibe Coding and Automation to the next generation.</p>
+                        <div class="flex gap-2">
+                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Education</span>
+                            <span class="px-2 py-0.5 bg-gray-800 text-gray-300 text-[10px] rounded font-mono">Speaker</span>
+                        </div>
+                    </div>
                 </a>
             </div>
 
-            <footer class="absolute bottom-4 w-full text-center">
-                 <p class="font-mono text-xs text-gray-600">© 2024 NICK. ALL SYSTEMS OPERATIONAL.</p>
+            <div class="mt-8 text-center">
+                <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 bg-n8n-panel hover:bg-n8n-orange border border-gray-600 hover:border-n8n-orange text-white rounded-lg transition-all font-mono text-sm group">
+                    <i class="fa-solid fa-database"></i> ACCESS_FULL_DATABASE
+                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- Contact Node (HTTP Request) -->
+        <section class="relative z-10 w-full md:w-2/3 mx-auto pb-20" id="contact">
+            <div class="node-card">
+                 <div class="node-header bg-gradient-to-r from-purple-500/20 to-purple-500/5 text-purple-400 border-b border-purple-500/20">
+                    <i class="fa-solid fa-paper-plane"></i> HTTP_REQUEST: SEND_MESSAGE
+                    <div class="ml-auto text-xs opacity-50 font-normal">ID: node_end_99</div>
+                </div>
+                <div class="p-8 md:p-12 text-center relative">
+                    <div class="node-input-dot hidden md:block" style="top: 0%; left: 50%; transform: translate(-50%, -50%);"></div>
+
+                    <h2 class="text-3xl font-bold mb-8">Ready to Automate?</h2>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-n8n-green/30">
+                            <div class="w-12 h-12 rounded-full bg-[#06c755] flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform">
+                                <i class="fa-brands fa-line"></i>
+                            </div>
+                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">LINE OA</span>
+                        </a>
+
+                        <a href="https://www.threads.net/@nickai216" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-white/30">
+                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black text-xl shadow-lg group-hover:scale-110 transition-transform">
+                                <i class="fa-brands fa-threads"></i>
+                            </div>
+                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">THREADS</span>
+                        </a>
+
+                        <a href="https://portaly.cc/zn.studio" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-orange-500/30">
+                            <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-link"></i>
+                            </div>
+                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">PORTALY</span>
+                        </a>
+
+                        <a href="https://znstudio216.com/" target="_blank" class="group flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-n8n-panel/50 transition-all border border-transparent hover:border-n8n-blue/30">
+                            <div class="w-12 h-12 rounded-full bg-n8n-blue flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-laptop-code"></i>
+                            </div>
+                            <span class="font-mono text-xs text-gray-400 group-hover:text-white">STUDIO</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+             <footer class="mt-12 text-center opacity-40 font-mono text-xs">
+                <p>STATUS: 200 OK // LATENCY: 12ms</p>
+                <p class="mt-2">© 2024 NICK. ALL WORKFLOWS ACTIVE.</p>
             </footer>
         </section>
 
-    </main>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -448,191 +492,211 @@
             }, 800);
         });
 
-        // Safety timeout for loader
         setTimeout(() => {
             const loader = document.getElementById('loader');
-            if (loader && loader.style.display !== 'none') {
+            if (loader && getComputedStyle(loader).display !== 'none') {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
             }
         }, 5000);
 
-        // --- Three.js Scene Setup ---
+        // --- Three.js Scene: "Data Cable" ---
         const canvas = document.querySelector('#webgl');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.002); // Distance fog
+        // Dark background color matching body
+        scene.background = new THREE.Color(0x15151a);
+        scene.fog = new THREE.Fog(0x15151a, 10, 50);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
 
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        // --- Tunnel Geometry (Hyperloop) ---
-        // Creating a tunnel using InstancedMesh for performance
-        const segments = 100;
-        const radius = 4;
-        const length = 200;
+        // Create the "Cable Bundle"
+        const curvePoints = [];
+        for (let i = 0; i < 50; i++) {
+            curvePoints.push(new THREE.Vector3(
+                Math.sin(i * 0.2) * 5,
+                Math.cos(i * 0.1) * 5 + i * 2, // Ascending spiral
+                Math.cos(i * 0.2) * 5 - i * 5  // Moving away in Z
+            ));
+        }
 
-        // Hexagonal Ring
-        const geometry = new THREE.TorusGeometry(radius, 0.1, 2, 6);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x00f3ff,
-            wireframe: true,
+        // This is a straight infinite-looking path for better control
+        const path = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, -20, 0),
+            new THREE.Vector3(0, 0, -20),
+            new THREE.Vector3(5, 10, -50),
+            new THREE.Vector3(-5, 20, -100),
+            new THREE.Vector3(0, 30, -150)
+        ]);
+
+        // Custom Shader Material for "Data Flow"
+        const flowVertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const flowFragmentShader = `
+            uniform float time;
+            uniform vec3 color;
+            varying vec2 vUv;
+
+            void main() {
+                // Create moving pulses
+                float pulse = step(0.9, sin(vUv.x * 20.0 + time * 5.0)); // Fast movement along U
+
+                // Base glow
+                float glow = 0.2 + 0.8 * pulse;
+
+                vec3 finalColor = color * glow;
+
+                // Add scanlines
+                float scan = sin(vUv.y * 50.0) * 0.1;
+
+                gl_FragColor = vec4(finalColor + scan, 0.3); // Semi-transparent
+            }
+        `;
+
+        const tubeGeometry = new THREE.TubeGeometry(path, 100, 1, 8, false);
+        const tubeMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                color: { value: new THREE.Color(0x00f3ff) } // Neon Cyan
+            },
+            vertexShader: flowVertexShader,
+            fragmentShader: flowFragmentShader,
             transparent: true,
-            opacity: 0.3
-        });
-
-        const tunnel = new THREE.InstancedMesh(geometry, material, segments);
-
-        const dummy = new THREE.Object3D();
-
-        for (let i = 0; i < segments; i++) {
-            const z = -i * (length / segments);
-            dummy.position.set(0, 0, z);
-            // Rotate each ring slightly to create a spiral effect
-            dummy.rotation.z = i * 0.1;
-            dummy.updateMatrix();
-            tunnel.setMatrixAt(i, dummy.matrix);
-        }
-
-        scene.add(tunnel);
-
-        // --- Particles (Data Flow) ---
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 2000;
-        const posArray = new Float32Array(particlesCount * 3);
-
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 20; // Spread x, y, z
-        }
-
-        // Stretch the particles along Z axis to simulate speed
-        for(let i = 0; i < particlesCount; i++) {
-             posArray[i * 3 + 2] = (Math.random() - 0.5) * 200 - 50;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.05,
-            color: 0xbc13fe,
-            transparent: true,
-            opacity: 0.8,
+            side: THREE.DoubleSide,
+            depthWrite: false,
             blending: THREE.AdditiveBlending
         });
 
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
+        const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        scene.add(tube);
 
-        // --- Camera Movement ---
-        camera.position.z = 5;
+        // Add a second intertwining tube (Orange)
+        const path2 = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(2, -20, 2),
+            new THREE.Vector3(-2, 0, -18),
+            new THREE.Vector3(3, 10, -48),
+            new THREE.Vector3(-7, 20, -98),
+            new THREE.Vector3(2, 30, -148)
+        ]);
+        const tubeMaterial2 = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                color: { value: new THREE.Color(0xff0055) } // Neon Pink/Red
+            },
+            vertexShader: flowVertexShader,
+            fragmentShader: flowFragmentShader,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const tube2 = new THREE.Mesh(new THREE.TubeGeometry(path2, 100, 0.5, 8, false), tubeMaterial2);
+        scene.add(tube2);
 
-        // --- Animation Loop ---
+        // Floating "Data Nodes" (Cubes)
+        const nodeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x25b864, wireframe: true });
+        const nodes = new THREE.Group();
+
+        for(let i=0; i<30; i++) {
+            const mesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
+            // Position along the path roughly
+            const point = path.getPoint(i/30);
+            mesh.position.set(point.x + (Math.random()-0.5)*10, point.y + (Math.random()-0.5)*10, point.z);
+            mesh.rotation.set(Math.random(), Math.random(), Math.random());
+            nodes.add(mesh);
+        }
+        scene.add(nodes);
+
+        // --- Camera & Animation ---
+        camera.position.set(0, 0, 10);
+
         let time = 0;
-        let speed = 0.05;
         let scrollY = 0;
 
         function animate() {
             requestAnimationFrame(animate);
             time += 0.01;
 
-            // Rotate tunnel slightly
-            tunnel.rotation.z = time * 0.1;
+            // Update Shader Uniforms
+            tubeMaterial.uniforms.time.value = time;
+            tubeMaterial2.uniforms.time.value = time + 2.0;
 
-            // Move particles to simulate speed
-            particlesMesh.position.z += speed;
-            if (particlesMesh.position.z > 20) {
-                particlesMesh.position.z = -50;
-            }
+            // Rotate Nodes
+            nodes.rotation.y = time * 0.1;
+            nodes.children.forEach(child => {
+                child.rotation.x += 0.01;
+            });
 
-            // Camera follow scroll
-            // Map scroll Y to camera Z position
-            const targetZ = -scrollY * 0.05 + 5;
-            camera.position.z += (targetZ - camera.position.z) * 0.1;
+            // Camera movement based on scroll
+            // Move camera ALONG the path
+            const scrollPercent = scrollY / (document.body.scrollHeight - window.innerHeight);
+            const loopTime = (scrollPercent * 0.9) + 0.05; // Stay within 5% to 95% of path
 
-            // Subtle mouse parallax (if desired, can be added here)
+            const pos = path.getPointAt(loopTime);
+            const lookAt = path.getPointAt(Math.min(loopTime + 0.1, 1));
+
+            // Smooth lerp
+            camera.position.lerp(pos, 0.1);
+            camera.lookAt(lookAt);
 
             renderer.render(scene, camera);
         }
-
         animate();
 
-        // --- Resize Handler ---
+        // Handle Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         });
 
-        // --- GSAP Scroll Animations ---
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        });
+
+        // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
         function initAnimations() {
-            // Update scrollY variable for Three.js loop
-            window.addEventListener('scroll', () => {
-                scrollY = window.scrollY;
-            });
-
-            // Hero Text Glitch In
-            gsap.from("#hero h1", {
-                duration: 1.5,
-                y: 100,
-                opacity: 0,
-                ease: "power4.out",
-                delay: 0.5
-            });
-
-            gsap.from("#hero h2", {
-                duration: 1.5,
-                y: 50,
-                opacity: 0,
-                ease: "power4.out",
-                delay: 0.8
-            });
-
-            // Section Reveal Animations
-            const sections = document.querySelectorAll('section:not(#hero)');
-            sections.forEach(section => {
-                gsap.from(section.children, {
+            // Animate Cards In
+            gsap.utils.toArray('.node-card').forEach((card, i) => {
+                gsap.from(card, {
                     scrollTrigger: {
-                        trigger: section,
-                        start: "top 80%",
-                        end: "bottom 20%",
+                        trigger: card,
+                        start: "top 85%",
                         toggleActions: "play none none reverse"
                     },
                     y: 50,
                     opacity: 0,
-                    duration: 1,
-                    stagger: 0.2
-                });
-            });
-
-            // Tech Border Animation
-            gsap.utils.toArray('.tech-border').forEach(border => {
-                gsap.from(border, {
-                    scrollTrigger: {
-                        trigger: border,
-                        start: "top 85%",
-                    },
-                    scale: 0.95,
-                    opacity: 0,
                     duration: 0.8,
-                    ease: "back.out(1.7)"
+                    ease: "power2.out"
                 });
             });
 
-            // Dynamic Camera Speed Burst on scroll
-            ScrollTrigger.create({
-                onUpdate: (self) => {
-                    // Increase particle speed based on scroll velocity
-                    speed = 0.05 + Math.abs(self.getVelocity()) * 0.0005;
-                    // Clamp speed
-                    if (speed > 2) speed = 2;
-                }
-            });
+            // Animate Connector Line Height
+            // On mobile we might hide it, but on desktop it grows
+            if (window.innerWidth > 768) {
+                gsap.from(".connector-line", {
+                    scrollTrigger: {
+                        trigger: "body",
+                        start: "top top",
+                        end: "bottom bottom",
+                        scrub: 1
+                    },
+                    height: "0%"
+                });
+            }
         }
-
     </script>
 </body>
 </html>
