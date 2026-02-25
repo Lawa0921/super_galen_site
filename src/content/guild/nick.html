@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nick | SYSTEM_OVERRIDE</title>
-    <meta name="description" content="Nick - Automation Architect. WARNING: High-velocity workflows detected.">
+    <title>Nick | Automation 8-BIT</title>
+    <meta name="description" content="Nick - Automation Architect. Building automated systems with pixel-perfect precision.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik+Glitch&family=Chakra+Petch:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -21,34 +21,36 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        glitch: ['Rubik Glitch', 'display'],
-                        tech: ['Chakra Petch', 'sans-serif'],
-                        mono: ['Share Tech Mono', 'monospace'],
+                        retro: ['"Press Start 2P"', 'cursive'],
+                        terminal: ['VT323', 'monospace'],
                     },
                     colors: {
-                        acid: {
-                            green: '#ccff00',
-                            pink: '#ff0055',
-                            cyan: '#00f3ff',
-                            black: '#0a0a0a',
-                            dark: '#050505'
+                        retro: {
+                            green: '#00ff41',
+                            dark: '#0d0208',
+                            purple: '#bd00ff',
+                            cyan: '#00ffff',
+                            yellow: '#ffff00',
+                            gray: '#2d2d2d'
                         }
                     },
                     animation: {
-                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
-                        'flash': 'flash 0.2s infinite',
+                        'blink': 'blink 1s steps(1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
                     },
                     keyframes: {
-                        shake: {
-                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
-                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
-                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
-                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
-                        },
-                        flash: {
-                            '0%, 100%': { opacity: 1 },
+                        blink: {
                             '50%': { opacity: 0 }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
                         }
+                    },
+                    boxShadow: {
+                        'pixel': '4px 4px 0px 0px rgba(0,0,0,1)',
+                        'pixel-green': '4px 4px 0px 0px #00ff41',
+                        'pixel-cyan': '4px 4px 0px 0px #00ffff',
                     }
                 }
             }
@@ -57,11 +59,12 @@
 
     <style>
         body {
-            background-color: #050505;
+            background-color: #0d0208;
             color: #ffffff;
             overflow-x: hidden;
-            font-family: 'Chakra Petch', sans-serif;
-            cursor: crosshair;
+            font-family: 'VT323', monospace;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%2300ff41" d="M0 0h14v2H0zm0 2h2v14H0zm2 14h10v2H2zm12-2h2v-2h-2zm2-2h2v-2h-2zm2-2h2v-2h-2zm2-2h2v-2h-2zm-2-2h-2v2h2zm-2 2h-2v2h2zm-2 2h-2v2h2z"/></svg>'), auto;
+            image-rendering: pixelated;
         }
 
         #webgl {
@@ -73,312 +76,297 @@
             z-index: -1;
         }
 
-        /* Glitch Text Effect */
-        .glitch-text {
-            position: relative;
-            color: white;
+        /* Retro Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+            background: #0d0208;
         }
-        .glitch-text::before,
-        .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
+        ::-webkit-scrollbar-thumb {
+            background: #00ff41;
+            border: 2px solid #0d0208;
+        }
+
+        /* CRT Effect */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: #050505;
-        }
-        .glitch-text::before {
-            left: 2px;
-            text-shadow: -2px 0 #ff0055;
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-        }
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -2px 0 #00f3ff;
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim 2.5s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim {
-            0% { clip: rect(10px, 9999px, 31px, 0); }
-            20% { clip: rect(65px, 9999px, 89px, 0); }
-            40% { clip: rect(18px, 9999px, 49px, 0); }
-            60% { clip: rect(12px, 9999px, 94px, 0); }
-            80% { clip: rect(54px, 9999px, 23px, 0); }
-            100% { clip: rect(8px, 9999px, 76px, 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(29px, 9999px, 86px, 0); }
-            20% { clip: rect(44px, 9999px, 11px, 0); }
-            40% { clip: rect(78px, 9999px, 34px, 0); }
-            60% { clip: rect(15px, 9999px, 67px, 0); }
-            80% { clip: rect(9px, 9999px, 2px, 0); }
-            100% { clip: rect(56px, 9999px, 39px, 0); }
-        }
-
-        /* Brutalist Card */
-        .brutal-card {
-            background: rgba(10, 10, 10, 0.9);
-            border: 2px solid #333;
-            position: relative;
-            transition: all 0.1s;
-        }
-        .brutal-card:hover {
-            border-color: #ccff00;
-            transform: translate(-4px, -4px);
-            box-shadow: 8px 8px 0 #ccff00;
-        }
-
-        /* CRT Scanline */
-        .crt-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            z-index: 50;
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
-            z-index: 100;
         }
 
-        .scramble-text {
-            font-family: 'Share Tech Mono', monospace;
+        /* Pixel Borders */
+        .pixel-border {
+            border: 4px solid white;
+            box-shadow: 6px 6px 0px 0px #000;
+            position: relative;
+            background: #0d0208;
+        }
+        .pixel-border-green {
+            border: 4px solid #00ff41;
+            box-shadow: 6px 6px 0px 0px #000;
+        }
+
+        .pixel-btn {
+            display: inline-block;
+            background: #00ff41;
+            color: black;
+            padding: 8px 16px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            text-transform: uppercase;
+            border: 4px solid white;
+            box-shadow: 4px 4px 0px 0px #000;
+            transition: transform 0.1s;
+            cursor: pointer;
+        }
+        .pixel-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px #000;
+        }
+        .pixel-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px 0px #000;
+        }
+
+        .glitch-load {
+            animation: glitch-skew 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+        }
+        @keyframes glitch-skew {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-2deg); }
+            40% { transform: skew(2deg); }
+            60% { transform: skew(-1deg); }
+            80% { transform: skew(1deg); }
+            100% { transform: skew(0deg); }
         }
     </style>
 </head>
-<body class="antialiased selection:bg-acid-green selection:text-black">
+<body class="antialiased selection:bg-retro-green selection:text-black">
 
-    <div class="crt-overlay"></div>
+    <div class="crt"></div>
 
     <!-- WebGL Background -->
     <canvas id="webgl"></canvas>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full z-50 p-6 flex justify-between items-center mix-blend-difference pointer-events-none">
+    <nav class="fixed top-0 left-0 w-full z-40 p-4 flex justify-between items-center pointer-events-none mix-blend-screen">
         <div class="pointer-events-auto">
-            <a href="/guild" class="flex items-center gap-2 group">
-                <div class="bg-acid-green text-black px-2 py-1 font-bold font-mono text-xs group-hover:bg-white transition-colors">
-                    &lt; ESC
-                </div>
-                <span class="font-mono text-xs text-acid-green tracking-widest group-hover:text-white">ABORT_SESSION</span>
+            <a href="/guild" class="flex items-center gap-2 group pixel-btn bg-white !text-black border-black !shadow-none hover:!translate-none">
+                <i class="fa-solid fa-arrow-left"></i> ESC
             </a>
         </div>
-        <div class="pointer-events-auto flex gap-4">
-             <a href="https://znstudio216.com/" target="_blank" class="text-white hover:text-acid-pink transition-colors text-xl"><i class="fa-solid fa-globe"></i></a>
-             <a href="https://www.threads.net/@nickai216" target="_blank" class="text-white hover:text-acid-green transition-colors text-xl"><i class="fa-brands fa-threads"></i></a>
+        <div class="pointer-events-auto flex gap-4 bg-black border-2 border-white p-2">
+             <a href="https://znstudio216.com/" target="_blank" class="text-white hover:text-retro-green text-xl"><i class="fa-solid fa-globe"></i></a>
+             <a href="https://www.threads.net/@nickai216" target="_blank" class="text-white hover:text-retro-green text-xl"><i class="fa-brands fa-threads"></i></a>
+             <div class="text-retro-green font-terminal text-lg animate-blink">_ONLINE</div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8 py-20 flex flex-col gap-40">
+    <main class="relative z-10 w-full max-w-5xl mx-auto px-4 py-20 flex flex-col gap-32">
 
         <!-- Hero Section -->
-        <section class="min-h-[90vh] flex flex-col justify-center items-start relative" id="hero">
+        <section class="min-h-[80vh] flex flex-col justify-center items-center text-center relative" id="hero">
 
-            <div class="absolute top-1/4 right-0 md:right-20 pointer-events-none opacity-20 md:opacity-100">
-                 <div class="border-4 border-acid-green w-64 h-64 md:w-96 md:h-96 rounded-full flex items-center justify-center animate-spin-slow">
-                    <div class="border-2 border-dashed border-acid-pink w-48 h-48 md:w-72 md:h-72 rounded-full"></div>
-                 </div>
+            <div class="pixel-border p-2 mb-8 animate-float bg-retro-green">
+                <div class="bg-black p-1">
+                    <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-32 h-32 object-cover grayscale contrast-125 pixelated">
+                </div>
             </div>
 
-            <div class="relative z-10">
-                <div class="bg-acid-pink text-black inline-block px-2 py-1 font-mono text-xs font-bold mb-4 transform -rotate-2">
-                    WARNING: SYSTEM UNSTABLE
-                </div>
-
-                <h1 class="text-7xl md:text-[10rem] font-black leading-none mb-2 glitch-text mix-blend-difference" data-text="NICK">
-                    NICK
+            <div class="space-y-4 relative">
+                <h1 class="font-retro text-4xl md:text-6xl text-white mb-2 leading-tight">
+                    PLAYER <span class="text-retro-green">NICK</span>
                 </h1>
-                <h2 class="text-2xl md:text-5xl font-bold font-tech text-acid-green mb-8 uppercase tracking-tighter">
-                    Automation <span class="text-white">_Warlord</span>
+                <h2 class="font-terminal text-3xl md:text-5xl text-retro-cyan bg-black inline-block px-2">
+                    LVL.99 AUTOMATION ARCHITECT
                 </h2>
 
-                <div class="brutal-card p-6 max-w-xl backdrop-blur-md bg-black/80">
-                    <div class="flex flex-col md:flex-row gap-6 items-start">
-                        <div class="w-24 h-24 shrink-0 border-2 border-white relative overflow-hidden group">
-                             <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-full h-full object-cover grayscale contrast-150 group-hover:grayscale-0 transition-all">
-                             <div class="absolute inset-0 bg-acid-green/20 mix-blend-overlay"></div>
-                        </div>
-                        <div class="space-y-4">
-                            <p class="font-mono text-sm leading-relaxed text-gray-300">
-                                <span class="text-acid-pink font-bold">>> ORIGIN:</span> Environmental Engineer.<br>
-                                <span class="text-acid-cyan font-bold">>> CURRENT_STATE:</span> Automating reality with extreme prejudice.<br>
-                                I build systems that don't just run; they dominate.
-                            </p>
-                            <div class="flex flex-wrap gap-2 text-[10px] font-bold font-mono">
-                                <span class="bg-white/10 px-2 py-1 border border-white/20">N8N_MASTER</span>
-                                <span class="bg-white/10 px-2 py-1 border border-white/20">VIBE_CODING</span>
-                                <span class="bg-white/10 px-2 py-1 border border-white/20">LVL.2_CERTIFIED</span>
-                            </div>
-                        </div>
+                <div class="flex justify-center gap-4 mt-8 flex-wrap">
+                    <div class="bg-black border-2 border-retro-green px-4 py-2 text-retro-green font-terminal text-xl">
+                        STR: N8N
+                    </div>
+                    <div class="bg-black border-2 border-retro-purple px-4 py-2 text-retro-purple font-terminal text-xl">
+                        INT: VIBE_CODING
+                    </div>
+                    <div class="bg-black border-2 border-retro-cyan px-4 py-2 text-retro-cyan font-terminal text-xl">
+                        DEX: WORKFLOWS
                     </div>
                 </div>
             </div>
 
-            <div class="absolute bottom-10 left-0 font-mono text-xs text-gray-500 animate-pulse">
-                SCROLL_VELOCITY_REQUIRED >>
+            <div class="mt-12 max-w-2xl bg-black/80 p-6 border-2 border-white text-left font-terminal text-xl md:text-2xl leading-relaxed">
+                <span class="text-retro-green">></span> SYSTEM_LOG: Environmental Engineer rebooted as AI Specialist.<br>
+                <span class="text-retro-green">></span> CURRENT_QUEST: Building self-driving business logic.<br>
+                <span class="text-retro-green">></span> STATUS: <span class="animate-blink">READY_TO_DEPLOY</span>
+            </div>
+
+            <div class="absolute bottom-10 animate-bounce font-retro text-xs text-retro-green">
+                INSERT COIN OR SCROLL DOWN
             </div>
         </section>
 
-        <!-- Stats / Chaos Grid -->
-        <section class="grid grid-cols-2 md:grid-cols-4 gap-4" id="stats">
-            <div class="col-span-2 md:col-span-1 border-t-4 border-acid-green p-4 bg-black/50">
-                <h3 class="font-mono text-acid-green text-xs mb-1">ACTIVE_WORKFLOWS</h3>
-                <div class="text-5xl font-black text-white glitch-text" data-text="33">33</div>
+        <!-- Stats / Inventory -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-8" id="stats">
+            <div class="pixel-border p-6 bg-black text-center group hover:bg-retro-green hover:text-black transition-colors">
+                <h3 class="font-retro text-xs mb-4">ACTIVE BOTS</h3>
+                <div class="font-terminal text-6xl">30+</div>
+                <p class="font-terminal text-lg opacity-70 mt-2">Running on Line/Discord</p>
             </div>
-            <div class="col-span-2 md:col-span-1 border-t-4 border-acid-pink p-4 bg-black/50">
-                <h3 class="font-mono text-acid-pink text-xs mb-1">LINE_BOTS</h3>
-                <div class="text-5xl font-black text-white glitch-text" data-text="30">30</div>
+            <div class="pixel-border p-6 bg-black text-center group hover:bg-retro-cyan hover:text-black transition-colors">
+                <h3 class="font-retro text-xs mb-4">WORKFLOWS</h3>
+                <div class="font-terminal text-6xl">33+</div>
+                <p class="font-terminal text-lg opacity-70 mt-2">Enterprise n8n Nodes</p>
             </div>
-            <div class="col-span-2 border-t-4 border-acid-cyan p-4 bg-black/50">
-                <h3 class="font-mono text-acid-cyan text-xs mb-1">SYSTEM_STATUS</h3>
-                <div class="text-2xl md:text-4xl font-bold text-white uppercase scramble-text">
-                    OPTIMIZING_REALITY...
-                </div>
+            <div class="pixel-border p-6 bg-black text-center group hover:bg-retro-purple hover:text-black transition-colors">
+                <h3 class="font-retro text-xs mb-4">STUDENTS</h3>
+                <div class="font-terminal text-6xl">∞</div>
+                <p class="font-terminal text-lg opacity-70 mt-2">Soochow Univ. Class</p>
             </div>
         </section>
 
-        <!-- Project Archive -->
+        <!-- Project Cartridges -->
         <section class="relative" id="projects">
-            <div class="mb-12 border-b-2 border-white pb-4 flex justify-between items-end">
-                <h2 class="text-4xl md:text-6xl font-black uppercase tracking-tighter">DEPLOYED_SYSTEMS</h2>
-                <span class="font-mono text-xs bg-white text-black px-2 py-1 font-bold animate-flash">LIVE</span>
+            <div class="text-center mb-16">
+                <h2 class="font-retro text-2xl md:text-4xl text-white mb-4">
+                    <span class="text-retro-yellow">★</span> SELECT MISSION <span class="text-retro-yellow">★</span>
+                </h2>
+                <div class="h-1 w-24 bg-white mx-auto"></div>
             </div>
 
-            <div class="space-y-32">
+            <div class="space-y-24">
                 <!-- Project 1 -->
-                <div class="group relative">
-                    <div class="absolute -inset-4 bg-acid-green/10 skew-y-2 group-hover:skew-y-0 transition-transform duration-500"></div>
-                    <div class="relative grid md:grid-cols-2 gap-8 items-center">
-                        <div class="border-2 border-acid-green bg-black p-1 relative overflow-hidden h-64 md:h-80 group-hover:rotate-1 transition-transform duration-300">
-                             <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage AI" class="w-full h-full object-cover filter contrast-125 sepia-[0.5] group-hover:sepia-0 transition-all">
-                             <div class="absolute bottom-0 left-0 bg-acid-green text-black px-4 py-1 font-bold font-mono text-lg">
-                                CASE_01
-                             </div>
+                <div class="pixel-border p-2 bg-retro-gray relative group">
+                    <div class="absolute -top-4 -left-4 bg-retro-green text-black font-retro text-xs px-2 py-1 border-2 border-white z-10 transform rotate-[-5deg]">
+                        MISSION 01
+                    </div>
+                    <div class="bg-black p-4 grid md:grid-cols-2 gap-8 items-center">
+                        <div class="border-4 border-white h-64 overflow-hidden relative">
+                             <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage AI" class="w-full h-full object-cover pixelated hover:scale-110 transition-transform duration-500">
+                             <!-- Scanline on image -->
+                             <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 opacity-50 pointer-events-none" style="background-size: 100% 4px;"></div>
                         </div>
                         <div class="space-y-4">
-                            <h3 class="text-4xl md:text-5xl font-bold uppercase text-white group-hover:text-acid-green transition-colors">
-                                Sewage_Design_AI
-                            </h3>
-                            <p class="font-mono text-gray-400 text-sm md:text-base border-l-2 border-gray-700 pl-4">
-                                Automated CAD blueprint generation for industrial wastewater.
-                                <span class="text-white block mt-2">LLM-Driven Logic // Instant Output</span>
+                            <h3 class="font-retro text-xl md:text-2xl text-retro-green">SEWAGE_AI_SYSTEM</h3>
+                            <p class="font-terminal text-xl text-gray-300">
+                                Automated CAD blueprint generation. Transforms dirty water specs into clean logic.
                             </p>
-                            <div class="flex gap-2">
-                                <div class="w-3 h-3 bg-acid-green"></div>
-                                <div class="w-3 h-3 bg-acid-green opacity-50"></div>
-                                <div class="w-3 h-3 bg-acid-green opacity-25"></div>
-                            </div>
+                            <ul class="font-terminal text-lg text-retro-green space-y-1">
+                                <li>> PYTHON_SCRIPT_LOADED</li>
+                                <li>> OPENAI_API_CONNECTED</li>
+                                <li>> OUTPUT: BLUEPRINT.DWG</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
 
                 <!-- Project 2 -->
-                <div class="group relative">
-                    <div class="absolute -inset-4 bg-acid-pink/10 -skew-y-2 group-hover:skew-y-0 transition-transform duration-500"></div>
-                    <div class="relative grid md:grid-cols-2 gap-8 items-center">
-                        <div class="order-2 md:order-1 space-y-4 md:text-right">
-                            <h3 class="text-4xl md:text-5xl font-bold uppercase text-white group-hover:text-acid-pink transition-colors">
-                                N8N_Megastructure
-                            </h3>
-                            <p class="font-mono text-gray-400 text-sm md:text-base border-r-2 border-gray-700 pr-4">
-                                Enterprise-grade automation suite. 33+ workflows synchronizing
-                                business reality in real-time.
-                                <span class="text-white block mt-2">Zero Latency // Max Efficiency</span>
+                <div class="pixel-border p-2 bg-retro-gray relative group">
+                    <div class="absolute -top-4 -right-4 bg-retro-cyan text-black font-retro text-xs px-2 py-1 border-2 border-white z-10 transform rotate-[5deg]">
+                        MISSION 02
+                    </div>
+                    <div class="bg-black p-4 grid md:grid-cols-2 gap-8 items-center">
+                        <div class="order-2 md:order-1 space-y-4 text-right">
+                            <h3 class="font-retro text-xl md:text-2xl text-retro-cyan">N8N_MEGA_SUITE</h3>
+                            <p class="font-terminal text-xl text-gray-300">
+                                Complete business automation ecosystem. Replacing humans with efficient loops.
                             </p>
-                            <div class="flex gap-2 justify-end">
-                                <div class="w-3 h-3 bg-acid-pink"></div>
-                                <div class="w-3 h-3 bg-acid-pink opacity-50"></div>
-                                <div class="w-3 h-3 bg-acid-pink opacity-25"></div>
-                            </div>
+                            <ul class="font-terminal text-lg text-retro-cyan space-y-1">
+                                <li>> CRM_SYNC_ACTIVE</li>
+                                <li>> QUOTATION_BOT_ONLINE</li>
+                                <li>> ERROR_RATE: 0%</li>
+                            </ul>
                         </div>
-                        <div class="order-1 md:order-2 border-2 border-acid-pink bg-black p-1 relative overflow-hidden h-64 md:h-80 group-hover:-rotate-1 transition-transform duration-300">
-                             <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n" class="w-full h-full object-cover filter contrast-125 sepia-[0.5] group-hover:sepia-0 transition-all">
-                             <div class="absolute bottom-0 right-0 bg-acid-pink text-black px-4 py-1 font-bold font-mono text-lg">
-                                CASE_02
-                             </div>
+                        <div class="order-1 md:order-2 border-4 border-white h-64 overflow-hidden relative">
+                             <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n" class="w-full h-full object-cover pixelated hover:scale-110 transition-transform duration-500">
                         </div>
                     </div>
                 </div>
 
                 <!-- Project 3 -->
-                <div class="group relative">
-                    <div class="absolute -inset-4 bg-acid-cyan/10 skew-y-2 group-hover:skew-y-0 transition-transform duration-500"></div>
-                    <div class="relative grid md:grid-cols-2 gap-8 items-center">
-                         <div class="border-2 border-acid-cyan bg-black p-1 relative overflow-hidden h-64 md:h-80 group-hover:rotate-1 transition-transform duration-300">
-                             <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-full object-cover filter contrast-125 sepia-[0.5] group-hover:sepia-0 transition-all">
-                             <div class="absolute bottom-0 left-0 bg-acid-cyan text-black px-4 py-1 font-bold font-mono text-lg">
-                                CASE_03
-                             </div>
+                <div class="pixel-border p-2 bg-retro-gray relative group">
+                    <div class="absolute -top-4 -left-4 bg-retro-purple text-black font-retro text-xs px-2 py-1 border-2 border-white z-10 transform rotate-[-5deg]">
+                        MISSION 03
+                    </div>
+                    <div class="bg-black p-4 grid md:grid-cols-2 gap-8 items-center">
+                        <div class="border-4 border-white h-64 overflow-hidden relative">
+                             <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-full object-cover pixelated hover:scale-110 transition-transform duration-500">
                         </div>
                         <div class="space-y-4">
-                            <h3 class="text-4xl md:text-5xl font-bold uppercase text-white group-hover:text-acid-cyan transition-colors">
-                                Soochow_Protocol
-                            </h3>
-                            <p class="font-mono text-gray-400 text-sm md:text-base border-l-2 border-gray-700 pl-4">
-                                Injecting Vibe Coding knowledge into the university curriculum.
-                                <span class="text-white block mt-2">Lecturer Mode // Activated</span>
+                            <h3 class="font-retro text-xl md:text-2xl text-retro-purple">ACADEMIC_PROTOCOL</h3>
+                            <p class="font-terminal text-xl text-gray-300">
+                                Teaching Vibe Coding at Soochow University. Uploading knowledge to new users.
                             </p>
-                            <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="inline-block mt-4 text-acid-cyan font-bold font-mono hover:bg-acid-cyan hover:text-black px-2 transition-colors">
-                                >> VERIFY_CREDENTIALS
+                            <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="pixel-btn inline-block mt-4 !bg-retro-purple !text-white hover:!bg-white hover:!text-purple-700">
+                                VIEW_CREDENTIALS
                             </a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Side Quests -->
-                 <div class="grid md:grid-cols-2 gap-8 mt-20">
-                    <div class="brutal-card p-8 bg-black">
-                        <div class="text-acid-pink font-mono text-xs font-bold mb-2">>> SIDE_QUEST_A</div>
-                        <h4 class="text-2xl font-bold uppercase mb-4">Love_Algorithm</h4>
-                        <p class="text-gray-400 text-sm mb-4">Anniversary & Xmas sites generated for my partner. Custom logic, pure dedication.</p>
-                        <div class="h-1 w-full bg-gray-800"><div class="h-full bg-acid-pink w-3/4"></div></div>
-                    </div>
-                    <div class="brutal-card p-8 bg-black">
-                        <div class="text-acid-green font-mono text-xs font-bold mb-2">>> SIDE_QUEST_B</div>
-                        <h4 class="text-2xl font-bold uppercase mb-4">Psycho_Analyzer</h4>
-                        <p class="text-gray-400 text-sm mb-4">AI-driven psychology test. Probing the human mind with LLMs.</p>
-                        <div class="h-1 w-full bg-gray-800"><div class="h-full bg-acid-green w-1/2"></div></div>
-                    </div>
-                 </div>
+                <!-- Side Quests (Mini Layout) -->
+                <div class="grid md:grid-cols-2 gap-6 mt-16">
+                     <div class="border-2 border-dashed border-white p-6 bg-black/50 hover:bg-retro-green/10 transition-colors cursor-help">
+                        <h4 class="font-retro text-xs text-retro-yellow mb-2">BONUS_STAGE_01</h4>
+                        <h3 class="font-terminal text-2xl text-white mb-2">GF_ANNIVERSARY_SITES</h3>
+                        <p class="font-terminal text-lg text-gray-400">Custom coded romantic logic gates.</p>
+                     </div>
+                     <div class="border-2 border-dashed border-white p-6 bg-black/50 hover:bg-retro-cyan/10 transition-colors cursor-help">
+                        <h4 class="font-retro text-xs text-retro-yellow mb-2">BONUS_STAGE_02</h4>
+                        <h3 class="font-terminal text-2xl text-white mb-2">AI_PSYCH_TEST</h3>
+                        <p class="font-terminal text-lg text-gray-400">LLM-powered personality analysis engine.</p>
+                     </div>
+                </div>
 
             </div>
 
             <div class="mt-24 text-center">
-                 <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="inline-block px-12 py-6 bg-white text-black font-black text-xl hover:bg-acid-green hover:scale-105 transition-all uppercase tracking-tighter">
-                    Unlock_Full_Archive
+                 <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="pixel-btn text-lg py-4 px-8">
+                    Start New Game (Full Archive)
                  </a>
             </div>
         </section>
 
-        <!-- Contact Footer -->
-        <section class="min-h-[60vh] flex flex-col items-center justify-center relative pb-20" id="contact">
-            <h2 class="text-5xl md:text-8xl font-black mb-12 uppercase text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-800">
-                Jack_In
+        <!-- Contact / Game Over -->
+        <section class="min-h-[50vh] flex flex-col items-center justify-center relative pb-20" id="contact">
+            <h2 class="font-retro text-3xl md:text-5xl text-white mb-12 animate-pulse">
+                GAME OVER
             </h2>
+            <p class="font-terminal text-xl text-retro-green mb-8">CONTINUE? 10...</p>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl px-4">
-                <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
-                    <i class="fa-brands fa-line text-4xl group-hover:text-[#06c755] transition-colors"></i>
-                    <span class="font-mono font-bold text-xs uppercase">Line_OA</span>
+            <div class="flex flex-wrap justify-center gap-6 w-full max-w-4xl px-4">
+                <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="pixel-btn !bg-[#06c755] !text-white !border-white flex items-center gap-2">
+                    <i class="fa-brands fa-line"></i> LINE
                 </a>
-                <a href="https://www.threads.net/@nickai216" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
-                    <i class="fa-brands fa-threads text-4xl group-hover:text-white transition-colors"></i>
-                    <span class="font-mono font-bold text-xs uppercase">Threads</span>
+                <a href="https://www.threads.net/@nickai216" target="_blank" class="pixel-btn !bg-black !text-white !border-white flex items-center gap-2">
+                    <i class="fa-brands fa-threads"></i> THREADS
                 </a>
-                <a href="https://portaly.cc/zn.studio" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
-                    <i class="fa-solid fa-link text-4xl group-hover:text-acid-pink transition-colors"></i>
-                    <span class="font-mono font-bold text-xs uppercase">Portaly</span>
+                <a href="https://portaly.cc/zn.studio" target="_blank" class="pixel-btn !bg-retro-yellow !text-black !border-white flex items-center gap-2">
+                    <i class="fa-solid fa-link"></i> PORTALY
                 </a>
-                <a href="https://znstudio216.com/" target="_blank" class="brutal-card p-6 flex flex-col items-center gap-4 group bg-black">
-                    <i class="fa-solid fa-laptop-code text-4xl group-hover:text-acid-cyan transition-colors"></i>
-                    <span class="font-mono font-bold text-xs uppercase">Studio</span>
+                <a href="https://znstudio216.com/" target="_blank" class="pixel-btn !bg-retro-cyan !text-black !border-white flex items-center gap-2">
+                    <i class="fa-solid fa-laptop-code"></i> STUDIO
                 </a>
             </div>
 
-            <footer class="absolute bottom-4 w-full text-center border-t border-gray-900 pt-4">
-                 <p class="font-mono text-[10px] text-gray-600">
-                    MADE WITH <i class="fa-solid fa-heart text-red-900"></i> BY NICK'S AUTOMATION FORGE
+            <footer class="absolute bottom-4 w-full text-center border-t-2 border-white pt-4 bg-black">
+                 <p class="font-terminal text-lg text-white">
+                    © 2024 NICK // HIGH SCORE: 999999
                  </p>
             </footer>
         </section>
@@ -391,146 +379,122 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
-        // --- Three.js Scene: "Warp Storm" ---
+        // --- Three.js Scene: "Isometric Voxel Sea" ---
         const canvas = document.querySelector('#webgl');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.FogExp2(0x050505, 0.02); // Heavy fog
+        scene.background = new THREE.Color(0x0d0208); // Dark purple/black
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
+        // Orthographic Camera for Isometric View
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = 20;
+        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
 
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: false }); // False for gritty look
+        camera.position.set(20, 20, 20); // Isometric angle
+        camera.lookAt(scene.position);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: false }); // Pixel art style needs aliasing
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        // Create Debris Field (InstancedMesh)
-        const debrisCount = 1000;
-        const debrisGeometry = new THREE.BoxGeometry(0.1, 0.1, 2); // Long streaks
-        const debrisMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-        });
+        // Create Voxel Grid (InstancedMesh)
+        const gridSize = 40;
+        const count = gridSize * gridSize;
+        const geometry = new THREE.BoxGeometry(0.9, 0.9, 0.9); // Slightly smaller than 1 for grid lines
 
-        const debris = new THREE.InstancedMesh(debrisGeometry, debrisMaterial, debrisCount);
+        // Material with Vertex Colors
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+        const mesh = new THREE.InstancedMesh(geometry, material, count);
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(mesh);
 
         const dummy = new THREE.Object3D();
-        const speeds = [];
+        const color = new THREE.Color();
+        const colors = [];
 
-        for (let i = 0; i < debrisCount; i++) {
-            dummy.position.set(
-                (Math.random() - 0.5) * 50,
-                (Math.random() - 0.5) * 50,
-                (Math.random() - 0.5) * 100
-            );
-            dummy.rotation.z = Math.random() * Math.PI;
-            dummy.updateMatrix();
-            debris.setMatrixAt(i, dummy.matrix);
-
-            // Random speed for each particle
-            speeds.push(0.5 + Math.random());
+        // Initialize Grid
+        for (let i = 0; i < count; i++) {
+             colors.push(0, 1, 0); // Green placeholder
         }
 
-        scene.add(debris);
+        // Lighting (Simulated via Color)
 
-        // --- Post-Processing / Glitch Logic (Simulated via Camera Shake) ---
-        // True post-processing is heavy, we'll simulate chaos with camera movement
-
+        // Animation Loop
         let time = 0;
-        let scrollVelocity = 0;
+        const mouse = new THREE.Vector2(-100, -100); // Start off screen
 
         function animate() {
             requestAnimationFrame(animate);
-            time += 0.01;
+            time += 0.05;
 
-            // Move debris towards camera
-            for (let i = 0; i < debrisCount; i++) {
-                debris.getMatrixAt(i, dummy.matrix);
-                dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+            let i = 0;
+            const offset = (gridSize - 1) / 2;
 
-                // Move z
-                dummy.position.z += speeds[i] + (scrollVelocity * 2);
+            for (let x = 0; x < gridSize; x++) {
+                for (let z = 0; z < gridSize; z++) {
 
-                if (dummy.position.z > 10) {
-                    dummy.position.z = -100;
-                    dummy.position.x = (Math.random() - 0.5) * 50;
-                    dummy.position.y = (Math.random() - 0.5) * 50;
+                    // Wave Logic
+                    const dist = Math.sqrt((x - 20) ** 2 + (z - 20) ** 2);
+                    let y = Math.sin(dist * 0.5 - time) * 2; // Ripple
+
+                    // Mouse Interaction
+                    // Map mouse (screen) to grid roughly for effect (not exact raycasting for performance)
+                    // Just purely visual noise based on time
+
+                    // Add perlin-like noise
+                    y += Math.sin(x * 0.5 + time) * Math.cos(z * 0.5 + time) * 2;
+
+                    dummy.position.set(x - offset, y, z - offset);
+                    dummy.updateMatrix();
+                    mesh.setMatrixAt(i, dummy.matrix);
+
+                    // Color based on height
+                    const heightFactor = (y + 4) / 8; // Normalize roughly 0-1
+                    // Gradient: Black -> Green -> Cyan -> White
+                    if (heightFactor < 0.3) {
+                        mesh.setColorAt(i, color.setHex(0x0d0208)); // Dark
+                    } else if (heightFactor < 0.6) {
+                         mesh.setColorAt(i, color.setHex(0x004411)); // Dark Green
+                    } else if (heightFactor < 0.8) {
+                        mesh.setColorAt(i, color.setHex(0x00ff41)); // Retro Green
+                    } else {
+                        mesh.setColorAt(i, color.setHex(0xffffff)); // White caps
+                    }
+
+                    i++;
                 }
-
-                // Color Pulse based on scroll speed (Simulated via scale for performance)
-                if (scrollVelocity > 0.5) {
-                    dummy.scale.z = 5; // Stretch more on speed
-                } else {
-                    dummy.scale.z = 1;
-                }
-
-                dummy.updateMatrix();
-                debris.setMatrixAt(i, dummy.matrix);
             }
-            debris.instanceMatrix.needsUpdate = true;
-
-            // Camera Shake on Scroll
-            camera.position.x = (Math.random() - 0.5) * scrollVelocity * 0.5;
-            camera.position.y = (Math.random() - 0.5) * scrollVelocity * 0.5;
-            camera.rotation.z = (Math.random() - 0.5) * scrollVelocity * 0.1;
-
-            // Dampen velocity
-            scrollVelocity *= 0.95;
+            mesh.instanceMatrix.needsUpdate = true;
+            mesh.instanceColor.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
         animate();
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP & Interactions ---
+        // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Track Scroll Velocity for 3D effect
-        ScrollTrigger.create({
-            onUpdate: (self) => {
-                const vel = Math.abs(self.getVelocity());
-                // Normalize slightly
-                scrollVelocity += vel * 0.0005;
-            }
-        });
-
-        // Scramble Text Effect
-        const scrambleElements = document.querySelectorAll('.scramble-text');
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-
-        scrambleElements.forEach(el => {
-            const originalText = el.innerText;
-            el.addEventListener('mouseenter', () => {
-                let iteration = 0;
-                const interval = setInterval(() => {
-                    el.innerText = originalText.split('')
-                        .map((letter, index) => {
-                            if(index < iteration) return originalText[index];
-                            return chars[Math.floor(Math.random() * 26)];
-                        })
-                        .join('');
-
-                    if(iteration >= originalText.length) clearInterval(interval);
-                    iteration += 1/3;
-                }, 30);
-            });
-        });
-
-        // Brutal Reveal Animations
-        gsap.utils.toArray('.brutal-card').forEach(card => {
+        // Animate Cards
+        gsap.utils.toArray('.pixel-border').forEach(card => {
             gsap.from(card, {
                 scrollTrigger: {
                     trigger: card,
-                    start: "top 90%",
+                    start: "top 85%",
                 },
-                x: -50,
+                y: 50,
                 opacity: 0,
-                duration: 0.1, // Snap in fast
-                delay: Math.random() * 0.2
+                duration: 0.5,
+                ease: "steps(5)" // Stepped ease for retro feel
             });
         });
 
