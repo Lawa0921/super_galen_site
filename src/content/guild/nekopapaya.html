@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Analyst's Haven</title>
+    <title>NEKOPAPAYA | The Ethereal Archive</title>
     <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Nunito:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Manrope:wght@300;400;600&family=Noto+Serif+TC:wght@300;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js" defer></script>
 
     <!-- Three.js Import Map -->
     <script type="importmap">
@@ -29,468 +28,424 @@
 
     <style>
         :root {
-            /* Palette: Deconstructed Editorial */
-            --c-bg: #F9F8F6;
-            --c-text: #111;
-            --c-accent: #6aa890;
-            --c-warm: #d4a362;
-            --c-cool: #6fb5d6;
+            /* Palette: Museum Stone */
+            --c-bg: #F2F0E9;       /* Warm Stone */
+            --c-text: #1a1918;     /* Soft Black */
+            --c-accent: #8A9A5B;   /* Moss Green (Muted) */
+            --c-sub: #8c8883;      /* Stone Grey */
 
-            --f-serif: 'Noto Serif TC', serif;
-            --f-display: 'Playfair Display', serif;
-            --f-sans: 'Nunito', sans-serif;
+            --f-head: 'Italiana', serif;
+            --f-body: 'Manrope', sans-serif;
+            --f-zh: 'Noto Serif TC', serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { font-size: 18px; overflow-x: hidden; }
 
         body {
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: var(--f-serif);
+            font-family: var(--f-body);
             overflow-x: hidden;
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         /* --- Global Layers --- */
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; pointer-events: none; opacity: 1;
-        }
-
-        #noise-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 99; pointer-events: none; opacity: 0.04;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+            z-index: 0; pointer-events: none;
         }
 
         .scroller { position: relative; z-index: 10; pointer-events: none; }
         .interactive-layer { pointer-events: auto; }
 
-        /* --- Typography & Layout --- */
-        h1, h2, h3 { font-family: var(--f-display); font-weight: 400; line-height: 0.9; }
+        /* --- Typography --- */
+        h1, h2, h3 { font-family: var(--f-head); font-weight: 400; line-height: 1; }
+        p { font-family: var(--f-zh); font-weight: 300; }
 
-        .huge-text {
-            font-size: clamp(5rem, 18vw, 15rem);
-            letter-spacing: -0.05em;
+        .super-title {
+            font-size: clamp(4rem, 15vw, 12rem);
             color: var(--c-text);
+            text-align: center;
+            mix-blend-mode: overlay;
+            opacity: 0.8;
+        }
+
+        .section-label {
+            font-family: var(--f-body); font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--c-sub); margin-bottom: 1rem; display: block;
+        }
+
+        /* --- Layouts --- */
+        .section {
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            display: flex; flex-direction: column; justify-content: center;
             position: relative;
-            z-index: 2;
-            mix-blend-mode: exclusion;
-            color: white; /* Inversion */
+        }
+
+        .container {
+            max-width: 1200px; width: 100%; margin: 0 auto;
         }
 
         .nav-fixed {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            font-family: var(--f-sans); font-weight: 900;
-            color: var(--c-text); text-decoration: none;
-            display: flex; align-items: center; gap: 0.5rem;
-            pointer-events: auto;
-            background: rgba(255,255,255,0.9);
-            padding: 0.5rem 1.2rem; border-radius: 50px;
-            border: 1px solid var(--c-text);
+            position: fixed; top: 2rem; left: 0; width: 100%; z-index: 50;
+            display: flex; justify-content: space-between; padding: 0 2rem;
+            mix-blend-mode: difference; color: #fff; pointer-events: auto;
+        }
+        .nav-logo { font-family: var(--f-head); font-size: 1.2rem; text-decoration: none; color: inherit; }
+
+        /* --- Hero --- */
+        .hero-spacer { height: 30vh; }
+        .hero-desc {
+            max-width: 400px; margin: 2rem auto; text-align: center; color: var(--c-text);
         }
 
-        /* --- Section 1: Deconstructed Hero --- */
-        .hero-section {
-            min-height: 120vh;
-            position: relative;
-            display: flex; flex-direction: column; justify-content: center;
-            overflow: hidden;
+        /* --- Cards --- */
+        .card-layout {
+            display: grid; grid-template-columns: 1fr; gap: 8rem;
+            margin: 10vh 0;
+        }
+        @media(min-width: 900px) {
+            .card-layout { grid-template-columns: 1fr 1fr; }
+            .card-layout .card-col:nth-child(2) { padding-top: 20vh; } /* Offset */
         }
 
-        .hero-bg-text {
-            position: absolute; top: 10%; left: -5%;
-            font-size: 30vw; opacity: 0.05; font-family: var(--f-sans); font-weight: 900;
-            white-space: nowrap; pointer-events: none;
+        .art-card {
+            background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border: 1px solid rgba(255,255,255,0.3);
+            margin-bottom: 4rem;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
+        .art-card:hover { transform: translateY(-10px); background: rgba(255,255,255,0.6); }
 
-        .hero-content {
-            width: 100%; max-width: 1400px; margin: 0 auto;
-            position: relative; display: grid; grid-template-columns: 1fr;
-            padding: 0 2rem;
-        }
-        @media(min-width: 900px) { .hero-content { grid-template-columns: 1fr 1fr; align-items: center; } }
+        .art-num { font-family: var(--f-head); font-size: 4rem; color: var(--c-sub); opacity: 0.3; line-height: 0.8; margin-bottom: 1rem; }
+        .art-title { font-size: 2.5rem; margin-bottom: 1rem; color: var(--c-text); }
 
-        .avatar-liquid-wrapper {
-            width: 100%; aspect-ratio: 0.8;
-            position: relative; z-index: 1;
+        /* --- Liquid Image Block --- */
+        .liquid-block {
+            width: 100%; height: 60vh;
+            position: relative; overflow: hidden;
+            background: #e0e0e0;
         }
-        .avatar-liquid-wrapper canvas { width: 100%; height: 100%; object-fit: cover; }
-
-        .hero-overlay-text {
-            position: relative; z-index: 2;
-            margin-left: -5vw;
-        }
-        @media(max-width: 900px) { .hero-overlay-text { margin-left: 0; margin-top: -10vh; } }
-
-        /* --- Section 2: Marquee --- */
-        .marquee-section {
-            padding: 4rem 0; background: var(--c-text); color: var(--c-bg);
-            overflow: hidden; position: relative; z-index: 20;
-            transform: rotate(-2deg) scale(1.05);
-        }
-        .marquee-track {
-            display: flex; gap: 4rem; white-space: nowrap;
-            font-family: var(--f-sans); font-weight: 900; font-size: 3rem; text-transform: uppercase;
-        }
-
-        /* --- Section 3: Horizontal Methodology --- */
-        .horiz-section {
-            height: 100vh; display: flex; align-items: center; overflow: hidden;
-            background: #fff;
-        }
-        .horiz-container {
-            display: flex; gap: 10vw; padding: 0 10vw;
-            width: 400%; /* Wide */
-        }
-        .horiz-card {
-            width: 70vw; max-width: 600px;
-            padding: 4rem; background: var(--c-bg); border: 1px solid #ddd;
-            flex-shrink: 0; display: flex; flex-direction: column; justify-content: center;
-        }
-        .horiz-num { font-family: var(--f-sans); font-size: 5rem; color: var(--c-accent); opacity: 0.3; }
-
-        /* --- Section 4: Scatter Grid (Log) --- */
-        .scatter-section {
-            padding: 10rem 2rem; position: relative;
-        }
-        .scatter-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 6rem; max-width: 1400px; margin: 0 auto;
-        }
-        .scatter-item {
-            position: relative; background: white; padding: 2rem;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-            transition: transform 0.5s;
-        }
-        .scatter-item:nth-child(even) { transform: translateY(4rem); }
-        .scatter-item:hover { transform: scale(1.05) rotate(1deg); z-index: 5; }
-
-        .scatter-img { width: 100%; height: 250px; background: #eee; margin-bottom: 1.5rem; overflow: hidden; }
-        .scatter-img img { width: 100%; height: 100%; object-fit: cover; }
+        .liquid-block canvas { width: 100%; height: 100%; display: block; }
 
         /* --- Footer --- */
-        .footer-section { padding: 8rem 2rem; text-align: center; background: #111; color: #fff; position: relative; z-index: 20; }
         .footer-link {
-            font-size: 3rem; color: #fff; text-decoration: none; font-family: var(--f-display);
-            margin: 0 1rem; border-bottom: 1px solid transparent; transition: border-color 0.3s;
+            font-family: var(--f-head); font-size: 3rem; color: var(--c-text); text-decoration: none;
+            display: block; margin: 1rem 0; transition: letter-spacing 0.3s, color 0.3s;
         }
-        .footer-link:hover { border-color: #fff; }
+        .footer-link:hover { letter-spacing: 5px; color: var(--c-accent); }
 
     </style>
 </head>
 <body>
 
-    <a href="/guild" class="nav-fixed">← GUILD</a>
+    <div class="nav-fixed">
+        <a href="/guild" class="nav-logo">NEKOPAPAYA</a>
+        <span class="nav-logo" style="font-family: var(--f-body); font-size: 0.8rem;">EST. 2024</span>
+    </div>
 
     <div id="webgl-container"></div>
-    <div id="noise-overlay"></div>
 
     <div class="scroller">
 
         <!-- 1. Hero -->
-        <section class="hero-section">
-            <div class="hero-bg-text">OBSERVER</div>
-            <div class="hero-content interactive-layer">
-
-                <div class="avatar-liquid-wrapper" id="liquid-avatar"></div>
-
-                <div class="hero-overlay-text">
-                    <div style="font-family: var(--f-sans); font-weight: 700; color: var(--c-accent); margin-bottom: 1rem;">
-                        HUMAN STATE ANALYST
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="hero-spacer"></div>
+                <div class="reveal">
+                    <span class="section-label" style="text-align: center;">HUMAN STATE ANALYST</span>
+                    <h1 class="super-title">THE<br>OBSERVER</h1>
+                    <div class="hero-desc">
+                        <p style="font-size: 1.1rem;">
+                            人體狀態觀察分析師。<br>
+                            氫氫敲醒你的心靈。<br>
+                            <span style="font-family: var(--f-head); font-style: italic; color: var(--c-accent);">Conductor of Joy.</span>
+                        </p>
                     </div>
-                    <h1 class="huge-text">THE<br>EYE.</h1>
-                    <p style="font-size: 1.5rem; max-width: 400px; margin-top: 2rem; color: var(--c-text);">
-                        人體狀態觀察分析師。<br>
-                        康樂股長，魔人揪揪。<br>
-                        <span style="font-family: var(--f-display); font-style: italic;">"Hydrogen knocking on your soul."</span>
-                    </p>
                 </div>
-
             </div>
         </section>
 
-        <!-- 2. Marquee -->
-        <div class="marquee-section">
-            <div class="marquee-track">
-                <span>SAFE HAVEN PROTOCOL</span> • <span>JOY CONDUCTOR</span> • <span>CONNECTION ESTABLISHED</span> •
-                <span>SAFE HAVEN PROTOCOL</span> • <span>JOY CONDUCTOR</span> • <span>CONNECTION ESTABLISHED</span> •
-            </div>
-        </div>
+        <!-- 2. The Artifacts (Cards) -->
+        <section class="section">
+            <div class="container interactive-layer">
+                <div class="card-layout">
 
-        <!-- 3. Horizontal Methodology -->
-        <section class="horiz-section interactive-layer" id="methodology">
-            <div class="horiz-container">
-
-                <div class="horiz-card">
-                    <div class="horiz-num">00</div>
-                    <h2>THE PROCESS</h2>
-                    <p class="lead">My methodology for tuning souls and creating spaces.</p>
-                    <p>SCROLL SIDEWAYS →</p>
-                </div>
-
-                <div class="horiz-card">
-                    <div class="horiz-num">01</div>
-                    <h3>Observe</h3>
-                    <p>無聲地觀察每個人的狀態與需求。在熱鬧的背後，往往藏著最需要被看見的靈魂。我不看鏡頭，我看見空間與氛圍。</p>
-                </div>
-
-                <div class="horiz-card">
-                    <div class="horiz-num">02</div>
-                    <h3>Analyze</h3>
-                    <p>解構情緒，調配出最適合當下的氛圍。如同氫原子輕輕撞擊，喚醒沉睡的靈魂。讓每個人都能找到屬於自己的舒適頻率。</p>
-                </div>
-
-                <div class="horiz-card">
-                    <div class="horiz-num">03</div>
-                    <h3>Connect</h3>
-                    <p>魔人揪揪出動！將孤單的靈魂串連起來。創造一個沒有壓力、自由進出的聚會空間。這裡只留一個空間給願意的人。</p>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- 4. Scatter Log -->
-        <section class="scatter-section interactive-layer">
-            <div class="container">
-                <h2 style="font-size: 4rem; text-align: center; margin-bottom: 4rem;">RESONANCE LOG</h2>
-
-                <div class="scatter-grid">
-
-                    <div class="scatter-item">
-                        <div class="scatter-img"><img src="/assets/img/guild/nekopapaya/scene.webp" alt="Scene"></div>
-                        <h4>ENTRY: SAFETY</h4>
-                        <p>一個累的人看到頁面，會不會想停下來？文字與氛圍有沒有柔軟、溫暖？</p>
-                    </div>
-
-                    <div class="scatter-item" style="margin-top: 5rem;">
-                        <div style="background: var(--c-accent); height: 250px; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
-                            <i class="fa-solid fa-anchor"></i>
+                    <!-- Col 1 -->
+                    <div class="card-col">
+                        <div class="liquid-block gs-liquid" data-img="/assets/img/guild/nekopapaya/avatar.webp" style="margin-bottom: 4rem; height: 500px;">
+                            <!-- Canvas injected -->
                         </div>
-                        <h4>ENTRY: FREEDOM</h4>
-                        <p>每個人都可以自由選擇。沒有強迫，只有邀請。</p>
+
+                        <div class="art-card gs-fade">
+                            <div class="art-num">01</div>
+                            <h2 class="art-title">Observe</h2>
+                            <p>無聲地觀察每個人的狀態與需求。在熱鬧的背後，往往藏著最需要被看見的靈魂。我不看鏡頭，我看見空間與氛圍。</p>
+                        </div>
+
+                        <div class="art-card gs-fade">
+                            <div class="art-num">03</div>
+                            <h2 class="art-title">Connect</h2>
+                            <p>魔人揪揪出動！將孤單的靈魂串連起來。創造一個沒有壓力、自由進出的聚會空間。這裡只留一個空間給願意的人。</p>
+                        </div>
                     </div>
 
-                    <div class="scatter-item">
-                        <div style="background: var(--c-warm); height: 250px; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
-                            <i class="fa-solid fa-fire"></i>
+                    <!-- Col 2 -->
+                    <div class="card-col">
+                        <div class="art-card gs-fade">
+                            <div class="section-label">CORE PHILOSOPHY</div>
+                            <h2 class="art-title">Safe Haven.</h2>
+                            <p>這是一個可以停下來、坐一下的地方。有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。</p>
+                            <p style="margin-top: 1rem; color: var(--c-accent);">不是為了任何目的，也不需要報名或承諾。</p>
                         </div>
-                        <h4>ENTRY: WARMTH</h4>
-                        <p>喜歡可愛人事物星人。熱情、船、與人相處的感覺。</p>
+
+                        <div class="art-card gs-fade">
+                            <div class="art-num">02</div>
+                            <h2 class="art-title">Tune</h2>
+                            <p>解構情緒，調配出最適合當下的氛圍。如同氫原子輕輕撞擊，喚醒沉睡的靈魂。讓每個人都能找到屬於自己的舒適頻率。</p>
+                        </div>
+
+                        <div class="liquid-block gs-liquid" data-img="/assets/img/guild/nekopapaya/scene.webp">
+                            <!-- Canvas injected -->
+                        </div>
                     </div>
 
                 </div>
             </div>
         </section>
 
-        <!-- 5. Footer -->
-        <footer class="footer-section interactive-layer">
-            <h2 style="font-size: 3rem; margin-bottom: 3rem;">SYNC COMPLETE.</h2>
-            <div>
-                <a href="https://www.threads.net/@nekopapaya" class="footer-link">Threads</a>
-                <a href="https://www.instagram.com/nekopapaya/" class="footer-link">Instagram</a>
+        <!-- 3. Logs -->
+        <section class="section" style="background: #EAE8E1;">
+            <div class="container interactive-layer">
+                <div class="section-label">ANALYST'S LOG</div>
+                <div style="border-top: 1px solid var(--c-sub); margin: 2rem 0;"></div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                    <div class="gs-fade">
+                        <h3>Safety.</h3>
+                        <p style="margin-top: 1rem;">一個累的人看到頁面，會不會想停下來？文字與氛圍有沒有柔軟、溫暖？</p>
+                    </div>
+                    <div class="gs-fade">
+                        <h3>Freedom.</h3>
+                        <p style="margin-top: 1rem;">每個人都可以自由選擇。沒有強迫，只有邀請。</p>
+                    </div>
+                    <div class="gs-fade">
+                        <h3>Warmth.</h3>
+                        <p style="margin-top: 1rem;">喜歡可愛人事物星人。熱情、船、與人相處的感覺。</p>
+                    </div>
+                </div>
             </div>
-        </footer>
+        </section>
+
+        <!-- 4. Footer -->
+        <section class="section" style="text-align: center; min-height: 60vh;">
+            <div class="container interactive-layer">
+                <div class="section-label">SYNC COMPLETE</div>
+                <div style="margin: 4rem 0;">
+                    <a href="https://www.threads.net/@nekopapaya" target="_blank" class="footer-link">Threads.net</a>
+                    <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="footer-link">Instagram</a>
+                </div>
+                <p style="font-size: 0.8rem; opacity: 0.5;">
+                    SAFETY PROTOCOL: VOLUNTARY INTERACTION ONLY.
+                </p>
+            </div>
+        </section>
 
     </div>
 
     <!-- SCRIPT -->
     <script type="module">
         import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // --- GSAP ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // 1. Marquee
-        gsap.to(".marquee-track", {
-            xPercent: -50,
-            ease: "none",
-            duration: 10,
-            repeat: -1
-        });
-
-        // 2. Horizontal Scroll
-        const sections = gsap.utils.toArray(".horiz-card");
-        gsap.to(sections, {
-            xPercent: -100 * (sections.length - 1),
-            ease: "none",
-            scrollTrigger: {
-                trigger: ".horiz-section",
-                pin: true,
-                scrub: 1,
-                snap: 1 / (sections.length - 1),
-                end: () => "+=" + document.querySelector(".horiz-section").offsetWidth
-            }
-        });
-
-        // 3. Scatter Parallax
-        gsap.utils.toArray(".scatter-item").forEach((item, i) => {
-            gsap.to(item, {
-                y: -50,
-                scrollTrigger: {
-                    trigger: item,
-                    scrub: true
-                }
+        // Fade In
+        gsap.utils.toArray('.gs-fade').forEach(elem => {
+            gsap.from(elem, {
+                y: 50, opacity: 0, duration: 1, ease: "power2.out",
+                scrollTrigger: { trigger: elem, start: "top 90%" }
             });
         });
 
-
-        // --- Three.js: Background & Floating Debris ---
+        // --- Three.js: Glass Artifact (Centerpiece) ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 5;
+        // scene.background = new THREE.Color(0xF2F0E9); // Use CSS for bg to allow transparency
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 8;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Objects: Floating Glass Shapes
-        const geometry = new THREE.IcosahedronGeometry(1, 0);
-        const material = new THREE.MeshNormalMaterial({ wireframe: true, transparent: true, opacity: 0.3 });
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
 
-        const shapes = [];
-        for(let i=0; i<15; i++) {
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(
-                (Math.random() - 0.5) * 15,
-                (Math.random() - 0.5) * 15,
-                (Math.random() - 0.5) * 5 - 2
-            );
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            mesh.userData = {
-                rotSpeed: Math.random() * 0.01 + 0.005,
-                floatSpeed: Math.random() * 0.01 + 0.005,
-                yOffset: Math.random() * 100
-            };
-            const s = Math.random() * 0.5 + 0.2;
-            mesh.scale.set(s,s,s);
-            scene.add(mesh);
-            shapes.push(mesh);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+
+        // Environment Map (for glass refraction)
+        // Since we don't have an HDR, we simulate one with a PMREMGenerator or just a simple CubeMap?
+        // Let's use a simple scene background or lights reflecting.
+        // Actually, for TransmissionMaterial to work best, we need something behind it.
+        // But since the background is plain, we can use a "blob" behind the glass.
+
+        // 1. Background Blob (Warm)
+        const blobGeo = new THREE.SphereGeometry(3, 32, 32);
+        const blobMat = new THREE.MeshBasicMaterial({ color: 0xE2B57B });
+        const blob = new THREE.Mesh(blobGeo, blobMat);
+        blob.position.z = -5;
+        blob.position.x = 2;
+        scene.add(blob);
+
+        // 2. Background Blob (Cool)
+        const blob2Mat = new THREE.MeshBasicMaterial({ color: 0x78C0A8 });
+        const blob2 = new THREE.Mesh(blobGeo, blob2Mat);
+        blob2.position.z = -5;
+        blob2.position.x = -2;
+        blob2.position.y = -2;
+        scene.add(blob2);
+
+        // 3. The Artifact (Glass)
+        const geometry = new THREE.IcosahedronGeometry(1.5, 0); // Low poly look? Or high? Let's go High.
+        // Let's distort it.
+        const posAttribute = geometry.attributes.position;
+        for ( let i = 0; i < posAttribute.count; i ++ ) {
+            const x = posAttribute.getX( i );
+            const y = posAttribute.getY( i );
+            const z = posAttribute.getZ( i );
+            // Slight noise
+            const noise = Math.sin(x*2)*0.2 + Math.cos(y*2)*0.2;
+            posAttribute.setXYZ( i, x+noise, y+noise, z+noise );
         }
+        geometry.computeVertexNormals();
 
-        // Post-Processing: RGB Shift Shader (Manual implementation for simplicity)
-        // We render scene to target, then render target to screen with shader
-        const rt = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
-        const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const postScene = new THREE.Scene();
-
-        const rgbShader = {
-            uniforms: {
-                tDiffuse: { value: null },
-                uAmount: { value: 0.0 }
-            },
-            vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
-            fragmentShader: `
-                uniform sampler2D tDiffuse;
-                uniform float uAmount;
-                varying vec2 vUv;
-                void main() {
-                    vec2 offset = uAmount * vec2(0.02, 0.0);
-                    vec4 cr = texture2D(tDiffuse, vUv + offset);
-                    vec4 cga = texture2D(tDiffuse, vUv);
-                    vec4 cb = texture2D(tDiffuse, vUv - offset);
-                    gl_FragColor = vec4(cr.r, cga.g, cb.b, cga.a);
-                }
-            `
-        };
-        const postMaterial = new THREE.ShaderMaterial({
-            uniforms: rgbShader.uniforms,
-            vertexShader: rgbShader.vertexShader,
-            fragmentShader: rgbShader.fragmentShader
+        const material = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0.1,
+            roughness: 0.1,
+            transmission: 0.95, // Glass
+            thickness: 1.5,
+            ior: 1.5,
+            reflectivity: 0.5,
+            clearcoat: 1.0
         });
-        postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial));
 
+        const artifact = new THREE.Mesh(geometry, material);
+        scene.add(artifact);
 
-        // --- Liquid Avatar (Hero) ---
-        // Same logic as before but localized
-        function initLiquidAvatar() {
-            const el = document.getElementById('liquid-avatar');
-            if(!el) return;
-            const lScene = new THREE.Scene();
-            const lCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            const lRenderer = new THREE.WebGLRenderer({ alpha: true });
-            lRenderer.setSize(el.clientWidth, el.clientHeight);
-            el.appendChild(lRenderer.domElement);
-
-            const texture = new THREE.TextureLoader().load('/assets/img/guild/nekopapaya/avatar.webp');
-            const uniforms = {
-                uTexture: { value: texture },
-                uTime: { value: 0 },
-                uMouse: { value: new THREE.Vector2(0.5,0.5) }
-            };
-            const mat = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
-                fragmentShader: `
-                    uniform sampler2D uTexture;
-                    uniform float uTime;
-                    varying vec2 vUv;
-                    void main() {
-                        vec2 uv = vUv;
-                        uv.y += sin(uv.x * 10.0 + uTime) * 0.02;
-                        uv.x += cos(uv.y * 10.0 + uTime) * 0.02;
-                        gl_FragColor = texture2D(uTexture, uv);
-                    }
-                `
-            });
-            lScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
-
-            return { scene: lScene, camera: lCamera, renderer: lRenderer, uniforms: uniforms };
-        }
-        const avatarObj = initLiquidAvatar();
-
-
-        // Animation Loop
+        // --- Interaction State ---
         let scrollY = 0;
-        let lastScrollY = 0;
-        let scrollSpeed = 0;
+        const mouse = new THREE.Vector2();
 
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-            scrollSpeed = Math.abs(scrollY - lastScrollY);
-            lastScrollY = scrollY;
+        window.addEventListener('scroll', () => scrollY = window.scrollY);
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
+        // --- Animation Loop ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // 1. Shapes
-            shapes.forEach(mesh => {
-                mesh.rotation.x += mesh.userData.rotSpeed;
-                mesh.rotation.y += mesh.userData.rotSpeed;
-                mesh.position.y += Math.sin(time * mesh.userData.floatSpeed + mesh.userData.yOffset) * 0.01;
-            });
+            // Animate Blobs (Background)
+            blob.position.x = Math.sin(time * 0.5) * 3;
+            blob.position.y = Math.cos(time * 0.3) * 2;
+            blob2.position.x = Math.cos(time * 0.4) * 3;
+            blob2.position.y = Math.sin(time * 0.6) * 2;
 
-            // 2. RGB Shift Decay
-            rgbShader.uniforms.uAmount.value += (scrollSpeed * 0.005 - rgbShader.uniforms.uAmount.value) * 0.1;
-            scrollSpeed *= 0.95; // Decay input
+            // Animate Artifact
+            artifact.rotation.x = time * 0.1 + scrollY * 0.001;
+            artifact.rotation.y = time * 0.15;
 
-            // 3. Render Scene to Target
-            renderer.setRenderTarget(rt);
+            // Mouse Interaction (Tilt)
+            artifact.rotation.x += mouse.y * 0.2;
+            artifact.rotation.y += mouse.x * 0.2;
+
             renderer.render(scene, camera);
-            renderer.setRenderTarget(null);
-
-            // 4. Render Post to Screen
-            rgbShader.uniforms.tDiffuse.value = rt.texture;
-            renderer.render(postScene, orthoCamera);
-
-            // 5. Render Avatar
-            if(avatarObj) {
-                avatarObj.uniforms.uTime.value = time;
-                avatarObj.renderer.render(avatarObj.scene, avatarObj.camera);
-            }
         }
         animate();
 
         window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            rt.setSize(window.innerWidth, window.innerHeight);
         });
+
+
+        // --- Helper: Liquid Image Injection ---
+        // Reuse shader logic for specific divs
+        document.querySelectorAll('.gs-liquid').forEach(el => {
+            const imgPath = el.dataset.img;
+            initLiquid(el, imgPath);
+        });
+
+        function initLiquid(el, path) {
+            const w = el.clientWidth;
+            const h = el.clientHeight;
+            const scene = new THREE.Scene();
+            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setSize(w, h);
+            el.appendChild(renderer.domElement);
+
+            const texture = new THREE.TextureLoader().load(path);
+            const uniforms = {
+                uTexture: { value: texture },
+                uTime: { value: 0 },
+                uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                uHover: { value: 0 }
+            };
+
+            const mat = new THREE.ShaderMaterial({
+                uniforms: uniforms,
+                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
+                fragmentShader: `
+                    uniform sampler2D uTexture;
+                    uniform float uTime;
+                    uniform float uHover;
+                    varying vec2 vUv;
+                    void main() {
+                        vec2 uv = vUv;
+                        // Wave effect on hover
+                        float wave = sin(uv.y * 10.0 + uTime * 2.0) * 0.02 * uHover;
+                        uv.x += wave;
+
+                        vec4 color = texture2D(uTexture, uv);
+                        // Grayscale to color
+                        float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                        vec3 final = mix(vec3(gray), color.rgb, uHover); // 0 = gray, 1 = color
+
+                        gl_FragColor = vec4(final, 1.0);
+                    }
+                `
+            });
+            scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+
+            let hoverTarget = 0;
+            el.addEventListener('mouseenter', () => hoverTarget = 1);
+            el.addEventListener('mouseleave', () => hoverTarget = 0);
+
+            function tick() {
+                requestAnimationFrame(tick);
+                uniforms.uTime.value += 0.05;
+                uniforms.uHover.value += (hoverTarget - uniforms.uHover.value) * 0.1;
+                renderer.render(scene, camera);
+            }
+            tick();
+        }
 
     </script>
 </body>
