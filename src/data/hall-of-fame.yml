@@ -945,3 +945,15 @@ members:
         label: "最強武將"
       - id: "indie_games"
         label: "獨立遊戲"
+
+  - id: "mian"
+    name: "Mian"
+    avatar: "/assets/img/guild/mian/avatar.webp"
+    page: "/guild/mian.html"
+    tags:
+      - id: "camera_geek"
+        label: "相機達人"
+      - id: "model_car"
+        label: "模型車改裝"
+      - id: "rider"
+        label: "摩托車騎士"
