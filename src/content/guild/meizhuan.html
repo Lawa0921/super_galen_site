@@ -4,30 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meizhuan | Guild Hall</title>
-    <!-- GSAP Global -->
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+TC:wght@300;500;700&display=swap">
+    <!-- GSAP (core only, ScrollTrigger removed) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Three.js Import Map -->
     <script type="importmap">
         {
             "imports": {
-                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&display=swap');
 
         :root {
             --neon-cyan: #00f3ff;
             --neon-pink: #ff0055;
             --neon-yellow: #ffee00;
             --neon-purple: #bc13fe;
+            --neon-green: #39ff14;
             --dark-bg: #020202;
-            --panel-bg: rgba(5, 5, 10, 0.9);
         }
 
         html {
@@ -48,6 +50,233 @@
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
         }
+
+        /* ======== INTRO OVERLAY ======== */
+        #intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: #020202;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        /* Phase 1: content fades out, background stays */
+        #intro-overlay.dismissing .intro-content {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        /* Phase 2: background fades out */
+        #intro-overlay.dismissed {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        /* Scanline texture */
+        #intro-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 243, 255, 0.02) 2px,
+                rgba(0, 243, 255, 0.02) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Horizontal sweep line */
+        #intro-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            animation: intro-sweep 2s linear infinite;
+            z-index: 2;
+            opacity: 0.5;
+        }
+
+        @keyframes intro-sweep {
+            0% { top: -2px; }
+            100% { top: 100%; }
+        }
+
+        .intro-content {
+            position: relative;
+            z-index: 3;
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Overlay background transition — slower, with blur */
+        #intro-overlay {
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Terminal lines */
+        .intro-terminal {
+            width: 100%;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 1.5px;
+            line-height: 2;
+            text-align: left;
+            color: var(--neon-cyan);
+            min-height: 140px;
+        }
+
+        .intro-terminal .term-line {
+            opacity: 0;
+            transform: translateX(-10px);
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .intro-terminal .term-line.visible {
+            opacity: 1;
+            transform: translateX(0);
+            transition: opacity 0.2s ease, transform 0.3s ease;
+        }
+
+        .intro-terminal .term-line .term-prefix {
+            color: var(--neon-green);
+        }
+
+        .intro-terminal .term-line .term-value {
+            color: #fff;
+        }
+
+        .intro-terminal .term-line .term-warn {
+            color: var(--neon-yellow);
+        }
+
+        .intro-terminal .term-line .term-ok {
+            color: var(--neon-green);
+        }
+
+        /* RPM Gauge */
+        #intro-rpm-gauge {
+            width: 220px;
+            height: 130px;
+        }
+
+        #intro-rpm-arc {
+            transition: stroke-dashoffset 0.15s ease;
+        }
+
+        /* Ignition prompt */
+        .intro-ignition {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--neon-pink);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .intro-ignition.visible {
+            opacity: 1;
+            animation: intro-pulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes intro-pulse {
+            0%, 100% { text-shadow: 0 0 5px var(--neon-pink); }
+            50% { text-shadow: 0 0 20px var(--neon-pink), 0 0 40px rgba(255,0,85,0.3); }
+        }
+
+        /* Speed lines burst on exit */
+        .intro-speedlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0;
+        }
+
+        .intro-speedlines.active {
+            opacity: 1;
+        }
+
+        .intro-speedlines .speedline {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 3px;
+            height: 0;
+            background: linear-gradient(to bottom, transparent, var(--neon-cyan));
+            transform-origin: top center;
+            opacity: 0;
+        }
+
+        .intro-speedlines.active .speedline {
+            animation: speedline-burst 0.8s ease-out forwards;
+        }
+
+        @keyframes speedline-burst {
+            0% { height: 0; opacity: 0.8; }
+            100% { height: 60vh; opacity: 0; }
+        }
+
+        /* Intro mobile */
+        @media (max-width: 768px) {
+            .intro-terminal {
+                font-size: 0.6rem;
+                letter-spacing: 1px;
+                min-height: 120px;
+            }
+            #intro-rpm-gauge {
+                width: 170px;
+                height: 100px;
+            }
+            .intro-ignition {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Main page content hidden until intro dismissed */
+        .content-scroll,
+        .nav-back,
+        #hud-container,
+        #hud-top-left {
+            opacity: 0;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.page-ready .content-scroll,
+        body.page-ready .nav-back,
+        body.page-ready #hud-container,
+        body.page-ready #hud-top-left {
+            opacity: 1;
+        }
+
+        /* ======== END INTRO OVERLAY ======== */
 
         /* Animations */
         @keyframes blink {
@@ -87,8 +316,8 @@
 
         #hud-top-left {
             position: fixed;
-            top: 6rem; /* Move below Nav Button */
-            left: 2rem; /* Align with Nav Button */
+            top: 6rem;
+            left: 2rem;
             z-index: 90;
             pointer-events: none;
             font-family: 'Orbitron', sans-serif;
@@ -109,14 +338,14 @@
             font-family: 'Orbitron', sans-serif;
             font-weight: 700;
             border: 1px solid var(--neon-cyan);
-            padding: 0.8rem 1.5rem; /* Larger touch target */
+            padding: 0.8rem 1.5rem;
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 2px;
-            background: rgba(0,0,0,0.9); /* Darker BG for readability */
+            background: rgba(0,0,0,0.9);
             backdrop-filter: blur(5px);
             clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-            white-space: nowrap; /* Prevent wrapping */
+            white-space: nowrap;
         }
 
         .nav-back:hover {
@@ -137,18 +366,22 @@
         .section {
             position: relative;
             width: 100%;
-            min-height: 100vh;
+            min-height: 80vh;
             height: auto;
             display: flex;
-            justify-content: center; /* Default center */
+            justify-content: center;
             align-items: center;
-            pointer-events: none;
             perspective: 1000px;
             padding: 4rem 0;
             box-sizing: border-box;
         }
 
-        /* Alignment Utilities (Replacing Inline Styles) */
+        /* Hero section stays full viewport */
+        #section-hero {
+            min-height: 100vh;
+        }
+
+        /* Alignment Utilities */
         .align-left {
             justify-content: flex-start;
             padding-left: 10%;
@@ -173,14 +406,10 @@
             text-align: center;
         }
 
-        /* Helper Classes */
-        .col-span-2 {
-            grid-column: span 2;
-        }
-
         .text-neon-cyan { color: var(--neon-cyan); }
         .text-neon-pink { color: var(--neon-pink); }
         .text-neon-yellow { color: var(--neon-yellow); }
+        .text-neon-green { color: var(--neon-green); }
         .text-gray-aaa { color: #aaa; }
         .text-gray-888 { color: #888; }
 
@@ -196,14 +425,14 @@
         .font-xl { font-size: 2.5rem; }
         .font-xxl { font-size: 3rem; }
 
-        /* Card Styling */
+        /* Card Styling - visible by default, GSAP will control animation */
         .hud-card {
             pointer-events: auto;
             background: linear-gradient(135deg, rgba(10,10,20,0.95), rgba(0,0,0,0.9));
             border: 1px solid rgba(0, 243, 255, 0.3);
             padding: 2.5rem;
             max-width: 550px;
-            width: 90%; /* Responsive width */
+            width: 90%;
             position: relative;
             backdrop-filter: blur(10px);
             box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0, 243, 255, 0.05);
@@ -213,8 +442,10 @@
                 100% calc(100% - 20px), calc(100% - 20px) 100%,
                 0 100%, 0 20px
             );
+        }
 
-            /* Initial Animation State */
+        /* GSAP will add this class to set initial hidden state */
+        .hud-card.gsap-init {
             opacity: 0;
             transform: translateZ(-50px) rotateX(10deg);
         }
@@ -236,6 +467,10 @@
             );
             pointer-events: none;
             opacity: 0.5;
+        }
+
+        .hud-card.final-card::before {
+            border-color: var(--neon-pink);
         }
 
         /* Typography */
@@ -298,12 +533,7 @@
             height: 100%;
             object-fit: cover;
             clip-path: polygon(30% 0, 100% 0, 100% 70%, 70% 100%, 0 100%, 0 30%);
-            filter: grayscale(100%) contrast(1.2);
             transition: all 0.5s ease;
-        }
-
-        .avatar-img:hover {
-            filter: grayscale(0%) contrast(1);
         }
 
         .avatar-border {
@@ -375,14 +605,19 @@
             height: 100%;
             background: var(--neon-cyan);
             box-shadow: 0 0 10px var(--neon-cyan);
-            /* Width controlled by class */
         }
 
+        .w-40 { width: 40%; }
+        .w-50 { width: 50%; }
+        .w-55 { width: 55%; }
         .w-60 { width: 60%; }
+        .w-65 { width: 65%; }
         .w-70 { width: 70%; }
         .w-80 { width: 80%; }
-        .w-40 { width: 40%; }
-        .bg-neon-purple { background: var(--neon-purple); }
+        .bg-neon-purple { background: var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple); }
+        .bg-neon-pink { background: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); }
+        .bg-neon-green { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        .bg-neon-yellow { background: var(--neon-yellow); box-shadow: 0 0 10px var(--neon-yellow); }
 
         /* Equipment Grid */
         .equip-grid {
@@ -411,6 +646,118 @@
             font-size: 1.2rem;
             margin-bottom: 0.3rem;
             color: var(--neon-yellow);
+        }
+
+        /* Quest Items */
+        .quest-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--neon-yellow);
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .quest-item:hover {
+            background: rgba(255, 238, 0, 0.05);
+            transform: translateX(5px);
+        }
+
+        .quest-item.quest-complete {
+            border-left-color: var(--neon-green);
+            opacity: 0.7;
+        }
+
+        .quest-item.quest-active {
+            border-left-color: var(--neon-cyan);
+        }
+
+        .quest-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 0.15rem;
+        }
+
+        .quest-content {
+            flex: 1;
+        }
+
+        .quest-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: #fff;
+            margin-bottom: 0.2rem;
+        }
+
+        .quest-desc {
+            font-size: 0.8rem;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .quest-reward {
+            font-size: 0.7rem;
+            color: var(--neon-yellow);
+            margin-top: 0.3rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Achievement Items */
+        .achievement-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+            margin-bottom: 0.6rem;
+        }
+
+        .achievement-item:hover {
+            background: rgba(188, 19, 254, 0.08);
+            border-color: var(--neon-purple);
+        }
+
+        .achievement-item.unlocked {
+            border-color: rgba(188, 19, 254, 0.4);
+        }
+
+        .achievement-item.locked {
+            opacity: 0.4;
+            filter: grayscale(50%);
+        }
+
+        .achievement-badge {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-purple);
+            clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+            flex-shrink: 0;
+        }
+
+        .achievement-info {
+            flex: 1;
+        }
+
+        .achievement-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--neon-purple);
+            margin-bottom: 0.2rem;
+        }
+
+        .achievement-desc {
+            font-size: 0.75rem;
+            color: #888;
+            line-height: 1.3;
         }
 
         /* Social Icons */
@@ -465,9 +812,8 @@
             .section {
                 min-height: auto;
                 height: auto;
-                padding: 6rem 0;
+                padding: 3rem 0;
                 align-items: center;
-                /* By default, we override flex alignments below without !important */
             }
 
             #section-hero {
@@ -478,8 +824,7 @@
                 padding-bottom: 12rem;
             }
 
-            /* Override explicit alignments with specific mobile rules */
-            /* Using specificity to override .align-left/right without !important */
+            /* Override explicit alignments for mobile */
             body .section.align-left,
             body .section.align-right,
             body .section.align-left-more,
@@ -487,7 +832,6 @@
                 justify-content: center;
                 padding-left: 0;
                 padding-right: 0;
-                margin-bottom: 4rem;
             }
 
             .stat-grid {
@@ -536,11 +880,79 @@
                 padding: 0.4rem;
                 word-break: break-all;
             }
+
+            .quest-item {
+                padding: 0.6rem 0.8rem;
+            }
+
+            .achievement-item {
+                padding: 0.6rem;
+            }
+
+            .achievement-badge {
+                width: 34px;
+                height: 34px;
+                font-size: 1rem;
+            }
         }
 
     </style>
 </head>
-<body>
+<body style="overflow: hidden;">
+
+    <!-- Engine Ignition Intro Overlay -->
+    <div id="intro-overlay">
+        <div class="intro-content">
+            <!-- RPM Gauge SVG -->
+            <svg id="intro-rpm-gauge" viewBox="0 0 220 130">
+                <defs>
+                    <filter id="rpm-glow">
+                        <feGaussianBlur stdDeviation="2" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                <!-- Outer arc background -->
+                <path d="M 25 120 A 95 95 0 0 1 195 120" fill="none" stroke="rgba(0,243,255,0.15)" stroke-width="3"/>
+                <!-- RPM arc (dynamic) -->
+                <path id="intro-rpm-arc"
+                      d="M 25 120 A 95 95 0 0 1 195 120"
+                      fill="none"
+                      stroke="var(--neon-cyan)"
+                      stroke-width="6"
+                      stroke-linecap="round"
+                      filter="url(#rpm-glow)"
+                      stroke-dasharray="298"
+                      stroke-dashoffset="298"/>
+                <!-- RPM text -->
+                <text x="110" y="95" text-anchor="middle" fill="#fff" font-family="'Orbitron', sans-serif" font-size="36" font-weight="bold" id="intro-rpm-text">0</text>
+                <text x="110" y="118" text-anchor="middle" fill="var(--neon-cyan)" font-family="'Orbitron', sans-serif" font-size="10" letter-spacing="2">RPM x1000</text>
+                <!-- Redline zone indicator -->
+                <path d="M 170 32 A 95 95 0 0 1 195 120" fill="none" stroke="rgba(255,0,85,0.3)" stroke-width="6"/>
+            </svg>
+
+            <!-- Terminal boot text -->
+            <div class="intro-terminal">
+                <div class="term-line" data-delay="200"><span class="term-prefix">&gt; </span>SYSTEM BOOT <span class="term-ok">[INIT]</span></div>
+                <div class="term-line" data-delay="500"><span class="term-prefix">&gt; </span>RIDER_ID: <span class="term-value">MEIZHUAN</span></div>
+                <div class="term-line" data-delay="800"><span class="term-prefix">&gt; </span>CLASS: <span class="term-value">ENGINEER / BIKER / OTAKU</span></div>
+                <div class="term-line" data-delay="1100"><span class="term-prefix">&gt; </span>ENGINE: <span class="term-value">V-TWIN 650cc</span> <span class="term-ok">[READY]</span></div>
+                <div class="term-line" data-delay="1400"><span class="term-prefix">&gt; </span>NAV_ROUTE: <span class="term-value">NEON_HIGHWAY</span></div>
+                <div class="term-line" data-delay="1700"><span class="term-prefix">&gt; </span>DEST: <span class="term-warn">JAPAN</span></div>
+                <div class="term-line" data-delay="2000"><span class="term-prefix">&gt; </span>ALL SYSTEMS <span class="term-ok">[GREEN]</span></div>
+            </div>
+
+            <!-- Ignition prompt -->
+            <div class="intro-ignition" id="intro-ignition">
+                <i class="fas fa-key"></i> Click to Ignite
+            </div>
+        </div>
+
+        <!-- Speed lines for exit burst -->
+        <div class="intro-speedlines" id="intro-speedlines"></div>
+    </div>
 
     <a href="/guild/" class="nav-back"><i class="fas fa-chevron-left"></i> Guild Hall</a>
 
@@ -550,13 +962,12 @@
     <div id="hud-top-left">
         <div>SYS: ONLINE</div>
         <div>LOC: NEON_HIGHWAY</div>
-        <div>OBJ: REACH_JAPAN <span class="text-neon-pink animate-blink">●</span></div>
+        <div>OBJ: REACH_JAPAN <span class="text-neon-pink animate-blink">&bull;</span></div>
     </div>
 
     <div id="hud-container">
         <!-- Speedometer SVG -->
         <svg width="250" height="250" viewBox="0 0 250 250">
-            <!-- Defs for glow -->
             <defs>
                 <filter id="glow">
                     <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
@@ -566,10 +977,8 @@
                     </feMerge>
                 </filter>
             </defs>
-
             <!-- Outer Ring (Static) -->
             <path d="M 45 205 A 110 110 0 1 1 205 205" fill="none" stroke="rgba(0, 243, 255, 0.2)" stroke-width="2" />
-
             <!-- Speed Arc (Dynamic) -->
             <path id="speed-arc" d="M 55 195 A 100 100 0 1 1 195 195"
                   fill="none"
@@ -579,11 +988,9 @@
                   filter="url(#glow)"
                   stroke-dasharray="471"
                   stroke-dashoffset="471" />
-
             <!-- Text Readout -->
             <text x="125" y="140" text-anchor="middle" fill="#fff" font-family="'Orbitron', sans-serif" font-size="48" font-weight="bold" id="speed-text">0</text>
             <text x="125" y="170" text-anchor="middle" fill="#00f3ff" font-family="'Orbitron', sans-serif" font-size="14" letter-spacing="2">KM/H</text>
-
             <!-- Gear -->
             <text x="180" y="100" text-anchor="middle" fill="#ffc800" font-family="'Orbitron', sans-serif" font-size="24" id="gear-text">N</text>
         </svg>
@@ -596,7 +1003,7 @@
             <div class="hud-card text-center">
                 <div class="avatar-container">
                     <div class="avatar-border"></div>
-                    <img src="/assets/img/guild/meizhuan/avatar.webp" alt="Meizhuan" class="avatar-img">
+                    <img src="/assets/img/guild/meizhuan/avatar.webp" alt="Meizhuan" class="avatar-img" width="140" height="140" loading="lazy">
                 </div>
                 <h1>石專豆頁</h1>
                 <div class="subtitle">// ENGINEER // BIKER // OTAKU</div>
@@ -618,6 +1025,10 @@
                     電機工程系畢業，目前身處<span class="highlight">助理工程師</span>的練功房。
                     正朝著真正的工程師之路疾馳，試圖解鎖更多技能樹。
                 </p>
+                <p class="font-md text-gray-aaa">
+                    從迴路到程式碼，從焊接到鍵盤，一步步將電機的基底轉化為軟體的力量。
+                    目標明確：成為能獨當一面的工程師。
+                </p>
                 <div class="stat-grid">
                     <div class="stat-item">
                         <span class="stat-label">Current Role</span>
@@ -626,6 +1037,14 @@
                     <div class="stat-item">
                         <span class="stat-label">Target Role</span>
                         <span class="stat-value">Full Engineer</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Background</span>
+                        <span class="stat-value">EE Major</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Exp. Years</span>
+                        <span class="stat-value">Loading...</span>
                     </div>
                 </div>
             </div>
@@ -646,6 +1065,14 @@
                 <div class="progress-container">
                     <div class="progress-label"><span>AGI (Riding / Reflex)</span><span>LV. 8</span></div>
                     <div class="progress-bg"><div class="progress-fill w-80"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>VIT (Endurance)</span><span>LV. 5</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-50 bg-neon-green"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>WIS (Life Exp)</span><span>LV. 5</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-55 bg-neon-yellow"></div></div>
                 </div>
                 <div class="progress-container">
                     <div class="progress-label"><span>LUCK (Gacha / Drops)</span><span>LV. ???</span></div>
@@ -671,10 +1098,27 @@
                         <span class="stat-label">Lang. Aux</span>
                         <span class="stat-value">Japanese (Loading)</span>
                     </div>
-                    <div class="stat-item col-span-2">
+                    <div class="stat-item">
                         <span class="stat-label">Project</span>
                         <span class="stat-value">Indie Game Dev</span>
                     </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Engine</span>
+                        <span class="stat-value">Exploring...</span>
+                    </div>
+                </div>
+                <p class="mt-1 font-sm text-gray-888">// SKILL PROGRESS</p>
+                <div class="progress-container">
+                    <div class="progress-label"><span>Python</span><span>65%</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-65 bg-neon-green"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>Japanese (N5 &rarr; N4)</span><span>40%</span></div>
+                    <div class="progress-bg"><div class="progress-fill w-40 bg-neon-pink"></div></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-label"><span>Game Dev</span><span>25%</span></div>
+                    <div class="progress-bg"><div class="progress-fill" style="width:25%"></div></div>
                 </div>
                 <p class="mt-1 font-md text-gray-aaa">
                     歡迎各路大神給予建議或方向，讓我們一起 Debug 人生。
@@ -717,6 +1161,22 @@
                         VS CODE
                     </div>
                 </div>
+
+                <p class="mt-1 mb-05 font-sm text-gray-888">// DAILY CARRY</p>
+                <div class="equip-grid">
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-headphones"></i></div>
+                        EARBUDS
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-mug-hot"></i></div>
+                        COFFEE
+                    </div>
+                    <div class="equip-slot">
+                        <div class="equip-icon"><i class="fas fa-mobile-screen"></i></div>
+                        PHONE
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -737,7 +1197,18 @@
                         <span class="stat-label">Focus</span>
                         <span class="stat-value">Anime & Gaming</span>
                     </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Fav Genre</span>
+                        <span class="stat-value">Isekai / Mecha</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Game Type</span>
+                        <span class="stat-value">RPG / Action</span>
+                    </div>
                 </div>
+                <p class="mt-1 font-md text-gray-aaa">
+                    「如果人生是一款遊戲，那我正在努力刷經驗值。」
+                </p>
             </div>
         </div>
 
@@ -762,6 +1233,127 @@
                         <span class="stat-label">Health Check</span>
                         <span class="stat-value">Smoking: OFF</span>
                     </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Sleep Cycle</span>
+                        <span class="stat-value">Optimizing...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Energy Source</span>
+                        <span class="stat-value">Coffee &#9749;</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quest Log (Left Aligned) - NEW -->
+        <div class="section align-left" id="section-quest">
+            <div class="hud-card">
+                <h3><i class="fas fa-scroll"></i> QUEST_LOG</h3>
+                <p class="font-sm text-gray-888 mb-05">// ACTIVE QUESTS</p>
+
+                <div class="quest-item quest-active">
+                    <div class="quest-icon text-neon-cyan"><i class="fas fa-code"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Path of the Engineer</div>
+                        <div class="quest-desc">從助理工程師升級為正式工程師，掌握核心開發技能。</div>
+                        <div class="quest-reward">REWARD: +500 EXP, Title &quot;Full Engineer&quot;</div>
+                    </div>
+                </div>
+
+                <div class="quest-item quest-active">
+                    <div class="quest-icon text-neon-cyan"><i class="fas fa-language"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Nihongo Challenge</div>
+                        <div class="quest-desc">日語學習計畫：通過 JLPT N4，邁向 N3 的旅程。</div>
+                        <div class="quest-reward">REWARD: +300 EXP, Unlock &quot;Japan Route&quot;</div>
+                    </div>
+                </div>
+
+                <div class="quest-item quest-active">
+                    <div class="quest-icon text-neon-cyan"><i class="fas fa-gamepad"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Indie Dev: First Build</div>
+                        <div class="quest-desc">完成第一款獨立遊戲的原型開發，從零到一的創作旅程。</div>
+                        <div class="quest-reward">REWARD: +800 EXP, Item &quot;Creator's Badge&quot;</div>
+                    </div>
+                </div>
+
+                <p class="font-sm text-gray-888 mb-05 mt-1">// COMPLETED</p>
+
+                <div class="quest-item quest-complete">
+                    <div class="quest-icon text-neon-green"><i class="fas fa-check-circle"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">Rider's License</div>
+                        <div class="quest-desc">取得重型機車駕照。</div>
+                        <div class="quest-reward">COMPLETE &mdash; Unlocked: Heavy Bike Access</div>
+                    </div>
+                </div>
+
+                <div class="quest-item quest-complete">
+                    <div class="quest-icon text-neon-green"><i class="fas fa-check-circle"></i></div>
+                    <div class="quest-content">
+                        <div class="quest-title">EE Graduation</div>
+                        <div class="quest-desc">電機工程系順利畢業。</div>
+                        <div class="quest-reward">COMPLETE &mdash; Unlocked: Engineer Path</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievements (Right Aligned) - NEW -->
+        <div class="section align-right" id="section-achievements">
+            <div class="hud-card">
+                <h3><i class="fas fa-trophy"></i> ACHIEVEMENT_HALL</h3>
+                <p class="font-sm text-gray-888 mb-05">// UNLOCKED</p>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-green"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">Scholar's Mark</div>
+                        <div class="achievement-desc">電機工程系畢業，完成學業主線任務。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-cyan"><i class="fas fa-motorcycle"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">Road Warrior</div>
+                        <div class="achievement-desc">取得重型機車駕照，解鎖雙輪旅行的自由。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-yellow"><i class="fas fa-briefcase"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">First Deploy</div>
+                        <div class="achievement-desc">成為助理工程師，踏入職場戰場。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item unlocked">
+                    <div class="achievement-badge text-neon-pink"><i class="fas fa-heart"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">Nicotine Purge: Init</div>
+                        <div class="achievement-desc">正式啟動戒菸程序，為了更好的自己。</div>
+                    </div>
+                </div>
+
+                <p class="font-sm text-gray-888 mb-05 mt-1">// LOCKED</p>
+
+                <div class="achievement-item locked">
+                    <div class="achievement-badge"><i class="fas fa-lock"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">??? Full Engineer ???</div>
+                        <div class="achievement-desc">晉升為正式工程師。條件未達成。</div>
+                    </div>
+                </div>
+
+                <div class="achievement-item locked">
+                    <div class="achievement-badge"><i class="fas fa-lock"></i></div>
+                    <div class="achievement-info">
+                        <div class="achievement-name">??? Japan Route Clear ???</div>
+                        <div class="achievement-desc">完成日本重機之旅。條件未達成。</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -769,7 +1361,7 @@
         <!-- Goal Section (Finale) -->
         <div class="section" id="section-goal">
             <div class="hud-card final-card text-center">
-                <i class="fas fa-motorcycle font-xxl text-neon-pink mb-1"></i>
+                <i class="fas fa-motorcycle font-xxl text-neon-pink mb-1" style="display:block"></i>
                 <h1 class="font-xl text-neon-pink">DREAM_ROUTE</h1>
                 <p class="highlight font-lg my-1">
                     DESTINATION: JAPAN
@@ -777,6 +1369,9 @@
                 <p>
                     擁有重機駕照，雖暫時選擇租車體驗各種車款，但騎士魂燃燒依舊。
                     終極目標是去日本體驗重機旅行，並給家人更好的生活。
+                </p>
+                <p class="font-md text-gray-aaa">
+                    「無論是程式碼還是公路，終點從來不是目標，旅途本身才是。」
                 </p>
                 <div class="social-links">
                     <a href="https://www.threads.net/@meizhuan" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
@@ -787,19 +1382,122 @@
 
     </div>
 
+    <!-- Engine Ignition Intro Script -->
+    <script>
+    (function() {
+        const overlay = document.getElementById('intro-overlay');
+        if (!overlay) return;
+
+        const termLines = overlay.querySelectorAll('.term-line');
+        const ignitionPrompt = document.getElementById('intro-ignition');
+        const rpmArc = document.getElementById('intro-rpm-arc');
+        const rpmText = document.getElementById('intro-rpm-text');
+        const speedlinesContainer = document.getElementById('intro-speedlines');
+        const maxRpmDash = 298;
+        let dismissed = false;
+        let autoTimer = null;
+
+        // Generate speed lines for burst effect
+        const lineCount = 24;
+        for (let i = 0; i < lineCount; i++) {
+            const line = document.createElement('div');
+            line.className = 'speedline';
+            const angle = (i / lineCount) * 360;
+            const delay = Math.random() * 0.15;
+            line.style.transform = 'rotate(' + angle + 'deg)';
+            line.style.animationDelay = delay + 's';
+            speedlinesContainer.appendChild(line);
+        }
+
+        // Phase 1: Terminal text reveal
+        termLines.forEach(function(line) {
+            var delay = parseInt(line.getAttribute('data-delay') || '0', 10);
+            setTimeout(function() {
+                if (!dismissed) line.classList.add('visible');
+            }, delay);
+        });
+
+        // Phase 2: RPM rev-up animation (starts at 2.2s)
+        var rpmStart = 2200;
+        var rpmDuration = 1800;
+        var rpmStartTime = null;
+
+        function animateRpm(timestamp) {
+            if (dismissed) return;
+            if (!rpmStartTime) rpmStartTime = timestamp;
+            var elapsed = timestamp - rpmStartTime;
+            var progress = Math.min(elapsed / rpmDuration, 1);
+
+            // Easing: ease-in-out with slight overshoot
+            var eased = progress < 0.5
+                ? 2 * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            var rpm = Math.floor(eased * 9.5);
+            rpmText.textContent = rpm.toFixed(0);
+            rpmArc.style.strokeDashoffset = maxRpmDash - (eased * 0.85 * maxRpmDash);
+
+            // Change color at high RPM
+            if (eased > 0.7) {
+                rpmArc.style.stroke = '#ff0055';
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(animateRpm);
+            }
+        }
+
+        setTimeout(function() {
+            if (!dismissed) requestAnimationFrame(animateRpm);
+        }, rpmStart);
+
+        // Phase 3: Show ignition prompt (at 2.5s)
+        setTimeout(function() {
+            if (!dismissed && ignitionPrompt) {
+                ignitionPrompt.classList.add('visible');
+            }
+        }, 2500);
+
+        // Dismiss function — two-phase cross-fade transition
+        function dismissIntro() {
+            if (dismissed) return;
+            dismissed = true;
+
+            // Phase 1: Speed lines burst + intro content fades out
+            speedlinesContainer.classList.add('active');
+            overlay.classList.add('dismissing');
+
+            // Phase 2: Overlay bg dissolves + main page content fades in simultaneously
+            setTimeout(function() {
+                overlay.classList.add('dismissed');
+                document.body.classList.add('page-ready');
+                document.body.style.overflow = '';
+            }, 600);
+        }
+
+        // Click to dismiss
+        overlay.addEventListener('click', dismissIntro);
+
+        // Keyboard dismiss (Enter or Space)
+        document.addEventListener('keydown', function onKey(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                dismissIntro();
+                document.removeEventListener('keydown', onKey);
+            }
+        });
+    })();
+    </script>
+
     <!-- Three.js & Animation Logic -->
     <script type="module">
         import * as THREE from 'three';
 
-        gsap.registerPlugin(ScrollTrigger);
-
         // --- Scene Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020202, 0.001); // Deep dark fog
+        scene.fog = new THREE.FogExp2(0x020202, 0.001);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        // Start position: Low angle, looking forward
         camera.position.set(0, 3, 10);
         camera.lookAt(0, 3, -100);
 
@@ -810,16 +1508,16 @@
 
         // --- Objects ---
 
-        // 1. The Grid Floor (Moving Road)
+        // 1. Grid Floor
         const gridSize = 2000;
         const gridDivisions = 40;
         const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x00f3ff, 0x111111);
         gridHelper.position.y = -5;
         scene.add(gridHelper);
 
-        // 2. The "Gates" (Passing structures)
-        const gateCount = 20;
-        const gateGeometry = new THREE.TorusGeometry(30, 0.5, 8, 4);
+        // 2. Gates (InstancedMesh for performance)
+        const gateCount = 15;
+        const gateGeometry = new THREE.TorusGeometry(30, 0.5, 6, 4);
         const gateMaterial = new THREE.MeshBasicMaterial({
             color: 0x00f3ff,
             transparent: true,
@@ -828,191 +1526,169 @@
             depthWrite: false
         });
         const gates = new THREE.InstancedMesh(gateGeometry, gateMaterial, gateCount);
-
         const dummy = new THREE.Object3D();
-        const gateSpacing = 200; // Distance between gates
+        const gateSpacing = 200;
 
-        // Initial placement
         for (let i = 0; i < gateCount; i++) {
-            const z = -i * gateSpacing;
-            dummy.position.set(0, 5, z);
-            dummy.rotation.z = Math.PI / 4; // Diamond shape
-            dummy.scale.set(1, 1, 1);
+            dummy.position.set(0, 5, -i * gateSpacing);
+            dummy.rotation.z = Math.PI / 4;
             dummy.updateMatrix();
             gates.setMatrixAt(i, dummy.matrix);
         }
         scene.add(gates);
 
-        // 3. The Sun (Finale)
-        const sunGeo = new THREE.CircleGeometry(80, 64);
+        // 3. Sun
+        const sunGeo = new THREE.CircleGeometry(80, 32);
         const sunMat = new THREE.MeshBasicMaterial({
-            color: 0xff0055,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            color: 0xff0055, transparent: true, opacity: 0.8,
+            blending: THREE.AdditiveBlending, depthWrite: false
         });
         const sun = new THREE.Mesh(sunGeo, sunMat);
         sun.position.set(0, 40, -1000);
         scene.add(sun);
 
-        const sunGlowGeo = new THREE.CircleGeometry(120, 64);
+        const sunGlowGeo = new THREE.CircleGeometry(120, 32);
         const sunGlowMat = new THREE.MeshBasicMaterial({
-            color: 0xff0055,
-            transparent: true,
-            opacity: 0.2,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            color: 0xff0055, transparent: true, opacity: 0.2,
+            blending: THREE.AdditiveBlending, depthWrite: false
         });
         const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
         sunGlow.position.set(0, 40, -1001);
         scene.add(sunGlow);
 
-        // --- Interaction Logic ---
+        // --- Speed state (replaces ScrollTrigger) ---
+        const state = { baseSpeed: 0.5, scrollBoost: 0, currentSpeed: 0.5 };
+        let lastScrollY = window.scrollY;
+        let lastScrollTime = performance.now();
 
-        // Global State
-        const state = {
-            baseSpeed: 0.5,      // Resting speed (cruising)
-            scrollBoost: 0,      // Added by scrolling
-            currentSpeed: 0.5,   // Actual simulation speed
-        };
-
-        // ScrollTrigger just adds "Impulse" to scrollBoost
-        ScrollTrigger.create({
-            trigger: ".content-scroll",
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                const v = Math.abs(self.getVelocity());
-                // Reduced sensitivity and clamped boost
-                state.scrollBoost = Math.min(v * 0.002, 10);
+        window.addEventListener('scroll', () => {
+            const now = performance.now();
+            const dt = now - lastScrollTime;
+            if (dt > 0) {
+                const velocity = Math.abs(window.scrollY - lastScrollY) / dt * 1000;
+                state.scrollBoost = Math.min(velocity * 0.005, 10);
             }
-        });
+            lastScrollY = window.scrollY;
+            lastScrollTime = now;
+        }, { passive: true });
 
-        // Cards Animation
+        // --- Card animations (IntersectionObserver + GSAP) ---
         const cards = document.querySelectorAll('.hud-card');
+        cards.forEach(card => card.classList.add('gsap-init'));
 
-        // Use a simpler, more robust trigger logic
-        ScrollTrigger.defaults({
-            markers: false
-        });
+        const cardObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const card = entry.target;
 
-        cards.forEach((card) => {
-            // Create a timeline for each card's entry
-            // Using fromTo ensures consistent starting state without separate gsap.set
-            const tl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top 95%", // Trigger earlier (when top hits bottom of viewport)
-                    end: "bottom 5%", // Keep active until it leaves top
-                    toggleActions: "play none none reverse" // Don't hide when scrolling down past it
-                }
-            });
-
-            // 1. Card Pops in (from hidden state)
-            tl.fromTo(card,
-                { opacity: 0, transform: "translateZ(-50px) rotateX(10deg)" },
-                {
+                gsap.to(card, {
                     opacity: 1,
                     transform: "translateZ(0) rotateX(0deg)",
                     duration: 0.8,
                     ease: "back.out(1.2)"
+                });
+
+                const items = card.querySelectorAll('.stat-item, .equip-slot, .social-link, .quest-item, .achievement-item');
+                if (items.length > 0) {
+                    gsap.fromTo(items,
+                        { y: 20, opacity: 0 },
+                        { y: 0, opacity: 1, stagger: 0.06, duration: 0.5, delay: 0.3, ease: "power2.out" }
+                    );
                 }
-            );
 
-            // 2. Staggered Items (Stats/Equip)
-            const items = card.querySelectorAll('.stat-item, .equip-slot, .social-link');
-            if(items.length > 0) {
-                tl.from(items, {
-                    y: 20,
-                    opacity: 0,
-                    stagger: 0.05,
-                    duration: 0.4,
-                    ease: "power2.out"
-                }, "-=0.4");
-            }
+                const bars = card.querySelectorAll('.progress-fill');
+                if (bars.length > 0) {
+                    gsap.from(bars, {
+                        width: "0%", duration: 1, delay: 0.4, ease: "power2.out", stagger: 0.1
+                    });
+                }
 
-            // 3. Progress Bars (Grow)
-            const bars = card.querySelectorAll('.progress-fill');
-            if(bars.length > 0) {
-                tl.from(bars, {
-                    width: "0%",
-                    duration: 1,
-                    ease: "power2.out",
-                    stagger: 0.1
-                }, "-=0.4");
-            }
-        });
+                cardObserver.unobserve(card);
+            });
+        }, { threshold: 0.1, rootMargin: "0px 0px -5% 0px" });
 
-        // Force refresh after load to ensure correct positions
-        window.addEventListener('load', () => {
-            ScrollTrigger.refresh();
-        });
+        cards.forEach(card => cardObserver.observe(card));
 
-        // Safety fallback: if ScrollTrigger isn't detecting scroll, check the body height
-        // and force a recalculation after a short delay
-        setTimeout(() => {
-            ScrollTrigger.refresh();
-        }, 1000);
-
-        // Hero Title Glitch Intro
-        const heroTitle = document.querySelector('h1');
+        // --- Hero Title Glitch ---
+        const heroTitle = document.querySelector('#section-hero h1');
         if (heroTitle) {
-            const tl = gsap.timeline();
-            tl.fromTo(heroTitle,
+            gsap.fromTo(heroTitle,
                 { opacity: 0, scale: 0.8, textShadow: "0 0 0px #000" },
                 { opacity: 1, scale: 1, textShadow: "0 0 20px var(--neon-cyan)", duration: 1, ease: "elastic.out(1, 0.5)" }
             );
-            // Random Glitch Loop
             gsap.to(heroTitle, {
-                skewX: 20,
-                duration: 0.1,
-                repeat: -1,
-                yoyo: true,
-                repeatDelay: 5,
-                ease: "steps(1)"
+                skewX: 20, duration: 0.1, repeat: -1, yoyo: true, repeatDelay: 5, ease: "steps(1)"
             });
         }
 
-        // HUD Elements (SVG)
+        // --- HUD ---
         const speedText = document.getElementById('speed-text');
         const gearText = document.getElementById('gear-text');
         const speedArc = document.getElementById('speed-arc');
-        const maxDash = 471; // Full arc length
+        const maxDash = 471;
+        const gearThresholds = [140, 120, 100, 70, 40, 10];
+        const gearLabels = ["6", "5", "4", "3", "2", "1"];
+        let prevGear = "N";
+        let prevKmhFloor = 0;
 
-        // Loop
+        function updateHUD(kmh) {
+            const floored = Math.floor(kmh);
+            if (floored !== prevKmhFloor) {
+                speedText.textContent = floored;
+                prevKmhFloor = floored;
+            }
+
+            let gear = "N";
+            for (let i = 0; i < gearThresholds.length; i++) {
+                if (kmh > gearThresholds[i]) { gear = gearLabels[i]; break; }
+            }
+            if (gear !== prevGear) {
+                gearText.textContent = gear;
+                prevGear = gear;
+            }
+
+            speedArc.style.strokeDashoffset = maxDash - (kmh / 160) * maxDash;
+            speedArc.style.stroke = kmh > 130 ? "#ff0055" : "#00f3ff";
+        }
+
+        // --- Mouse tracking (throttled) ---
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        window.addEventListener('pointermove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        }, { passive: true });
+
+        // --- Animation loop (pauses when tab hidden) ---
+        const gridResetZ = gridSize / gridDivisions;
+        const gateResetZ = -(gateCount * gateSpacing) + 20;
+
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. Physics / Speed Logic
-            state.scrollBoost *= 0.96; // Decay
-            const targetSpeed = state.baseSpeed + state.scrollBoost;
-            state.currentSpeed += (targetSpeed - state.currentSpeed) * 0.05;
+            // Skip rendering when tab is not visible
+            if (document.hidden) return;
 
-            // KM/H calculation
+            // Physics
+            state.scrollBoost *= 0.96;
+            state.currentSpeed += (state.baseSpeed + state.scrollBoost - state.currentSpeed) * 0.05;
+
             let kmh = 60 + (state.currentSpeed * 6);
             if (kmh > 150) kmh = 150;
 
-            // 2. Move World (Relative to Camera)
             // Move Grid
             gridHelper.position.z += state.currentSpeed;
-            if (gridHelper.position.z > 50) gridHelper.position.z = -50;
-            if (gridHelper.position.z >= (gridSize / gridDivisions)) {
-                gridHelper.position.z = 0;
-            }
+            if (gridHelper.position.z >= gridResetZ) gridHelper.position.z = 0;
 
             // Move Gates
             for (let i = 0; i < gateCount; i++) {
                 gates.getMatrixAt(i, dummy.matrix);
                 dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
-
                 dummy.position.z += state.currentSpeed;
-
                 if (dummy.position.z > 20) {
-                    dummy.position.z = -(gateCount * gateSpacing) + 20;
+                    dummy.position.z = gateResetZ;
                     dummy.rotation.z = (Math.PI / 4) + (Math.random() * 0.2);
                 }
-
                 dummy.updateMatrix();
                 gates.setMatrixAt(i, dummy.matrix);
             }
@@ -1026,57 +1702,20 @@
             camera.rotation.z = -(targetX - camera.position.x) * 0.05;
 
             renderer.render(scene, camera);
-
-            // 3. Update HUD (SVG)
             updateHUD(kmh);
         }
 
-        function updateHUD(speed) {
-            // Text
-            speedText.textContent = Math.floor(speed);
-
-            // Gear
-            let gear = "N";
-            if (speed > 10) gear = "1";
-            if (speed > 40) gear = "2";
-            if (speed > 70) gear = "3";
-            if (speed > 100) gear = "4";
-            if (speed > 120) gear = "5";
-            if (speed > 140) gear = "6";
-            gearText.textContent = gear;
-
-            // Arc Stroke (0 to 160 range)
-            // Offset goes from 471 (empty) to 0 (full)?
-            // Actually, for gauge, usually from 471 to 0 fills it.
-            // Let's map 0-160 speed to 471-0 offset.
-            // But the SVG arc is drawn fully. We want to 'reveal' it.
-            // dashoffset = length - (value / max) * length
-            const progress = (speed / 160);
-            const offset = maxDash - (progress * maxDash);
-            speedArc.style.strokeDashoffset = offset;
-
-            // Color shift for redline
-            if (speed > 130) {
-                speedArc.style.stroke = "#ff0055";
-            } else {
-                speedArc.style.stroke = "#00f3ff";
-            }
-        }
-
-        let mouseX = window.innerWidth / 2;
-        let mouseY = window.innerHeight / 2;
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-
         animate();
 
-        // Resize
+        // Resize (debounced)
+        let resizeTimer;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 150);
         });
     </script>
 </body>
