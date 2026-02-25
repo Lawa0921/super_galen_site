@@ -34,23 +34,23 @@ test.describe('SPJ Guild Page (High-Vis Tavern)', () => {
     await expect(dialogueBox).toBeVisible();
     // Wait for text to be populated (in case of animation delay)
     await expect(dialogueBox).not.toBeEmpty({ timeout: 15000 });
-    await expect(dialogueBox).toContainText('Welcome, traveler');
+    await expect(dialogueBox).toContainText('歡迎，冒險者');
 
     // Perform scroll (to 2nd section ~ 800px)
     await page.mouse.wheel(0, 800);
     await page.waitForTimeout(1000); // Wait for GSAP scrub/update
 
     // Check dialogue updated
-    // The second beat text starts with "My inventory..."
-    await expect(dialogueBox).toContainText('My inventory');
+    // The second beat text starts with "這面牆展示了我的原型作品..."
+    await expect(dialogueBox).toContainText('原型作品');
 
     // Scroll more (to 3rd section ~ 1600px total)
     await page.mouse.wheel(0, 1000);
     await page.waitForTimeout(1000);
 
     // Check dialogue updated
-    // The third beat text starts with "The Quest Log..."
-    await expect(dialogueBox).toContainText('Quest Log');
+    // The third beat text starts with "桌上的「任務日誌」..."
+    await expect(dialogueBox).toContainText('任務日誌');
   });
 
   test('should open Quest Log via simulated click (or fallback)', async ({ page }) => {

@@ -208,8 +208,8 @@
             font-family: 'Cinzel'; font-size: 1.5rem; color: #3e2723;
         }
         .skill-list li {
-            margin-bottom: 0.8rem; font-family: 'Cinzel';
-            color: #5d4037; font-size: 1rem; font-weight: bold;
+            margin-bottom: 0.8rem; font-family: 'Noto Serif TC', serif;
+            color: #5d4037; font-size: 1.1rem; font-weight: bold;
             display: flex; justify-content: space-between;
         }
 
@@ -237,7 +237,8 @@
         /* Toast Message */
         #toast-msg {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-family: 'Cinzel'; font-size: 4rem; color: #ffca28;
+            font-family: 'Noto Serif TC', serif; font-weight: 900;
+            font-size: 4rem; color: #ffca28;
             text-shadow: 0 0 20px rgba(255, 202, 40, 0.8);
             opacity: 0; pointer-events: none; z-index: 300;
         }
@@ -273,10 +274,10 @@
         <div id="skill-board">
             <div class="skill-title">MENU</div>
             <ul class="skill-list" style="list-style: none; padding: 0;">
-                <li>CODE SYNTHESIS <span>99G</span></li>
-                <li>SYS ARCHITECTURE <span>150G</span></li>
-                <li>MANA COFFEE <span>5G</span></li>
-                <li>STORYTELLING <span>FREE</span></li>
+                <li>代碼鍊成 <span>99G</span></li>
+                <li>系統架構 <span>150G</span></li>
+                <li>魔力咖啡 <span>5G</span></li>
+                <li>吟遊敘事 <span>FREE</span></li>
             </ul>
         </div>
 
@@ -284,8 +285,8 @@
             <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn">Join The Guild</a>
         </div>
 
-        <div id="hover-tooltip" class="hover-tooltip">Interact</div>
-        <div id="toast-msg">CHEERS!</div>
+        <div id="hover-tooltip" class="hover-tooltip">點擊互動</div>
+        <div id="toast-msg">乾杯!</div>
 
         <!-- Quest Log -->
         <div id="quest-parchment">
@@ -425,7 +426,7 @@
         // Bottle Hitbox (Invisible but clickable)
         const bottlesHit = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 2), new THREE.MeshBasicMaterial({ visible: false }));
         bottlesHit.position.set(0, 4, -4);
-        bottlesHit.userData = { id: 'bottles', label: 'Inspect Collection' };
+        bottlesHit.userData = { id: 'bottles', label: '查看收藏' };
         scene.add(bottlesHit);
         clickableObjects.push(bottlesHit);
 
@@ -447,11 +448,11 @@
         rune.rotation.x = Math.PI / 2;
         bookGroup.add(rune);
 
-        bookGroup.userData = { id: 'book', label: 'Read Quest Log' };
+        bookGroup.userData = { id: 'book', label: '閱讀日誌' };
         scene.add(bookGroup);
         // Add book cover to clickable raycast list specifically for highlight
         clickableObjects.push(bookCover);
-        bookCover.userData = { parentId: 'book', label: 'Read Quest Log' };
+        bookCover.userData = { parentId: 'book', label: '閱讀日誌' };
 
         // Mug
         const mugGroup = new THREE.Group();
@@ -461,10 +462,10 @@
         handle.position.set(0.4, 0, 0);
         mugGroup.add(mugBody, handle);
 
-        mugGroup.userData = { id: 'mug', label: 'Drink' };
+        mugGroup.userData = { id: 'mug', label: '乾杯' };
         scene.add(mugGroup);
         clickableObjects.push(mugBody);
-        mugBody.userData = { parentId: 'mug', label: 'Drink' };
+        mugBody.userData = { parentId: 'mug', label: '乾杯' };
 
         // Candle
         const candleMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8), new THREE.MeshStandardMaterial({color: 0xfff}));
@@ -558,16 +559,16 @@
                     toast.style.opacity = 1;
                     gsap.fromTo(toast, { scale: 0.5 }, { scale: 1.5, opacity: 0, duration: 1.5, ease: "power2.out" });
 
-                    setDialogue("Cheers! May your bugs be few and your commits be clean.");
+                    setDialogue("乾杯！願你的 Bug 少少，Commit 乾乾淨淨。");
                 }
 
                 if (id === 'bottles') {
                     // Shake Camera
                     gsap.to(camera.position, { x: "+=0.2", duration: 0.05, yoyo: true, repeat: 5 });
                     const texts = [
-                        "That's pure 'Dependency Hell' whiskey.",
-                        "A vintage 2015 'Callback Hell'. Very bitter.",
-                        "Ah, 'Memory Leak'. You won't remember drinking this."
+                        "那是純釀的「相依性地獄」威士忌。",
+                        "2015 年份的「回呼地獄」。非常苦澀。",
+                        "啊，「記憶體洩漏」。喝了這杯你會失憶。"
                     ];
                     setDialogue(texts[Math.floor(Math.random()*texts.length)]);
                 }
@@ -609,32 +610,32 @@
 
         const script = [
             {
-                text: "Welcome, traveler. I am SPJ. This is where I materialize ideas into reality.",
-                cam: { x: 0, y: 3, z: 8 },
+                text: "歡迎，冒險者。我是 SPJ。這裡是讓創意具現化的地方。",
+                cam: { x: 0, y: 3, z: 12 },
                 look: { x: 0, y: 0, z: 0 },
                 skill: false, footer: false
             },
             {
-                text: "My inventory is full of prototypes. Side projects, experiments... the building blocks of this world.",
-                cam: { x: -2, y: 4, z: 6 },
+                text: "這面牆展示了我的原型作品。Side Projects、實驗... 這些都是構成這個世界的基石。",
+                cam: { x: -3, y: 5, z: 9 },
                 look: { x: 0, y: 3, z: -5 },
                 skill: true, footer: false
             },
             {
-                text: "The Quest Log contains my current missions: The Text Town and the Sepajuan Guild.",
-                cam: { x: -1, y: 2, z: 4 },
+                text: "桌上的「任務日誌」記載著當前的任務：文字小鎮與塞趴卷公會。",
+                cam: { x: -2, y: 3, z: 7 },
                 look: { x: -2, y: 0.5, z: 2 },
                 skill: false, footer: false
             },
             {
-                text: "I want to gather adventurers here. To share stories, not just results.",
-                cam: { x: 0, y: 3, z: 10 },
+                text: "我希望能在此集結冒險者。分享故事，而不僅僅是死板的結果。",
+                cam: { x: 0, y: 4, z: 14 },
                 look: { x: 0, y: 0, z: 0 },
                 skill: false, footer: false
             },
             {
-                text: "Here is my card. Join us, and let's craft something legendary together.",
-                cam: { x: 0, y: 2, z: 6 },
+                text: "這是我的名片。加入我們，一起打造傳說吧。",
+                cam: { x: 0, y: 3, z: 8 },
                 look: { x: 0, y: 0, z: 0 },
                 skill: false, footer: true
             }
@@ -652,7 +653,7 @@
 
             // 2. Camera Entry
             gsap.to(camera.position, {
-                z: 8, y: 3, duration: 2, ease: "power2.out",
+                z: 12, y: 3, duration: 2, ease: "power2.out",
                 onComplete: () => {
                     document.getElementById('ui-layer').classList.add('visible');
                     initScrollTrigger(); // Start scroll logic
