@@ -575,6 +575,7 @@
         const cliffGeo = new THREE.PlaneGeometry(cliffWidth, cliffHeight, 40, 100);
 
         const posAttribute = cliffGeo.attributes.position;
+        // Keep a seed-like consistency for bumpiness
         for (let i = 0; i < posAttribute.count; i++) {
             const x = posAttribute.getX(i);
             const y = posAttribute.getY(i);
@@ -601,26 +602,31 @@
         cliff.position.y = cliffHeight / 2 - 20;
         scene.add(cliff);
 
-        // --- Interactive Anchors (Carabiners/Pitons) ---
+        // --- Interactive Anchors (High Detail) ---
         const anchorsGroup = new THREE.Group();
 
-        // Carabiner Geometry (Torus)
-        const carabinerGeo = new THREE.TorusGeometry(0.5, 0.1, 8, 20);
-        // Piton Geometry (Cone)
-        const pitonGeo = new THREE.ConeGeometry(0.1, 1, 6);
+        // Detailed Piton: Hex head + Spike + Eyelet
+        const pitonHeadGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 6);
+        const pitonBodyGeo = new THREE.ConeGeometry(0.15, 1.2, 8);
+        const pitonEyeletGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 16);
+
+        // Detailed Carabiner: Body (Torus) + Gate (Cylinder)
+        const carabinerBodyGeo = new THREE.TorusGeometry(0.6, 0.08, 8, 24, Math.PI * 1.8); // Open loop
+        const carabinerGateGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2);
 
         const metalMat = new THREE.MeshStandardMaterial({
             color: config.anchorColor,
-            metalness: 0.8,
-            roughness: 0.2
+            metalness: 0.7,
+            roughness: 0.3
         });
+
         const highlightMat = new THREE.MeshStandardMaterial({
             color: 0xffaa00,
             emissive: 0xffaa00,
             emissiveIntensity: 0.5
         });
 
-        // Positions roughly matching content sections
+        // Positions
         const anchorPositions = [
             { y: 5, label: "Basecamp Checkpoint" },
             { y: 35, label: "Language Anchor" },
@@ -633,45 +639,74 @@
             group.position.set(
                 (i % 2 === 0 ? -6 : 6) + (Math.random()-0.5)*2, // Alternating sides
                 pos.y,
-                -10 // Stick into cliff (cliff is at -12 z, with bumps up to -10)
+                -10
             );
 
-            // Piton (Stuck in wall)
-            const piton = new THREE.Mesh(pitonGeo, metalMat);
-            piton.rotation.x = Math.PI / 2; // Stick out
-            piton.position.z = -0.5;
-            group.add(piton);
+            // Construct Piton
+            const pitonGroup = new THREE.Group();
+            const head = new THREE.Mesh(pitonHeadGeo, metalMat);
+            head.rotation.x = Math.PI / 2;
+            const body = new THREE.Mesh(pitonBodyGeo, metalMat);
+            body.rotation.x = Math.PI / 2;
+            body.position.z = -0.6;
+            const eyelet = new THREE.Mesh(pitonEyeletGeo, metalMat);
+            eyelet.position.z = 0.2;
 
-            // Carabiner (Hanging)
-            const carabiner = new THREE.Mesh(carabinerGeo, metalMat.clone()); // Clone for independent highlight
-            carabiner.rotation.z = Math.PI / 8;
-            group.add(carabiner);
+            pitonGroup.add(head);
+            pitonGroup.add(body);
+            pitonGroup.add(eyelet);
+            pitonGroup.position.z = -0.2; // Stick into rock
+            group.add(pitonGroup);
+
+            // Construct Carabiner
+            const carabinerGroup = new THREE.Group();
+            const cBody = new THREE.Mesh(carabinerBodyGeo, metalMat.clone());
+            const cGate = new THREE.Mesh(carabinerGateGeo, new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 })); // Silver gate
+            cGate.position.set(0.5, 0.1, 0); // Position across opening
+            cGate.rotation.z = -0.2;
+
+            carabinerGroup.add(cBody);
+            carabinerGroup.add(cGate);
+            carabinerGroup.position.y = -0.8; // Hang below eyelet
+            carabinerGroup.rotation.y = Math.PI / 2; // Face out
+
+            group.add(carabinerGroup);
 
             group.userData = {
                 label: pos.label,
                 baseScale: 1,
                 id: i,
-                targetMesh: carabiner // Highlight this part
+                targetMesh: cBody // Highlight main carabiner ring
             };
             anchorsGroup.add(group);
         });
         scene.add(anchorsGroup);
 
 
-        // --- The Summit (Grounded Platform) ---
+        // --- The Summit (Rugged Platform) ---
         const summitGroup = new THREE.Group();
         summitGroup.position.set(0, 130, -10); // Top of cliff
 
-        // 1. Summit Platform (Flat Rock)
-        // A flattened box or cylinder sticking out
-        const platformGeo = new THREE.CylinderGeometry(15, 12, 5, 8);
-        const platformMat = new THREE.MeshStandardMaterial({
-            color: 0xd0d0d0, // Grey rock
+        // 1. Summit Platform (Rugged Plane)
+        // Use PlaneGeometry with displacement to match cliff
+        const platGeo = new THREE.PlaneGeometry(30, 30, 20, 20);
+        const platPos = platGeo.attributes.position;
+        for(let i=0; i<platPos.count; i++) {
+            const z = platPos.getZ(i);
+            // Add noise similar to cliff
+            const noise = (Math.random() - 0.5) * 1.5; // Match cliff noise scale
+            platPos.setZ(i, z + noise);
+        }
+        platGeo.computeVertexNormals();
+        const platMat = new THREE.MeshStandardMaterial({
+            color: config.cliffColor, // Match cliff
+            roughness: 0.9,
             flatShading: true,
-            roughness: 0.9
+            side: THREE.DoubleSide
         });
-        const platform = new THREE.Mesh(platformGeo, platformMat);
-        platform.position.y = -2.5; // Top surface at y=0
+        const platform = new THREE.Mesh(platGeo, platMat);
+        platform.rotation.x = -Math.PI / 2; // Flat
+        platform.position.y = -0.5;
         summitGroup.add(platform);
 
         // 2. Tent (Refined Low Poly)
@@ -748,7 +783,6 @@
             fireSizes.push(0.2 + Math.random() * 0.3);
         }
         firePartGeo.setAttribute('position', new THREE.BufferAttribute(firePos, 3));
-        firePartGeo.setAttribute('size', new THREE.Float32BufferAttribute(fireSizes, 1)); // Custom size attr (needs shader or simple size)
 
         // Simple PointsMaterial with size attenuation is easiest
         const firePartMat = new THREE.PointsMaterial({
@@ -832,32 +866,37 @@
 
             // 3. Anchor Animation (Carabiners swing?)
             anchorsGroup.children.forEach(group => {
-                // Sway carabiner
-                const carabiner = group.children[1];
-                carabiner.rotation.z = Math.PI/8 + Math.sin(time * 2 + group.userData.id) * 0.1;
+                // Sway carabiner group (which is child 1)
+                const carabinerGroup = group.children[1];
+                carabinerGroup.rotation.x = Math.sin(time * 2 + group.userData.id) * 0.1;
             });
 
             // 4. Raycasting for Anchors
-            // We need to raycast against the CHILDREN (meshes) of the groups
+            // We need to raycast against the CHILDREN (meshes) of the carabiner groups
             const meshesToCheck = [];
-            anchorsGroup.children.forEach(g => meshesToCheck.push(g.children[1])); // Only carabiner
+            anchorsGroup.children.forEach(g => {
+                // Carabiner Group is children[1]
+                // Carabiner Body is children[1].children[0]
+                meshesToCheck.push(g.children[1].children[0]);
+            });
 
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(meshesToCheck);
 
             if (intersects.length > 0) {
                 const hitMesh = intersects[0].object;
-                const parentGroup = hitMesh.parent;
+                const topGroup = hitMesh.parent.parent; // carabiner -> carabinerGroup -> anchorGroup
 
-                if (intersectedAnchor != parentGroup) {
+                if (intersectedAnchor != topGroup) {
                     // Hover In
-                    intersectedAnchor = parentGroup;
+                    intersectedAnchor = topGroup;
                     document.body.style.cursor = 'pointer';
-                    tooltip.innerText = parentGroup.userData.label;
+                    tooltip.innerText = topGroup.userData.label;
                     tooltip.style.opacity = 1;
 
                     gsap.to(hitMesh.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 0.3 });
-                    gsap.to(hitMesh.material, { color: 0xffaa00, duration: 0.3 }); // Highlight color
+                    // Use GSAP to tween color components individually to avoid replacing the THREE.Color object
+                    gsap.to(hitMesh.material.color, { r: 1, g: 0.66, b: 0, duration: 0.3 }); // Highlight color (Orange)
                 }
             } else {
                 if (intersectedAnchor) {
@@ -867,7 +906,10 @@
 
                     const hitMesh = intersectedAnchor.userData.targetMesh;
                     gsap.to(hitMesh.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
-                    gsap.to(hitMesh.material, { color: config.anchorColor, duration: 0.3 });
+
+                    // Reset to original color (Steel/Blue: 0x5d6d7e -> r:0.36, g:0.42, b:0.49)
+                    const baseColor = new THREE.Color(config.anchorColor);
+                    gsap.to(hitMesh.material.color, { r: baseColor.r, g: baseColor.g, b: baseColor.b, duration: 0.3 });
 
                     intersectedAnchor = null;
                 }
