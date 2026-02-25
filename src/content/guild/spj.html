@@ -13,16 +13,15 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <style>
         :root {
-            /* Brighter, warmer palette */
-            --bg-color: #2b1d12;
-            --ui-bg: rgba(255, 248, 225, 0.95); /* Light parchment UI */
+            --bg-color: #1a1008;
+            --ui-bg: rgba(255, 248, 225, 0.95);
             --ui-border: #8d6e63;
             --text-dark: #3e2723;
-            --text-gold: #f9a825;
+            --text-gold: #ffca28;
+            --highlight: #ff6d00;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -38,30 +37,37 @@
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
+            cursor: default; /* Will change via JS */
         }
 
-        /* --- Simple Cinematic Intro --- */
+        /* --- Intro --- */
         #intro-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
             z-index: 2000;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             cursor: pointer;
             transition: opacity 1.5s;
         }
 
-        .intro-text {
-            color: #fff; font-family: 'Cinzel'; font-size: 1.5rem; letter-spacing: 5px;
-            text-align: center; animation: pulse 2s infinite;
+        .intro-title {
+            color: var(--text-gold); font-family: 'Cinzel'; font-size: 3rem; letter-spacing: 5px;
+            text-align: center; text-shadow: 0 0 20px rgba(255, 160, 0, 0.5);
+            margin-bottom: 1rem;
         }
-        .intro-sub { font-size: 0.8rem; color: #888; margin-top: 1rem; }
+        .intro-sub {
+            font-family: 'IM Fell English SC', serif;
+            font-size: 1.2rem; color: #aaa; margin-top: 1rem;
+            letter-spacing: 2px;
+            animation: pulse 2s infinite;
+        }
 
         #intro-overlay.hidden { opacity: 0; pointer-events: none; }
 
         @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
         /* --- Scroll Track --- */
-        .scroll-track { height: 500vh; }
+        .scroll-track { height: 600vh; pointer-events: none; }
 
         /* --- UI Layer --- */
         #ui-layer {
@@ -72,86 +78,76 @@
         }
         #ui-layer.visible { opacity: 1; }
 
-        /* Navigation */
         .nav-return {
             position: fixed; top: 2rem; left: 2rem;
             color: var(--text-dark); text-decoration: none;
             font-family: 'Cinzel'; font-size: 0.9rem; letter-spacing: 2px;
-            pointer-events: auto; background: rgba(255, 255, 255, 0.8);
+            pointer-events: auto; background: rgba(255, 255, 255, 0.9);
             padding: 10px 20px; border-radius: 4px;
             border: 1px solid var(--ui-border);
             transition: 0.3s;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .nav-return:hover { background: var(--text-dark); color: #fff; }
+        .nav-return:hover { background: var(--text-dark); color: #fff; transform: translateY(-2px); }
 
-        /* Character */
-        .char-container {
-            position: absolute;
-            bottom: 30vh; right: 10vw;
-            width: 350px; height: 350px;
-            transition: transform 0.5s ease-out;
-            pointer-events: none;
-        }
-        .char-img {
-            width: 100%; height: 100%; object-fit: cover;
-            border-radius: 50%;
-            border: 6px solid #fff;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            background: #000;
-        }
-        .speaker-tag {
-            position: absolute; bottom: -15px; left: 50%; transform: translateX(-50%);
-            background: #fff; color: var(--text-dark);
-            padding: 5px 20px; border-radius: 20px;
-            font-family: 'Cinzel'; font-size: 0.9rem; font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
-        /* Dialogue Box (Light Theme) */
+        /* Dialogue Box */
         .dialogue-box {
             position: absolute;
             bottom: 5vh; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 800px; height: 22vh;
+            width: 90%; max-width: 800px; min-height: 180px;
             background: var(--ui-bg);
-            border: 1px solid var(--ui-border);
-            border-radius: 4px;
+            border: 2px solid var(--ui-border);
+            border-radius: 8px;
             padding: 2rem;
             pointer-events: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(141, 110, 99, 0.1);
             display: flex; flex-direction: column;
+            backdrop-filter: blur(5px);
+        }
+        .dialogue-name {
+            font-family: 'Cinzel'; font-weight: 700; color: var(--highlight);
+            font-size: 1.1rem; margin-bottom: 0.5rem; letter-spacing: 1px;
         }
         .dialogue-text {
-            font-size: 1.2rem; line-height: 1.8; color: var(--text-dark);
+            font-size: 1.25rem; line-height: 1.8; color: var(--text-dark);
             flex: 1; font-weight: 500;
         }
         .dialogue-prompt {
             text-align: right; color: #888; font-family: 'Cinzel';
-            font-size: 0.8rem; animation: pulse 1s infinite;
+            font-size: 0.8rem; margin-top: 1rem; opacity: 0.7;
         }
 
-        /* Interaction Labels (Floating) */
-        .interact-label {
-            position: absolute; padding: 5px 10px;
-            background: rgba(0,0,0,0.7); color: #fff;
-            border-radius: 4px; font-family: 'Cinzel'; font-size: 0.8rem;
-            pointer-events: none; opacity: 0; transition: opacity 0.2s;
-            white-space: nowrap;
+        /* Interactive Labels */
+        .hover-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: 'Cinzel';
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s, transform 0.2s;
+            border: 1px solid var(--highlight);
+            box-shadow: 0 0 10px var(--highlight);
         }
 
-        /* Quest Log (Parchment) */
+        /* Quest Log Overlay */
         #quest-parchment {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            width: 90%; max-width: 700px; height: 80vh;
-            background: #fffbf0;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            width: 90%; max-width: 700px; height: 85vh;
+            background: #fffbf0 url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmYmYwIi8+CjxwYXRoIGQ9Ik0wIDBoNHY0SDB6IiBmaWxsPSIjZDdjY2M4IiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=');
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.7), 0 30px 80px rgba(0,0,0,0.8);
             padding: 4rem 3rem;
             opacity: 0; pointer-events: none;
-            z-index: 20;
+            z-index: 200;
             color: #3e2723;
             overflow-y: auto;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid #d7ccc8;
+            border: 8px double #5d4037;
         }
 
         #quest-parchment.visible {
@@ -162,144 +158,161 @@
         .parchment-header {
             text-align: center; font-family: 'Cinzel'; font-size: 2.5rem;
             border-bottom: 2px solid #3e2723; padding-bottom: 1rem; margin-bottom: 2rem;
-            color: #5d4037; font-weight: bold;
+            color: #3e2723; font-weight: 900;
         }
 
         .quest-item {
-            margin-bottom: 2rem; border-bottom: 1px dashed #d7ccc8; padding-bottom: 1rem;
+            margin-bottom: 2rem; border-bottom: 1px dashed #a1887f; padding-bottom: 1.5rem;
         }
         .quest-title {
             font-family: 'Cinzel'; font-weight: bold; font-size: 1.4rem;
-            display: flex; justify-content: space-between; color: #3e2723;
+            display: flex; justify-content: space-between; color: #d84315;
+            align-items: center;
+        }
+        .quest-rank {
+            background: #3e2723; color: #fff; padding: 2px 8px; font-size: 0.8rem; border-radius: 4px;
         }
         .quest-desc {
-            font-family: 'Noto Serif TC'; font-size: 1.1rem; color: #5d4037; margin-top: 0.5rem; line-height: 1.6;
+            font-family: 'Noto Serif TC'; font-size: 1.1rem; color: #5d4037; margin-top: 0.8rem; line-height: 1.6;
         }
 
         .close-btn {
             position: absolute; top: 1rem; right: 1rem;
             width: 40px; height: 40px;
-            background: #8d6e63; color: #fff;
+            background: #5d4037; color: #fff;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-weight: bold; cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-family: sans-serif;
+            transition: transform 0.2s;
         }
+        .close-btn:hover { transform: rotate(90deg); background: #8d6e63; }
 
         /* Skill Board */
         #skill-board {
-            position: absolute; top: 20vh; left: 15vw;
-            width: 320px;
-            background: #fff8e1; /* Paper color */
-            border: 1px solid #8d6e63;
+            position: fixed; top: 20vh; right: 10vw;
+            width: 280px;
+            background: #fff8e1;
+            border: 4px solid #3e2723;
             padding: 2rem;
-            transform: rotate(-2deg);
-            box-shadow: 5px 10px 20px rgba(0,0,0,0.2);
-            opacity: 0;
+            transform: rotate(3deg) translateY(50px);
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.3);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s, transform 0.5s;
         }
-        .skill-title { text-align: center; border-bottom: 2px solid #3e2723; padding-bottom: 10px; margin-bottom: 1rem; font-family: 'Cinzel'; font-size: 1.5rem; color: #3e2723; }
-        .skill-list li { margin-bottom: 0.8rem; font-family: 'Noto Serif TC'; color: #5d4037; font-size: 1.1rem; font-weight: bold; }
+        #skill-board.visible { opacity: 1; transform: rotate(3deg) translateY(0); }
 
-        /* Footer Socials */
+        .skill-title {
+            text-align: center; border-bottom: 2px solid #3e2723;
+            padding-bottom: 10px; margin-bottom: 1rem;
+            font-family: 'Cinzel'; font-size: 1.5rem; color: #3e2723;
+        }
+        .skill-list li {
+            margin-bottom: 0.8rem; font-family: 'Cinzel';
+            color: #5d4037; font-size: 1rem; font-weight: bold;
+            display: flex; justify-content: space-between;
+        }
+
+        /* Socials */
         .footer-socials {
             position: fixed; bottom: 2rem; right: 2rem;
             display: flex; gap: 1rem;
             pointer-events: auto;
-            opacity: 0;
+            opacity: 0; transform: translateY(20px);
+            transition: 0.5s;
         }
-        .social-btn {
-            background: #fff; color: #3e2723;
-            padding: 10px 20px; font-family: 'Cinzel';
-            text-decoration: none; border-radius: 4px;
-            font-weight: bold; border: 1px solid #3e2723;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: 0.2s;
-        }
-        .social-btn:hover { background: #3e2723; color: #fff; }
+        .footer-socials.visible { opacity: 1; transform: translateY(0); }
 
-        /* Click Here Indicator for Book */
-        #book-indicator {
-            position: absolute; /* Set by JS */
-            color: #fff; background: #e53935; padding: 5px 10px;
-            border-radius: 4px; font-weight: bold; font-size: 0.8rem;
-            pointer-events: none; opacity: 0; z-index: 100;
-            animation: bounce 1s infinite;
+        .social-btn {
+            background: #ff6d00; color: #fff;
+            padding: 12px 24px; font-family: 'Cinzel';
+            text-decoration: none; border-radius: 4px;
+            font-weight: bold; border: 2px solid #fff;
+            box-shadow: 0 0 15px rgba(255, 109, 0, 0.4);
+            transition: 0.2s;
+            text-transform: uppercase;
         }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .social-btn:hover { background: #fff; color: #ff6d00; border-color: #ff6d00; }
+
+        /* Toast Message */
+        #toast-msg {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-family: 'Cinzel'; font-size: 4rem; color: #ffca28;
+            text-shadow: 0 0 20px rgba(255, 202, 40, 0.8);
+            opacity: 0; pointer-events: none; z-index: 300;
+        }
 
     </style>
 </head>
 <body>
 
+    <!-- Intro -->
     <div id="intro-overlay" onclick="enterTavern()">
-        <div>
-            <div class="intro-text">CLICK TO ENTER THE TAVERN</div>
-            <div class="intro-sub">Audio Not Included (Yet)</div>
-        </div>
+        <div class="intro-title">THE GUILD TAVERN</div>
+        <div class="intro-sub">Tap to Enter</div>
     </div>
 
+    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
-    <a href="/guild/" class="nav-return">LEAVE</a>
+    <!-- Navigation -->
+    <a href="/guild/" class="nav-return">BACK TO GUILD</a>
 
+    <!-- Scroll Spacer -->
     <div class="scroll-track"></div>
 
+    <!-- UI Overlay -->
     <div id="ui-layer">
 
-        <div class="char-container" id="character">
-            <img src="/assets/img/guild/spj/avatar.webp" class="char-img">
-            <div class="speaker-tag">SPJ</div>
+        <div class="dialogue-box">
+            <div class="dialogue-name">SPJ</div>
+            <div class="dialogue-text" id="dialogue-text"></div>
+            <div class="dialogue-prompt">▼ SCROLL TO EXPLORE</div>
         </div>
 
         <div id="skill-board">
             <div class="skill-title">MENU</div>
             <ul class="skill-list" style="list-style: none; padding: 0;">
-                <li>🍺 Code Synthesis</li>
-                <li>🍷 Materialization</li>
-                <li>☕ Mana (Coffee)</li>
-                <li>📜 Legend Writing</li>
+                <li>CODE SYNTHESIS <span>99G</span></li>
+                <li>SYS ARCHITECTURE <span>150G</span></li>
+                <li>MANA COFFEE <span>5G</span></li>
+                <li>STORYTELLING <span>FREE</span></li>
             </ul>
         </div>
 
-        <div class="dialogue-box">
-            <div class="dialogue-text" id="dialogue-text"></div>
-            <div class="dialogue-prompt">▼ SCROLL TO CONTINUE</div>
+        <div class="footer-socials" id="footer-socials">
+            <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn">Join The Guild</a>
         </div>
 
-        <!-- Book Indicator -->
-        <div id="book-indicator">CLICK ME!</div>
-        <div id="hover-label" class="interact-label"></div>
+        <div id="hover-tooltip" class="hover-tooltip">Interact</div>
+        <div id="toast-msg">CHEERS!</div>
 
         <!-- Quest Log -->
         <div id="quest-parchment">
-            <div class="close-btn" onclick="closeScroll()">X</div>
+            <div class="close-btn" onclick="closeScroll()">✕</div>
             <div class="parchment-header">QUEST LOG</div>
 
             <div class="quest-item">
-                <div class="quest-title">TEXT TOWN <span style="color: #d32f2f; font-size: 1rem;">RANK S</span></div>
+                <div class="quest-title">TEXT TOWN <span class="quest-rank">RANK S</span></div>
                 <div class="quest-desc">
-                    天書系統核心開發。目標是創造一個完全由文字定義物理法則的世界。
+                    天書系統核心開發。目標是創造一個完全由文字定義物理法則的世界。將創意具現化為真實的遊戲體驗。
                 </div>
             </div>
 
             <div class="quest-item">
-                <div class="quest-title">SEPAJUAN GUILD <span style="color: #d32f2f; font-size: 1rem;">RANK A</span></div>
+                <div class="quest-title">SEPAJUAN GUILD <span class="quest-rank">RANK A</span></div>
                 <div class="quest-desc">
-                    連結現實世界的創造者。我們在此集結，共享資源，對抗孤獨。
+                    連結現實世界的創造者。我們在此集結，共享資源，對抗孤獨。像異世界轉生一樣，尋找志同道合的夥伴。
                 </div>
             </div>
 
             <div class="quest-item">
-                <div class="quest-title">CHRONICLES <span style="color: #d32f2f; font-size: 1rem;">RANK B</span></div>
+                <div class="quest-title">CHRONICLES <span class="quest-rank">RANK B</span></div>
                 <div class="quest-desc">
-                    紀錄開發的過程與溫度。每一行代碼都是詩篇。
+                    紀錄開發的過程與溫度。讓事情不是只有死板板的結果，而是充滿故事的冒險篇章。
                 </div>
             </div>
         </div>
-
-        <div class="footer-socials" id="footer-socials">
-            <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn">THREADS</a>
-        </div>
-
     </div>
 
     <script type="importmap">
@@ -317,281 +330,390 @@
         // --- Init Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x3e2723); // Base wood color to avoid black voids
-        scene.fog = new THREE.Fog(0x3e2723, 10, 50); // Lighter fog
+        scene.background = new THREE.Color(0x1a1008);
+        scene.fog = new THREE.FogExp2(0x1a1008, 0.035);
 
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3, 15); // Start outside
+        camera.position.set(0, 3, 12); // Start outside
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
+        renderer.toneMappingExposure = 1.1;
         container.appendChild(renderer.domElement);
 
-        // --- Lighting (High Visibility) ---
-        // 1. General Ambience (Warm)
-        const ambientLight = new THREE.AmbientLight(0xffedd5, 0.8);
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffcc80, 0.4);
         scene.add(ambientLight);
 
-        // 2. Bar Lights (Overhead)
-        const mainLight = new THREE.DirectionalLight(0xffe0b2, 1.2);
-        mainLight.position.set(5, 10, 5);
+        const mainLight = new THREE.DirectionalLight(0xffe0b2, 1.5);
+        mainLight.position.set(5, 8, 3);
         mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 1024;
+        mainLight.shadow.mapSize.height = 1024;
         scene.add(mainLight);
 
-        // 3. Candle (Orange Accent)
-        const candleLight = new THREE.PointLight(0xff6d00, 1.5, 10);
-        candleLight.position.set(2, 2, 2);
+        const candleLight = new THREE.PointLight(0xff6d00, 3, 8);
+        candleLight.position.set(2, 1.5, 2);
         scene.add(candleLight);
 
-        // --- Environment (The Bar) ---
+        // --- Materials ---
+        const woodMat = new THREE.MeshStandardMaterial({
+            color: 0x5d4037, roughness: 0.7,
+            emissive: 0x8d6e63, emissiveIntensity: 0
+        });
+        const bookMat = new THREE.MeshStandardMaterial({
+            color: 0x8d6e63, roughness: 0.4,
+            emissive: 0xffca28, emissiveIntensity: 0
+        });
+        const metalMat = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa, metalness: 0.8, roughness: 0.2,
+            emissive: 0xffffff, emissiveIntensity: 0
+        });
+
+        // --- Objects ---
         const clickableObjects = [];
 
-        // Textures (Procedural)
-        function createWoodTex(color) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = color;
-            ctx.fillRect(0,0,256,256);
-            ctx.fillStyle = "rgba(0,0,0,0.1)";
-            for(let i=0; i<100; i++) ctx.fillRect(Math.random()*256, 0, Math.random()*20+5, 256);
-            const t = new THREE.CanvasTexture(canvas);
-            return t;
-        }
-        const woodTex = createWoodTex('#8d6e63'); // Oak
-
-        // 1. Counter Top
-        const counterMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.5 });
-        const counter = new THREE.Mesh(new THREE.BoxGeometry(30, 1, 10), counterMat);
+        // Counter
+        const counter = new THREE.Mesh(new THREE.BoxGeometry(30, 1, 10), woodMat);
         counter.position.set(0, -0.5, 0);
         counter.receiveShadow = true;
         scene.add(counter);
 
-        // 2. Bar Cabinet (Back Wall)
+        // Cabinet
         const cabinetGroup = new THREE.Group();
         cabinetGroup.position.set(0, 0, -5);
-
-        // Main Structure
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 1), counterMat);
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 1), woodMat);
         wall.position.y = 4;
+        wall.receiveShadow = true;
         cabinetGroup.add(wall);
 
         // Shelves
-        const shelfGeo = new THREE.BoxGeometry(18, 0.2, 1);
         for(let i=0; i<3; i++) {
-            const shelf = new THREE.Mesh(shelfGeo, counterMat);
+            const shelf = new THREE.Mesh(new THREE.BoxGeometry(18, 0.2, 1), woodMat);
             shelf.position.set(0, 2 + i*2.5, 0.6);
-            shelf.receiveShadow = true;
+            shelf.castShadow = true;
             cabinetGroup.add(shelf);
         }
 
-        // Bottles (InstancedMesh for performance & quantity)
-        const bottleGeo = new THREE.CylinderGeometry(0.3, 0.3, 1.2, 8);
+        // Bottles (Instanced)
+        const bottleGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.0, 8);
         const bottleMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff, transmission: 0.5, opacity: 0.8, roughness: 0.1, thickness: 0.5
+            color: 0xffffff, transmission: 0.6, opacity: 0.9, roughness: 0.1, thickness: 0.5,
+            emissive: 0xffffff, emissiveIntensity: 0
         });
-        const bottleCount = 60;
-        const bottles = new THREE.InstancedMesh(bottleGeo, bottleMat, bottleCount);
-
+        const bottles = new THREE.InstancedMesh(bottleGeo, bottleMat, 60);
         const dummy = new THREE.Object3D();
-        const colors = [];
-        const colorPalette = [0xe53935, 0x43a047, 0x1e88e5, 0xfdd835, 0x8e24aa];
+        const colors = [0xe53935, 0x43a047, 0x1e88e5, 0xfdd835, 0x8e24aa];
 
-        for(let i=0; i<bottleCount; i++) {
-            const row = Math.floor(i / 20); // 3 rows
+        for(let i=0; i<60; i++) {
+            const row = Math.floor(i / 20);
             const col = i % 20;
-            dummy.position.set( (col - 9.5) * 0.8 + (Math.random()*0.2), 2.6 + row*2.5, 0.6 );
+            dummy.position.set( (col - 9.5) * 0.8 + (Math.random()*0.3), 2.6 + row*2.5, 0.6 );
             dummy.scale.setY(0.8 + Math.random()*0.5);
             dummy.updateMatrix();
             bottles.setMatrixAt(i, dummy.matrix);
-
-            const c = new THREE.Color(colorPalette[Math.floor(Math.random()*colorPalette.length)]);
-            bottles.setColorAt(i, c);
+            bottles.setColorAt(i, new THREE.Color(colors[Math.floor(Math.random()*colors.length)]));
         }
         bottles.instanceMatrix.needsUpdate = true;
-        // bottles.instanceColor.needsUpdate = true; // Needs newer Three.js, fallback to tint if fail
-        // Using basic random colors if instanceColor supported, else white
-
         cabinetGroup.add(bottles);
         scene.add(cabinetGroup);
 
-        // Hitboxes for bottles?
-        // Let's make the whole shelf area clickable for "Inspect Bar" flavor text
-        const shelfHit = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 2), new THREE.MeshBasicMaterial({visible:false}));
-        shelfHit.position.set(0, 4, -4);
-        shelfHit.userData = { id: 'bottles' };
-        scene.add(shelfHit);
-        clickableObjects.push(shelfHit);
+        // Bottle Hitbox (Invisible but clickable)
+        const bottlesHit = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 2), new THREE.MeshBasicMaterial({ visible: false }));
+        bottlesHit.position.set(0, 4, -4);
+        bottlesHit.userData = { id: 'bottles', label: 'Inspect Collection' };
+        scene.add(bottlesHit);
+        clickableObjects.push(bottlesHit);
 
-        // 3. Quest Book (Interactive Hero)
+        // Quest Book
         const bookGroup = new THREE.Group();
-        const bookMesh = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.4, 3.5), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
-        const bookPages = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.2, 3.3), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-        bookPages.position.y = 0.2;
-        bookGroup.add(bookMesh, bookPages);
+        bookGroup.position.set(-2, 0.3, 2);
+        bookGroup.rotation.set(-0.1, 0.4, 0);
 
-        bookGroup.position.set(-2, 0.3, 2); // Raised slightly
-        bookGroup.rotation.y = 0.4;
-        bookGroup.rotation.x = -0.1; // Tilted towards user
+        const bookCover = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.3, 3.5), bookMat);
+        const pages = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.2, 3.3), new THREE.MeshStandardMaterial({ color: 0xfffbe6 }));
+        pages.position.y = 0.2;
+        bookGroup.add(bookCover, pages);
 
-        bookGroup.userData = { id: 'book' };
+        // Floating Rune (Click Hint)
+        const runeGeo = new THREE.TorusGeometry(0.5, 0.05, 8, 32);
+        const runeMat = new THREE.MeshBasicMaterial({ color: 0xffca28, transparent: true, opacity: 0.6 });
+        const rune = new THREE.Mesh(runeGeo, runeMat);
+        rune.position.set(0, 1.5, 0);
+        rune.rotation.x = Math.PI / 2;
+        bookGroup.add(rune);
+
+        bookGroup.userData = { id: 'book', label: 'Read Quest Log' };
         scene.add(bookGroup);
+        // Add book cover to clickable raycast list specifically for highlight
+        clickableObjects.push(bookCover);
+        bookCover.userData = { parentId: 'book', label: 'Read Quest Log' };
 
-        const bookHit = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 4), new THREE.MeshBasicMaterial({visible:false}));
-        bookHit.position.copy(bookGroup.position);
-        bookHit.userData = { id: 'book' };
-        scene.add(bookHit);
-        clickableObjects.push(bookHit);
+        // Mug
+        const mugGroup = new THREE.Group();
+        mugGroup.position.set(2, 0.6, 2);
+        const mugBody = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16), metalMat);
+        const handle = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 8, 16), metalMat);
+        handle.position.set(0.4, 0, 0);
+        mugGroup.add(mugBody, handle);
 
-        // 4. Tankard
-        const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 1.4, 16), new THREE.MeshStandardMaterial({ color: 0x8d6e63 }));
-        mug.position.set(2, 0.7, 2);
-        mug.userData = { id: 'mug' };
-        scene.add(mug);
-        clickableObjects.push(mug);
+        mugGroup.userData = { id: 'mug', label: 'Drink' };
+        scene.add(mugGroup);
+        clickableObjects.push(mugBody);
+        mugBody.userData = { parentId: 'mug', label: 'Drink' };
 
-        // 5. Candle
-        const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8, 8), new THREE.MeshStandardMaterial({color: 0xfff}));
-        candle.position.copy(candleLight.position);
-        candle.position.y -= 0.5;
-        scene.add(candle);
+        // Candle
+        const candleMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8), new THREE.MeshStandardMaterial({color: 0xfff}));
+        candleMesh.position.copy(candleLight.position);
+        candleMesh.position.y -= 0.3;
+        scene.add(candleMesh);
 
-        // --- Logic ---
 
-        // Door
-        window.enterTavern = () => {
-            document.getElementById('intro-overlay').classList.add('hidden');
-            document.body.style.overflow = 'auto'; // Unlock
+        // --- Interaction Logic ---
 
-            // Camera Move
-            gsap.to(camera.position, {
-                z: 8,
-                y: 3,
-                duration: 2,
-                ease: "power2.out",
-                onComplete: () => {
-                    document.getElementById('ui-layer').classList.add('visible');
-                    // Show indicator
-                    updateBookIndicator();
-                }
-            });
-        };
+        // State
+        let isHovering = false;
+        let hoveredObj = null;
 
-        // Book Indicator Position
-        function updateBookIndicator() {
-            const vector = new THREE.Vector3();
-            bookGroup.getWorldPosition(vector);
-            vector.y += 1; // Above book
-            vector.project(camera);
+        // Mouse Move (Hover)
+        window.addEventListener('mousemove', (e) => {
+            if (!document.getElementById('ui-layer').classList.contains('visible')) return;
 
-            const x = (vector.x * .5 + .5) * window.innerWidth;
-            const y = (-(vector.y * .5) + .5) * window.innerHeight;
+            const mouse = new THREE.Vector2(
+                (e.clientX / window.innerWidth) * 2 - 1,
+                -(e.clientY / window.innerHeight) * 2 + 1
+            );
 
-            const el = document.getElementById('book-indicator');
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.style.opacity = 1;
-        }
-
-        // Raycasting
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (e) => {
-            if (e.target.closest('a, button, .close-btn, #intro-overlay')) return;
-
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(clickableObjects);
 
             if (intersects.length > 0) {
-                const id = intersects[0].object.userData.id;
-                if (id === 'book') openScroll();
-                if (id === 'mug') {
-                    gsap.to(mug.position, { y: 1, duration: 0.2, yoyo: true, repeat: 1 });
-                    document.getElementById('dialogue-text').innerText = "為我們的相遇乾杯！";
+                const obj = intersects[0].object;
+                const label = obj.userData.label || obj.userData.parentId && scene.children.find(c => c.userData.id === obj.userData.parentId)?.userData.label;
+
+                if (hoveredObj !== obj) {
+                    // Reset previous
+                    if (hoveredObj && hoveredObj.material && hoveredObj.material.emissiveIntensity !== undefined) {
+                        gsap.to(hoveredObj.material, { emissiveIntensity: 0, duration: 0.2 });
+                    }
+
+                    // Set new
+                    hoveredObj = obj;
+                    document.body.style.cursor = 'pointer';
+
+                    // Show Tooltip
+                    const tooltip = document.getElementById('hover-tooltip');
+                    tooltip.innerText = label;
+                    tooltip.style.opacity = 1;
+                    tooltip.style.left = e.clientX + 15 + 'px';
+                    tooltip.style.top = e.clientY + 15 + 'px';
+
+                    // Highlight effect
+                    if (obj.material && obj.material.emissiveIntensity !== undefined) {
+                        gsap.to(obj.material, { emissiveIntensity: 0.6, duration: 0.2 });
+                    }
+                } else {
+                     // Update tooltip pos
+                    const tooltip = document.getElementById('hover-tooltip');
+                    tooltip.style.left = e.clientX + 15 + 'px';
+                    tooltip.style.top = e.clientY + 15 + 'px';
                 }
-                if (id === 'bottles') {
-                    const msgs = ["那是陳年的「除錯藥水」。", "這瓶是「靈感釀」，喝了會熬夜。", "小心，那是「無窮迴圈」烈酒。"];
-                    document.getElementById('dialogue-text').innerText = msgs[Math.floor(Math.random()*msgs.length)];
+            } else {
+                if (hoveredObj) {
+                    if (hoveredObj.material && hoveredObj.material.emissiveIntensity !== undefined) {
+                        gsap.to(hoveredObj.material, { emissiveIntensity: 0, duration: 0.2 });
+                    }
+                    hoveredObj = null;
+                    document.body.style.cursor = 'default';
+                    document.getElementById('hover-tooltip').style.opacity = 0;
                 }
             }
         });
 
-        window.openScroll = () => {
-            document.getElementById('quest-parchment').classList.add('visible');
-            document.getElementById('book-indicator').style.opacity = 0; // Hide hint
-        };
+        // Click
+        window.addEventListener('click', (e) => {
+            if (!document.getElementById('ui-layer').classList.contains('visible')) return;
+            if (e.target.closest('.close-btn')) return;
+            if (e.target.closest('#intro-overlay')) return;
+
+            if (hoveredObj) {
+                const id = hoveredObj.userData.id || hoveredObj.userData.parentId;
+
+                if (id === 'book') {
+                    document.getElementById('quest-parchment').classList.add('visible');
+                    document.getElementById('hover-tooltip').style.opacity = 0;
+                }
+
+                if (id === 'mug') {
+                    // Drink Animation
+                    gsap.to(mugGroup.position, { y: 2, z: 4, duration: 0.3, yoyo: true, repeat: 1 });
+                    gsap.to(mugGroup.rotation, { x: 0.5, duration: 0.3, yoyo: true, repeat: 1, delay: 0.1 });
+
+                    const toast = document.getElementById('toast-msg');
+                    toast.style.opacity = 1;
+                    gsap.fromTo(toast, { scale: 0.5 }, { scale: 1.5, opacity: 0, duration: 1.5, ease: "power2.out" });
+
+                    setDialogue("Cheers! May your bugs be few and your commits be clean.");
+                }
+
+                if (id === 'bottles') {
+                    // Shake Camera
+                    gsap.to(camera.position, { x: "+=0.2", duration: 0.05, yoyo: true, repeat: 5 });
+                    const texts = [
+                        "That's pure 'Dependency Hell' whiskey.",
+                        "A vintage 2015 'Callback Hell'. Very bitter.",
+                        "Ah, 'Memory Leak'. You won't remember drinking this."
+                    ];
+                    setDialogue(texts[Math.floor(Math.random()*texts.length)]);
+                }
+            }
+        });
+
+        function setDialogue(text) {
+            const el = document.getElementById('dialogue-text');
+            gsap.to(el, { opacity: 0, duration: 0.2, onComplete: () => {
+                el.innerText = text;
+                gsap.to(el, { opacity: 1, duration: 0.2 });
+            }});
+        }
+
         window.closeScroll = () => {
             document.getElementById('quest-parchment').classList.remove('visible');
         };
 
-        // Animation Loop
+        // --- Animations ---
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-            candleLight.intensity = 2 + Math.sin(time * 10) * 0.3;
+            const t = clock.getElapsedTime();
 
-            // Only update indicator if ui visible
-            if (document.getElementById('ui-layer').style.opacity === '1') updateBookIndicator();
+            // Candle flicker
+            candleLight.intensity = 2.5 + Math.sin(t * 15) * 0.5 + Math.random() * 0.5;
+            candleLight.position.x = 2 + Math.sin(t * 5) * 0.02;
+
+            // Rune Float
+            rune.position.y = 1.5 + Math.sin(t * 2) * 0.1;
+            rune.rotation.z = t * 0.5;
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // Scroll
+        // --- Scroll Story ---
         gsap.registerPlugin(ScrollTrigger);
+
         const script = [
-            { text: "嘿，歡迎！外面很冷吧？我是 SPJ，這裡的老闆。", camera: { x:0, y:3, z:8 }, skill: false },
-            { text: "看看這面牆，都是我的收藏。每一瓶都是一個專案的精華。", camera: { x: -1, y: 4, z: 6 }, skill: true },
-            { text: "桌上那本<span style='color:#ffd54f'>「任務日誌」</span>... 記載著我最近的瘋狂計畫。點開看看吧？", camera: { x: -1.5, y: 1.5, z: 5 }, skill: false },
-            { text: "我夢想建立一個「公會」。讓所有創造者不再孤單。", camera: { x: 0, y: 3, z: 8 }, skill: false },
-            { text: "這張名片你收著。期待你的加入，冒險者！", camera: { x: 1.5, y: 1, z: 5 }, skill: false, footer: true }
+            {
+                text: "Welcome, traveler. I am SPJ. This is where I materialize ideas into reality.",
+                cam: { x: 0, y: 3, z: 8 },
+                look: { x: 0, y: 0, z: 0 },
+                skill: false, footer: false
+            },
+            {
+                text: "My inventory is full of prototypes. Side projects, experiments... the building blocks of this world.",
+                cam: { x: -2, y: 4, z: 6 },
+                look: { x: 0, y: 3, z: -5 },
+                skill: true, footer: false
+            },
+            {
+                text: "The Quest Log contains my current missions: The Text Town and the Sepajuan Guild.",
+                cam: { x: -1, y: 2, z: 4 },
+                look: { x: -2, y: 0.5, z: 2 },
+                skill: false, footer: false
+            },
+            {
+                text: "I want to gather adventurers here. To share stories, not just results.",
+                cam: { x: 0, y: 3, z: 10 },
+                look: { x: 0, y: 0, z: 0 },
+                skill: false, footer: false
+            },
+            {
+                text: "Here is my card. Join us, and let's craft something legendary together.",
+                cam: { x: 0, y: 2, z: 6 },
+                look: { x: 0, y: 0, z: 0 },
+                skill: false, footer: true
+            }
         ];
 
-        const textBox = document.getElementById('dialogue-text');
+        // Enter Logic
+        window.enterTavern = () => {
+            document.getElementById('intro-overlay').classList.add('hidden');
+            document.body.style.overflow = 'auto'; // UNLOCK SCROLL
 
-        ScrollTrigger.create({
-            trigger: ".scroll-track",
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                if (document.getElementById('intro-overlay').style.opacity !== '0') return; // Wait for entry
+            // 1. Refresh Trigger after Unlock
+            setTimeout(() => {
+                ScrollTrigger.refresh();
+            }, 100);
 
-                const idx = Math.min(Math.floor(self.progress * script.length), script.length - 1);
-                const beat = script[idx];
+            // 2. Camera Entry
+            gsap.to(camera.position, {
+                z: 8, y: 3, duration: 2, ease: "power2.out",
+                onComplete: () => {
+                    document.getElementById('ui-layer').classList.add('visible');
+                    initScrollTrigger(); // Start scroll logic
+                }
+            });
+        };
 
-                if (textBox.dataset.index != idx) {
-                    textBox.dataset.index = idx;
-                    gsap.to(textBox, { opacity: 0, duration: 0.2, onComplete: () => {
-                        textBox.innerHTML = beat.text;
-                        gsap.to(textBox, { opacity: 1, duration: 0.2 });
-                    }});
+        function initScrollTrigger() {
+            const textBox = document.getElementById('dialogue-text');
+            textBox.innerText = script[0].text; // Init text
+            textBox.dataset.index = 0; // Prevent initial fade
+            textBox.dataset.camIndex = 0;
 
-                    if (beat.camera) {
-                        gsap.to(camera.position, {
-                            x: beat.camera.x, y: beat.camera.y, z: beat.camera.z,
-                            duration: 1.5, ease: "power2.inOut"
-                        });
+            ScrollTrigger.create({
+                trigger: ".scroll-track",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1, // Smooth interaction
+                onUpdate: (self) => {
+                    // Update Text
+                    const idx = Math.min(Math.floor(self.progress * script.length), script.length - 1);
+                    const beat = script[idx];
+
+                    if (textBox.dataset.index != idx) {
+                        textBox.dataset.index = idx;
+                        gsap.to(textBox, { opacity: 0, duration: 0.2, onComplete: () => {
+                            textBox.innerText = beat.text;
+                            gsap.to(textBox, { opacity: 1, duration: 0.2 });
+                        }});
+
+                        // Toggle UI
+                        const skillBoard = document.getElementById('skill-board');
+                        if (beat.skill) skillBoard.classList.add('visible');
+                        else skillBoard.classList.remove('visible');
+
+                        const footer = document.getElementById('footer-socials');
+                        if (beat.footer) footer.classList.add('visible');
+                        else footer.classList.remove('visible');
                     }
 
-                    gsap.to("#skill-board", { opacity: beat.skill ? 1 : 0 });
-                    gsap.to("#footer-socials", { opacity: beat.footer ? 1 : 0 });
+                    // Update Camera (Scrubbed)
+                    // Interpolate between current beat and next beat based on decimal progress
+                    // Actually, let's keep it simple: GSAP to the discrete beat position to avoid jerky linear interpolation if beats are far apart.
+                    // But we want it to feel connected to scroll.
+                    // Let's use the discrete GSAP we had, it felt cinematic.
+                    if (textBox.dataset.camIndex != idx) {
+                         textBox.dataset.camIndex = idx;
+                         gsap.to(camera.position, {
+                             x: beat.cam.x, y: beat.cam.y, z: beat.cam.z,
+                             duration: 1.5, ease: "power2.inOut"
+                         });
+                    }
                 }
-            }
-        });
+            });
+        }
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            ScrollTrigger.refresh();
         });
 
     </script>
