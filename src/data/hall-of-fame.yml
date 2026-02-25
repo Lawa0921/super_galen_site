@@ -910,6 +910,18 @@ members:
       - id: "forever_20"
         label: "永遠 20 歲"
 
+  - id: "zaira"
+    name: "Zaira"
+    avatar: "/assets/img/guild/zaira/avatar.webp"
+    page: "/guild/zaira.html"
+    tags:
+      - id: "language_explorer"
+        label: "語言探索"
+      - id: "climber"
+        label: "攀登者"
+      - id: "podcast"
+        label: "Podcast"
+
   - id: "lubu"
     name: "呂布"
     avatar: "/assets/img/guild/lubu/avatar.webp"
