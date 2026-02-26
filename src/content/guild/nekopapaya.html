@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Narrative Archive</title>
+    <title>NEKOPAPAYA | The Luminous Haven</title>
     <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -28,224 +28,158 @@
 
     <style>
         :root {
-            /* Palette: Notebook Paper */
-            --c-bg: #F9F7F1;       /* Paper White */
-            --c-text: #2c2c2c;     /* Ink Black */
-            --c-accent: #78C0A8;   /* Sage */
-            --c-blue: #7FB2D4;     /* Ink Blue */
-            --c-warm: #EAC435;     /* Highlight */
-            --c-line: #ddd;        /* Grid Line */
+            /* Palette: Luminous */
+            --c-text-light: #F9F7F1;
+            --c-text-dark: #2D3436;
+            --c-accent: #EAC435;
 
             --f-en: 'Nunito', sans-serif;
-            --f-zh: 'Noto Sans TC', sans-serif;
-        }
-
-        body.night-mode {
-            --c-bg: #2b2b2b;
-            --c-text: #e0e0e0;
-            --c-accent: #F1C40F;
-            --c-line: #444;
+            --f-zh: 'Noto Serif TC', serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-bg);
-            color: var(--c-text);
+            background-color: #111; /* Start dark */
+            color: var(--c-text-light);
             font-family: var(--f-zh);
             overflow-x: hidden;
-            line-height: 1.8;
-            transition: background-color 0.5s, color 0.5s;
-            background-image: linear-gradient(var(--c-line) 1px, transparent 1px),
-            linear-gradient(90deg, var(--c-line) 1px, transparent 1px);
-            background-size: 40px 40px;
+            line-height: 1.7;
         }
 
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
+
+        /* UI Layer */
         .scroller { position: relative; z-index: 10; pointer-events: none; }
         .interactive-layer { pointer-events: auto; }
 
-        /* --- Bubble Tooltip --- */
-        #tooltip {
-            position: fixed; pointer-events: none; opacity: 0;
-            background: white; padding: 0.8rem 1.2rem;
-            border: 2px solid var(--c-text); border-radius: 12px;
-            box-shadow: 4px 4px 0px var(--c-text);
-            font-family: var(--f-en); color: #2c2c2c; /* Always dark text in tooltip */
-            transform: translate(-50%, -150%); transition: opacity 0.2s, transform 0.2s;
-            z-index: 100;
-        }
-        #tooltip::after {
-            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
-            border-width: 8px 8px 0; border-style: solid;
-            border-color: var(--c-text) transparent transparent transparent;
-        }
-
-        /* --- Mode Switch --- */
-        .mode-switch {
-            position: fixed; top: 2rem; right: 2rem; z-index: 50;
-            background: white; border: 2px solid var(--c-text);
-            width: 50px; height: 50px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; cursor: pointer; pointer-events: auto;
-            transition: transform 0.2s; color: #2c2c2c;
-        }
-        .mode-switch:hover { transform: scale(1.1); background: var(--c-warm); }
-
-        /* --- Sections --- */
         .section {
-            min-height: 120vh;
-            display: flex; flex-direction: column; justify-content: center;
-            padding: 2rem; position: relative;
-        }
-
-        .notebook-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 3rem;
-            border-radius: 4px;
-            border: 2px solid var(--c-text);
-            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
-            max-width: 500px;
+            height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             position: relative;
-            transform-origin: top left;
-        }
-        .notebook-card::before { /* Tape effect */
-            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            width: 100px; height: 30px; background: rgba(255, 255, 255, 0.6);
-            border: 1px dashed #ccc; transform: translateX(-50%) rotate(-2deg);
-        }
-        body.night-mode .notebook-card {
-            background: #333; border-color: #eee; box-shadow: 10px 10px 0px rgba(255,255,255,0.05);
+            text-align: center;
+            padding: 2rem;
         }
 
-        .pos-left { margin-right: auto; margin-left: 5vw; }
-        .pos-right { margin-left: auto; margin-right: 5vw; }
-        .pos-center { margin: 0 auto; text-align: center; }
-
-        h1 { font-family: var(--f-en); font-weight: 900; font-size: 3rem; line-height: 1.1; margin-bottom: 0.5rem; }
-        h2 { font-family: var(--f-en); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-accent); margin-bottom: 1rem; border-bottom: 2px dashed var(--c-accent); display: inline-block; }
-        h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
-        p { font-size: 1rem; opacity: 0.8; margin-bottom: 1rem; }
-
-        .tag {
-            display: inline-block; padding: 0.3rem 0.8rem; background: var(--c-text);
-            color: var(--c-bg); border-radius: 4px;
-            font-size: 0.8rem; font-weight: 700; margin-right: 0.5rem;
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--f-en); font-weight: 300; font-size: clamp(3rem, 8vw, 6rem);
+            letter-spacing: 0.1em; margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        h2 {
+            font-family: var(--f-en); font-weight: 700; font-size: 1rem;
+            text-transform: uppercase; letter-spacing: 0.3em;
+            color: var(--c-accent); margin-bottom: 2rem;
+        }
+        p {
+            font-size: 1.2rem; max-width: 600px; margin: 0 auto 1.5rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
-        .nav-fixed {
-            position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: var(--f-en); font-weight: 900; color: var(--c-text); text-decoration: none;
-            padding: 0.5rem 1.2rem; background: var(--c-bg); border: 2px solid var(--c-text); border-radius: 50px;
-            pointer-events: auto; transition: transform 0.2s;
+        .glass-panel {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 100px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transform: translateY(30px); opacity: 0;
         }
-        .nav-fixed:hover { transform: scale(1.05); }
 
+        .light-theme .glass-panel {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: #2c2c2c;
+            text-shadow: none;
+        }
+        .light-theme h1 { text-shadow: none; color: #2c2c2c; }
+        .light-theme p { text-shadow: none; color: #4a4a4a; }
+        .light-theme h2 { color: #8A6E00; /* Darker Gold for contrast */ }
+
+        /* Avatar */
+        .avatar-frame {
+            width: 120px; height: 120px; border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            border: 2px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+        .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .light-theme .avatar-frame { border-color: rgba(0,0,0,0.1); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        /* Socials */
         .social-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 50px; height: 50px; border-radius: 50%; background: var(--c-bg);
-            color: var(--c-text); font-size: 1.2rem; margin: 0 0.5rem;
-            border: 2px solid var(--c-text);
-            transition: transform 0.2s, background 0.2s; text-decoration: none;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);
+            color: white; font-size: 1.5rem; margin: 0 1rem;
+            transition: 0.3s; text-decoration: none;
         }
-        .social-link:hover { transform: translateY(-3px); background: var(--c-accent); color: white; border-color: var(--c-text); }
+        .social-link:hover { background: var(--c-accent); border-color: var(--c-accent); transform: scale(1.1); }
 
-        /* --- Custom List --- */
-        .check-list { list-style: none; padding: 0; }
-        .check-list li { margin-bottom: 0.5rem; padding-left: 1.5rem; position: relative; }
-        .check-list li::before {
-            content: '✓'; position: absolute; left: 0; color: var(--c-accent); font-weight: bold;
+        .light-theme .social-link {
+            background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: #2c2c2c;
         }
+        .light-theme .social-link:hover { color: white; }
 
-        @media(max-width: 768px) {
-            .notebook-card { margin: 0 auto !important; width: 100%; max-width: 100%; padding: 2rem; }
-            h1 { font-size: 2.5rem; }
-            .section { min-height: 80vh; padding: 4rem 1.5rem; }
+        /* Nav */
+        .nav-fixed {
+            position: fixed; top: 2rem; left: 2rem; z-index: 50;
+            font-family: var(--f-en); font-weight: 700;
+            color: white; text-decoration: none; opacity: 0.5; transition: 0.3s;
+            pointer-events: auto;
         }
+        .nav-fixed:hover { opacity: 1; }
+        .light-theme .nav-fixed { color: #2c2c2c; }
 
     </style>
 </head>
 <body>
 
     <a href="/guild" class="nav-fixed">← GUILD</a>
-    <div class="mode-switch" id="mode-switch">☀</div>
-    <div id="tooltip"></div>
     <div id="webgl-container"></div>
 
     <div class="scroller">
 
-        <!-- 1. Hero -->
+        <!-- 1. Outside: The Cold -->
         <section class="section">
-            <div class="notebook-card pos-left interactive-layer gs-reveal">
-                <span class="tag">#Analyst</span> <span class="tag">#Joy</span>
-                <h1 style="margin-top: 1rem;">NEKOPAPAYA</h1>
-                <p style="font-weight: 700;">人體狀態觀察分析師 | 康樂股長</p>
-                <div style="border-top: 2px solid var(--c-accent); margin: 1rem 0; padding-top: 1rem;">
-                    <p>
-                        "Hydrogen knocking on your soul."<br>
-                        (氫氫敲醒你的心靈)
-                    </p>
+            <div class="glass-panel interactive-layer gs-reveal">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar">
                 </div>
-                <p style="font-size: 0.9rem; opacity: 0.6;">
-                    <i class="fa-solid fa-cube"></i> Explore the room to find the stories.
-                </p>
+                <h2>OBSERVER</h2>
+                <h1>NEKOPAPAYA</h1>
+                <p>"Hydrogen knocking on your soul."</p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">Scroll to Enter the Haven</p>
             </div>
         </section>
 
-        <!-- 2. Desk: Analysis -->
+        <!-- 2. Transition: The Filter -->
         <section class="section">
-            <div class="notebook-card pos-right interactive-layer gs-reveal" style="max-width: 400px;">
+            <div class="glass-panel interactive-layer gs-reveal">
                 <h2>METHODOLOGY</h2>
-                <h1>The Lab Report.</h1>
-                <h3>Subject: Human Connection</h3>
-                <p>作為分析師，我的工作是無聲地觀察與調頻。</p>
-                <ul class="check-list">
-                    <li><strong>Signal Detection:</strong> 在熱鬧中捕捉被忽略的訊號。</li>
-                    <li><strong>Noise Cancellation:</strong> 消除社交壓力，創造自在空間。</li>
-                    <li><strong>Frequency Matching:</strong> 像氫原子般輕輕撞擊，喚醒共鳴。</li>
-                </ul>
+                <p>無聲地觀察每個人的狀態與需求。<br>在熱鬧的背後，捕捉微弱的訊號。</p>
             </div>
         </section>
 
-        <!-- 3. Bookshelf: Stories -->
-        <section class="section">
-            <div class="notebook-card pos-left interactive-layer gs-reveal">
-                <h2>ARCHIVE</h2>
-                <h1>Collected Moments.</h1>
-                <p>每一個架上的物件，都是一段相遇的故事。</p>
-                <p>「魔人揪揪」不只是稱號，是一種行動代號——將散落的個體，透過熱情重新編織成網。</p>
-                <div style="background: var(--c-accent); color: white; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block; margin-top: 1rem;">
-                    Status: Gathering...
-                </div>
+        <!-- 3. Inside: The Warmth -->
+        <section class="section" id="inside-section">
+            <div class="glass-panel interactive-layer gs-reveal">
+                <h2>SAFE HAVEN</h2>
+                <h1 style="font-size: 4rem;">WELCOME HOME.</h1>
+                <p>這裡是一個可以停下來、坐一下的地方。<br>沒有強迫，只有邀請。</p>
             </div>
         </section>
 
-        <!-- 4. Lounge: Haven -->
+        <!-- 4. Core: Connection -->
         <section class="section">
-            <div class="notebook-card pos-right interactive-layer gs-reveal">
-                <h2>PHILOSOPHY</h2>
-                <h1>Safe Haven.</h1>
-                <p>這裡是一個可以停下來、坐一下的地方。</p>
-                <p>
-                    <i class="fa-solid fa-mug-hot"></i> <strong>Warmth:</strong> 提供熱茶般的溫度。<br>
-                    <i class="fa-solid fa-door-open"></i> <strong>Freedom:</strong> 沒有強迫，隨時歡迎離開或加入。
-                </p>
-            </div>
-        </section>
-
-        <!-- 5. Board: Plan -->
-        <section class="section">
-            <div class="notebook-card pos-center interactive-layer gs-reveal">
-                <h2>NEXT EVENT</h2>
-                <h1>Ready to Sync?</h1>
-                <p>如果你剛好想參與、想一起感受，就可以私訊我。</p>
+            <div class="glass-panel interactive-layer gs-reveal">
+                <h2>SYNC PROTOCOL</h2>
+                <p>魔人揪揪出動！將孤單的靈魂串連起來。<br>如果你剛好想參與，就可以私訊我。</p>
                 <div style="margin-top: 2rem;">
                     <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p style="font-size: 0.8rem; margin-top: 1rem; opacity: 0.6;">
-                    * All interactions are voluntary. No pressure protocol active.
-                </p>
             </div>
         </section>
 
@@ -257,312 +191,201 @@
 
         // --- Setup ---
         const container = document.getElementById('webgl-container');
-        const tooltip = document.getElementById('tooltip');
-        const modeSwitch = document.getElementById('mode-switch');
-
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xF9F7F1); // Paper
+        scene.fog = new THREE.FogExp2(0x050510, 0.05); // Start dark fog
 
-        // Camera
-        const aspect = window.innerWidth / window.innerHeight;
-        const d = 10;
-        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
-        camera.position.set(20, 20, 20);
-        camera.lookAt(0, 0, 0);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // Tone mapping for glow
+        renderer.toneMapping = THREE.ReinhardToneMapping;
         container.appendChild(renderer.domElement);
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xFFE4C4, 0.8);
-        dirLight.position.set(10, 20, 5);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        scene.add(dirLight);
+        // --- Objects ---
 
-        // --- Toon Materials & Outline ---
-        // Gradient Map for Cell Shading
-        const colors = new Uint8Array([240, 240, 240, 100, 100, 100]); // 2 steps
-        const gradientMap = new THREE.DataTexture(colors, 2, 1, THREE.LuminanceFormat);
-        gradientMap.minFilter = THREE.NearestFilter;
-        gradientMap.magFilter = THREE.NearestFilter;
-        gradientMap.needsUpdate = true;
+        // 1. The Dome (Igloo)
+        // Icosahedron with glass material
+        const domeGeo = new THREE.IcosahedronGeometry(6, 2);
+        const domeMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            roughness: 0.1,
+            metalness: 0.1,
+            transmission: 0.9,
+            thickness: 2.0,
+            ior: 1.5,
+            side: THREE.DoubleSide,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1
+        });
+        const dome = new THREE.Mesh(domeGeo, domeMat);
+        scene.add(dome);
 
-        function createToonMat(color) {
-            return new THREE.MeshToonMaterial({ color: color, gradientMap: gradientMap });
-        }
+        // Wireframe overlay for "Tech" feel
+        const wireGeo = new THREE.WireframeGeometry(domeGeo);
+        const wireMat = new THREE.LineBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.1 });
+        const wire = new THREE.LineSegments(wireGeo, wireMat);
+        dome.add(wire);
 
-        const matWood = createToonMat(0xD7B698);
-        const matWall = createToonMat(0xFFFFFF);
-        const matDark = createToonMat(0x2D3436);
-        const matAccent = createToonMat(0x78C0A8);
-        const matBlue = createToonMat(0x7FB2D4);
-        const matYellow = createToonMat(0xEAC435);
-        const matPink = createToonMat(0xFF7675); // Joy color
+        // 2. The Core (Hearth) - Inside
+        const coreGeo = new THREE.SphereGeometry(1, 32, 32);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
 
-        const lineMat = new THREE.LineBasicMaterial({ color: 0x2D3436, linewidth: 2 });
-
-        function addOutline(mesh, geo) {
-            const edges = new THREE.EdgesGeometry(geo, 20);
-            const line = new THREE.LineSegments(edges, lineMat);
-            mesh.add(line);
-        }
-
-        // --- Scene Construction ---
-        const room = new THREE.Group();
-        scene.add(room);
-
-        // 1. Structure
-        const floorGeo = new THREE.BoxGeometry(14, 0.5, 14);
-        const floor = new THREE.Mesh(floorGeo, matWood);
-        floor.position.y = -0.25; floor.receiveShadow = true;
-        addOutline(floor, floorGeo); room.add(floor);
-
-        const wall1 = new THREE.Mesh(new THREE.BoxGeometry(14, 8, 0.5), matWall);
-        wall1.position.set(0, 4, -7.25); wall1.receiveShadow = true; addOutline(wall1, wall1.geometry); room.add(wall1);
-        const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 8, 14), matWall);
-        wall2.position.set(-7.25, 4, 0); wall2.receiveShadow = true; addOutline(wall2, wall2.geometry); room.add(wall2);
-
-        // 2. Desk Area
-        const desk = new THREE.Group(); desk.position.set(-4, 0, -4); room.add(desk);
-        const topGeo = new THREE.BoxGeometry(4, 0.2, 2.5);
-        const top = new THREE.Mesh(topGeo, matWood);
-        top.position.y = 1.5; top.castShadow = true; top.receiveShadow = true;
-        addOutline(top, topGeo); desk.add(top);
-        // Legs
-        [[-1.8,1], [1.8,1], [-1.8,-1], [1.8,-1]].forEach(pos => {
-            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,1.5), matDark);
-            leg.position.set(pos[0], 0.75, pos[1]); desk.add(leg);
+        // Core Glow (Sprite)
+        const spriteMat = new THREE.SpriteMaterial({
+            map: new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/sprites/glow.png'), // Use standard glow asset or procedural? Let's make procedural canvas to be safe.
+            color: 0xFFD700, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
         });
 
-        // Prop: Hydrogen Balloon (Sphere + String)
-        const balloonGeo = new THREE.SphereGeometry(0.6, 16, 16);
-        const balloon = new THREE.Mesh(balloonGeo, matBlue);
-        balloon.position.set(-1.5, 3.5, 0);
-        addOutline(balloon, balloonGeo);
-        balloon.userData = { name: "H2 Balloon", desc: "Hydrogen knocking..." };
-        desk.add(balloon);
-        // String
-        const stringGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-2,0)]);
-        const string = new THREE.Line(stringGeo, lineMat);
-        string.position.y = -0.6; balloon.add(string);
+        // Canvas Texture for Glow
+        const canvas = document.createElement('canvas'); canvas.width=64; canvas.height=64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(32,32,0, 32,32,32);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad; ctx.fillRect(0,0,64,64);
+        const glowTex = new THREE.CanvasTexture(canvas);
+        spriteMat.map = glowTex;
 
-        // Prop: Monitor (Vibe Check)
-        const mon = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 0.2), matDark);
-        mon.position.set(0, 2.4, -0.5); addOutline(mon, mon.geometry); desk.add(mon);
-        mon.userData = { name: "Vibe Monitor", desc: "Scanning Frequency" };
+        const coreGlow = new THREE.Sprite(spriteMat);
+        coreGlow.scale.set(8, 8, 1);
+        core.add(coreGlow);
 
-        // Prop: Photo Frame
-        const photoGeo = new THREE.PlaneGeometry(0.8, 0.8);
-        const photoTex = new THREE.TextureLoader().load('/assets/img/guild/nekopapaya/avatar.webp');
-        const photo = new THREE.Mesh(photoGeo, new THREE.MeshBasicMaterial({ map: photoTex }));
-        photo.position.set(1.2, 1.8, -0.8); photo.rotation.set(-0.1, -0.2, 0); desk.add(photo);
-        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.05), matWall);
-        frame.position.set(1.2, 1.8, -0.85); frame.rotation.set(-0.1, -0.2, 0); addOutline(frame, frame.geometry); desk.add(frame);
+        // 3. Particles (Snow -> Embers)
+        const pCount = 500;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(pCount * 3);
+        const pVel = new Float32Array(pCount); // Fall speed
 
-        // 3. Bookshelf (Stories)
-        const shelf = new THREE.Group(); shelf.position.set(0, 0, -6.5); room.add(shelf);
-        const shelfBody = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 1), matWood);
-        shelfBody.position.y = 2.5; shelfBody.castShadow = true; addOutline(shelfBody, shelfBody.geometry); shelf.add(shelfBody);
-
-        // Prop: Joy Cannon (Cylinder)
-        const cannonGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.8);
-        const cannon = new THREE.Mesh(cannonGeo, matPink);
-        cannon.position.set(1, 5.2, 0); cannon.rotation.z = 0.2;
-        addOutline(cannon, cannonGeo);
-        cannon.userData = { name: "Party Cannon", desc: "Ready to Celebrate" };
-        shelf.add(cannon);
-
-        // 4. Lounge (Haven)
-        const lounge = new THREE.Group(); lounge.position.set(3, 0, 3); room.add(lounge);
-        const rug = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.05, 32), matAccent);
-        rug.position.y = 0.05; rug.receiveShadow = true; lounge.add(rug);
-
-        // Prop: Tea Set
-        const teaTable = new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.8,0.5), matWood);
-        teaTable.position.set(0, 0.25, 0); addOutline(teaTable, teaTable.geometry); lounge.add(teaTable);
-        const pot = new THREE.Mesh(new THREE.SphereGeometry(0.3), matWall);
-        pot.position.set(0, 0.7, 0); addOutline(pot, pot.geometry);
-        pot.userData = { name: "Tea Pot", desc: "Warmth Serving" }; lounge.add(pot);
-
-        // 5. The Box Cat (Blocky)
-        const catGroup = new THREE.Group();
-        catGroup.position.set(4, 0.5, 4);
-        catGroup.rotation.y = -Math.PI/4;
-        room.add(catGroup);
-
-        // Body
-        const catBodyGeo = new THREE.BoxGeometry(0.6, 0.5, 0.9);
-        const catBody = new THREE.Mesh(catBodyGeo, matYellow);
-        catBody.castShadow = true; addOutline(catBody, catBodyGeo);
-        catBody.userData = { name: "Box Cat", desc: "The Guardian", type: "cat" };
-        catGroup.add(catBody);
-
-        // Head
-        const catHeadGroup = new THREE.Group();
-        catHeadGroup.position.set(0, 0.4, 0.4);
-        catGroup.add(catHeadGroup);
-
-        const headGeo = new THREE.BoxGeometry(0.7, 0.6, 0.6);
-        const head = new THREE.Mesh(headGeo, matYellow);
-        addOutline(head, headGeo); catHeadGroup.add(head);
-
-        // Ears
-        const earGeo = new THREE.ConeGeometry(0.15, 0.3, 4);
-        const earL = new THREE.Mesh(earGeo, matDark); earL.position.set(-0.2, 0.45, 0); catHeadGroup.add(earL);
-        const earR = new THREE.Mesh(earGeo, matDark); earR.position.set(0.2, 0.45, 0); catHeadGroup.add(earR);
-
-        // Tail
-        const tailGeo = new THREE.BoxGeometry(0.1, 0.1, 0.8);
-        const tail = new THREE.Mesh(tailGeo, matYellow);
-        tail.position.set(0, 0.2, -0.6); tail.rotation.x = 0.5;
-        addOutline(tail, tailGeo); catGroup.add(tail);
+        for(let i=0; i<pCount; i++) {
+            pPos[i*3] = (Math.random()-0.5) * 40;
+            pPos[i*3+1] = (Math.random()-0.5) * 40;
+            pPos[i*3+2] = (Math.random()-0.5) * 40;
+            pVel[i] = Math.random() * 0.05 + 0.02;
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({
+            color: 0x88ccff, size: 0.2, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
+        });
+        const particles = new THREE.Points(pGeo, pMat);
+        scene.add(particles);
 
 
-        // 6. Corkboard (Plans)
-        const boardGroup = new THREE.Group(); boardGroup.position.set(-6.9, 4, 2); room.add(boardGroup);
-        const board = new THREE.Mesh(new THREE.BoxGeometry(0.1, 3, 4), matWood);
-        addOutline(board, board.geometry); boardGroup.add(board);
+        // --- Lights ---
+        const ambient = new THREE.AmbientLight(0x404040); // Dim outside
+        scene.add(ambient);
 
-        // Prop: Whiteboard
-        const wbGeo = new THREE.BoxGeometry(0.15, 1.5, 2.5);
-        const wb = new THREE.Mesh(wbGeo, matWall);
-        wb.position.set(0.1, 0, 0); addOutline(wb, wbGeo);
-        wb.userData = { name: "Plan Board", desc: "Gathering Protocol: Active" };
-        boardGroup.add(wb);
+        const warmPoint = new THREE.PointLight(0xFFD700, 2, 20); // Warm inside
+        warmPoint.position.set(0,0,0);
+        scene.add(warmPoint);
 
 
         // --- Interaction ---
         let scrollY = 0;
-        let targetCamPos = new THREE.Vector3(20, 20, 20);
-        let targetZoom = 1;
-        let targetLookAt = new THREE.Vector3(0,0,0);
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2(-1, -1);
-        let isNight = false;
+        let insideState = 0; // 0 = Outside, 1 = Inside
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
-            const progress = scrollY / (document.body.scrollHeight - window.innerHeight);
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = scrollY / maxScroll;
 
-            if(progress < 0.1) { // Hero
-                targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0);
-            } else if(progress < 0.35) { // Desk
-                targetCamPos.set(-5, 10, 5); targetZoom = 2; targetLookAt.set(-4, 2, -4);
-            } else if(progress < 0.6) { // Shelf
-                targetCamPos.set(5, 8, -5); targetZoom = 2; targetLookAt.set(0, 3, -6.5);
-            } else if(progress < 0.85) { // Lounge
-                targetCamPos.set(5, 10, 5); targetZoom = 2; targetLookAt.set(3, 1, 3);
-            } else { // Board
-                targetCamPos.set(-10, 10, 10); targetZoom = 2; targetLookAt.set(-6.9, 4, 2);
-            }
-        });
+            // Camera Journey
+            // 0.0 -> 0.3: Orbit Outside
+            // 0.3 -> 0.6: Penetrate Wall (Z: 15 -> 0)
+            // 0.6 -> 1.0: Rotate Inside
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            tooltip.style.left = e.clientX + 'px'; tooltip.style.top = e.clientY + 'px';
-        });
-
-        // Switch
-        const switchGeo = new THREE.BoxGeometry(0.1, 0.4, 0.4);
-        const switchMesh = new THREE.Mesh(switchGeo, matDark);
-        switchMesh.position.set(-7, 3, 2);
-        switchMesh.userData = { name: "Light Switch", desc: "Toggle Mode", type: "switch" };
-        room.add(switchMesh);
-
-        modeSwitch.addEventListener('click', (e) => { e.stopPropagation(); toggleNightMode(); });
-        window.addEventListener('click', () => {
-            if(!hoveredObj) return;
-            if (hoveredObj.userData.type === 'switch') toggleNightMode();
-            if (hoveredObj.userData.type === 'cat') {
-                gsap.to(catGroup.position, { y: 1.5, duration: 0.2, yoyo: true, repeat: 1 });
-            }
-        });
-
-        function toggleNightMode() {
-            isNight = !isNight;
-            modeSwitch.innerText = isNight ? '🌙' : '☀';
-            if (isNight) {
-                document.body.classList.add('night-mode');
-                gsap.to(scene.background, { r: 43/255, g: 43/255, b: 43/255, duration: 1 });
-                gsap.to(ambientLight, { intensity: 0.2, duration: 1 });
-                gsap.to(dirLight, { intensity: 0.2, duration: 1 });
+            if (progress < 0.3) {
+                // Outside
+                const angle = progress * 2;
+                camera.position.x = Math.sin(angle) * 15;
+                camera.position.z = Math.cos(angle) * 15;
+                camera.position.y = 0;
+                setTheme(0);
+            } else if (progress < 0.6) {
+                // Transition
+                const t = (progress - 0.3) / 0.3; // 0 to 1
+                // Easing into the core
+                camera.position.x = Math.sin(0.6) * 15 * (1-t);
+                camera.position.z = Math.cos(0.6) * 15 * (1-t) + t * 4; // End at z=4 inside
+                setTheme(t);
             } else {
-                document.body.classList.remove('night-mode');
-                gsap.to(scene.background, { r: 249/255, g: 247/255, b: 241/255, duration: 1 });
-                gsap.to(ambientLight, { intensity: 0.7, duration: 1 });
-                gsap.to(dirLight, { intensity: 0.8, duration: 1 });
+                // Inside
+                const t = (progress - 0.6) / 0.4;
+                camera.position.z = 4 - t * 1; // Slight push in
+                camera.position.x = Math.sin(t) * 2; // Slight orbit inside
+                camera.position.y = Math.cos(t * 2) * 0.5;
+                setTheme(1);
+            }
+            camera.lookAt(0, 0, 0);
+        });
+
+        // Theme Switcher (Visuals)
+        function setTheme(t) {
+            // t = 0 (Dark/Cold) -> 1 (Light/Warm)
+
+            // Fog Color: Dark Blue -> Warm Cream
+            const c1 = new THREE.Color(0x050510);
+            const c2 = new THREE.Color(0xF9F7F1); // Paper
+            scene.fog.color.lerpColors(c1, c2, t);
+
+            // Particle Color: Blue -> Gold
+            const p1 = new THREE.Color(0x88ccff);
+            const p2 = new THREE.Color(0xFFD700);
+            pMat.color.lerpColors(p1, p2, t);
+
+            // Background Color
+            const bg1 = new THREE.Color(0x111111);
+            const bg2 = new THREE.Color(0xF4F1EC);
+            renderer.setClearColor(bg1.lerp(bg2, t));
+
+            // CSS Theme (Threshold)
+            if(t > 0.5) {
+                document.body.classList.add('light-theme');
+            } else {
+                document.body.classList.remove('light-theme');
             }
         }
 
-        // Loop
-        let hoveredObj = null;
+
+        // Animation Loop
         function animate() {
             requestAnimationFrame(animate);
             const time = Date.now() * 0.001;
 
-            camera.position.lerp(targetCamPos, 0.05);
-            camera.zoom += (targetZoom - camera.zoom) * 0.05;
-            camera.updateProjectionMatrix();
-            if(!window.camTarget) window.camTarget = new THREE.Vector3(0,0,0);
-            window.camTarget.lerp(targetLookAt, 0.05);
-            camera.lookAt(window.camTarget);
+            // Rotate Dome
+            dome.rotation.y = time * 0.05;
 
-            // Animate Props
-            balloon.position.y = 3.5 + Math.sin(time)*0.2;
-            balloon.rotation.z = Math.sin(time*0.5)*0.1;
+            // Pulse Core
+            const pulse = 1 + Math.sin(time * 2) * 0.1;
+            core.scale.setScalar(pulse);
+            coreGlow.scale.setScalar(8 * pulse);
 
-            // Cat Head Track
-            if(catHeadGroup) {
-                catHeadGroup.lookAt(targetLookAt.x + mouse.x*5, 2, targetLookAt.z - mouse.y*5);
+            // Particles
+            const pos = pGeo.attributes.position.array;
+            for(let i=0; i<pCount; i++) {
+                // Gravity
+                pos[i*3+1] -= pVel[i];
+
+                // Wrap around
+                if(pos[i*3+1] < -20) pos[i*3+1] = 20;
+
+                // Spiral motion
+                const x = pos[i*3];
+                const z = pos[i*3+2];
+                pos[i*3] = x * Math.cos(0.01) - z * Math.sin(0.01);
+                pos[i*3+2] = x * Math.sin(0.01) + z * Math.cos(0.01);
             }
-            // Tail Wag
-            tail.rotation.y = Math.sin(time * 5) * 0.2;
-
-            // Raycast
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(room.children, true);
-            let hit = null;
-            for(let i=0; i<intersects.length; i++) {
-                let obj = intersects[i].object;
-                while(obj.parent && obj.parent !== room && !obj.userData.name) obj = obj.parent;
-                if(obj.userData.name) { hit = obj; break; }
-            }
-
-            if(hit) {
-                document.body.style.cursor = 'pointer';
-                tooltip.style.opacity = 1;
-                tooltip.innerHTML = `<strong>${hit.userData.name}</strong><br>${hit.userData.desc}`;
-
-                if (!hit.userData.originalScale) hit.userData.originalScale = hit.scale.clone();
-                const targetScale = hit.userData.originalScale.clone().multiplyScalar(1.1);
-                hit.scale.lerp(targetScale, 0.2);
-                hoveredObj = hit;
-            } else {
-                document.body.style.cursor = 'default';
-                tooltip.style.opacity = 0;
-                hoveredObj = null;
-            }
-
-            // Reset
-            room.traverse(obj => {
-                if (obj.userData.originalScale && obj !== hit) {
-                    obj.scale.lerp(obj.userData.originalScale, 0.1);
-                }
-            });
+            pGeo.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
         animate();
 
+        // GSAP
         gsap.registerPlugin(ScrollTrigger);
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.to(elem, {
@@ -572,9 +395,7 @@
         });
 
         window.addEventListener('resize', () => {
-            const aspect = window.innerWidth / window.innerHeight;
-            camera.left = -d * aspect; camera.right = d * aspect;
-            camera.top = d; camera.bottom = -d;
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
