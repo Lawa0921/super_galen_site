@@ -814,6 +814,18 @@ members:
       - id: "composer"
         label: "詞曲創作"
 
+  - id: "spj"
+    name: "塞趴卷 SPJ"
+    avatar: "/assets/img/guild/spj/avatar.webp"
+    page: "/guild/spj.html"
+    tags:
+      - id: "materialization_alchemist"
+        label: "具現化系鍊金術師"
+      - id: "text_town_architect"
+        label: "文字小鎮架構師"
+      - id: "guild_master"
+        label: "冒險公會會長"
+
   - id: "tyou"
     name: "秋桑 Tyou"
     avatar: "/assets/img/guild/tyou/pot.webp"
@@ -945,3 +957,15 @@ members:
         label: "山海探險"
       - id: "life_gamer"
         label: "遊戲人生"
+
+  - id: "mian"
+    name: "Mian"
+    avatar: "/assets/img/guild/mian/avatar.webp"
+    page: "/guild/mian.html"
+    tags:
+      - id: "student"
+        label: "大二生"
+      - id: "model_car"
+        label: "模型車改裝"
+      - id: "rider"
+        label: "摩旅愛好者"
