@@ -946,6 +946,18 @@ members:
       - id: "indie_games"
         label: "獨立遊戲"
 
+  - id: "bebe_liu"
+    name: "Bèbè Liu"
+    avatar: "/assets/img/guild/bebe_liu/avatar.webp"
+    page: "/guild/bebe_liu.html"
+    tags:
+      - id: "illustrator"
+        label: "插畫/設計"
+      - id: "explorer"
+        label: "山海探險"
+      - id: "life_gamer"
+        label: "遊戲人生"
+
   - id: "mian"
     name: "Mian"
     avatar: "/assets/img/guild/mian/avatar.webp"

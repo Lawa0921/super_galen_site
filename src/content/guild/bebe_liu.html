@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bèbè Liu | The Adventure Map 🗺️</title>
+    <meta name="description" content="Bèbè Liu - Graphic Designer, Illustrator, & Life Explorer.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;500;600&family=Noto+Sans+TC:wght@300;400;500;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            /* Palette: Vibrant, Flat, Graphic Design */
+            --bg-color: #fffdf5; /* Warm paper */
+            --ink-black: #1a1a1a;
+            --pop-orange: #ff6b35;
+            --pop-cyan: #00b4d8;
+            --pop-yellow: #fdec00;
+            --pop-pink: #f72585;
+            --grid-line: rgba(26, 26, 26, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--ink-black);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            cursor: crosshair; /* Custom cursor indicator */
+        }
+
+        /* P5 Canvas Container */
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.6; /* Let content pop */
+            transition: opacity 0.5s;
+        }
+
+        /* Grid Background Pattern (CSS) */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--pop-cyan);
+            border-top: 4px solid var(--pop-pink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Scroll Layout */
+        .scroll-wrapper {
+            position: relative;
+            width: 100%;
+            /* Length determines pacing */
+            height: 600vh;
+        }
+
+        .section {
+            position: absolute;
+            width: 100%;
+            min-height: 100vh;
+            padding: 2rem;
+            display: flex;
+            justify-content: center; /* Default center */
+            align-items: center;
+            pointer-events: none;
+        }
+
+        /* Section Positioning */
+        .section:nth-child(1) { top: 0; z-index: 2; }
+        .section:nth-child(2) { top: 100vh; justify-content: flex-start; padding-left: 5vw; z-index: 2; }
+        .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 5vw; z-index: 2; }
+        .section:nth-child(4) { top: 300vh; justify-content: center; z-index: 2; }
+        .section:nth-child(5) { top: 400vh; justify-content: center; z-index: 2; }
+        .section:nth-child(6) { top: 500vh; justify-content: center; padding-bottom: 10vh; z-index: 2; }
+
+
+        /* Typography */
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: clamp(3rem, 8vw, 6rem);
+            color: var(--ink-black);
+            line-height: 0.9;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 span.highlight {
+            color: var(--pop-orange);
+            display: inline-block; /* Allow transforms */
+        }
+
+        h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            /* Gradient Text */
+            background: linear-gradient(120deg, var(--pop-cyan) 0%, var(--pop-pink) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            position: relative;
+        }
+
+        h3 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: 1.2rem;
+            color: var(--ink-black);
+            background: var(--pop-yellow);
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            transform: rotate(-2deg);
+            margin-bottom: 1rem;
+            border: 2px solid var(--ink-black);
+            box-shadow: 4px 4px 0 var(--ink-black);
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            text-align: justify;
+        }
+
+        /* Cards / Panels */
+        .panel {
+            background: #fff;
+            border: 3px solid var(--ink-black);
+            box-shadow: 10px 10px 0 var(--ink-black); /* Brutalist shadow */
+            padding: 3rem;
+            max-width: 550px;
+            width: 100%;
+            pointer-events: auto;
+            position: relative;
+            transition: transform 0.1s ease; /* Faster for parallax */
+        }
+
+        .panel:hover {
+            box-shadow: 12px 12px 0 var(--pop-pink);
+        }
+
+        .panel.wide {
+            max-width: 900px;
+        }
+
+        /* Decoration: Tape */
+        .tape {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            width: 100px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateX(-50%) rotate(-2deg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        /* Avatar Styling */
+        .avatar-wrapper {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 2rem;
+            perspective: 1000px; /* For 3D tilt */
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid var(--ink-black);
+            position: relative;
+            z-index: 2;
+            background: #fff;
+            transition: transform 0.3s ease;
+        }
+
+        .avatar-bg {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--pop-cyan);
+            border: 4px solid var(--ink-black);
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .avatar-wrapper:hover .avatar-img {
+            transform: translate(-5px, -5px);
+        }
+
+        .avatar-wrapper:hover .avatar-bg {
+            transform: translate(5px, 5px);
+        }
+
+        /* Tags */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+            pointer-events: auto; /* Allow dragging later? */
+        }
+
+        .tag {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--ink-black);
+            border: 2px solid var(--ink-black);
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            background: #fff;
+            transition: all 0.2s;
+            cursor: grab;
+        }
+
+        .tag:hover {
+            transform: scale(1.1) rotate(3deg);
+            box-shadow: 4px 4px 0 var(--ink-black);
+        }
+
+        .tag:nth-child(1):hover { background: var(--pop-orange); }
+        .tag:nth-child(2):hover { background: var(--pop-cyan); }
+        .tag:nth-child(3):hover { background: var(--pop-yellow); }
+        .tag:nth-child(4):hover { background: var(--pop-pink); }
+
+        /* Grid Layouts */
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .mini-card {
+            border: 2px solid var(--ink-black);
+            padding: 1.5rem;
+            text-align: center;
+            background: #fff;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .mini-card::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 10px;
+            background: rgba(0,0,0,0.1); /* Tape effect */
+        }
+
+        .mini-card:hover {
+            transform: scale(1.05) rotate(1deg);
+            background: var(--pop-yellow);
+            z-index: 10;
+            box-shadow: 8px 8px 0 var(--ink-black);
+        }
+
+        .mini-card i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--ink-black);
+        }
+
+        .mini-card h4 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        /* Philosophy Points */
+        .point-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .point-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.8);
+            border-left: 4px solid var(--pop-cyan);
+        }
+
+        .point-icon {
+            font-size: 1.5rem;
+            color: var(--pop-orange);
+        }
+
+        /* Socials */
+        .social-row {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .social-btn {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--ink-black);
+            border-radius: 50%; /* Circle */
+            font-size: 2rem;
+            color: var(--ink-black);
+            background: #fff;
+            box-shadow: 4px 4px 0 var(--ink-black);
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .social-btn:hover {
+            transform: translate(-3px, -3px) rotate(10deg);
+            box-shadow: 8px 8px 0 var(--pop-pink);
+            background: var(--pop-yellow);
+        }
+
+        /* HUD Overlay */
+        .hud {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: var(--ink-black);
+            color: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid #fff;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+        }
+
+        /* Scroll Indicator */
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--ink-black);
+            animation: bounce 2s infinite;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .section { padding: 1rem; justify-content: center !important; }
+            .panel { padding: 2rem; margin: 0; max-width: 100%; box-shadow: 6px 6px 0 var(--ink-black); }
+            h1 { font-size: 3rem; }
+            .grid-cards { grid-template-columns: 1fr 1fr; } /* 2 cols on mobile */
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-spinner"></div>
+        <div style="margin-top: 1rem; font-weight: 700; letter-spacing: 2px;">LOADING SKETCHBOOK</div>
+    </div>
+
+    <!-- Background Grid -->
+    <div class="bg-grid"></div>
+
+    <!-- P5 Canvas -->
+    <div id="p5-container"></div>
+
+    <!-- HUD -->
+    <div class="hud">
+        <i class="fa-solid fa-pen-nib"></i>
+        <span>DESIGN MODE: ON</span>
+    </div>
+
+    <div class="scroll-wrapper">
+
+        <!-- 1. Hero -->
+        <div class="section">
+            <div style="text-align: center; position: relative;">
+                <div class="avatar-wrapper">
+                    <div class="avatar-bg"></div>
+                    <img src="/assets/img/guild/bebe_liu/avatar.webp" alt="Bèbè Liu" class="avatar-img">
+                </div>
+                <h3>HELLO WORLD</h3>
+                <h1>I AM <span class="highlight">Bèbè</span></h1>
+                <p style="font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
+                    Graphic Designer / Illustrator / Life Gamer
+                </p>
+
+                <div class="tags">
+                    <span class="tag">#平面設計</span>
+                    <span class="tag">#網頁設計</span>
+                    <span class="tag">#插畫</span>
+                    <span class="tag">#自媒體</span>
+                </div>
+
+                <div class="scroll-hint">SCROLL TO EXPLORE <br> <i class="fa-solid fa-arrow-down"></i></div>
+            </div>
+        </div>
+
+        <!-- 2. The Artist (Flow State) -->
+        <div class="section">
+            <div class="panel">
+                <div class="tape"></div>
+                <h3>THE ARTIST</h3>
+                <h2>畫畫與心流</h2>
+                <p>
+                    我是 Bèbè Liu，一位自由工作者。平時以平面設計、插畫和自媒體來賺取在地球的遊戲金幣💰
+                </p>
+                <p>
+                    曾經跑遍台北各大市集擺攤畫似顏繪，也舉辦過小型的畫展。對我來說，畫畫是一種進入「心流」的過程。
+                </p>
+                <div class="point-item">
+                    <i class="fa-solid fa-palette point-icon"></i>
+                    <div>
+                        <strong>專注當下</strong><br>
+                        <span style="font-size: 0.9rem;">「能讓人廢寢忘食地持續做著，就會是我一直持續做的事。」</span>
+                    </div>
+                </div>
+                <p>重質不重量，我只想把握每一個當下，創造出讓人會心一笑的作品。</p>
+            </div>
+        </div>
+
+        <!-- 3. The Explorer (Unknown) -->
+        <div class="section">
+            <div class="panel">
+                <div class="tape"></div>
+                <h3>THE EXPLORER</h3>
+                <h2>冒險與未知</h2>
+                <p>
+                    喜歡冒險與探索，害怕未知又期待它帶給我的驚喜，我想人生也是如此。
+                </p>
+                <div class="point-item" style="border-left-color: var(--pop-pink);">
+                    <i class="fa-solid fa-map-location-dot point-icon" style="color: var(--pop-pink);"></i>
+                    <div>
+                        <strong>旅行的意義</strong><br>
+                        <span style="font-size: 0.9rem;">旅行能帶給我生命力，不論幾歲都能閃閃發光 ✨</span>
+                    </div>
+                </div>
+                <p>
+                    熱愛閱讀，也喜歡與人深度談話，對世界保持著永遠的好奇心。
+                </p>
+            </div>
+        </div>
+
+        <!-- 4. Outdoors (Activities) -->
+        <div class="section">
+            <div class="panel wide">
+                <div class="tape"></div>
+                <h3>OUTDOOR LIFE</h3>
+                <h2>山與海的呼喚</h2>
+                <p style="text-align: center; margin-bottom: 2rem;">
+                    生活體驗家｜不發動態的日子都在好好生活。<br>
+                    喜歡投入大自然的懷抱，感受最純粹的快樂。
+                </p>
+                <div class="grid-cards">
+                    <div class="mini-card">
+                        <i class="fa-solid fa-mountain-sun"></i>
+                        <h4>CLIMBING</h4>
+                        <p style="font-size: 0.8rem; margin:0;">爬山健行</p>
+                    </div>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-campground"></i>
+                        <h4>CAMPING</h4>
+                        <p style="font-size: 0.8rem; margin:0;">露營野營</p>
+                    </div>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-water"></i>
+                        <h4>SUP</h4>
+                        <p style="font-size: 0.8rem; margin:0;">立槳探索</p>
+                    </div>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-mask-ventilator"></i>
+                        <h4>DIVING</h4>
+                        <p style="font-size: 0.8rem; margin:0;">潛水悠遊</p>
+                    </div>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-person-surfing"></i>
+                        <h4>SURFING</h4>
+                        <p style="font-size: 0.8rem; margin:0;">衝浪挑戰</p>
+                    </div>
+                    <div class="mini-card">
+                        <i class="fa-solid fa-dog"></i>
+                        <h4>DOG LOVER</h4>
+                        <p style="font-size: 0.8rem; margin:0;">玩玩狗勾</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Philosophy (Game of Life) -->
+        <div class="section">
+            <div class="panel">
+                <div class="tape"></div>
+                <h3>PHILOSOPHY</h3>
+                <h2>遊戲人生</h2>
+                <p>
+                    繼續抱持著熱情，在地球上實行遊戲人生。
+                </p>
+                <p>
+                    我是一個拍照、剪片、偶爾畫畫的創作者。我想把這個世界的美好，透過我的眼睛和手，傳遞給每一個遇見的人。
+                </p>
+                <div class="point-item" style="border-left-color: var(--pop-yellow);">
+                    <i class="fa-solid fa-gamepad point-icon" style="color: var(--ink-black);"></i>
+                    <div>
+                        <strong>玩家精神</strong><br>
+                        <span style="font-size: 0.9rem;">認真玩樂，努力賺取金幣，然後去解鎖更多地圖！</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Connect -->
+        <div class="section">
+            <div class="panel" style="text-align: center; border-style: dashed;">
+                <h3>CONNECT</h3>
+                <h2>一起冒險吧！</h2>
+                <p>
+                    如果你也喜歡我的作品，或者想一起去探索世界，歡迎追蹤我！<br>
+                    （我可以整理圖文作品集給你唷如果快輪到我的話🥹🥹☺️）
+                </p>
+                <div class="social-row">
+                    <a href="https://www.threads.com/@kewpiebay" target="_blank" rel="noopener noreferrer" class="social-btn" title="Threads">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                    <a href="https://www.instagram.com/kewpiebay/" target="_blank" rel="noopener noreferrer" class="social-btn" title="Instagram">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <script>
+        // --- GSAP & P5 Integration ---
+
+        // Use Global mode for P5 or Instance mode? Instance is safer.
+        const s = (p) => {
+            let canvas;
+            let width, height;
+
+            // Animation States driven by Scroll
+            let scrollY = 0;
+            let targetScrollY = 0;
+
+            // Map / Terrain Lines
+            let lines = [];
+            const numLines = 25;
+
+            // Mouse Trail
+            let trail = [];
+
+            // Colors
+            const cOrange = p.color('#ff6b35');
+            const cCyan = p.color('#00b4d8');
+            const cYellow = p.color('#fdec00');
+            const cPink = p.color('#f72585');
+            const cDark = p.color('#1a1a1a');
+
+            // Current Theme Color
+            let themeColor;
+
+            p.setup = () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas = p.createCanvas(width, height);
+                canvas.parent('p5-container');
+
+                themeColor = cDark;
+
+                // Initialize lines
+                for(let i = 0; i < numLines; i++) {
+                    lines.push({
+                        y: p.map(i, 0, numLines, height * 0.1, height * 0.9),
+                        offset: i * 100, // Noise offset
+                        baseColor: (i % 2 === 0) ? cCyan : cOrange
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Lerp scroll for smoothness
+                targetScrollY = window.scrollY;
+                scrollY = p.lerp(scrollY, targetScrollY, 0.1);
+
+                // Scroll Progress (0 to 1 roughly)
+                const maxScroll = document.body.scrollHeight - window.innerHeight;
+                const progress = scrollY / maxScroll;
+
+                // --- 1. Dynamic Background Logic ---
+                // Morph based on progress
+                let amplitude, freq, speed;
+
+                if (progress < 0.2) {
+                    // Intro: Sketchy
+                    p.stroke(cDark);
+                    amplitude = 20;
+                    freq = 0.005;
+                    speed = 0.01;
+                } else if (progress < 0.4) {
+                    // Art: Flowy
+                    p.stroke(cOrange);
+                    amplitude = 50 + p.sin(p.frameCount * 0.05) * 20;
+                    freq = 0.008;
+                    speed = 0.02;
+                } else if (progress < 0.6) {
+                    // Explorer: Mountains
+                    p.stroke(cPink);
+                    amplitude = 150;
+                    freq = 0.015; // Sharp
+                    speed = 0.01;
+                } else if (progress < 0.8) {
+                    // Outdoors: Waves
+                    p.stroke(cCyan);
+                    amplitude = 100;
+                    freq = 0.005;
+                    speed = 0.04;
+                } else {
+                    // Philosophy: Complex
+                    p.stroke(cDark);
+                    amplitude = 80;
+                    freq = 0.01;
+                    speed = 0.02;
+                }
+
+                p.noFill();
+                p.strokeWeight(2);
+
+                lines.forEach((line, index) => {
+                    p.beginShape();
+                    for (let x = 0; x <= width + 50; x += 30) {
+                        // Calculate Y with noise
+                        let noiseVal = p.noise(
+                            x * freq,
+                            (line.offset + p.frameCount * speed) * 0.5,
+                            progress * 3
+                        );
+
+                        // Mouse Interaction (Ripple)
+                        let d = p.dist(x, line.y, p.mouseX, p.mouseY);
+                        let mousePush = 0;
+                        if(d < 300) {
+                            mousePush = p.map(d, 0, 300, 50, 0) * p.sin(d * 0.1 - p.frameCount * 0.2);
+                        }
+
+                        let y = line.y + (noiseVal - 0.5) * amplitude + mousePush;
+
+                        // Parallax Y
+                        y -= scrollY * 0.15;
+
+                        // Loop y if off screen?
+                        // Instead, just keep drawing.
+
+                        p.vertex(x, y);
+                    }
+                    p.endShape();
+                });
+
+                // --- 2. Ink Trail ---
+                // Add point if mouse moved
+                if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
+                    trail.push({ x: p.mouseX, y: p.mouseY, age: 0 });
+                }
+
+                p.noStroke();
+                for (let i = trail.length - 1; i >= 0; i--) {
+                    let t = trail[i];
+                    t.age += 1;
+                    let size = p.map(t.age, 0, 50, 20, 0);
+
+                    if (size <= 0) {
+                        trail.splice(i, 1);
+                        continue;
+                    }
+
+                    // Color cycles
+                    let col = p.lerpColor(cYellow, cPink, (t.age / 50));
+                    col.setAlpha(150);
+                    p.fill(col);
+                    p.circle(t.x, t.y, size);
+                }
+            };
+
+            p.windowResized = () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                p.resizeCanvas(width, height);
+            };
+        };
+
+        new p5(s);
+
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        window.onload = () => {
+            // Hide Loader
+            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => {
+                document.getElementById("loader").style.display = "none";
+            }});
+
+            // 1. Panel Animations
+            const panels = document.querySelectorAll('.panel');
+            panels.forEach((panel) => {
+                gsap.fromTo(panel,
+                    { opacity: 0, y: 100, rotation: 3 },
+                    {
+                        scrollTrigger: {
+                            trigger: panel,
+                            start: "top 85%",
+                            end: "top 30%",
+                            toggleActions: "play none none reverse"
+                        },
+                        opacity: 1,
+                        y: 0,
+                        rotation: 0, // Settle flat
+                        duration: 0.8,
+                        ease: "back.out(1.7)"
+                    }
+                );
+            });
+
+            // 2. Parallax Effect for Panels (Mouse Move)
+            document.addEventListener("mousemove", (e) => {
+                const x = (e.clientX / window.innerWidth - 0.5) * 20;
+                const y = (e.clientY / window.innerHeight - 0.5) * 20;
+
+                gsap.to(".panel", {
+                    x: x,
+                    y: y,
+                    duration: 0.5,
+                    ease: "power2.out",
+                    overwrite: "auto"
+                });
+
+                gsap.to(".avatar-wrapper", {
+                    x: -x * 1.5,
+                    y: -y * 1.5,
+                    duration: 0.5,
+                    ease: "power2.out"
+                });
+            });
+
+            // 3. Stagger Grid Items
+            gsap.utils.toArray('.grid-cards').forEach(grid => {
+                gsap.from(grid.children, {
+                    scrollTrigger: {
+                        trigger: grid,
+                        start: "top 80%"
+                    },
+                    y: 50,
+                    opacity: 0,
+                    rotation: 10,
+                    duration: 0.6,
+                    stagger: 0.1,
+                    ease: "elastic.out(1, 0.5)"
+                });
+            });
+
+            // 4. Draggable Tags (Robust "Sticker" implementation)
+            const tags = document.querySelectorAll('.tag');
+            tags.forEach(tag => {
+                tag.addEventListener('mousedown', (e) => {
+                    // Prevent default selection
+                    e.preventDefault();
+
+                    // Get current position/size before moving to body
+                    const rect = tag.getBoundingClientRect();
+                    const offsetX = e.clientX - rect.left;
+                    const offsetY = e.clientY - rect.top;
+
+                    // Move to body to escape transforms and z-index issues
+                    document.body.appendChild(tag);
+
+                    tag.style.position = 'fixed'; // Fixed is easier with clientX/Y
+                    tag.style.zIndex = 1000;
+                    tag.style.left = rect.left + 'px';
+                    tag.style.top = rect.top + 'px';
+                    tag.style.margin = 0;
+                    tag.style.transform = 'scale(1.1) rotate(5deg)'; // Pop effect
+                    tag.style.boxShadow = '10px 10px 20px rgba(0,0,0,0.2)';
+
+                    function moveAt(clientX, clientY) {
+                        tag.style.left = clientX - offsetX + 'px';
+                        tag.style.top = clientY - offsetY + 'px';
+                    }
+
+                    function onMouseMove(event) {
+                        moveAt(event.clientX, event.clientY);
+                    }
+
+                    document.addEventListener('mousemove', onMouseMove);
+
+                    tag.onmouseup = function() {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        tag.onmouseup = null;
+
+                        // "Stick" it there
+                        tag.style.transform = 'scale(1) rotate(' + (Math.random() * 10 - 5) + 'deg)';
+                        tag.style.boxShadow = '4px 4px 0 var(--ink-black)';
+                        tag.style.cursor = 'grab';
+                    };
+                });
+                tag.ondragstart = function() { return false; };
+            });
+        };
+
+    </script>
+</body>
+</html>
