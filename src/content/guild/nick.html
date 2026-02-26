@@ -109,6 +109,18 @@
             pointer-events: none;
         }
 
+        /* Dark Gradient Overlay for Readability */
+        .vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent 40%, #0d0208 90%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
         /* Pixel Borders */
         .pixel-border {
             border: 4px solid white;
@@ -159,6 +171,7 @@
 <body class="antialiased selection:bg-retro-green selection:text-black">
 
     <div class="crt"></div>
+    <div class="vignette-overlay"></div>
 
     <!-- WebGL Background -->
     <canvas id="webgl"></canvas>
@@ -210,7 +223,7 @@
                 </div>
             </div>
 
-            <div class="mt-12 max-w-2xl bg-black/80 p-6 border-2 border-white text-left font-terminal text-xl md:text-2xl leading-relaxed">
+            <div class="mt-12 max-w-2xl bg-black/95 p-6 border-2 border-white text-left font-terminal text-xl md:text-2xl leading-relaxed shadow-lg shadow-black">
                 <span class="text-retro-green">></span> SYSTEM_LOG: Environmental Engineer rebooted as AI Specialist.<br>
                 <span class="text-retro-green">></span> CURRENT_QUEST: Building self-driving business logic.<br>
                 <span class="text-retro-green">></span> STATUS: <span class="animate-blink">READY_TO_DEPLOY</span>
@@ -223,17 +236,17 @@
 
         <!-- Stats / Inventory -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-8" id="stats">
-            <div class="pixel-border p-6 bg-black text-center group hover:bg-retro-green hover:text-black transition-colors">
+            <div class="pixel-border p-6 bg-black/90 text-center group hover:bg-retro-green hover:text-black transition-colors">
                 <h3 class="font-retro text-xs mb-4">ACTIVE BOTS</h3>
                 <div class="font-terminal text-6xl">30+</div>
                 <p class="font-terminal text-lg opacity-70 mt-2">Running on Line/Discord</p>
             </div>
-            <div class="pixel-border p-6 bg-black text-center group hover:bg-retro-cyan hover:text-black transition-colors">
+            <div class="pixel-border p-6 bg-black/90 text-center group hover:bg-retro-cyan hover:text-black transition-colors">
                 <h3 class="font-retro text-xs mb-4">WORKFLOWS</h3>
                 <div class="font-terminal text-6xl">33+</div>
                 <p class="font-terminal text-lg opacity-70 mt-2">Enterprise n8n Nodes</p>
             </div>
-            <div class="pixel-border p-6 bg-black text-center group hover:bg-retro-purple hover:text-black transition-colors">
+            <div class="pixel-border p-6 bg-black/90 text-center group hover:bg-retro-purple hover:text-black transition-colors">
                 <h3 class="font-retro text-xs mb-4">STUDENTS</h3>
                 <div class="font-terminal text-6xl">∞</div>
                 <p class="font-terminal text-lg opacity-70 mt-2">Soochow Univ. Class</p>
@@ -366,7 +379,7 @@
 
             <footer class="absolute bottom-4 w-full text-center border-t-2 border-white pt-4 bg-black">
                  <p class="font-terminal text-lg text-white">
-                    © 2024 NICK // HIGH SCORE: 999999
+                    MADE WITH <i class="fa-solid fa-heart text-red-600 animate-pulse"></i> BY SUPERGALEN'S DUNGEON
                  </p>
             </footer>
         </section>
@@ -451,14 +464,15 @@
                     // Color based on height
                     const heightFactor = (y + 4) / 8; // Normalize roughly 0-1
                     // Gradient: Black -> Green -> Cyan -> White
-                    if (heightFactor < 0.3) {
-                        mesh.setColorAt(i, color.setHex(0x0d0208)); // Dark
+                    // Adjusted for darker palette to improve text readability
+                    if (heightFactor < 0.4) {
+                        mesh.setColorAt(i, color.setHex(0x050103)); // Very Dark
                     } else if (heightFactor < 0.6) {
-                         mesh.setColorAt(i, color.setHex(0x004411)); // Dark Green
+                         mesh.setColorAt(i, color.setHex(0x002208)); // Deep Dark Green
                     } else if (heightFactor < 0.8) {
-                        mesh.setColorAt(i, color.setHex(0x00ff41)); // Retro Green
+                        mesh.setColorAt(i, color.setHex(0x008822)); // Muted Green
                     } else {
-                        mesh.setColorAt(i, color.setHex(0xffffff)); // White caps
+                        mesh.setColorAt(i, color.setHex(0x00cc33)); // Bright Green (No White)
                     }
 
                     i++;
