@@ -936,7 +936,7 @@ members:
 
   - id: "bebe_liu"
     name: "Bèbè Liu"
-    avatar: "/assets/img/guild/bebe_liu/avatar.jpg"
+    avatar: "/assets/img/guild/bebe_liu/avatar.webp"
     page: "/guild/bebe_liu.html"
     tags:
       - id: "illustrator"
