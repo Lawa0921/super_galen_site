@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zai Lab | The Ascent ⛰️</title>
+    <title>Zai Lab | The Ascent</title>
     <meta name="description" content="Zaira's Experimental Lab - A Journey of Climbing, Culture, and Connection.">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,6 +22,7 @@
             --accent-clay: #e0c9a6;
             --glass-panel: rgba(255, 255, 255, 0.85);
             --fire-glow: #ff9d5c;
+            --night-sky: #0f0e1a;
         }
 
         * {
@@ -45,8 +46,7 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            /* Gradient Sky */
-            background: linear-gradient(to top, #e6f3ff 0%, #fdfbf7 60%, #1a1a2e 100%); /* Night sky at top */
+            background: linear-gradient(to top, #e6f3ff 0%, #fdfbf7 40%, #6b6897 75%, #1a1a2e 90%, #0f0e1a 100%);
         }
 
         /* Loader */
@@ -164,8 +164,7 @@
         .scroll-wrapper {
             position: relative;
             width: 100%;
-            /* Length of the climb - Taller for finale */
-            height: 600vh;
+            height: 800vh;
         }
 
         .section {
@@ -176,7 +175,7 @@
             justify-content: center;
             align-items: center;
             padding: 2rem;
-            pointer-events: none; /* Let scroll pass */
+            pointer-events: none;
         }
 
         .card {
@@ -189,7 +188,7 @@
             width: 100%;
             box-shadow: 0 15px 35px rgba(0,0,0,0.05);
             border: 1px solid rgba(255,255,255,0.6);
-            pointer-events: auto; /* Enable interaction */
+            pointer-events: auto;
             opacity: 0;
             transform: translateY(30px);
         }
@@ -199,14 +198,13 @@
         .section:nth-child(2) { top: 100vh; justify-content: flex-start; padding-left: 10%; }
         .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 10%; }
         .section:nth-child(4) { top: 300vh; justify-content: flex-start; padding-left: 10%; }
-        /* Finale Section: Campfire */
-        /* Make sure it's at the very end of scroll */
-        .section:nth-child(5) {
-            top: 500vh;
-            align-items: flex-start; /* Push content card up slightly so it doesn't cover fire */
-            padding-top: 10vh;
+        .section:nth-child(5) { top: 400vh; justify-content: flex-end; padding-right: 10%; }
+        .section:nth-child(6) { top: 500vh; justify-content: flex-start; padding-left: 10%; }
+        .section:nth-child(7) {
+            bottom: 0;
+            top: auto;
+            align-items: center;
         }
-
 
         /* Typography */
         h1 {
@@ -301,13 +299,14 @@
         }
 
         .exp-item::before {
-            content: '•';
+            content: '';
             position: absolute;
             left: 0;
-            color: var(--accent-sage);
-            font-size: 1.5rem;
-            line-height: 1.5rem;
-            top: -2px;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-sage);
         }
 
         .exp-title {
@@ -320,6 +319,50 @@
         .exp-desc {
             font-size: 0.95rem;
             color: #7f8c8d;
+        }
+
+        /* Blockquote */
+        .philosophy-quote {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1.15rem;
+            line-height: 2;
+            color: var(--text-primary);
+            padding: 1.5rem 2rem;
+            margin: 1.5rem 0;
+            border-left: 3px solid var(--accent-sage);
+            background: rgba(136, 160, 150, 0.06);
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Skill Tags */
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin: 1.5rem 0;
+        }
+
+        .skill-tag {
+            font-size: 0.85rem;
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-sage);
+            color: var(--accent-sage);
+            background: rgba(136, 160, 150, 0.06);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .skill-tag:hover {
+            background: var(--accent-sage);
+            color: #fff;
+        }
+
+        .skill-tag.active {
+            background: var(--accent-sage);
+            color: #fff;
         }
 
         /* Social Grid */
@@ -367,13 +410,75 @@
             transform: translate(-50%, -150%);
         }
 
+        /* Altitude Badge */
+        .altitude-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border: 1px solid rgba(136, 160, 150, 0.3);
+            border-radius: 12px;
+            color: var(--accent-sage);
+            letter-spacing: 1px;
+            font-family: monospace;
+            margin-bottom: 1rem;
+        }
+
+        /* Currently Learning */
+        .learning-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            background: rgba(136, 160, 150, 0.04);
+            border: 1px solid rgba(136, 160, 150, 0.08);
+        }
+
+        .learning-icon {
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(136, 160, 150, 0.1);
+            border-radius: 8px;
+        }
+
+        .learning-text {
+            flex: 1;
+        }
+
+        .learning-text strong {
+            display: block;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+            color: var(--text-primary);
+        }
+
+        .learning-text span {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+
         /* Mobile */
         @media (max-width: 768px) {
-            .section { padding: 1rem; justify-content: center !important; }
-            .card { padding: 2rem; margin: 0 !important; width: 100%; }
+            .section { padding: 1rem; }
+            .section:nth-child(2),
+            .section:nth-child(3),
+            .section:nth-child(4),
+            .section:nth-child(5),
+            .section:nth-child(6) {
+                justify-content: center;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .card { padding: 2rem; margin: 0; width: 100%; }
             h1 { font-size: 2rem; }
             h2 { font-size: 1.5rem; }
-            /* Adjust cliff position on mobile via JS logic if needed */
+            .philosophy-quote { padding: 1rem 1.2rem; font-size: 1rem; }
         }
 
     </style>
@@ -416,8 +521,8 @@
                     我是 Zaira，還在探索自己的人生路上。<br>
                     如果人生是一場沒有終點的攀登，那我就是那個在途中不斷實驗、記錄風景的登山者。
                 </p>
-                <div style="margin-top: 1rem;">
-                    <span style="font-size: 0.8rem; color: #aaa; letter-spacing: 1px;">CURRENT STATUS: ASCENDING</span>
+                <div>
+                    <span class="altitude-badge">CURRENT STATUS: ASCENDING</span>
                 </div>
             </div>
         </div>
@@ -440,7 +545,7 @@
                         <span class="exp-desc">在羅馬的一年交換時光，讓我學會了用熱情與手勢說話。</span>
                     </li>
                     <li class="exp-item">
-                        <span class="exp-title">西班牙語 (Español) 🔓</span>
+                        <span class="exp-title">西班牙語 (Espanol)</span>
                         <span class="exp-desc">目前正在努力解鎖的新地圖，期待能聽懂更多熱情的靈魂。</span>
                     </li>
                 </ul>
@@ -472,29 +577,91 @@
             </div>
         </div>
 
-        <!-- 4. Podcast & Creative -->
+        <!-- 4. Philosophy (Inner Compass) - NEW -->
         <div class="section">
             <div class="card">
-                <h3>Experiment III: Transmission</h3>
+                <h3>Experiment III: Inner Compass</h3>
+                <h2>那些攀登教我的事</h2>
+                <p>
+                    每一次出發前，總有人問我：「準備好了嗎？」老實說，我從來沒有真正準備好過。但後來我發現——
+                </p>
+                <blockquote class="philosophy-quote">
+                    不是要等到準備好了才出發，而是出發了之後才慢慢準備好的。
+                </blockquote>
+                <p>
+                    在坦尚尼亞的紅土上、在羅馬的石板路上、在捷克的教室裡，我一次又一次地確認：成長不是發生在舒適的地方，而是在那些讓你感到陌生、不確定、甚至有點害怕的時刻。
+                </p>
+                <p>
+                    所以我選擇繼續攀登。不是因為知道山頂有什麼，而是因為每一步都在認識一個更完整的自己。
+                </p>
+            </div>
+        </div>
+
+        <!-- 5. Podcast & Creative -->
+        <div class="section">
+            <div class="card">
+                <h3>Experiment IV: Transmission</h3>
                 <h2>頻率與共鳴</h2>
                 <p>
                     我非常喜歡與人交流，聆聽每個人背後的故事與經驗，這對我來說是有趣且珍貴的過程。
                 </p>
                 <p>
-                    為了記錄這些稍縱即逝的靈光，我在 Medium 寫下關於語言學習、個人成長與歌詞翻譯的筆記。也開啟了 Podcast 頻道<span class="highlight">「在意實驗室｜ Zai Lab」</span>，雖然目前還不知道它最終會長成什麼樣子，但正如其名——這是一場充滿可能性的實驗🧪
+                    為了記錄這些稍縱即逝的靈光，我在 Medium 寫下關於語言學習、個人成長與歌詞翻譯的筆記。也開啟了 Podcast 頻道<span class="highlight">「在意實驗室｜ Zai Lab」</span>，雖然目前還不知道它最終會長成什麼樣子，但正如其名——這是一場充滿可能性的實驗。
                 </p>
             </div>
         </div>
 
-        <!-- 5. Connect (The Summit) -->
+        <!-- 6. Toolkit (Skills & Current) - NEW -->
         <div class="section">
-            <div class="card" style="text-align: center; margin-bottom: 20vh;"> <!-- Push up to reveal fire -->
+            <div class="card">
+                <h3>Experiment V: The Toolkit</h3>
+                <h2>背包裡的裝備</h2>
+                <p>
+                    每一個攀登者都有自己的裝備清單。這些是我目前背在身上的工具，有些已經用得很順手，有些還在磨合中。
+                </p>
+                <div class="skill-tags">
+                    <span class="skill-tag active">Podcast 製作</span>
+                    <span class="skill-tag active">文字創作</span>
+                    <span class="skill-tag">歌詞翻譯</span>
+                    <span class="skill-tag active">跨文化溝通</span>
+                    <span class="skill-tag">華語教學</span>
+                    <span class="skill-tag">社群經營</span>
+                    <span class="skill-tag">語言學習策略</span>
+                    <span class="skill-tag">田野調查</span>
+                </div>
+                <p style="font-size: 0.95rem; margin-top: 0.5rem;">目前正在探索的新裝備：</p>
+                <div>
+                    <div class="learning-item">
+                        <div class="learning-icon">
+                            <i class="fa-solid fa-language" style="color: var(--accent-sage);"></i>
+                        </div>
+                        <div class="learning-text">
+                            <strong>西班牙語 B1</strong>
+                            <span>朝著能自在對話的方向前進中</span>
+                        </div>
+                    </div>
+                    <div class="learning-item">
+                        <div class="learning-icon">
+                            <i class="fa-solid fa-pen-nib" style="color: var(--accent-sage);"></i>
+                        </div>
+                        <div class="learning-text">
+                            <strong>長篇寫作</strong>
+                            <span>從短文筆記走向更深入的敘事</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Connect (The Summit) -->
+        <div class="section">
+            <div class="card" style="text-align: center;">
                 <h3>Final Report</h3>
                 <h2>歡迎來到營地</h2>
                 <p>
                     這座實驗室永遠歡迎新的訪客。非常喜歡和別人聊聊，知道別人背後的故事和不同的經驗讓我覺得很有趣！
                 </p>
-                <p>歡迎大家來交流，一起分享攀登途中的風景✨</p>
+                <p>歡迎大家來交流，一起在營火旁分享攀登途中的風景。</p>
 
                 <div class="social-grid">
                     <a href="https://medium.com/@zairaforzaaa" target="_blank" class="social-link" title="Medium">
@@ -530,32 +697,31 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // --- Config ---
         const config = {
-            cliffColor: 0xfdfbf7, // Match BG
-            ropeColor: 0x9fb8ad, // Sage
-            anchorColor: 0x5d6d7e, // Steel/Blue
-            fireColor: 0xff4500,
-            summitRockColor: 0xe0e0e0
+            cliffColor: 0xfdfbf7,
+            anchorColor: 0x5d6d7e,
+            summitHeight: 150,
+            cameraMaxY: 160
         };
 
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Fog starts white, fades to dark blue at top?
         scene.fog = new THREE.Fog(config.cliffColor, 15, 60);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
         camera.position.set(0, 0, 20);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
         container.appendChild(renderer.domElement);
 
-        // --- Raycaster for Interaction ---
+        // --- Raycaster ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         const tooltip = document.getElementById('anchor-tooltip');
@@ -569,49 +735,163 @@
         dirLight.position.set(10, 20, 10);
         scene.add(dirLight);
 
-        // --- Procedural Cliff ---
-        const cliffHeight = 150;
-        const cliffWidth = 60;
-        const cliffGeo = new THREE.PlaneGeometry(cliffWidth, cliffHeight, 40, 100);
+        // --- Unified Terrain: Cliff Face + Curved Summit Ledge ---
+        // Single continuous mesh: vertical cliff that curves into horizontal camp ground
+        const tSegW = 50;
+        const tSegH = 140;
+        const tBaseY = -20;
+        const tCliffTopY = 148;
+        const tLedgeY = config.summitHeight; // 150
+        const tCliffZ = -12;
+        const tLedgeFrontZ = -1;
+        const tWidth = 60;
 
-        const posAttribute = cliffGeo.attributes.position;
-        // Keep a seed-like consistency for bumpiness
-        for (let i = 0; i < posAttribute.count; i++) {
-            const x = posAttribute.getX(i);
-            const y = posAttribute.getY(i);
-            let z = posAttribute.getZ(i);
+        // Phase boundaries (normalized v) — single continuous mesh
+        const tCliffEnd = 0.80;   // cliff stops, curve begins
+        const tCurveEnd = 0.87;   // curve finishes, flat ledge begins
+        const tLedgeEnd = 0.93;   // ledge ends, front face wrap begins
 
-            // Noise function replacement (simple randomness)
-            z += Math.sin(x * 0.3) * 2;
-            z += Math.cos(y * 0.15) * 3;
-            z += (Math.random() - 0.5) * 1.5;
+        const tVertCount = (tSegW + 1) * (tSegH + 1);
+        const tPositions = new Float32Array(tVertCount * 3);
+        const tColors = new Float32Array(tVertCount * 3);
 
-            posAttribute.setZ(i, z);
+        let tvi = 0, tci = 0;
+
+        // Color endpoints
+        const cR = 0xfd / 255, cG = 0xfb / 255, cB = 0xf7 / 255; // cliff
+        const lR = 0xd8 / 255, lG = 0xd3 / 255, lB = 0xc8 / 255; // ledge
+
+        for (let j = 0; j <= tSegH; j++) {
+            const v = j / tSegH;
+
+            for (let i = 0; i <= tSegW; i++) {
+                const u = i / tSegW;
+                const baseX = (u - 0.5) * tWidth;
+                let x = baseX, y, z;
+
+                if (v <= tCliffEnd) {
+                    // --- Vertical cliff face ---
+                    const t = v / tCliffEnd;
+                    y = tBaseY + t * (tCliffTopY - tBaseY);
+                    z = tCliffZ;
+                } else if (v <= tCurveEnd) {
+                    // --- Curved transition (smoothstep) ---
+                    const t = (v - tCliffEnd) / (tCurveEnd - tCliffEnd);
+                    const s = t * t * (3 - 2 * t);
+                    y = tCliffTopY + s * (tLedgeY - tCliffTopY);
+                    z = tCliffZ + s * (tLedgeFrontZ - tCliffZ) * 0.3;
+                } else if (v <= tLedgeEnd) {
+                    // --- Horizontal ledge ---
+                    const t = (v - tCurveEnd) / (tLedgeEnd - tCurveEnd);
+                    y = tLedgeY;
+                    z = tCliffZ + (tLedgeFrontZ - tCliffZ) * (0.3 + t * 0.7);
+                    x = baseX * (1 - t * 0.15);
+                } else {
+                    // --- Front face wrap (curves down AND back behind the cliff) ---
+                    const t = (v - tLedgeEnd) / (1 - tLedgeEnd);
+                    y = tLedgeY - t * t * 25;
+                    // Slight overhang first, then curves deep behind the cliff face
+                    z = tLedgeFrontZ + t * 1.5 - t * t * 16;
+                    x = baseX * (1 - 0.15 - t * 0.1);
+                }
+
+                // Unified noise — same rock texture across ALL phases
+                const n1 = Math.sin(x * 0.3) * 2;
+                const n2 = Math.cos(y * 0.15 + z * 0.2) * 3;
+                const n3 = Math.sin(x * 0.7 + y * 0.3) * 1.2;
+                const n4 = Math.sin(x * 1.3 + y * 0.8) * 0.6;
+                const nRand = (Math.random() - 0.5) * 1.8;
+                const totalNoise = n1 + n2 + n3 + n4 + nRand;
+
+                // Edge irregularity — jagged silhouette on left/right edges
+                const edgeDist = Math.abs(u - 0.5) * 2; // 0 center, 1 edge
+                const edgePow = edgeDist * edgeDist * edgeDist;
+                const edgeNoise = (Math.sin(y * 0.4 + x * 0.3) * 2.0
+                    + Math.cos(y * 0.7) * 1.2
+                    + (Math.random() - 0.5) * 1.5) * edgePow;
+                x += edgeNoise;
+
+                // Noise follows surface normal direction smoothly
+                if (v <= tCliffEnd) {
+                    z += totalNoise;
+                    x += totalNoise * 0.15;
+                } else if (v <= tCurveEnd) {
+                    const t = (v - tCliffEnd) / (tCurveEnd - tCliffEnd);
+                    const s = t * t * (3 - 2 * t);
+                    z += totalNoise * (1 - s) * 1.1;
+                    y += totalNoise * s * 0.6;
+                    x += totalNoise * 0.15;
+                } else if (v <= tLedgeEnd) {
+                    // Dampen noise near camp center so objects sit on ground
+                    const centerDist = Math.abs(u - 0.5) * 2;
+                    const campZone = Math.max(0, 1 - centerDist * 1.8);
+                    const campDamp = 1 - campZone * 0.75;
+                    y += totalNoise * 0.5 * campDamp;
+                    z += totalNoise * 0.2 * campDamp;
+                    x += totalNoise * 0.15 * campDamp;
+                } else {
+                    const t = (v - tLedgeEnd) / (1 - tLedgeEnd);
+                    // Strong noise matches cliff face rock texture
+                    const ns = 0.5 + t * 0.8;
+                    z += totalNoise * ns;
+                    y += totalNoise * ns * 0.4;
+                    x += totalNoise * 0.2;
+                }
+
+                tPositions[tvi++] = x;
+                tPositions[tvi++] = y;
+                tPositions[tvi++] = z;
+
+                // Vertex color: smooth transition with natural variation
+                const colorNoise = (Math.random() - 0.5) * 0.05
+                    + Math.sin(x * 0.5 + y * 0.3) * 0.025;
+                let colorT = 0;
+                if (v > tCliffEnd - 0.03) {
+                    colorT = Math.min(1, Math.max(0,
+                        (v - (tCliffEnd - 0.03)) / (tCurveEnd + 0.02 - (tCliffEnd - 0.03))));
+                    colorT = colorT * colorT * (3 - 2 * colorT);
+                }
+                tColors[tci++] = Math.min(1, Math.max(0, cR + (lR - cR) * colorT + colorNoise));
+                tColors[tci++] = Math.min(1, Math.max(0, cG + (lG - cG) * colorT + colorNoise));
+                tColors[tci++] = Math.min(1, Math.max(0, cB + (lB - cB) * colorT + colorNoise));
+            }
         }
-        cliffGeo.computeVertexNormals();
 
-        const cliffMat = new THREE.MeshStandardMaterial({
-            color: config.cliffColor,
+        // Build index buffer
+        const tIndices = [];
+        for (let j = 0; j < tSegH; j++) {
+            for (let i = 0; i < tSegW; i++) {
+                const a = j * (tSegW + 1) + i;
+                const b = a + 1;
+                const c = (j + 1) * (tSegW + 1) + i;
+                const d = c + 1;
+                tIndices.push(a, c, b, b, c, d);
+            }
+        }
+
+        const terrainGeo = new THREE.BufferGeometry();
+        terrainGeo.setAttribute('position', new THREE.BufferAttribute(tPositions, 3));
+        terrainGeo.setAttribute('color', new THREE.BufferAttribute(tColors, 3));
+        terrainGeo.setIndex(tIndices);
+        terrainGeo.computeVertexNormals();
+
+        const terrainMat = new THREE.MeshStandardMaterial({
+            vertexColors: true,
             roughness: 0.9,
             flatShading: true,
             side: THREE.DoubleSide
         });
 
-        const cliff = new THREE.Mesh(cliffGeo, cliffMat);
-        cliff.position.z = -12;
-        cliff.position.y = cliffHeight / 2 - 20;
-        scene.add(cliff);
+        const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+        scene.add(terrain);
 
-        // --- Interactive Anchors (High Detail) ---
+        // --- Interactive Anchors ---
         const anchorsGroup = new THREE.Group();
 
-        // Detailed Piton: Hex head + Spike + Eyelet
         const pitonHeadGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 6);
         const pitonBodyGeo = new THREE.ConeGeometry(0.15, 1.2, 8);
         const pitonEyeletGeo = new THREE.TorusGeometry(0.2, 0.05, 8, 16);
-
-        // Detailed Carabiner: Body (Torus) + Gate (Cylinder)
-        const carabinerBodyGeo = new THREE.TorusGeometry(0.6, 0.08, 8, 24, Math.PI * 1.8); // Open loop
+        const carabinerBodyGeo = new THREE.TorusGeometry(0.6, 0.08, 8, 24, Math.PI * 1.8);
         const carabinerGateGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2);
 
         const metalMat = new THREE.MeshStandardMaterial({
@@ -620,29 +900,23 @@
             roughness: 0.3
         });
 
-        const highlightMat = new THREE.MeshStandardMaterial({
-            color: 0xffaa00,
-            emissive: 0xffaa00,
-            emissiveIntensity: 0.5
-        });
-
-        // Positions
         const anchorPositions = [
             { y: 5, label: "Basecamp Checkpoint" },
-            { y: 35, label: "Language Anchor" },
-            { y: 65, label: "Travel Anchor" },
-            { y: 95, label: "Broadcast Relay" }
+            { y: 28, label: "Language Anchor" },
+            { y: 50, label: "Travel Anchor" },
+            { y: 72, label: "Compass Point" },
+            { y: 95, label: "Broadcast Relay" },
+            { y: 118, label: "Toolkit Station" }
         ];
 
         anchorPositions.forEach((pos, i) => {
             const group = new THREE.Group();
             group.position.set(
-                (i % 2 === 0 ? -6 : 6) + (Math.random()-0.5)*2, // Alternating sides
+                (i % 2 === 0 ? -6 : 6) + (Math.random() - 0.5) * 2,
                 pos.y,
                 -10
             );
 
-            // Construct Piton
             const pitonGroup = new THREE.Group();
             const head = new THREE.Mesh(pitonHeadGeo, metalMat);
             head.rotation.x = Math.PI / 2;
@@ -655,20 +929,19 @@
             pitonGroup.add(head);
             pitonGroup.add(body);
             pitonGroup.add(eyelet);
-            pitonGroup.position.z = -0.2; // Stick into rock
+            pitonGroup.position.z = -0.2;
             group.add(pitonGroup);
 
-            // Construct Carabiner
             const carabinerGroup = new THREE.Group();
             const cBody = new THREE.Mesh(carabinerBodyGeo, metalMat.clone());
-            const cGate = new THREE.Mesh(carabinerGateGeo, new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 })); // Silver gate
-            cGate.position.set(0.5, 0.1, 0); // Position across opening
+            const cGate = new THREE.Mesh(carabinerGateGeo, new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 }));
+            cGate.position.set(0.5, 0.1, 0);
             cGate.rotation.z = -0.2;
 
             carabinerGroup.add(cBody);
             carabinerGroup.add(cGate);
-            carabinerGroup.position.y = -0.8; // Hang below eyelet
-            carabinerGroup.rotation.y = Math.PI / 2; // Face out
+            carabinerGroup.position.y = -0.8;
+            carabinerGroup.rotation.y = Math.PI / 2;
 
             group.add(carabinerGroup);
 
@@ -676,152 +949,823 @@
                 label: pos.label,
                 baseScale: 1,
                 id: i,
-                targetMesh: cBody // Highlight main carabiner ring
+                targetMesh: cBody
             };
             anchorsGroup.add(group);
         });
         scene.add(anchorsGroup);
 
 
-        // --- The Summit (Rugged Platform) ---
+        // ===========================
+        // THE SUMMIT SCENE
+        // ===========================
         const summitGroup = new THREE.Group();
-        summitGroup.position.set(0, 130, -10); // Top of cliff
+        summitGroup.position.set(0, config.summitHeight, -10);
 
-        // 1. Summit Platform (Rugged Plane)
-        // Use PlaneGeometry with displacement to match cliff
-        const platGeo = new THREE.PlaneGeometry(30, 30, 20, 20);
-        const platPos = platGeo.attributes.position;
-        for(let i=0; i<platPos.count; i++) {
-            const z = platPos.getZ(i);
-            // Add noise similar to cliff
-            const noise = (Math.random() - 0.5) * 1.5; // Match cliff noise scale
-            platPos.setZ(i, z + noise);
-        }
-        platGeo.computeVertexNormals();
-        const platMat = new THREE.MeshStandardMaterial({
-            color: config.cliffColor, // Match cliff
-            roughness: 0.9,
-            flatShading: true,
-            side: THREE.DoubleSide
+        // --- Edge Boulders (scattered around ledge perimeter) ---
+        const edgeBoulderMat = new THREE.MeshStandardMaterial({
+            color: 0xbbb5ab, roughness: 0.92, flatShading: true
         });
-        const platform = new THREE.Mesh(platGeo, platMat);
-        platform.rotation.x = -Math.PI / 2; // Flat
-        platform.position.y = -0.5;
-        summitGroup.add(platform);
+        const boulderConfigs = [
+            // Far edges — small, scattered, half-buried
+            { size: 0.35, pos: [8, -0.2, 5], squash: 0.6 },
+            { size: 0.3, pos: [-7, -0.18, 6], squash: 0.5 },
+            { size: 0.25, pos: [10, -0.15, 2.5], squash: 0.7 },
+            { size: 0.4, pos: [-9, -0.22, 3.5], squash: 0.55 },
+            // Mid-range — natural scatter
+            { size: 0.3, pos: [5, -0.15, 7], squash: 0.6 },
+            { size: 0.2, pos: [-3, -0.12, 7.5], squash: 0.5 },
+            { size: 0.35, pos: [3, -0.18, 8], squash: 0.65 },
+            // Near tent — very small accent rocks
+            { size: 0.15, pos: [-6, -0.1, 2], squash: 0.4 },
+            { size: 0.18, pos: [-2.5, -0.1, 3], squash: 0.5 },
+        ];
+        boulderConfigs.forEach(cfg => {
+            const geo = new THREE.DodecahedronGeometry(cfg.size);
+            const bp = geo.attributes.position;
+            for (let i = 0; i < bp.count; i++) {
+                bp.setX(i, bp.getX(i) + (Math.random() - 0.5) * cfg.size * 0.3);
+                // Squash vertically for flatter, more natural rock shapes
+                bp.setY(i, bp.getY(i) * (cfg.squash || 0.6) + (Math.random() - 0.5) * cfg.size * 0.15);
+                bp.setZ(i, bp.getZ(i) + (Math.random() - 0.5) * cfg.size * 0.3);
+            }
+            geo.computeVertexNormals();
+            const boulder = new THREE.Mesh(geo, edgeBoulderMat);
+            boulder.position.set(...cfg.pos);
+            boulder.rotation.set(Math.random() * 0.3, Math.random() * Math.PI, Math.random() * 0.3);
+            summitGroup.add(boulder);
+        });
 
-        // 2. Tent (Refined Low Poly)
+        // --- Tent (3D triangular prism with fabric draping) ---
         const tentGroup = new THREE.Group();
-        tentGroup.position.set(-3, 0, 2);
+        tentGroup.position.set(-4, -0.4, 1);
 
-        // Tent Body
-        const tentBodyGeo = new THREE.ConeGeometry(3, 4, 4, 1, true); // Open bottom
-        const tentMat = new THREE.MeshStandardMaterial({ color: 0xe0c9a6, flatShading: true, side: THREE.DoubleSide });
-        const tentBody = new THREE.Mesh(tentBodyGeo, tentMat);
-        tentBody.position.y = 2;
-        tentBody.rotation.y = Math.PI / 4;
-        tentBody.scale.z = 0.8; // Flatten slightly
-        tentGroup.add(tentBody);
+        const tentFabricMat = new THREE.MeshStandardMaterial({
+            color: 0xc4a882,
+            flatShading: true,
+            side: THREE.DoubleSide,
+            roughness: 0.8
+        });
 
-        // Tent Poles
-        const poleGeo = new THREE.CylinderGeometry(0.05, 0.05, 5);
-        const poleMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const pole1 = new THREE.Mesh(poleGeo, poleMat);
-        pole1.rotation.z = 0.5;
-        pole1.position.y = 2;
-        pole1.position.x = -0.8;
-        const pole2 = new THREE.Mesh(poleGeo, poleMat);
-        pole2.rotation.z = -0.5;
-        pole2.position.y = 2;
-        pole2.position.x = 0.8;
-        tentGroup.add(pole1);
-        tentGroup.add(pole2);
+        // Tent dimensions
+        const tentHalfW = 1.6;   // half base width
+        const tentH = 2.8;       // ridge height
+        const tentLen = 4;        // length along Z
+        const tentSubL = 14;     // subdivisions along length
+        const tentSubS = 10;     // subdivisions across slope
 
+        // Create a sloped tent panel (left or right)
+        function createTentSlope(isLeft) {
+            const verts = [];
+            const indices = [];
+            const uvs = [];
+
+            for (let j = 0; j <= tentSubL; j++) {
+                const vl = j / tentSubL;
+                const z = (vl - 0.5) * tentLen;
+
+                for (let i = 0; i <= tentSubS; i++) {
+                    const vs = i / tentSubS;
+                    // vs=0 is ground edge, vs=1 is ridge
+                    const groundX = isLeft ? -tentHalfW : tentHalfW;
+                    const x = groundX * (1 - vs);
+                    let y = vs * tentH;
+
+                    // Fabric sag between support poles
+                    const sagAmount = Math.sin(vl * Math.PI) * 0.12 * (1 - vs * 0.5);
+                    y -= sagAmount;
+
+                    // Slight outward billow
+                    const billow = Math.sin(vs * Math.PI) * 0.15 * Math.sin(vl * Math.PI);
+                    const billowX = isLeft ? -billow : billow;
+
+                    // Fabric wrinkle micro-noise
+                    const wrinkle = (Math.sin(vl * 17 + vs * 11) * 0.02 +
+                                     Math.sin(vl * 7 + vs * 23) * 0.015) * (1 - vs * 0.3);
+
+                    verts.push(x + billowX, y + wrinkle, z);
+                    uvs.push(vs, vl);
+                }
+            }
+
+            for (let j = 0; j < tentSubL; j++) {
+                for (let i = 0; i < tentSubS; i++) {
+                    const a = j * (tentSubS + 1) + i;
+                    const b = a + 1;
+                    const c = (j + 1) * (tentSubS + 1) + i;
+                    const d = c + 1;
+                    if (isLeft) {
+                        indices.push(a, b, c, b, d, c);
+                    } else {
+                        indices.push(a, c, b, b, c, d);
+                    }
+                }
+            }
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+            geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geo.setIndex(indices);
+            geo.computeVertexNormals();
+            return new THREE.Mesh(geo, tentFabricMat);
+        }
+
+        tentGroup.add(createTentSlope(true));
+        tentGroup.add(createTentSlope(false));
+
+        // Front and back triangular end caps
+        const endCapMat = new THREE.MeshStandardMaterial({
+            color: 0xb89a74,
+            flatShading: true,
+            side: THREE.DoubleSide,
+            roughness: 0.85
+        });
+
+        function createEndCap(zPos, faceDir) {
+            const shape = new THREE.Shape();
+            shape.moveTo(-tentHalfW, 0);
+            shape.lineTo(0, tentH);
+            shape.lineTo(tentHalfW, 0);
+            shape.closePath();
+
+            const geo = new THREE.ShapeGeometry(shape, 4);
+            // Add micro displacement for fabric texture
+            const pos = geo.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.04);
+            }
+            geo.computeVertexNormals();
+
+            const mesh = new THREE.Mesh(geo, endCapMat);
+            mesh.position.z = zPos;
+            if (faceDir < 0) mesh.rotation.y = Math.PI;
+            return mesh;
+        }
+
+        tentGroup.add(createEndCap(tentLen / 2, 1));
+        tentGroup.add(createEndCap(-tentLen / 2, -1));
+
+        // Ridge pole
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, metalness: 0.5 });
+        const ridgePoleGeo = new THREE.CylinderGeometry(0.04, 0.04, tentLen + 0.4);
+        const ridgePole = new THREE.Mesh(ridgePoleGeo, poleMat);
+        ridgePole.rotation.x = Math.PI / 2;
+        ridgePole.position.y = tentH;
+        tentGroup.add(ridgePole);
+
+        // Vertical support poles at front/back
+        const supportGeo = new THREE.CylinderGeometry(0.035, 0.035, tentH + 0.2);
+        const support1 = new THREE.Mesh(supportGeo, poleMat);
+        support1.position.set(0, tentH / 2, -tentLen / 2);
+        tentGroup.add(support1);
+        const support2 = new THREE.Mesh(supportGeo, poleMat);
+        support2.position.set(0, tentH / 2, tentLen / 2);
+        tentGroup.add(support2);
+
+        // Guy lines (thin ropes from ridge to ground)
+        const ropeMat = new THREE.MeshStandardMaterial({ color: 0x666666 });
+        const ropeConfigs = [
+            { from: [-tentHalfW - 0.8, 0, -1.5], to: [-0.1, tentH * 0.9, -tentLen / 2 + 0.3] },
+            { from: [tentHalfW + 0.8, 0, -1.5], to: [0.1, tentH * 0.9, -tentLen / 2 + 0.3] },
+            { from: [-tentHalfW - 0.8, 0, 1.5], to: [-0.1, tentH * 0.9, tentLen / 2 - 0.3] },
+            { from: [tentHalfW + 0.8, 0, 1.5], to: [0.1, tentH * 0.9, tentLen / 2 - 0.3] },
+        ];
+        ropeConfigs.forEach(cfg => {
+            const dir = new THREE.Vector3(...cfg.to).sub(new THREE.Vector3(...cfg.from));
+            const len = dir.length();
+            const ropeGeo = new THREE.CylinderGeometry(0.015, 0.015, len);
+            const rope = new THREE.Mesh(ropeGeo, ropeMat);
+            const mid = new THREE.Vector3(...cfg.from).add(dir.multiplyScalar(0.5));
+            rope.position.copy(mid);
+            rope.lookAt(new THREE.Vector3(...cfg.to));
+            rope.rotateX(Math.PI / 2);
+            tentGroup.add(rope);
+        });
+
+        // Tent inner glow
+        const tentLight = new THREE.PointLight(0xffcc88, 0.8, 6);
+        tentLight.position.set(0, 1.2, 0);
+        tentGroup.add(tentLight);
+
+        tentGroup.rotation.y = 0.3;
         summitGroup.add(tentGroup);
 
-        // 3. Campfire (Enhanced)
+
+        // ===========================
+        // CAMPFIRE (Complete Overhaul)
+        // ===========================
         const fireGroup = new THREE.Group();
         fireGroup.position.set(4, 0, 2);
 
-        // Logs (Star pattern)
-        const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 2.5);
-        const logMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
-        for(let i=0; i<5; i++) {
-            const log = new THREE.Mesh(logGeo, logMat);
-            log.rotation.z = Math.PI / 2;
-            log.rotation.x = Math.PI / 8; // Tilt up
-            log.rotation.y = (i / 5) * Math.PI * 2;
-            fireGroup.add(log);
-        }
+        // --- Logs (Natural arrangement) ---
+        const logMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.95, flatShading: true });
+        const charredMat = new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 1.0, flatShading: true });
 
-        // Stones circle
-        const stoneGeo = new THREE.DodecahedronGeometry(0.4);
-        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
-        for(let i=0; i<8; i++) {
+        const logConfigs = [
+            { radius: 0.22, length: 2.8, pos: [0.3, 0.22, 0], rotY: 0.4, rotX: 0.1, mat: logMat },
+            { radius: 0.18, length: 2.4, pos: [-0.2, 0.18, 0.1], rotY: -0.6, rotX: 0.15, mat: logMat },
+            { radius: 0.25, length: 2.6, pos: [0, 0.25, -0.2], rotY: 1.2, rotX: 0.08, mat: charredMat },
+            { radius: 0.15, length: 2.0, pos: [0.4, 0.15, 0.3], rotY: -1.8, rotX: 0.2, mat: charredMat },
+            { radius: 0.2, length: 2.2, pos: [-0.3, 0.2, -0.1], rotY: 2.4, rotX: 0.12, mat: logMat },
+        ];
+
+        logConfigs.forEach(cfg => {
+            const geo = new THREE.CylinderGeometry(cfg.radius * 0.8, cfg.radius, cfg.length, 8);
+            const log = new THREE.Mesh(geo, cfg.mat);
+            log.position.set(...cfg.pos);
+            log.rotation.z = Math.PI / 2;
+            log.rotation.x = cfg.rotX;
+            log.rotation.y = cfg.rotY;
+            fireGroup.add(log);
+        });
+
+        // --- Stone Circle (Varied) ---
+        const stoneColors = [0x777777, 0x8a8a8a, 0x6b6b6b, 0x999999, 0x7d7d7d, 0x888888, 0x757575, 0x8f8f8f, 0x707070, 0x959595];
+        for (let i = 0; i < 10; i++) {
+            const size = 0.25 + Math.random() * 0.3;
+            const stoneGeo = new THREE.DodecahedronGeometry(size);
+            // Deform each stone slightly
+            const stonePos = stoneGeo.attributes.position;
+            for (let j = 0; j < stonePos.count; j++) {
+                stonePos.setX(j, stonePos.getX(j) + (Math.random() - 0.5) * 0.1);
+                stonePos.setY(j, stonePos.getY(j) + (Math.random() - 0.5) * 0.1);
+                stonePos.setZ(j, stonePos.getZ(j) + (Math.random() - 0.5) * 0.1);
+            }
+            stoneGeo.computeVertexNormals();
+
+            const stoneMat = new THREE.MeshStandardMaterial({
+                color: stoneColors[i],
+                roughness: 0.9,
+                flatShading: true
+            });
             const stone = new THREE.Mesh(stoneGeo, stoneMat);
-            const angle = (i/8)*Math.PI*2;
-            stone.position.set(Math.cos(angle)*1.5, 0.2, Math.sin(angle)*1.5);
+            const angle = (i / 10) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+            const radius = 1.4 + (Math.random() - 0.5) * 0.3;
+            stone.position.set(
+                Math.cos(angle) * radius,
+                size * 0.4,
+                Math.sin(angle) * radius
+            );
+            stone.rotation.set(Math.random() * 0.5, Math.random() * Math.PI, Math.random() * 0.5);
             fireGroup.add(stone);
         }
 
-        // Fire Light
-        const fireLight = new THREE.PointLight(0xff4500, 2, 15);
-        fireLight.position.y = 1.5;
+        // --- Fire Light (Main) ---
+        const fireLight = new THREE.PointLight(0xff6a00, 3, 20);
+        fireLight.position.y = 1.8;
         fireGroup.add(fireLight);
 
-        // Fire Particles (System)
-        const firePartGeo = new THREE.BufferGeometry();
-        const firePartCount = 60;
-        const firePos = new Float32Array(firePartCount * 3);
-        const fireSpeeds = [];
-        const fireSizes = [];
+        // Secondary warm fill
+        const fireFillLight = new THREE.PointLight(0xff4500, 1.2, 12);
+        fireFillLight.position.set(0, 0.5, 0);
+        fireGroup.add(fireFillLight);
 
-        for(let i=0; i<firePartCount; i++) {
-            firePos[i*3] = (Math.random()-0.5) * 0.8;
-            firePos[i*3+1] = Math.random() * 2;
-            firePos[i*3+2] = (Math.random()-0.5) * 0.8;
-            fireSpeeds.push(0.04 + Math.random() * 0.08);
-            fireSizes.push(0.2 + Math.random() * 0.3);
+        // --- Flame Shader ---
+        const flameVertexShader = `
+            uniform float uTime;
+            uniform float uOffset;
+            varying vec2 vUv;
+
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+
+                float heightNorm = max(0.0, (pos.y) / 3.5);
+
+                // Multi-frequency sway
+                pos.x += sin(uTime * 3.5 + pos.y * 2.5 + uOffset) * 0.25 * heightNorm;
+                pos.x += sin(uTime * 7.0 + pos.y * 4.0 + uOffset * 2.0) * 0.12 * heightNorm;
+                pos.z += cos(uTime * 4.5 + pos.y * 3.0 + uOffset * 0.7) * 0.18 * heightNorm;
+
+                // Pinch toward top
+                float pinch = 1.0 - heightNorm * 0.75;
+                pos.x *= pinch;
+                pos.z *= pinch;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `;
+
+        const flameFragmentShader = `
+            varying vec2 vUv;
+
+            void main() {
+                float centerDist = abs(vUv.x - 0.5) * 2.0;
+                float height = vUv.y;
+
+                // Flame shape mask
+                float edgeFade = 1.0 - smoothstep(0.2, 0.6, centerDist / max(0.01, 1.0 - height * 0.65));
+                float bottomFade = smoothstep(0.0, 0.08, height);
+                float topFade = 1.0 - smoothstep(0.65, 1.0, height);
+                float flameMask = edgeFade * bottomFade * topFade;
+
+                // Color gradient: bright core -> orange -> red tips
+                vec3 white = vec3(1.0, 0.96, 0.85);
+                vec3 yellow = vec3(1.0, 0.82, 0.28);
+                vec3 orange = vec3(1.0, 0.45, 0.08);
+                vec3 red = vec3(0.75, 0.12, 0.02);
+
+                vec3 color = mix(white, yellow, smoothstep(0.0, 0.25, height));
+                color = mix(color, orange, smoothstep(0.25, 0.55, height));
+                color = mix(color, red, smoothstep(0.55, 0.85, height));
+
+                // Brighter at center
+                color = mix(color, white, (1.0 - centerDist) * 0.35 * (1.0 - height * 0.8));
+
+                gl_FragColor = vec4(color, flameMask * 0.82);
+            }
+        `;
+
+        function createFlameMaterial(offset) {
+            return new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uOffset: { value: offset }
+                },
+                vertexShader: flameVertexShader,
+                fragmentShader: flameFragmentShader,
+                transparent: true,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending
+            });
         }
-        firePartGeo.setAttribute('position', new THREE.BufferAttribute(firePos, 3));
 
-        // Simple PointsMaterial with size attenuation is easiest
-        const firePartMat = new THREE.PointsMaterial({
-            color: 0xffaa00,
-            size: 0.3,
+        // Create flame geometry - shifted up so base is at y=0
+        const flameGeo = new THREE.PlaneGeometry(1.4, 3.5, 1, 20);
+        const fgPos = flameGeo.attributes.position;
+        for (let i = 0; i < fgPos.count; i++) {
+            fgPos.setY(i, fgPos.getY(i) + 1.75);
+        }
+
+        // 4 intersecting flame planes
+        const flameSheets = [];
+        for (let i = 0; i < 4; i++) {
+            const mat = createFlameMaterial(i * 1.7);
+            const mesh = new THREE.Mesh(flameGeo, mat);
+            mesh.rotation.y = (i / 4) * Math.PI;
+            mesh.position.y = 0.3;
+            flameSheets.push(mesh);
+            fireGroup.add(mesh);
+        }
+
+        // --- Ground Glow (warm circle under fire) ---
+        const glowGeo = new THREE.CircleGeometry(2.5, 32);
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0xff7733,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.15,
             blending: THREE.AdditiveBlending,
-            sizeAttenuation: true
+            depthWrite: false
         });
-        const fireParticles = new THREE.Points(firePartGeo, firePartMat);
-        fireGroup.add(fireParticles);
+        const groundGlow = new THREE.Mesh(glowGeo, glowMat);
+        groundGlow.rotation.x = -Math.PI / 2;
+        groundGlow.position.y = 0.05;
+        fireGroup.add(groundGlow);
+
+        // --- Ember Particles ---
+        const emberCount = 50;
+        const emberGeo = new THREE.BufferGeometry();
+        const emberPositions = new Float32Array(emberCount * 3);
+        const emberVelocities = [];
+        const emberLifetimes = [];
+
+        for (let i = 0; i < emberCount; i++) {
+            emberPositions[i * 3] = (Math.random() - 0.5) * 0.6;
+            emberPositions[i * 3 + 1] = Math.random() * 4;
+            emberPositions[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
+            emberVelocities.push({
+                x: (Math.random() - 0.5) * 0.015,
+                y: 0.02 + Math.random() * 0.04,
+                z: (Math.random() - 0.5) * 0.015
+            });
+            emberLifetimes.push(Math.random());
+        }
+        emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPositions, 3));
+
+        const emberMat = new THREE.PointsMaterial({
+            color: 0xffbb44,
+            size: 0.12,
+            transparent: true,
+            opacity: 0.9,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            depthWrite: false
+        });
+        const embers = new THREE.Points(emberGeo, emberMat);
+        fireGroup.add(embers);
+
+        // --- Smoke Particles ---
+        const smokeCount = 20;
+        const smokeGeo = new THREE.BufferGeometry();
+        const smokePositions = new Float32Array(smokeCount * 3);
+        const smokeSpeeds = [];
+        const smokeLife = [];
+
+        for (let i = 0; i < smokeCount; i++) {
+            smokePositions[i * 3] = (Math.random() - 0.5) * 0.3;
+            smokePositions[i * 3 + 1] = 3 + Math.random() * 4;
+            smokePositions[i * 3 + 2] = (Math.random() - 0.5) * 0.3;
+            smokeSpeeds.push(0.008 + Math.random() * 0.015);
+            smokeLife.push(Math.random());
+        }
+        smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePositions, 3));
+
+        // Circular soft texture for smoke
+        const smokeCanvas = document.createElement('canvas');
+        smokeCanvas.width = 64;
+        smokeCanvas.height = 64;
+        const smokeCtx = smokeCanvas.getContext('2d');
+        const smokeGrad = smokeCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        smokeGrad.addColorStop(0, 'rgba(255,255,255,0.6)');
+        smokeGrad.addColorStop(0.4, 'rgba(255,255,255,0.25)');
+        smokeGrad.addColorStop(1, 'rgba(255,255,255,0)');
+        smokeCtx.fillStyle = smokeGrad;
+        smokeCtx.fillRect(0, 0, 64, 64);
+        const smokeTexture = new THREE.CanvasTexture(smokeCanvas);
+
+        const smokeMat = new THREE.PointsMaterial({
+            map: smokeTexture,
+            color: 0x888888,
+            size: 1.2,
+            transparent: true,
+            opacity: 0.25,
+            sizeAttenuation: true,
+            depthWrite: false
+        });
+        const smoke = new THREE.Points(smokeGeo, smokeMat);
+        fireGroup.add(smoke);
+
+        // --- Original Fire Sparks (enhanced) ---
+        const sparkCount = 40;
+        const sparkGeo = new THREE.BufferGeometry();
+        const sparkPositions = new Float32Array(sparkCount * 3);
+        const sparkSpeeds = [];
+
+        for (let i = 0; i < sparkCount; i++) {
+            sparkPositions[i * 3] = (Math.random() - 0.5) * 0.5;
+            sparkPositions[i * 3 + 1] = Math.random() * 2.5;
+            sparkPositions[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+            sparkSpeeds.push(0.03 + Math.random() * 0.06);
+        }
+        sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+
+        const sparkMat = new THREE.PointsMaterial({
+            color: 0xffaa00,
+            size: 0.2,
+            transparent: true,
+            opacity: 0.75,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            depthWrite: false
+        });
+        const sparks = new THREE.Points(sparkGeo, sparkMat);
+        fireGroup.add(sparks);
 
         summitGroup.add(fireGroup);
+
+        // --- Small scattered items around camp ---
+        // Backpack near tent
+        const backpackGeo = new THREE.BoxGeometry(0.6, 0.8, 0.4);
+        const backpackMat = new THREE.MeshStandardMaterial({ color: 0x5c7a5c, roughness: 0.85, flatShading: true });
+        const backpack = new THREE.Mesh(backpackGeo, backpackMat);
+        backpack.position.set(-2, 0.1, 3.5);
+        backpack.rotation.y = 0.8;
+        backpack.rotation.x = -0.15;
+        summitGroup.add(backpack);
+
+        // Sitting log
+        const seatLogGeo = new THREE.CylinderGeometry(0.35, 0.4, 2.5, 8);
+        const seatLogMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, flatShading: true });
+        const seatLog = new THREE.Mesh(seatLogGeo, seatLogMat);
+        seatLog.position.set(1.5, 0.1, 5);
+        seatLog.rotation.z = Math.PI / 2;
+        seatLog.rotation.y = 0.4;
+        summitGroup.add(seatLog);
+
+
+        // ===========================
+        // STAR FIELD (dense, multi-colored)
+        // ===========================
+        const starCount = 900;
+        const starGeo = new THREE.BufferGeometry();
+        const starPositions = new Float32Array(starCount * 3);
+        const starColors = new Float32Array(starCount * 3);
+        const starSizes = new Float32Array(starCount);
+        const starPhases = [];
+
+        // Star color palettes (cool blue, neutral white, warm yellow)
+        const starPalette = [
+            [0.75, 0.82, 1.0],   // cool blue-white
+            [1.0, 1.0, 1.0],     // pure white
+            [1.0, 0.95, 0.85],   // warm white
+            [0.85, 0.9, 1.0],    // pale blue
+            [1.0, 0.92, 0.75],   // golden
+            [0.9, 0.85, 1.0],    // lavender tint
+        ];
+
+        for (let i = 0; i < starCount; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI * 0.55;
+            const r = 40 + Math.random() * 55;
+
+            starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            starPositions[i * 3 + 1] = config.summitHeight + 5 + r * Math.cos(phi);
+            starPositions[i * 3 + 2] = -10 + r * Math.sin(phi) * Math.sin(theta);
+
+            // Mostly small stars with a few bright ones
+            const sizeRoll = Math.random();
+            if (sizeRoll < 0.7) starSizes[i] = 0.15 + Math.random() * 0.4;
+            else if (sizeRoll < 0.92) starSizes[i] = 0.5 + Math.random() * 0.6;
+            else starSizes[i] = 1.0 + Math.random() * 0.8;
+
+            // Random color from palette
+            const color = starPalette[Math.floor(Math.random() * starPalette.length)];
+            starColors[i * 3] = color[0];
+            starColors[i * 3 + 1] = color[1];
+            starColors[i * 3 + 2] = color[2];
+
+            starPhases.push(Math.random() * Math.PI * 2);
+        }
+
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+        starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+
+        // Circular star texture with cross-shaped diffraction spike
+        const starCanvas = document.createElement('canvas');
+        starCanvas.width = 64;
+        starCanvas.height = 64;
+        const starCtx = starCanvas.getContext('2d');
+        // Soft glow base
+        const starGrad = starCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        starGrad.addColorStop(0, 'rgba(255,255,255,1)');
+        starGrad.addColorStop(0.08, 'rgba(255,255,255,0.9)');
+        starGrad.addColorStop(0.2, 'rgba(255,255,255,0.4)');
+        starGrad.addColorStop(0.5, 'rgba(255,255,255,0.08)');
+        starGrad.addColorStop(1, 'rgba(255,255,255,0)');
+        starCtx.fillStyle = starGrad;
+        starCtx.fillRect(0, 0, 64, 64);
+        // Subtle cross spikes for brighter stars
+        starCtx.globalAlpha = 0.25;
+        starCtx.strokeStyle = '#ffffff';
+        starCtx.lineWidth = 0.8;
+        starCtx.beginPath();
+        starCtx.moveTo(32, 8); starCtx.lineTo(32, 56);
+        starCtx.moveTo(8, 32); starCtx.lineTo(56, 32);
+        starCtx.stroke();
+        starCtx.globalAlpha = 1;
+        const starTexture = new THREE.CanvasTexture(starCanvas);
+
+        const starMat = new THREE.PointsMaterial({
+            map: starTexture,
+            vertexColors: true,
+            size: 0.8,
+            transparent: true,
+            opacity: 0,
+            sizeAttenuation: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+
+        // ===========================
+        // MOON (canvas texture with craters + multi-layer glow)
+        // ===========================
+        const moonGroup = new THREE.Group();
+        moonGroup.position.set(-18, config.summitHeight + 18, -35);
+
+        // Paint moon surface on canvas
+        const moonCanvas = document.createElement('canvas');
+        moonCanvas.width = 256;
+        moonCanvas.height = 256;
+        const mCtx = moonCanvas.getContext('2d');
+
+        // Base gradient (slight shading for depth)
+        const moonBaseGrad = mCtx.createRadialGradient(110, 100, 10, 128, 128, 128);
+        moonBaseGrad.addColorStop(0, '#fffdf5');
+        moonBaseGrad.addColorStop(0.5, '#f0ead8');
+        moonBaseGrad.addColorStop(0.85, '#d8d0be');
+        moonBaseGrad.addColorStop(1, '#c0b8a5');
+        mCtx.fillStyle = moonBaseGrad;
+        mCtx.beginPath();
+        mCtx.arc(128, 128, 128, 0, Math.PI * 2);
+        mCtx.fill();
+
+        // Draw craters (maria)
+        const craters = [
+            { x: 90, y: 85, r: 28, a: 0.12 },
+            { x: 145, y: 110, r: 22, a: 0.1 },
+            { x: 110, y: 155, r: 18, a: 0.09 },
+            { x: 70, y: 130, r: 15, a: 0.08 },
+            { x: 160, y: 75, r: 12, a: 0.07 },
+            { x: 130, y: 60, r: 10, a: 0.06 },
+            { x: 85, y: 170, r: 14, a: 0.08 },
+            { x: 170, y: 150, r: 11, a: 0.07 },
+            { x: 55, y: 100, r: 9, a: 0.06 },
+            { x: 140, y: 170, r: 8, a: 0.05 },
+        ];
+        craters.forEach(c => {
+            const cGrad = mCtx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
+            cGrad.addColorStop(0, `rgba(80, 75, 65, ${c.a})`);
+            cGrad.addColorStop(0.6, `rgba(90, 85, 75, ${c.a * 0.6})`);
+            cGrad.addColorStop(1, 'rgba(90, 85, 75, 0)');
+            mCtx.fillStyle = cGrad;
+            mCtx.beginPath();
+            mCtx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+            mCtx.fill();
+        });
+
+        // Subtle small craters
+        for (let i = 0; i < 25; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 110;
+            const cx = 128 + Math.cos(angle) * dist;
+            const cy = 128 + Math.sin(angle) * dist;
+            const cr = 2 + Math.random() * 5;
+            const ca = 0.03 + Math.random() * 0.04;
+            mCtx.fillStyle = `rgba(70, 65, 55, ${ca})`;
+            mCtx.beginPath();
+            mCtx.arc(cx, cy, cr, 0, Math.PI * 2);
+            mCtx.fill();
+        }
+
+        const moonTexture = new THREE.CanvasTexture(moonCanvas);
+
+        // Moon sphere with texture
+        const moonGeo = new THREE.SphereGeometry(3.5, 48, 48);
+        const moonMat = new THREE.MeshBasicMaterial({
+            map: moonTexture,
+            transparent: true,
+            opacity: 0,
+            fog: false
+        });
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonGroup.add(moonMesh);
+
+        // Inner glow (tight halo)
+        const moonGlowGeo = new THREE.SphereGeometry(4.5, 32, 32);
+        const moonGlowMat = new THREE.MeshBasicMaterial({
+            color: 0xfff5e0,
+            transparent: true,
+            opacity: 0,
+            side: THREE.BackSide,
+            fog: false
+        });
+        const moonGlow = new THREE.Mesh(moonGlowGeo, moonGlowMat);
+        moonGroup.add(moonGlow);
+
+        // Outer atmospheric glow (wide, soft)
+        const moonOuterGlowGeo = new THREE.SphereGeometry(8, 32, 32);
+        const moonOuterGlowMat = new THREE.MeshBasicMaterial({
+            color: 0xe8e0d0,
+            transparent: true,
+            opacity: 0,
+            side: THREE.BackSide,
+            fog: false
+        });
+        const moonOuterGlow = new THREE.Mesh(moonOuterGlowGeo, moonOuterGlowMat);
+        moonGroup.add(moonOuterGlow);
+
+        // Moon light
+        const moonLight = new THREE.PointLight(0xc8d8ff, 0, 120);
+        moonGroup.add(moonLight);
+
+        scene.add(moonGroup);
+
+
+        // ===========================
+        // SHOOTING STARS
+        // ===========================
+        const shootingStarCount = 5;
+        const shootingStars = [];
+        for (let i = 0; i < shootingStarCount; i++) {
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(6);
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0
+            });
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            shootingStars.push({
+                line,
+                active: false,
+                timer: 3 + Math.random() * 12,
+                duration: 0.4 + Math.random() * 0.3,
+                elapsed: 0,
+                sx: 0, sy: 0, sz: 0,
+                dx: 0, dy: 0, dz: 0
+            });
+        }
+
+
+        // ===========================
+        // FIREFLIES (warm glow near camp)
+        // ===========================
+        const fireflyCount = 35;
+        const fireflyGeo = new THREE.BufferGeometry();
+        const fireflyPositions = new Float32Array(fireflyCount * 3);
+        const fireflyPhases = [];
+
+        for (let i = 0; i < fireflyCount; i++) {
+            fireflyPositions[i * 3] = (Math.random() - 0.5) * 18;
+            fireflyPositions[i * 3 + 1] = config.summitHeight + 0.5 + Math.random() * 5;
+            fireflyPositions[i * 3 + 2] = -10 + (Math.random() - 0.5) * 14;
+            fireflyPhases.push({
+                phase: Math.random() * Math.PI * 2,
+                speed: 0.3 + Math.random() * 1.5,
+                blinkPhase: Math.random() * Math.PI * 2,
+                blinkSpeed: 1 + Math.random() * 3
+            });
+        }
+        fireflyGeo.setAttribute('position', new THREE.BufferAttribute(fireflyPositions, 3));
+
+        // Soft glow texture for fireflies
+        const ffCanvas = document.createElement('canvas');
+        ffCanvas.width = 32;
+        ffCanvas.height = 32;
+        const ffCtx = ffCanvas.getContext('2d');
+        const ffGrad = ffCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        ffGrad.addColorStop(0, 'rgba(255,238,170,1)');
+        ffGrad.addColorStop(0.3, 'rgba(255,238,170,0.5)');
+        ffGrad.addColorStop(1, 'rgba(255,238,170,0)');
+        ffCtx.fillStyle = ffGrad;
+        ffCtx.fillRect(0, 0, 32, 32);
+        const ffTexture = new THREE.CanvasTexture(ffCanvas);
+
+        const fireflyMat = new THREE.PointsMaterial({
+            map: ffTexture,
+            color: 0xffeeaa,
+            size: 0.5,
+            transparent: true,
+            opacity: 0,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            depthWrite: false
+        });
+        const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
+        scene.add(fireflies);
+
+
+        // ===========================
+        // ATMOSPHERIC DUST PARTICLES
+        // ===========================
+        const dustCount = 80;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPositions = new Float32Array(dustCount * 3);
+        const dustDrifts = [];
+
+        for (let i = 0; i < dustCount; i++) {
+            dustPositions[i * 3] = (Math.random() - 0.5) * 30;
+            dustPositions[i * 3 + 1] = Math.random() * 126;
+            dustPositions[i * 3 + 2] = -5 + (Math.random() - 0.5) * 15;
+            dustDrifts.push({
+                speed: 0.002 + Math.random() * 0.005,
+                amplitude: 0.5 + Math.random() * 1.5,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+
+        const dustMat = new THREE.PointsMaterial({
+            color: 0xcccccc,
+            size: 0.15,
+            transparent: true,
+            opacity: 0.35,
+            sizeAttenuation: true,
+            depthWrite: false
+        });
+        const dust = new THREE.Points(dustGeo, dustMat);
+        scene.add(dust);
+
+
         scene.add(summitGroup);
 
 
         // --- Logic ---
 
-        // Mouse Move for Parallax + Raycasting
+        let raycasterDirty = false;
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            // Move tooltip
             tooltip.style.left = e.clientX + 'px';
             tooltip.style.top = e.clientY + 'px';
+            raycasterDirty = true;
         });
 
-        // Scroll Logic
         gsap.registerPlugin(ScrollTrigger);
 
         window.onload = () => {
             const loader = document.getElementById('loader');
             gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.style.display = 'none' });
 
-            // Animate Sections
             const cards = document.querySelectorAll('.card');
-            cards.forEach((card, i) => {
+            cards.forEach((card) => {
                 gsap.to(card, {
                     scrollTrigger: {
                         trigger: card.parentElement,
@@ -838,6 +1782,10 @@
         };
 
         const clock = new THREE.Clock();
+        const baseFogColor = new THREE.Color(config.cliffColor);
+        const nightFogColor = new THREE.Color(0x12111e);
+        const scrollHintEl = document.getElementById('scroll-hint');
+        let lastNightT = -1;
 
         function animate() {
             requestAnimationFrame(animate);
@@ -845,69 +1793,110 @@
 
             // 1. Camera Ascent
             const scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight || 1);
-            // Height mapping: 0 -> 0, 100% -> Summit (130) + extra to look down at fire
-            // Target Y: Summit is at 130. We want camera to rise to ~135
-            const targetCamY = scrollPct * 138;
+            const targetCamY = scrollPct * config.cameraMaxY;
             camera.position.y += (targetCamY - camera.position.y) * 0.05;
 
             // 2. Parallax
             camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
-            // Look target adjustment near summit
+
             let lookTargetY = camera.position.y + 5;
             let lookTargetZ = -15;
 
-            // If near summit (scroll > 90%), look slightly down at the fire
-            if(scrollPct > 0.9) {
-                lookTargetY = 132; // Fire height roughly
-                lookTargetZ = -10;
+            if (scrollPct > 0.88) {
+                const t = (scrollPct - 0.88) / 0.12;
+                lookTargetY = camera.position.y + 5 - t * 8;
+                lookTargetZ = -15 + t * 5;
             }
-
             camera.lookAt(0, lookTargetY, lookTargetZ);
 
-            // 3. Anchor Animation (Carabiners swing?)
+            // 3. Atmosphere transition (day -> night near summit)
+            if (scrollPct > 0.6) {
+                const nightT = Math.min(1, (scrollPct - 0.6) / 0.35);
+                scene.fog.color.copy(baseFogColor).lerp(nightFogColor, nightT);
+                scene.fog.near = 15 + nightT * 20;
+                scene.fog.far = 60 + nightT * 30;
+
+                ambientLight.intensity = 0.6 - nightT * 0.35;
+                dirLight.intensity = 0.8 - nightT * 0.6;
+
+                starMat.opacity = nightT * 0.95;
+
+                // Moon fade in
+                moonMat.opacity = nightT * 0.95;
+                moonGlowMat.opacity = nightT * 0.18;
+                moonOuterGlowMat.opacity = nightT * 0.06;
+                moonLight.intensity = nightT * 0.5;
+
+                // Fireflies fade in
+                fireflyMat.opacity = nightT * 0.7;
+
+                renderer.toneMappingExposure = 1.0 - nightT * 0.3;
+
+                // Darken CSS background only when nightT changes noticeably
+                const roundedNightT = Math.round(nightT * 50) / 50;
+                if (roundedNightT !== lastNightT) {
+                    lastNightT = roundedNightT;
+                    const bR = Math.round(230 - nightT * 210);
+                    const bG = Math.round(243 - nightT * 225);
+                    const bB = Math.round(255 - nightT * 235);
+                    const mR = Math.round(253 - nightT * 233);
+                    const mG = Math.round(251 - nightT * 231);
+                    const mB = Math.round(247 - nightT * 227);
+                    container.style.background = `linear-gradient(to top, rgb(${bR},${bG},${bB}) 0%, rgb(${mR},${mG},${mB}) 40%, #6b6897 75%, #1a1a2e 90%, #0f0e1a 100%)`;
+                }
+            } else {
+                scene.fog.color.copy(baseFogColor);
+                scene.fog.near = 15;
+                scene.fog.far = 60;
+                ambientLight.intensity = 0.6;
+                dirLight.intensity = 0.8;
+                starMat.opacity = 0;
+                moonMat.opacity = 0;
+                moonGlowMat.opacity = 0;
+                moonOuterGlowMat.opacity = 0;
+                moonLight.intensity = 0;
+                fireflyMat.opacity = 0;
+                renderer.toneMappingExposure = 1.0;
+                if (lastNightT !== 0) {
+                    lastNightT = 0;
+                    container.style.background = '';
+                }
+            }
+
+            // 4. Anchor Animation
             anchorsGroup.children.forEach(group => {
-                // Sway carabiner group (which is child 1)
                 const carabinerGroup = group.children[1];
                 carabinerGroup.rotation.x = Math.sin(time * 2 + group.userData.id) * 0.1;
             });
 
-            // 4. Raycasting for Anchors
-            // We need to raycast against the CHILDREN (meshes) of the carabiner groups
-            const meshesToCheck = [];
-            anchorsGroup.children.forEach(g => {
-                // Carabiner Group is children[1]
-                // Carabiner Body is children[1].children[0]
-                meshesToCheck.push(g.children[1].children[0]);
-            });
+            // 5. Raycasting (only when mouse moves)
+            if (raycasterDirty) {
+                raycasterDirty = false;
+                const meshesToCheck = anchorsGroup.children.map(g => g.children[1].children[0]);
 
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(meshesToCheck);
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(meshesToCheck);
 
-            if (intersects.length > 0) {
-                const hitMesh = intersects[0].object;
-                const topGroup = hitMesh.parent.parent; // carabiner -> carabinerGroup -> anchorGroup
+                if (intersects.length > 0) {
+                    const hitMesh = intersects[0].object;
+                    const topGroup = hitMesh.parent.parent;
 
-                if (intersectedAnchor != topGroup) {
-                    // Hover In
-                    intersectedAnchor = topGroup;
-                    document.body.style.cursor = 'pointer';
-                    tooltip.innerText = topGroup.userData.label;
-                    tooltip.style.opacity = 1;
+                    if (intersectedAnchor !== topGroup) {
+                        intersectedAnchor = topGroup;
+                        document.body.style.cursor = 'pointer';
+                        tooltip.innerText = topGroup.userData.label;
+                        tooltip.style.opacity = 1;
 
-                    gsap.to(hitMesh.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 0.3 });
-                    // Use GSAP to tween color components individually to avoid replacing the THREE.Color object
-                    gsap.to(hitMesh.material.color, { r: 1, g: 0.66, b: 0, duration: 0.3 }); // Highlight color (Orange)
-                }
-            } else {
-                if (intersectedAnchor) {
-                    // Hover Out
+                        gsap.to(hitMesh.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 0.3 });
+                        gsap.to(hitMesh.material.color, { r: 1, g: 0.66, b: 0, duration: 0.3 });
+                    }
+                } else if (intersectedAnchor) {
                     document.body.style.cursor = 'default';
                     tooltip.style.opacity = 0;
 
                     const hitMesh = intersectedAnchor.userData.targetMesh;
                     gsap.to(hitMesh.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
 
-                    // Reset to original color (Steel/Blue: 0x5d6d7e -> r:0.36, g:0.42, b:0.49)
                     const baseColor = new THREE.Color(config.anchorColor);
                     gsap.to(hitMesh.material.color, { r: baseColor.r, g: baseColor.g, b: baseColor.b, duration: 0.3 });
 
@@ -915,22 +1904,140 @@
                 }
             }
 
-            // 5. Fire Animation
-            const positions = fireParticles.geometry.attributes.position.array;
-            for(let i=0; i<firePartCount; i++) {
-                // y += speed
-                positions[i*3 + 1] += fireSpeeds[i];
-                // reset if too high
-                if(positions[i*3 + 1] > 3.5) {
-                    positions[i*3 + 1] = 0;
-                    positions[i*3] = (Math.random()-0.5) * 0.8; // reset x
-                    positions[i*3+2] = (Math.random()-0.5) * 0.8; // reset z
+            // 6. Flame Animation
+            flameSheets.forEach(sheet => {
+                sheet.material.uniforms.uTime.value = time;
+            });
+
+            // 7. Fire Light Flicker
+            const flicker = Math.sin(time * 8) * 0.4 + Math.sin(time * 13) * 0.2 + Math.sin(time * 21) * 0.15;
+            fireLight.intensity = 3 + flicker + Math.random() * 0.3;
+            fireFillLight.intensity = 1.2 + flicker * 0.4;
+
+            // Tent light subtle flicker
+            tentLight.intensity = 0.8 + Math.sin(time * 3) * 0.15;
+
+            // Ground glow pulse
+            groundGlow.material.opacity = 0.12 + Math.sin(time * 2) * 0.03;
+
+            // 8-10. Fire particles (skip when camera far from summit)
+            if (scrollPct > 0.7) {
+                const sparkPos = sparks.geometry.attributes.position.array;
+                for (let i = 0; i < sparkCount; i++) {
+                    sparkPos[i * 3 + 1] += sparkSpeeds[i];
+                    if (sparkPos[i * 3 + 1] > 3.5) {
+                        sparkPos[i * 3 + 1] = 0;
+                        sparkPos[i * 3] = (Math.random() - 0.5) * 0.5;
+                        sparkPos[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+                    }
+                }
+                sparks.geometry.attributes.position.needsUpdate = true;
+
+                const ePos = embers.geometry.attributes.position.array;
+                for (let i = 0; i < emberCount; i++) {
+                    ePos[i * 3] += emberVelocities[i].x + Math.sin(time * 2 + i) * 0.003;
+                    ePos[i * 3 + 1] += emberVelocities[i].y;
+                    ePos[i * 3 + 2] += emberVelocities[i].z + Math.cos(time * 1.5 + i) * 0.003;
+
+                    if (ePos[i * 3 + 1] > 6) {
+                        ePos[i * 3] = (Math.random() - 0.5) * 0.6;
+                        ePos[i * 3 + 1] = 0.5 + Math.random() * 0.5;
+                        ePos[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
+                    }
+                }
+                embers.geometry.attributes.position.needsUpdate = true;
+
+                const sPos = smoke.geometry.attributes.position.array;
+                for (let i = 0; i < smokeCount; i++) {
+                    sPos[i * 3 + 1] += smokeSpeeds[i];
+                    sPos[i * 3] += Math.sin(time * 0.5 + i * 0.7) * 0.004;
+                    sPos[i * 3 + 2] += Math.cos(time * 0.4 + i * 0.5) * 0.003;
+
+                    if (sPos[i * 3 + 1] > 8) {
+                        sPos[i * 3] = (Math.random() - 0.5) * 0.3;
+                        sPos[i * 3 + 1] = 3 + Math.random();
+                        sPos[i * 3 + 2] = (Math.random() - 0.5) * 0.3;
+                    }
+                }
+                smoke.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // 11. Star Twinkle (skip when stars invisible)
+            if (starMat.opacity > 0) {
+                const starSizeAttr = stars.geometry.attributes.size;
+                for (let i = 0; i < starCount; i++) {
+                    starSizeAttr.array[i] = starSizes[i] * (0.6 + 0.4 * Math.sin(time * (1.5 + i * 0.01) + starPhases[i]));
+                }
+                starSizeAttr.needsUpdate = true;
+            }
+
+            // 12. Atmospheric Dust
+            const dPos = dust.geometry.attributes.position.array;
+            for (let i = 0; i < dustCount; i++) {
+                const d = dustDrifts[i];
+                dPos[i * 3] += Math.sin(time * d.speed * 10 + d.phase) * 0.01;
+                dPos[i * 3 + 1] += d.speed;
+                if (dPos[i * 3 + 1] > 126) {
+                    dPos[i * 3 + 1] = 0;
+                    dPos[i * 3] = (Math.random() - 0.5) * 30;
                 }
             }
-            fireParticles.geometry.attributes.position.needsUpdate = true;
+            dust.geometry.attributes.position.needsUpdate = true;
 
-            // Flicker light
-            fireLight.intensity = 2 + Math.sin(time * 10) * 0.5 + Math.random() * 0.5;
+            // 13. Shooting Stars
+            shootingStars.forEach(ss => {
+                if (!ss.active) {
+                    ss.timer -= 0.016;
+                    if (ss.timer <= 0 && scrollPct > 0.65) {
+                        ss.active = true;
+                        ss.elapsed = 0;
+                        ss.sx = (Math.random() - 0.5) * 50;
+                        ss.sy = config.summitHeight + 25 + Math.random() * 25;
+                        ss.sz = -10 + (Math.random() - 0.5) * 40;
+                        const angle = -0.3 - Math.random() * 0.5;
+                        ss.dx = 20 * Math.cos(angle);
+                        ss.dy = 20 * Math.sin(angle);
+                        ss.dz = (Math.random() - 0.5) * 8;
+                    }
+                }
+                if (ss.active) {
+                    ss.elapsed += 0.016;
+                    const t = ss.elapsed / ss.duration;
+                    if (t >= 1) {
+                        ss.active = false;
+                        ss.timer = 4 + Math.random() * 18;
+                        ss.line.material.opacity = 0;
+                    } else {
+                        ss.line.material.opacity = (1 - t * t) * 0.85;
+                        const pos = ss.line.geometry.attributes.position.array;
+                        const tailT = Math.max(0, t - 0.25);
+                        pos[0] = ss.sx + ss.dx * tailT;
+                        pos[1] = ss.sy + ss.dy * tailT;
+                        pos[2] = ss.sz + ss.dz * tailT;
+                        pos[3] = ss.sx + ss.dx * t;
+                        pos[4] = ss.sy + ss.dy * t;
+                        pos[5] = ss.sz + ss.dz * t;
+                        ss.line.geometry.attributes.position.needsUpdate = true;
+                    }
+                }
+            });
+
+            // 14. Fireflies (drift & blink near camp)
+            if (scrollPct > 0.65) {
+                const ffPos = fireflies.geometry.attributes.position.array;
+                for (let i = 0; i < fireflyCount; i++) {
+                    const p = fireflyPhases[i];
+                    ffPos[i * 3] += Math.sin(time * p.speed + p.phase) * 0.008;
+                    ffPos[i * 3 + 1] += Math.cos(time * p.speed * 0.6 + p.phase) * 0.004;
+                    ffPos[i * 3 + 2] += Math.sin(time * p.speed * 0.4 + p.phase * 2) * 0.006;
+                }
+                fireflies.geometry.attributes.position.needsUpdate = true;
+            }
+
+            // Hide scroll hint after scrolling
+            if (scrollHintEl) {
+                scrollHintEl.style.opacity = scrollPct > 0.02 ? '0' : '0.6';
+            }
 
             renderer.render(scene, camera);
         }
