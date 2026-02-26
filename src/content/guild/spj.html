@@ -4,276 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>塞趴卷 - 酒館老闆</title>
-
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Serif+TC:wght@400;700;900&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
-
-    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
     <style>
         :root {
-            --bg-color: #1a1008;
-            --ui-bg: rgba(255, 248, 225, 0.95);
-            --ui-border: #8d6e63;
-            --text-dark: #3e2723;
-            --text-gold: #ffca28;
-            --highlight: #ff6d00;
+            --bg:#1a1008;--ui-bg:rgba(255,248,225,.95);--border:#8d6e63;
+            --dark:#3e2723;--gold:#ffca28;--hl:#ff6d00;
         }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:var(--bg);color:var(--dark);font-family:'Noto Serif TC',serif;overflow-x:hidden;overflow-y:hidden}
+        #canvas-container{position:fixed;inset:0;z-index:0;cursor:default}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Intro */
+        #intro-overlay{position:fixed;inset:0;background:#000;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity 1.5s}
+        .intro-title{color:var(--gold);font-family:'Cinzel';font-size:clamp(1.8rem,5vw,3rem);letter-spacing:5px;text-align:center;text-shadow:0 0 20px rgba(255,160,0,.5);margin-bottom:1rem}
+        .intro-sub{font-family:'IM Fell English SC',serif;font-size:clamp(.9rem,2.5vw,1.2rem);color:#aaa;margin-top:1rem;letter-spacing:2px;animation:pulse 2s infinite}
+        #intro-overlay.hidden{opacity:0;pointer-events:none}
+        @keyframes pulse{0%{opacity:.5}50%{opacity:1}100%{opacity:.5}}
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-dark);
-            font-family: 'Noto Serif TC', serif;
-            overflow-x: hidden;
-            overflow-y: hidden; /* Locked initially */
-        }
+        .scroll-track{height:800vh;pointer-events:none}
 
-        #canvas-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-            cursor: default; /* Will change via JS */
-        }
+        /* UI Layer */
+        #ui-layer{position:fixed;inset:0;pointer-events:none;z-index:10;opacity:0;transition:opacity 1s}
+        #ui-layer.visible{opacity:1}
 
-        /* --- Intro --- */
-        #intro-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer;
-            transition: opacity 1.5s;
-        }
+        .nav-return{position:fixed;top:1.5rem;left:1.5rem;color:var(--dark);text-decoration:none;font-family:'Cinzel';font-size:clamp(.7rem,1.8vw,.9rem);letter-spacing:2px;pointer-events:auto;background:rgba(255,255,255,.9);padding:8px 16px;border-radius:4px;border:1px solid var(--border);transition:.3s;box-shadow:0 4px 15px rgba(0,0,0,.3)}
+        .nav-return:hover{background:var(--dark);color:#fff;transform:translateY(-2px)}
 
-        .intro-title {
-            color: var(--text-gold); font-family: 'Cinzel'; font-size: 3rem; letter-spacing: 5px;
-            text-align: center; text-shadow: 0 0 20px rgba(255, 160, 0, 0.5);
-            margin-bottom: 1rem;
-        }
-        .intro-sub {
-            font-family: 'IM Fell English SC', serif;
-            font-size: 1.2rem; color: #aaa; margin-top: 1rem;
-            letter-spacing: 2px;
-            animation: pulse 2s infinite;
-        }
+        /* Dialogue */
+        #dialogue-box{position:absolute;bottom:2vh;left:50%;transform:translateX(-50%);width:min(92%,820px);background:var(--ui-bg);border:2px solid var(--border);border-radius:12px;padding:1rem 1.2rem;pointer-events:auto;box-shadow:0 12px 40px rgba(0,0,0,.5),inset 0 0 20px rgba(141,110,99,.08);display:flex;align-items:flex-start;gap:.8rem;backdrop-filter:blur(5px);max-height:130px;overflow:hidden;transition:opacity .5s,transform .5s,max-height .4s}
+        #dialogue-box.hidden-beat{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(30px)}
+        .dialogue-avatar{flex-shrink:0;width:48px;height:48px;border-radius:8px;border:2px solid var(--border);overflow:hidden;background:var(--dark);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+        .dialogue-avatar img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+        .dialogue-content{flex:1;min-width:0;display:flex;flex-direction:column}
+        .dialogue-name{font-family:'Cinzel';font-weight:700;color:var(--hl);font-size:.85rem;margin-bottom:.15rem;letter-spacing:1px}
+        .dialogue-text{font-size:clamp(.85rem,2.2vw,1.05rem);line-height:1.6;color:var(--dark);font-weight:500}
+        .dialogue-prompt{text-align:right;color:#999;font-family:'Cinzel';font-size:.6rem;margin-top:.15rem;opacity:.7}
 
-        #intro-overlay.hidden { opacity: 0; pointer-events: none; }
+        .hover-tooltip{position:fixed;background:rgba(0,0,0,.85);color:#fff;padding:8px 16px;border-radius:4px;font-family:'Cinzel';font-size:.9rem;pointer-events:none;z-index:100;opacity:0;transform:translateY(10px);transition:opacity .2s,transform .2s;border:1px solid var(--hl);box-shadow:0 0 12px var(--hl)}
 
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-
-        /* --- Scroll Track --- */
-        .scroll-track { height: 600vh; pointer-events: none; }
-
-        /* --- UI Layer --- */
-        #ui-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 10;
-            opacity: 0; transition: opacity 1s;
-        }
-        #ui-layer.visible { opacity: 1; }
-
-        .nav-return {
-            position: fixed; top: 2rem; left: 2rem;
-            color: var(--text-dark); text-decoration: none;
-            font-family: 'Cinzel'; font-size: 0.9rem; letter-spacing: 2px;
-            pointer-events: auto; background: rgba(255, 255, 255, 0.9);
-            padding: 10px 20px; border-radius: 4px;
-            border: 1px solid var(--ui-border);
-            transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .nav-return:hover { background: var(--text-dark); color: #fff; transform: translateY(-2px); }
-
-        /* Dialogue Box */
-        .dialogue-box {
-            position: absolute;
-            bottom: 5vh; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 800px; min-height: 180px;
-            background: var(--ui-bg);
-            border: 2px solid var(--ui-border);
-            border-radius: 8px;
-            padding: 2rem;
-            pointer-events: auto;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(141, 110, 99, 0.1);
-            display: flex; flex-direction: column;
-            backdrop-filter: blur(5px);
-        }
-        .dialogue-name {
-            font-family: 'Cinzel'; font-weight: 700; color: var(--highlight);
-            font-size: 1.1rem; margin-bottom: 0.5rem; letter-spacing: 1px;
-        }
-        .dialogue-text {
-            font-size: 1.25rem; line-height: 1.8; color: var(--text-dark);
-            flex: 1; font-weight: 500;
-        }
-        .dialogue-prompt {
-            text-align: right; color: #888; font-family: 'Cinzel';
-            font-size: 0.8rem; margin-top: 1rem; opacity: 0.7;
-        }
-
-        /* Interactive Labels */
-        .hover-tooltip {
-            position: fixed;
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-family: 'Cinzel';
-            font-size: 0.9rem;
-            pointer-events: none;
-            z-index: 100;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.2s, transform 0.2s;
-            border: 1px solid var(--highlight);
-            box-shadow: 0 0 10px var(--highlight);
-        }
-
-        /* Quest Log Overlay */
-        #quest-parchment {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-            width: 90%; max-width: 700px; height: 85vh;
-            background: #fffbf0 url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmYmYwIi8+CjxwYXRoIGQ9Ik0wIDBoNHY0SDB6IiBmaWxsPSIjZDdjY2M4IiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=');
-            box-shadow: 0 0 0 1000px rgba(0,0,0,0.7), 0 30px 80px rgba(0,0,0,0.8);
-            padding: 4rem 3rem;
-            opacity: 0; pointer-events: none;
-            z-index: 200;
-            color: #3e2723;
-            overflow-y: auto;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 8px double #5d4037;
-        }
-
-        #quest-parchment.visible {
-            opacity: 1; pointer-events: auto;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .parchment-header {
-            text-align: center; font-family: 'Cinzel'; font-size: 2.5rem;
-            border-bottom: 2px solid #3e2723; padding-bottom: 1rem; margin-bottom: 2rem;
-            color: #3e2723; font-weight: 900;
-        }
-
-        .quest-item {
-            margin-bottom: 2rem; border-bottom: 1px dashed #a1887f; padding-bottom: 1.5rem;
-        }
-        .quest-title {
-            font-family: 'Cinzel'; font-weight: bold; font-size: 1.4rem;
-            display: flex; justify-content: space-between; color: #d84315;
-            align-items: center;
-        }
-        .quest-rank {
-            background: #3e2723; color: #fff; padding: 2px 8px; font-size: 0.8rem; border-radius: 4px;
-        }
-        .quest-desc {
-            font-family: 'Noto Serif TC'; font-size: 1.1rem; color: #5d4037; margin-top: 0.8rem; line-height: 1.6;
-        }
-
-        .close-btn {
-            position: absolute; top: 1rem; right: 1rem;
-            width: 40px; height: 40px;
-            background: #5d4037; color: #fff;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-weight: bold; cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            font-family: sans-serif;
-            transition: transform 0.2s;
-        }
-        .close-btn:hover { transform: rotate(90deg); background: #8d6e63; }
+        /* Quest Parchment */
+        #quest-parchment{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);width:min(90%,700px);height:85vh;background:#fffbf0 url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmYmYwIi8+CjxwYXRoIGQ9Ik0wIDBoNHY0SDB6IiBmaWxsPSIjZDdjY2M4IiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=');box-shadow:0 0 0 1000px rgba(0,0,0,.7),0 30px 80px rgba(0,0,0,.8);padding:3rem 2.5rem;opacity:0;pointer-events:none;z-index:200;color:var(--dark);overflow-y:auto;transition:all .4s cubic-bezier(.175,.885,.32,1.275);border:8px double #5d4037}
+        #quest-parchment.visible{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+        .parchment-header{text-align:center;font-family:'Cinzel';font-size:clamp(1.6rem,4vw,2.5rem);border-bottom:2px solid var(--dark);padding-bottom:1rem;margin-bottom:2rem;font-weight:900}
+        .quest-item{margin-bottom:1.8rem;border-bottom:1px dashed #a1887f;padding-bottom:1.2rem}
+        .quest-title{font-family:'Cinzel';font-weight:bold;font-size:clamp(1rem,2.5vw,1.4rem);display:flex;justify-content:space-between;color:#d84315;align-items:center;gap:.5rem}
+        .quest-rank{background:var(--dark);color:#fff;padding:2px 8px;font-size:.75rem;border-radius:4px;white-space:nowrap}
+        .quest-desc{font-size:clamp(.9rem,2vw,1.1rem);color:#5d4037;margin-top:.8rem;line-height:1.6}
+        .close-btn{position:absolute;top:1rem;right:1rem;width:40px;height:40px;background:#5d4037;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.2);font-family:sans-serif;transition:transform .2s}
+        .close-btn:hover{transform:rotate(90deg);background:#8d6e63}
 
         /* Skill Board */
-        #skill-board {
-            position: fixed; top: 20vh; right: 10vw;
-            width: 280px;
-            background: #fff8e1;
-            border: 4px solid #3e2723;
-            padding: 2rem;
-            transform: rotate(3deg) translateY(50px);
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.3);
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.5s, transform 0.5s;
-        }
-        #skill-board.visible { opacity: 1; transform: rotate(3deg) translateY(0); }
+        #skill-board{position:fixed;top:18vh;right:8vw;width:min(260px,40vw);background:#fff8e1;border:4px solid var(--dark);padding:1.5rem;transform:rotate(3deg) translateY(50px);box-shadow:10px 10px 30px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .5s,transform .5s}
+        #skill-board.visible{opacity:1;transform:rotate(3deg) translateY(0)}
+        .skill-title{text-align:center;border-bottom:2px solid var(--dark);padding-bottom:8px;margin-bottom:.8rem;font-family:'Cinzel';font-size:clamp(1.1rem,2.5vw,1.5rem);color:var(--dark)}
+        .skill-list li{margin-bottom:.6rem;font-family:'Noto Serif TC',serif;color:#5d4037;font-size:clamp(.85rem,2vw,1.1rem);font-weight:bold;display:flex;justify-content:space-between}
 
-        .skill-title {
-            text-align: center; border-bottom: 2px solid #3e2723;
-            padding-bottom: 10px; margin-bottom: 1rem;
-            font-family: 'Cinzel'; font-size: 1.5rem; color: #3e2723;
-        }
-        .skill-list li {
-            margin-bottom: 0.8rem; font-family: 'Noto Serif TC', serif;
-            color: #5d4037; font-size: 1.1rem; font-weight: bold;
-            display: flex; justify-content: space-between;
-        }
+        /* Social Card */
+        #social-card{position:fixed;bottom:4vh;left:50%;transform:translateX(-50%);width:min(380px,92vw);background:linear-gradient(145deg,#fff8e1,#ffe0b2);border:3px solid #5d4037;border-radius:16px;padding:1.5rem 1.8rem;box-shadow:0 16px 48px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.4);pointer-events:auto;opacity:0;transition:opacity .6s,transform .6s;display:flex;flex-direction:column;align-items:center;gap:.7rem;text-align:center}
+        #social-card.visible{opacity:1}
+        .social-card-avatar{width:64px;height:64px;border-radius:50%;border:3px solid #5d4037;overflow:hidden;background:var(--dark);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+        .social-card-avatar img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+        .social-card-name{font-family:'Cinzel';font-size:clamp(1.1rem,3vw,1.4rem);font-weight:700;color:var(--dark);letter-spacing:2px}
+        .social-card-tagline{font-size:clamp(.8rem,2vw,.95rem);color:#5d4037;line-height:1.5;max-width:300px}
+        .social-card-links{display:flex;gap:.8rem;margin-top:.3rem;flex-wrap:wrap;justify-content:center}
+        .social-card-links a{background:var(--hl);color:#fff;padding:10px 22px;font-family:'Cinzel';text-decoration:none;border-radius:6px;font-weight:bold;font-size:clamp(.75rem,1.8vw,.85rem);border:2px solid #fff;box-shadow:0 0 12px rgba(255,109,0,.3);transition:.2s;text-transform:uppercase;letter-spacing:1px}
+        .social-card-links a:hover{background:#fff;color:var(--hl);border-color:var(--hl)}
 
-        /* Socials */
-        .footer-socials {
-            position: fixed; bottom: 2rem; right: 2rem;
-            display: flex; gap: 1rem;
-            pointer-events: auto;
-            opacity: 0; transform: translateY(20px);
-            transition: 0.5s;
-        }
-        .footer-socials.visible { opacity: 1; transform: translateY(0); }
+        #toast-msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Noto Serif TC',serif;font-weight:900;font-size:clamp(2.5rem,8vw,4rem);color:var(--gold);text-shadow:0 0 20px rgba(255,202,40,.8);opacity:0;pointer-events:none;z-index:300}
 
-        .social-btn {
-            background: #ff6d00; color: #fff;
-            padding: 12px 24px; font-family: 'Cinzel';
-            text-decoration: none; border-radius: 4px;
-            font-weight: bold; border: 2px solid #fff;
-            box-shadow: 0 0 15px rgba(255, 109, 0, 0.4);
-            transition: 0.2s;
-            text-transform: uppercase;
+        /* ---- RWD ---- */
+        @media(max-width:768px){
+            #dialogue-box{width:96%;padding:.6rem .8rem;max-height:150px;bottom:1vh;gap:.5rem}
+            .dialogue-avatar{width:36px;height:36px}
+            .dialogue-prompt{display:none}
+            #quest-parchment{padding:2rem 1.5rem;height:80vh}
+            #social-card{padding:1.2rem}
+            .social-card-avatar{width:48px;height:48px}
         }
-        .social-btn:hover { background: #fff; color: #ff6d00; border-color: #ff6d00; }
-
-        /* Toast Message */
-        #toast-msg {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-family: 'Noto Serif TC', serif; font-weight: 900;
-            font-size: 4rem; color: #ffca28;
-            text-shadow: 0 0 20px rgba(255, 202, 40, 0.8);
-            opacity: 0; pointer-events: none; z-index: 300;
+        @media(max-width:480px){
+            #dialogue-box{max-height:140px;padding:.5rem .6rem}
+            .dialogue-avatar{width:30px;height:30px}
+            .dialogue-name{font-size:.7rem}
         }
-
     </style>
 </head>
 <body>
-
-    <!-- Intro -->
     <div id="intro-overlay" onclick="enterTavern()">
         <div class="intro-title">THE GUILD TAVERN</div>
         <div class="intro-sub">Tap to Enter</div>
     </div>
-
-    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
-
-    <!-- Navigation -->
     <a href="/guild/" class="nav-return">BACK TO GUILD</a>
-
-    <!-- Scroll Spacer -->
     <div class="scroll-track"></div>
 
-    <!-- UI Overlay -->
     <div id="ui-layer">
-
-        <div class="dialogue-box">
-            <div class="dialogue-name">SPJ</div>
-            <div class="dialogue-text" id="dialogue-text"></div>
-            <div class="dialogue-prompt">▼ SCROLL TO EXPLORE</div>
+        <div id="dialogue-box">
+            <div class="dialogue-avatar"><img src="/assets/img/guild/spj/avatar.webp" alt="SPJ"/></div>
+            <div class="dialogue-content">
+                <div class="dialogue-name">SPJ</div>
+                <div class="dialogue-text" id="dialogue-text"></div>
+                <div class="dialogue-prompt">▼ SCROLL TO EXPLORE</div>
+            </div>
         </div>
 
         <div id="skill-board">
             <div class="skill-title">MENU</div>
-            <ul class="skill-list" style="list-style: none; padding: 0;">
+            <ul class="skill-list" style="list-style:none;padding:0">
                 <li>代碼鍊成 <span>99G</span></li>
                 <li>系統架構 <span>150G</span></li>
                 <li>魔力咖啡 <span>5G</span></li>
@@ -281,442 +121,903 @@
             </ul>
         </div>
 
-        <div class="footer-socials" id="footer-socials">
-            <a href="https://www.threads.net/@spj.story" target="_blank" class="social-btn">Join The Guild</a>
+        <div id="social-card">
+            <div class="social-card-avatar"><img src="/assets/img/guild/spj/avatar.webp" alt="SPJ"/></div>
+            <div class="social-card-name">SPJ</div>
+            <div class="social-card-tagline">酒館老闆 / 獨立開發者<br>用程式碼釀造故事</div>
+            <div class="social-card-links">
+                <a href="https://www.threads.net/@spj.story" target="_blank">Threads</a>
+            </div>
         </div>
 
-        <div id="hover-tooltip" class="hover-tooltip">點擊互動</div>
+        <div id="hover-tooltip" class="hover-tooltip"></div>
         <div id="toast-msg">乾杯!</div>
 
-        <!-- Quest Log -->
         <div id="quest-parchment">
             <div class="close-btn" onclick="closeScroll()">✕</div>
             <div class="parchment-header">QUEST LOG</div>
-
-            <div class="quest-item">
-                <div class="quest-title">TEXT TOWN <span class="quest-rank">RANK S</span></div>
-                <div class="quest-desc">
-                    天書系統核心開發。目標是創造一個完全由文字定義物理法則的世界。將創意具現化為真實的遊戲體驗。
-                </div>
-            </div>
-
-            <div class="quest-item">
-                <div class="quest-title">SEPAJUAN GUILD <span class="quest-rank">RANK A</span></div>
-                <div class="quest-desc">
-                    連結現實世界的創造者。我們在此集結，共享資源，對抗孤獨。像異世界轉生一樣，尋找志同道合的夥伴。
-                </div>
-            </div>
-
-            <div class="quest-item">
-                <div class="quest-title">CHRONICLES <span class="quest-rank">RANK B</span></div>
-                <div class="quest-desc">
-                    紀錄開發的過程與溫度。讓事情不是只有死板板的結果，而是充滿故事的冒險篇章。
-                </div>
-            </div>
+            <div class="quest-item"><div class="quest-title">TEXT TOWN <span class="quest-rank">RANK S</span></div><div class="quest-desc">天書系統核心開發。目標是創造一個完全由文字定義物理法則的世界。將創意具現化為真實的遊戲體驗。</div></div>
+            <div class="quest-item"><div class="quest-title">SEPAJUAN GUILD <span class="quest-rank">RANK A</span></div><div class="quest-desc">連結現實世界的創造者。我們在此集結，共享資源，對抗孤獨。像異世界轉生一樣，尋找志同道合的夥伴。</div></div>
+            <div class="quest-item"><div class="quest-title">CHRONICLES <span class="quest-rank">RANK B</span></div><div class="quest-desc">紀錄開發的過程與溫度。讓事情不是只有死板板的結果，而是充滿故事的冒險篇章。</div></div>
+            <div class="quest-item"><div class="quest-title">TAVERN EXPANSION <span class="quest-rank">RANK A</span></div><div class="quest-desc">擴張酒館的版圖。讓更多冒險者能在這裡找到彼此、交換情報、分享戰利品。</div></div>
         </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-
+    <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
     <script type="module">
-        import * as THREE from 'three';
+import * as THREE from 'three';
 
-        // --- Init Scene ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1008);
-        scene.fog = new THREE.FogExp2(0x1a1008, 0.035);
+/* ========== SCENE ========== */
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1008);
+scene.fog = new THREE.FogExp2(0x1a1008, 0.035);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3, 12); // Start outside
+const isMobile = () => window.innerWidth < 768;
+const camera = new THREE.PerspectiveCamera(isMobile() ? 60 : 50, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 3, 12);
+const camTarget = new THREE.Vector3(0, 2, 0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.1;
-        container.appendChild(renderer.domElement);
+/* ========== HORIZONTAL PAN (mobile/narrow) ========== */
+let panX = 0;
+let panMaxX = isMobile() ? 3 : 0;
+let touchStartX = 0, touchStartY = 0, touchStartPanX = 0;
+let isPanning = false;
+const PAN_THRESHOLD = 10;
+window.__panEnabled = panMaxX > 0;
+window.__panMaxX = panMaxX;
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffcc80, 0.4);
-        scene.add(ambientLight);
+const renderer = new THREE.WebGLRenderer({ antialias: !isMobile(), powerPreference: 'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile() ? 1 : 1.5));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+container.appendChild(renderer.domElement);
 
-        const mainLight = new THREE.DirectionalLight(0xffe0b2, 1.5);
-        mainLight.position.set(5, 8, 3);
-        mainLight.castShadow = true;
-        mainLight.shadow.mapSize.width = 1024;
-        mainLight.shadow.mapSize.height = 1024;
-        scene.add(mainLight);
+/* ========== LIGHTING ========== */
+scene.add(new THREE.AmbientLight(0xffcc80, 0.5));
+const mainLight = new THREE.DirectionalLight(0xffe0b2, 1.2);
+mainLight.position.set(5, 8, 3);
+scene.add(mainLight);
+const candleLight = new THREE.PointLight(0xff9944, 1.8, 10);
+candleLight.position.set(0, .3, 2.5);
+scene.add(candleLight);
 
-        const candleLight = new THREE.PointLight(0xff6d00, 3, 8);
-        candleLight.position.set(2, 1.5, 2);
-        scene.add(candleLight);
+const torchAnimData = [];
 
-        // --- Materials ---
-        const woodMat = new THREE.MeshStandardMaterial({
-            color: 0x5d4037, roughness: 0.7,
-            emissive: 0x8d6e63, emissiveIntensity: 0
-        });
-        const bookMat = new THREE.MeshStandardMaterial({
-            color: 0x8d6e63, roughness: 0.4,
-            emissive: 0xffca28, emissiveIntensity: 0
-        });
-        const metalMat = new THREE.MeshStandardMaterial({
-            color: 0xaaaaaa, metalness: 0.8, roughness: 0.2,
-            emissive: 0xffffff, emissiveIntensity: 0
-        });
+/* ========== MATERIALS ========== */
+const woodLight  = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.6 });
+const woodLightB = new THREE.MeshStandardMaterial({ color: 0x9e8070, roughness: 0.55 }); // alternating plank
+const woodMed    = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.7, emissive: 0x8d6e63, emissiveIntensity: 0 });
+const woodMedB   = new THREE.MeshStandardMaterial({ color: 0x6d5044, roughness: 0.65 }); // alternating plank
+const woodDark   = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.8 });
+const woodDarkB  = new THREE.MeshStandardMaterial({ color: 0x4a3028, roughness: 0.75 });
+const leatherMat = new THREE.MeshStandardMaterial({ color: 0x5d2906, roughness: 0.55, emissive: 0xffca28, emissiveIntensity: 0 });
+const goldTrim   = new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.6, roughness: 0.25 });
+const pageMat    = new THREE.MeshStandardMaterial({ color: 0xfffbe6, roughness: 0.9 });
+const metalMat   = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8, roughness: 0.2, emissive: 0xffffff, emissiveIntensity: 0 });
+const ceramicMat = new THREE.MeshStandardMaterial({ color: 0xd4c5a9, roughness: 0.8 });
 
-        // --- Objects ---
-        const clickableObjects = [];
+/* ========== HELPERS ========== */
+function box(w,h,d,mat){ return new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); }
+function cyl(rt,rb,h,seg,mat){ return new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat); }
 
-        // Counter
-        const counter = new THREE.Mesh(new THREE.BoxGeometry(30, 1, 10), woodMat);
-        counter.position.set(0, -0.5, 0);
-        counter.receiveShadow = true;
-        scene.add(counter);
+/* ========== CACHED DOM REFS ========== */
+const uiLayer = document.getElementById('ui-layer');
+const hoverTooltip = document.getElementById('hover-tooltip');
+const dialogueTextEl = document.getElementById('dialogue-text');
+const dialogueBoxEl = document.getElementById('dialogue-box');
 
-        // Cabinet
-        const cabinetGroup = new THREE.Group();
-        cabinetGroup.position.set(0, 0, -5);
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 1), woodMat);
-        wall.position.y = 4;
-        wall.receiveShadow = true;
-        cabinetGroup.add(wall);
+/* ========== SHARED GEOMETRIES ========== */
+const sharedGeos = {
+    boltCyl: new THREE.CylinderGeometry(.04, .04, .08, 6),
+    bracketNail: new THREE.CylinderGeometry(.025, .025, .06, 6),
+    decoNail: new THREE.CylinderGeometry(.02, .02, .05, 6),
+    railSupport: new THREE.CylinderGeometry(.035, .035, .3, 6),
+    railPlate: new THREE.BoxGeometry(.14, .14, .04),
+    bracketV: new THREE.BoxGeometry(.1, .4, .08),
+    bracketH: new THREE.BoxGeometry(.1, .08, .5),
+    glowCore: new THREE.SphereGeometry(.1, 6, 6),
+    glowHalo: new THREE.RingGeometry(.18, .28, 12),
+    torchBolt: new THREE.SphereGeometry(.03, 6, 6),
+    torchCradleArm: new THREE.BoxGeometry(.04, .3, .08),
+    torchCradleBase: new THREE.BoxGeometry(.24, .04, .08),
+    torchRopeWrap: new THREE.TorusGeometry(.065, .015, 6, 10),
+};
+window.__sharedGeoCount = Object.keys(sharedGeos).length;
 
-        // Shelves
-        for(let i=0; i<3; i++) {
-            const shelf = new THREE.Mesh(new THREE.BoxGeometry(18, 0.2, 1), woodMat);
-            shelf.position.set(0, 2 + i*2.5, 0.6);
-            shelf.castShadow = true;
-            cabinetGroup.add(shelf);
+/* ========== REUSABLE RAYCASTER ========== */
+const _rcVec2 = new THREE.Vector2();
+const _raycaster = new THREE.Raycaster();
+window.__reusesRaycaster = true;
+
+// Bottle profile via LatheGeometry (standard wine/spirit shape)
+function bottleGeo(bodyR, neckR, bodyH, neckH, seg){
+    const p = [];
+    p.push(new THREE.Vector2(0,0));
+    p.push(new THREE.Vector2(bodyR, 0));
+    p.push(new THREE.Vector2(bodyR, bodyH*.7));
+    p.push(new THREE.Vector2(bodyR*.65, bodyH*.88));
+    p.push(new THREE.Vector2(neckR, bodyH));
+    p.push(new THREE.Vector2(neckR, bodyH+neckH*.8));
+    p.push(new THREE.Vector2(neckR*1.35, bodyH+neckH));
+    p.push(new THREE.Vector2(neckR*1.35, bodyH+neckH+.03));
+    p.push(new THREE.Vector2(neckR, bodyH+neckH+.03));
+    p.push(new THREE.Vector2(0, bodyH+neckH+.03));
+    return new THREE.LatheGeometry(p, seg||12);
+}
+// Round flask (potion-like, wide belly + thin neck)
+function flaskGeo(r, neckR, h, seg){
+    const p = [new THREE.Vector2(0,0), new THREE.Vector2(r*.3,0),
+        new THREE.Vector2(r, h*.25), new THREE.Vector2(r, h*.5),
+        new THREE.Vector2(r*.6, h*.7), new THREE.Vector2(neckR, h*.78),
+        new THREE.Vector2(neckR, h*.95), new THREE.Vector2(neckR*1.3, h),
+        new THREE.Vector2(0, h)];
+    return new THREE.LatheGeometry(p, seg||10);
+}
+// Tall slender bottle (champagne-like)
+function slenderGeo(r, h, seg){
+    const p = [new THREE.Vector2(0,0), new THREE.Vector2(r,0),
+        new THREE.Vector2(r*.95, h*.15), new THREE.Vector2(r*.85, h*.5),
+        new THREE.Vector2(r*.55, h*.7), new THREE.Vector2(r*.3, h*.8),
+        new THREE.Vector2(r*.3, h*.95), new THREE.Vector2(r*.35, h),
+        new THREE.Vector2(0, h)];
+    return new THREE.LatheGeometry(p, seg||10);
+}
+// Squat jar/jug (wide, short, ceramic feel)
+function jarGeo(r, h, seg){
+    const p = [new THREE.Vector2(0,0), new THREE.Vector2(r*.8,0),
+        new THREE.Vector2(r, h*.15), new THREE.Vector2(r, h*.55),
+        new THREE.Vector2(r*.85, h*.7), new THREE.Vector2(r*.65, h*.8),
+        new THREE.Vector2(r*.65, h*.92), new THREE.Vector2(r*.7, h),
+        new THREE.Vector2(0, h)];
+    return new THREE.LatheGeometry(p, seg||10);
+}
+// Rectangular spirit bottle (approximated with low-segment lathe)
+function spiritGeo(r, h, seg){
+    const p = [new THREE.Vector2(0,0), new THREE.Vector2(r,0),
+        new THREE.Vector2(r, h*.6), new THREE.Vector2(r*.4, h*.75),
+        new THREE.Vector2(r*.25, h*.78), new THREE.Vector2(r*.25, h*.95),
+        new THREE.Vector2(r*.3, h), new THREE.Vector2(0, h)];
+    return new THREE.LatheGeometry(p, seg||4); // 4 segments = boxy
+}
+const bgGeos = [
+    bottleGeo(.2,.08,.6,.35,8),    // standard wine
+    bottleGeo(.18,.06,.75,.25,8),   // tall wine
+    bottleGeo(.25,.09,.5,.4,8),     // wide short
+    flaskGeo(.22,.06,.65,10),       // round flask
+    slenderGeo(.16,.85,10),         // champagne-like
+    jarGeo(.24,.45,10),             // squat jar
+    spiritGeo(.18,.7,4),            // rectangular spirit
+    bottleGeo(.15,.05,.8,.2,8),     // thin tall
+];
+const clickableObjects = [];
+
+/* ========== COUNTER (detailed) ========== */
+const counterG = new THREE.Group();
+// Top surface — individual planks running lengthwise
+const cPlankCount = 5;
+const cPlankD = 6 / cPlankCount;
+for (let i = 0; i < cPlankCount; i++) {
+    const mat = i % 2 === 0 ? woodLight : woodLightB;
+    const plank = box(22, .2, cPlankD - .05, mat);
+    plank.position.set(0, 0, -3 + cPlankD * .5 + i * cPlankD);
+    plank.receiveShadow = true;
+    counterG.add(plank);
+}
+// Beveled front edge trim
+const frontTrim = box(22, .12, .2, woodDark);
+frontTrim.position.set(0, -.05, 3.02);
+counterG.add(frontTrim);
+// Front apron — paneled (3 recessed panels)
+const cApronFrame = box(22, 1.3, .12, woodDark);
+cApronFrame.position.set(0, -.8, 2.95);
+counterG.add(cApronFrame);
+for (let p = 0; p < 3; p++) {
+    const panelW = 6;
+    const panel = box(panelW - .4, .9, .06, woodMedB);
+    panel.position.set(-7.3 + p * 7.3, -.8, 3.02);
+    counterG.add(panel);
+}
+// Bar rail (brass rod along front edge)
+const cRail = cyl(.055, .055, 22, 10, goldTrim);
+cRail.rotation.z = Math.PI / 2;
+cRail.position.set(0, -.08, 3.12);
+counterG.add(cRail);
+// Rail bracket supports (decorative scroll brackets)
+for (let i = 0; i < 6; i++) {
+    const sup = new THREE.Mesh(sharedGeos.railSupport, goldTrim);
+    sup.position.set(-9 + i * 3.6, -.25, 3.12);
+    counterG.add(sup);
+    const plate = new THREE.Mesh(sharedGeos.railPlate, goldTrim);
+    plate.position.set(-9 + i * 3.6, -.42, 3.1);
+    counterG.add(plate);
+}
+// Back wall of counter
+const cBack = box(22, 1.8, .12, woodDark);
+cBack.position.set(0, -.8, -2.95);
+counterG.add(cBack);
+// Shelf under counter (multi-plank)
+for (let s = 0; s < 3; s++) {
+    const mat = s % 2 === 0 ? woodMed : woodMedB;
+    const shPlank = box(20, .1, 1.25, mat);
+    shPlank.position.set(0, -1.2, -1.5 + s * 1.35);
+    counterG.add(shPlank);
+}
+// Support posts under counter
+for (let i = 0; i < 4; i++) {
+    const post = cyl(.12, .14, 1.5, 8, woodDark);
+    post.position.set(-7.5 + i * 5, -1.1, 1.2);
+    counterG.add(post);
+    // Post cap
+    const cap = cyl(.16, .12, .08, 8, woodDarkB);
+    cap.position.set(-7.5 + i * 5, -.35, 1.2);
+    counterG.add(cap);
+}
+// Coaster near mug position
+const coaster = cyl(.5, .5, .04, 12, ceramicMat);
+coaster.position.set(2, .15, 2);
+counterG.add(coaster);
+counterG.position.y = -.5;
+scene.add(counterG);
+
+/* ========== CABINET (detailed) ========== */
+const cabG = new THREE.Group();
+cabG.position.set(0, 0, -5);
+// Back wall — vertical planks with alternating wood tones
+const plankCount = 14;
+const plankW = 18 / plankCount;
+for (let i = 0; i < plankCount; i++) {
+    const mat = i % 2 === 0 ? woodMed : woodMedB;
+    const h = 9 + (Math.random() - .5) * .15;           // slight height variation
+    const plank = box(plankW - .04, h, .3, mat);
+    plank.position.set(-9 + plankW * .5 + i * plankW, 4.5, 0);
+    plank.receiveShadow = true;
+    cabG.add(plank);
+}
+// Horizontal support beams behind planks
+[1.5, 5, 8.5].forEach(y => {
+    const beam = box(18.2, .25, .15, woodDarkB);
+    beam.position.set(0, y, -.18);
+    cabG.add(beam);
+});
+// Decorative iron straps with bolts
+[-6, 0, 6].forEach(x => {
+    const strap = box(.12, 9, .06, metalMat);
+    strap.position.set(x, 4.5, .16);
+    cabG.add(strap);
+    [1.5, 3.5, 5.5, 7.5].forEach(y => {
+        const bolt = new THREE.Mesh(sharedGeos.boltCyl, metalMat);
+        bolt.rotation.x = Math.PI / 2;
+        bolt.position.set(x, y, .2);
+        cabG.add(bolt);
+    });
+});
+// Side panels
+[-9.15, 9.15].forEach(x=>{
+    const side = box(.3, 9, 1.5, woodDark);
+    side.position.set(x, 4.5, .55);
+    cabG.add(side);
+});
+// Crown molding
+const crown = box(18.6, .35, 1.8, woodDark);
+crown.position.set(0, 9.2, .6);
+cabG.add(crown);
+// Crown lip (decorative overhang)
+const crownLip = box(18.8, .12, .25, goldTrim);
+crownLip.position.set(0, 9.38, 1.35);
+cabG.add(crownLip);
+// Base
+const cabBase = box(18.6, .25, 1.5, woodDark);
+cabBase.position.set(0, .12, .55);
+cabG.add(cabBase);
+// Shelves with front lip, grooved surface, brackets & decorative nails
+const shelfY = [2, 4.5, 7];
+shelfY.forEach(y=>{
+    // Multi-plank shelf surface (6 planks per shelf)
+    const shPlankCount = 6;
+    const shPlankD = 1.2 / shPlankCount;
+    for (let p = 0; p < shPlankCount; p++) {
+        const mat = p % 2 === 0 ? woodLight : woodLightB;
+        const plank = box(17.5, .12, shPlankD - .02, mat);
+        plank.position.set(0, y, .05 + shPlankD * .5 + p * shPlankD);
+        plank.castShadow = true;
+        cabG.add(plank);
+    }
+    // Front lip (rounded rail effect)
+    const lip = box(17.5, .1, .12, woodDark);
+    lip.position.set(0, y + .08, 1.22);
+    cabG.add(lip);
+    // Back lip (prevent bottles sliding)
+    const backLip = box(17.5, .06, .06, woodDark);
+    backLip.position.set(0, y + .06, .02);
+    cabG.add(backLip);
+    // L-shaped brackets (5 per shelf)
+    for (let b = 0; b < 5; b++) {
+        const bx = -7 + b * 3.5;
+        const brV = new THREE.Mesh(sharedGeos.bracketV, metalMat);
+        brV.position.set(bx, y - .25, .2);
+        cabG.add(brV);
+        const brH = new THREE.Mesh(sharedGeos.bracketH, metalMat);
+        brH.position.set(bx, y - .08, .45);
+        cabG.add(brH);
+        const nail = new THREE.Mesh(sharedGeos.bracketNail, metalMat);
+        nail.rotation.x = Math.PI / 2;
+        nail.position.set(bx, y - .15, .25);
+        cabG.add(nail);
+    }
+    // Decorative nails along front lip
+    for (let n = 0; n < 8; n++) {
+        const nail = new THREE.Mesh(sharedGeos.decoNail, goldTrim);
+        nail.rotation.x = Math.PI / 2;
+        nail.position.set(-7 + n * 2, y + .08, 1.29);
+        cabG.add(nail);
+    }
+});
+
+/* ---- Background Bottles (decorative, varied shapes & lightweight materials) ---- */
+const bgColors = [0x8b2020,0x2e6b2e,0x1c5a8b,0xb8860b,0x6a1b9a,0x4e342e,0xbf360c,0x01579b,0x004d40,0x880e4f,0x33691e,0x0d47a1];
+// Pre-built shared materials (MeshStandardMaterial — no transmission, much cheaper)
+const bgMats = bgColors.map((c, i) => {
+    const style = i % 4;
+    if (style === 0) return new THREE.MeshStandardMaterial({ color: c, transparent: true, opacity: .7, roughness: .15, metalness: .05 }); // clear glass
+    if (style === 1) return new THREE.MeshStandardMaterial({ color: c, transparent: true, opacity: .8, roughness: .5 }); // frosted
+    if (style === 2) return new THREE.MeshStandardMaterial({ color: c, transparent: true, opacity: .85, roughness: .1, metalness: .1 }); // dark glass
+    return new THREE.MeshStandardMaterial({ color: c, roughness: .7 }); // ceramic opaque
+});
+const specialXByRow = [[-4.2, 1.5], [-2.0, 3.8], [-.5, 5]];
+let seed = 42;
+function seededRandom(){ seed=(seed*16807)%2147483647; return(seed-1)/2147483646; }
+for(let row=0;row<3;row++){
+    const by = shelfY[row]+.01;
+    for(let c=0;c<12;c++){
+        const bx = (c-5.5)*1.2;
+        if(specialXByRow[row].some(sx => Math.abs(bx - sx) < 1.0)) continue;
+        const geoIdx = (c + row * 3) % bgGeos.length;
+        const matIdx = (c * 3 + row * 5) % bgMats.length;
+        const b = new THREE.Mesh(bgGeos[geoIdx], bgMats[matIdx]);
+        b.position.set(bx, by, .6);
+        b.scale.setScalar(.75 + seededRandom() * .2);
+        b.rotation.y = seededRandom() * Math.PI * 2;
+        b.rotation.z = (seededRandom() - .5) * .06;
+        cabG.add(b);
+    }
+}
+scene.add(cabG);
+
+/* ========== SPECIAL INTERACTIVE BOTTLES ========== */
+const specials = [
+    { label:'「回呼地獄」白蘭地',     dialogue:'2015 年份的「回呼地獄」白蘭地。每一層回呼都沉澱出更深的苦澀，最後只留下一絲名為 Promise 的甘甜。', color:0xd4a017, x:-4.2, row:0, s:1.2 },
+    { label:'「Null 指標」琴酒',       dialogue:'「Null 指標」——碰都不要碰。上次有人喝了一口，整個人就 undefined 了。至今下落不明。', color:0xc0c0c0, x:1.5, row:0, s:1.0 },
+    { label:'「Git Merge」雞尾酒',     dialogue:'「Git Merge 雞尾酒」——把三種基酒混在一起，有時候很順，有時候會衝突到爆炸。今天運氣如何？', color:0xf4511e, x:-2.0, row:1, s:1.15 },
+    { label:'「記憶體洩漏」威士忌',     dialogue:'「記憶體洩漏」——喝了之後你會忘記自己為什麼進這間酒館。但味道真的很好，所以每個人都會再來一杯。', color:0x1b5e20, x:3.8, row:1, s:1.1 },
+    { label:'「量子糾纏」雙份裝',      dialogue:'「量子糾纏」——左瓶和右瓶永遠同步。你喝了左邊那杯，右邊那杯也會同時變空。薛丁格表示認可。', color:0x4a148c, x:-.5, row:2, s:1.25 },
+    { label:'「Segfault」雪莉酒',      dialogue:'這瓶「Segfault 雪莉酒」已經在架上好幾年了。瓶蓋上寫著「開啟即當機」，沒人敢碰。你要試嗎？', color:0x880e4f, x:5, row:2, s:1.0 },
+];
+const spBottleGeo = bottleGeo(.22,.08,.7,.35,10);
+const glowSprites = [];
+
+function createGlow(pos, color){
+    const core = new THREE.Mesh(sharedGeos.glowCore, new THREE.MeshBasicMaterial({color, transparent:true, opacity:.5}));
+    core.position.copy(pos); scene.add(core);
+    const halo = new THREE.Mesh(sharedGeos.glowHalo, new THREE.MeshBasicMaterial({color, transparent:true, opacity:.2, side:THREE.DoubleSide}));
+    halo.position.copy(pos); halo.rotation.x=-Math.PI/2; scene.add(halo);
+    glowSprites.push({core, halo, baseY:pos.y});
+}
+
+specials.forEach(def=>{
+    const mat = new THREE.MeshStandardMaterial({ color:def.color, transparent:true, opacity:.85, roughness:.12, metalness:.08, emissive:def.color, emissiveIntensity:0 });
+    const mesh = new THREE.Mesh(spBottleGeo, mat);
+    mesh.position.set(def.x, shelfY[def.row]+.01, .6);
+    mesh.scale.setScalar(def.s);
+    cabG.add(mesh);
+    // Hitbox (world space)
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(.7,1.4,1), new THREE.MeshBasicMaterial({visible:false}));
+    hit.position.set(def.x, shelfY[def.row]+.5, -4.4);
+    hit.userData = {id:'bottle-'+def.label, label:def.label, dialogue:def.dialogue, type:'bottle'};
+    scene.add(hit); clickableObjects.push(hit);
+    createGlow(new THREE.Vector3(def.x, shelfY[def.row]+1.5, -4.2), def.color);
+});
+window.__specialBottleCount = specials.length;
+window.__bottleDialoguesAllUnique = new Set(specials.map(b=>b.dialogue)).size === specials.length;
+
+/* ========== BOOK (detailed) ========== */
+const bookG = new THREE.Group();
+bookG.position.set(-2, .3, 2);
+bookG.rotation.set(-.1, .4, 0);
+// Bottom cover
+const bottomCover = box(2.5,.12,3.5, leatherMat);
+bookG.add(bottomCover);
+// Page layers
+for(let i=0;i<4;i++){
+    const pg = box(2.3-i*.015, .04, 3.3-i*.015, pageMat);
+    pg.position.y = .1+i*.04;
+    bookG.add(pg);
+}
+// Top cover
+const topCover = box(2.5,.1,3.5, leatherMat);
+topCover.position.y = .3;
+bookG.add(topCover);
+// Cover embossed border (gold frame on top cover)
+[[0,.33,-1.6, 2.1,.04,.07],[0,.33,1.6, 2.1,.04,.07],[-1.1,.33,0, .07,.04,3.1],[1.1,.33,0, .07,.04,3.1]].forEach(([x,y,z,w,h,d])=>{
+    const b = box(w,h,d, goldTrim);
+    b.position.set(x,y,z);
+    bookG.add(b);
+});
+// Spine
+const spine = box(.14,.38,3.5, new THREE.MeshStandardMaterial({color:0x4e2600, roughness:.5}));
+spine.position.set(-1.28, .16, 0);
+bookG.add(spine);
+// Spine ridges
+for(let i=0;i<3;i++){
+    const ridge = box(.16,.04,.2, goldTrim);
+    ridge.position.set(-1.3, .16, -1+i*1);
+    bookG.add(ridge);
+}
+// Metal corner pieces
+[[-1.15,-1.65],[1.15,-1.65],[-1.15,1.65],[1.15,1.65]].forEach(([x,z])=>{
+    const c = box(.18,.05,.18, goldTrim);
+    c.position.set(x,.33,z);
+    bookG.add(c);
+});
+// Floating rune
+const rune = new THREE.Mesh(new THREE.TorusGeometry(.5,.05,6,16), new THREE.MeshBasicMaterial({color:0xffca28, transparent:true, opacity:.6}));
+rune.position.set(0,1.5,0); rune.rotation.x=Math.PI/2;
+bookG.add(rune);
+
+bookG.userData = {id:'book', label:'閱讀任務日誌'};
+scene.add(bookG);
+clickableObjects.push(topCover);
+topCover.userData = {parentId:'book', label:'閱讀任務日誌'};
+createGlow(new THREE.Vector3(-2,1.8,2), 0xffca28);
+
+/* ========== MUG (glass beer mug) ========== */
+const mugG = new THREE.Group();
+// Counter top is at world y ≈ -.4, coaster top at ≈ -.33 — sit on coaster
+mugG.position.set(2, -.33, 2);
+// Glass body via LatheGeometry — simple open cylinder, no bottle neck
+const glassPts = [
+    new THREE.Vector2(0, 0),
+    new THREE.Vector2(.3, 0),       // base flat
+    new THREE.Vector2(.32, .02),    // base edge
+    new THREE.Vector2(.3, .04),     // base inner ledge
+    new THREE.Vector2(.3, .1),      // start of body
+    new THREE.Vector2(.32, .4),     // mid body (gentle taper outward)
+    new THREE.Vector2(.34, .7),     // upper body
+    new THREE.Vector2(.35, .85),    // near rim
+    new THREE.Vector2(.36, .9),     // rim outer
+    new THREE.Vector2(.34, .92),    // rim thickness
+    new THREE.Vector2(0, .92),      // top center (open)
+];
+const glassGeo = new THREE.LatheGeometry(glassPts, 16);
+const glassMat = new THREE.MeshStandardMaterial({
+    color: 0xddeedd, transparent: true, opacity: .3, roughness: .05,
+    metalness: .1, side: THREE.DoubleSide,
+});
+const mugBody = new THREE.Mesh(glassGeo, glassMat);
+mugG.add(mugBody);
+// Handle (CatmullRom curve tube)
+const handleCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(.34, .7, 0),
+    new THREE.Vector3(.55, .65, 0),
+    new THREE.Vector3(.58, .45, 0),
+    new THREE.Vector3(.55, .25, 0),
+    new THREE.Vector3(.34, .2, 0),
+]);
+const handleGeo = new THREE.TubeGeometry(handleCurve, 10, .035, 6, false);
+const handleMesh = new THREE.Mesh(handleGeo, glassMat);
+mugG.add(handleMesh);
+// Liquid inside (amber ale)
+const liquidMat = new THREE.MeshStandardMaterial({ color: 0xd4a017, roughness: .3, transparent: true, opacity: .8 });
+const liquid = cyl(.28, .28, .65, 16, liquidMat);
+liquid.position.y = .38;
+mugG.add(liquid);
+// Foam layer
+const foamMat = new THREE.MeshStandardMaterial({ color: 0xfffde7, roughness: .95 });
+const foam = new THREE.Mesh(new THREE.SphereGeometry(.3, 14, 10), foamMat);
+foam.scale.set(1, .2, 1);
+foam.position.y = .72;
+mugG.add(foam);
+
+mugG.userData = {id:'mug', label:'乾杯'};
+scene.add(mugG);
+clickableObjects.push(mugBody);
+mugBody.userData = {parentId:'mug', label:'乾杯'};
+createGlow(new THREE.Vector3(2, .6, 2), 0xff6d00);
+
+/* ========== TABLE CANDLE (single candle on counter center) ========== */
+const waxMat = new THREE.MeshStandardMaterial({ color: 0xfff5e0, roughness: .7 });
+const dripMat = new THREE.MeshStandardMaterial({ color: 0xfff8e8, roughness: .8 });
+const wickMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+const flameOuterMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: .1 });
+const flameMidMat = new THREE.MeshBasicMaterial({ color: 0xffaa33, transparent: true, opacity: .4 });
+const flameCoreMat = new THREE.MeshBasicMaterial({ color: 0xffee88, transparent: true, opacity: .7 });
+
+const candleG = new THREE.Group();
+candleG.position.set(0, -.4, 2);
+candleG.add(new THREE.Mesh(new THREE.CylinderGeometry(.25, .28, .05, 10), goldTrim));
+const cBody = new THREE.Mesh(new THREE.CylinderGeometry(.06, .08, .45, 8), waxMat);
+cBody.position.y = .25; candleG.add(cBody);
+[[.06,.2,.02],[-.04,.15,.05],[.03,.1,-.04]].forEach(([x,y,z]) => {
+    const blob = new THREE.Mesh(new THREE.SphereGeometry(.02, 5, 5), dripMat);
+    blob.scale.set(1, 2, 1); blob.position.set(x, y, z); candleG.add(blob);
+});
+const wick = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .06, 4), wickMat);
+wick.position.y = .5;
+candleG.add(wick);
+const flameOuter = new THREE.Mesh(new THREE.SphereGeometry(.08, 8, 8), flameOuterMat);
+flameOuter.scale.set(.6, 1.5, .6); flameOuter.position.y = .58; candleG.add(flameOuter);
+const flameMid = new THREE.Mesh(new THREE.ConeGeometry(.025, .1, 6), flameMidMat);
+flameMid.position.y = .56; candleG.add(flameMid);
+const flameCore = new THREE.Mesh(new THREE.ConeGeometry(.012, .06, 5), flameCoreMat);
+flameCore.position.y = .55; candleG.add(flameCore);
+scene.add(candleG);
+const candleFlameData = { outer: flameOuter, mid: flameMid, core: flameCore, baseY: .56 };
+
+/* ========== WALL TORCHES (on back wall, ABOVE top shelf) ========== */
+/* Canvas is portrait (~1265x1493). Visible x ≈ ±5.5 at z=-5.
+   Top shelf at y=7, crown molding at y=9.2. Torches go in that gap.
+   Bracket flat on wall, torch angled upward ~45°, flame at top. */
+const torchWoodMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: .8 });
+const torchRopeMat = new THREE.MeshStandardMaterial({ color: 0x8d6e50, roughness: .9 });
+const torchGlowMat = new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0xff4400, emissiveIntensity: 3, roughness: 1 });
+// Glow sprite texture
+const _gc = document.createElement('canvas');
+_gc.width = 64; _gc.height = 64;
+const _gctx = _gc.getContext('2d');
+const _grad = _gctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+_grad.addColorStop(0, 'rgba(255,238,136,1)');
+_grad.addColorStop(.2, 'rgba(255,200,80,0.85)');
+_grad.addColorStop(.5, 'rgba(255,120,30,0.4)');
+_grad.addColorStop(1, 'rgba(255,68,0,0)');
+_gctx.fillStyle = _grad;
+_gctx.fillRect(0, 0, 64, 64);
+const glowTex = new THREE.CanvasTexture(_gc);
+
+// Torch positions: above top shelf (y=7.5), on back wall (z=-4.85)
+const torchPositions = [[-4, 7.5, -4.85], [4, 7.5, -4.85]];
+window.__torchPositions = torchPositions.map(([x,y,z]) => ({x,y,z}));
+
+torchPositions.forEach(([tx, ty, tz]) => {
+    const tg = new THREE.Group();
+    tg.position.set(tx, ty, tz);
+    // Iron wall bracket plate (flat on wall)
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(.4, .55, .08), metalMat);
+    tg.add(plate);
+    // Bolts on bracket corners
+    [[-0.12, .18], [.12, .18], [-.12, -.18], [.12, -.18]].forEach(([bx, by]) => {
+        const bolt = new THREE.Mesh(sharedGeos.torchBolt, metalMat);
+        bolt.position.set(bx, by, .05);
+        tg.add(bolt);
+    });
+    // Iron cradle/cup that holds the torch (U-shape, open top)
+    const cradleL = new THREE.Mesh(sharedGeos.torchCradleArm, metalMat);
+    cradleL.position.set(-.1, .15, .12);
+    tg.add(cradleL);
+    const cradleR = new THREE.Mesh(sharedGeos.torchCradleArm, metalMat);
+    cradleR.position.set(.1, .15, .12);
+    tg.add(cradleR);
+    const cradleBase = new THREE.Mesh(sharedGeos.torchCradleBase, metalMat);
+    cradleBase.position.set(0, .02, .12);
+    tg.add(cradleBase);
+    // Wooden torch stick — angled upward ~55° from the cradle
+    const stick = new THREE.Mesh(
+        new THREE.CylinderGeometry(.04, .06, 1.4, 8), torchWoodMat);
+    stick.position.set(0, .8, .2);
+    stick.rotation.x = -.3; // tilted slightly forward from wall
+    tg.add(stick);
+    // Rope wraps near the head
+    [.35, .45].forEach(offset => {
+        const wrap = new THREE.Mesh(sharedGeos.torchRopeWrap, torchRopeMat);
+        wrap.position.set(0, .5 + offset, .2 + offset * .15);
+        wrap.rotation.x = Math.PI / 2 - .3;
+        tg.add(wrap);
+    });
+    // Cloth/pitch wrap at torch head (glowing emissive)
+    const headWrap = new THREE.Mesh(
+        new THREE.CylinderGeometry(.1, .08, .25, 8), torchGlowMat);
+    headWrap.position.set(0, 1.35, .35);
+    headWrap.rotation.x = -.3;
+    tg.add(headWrap);
+    // Glow sprite (depthTest:false → always visible)
+    const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: glowTex, blending: THREE.AdditiveBlending,
+        transparent: true, opacity: .85, depthTest: false, depthWrite: false
+    }));
+    glowSprite.scale.set(2, 3, 1);
+    glowSprite.position.set(0, 1.6, .4);
+    tg.add(glowSprite);
+    // Bright opaque flame core
+    const fc = new THREE.Mesh(
+        new THREE.SphereGeometry(.06, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xffee88 }));
+    fc.position.set(0, 1.5, .38);
+    tg.add(fc);
+    scene.add(tg);
+    // PointLight at flame tip
+    const tLight = new THREE.PointLight(0xff8844, 8, 18);
+    tLight.position.set(tx, ty + 1.6, tz + .4);
+    scene.add(tLight);
+    torchAnimData.push({
+        outer: glowSprite, core: fc,
+        light: tLight,
+        baseY: ty + 1.5, baseIntensity: 8
+    });
+});
+
+// E2E
+window.__interactivePointCount = specials.length + 2;
+
+/* ========== INTERACTION ========== */
+let hoveredObj = null;
+const mugLines = [
+    '乾杯！願你的 Bug 少少，Commit 乾乾淨淨。',
+    '乾杯！下次 Deploy 一定順利！',
+    '乾杯！寫出乾淨的程式碼是一種浪漫。',
+    '乾杯！希望你的 Code Review 都是 Approved。',
+];
+
+function getLabel(obj){
+    return obj.userData.label || (obj.userData.parentId && scene.children.find(c=>c.userData.id===obj.userData.parentId)?.userData.label) || '';
+}
+
+function handleHover(obj, cx, cy){
+    if(hoveredObj !== obj){
+        if(hoveredObj?.material?.emissiveIntensity !== undefined) gsap.to(hoveredObj.material,{emissiveIntensity:0,duration:.2});
+        hoveredObj = obj;
+        document.body.style.cursor='pointer';
+        if(obj.material?.emissiveIntensity !== undefined) gsap.to(obj.material,{emissiveIntensity:.6,duration:.2});
+    }
+    hoverTooltip.innerText = getLabel(obj);
+    hoverTooltip.style.opacity = 1;
+    hoverTooltip.style.left = cx+15+'px';
+    hoverTooltip.style.top = cy+15+'px';
+}
+
+function clearHover(){
+    if(!hoveredObj) return;
+    if(hoveredObj.material?.emissiveIntensity !== undefined) gsap.to(hoveredObj.material,{emissiveIntensity:0,duration:.2});
+    hoveredObj = null;
+    document.body.style.cursor='default';
+    hoverTooltip.style.opacity = 0;
+}
+
+function raycast(cx, cy){
+    _rcVec2.set((cx/window.innerWidth)*2-1, -(cy/window.innerHeight)*2+1);
+    _raycaster.setFromCamera(_rcVec2, camera);
+    return _raycaster.intersectObjects(clickableObjects);
+}
+
+// Desktop hover
+window.addEventListener('mousemove', e=>{
+    if(!uiLayer.classList.contains('visible')) return;
+    const hits = raycast(e.clientX, e.clientY);
+    if(hits.length > 0) handleHover(hits[0].object, e.clientX, e.clientY);
+    else clearHover();
+});
+
+// Click (works for both desktop and mobile tap)
+function handleClick(cx, cy, fromTouch){
+    if(!uiLayer.classList.contains('visible')) return;
+    // On mobile, do raycasting at click position since there's no hover
+    if(!hoveredObj){
+        const hits = raycast(cx, cy);
+        if(hits.length > 0) hoveredObj = hits[0].object;
+    }
+    if(!hoveredObj) return;
+
+    const id = hoveredObj.userData.id || hoveredObj.userData.parentId;
+    const data = hoveredObj.userData;
+
+    if(data.type === 'bottle'){
+        gsap.to(camera.position,{x:'+=.1',duration:.04,yoyo:true,repeat:3});
+        setDialogue(data.dialogue);
+    } else if(id === 'book'){
+        document.getElementById('quest-parchment').classList.add('visible');
+        hoverTooltip.style.opacity = 0;
+    } else if(id === 'mug'){
+        gsap.to(mugG.position,{y:2,z:4,duration:.3,yoyo:true,repeat:1});
+        gsap.to(mugG.rotation,{x:.5,duration:.3,yoyo:true,repeat:1,delay:.1});
+        const toast = document.getElementById('toast-msg');
+        toast.style.opacity = 1;
+        gsap.fromTo(toast,{scale:.5},{scale:1.5,opacity:0,duration:1.5,ease:'power2.out'});
+        setDialogue(mugLines[Math.floor(Math.random()*mugLines.length)]);
+    }
+
+    // Mobile: show tooltip briefly and auto-clear
+    if(fromTouch){
+        hoverTooltip.innerText = getLabel(hoveredObj);
+        hoverTooltip.style.opacity = 1;
+        hoverTooltip.style.left = cx+'px';
+        hoverTooltip.style.top = (cy-50)+'px';
+        setTimeout(clearHover, 2000);
+    }
+}
+
+window.addEventListener('click', e=>{
+    if(e.target.closest('.close-btn')||e.target.closest('#intro-overlay')||e.target.closest('#social-card')||e.target.closest('#quest-parchment')) return;
+    handleClick(e.clientX, e.clientY, false);
+});
+
+// Mobile pan — horizontal swipe to explore scene
+container.addEventListener('touchstart', e=>{
+    const t = e.touches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    touchStartPanX = panX;
+    isPanning = false;
+}, {passive:true});
+
+container.addEventListener('touchmove', e=>{
+    if(panMaxX<=0) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    if(!isPanning && Math.abs(dx)>PAN_THRESHOLD && Math.abs(dx)>Math.abs(dy)*1.5){
+        isPanning = true;
+    }
+    if(isPanning){
+        const panScale = panMaxX*2/window.innerWidth;
+        panX = Math.max(-panMaxX, Math.min(panMaxX, touchStartPanX - dx*panScale));
+        e.preventDefault();
+    }
+}, {passive:false});
+
+// Mobile touch — raycast on tap (skip if was panning)
+container.addEventListener('touchend', e=>{
+    if(isPanning){ isPanning=false; return; }
+    if(!uiLayer.classList.contains('visible')) return;
+    const t = e.changedTouches[0];
+    if(!t) return;
+    hoveredObj = null;
+    handleClick(t.clientX, t.clientY, true);
+}, {passive:true});
+
+function setDialogue(text){
+    dialogueBoxEl.classList.remove('hidden-beat');
+    gsap.to(dialogueTextEl,{opacity:0,duration:.2,onComplete:()=>{
+        dialogueTextEl.innerText = text;
+        gsap.to(dialogueTextEl,{opacity:1,duration:.2});
+    }});
+}
+
+window.closeScroll = ()=>{ document.getElementById('quest-parchment').classList.remove('visible'); };
+
+/* ========== ANIMATION ========== */
+const clock = new THREE.Clock();
+function animate(){
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+    // Candle light — gentle flicker (no Math.random, deterministic)
+    const cf1 = Math.sin(t*4.7), cf2 = Math.sin(t*7.3+1.2);
+    candleLight.intensity = 1.5 + cf1*.25 + cf2*.15;
+    // Candle flame animation
+    const cdy = cf1*.01;
+    candleFlameData.outer.scale.y = 1.3 + cf2*.2;
+    candleFlameData.outer.position.y = candleFlameData.baseY + .02 + cdy;
+    candleFlameData.mid.position.y = candleFlameData.baseY + cdy;
+    candleFlameData.core.position.y = candleFlameData.baseY - .01 + cdy;
+    // Rune
+    rune.position.y = 1.5+Math.sin(t*2)*.1;
+    rune.rotation.z = t*.5;
+    // Glow sprites (no PointLight, visual only)
+    glowSprites.forEach((g,i)=>{
+        const ph = t*1.5+i*.9;
+        const p = .3+Math.sin(ph)*.25;
+        g.core.material.opacity = p;
+        g.halo.material.opacity = p*.5;
+        const dy = Math.sin(t*1.2+i)*.06;
+        g.core.position.y = g.baseY+dy;
+        g.halo.position.y = g.baseY+dy;
+        g.halo.rotation.z = t*.3+i;
+    });
+    // Torch flame flicker (deterministic, no Math.random)
+    torchAnimData.forEach((td, i)=>{
+        const s1 = Math.sin(t*3.5+i*2.1);
+        const s2 = Math.sin(t*5.2+i*1.7);
+        const dy = s1*.04;
+        // Sprite glow: animate opacity and scale for flickering
+        td.outer.material.opacity = .7+s1*.2;
+        td.outer.scale.y = 3.5+s2*.8;
+        td.outer.position.y = td.baseY+.1+dy;
+        // Core sphere: subtle bounce
+        td.core.position.y = td.baseY-.05+dy;
+        td.core.scale.set(1+s2*.1, 1+s1*.1, 1+s2*.1);
+        const bi = td.baseIntensity || 1.5;
+        td.light.intensity = bi * (.85 + s1 * .15);
+    });
+    // Apply horizontal pan offset for rendering
+    camera.position.x += panX;
+    camTarget.x += panX;
+    camera.lookAt(camTarget);
+    renderer.render(scene, camera);
+    camera.position.x -= panX;
+    camTarget.x -= panX;
+}
+animate();
+
+/* ========== SCROLL STORY ========== */
+gsap.registerPlugin(ScrollTrigger);
+
+const script = [
+    { text:'歡迎，冒險者。我是 SPJ，這間酒館的老闆。推開門的那一刻，你的冒險就開始了。',
+      cam:{x:0,y:3,z:12}, look:{x:0,y:2,z:0}, skill:false, socialCard:false, hideDialogue:false },
+    { text:'這裡不只是喝酒的地方。每一瓶酒、每一本書，都藏著一段開發者的傳說。',
+      cam:{x:1,y:3.5,z:10}, look:{x:0,y:2,z:0}, skill:false, socialCard:false, hideDialogue:false },
+    { text:'看看這面牆——我的原型作品。Side Projects、實驗... 發光的那幾瓶比較特別，點它們聽聽故事。',
+      cam:{x:-3,y:5,z:9}, look:{x:0,y:4,z:-5}, skill:true, socialCard:false, hideDialogue:false },
+    { text:'上層的比較...危險。「量子糾纏」和「Segfault」放在最高處是有原因的。',
+      cam:{x:2,y:6.5,z:8}, look:{x:0,y:6,z:-5}, skill:true, socialCard:false, hideDialogue:false },
+    { text:'桌上那本是「任務日誌」，記載著進行中的冒險。點它翻開看看。',
+      cam:{x:-2,y:3.5,z:5.5}, look:{x:-2,y:.5,z:2}, skill:false, socialCard:false, hideDialogue:false },
+    { text:'那杯是給你的。在這裡，每位冒險者都值得一杯敬意。',
+      cam:{x:1.5,y:2.5,z:5.5}, look:{x:2,y:.6,z:2}, skill:false, socialCard:false, hideDialogue:false },
+    { text:'我希望能在此集結冒險者。分享故事，而不僅僅是死板的結果。程式碼之外，還有溫度。',
+      cam:{x:0,y:4,z:14}, look:{x:0,y:2,z:0}, skill:false, socialCard:false, hideDialogue:false },
+    { text:'這是我的名片。加入我們，一起打造傳說吧。',
+      cam:{x:0,y:3,z:8}, look:{x:0,y:2,z:0}, skill:false, socialCard:true, hideDialogue:true },
+];
+window.__scriptBeatCount = script.length;
+window.__scriptBeats = script;
+
+window.enterTavern = ()=>{
+    document.getElementById('intro-overlay').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    setTimeout(()=>ScrollTrigger.refresh(), 100);
+    gsap.to(camera.position,{ z:12, y:3, duration:2, ease:'power2.out',
+        onComplete:()=>{
+            uiLayer.classList.add('visible');
+            initScroll();
         }
+    });
+};
 
-        // Bottles (Instanced)
-        const bottleGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.0, 8);
-        const bottleMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff, transmission: 0.6, opacity: 0.9, roughness: 0.1, thickness: 0.5,
-            emissive: 0xffffff, emissiveIntensity: 0
-        });
-        const bottles = new THREE.InstancedMesh(bottleGeo, bottleMat, 60);
-        const dummy = new THREE.Object3D();
-        const colors = [0xe53935, 0x43a047, 0x1e88e5, 0xfdd835, 0x8e24aa];
+function initScroll(){
+    dialogueTextEl.innerText = script[0].text;
+    dialogueTextEl.dataset.index = 0;
+    dialogueTextEl.dataset.camIndex = 0;
 
-        for(let i=0; i<60; i++) {
-            const row = Math.floor(i / 20);
-            const col = i % 20;
-            dummy.position.set( (col - 9.5) * 0.8 + (Math.random()*0.3), 2.6 + row*2.5, 0.6 );
-            dummy.scale.setY(0.8 + Math.random()*0.5);
-            dummy.updateMatrix();
-            bottles.setMatrixAt(i, dummy.matrix);
-            bottles.setColorAt(i, new THREE.Color(colors[Math.floor(Math.random()*colors.length)]));
-        }
-        bottles.instanceMatrix.needsUpdate = true;
-        cabinetGroup.add(bottles);
-        scene.add(cabinetGroup);
-
-        // Bottle Hitbox (Invisible but clickable)
-        const bottlesHit = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 2), new THREE.MeshBasicMaterial({ visible: false }));
-        bottlesHit.position.set(0, 4, -4);
-        bottlesHit.userData = { id: 'bottles', label: '查看收藏' };
-        scene.add(bottlesHit);
-        clickableObjects.push(bottlesHit);
-
-        // Quest Book
-        const bookGroup = new THREE.Group();
-        bookGroup.position.set(-2, 0.3, 2);
-        bookGroup.rotation.set(-0.1, 0.4, 0);
-
-        const bookCover = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.3, 3.5), bookMat);
-        const pages = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.2, 3.3), new THREE.MeshStandardMaterial({ color: 0xfffbe6 }));
-        pages.position.y = 0.2;
-        bookGroup.add(bookCover, pages);
-
-        // Floating Rune (Click Hint)
-        const runeGeo = new THREE.TorusGeometry(0.5, 0.05, 8, 32);
-        const runeMat = new THREE.MeshBasicMaterial({ color: 0xffca28, transparent: true, opacity: 0.6 });
-        const rune = new THREE.Mesh(runeGeo, runeMat);
-        rune.position.set(0, 1.5, 0);
-        rune.rotation.x = Math.PI / 2;
-        bookGroup.add(rune);
-
-        bookGroup.userData = { id: 'book', label: '閱讀日誌' };
-        scene.add(bookGroup);
-        // Add book cover to clickable raycast list specifically for highlight
-        clickableObjects.push(bookCover);
-        bookCover.userData = { parentId: 'book', label: '閱讀日誌' };
-
-        // Mug
-        const mugGroup = new THREE.Group();
-        mugGroup.position.set(2, 0.6, 2);
-        const mugBody = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.2, 16), metalMat);
-        const handle = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 8, 16), metalMat);
-        handle.position.set(0.4, 0, 0);
-        mugGroup.add(mugBody, handle);
-
-        mugGroup.userData = { id: 'mug', label: '乾杯' };
-        scene.add(mugGroup);
-        clickableObjects.push(mugBody);
-        mugBody.userData = { parentId: 'mug', label: '乾杯' };
-
-        // Candle
-        const candleMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 8), new THREE.MeshStandardMaterial({color: 0xfff}));
-        candleMesh.position.copy(candleLight.position);
-        candleMesh.position.y -= 0.3;
-        scene.add(candleMesh);
-
-
-        // --- Interaction Logic ---
-
-        // State
-        let isHovering = false;
-        let hoveredObj = null;
-
-        // Mouse Move (Hover)
-        window.addEventListener('mousemove', (e) => {
-            if (!document.getElementById('ui-layer').classList.contains('visible')) return;
-
-            const mouse = new THREE.Vector2(
-                (e.clientX / window.innerWidth) * 2 - 1,
-                -(e.clientY / window.innerHeight) * 2 + 1
-            );
-
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(clickableObjects);
-
-            if (intersects.length > 0) {
-                const obj = intersects[0].object;
-                const label = obj.userData.label || obj.userData.parentId && scene.children.find(c => c.userData.id === obj.userData.parentId)?.userData.label;
-
-                if (hoveredObj !== obj) {
-                    // Reset previous
-                    if (hoveredObj && hoveredObj.material && hoveredObj.material.emissiveIntensity !== undefined) {
-                        gsap.to(hoveredObj.material, { emissiveIntensity: 0, duration: 0.2 });
-                    }
-
-                    // Set new
-                    hoveredObj = obj;
-                    document.body.style.cursor = 'pointer';
-
-                    // Show Tooltip
-                    const tooltip = document.getElementById('hover-tooltip');
-                    tooltip.innerText = label;
-                    tooltip.style.opacity = 1;
-                    tooltip.style.left = e.clientX + 15 + 'px';
-                    tooltip.style.top = e.clientY + 15 + 'px';
-
-                    // Highlight effect
-                    if (obj.material && obj.material.emissiveIntensity !== undefined) {
-                        gsap.to(obj.material, { emissiveIntensity: 0.6, duration: 0.2 });
-                    }
+    ScrollTrigger.create({
+        trigger:'.scroll-track', start:'top top', end:'bottom bottom', scrub:1,
+        onUpdate:(self)=>{
+            const idx = Math.min(Math.floor(self.progress*script.length), script.length-1);
+            const beat = script[idx];
+            if(dialogueTextEl.dataset.index != idx){
+                dialogueTextEl.dataset.index = idx;
+                if(!beat.hideDialogue){
+                    dialogueBoxEl.classList.remove('hidden-beat');
+                    gsap.to(dialogueTextEl,{opacity:0,duration:.2,onComplete:()=>{
+                        dialogueTextEl.innerText = beat.text;
+                        gsap.to(dialogueTextEl,{opacity:1,duration:.2});
+                    }});
                 } else {
-                     // Update tooltip pos
-                    const tooltip = document.getElementById('hover-tooltip');
-                    tooltip.style.left = e.clientX + 15 + 'px';
-                    tooltip.style.top = e.clientY + 15 + 'px';
+                    dialogueBoxEl.classList.add('hidden-beat');
                 }
-            } else {
-                if (hoveredObj) {
-                    if (hoveredObj.material && hoveredObj.material.emissiveIntensity !== undefined) {
-                        gsap.to(hoveredObj.material, { emissiveIntensity: 0, duration: 0.2 });
-                    }
-                    hoveredObj = null;
-                    document.body.style.cursor = 'default';
-                    document.getElementById('hover-tooltip').style.opacity = 0;
-                }
+                const sb = document.getElementById('skill-board');
+                beat.skill ? sb.classList.add('visible') : sb.classList.remove('visible');
+                const sc = document.getElementById('social-card');
+                beat.socialCard ? sc.classList.add('visible') : sc.classList.remove('visible');
             }
-        });
-
-        // Click
-        window.addEventListener('click', (e) => {
-            if (!document.getElementById('ui-layer').classList.contains('visible')) return;
-            if (e.target.closest('.close-btn')) return;
-            if (e.target.closest('#intro-overlay')) return;
-
-            if (hoveredObj) {
-                const id = hoveredObj.userData.id || hoveredObj.userData.parentId;
-
-                if (id === 'book') {
-                    document.getElementById('quest-parchment').classList.add('visible');
-                    document.getElementById('hover-tooltip').style.opacity = 0;
-                }
-
-                if (id === 'mug') {
-                    // Drink Animation
-                    gsap.to(mugGroup.position, { y: 2, z: 4, duration: 0.3, yoyo: true, repeat: 1 });
-                    gsap.to(mugGroup.rotation, { x: 0.5, duration: 0.3, yoyo: true, repeat: 1, delay: 0.1 });
-
-                    const toast = document.getElementById('toast-msg');
-                    toast.style.opacity = 1;
-                    gsap.fromTo(toast, { scale: 0.5 }, { scale: 1.5, opacity: 0, duration: 1.5, ease: "power2.out" });
-
-                    setDialogue("乾杯！願你的 Bug 少少，Commit 乾乾淨淨。");
-                }
-
-                if (id === 'bottles') {
-                    // Shake Camera
-                    gsap.to(camera.position, { x: "+=0.2", duration: 0.05, yoyo: true, repeat: 5 });
-                    const texts = [
-                        "那是純釀的「相依性地獄」威士忌。",
-                        "2015 年份的「回呼地獄」。非常苦澀。",
-                        "啊，「記憶體洩漏」。喝了這杯你會失憶。"
-                    ];
-                    setDialogue(texts[Math.floor(Math.random()*texts.length)]);
-                }
+            if(dialogueTextEl.dataset.camIndex != idx){
+                dialogueTextEl.dataset.camIndex = idx;
+                gsap.to(camera.position,{ x:beat.cam.x, y:beat.cam.y, z:beat.cam.z, duration:1.5, ease:'power2.inOut' });
+                gsap.to(camTarget,{ x:beat.look.x, y:beat.look.y, z:beat.look.z, duration:1.5, ease:'power2.inOut' });
             }
-        });
-
-        function setDialogue(text) {
-            const el = document.getElementById('dialogue-text');
-            gsap.to(el, { opacity: 0, duration: 0.2, onComplete: () => {
-                el.innerText = text;
-                gsap.to(el, { opacity: 1, duration: 0.2 });
-            }});
         }
+    });
+}
 
-        window.closeScroll = () => {
-            document.getElementById('quest-parchment').classList.remove('visible');
-        };
-
-        // --- Animations ---
-        const clock = new THREE.Clock();
-        function animate() {
-            requestAnimationFrame(animate);
-            const t = clock.getElapsedTime();
-
-            // Candle flicker
-            candleLight.intensity = 2.5 + Math.sin(t * 15) * 0.5 + Math.random() * 0.5;
-            candleLight.position.x = 2 + Math.sin(t * 5) * 0.02;
-
-            // Rune Float
-            rune.position.y = 1.5 + Math.sin(t * 2) * 0.1;
-            rune.rotation.z = t * 0.5;
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // --- Scroll Story ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        const script = [
-            {
-                text: "歡迎，冒險者。我是 SPJ。這裡是讓創意具現化的地方。",
-                cam: { x: 0, y: 3, z: 12 },
-                look: { x: 0, y: 0, z: 0 },
-                skill: false, footer: false
-            },
-            {
-                text: "這面牆展示了我的原型作品。Side Projects、實驗... 這些都是構成這個世界的基石。",
-                cam: { x: -3, y: 5, z: 9 },
-                look: { x: 0, y: 3, z: -5 },
-                skill: true, footer: false
-            },
-            {
-                text: "桌上的「任務日誌」記載著當前的任務：文字小鎮與塞趴卷公會。",
-                cam: { x: -2, y: 3, z: 7 },
-                look: { x: -2, y: 0.5, z: 2 },
-                skill: false, footer: false
-            },
-            {
-                text: "我希望能在此集結冒險者。分享故事，而不僅僅是死板的結果。",
-                cam: { x: 0, y: 4, z: 14 },
-                look: { x: 0, y: 0, z: 0 },
-                skill: false, footer: false
-            },
-            {
-                text: "這是我的名片。加入我們，一起打造傳說吧。",
-                cam: { x: 0, y: 3, z: 8 },
-                look: { x: 0, y: 0, z: 0 },
-                skill: false, footer: true
-            }
-        ];
-
-        // Enter Logic
-        window.enterTavern = () => {
-            document.getElementById('intro-overlay').classList.add('hidden');
-            document.body.style.overflow = 'auto'; // UNLOCK SCROLL
-
-            // 1. Refresh Trigger after Unlock
-            setTimeout(() => {
-                ScrollTrigger.refresh();
-            }, 100);
-
-            // 2. Camera Entry
-            gsap.to(camera.position, {
-                z: 12, y: 3, duration: 2, ease: "power2.out",
-                onComplete: () => {
-                    document.getElementById('ui-layer').classList.add('visible');
-                    initScrollTrigger(); // Start scroll logic
-                }
-            });
-        };
-
-        function initScrollTrigger() {
-            const textBox = document.getElementById('dialogue-text');
-            textBox.innerText = script[0].text; // Init text
-            textBox.dataset.index = 0; // Prevent initial fade
-            textBox.dataset.camIndex = 0;
-
-            ScrollTrigger.create({
-                trigger: ".scroll-track",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1, // Smooth interaction
-                onUpdate: (self) => {
-                    // Update Text
-                    const idx = Math.min(Math.floor(self.progress * script.length), script.length - 1);
-                    const beat = script[idx];
-
-                    if (textBox.dataset.index != idx) {
-                        textBox.dataset.index = idx;
-                        gsap.to(textBox, { opacity: 0, duration: 0.2, onComplete: () => {
-                            textBox.innerText = beat.text;
-                            gsap.to(textBox, { opacity: 1, duration: 0.2 });
-                        }});
-
-                        // Toggle UI
-                        const skillBoard = document.getElementById('skill-board');
-                        if (beat.skill) skillBoard.classList.add('visible');
-                        else skillBoard.classList.remove('visible');
-
-                        const footer = document.getElementById('footer-socials');
-                        if (beat.footer) footer.classList.add('visible');
-                        else footer.classList.remove('visible');
-                    }
-
-                    // Update Camera (Scrubbed)
-                    // Interpolate between current beat and next beat based on decimal progress
-                    // Actually, let's keep it simple: GSAP to the discrete beat position to avoid jerky linear interpolation if beats are far apart.
-                    // But we want it to feel connected to scroll.
-                    // Let's use the discrete GSAP we had, it felt cinematic.
-                    if (textBox.dataset.camIndex != idx) {
-                         textBox.dataset.camIndex = idx;
-                         gsap.to(camera.position, {
-                             x: beat.cam.x, y: beat.cam.y, z: beat.cam.z,
-                             duration: 1.5, ease: "power2.inOut"
-                         });
-                    }
-                }
-            });
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            ScrollTrigger.refresh();
-        });
-
+window.addEventListener('resize', ()=>{
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.fov = isMobile() ? 60 : 50;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    ScrollTrigger.refresh();
+    panMaxX = isMobile() ? 3 : 0;
+    window.__panEnabled = panMaxX > 0;
+    window.__panMaxX = panMaxX;
+    if(!isMobile()) panX = 0;
+});
     </script>
 </body>
 </html>
