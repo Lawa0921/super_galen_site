@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIC NAIL - 邏輯美甲與科技雜學</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --accent-cyan: #00f3ff;
+            --accent-gold: #ffd700;
+            --accent-magenta: #ff0055;
+            --text-main: #e0e0e0;
+            --glass-bg: rgba(10, 10, 10, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            overflow-y: hidden; /* Locked initially */
+        }
+
+        /* --- 3D Background --- */
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: all; /* Allow raycasting */
+        }
+
+        /* --- UI Overlay --- */
+        #ui-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* --- Navigation --- */
+        .nav-return {
+            position: fixed; top: 2rem; left: 2rem;
+            color: var(--accent-cyan); text-decoration: none;
+            font-family: 'Orbitron', sans-serif; font-size: 0.9rem; letter-spacing: 2px;
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border: 1px solid var(--accent-cyan);
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+            text-transform: uppercase;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+        .nav-return:hover {
+            background: var(--accent-cyan); color: #000;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        /* --- Sections (Scroll Driven) --- */
+        .scroll-spacer { height: 600vh; } /* Defines scroll length */
+
+        .content-section {
+            position: absolute;
+            width: 100%; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 0 10vw;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .content-section.active { opacity: 1; pointer-events: auto; }
+
+        .section-right { align-items: flex-end; text-align: right; }
+        .section-left { align-items: flex-start; text-align: left; }
+        .section-center { align-items: center; text-align: center; }
+
+        /* Typography */
+        h1, h2 {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+        }
+        h1 { font-size: 4rem; color: var(--accent-gold); text-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+        h2 { font-size: 2.5rem; color: var(--accent-cyan); }
+
+        .subtitle {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.2rem; color: var(--accent-magenta);
+            margin-bottom: 2rem; letter-spacing: 2px;
+        }
+
+        .text-block {
+            max-width: 600px;
+            background: var(--glass-bg);
+            border-left: 3px solid var(--accent-gold);
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            font-size: 1.1rem; line-height: 1.8;
+            position: relative;
+        }
+        .text-block::before {
+            content: ''; position: absolute; top: -2px; left: -2px; width: 20px; height: 20px;
+            border-top: 2px solid var(--accent-gold); border-left: 2px solid var(--accent-gold);
+        }
+
+        /* --- Specific Elements --- */
+        .avatar-img {
+            width: 150px; height: 150px; border-radius: 50%;
+            border: 2px solid var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            margin-bottom: 2rem;
+            object-fit: cover;
+        }
+
+        .skill-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem; margin-top: 2rem; width: 100%; max-width: 800px;
+        }
+        .skill-tag {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 10px; text-align: center;
+            font-family: 'Share Tech Mono';
+            cursor: default; transition: 0.3s;
+        }
+        .skill-tag:hover {
+            background: var(--accent-cyan); color: #000;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        /* --- Intro Overlay --- */
+        #intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 2000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: opacity 1.5s;
+        }
+        .intro-loader {
+            width: 50px; height: 50px; border: 2px solid var(--accent-cyan);
+            animation: spin 1s infinite linear; margin-bottom: 20px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .glitch-text {
+            font-family: 'Orbitron'; font-size: 2rem; color: var(--accent-cyan);
+            position: relative;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch-text::before {
+            left: 2px; text-shadow: -1px 0 red; clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px; text-shadow: -1px 0 blue; clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 80px, 0); }
+            20% { clip: rect(100px, 9999px, 110px, 0); }
+            100% { clip: rect(5px, 9999px, 150px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(120px, 9999px, 150px, 0); }
+            100% { clip: rect(10px, 9999px, 90px, 0); }
+        }
+
+        /* --- Footer --- */
+        .footer-socials {
+            display: flex; gap: 2rem; margin-top: 2rem; pointer-events: auto;
+        }
+        .social-link {
+            color: var(--text-main); font-size: 2rem; transition: 0.3s;
+            position: relative;
+        }
+        .social-link:hover { color: var(--accent-gold); transform: translateY(-5px); text-shadow: 0 0 15px var(--accent-gold); }
+
+        /* --- Tooltip --- */
+        #tooltip {
+            position: fixed; pointer-events: none;
+            background: rgba(0, 0, 0, 0.8); border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan); padding: 8px 16px;
+            font-family: 'Share Tech Mono'; font-size: 0.9rem;
+            transform: translate(15px, 15px);
+            opacity: 0; transition: opacity 0.2s;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Intro -->
+    <div id="intro-overlay" onclick="startExperience()">
+        <div class="intro-loader"></div>
+        <div class="glitch-text" data-text="INITIALIZING LOGIC CORE">INITIALIZING LOGIC CORE</div>
+        <div style="margin-top: 1rem; color: #666; font-family: 'Share Tech Mono';">CLICK TO START</div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- UI -->
+    <div id="ui-layer">
+        <a href="/guild/" class="nav-return">Return to Guild</a>
+        <div id="tooltip"></div>
+
+        <!-- Section 1: Hero -->
+        <div class="content-section section-left active" id="sec-1">
+            <img src="/assets/img/guild/vic/avatar.webp" class="avatar-img" alt="VIC NAIL Avatar">
+            <h1>VIC NAIL</h1>
+            <div class="subtitle">LOGIC // AESTHETICS // TECH</div>
+            <div class="text-block">
+                <p>我是東東老師。<br>在 0 與 1 的邏輯世界中，雕琢指尖的藝術。</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Philosophy -->
+        <div class="content-section section-right" id="sec-2">
+            <h2>THE PHILOSOPHY</h2>
+            <div class="subtitle">KNOW HOW, KNOW WHY</div>
+            <div class="text-block">
+                <p>「知其然，更要知其所以然。」</p>
+                <p>拒絕死記硬背。我將複雜的技術拆解為「邏輯完善」的系統化課程。</p>
+                <p>唯有通透邏輯，技術才能內化為你的武器。</p>
+            </div>
+        </div>
+
+        <!-- Section 3: Skills -->
+        <div class="content-section section-center" id="sec-3">
+            <h2>POLYMATH</h2>
+            <div class="subtitle">JACK OF ALL TRADES</div>
+            <div class="text-block" style="text-align: left;">
+                <p>脫下講師袍，我是用生命在冒險的雜學家。<br>履歷表比色卡還豐富。</p>
+            </div>
+            <div class="skill-grid">
+                <div class="skill-tag">PRESTO INSTRUCTOR</div>
+                <div class="skill-tag">UBER DRIVER</div>
+                <div class="skill-tag">CONSTRUCTION</div>
+                <div class="skill-tag">DIY</div>
+                <div class="skill-tag">COOKING</div>
+                <div class="skill-tag">VIDEO EDITING</div>
+            </div>
+        </div>
+
+        <!-- Section 4: Status -->
+        <div class="content-section section-left" id="sec-4">
+            <h2>CURRENT STATUS</h2>
+            <div class="subtitle">AUTOMATION & CATS</div>
+            <div class="text-block">
+                <p>家有兩隻貓主子 🐈。</p>
+                <p>正沉迷於 N8N 自動化，努力扮演科技業的「慣老闆」，指使 AI 幫我寫程式。</p>
+            </div>
+        </div>
+
+        <!-- Section 5: Footer -->
+        <div class="content-section section-center" id="sec-5">
+            <h1>CONNECT</h1>
+            <div class="subtitle">LET'S BUILD SOMETHING COOL</div>
+            <div class="footer-socials">
+                <a href="https://www.threads.com/@dwng1274" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.facebook.com/VicNailArt" target="_blank" class="social-link"><i class="fa-brands fa-facebook"></i></a>
+                <a href="https://www.instagram.com/dwng1274/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <div style="margin-top: 2rem; font-size: 0.8rem; color: #666;">MADE WITH <i class="fa-solid fa-heart" style="color: var(--accent-magenta);"></i> BY SUPERGALEN'S DUNGEON</div>
+        </div>
+    </div>
+
+    <!-- Scroll Spacer -->
+    <div class="scroll-spacer"></div>
+
+    <!-- Scripts -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+        // --- Configuration ---
+        const ASSETS = {
+            avatar: '/assets/img/guild/vic/avatar.webp',
+            gallery: [
+                '/assets/img/guild/vic/gallery_01.webp',
+                '/assets/img/guild/vic/gallery_02.webp',
+                '/assets/img/guild/vic/gallery_03.webp',
+                '/assets/img/guild/vic/gallery_04.webp',
+                '/assets/img/guild/vic/gallery_05.webp',
+                '/assets/img/guild/vic/gallery_06.webp',
+                '/assets/img/guild/vic/gallery_07.webp'
+            ]
+        };
+
+        // --- Scene Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false }); // Antialias false for post-processing performance
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // --- Post Processing (Bloom) ---
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2; // High bloom for neon effect
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        const outputPass = new OutputPass();
+        composer.addPass(outputPass);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+
+        const coreLight = new THREE.PointLight(0x00f3ff, 2, 20);
+        coreLight.position.set(0, 0, 0);
+        scene.add(coreLight);
+
+        const goldLight = new THREE.PointLight(0xffd700, 2, 20);
+        goldLight.position.set(5, 5, 5);
+        scene.add(goldLight);
+
+        // --- Objects ---
+        const clickableObjects = [];
+
+        // 1. Logic Core (Icosahedron)
+        const coreGeo = new THREE.IcosahedronGeometry(2, 2); // Detailed
+        const coreMat = new THREE.MeshPhysicalMaterial({
+            color: 0x00f3ff,
+            metalness: 0.1,
+            roughness: 0.1,
+            transmission: 0.9, // Glassy
+            thickness: 1,
+            emissive: 0x00f3ff,
+            emissiveIntensity: 0.2,
+            wireframe: false // Starts solid
+        });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(core);
+
+        // Wireframe overlay for core
+        const wireGeo = new THREE.IcosahedronGeometry(2.05, 2);
+        const wireMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.1 });
+        const coreWire = new THREE.Mesh(wireGeo, wireMat);
+        core.add(coreWire);
+
+        // 2. Node Network (Orbiting Spheres)
+        const networkGroup = new THREE.Group();
+        scene.add(networkGroup);
+
+        const nodeData = [
+            { label: "Nail Art", color: 0xffd700, size: 0.8, dist: 6 },
+            { label: "Logic", color: 0x00f3ff, size: 0.6, dist: 7 },
+            { label: "N8N", color: 0xff0055, size: 0.7, dist: 8 },
+            { label: "Cats", color: 0xffffff, size: 0.5, dist: 5 },
+            { label: "Teaching", color: 0x00ff00, size: 0.6, dist: 7 },
+            { label: "Uber", color: 0xaaaaaa, size: 0.4, dist: 9 },
+            { label: "Life", color: 0xffaa00, size: 0.5, dist: 8 }
+        ];
+
+        const nodes = [];
+        const lines = [];
+
+        nodeData.forEach((data, i) => {
+            const angle = (i / nodeData.length) * Math.PI * 2;
+            const y = (Math.random() - 0.5) * 5;
+            const x = Math.cos(angle) * data.dist;
+            const z = Math.sin(angle) * data.dist;
+
+            const geo = new THREE.SphereGeometry(data.size, 16, 16);
+            const mat = new THREE.MeshStandardMaterial({
+                color: data.color,
+                emissive: data.color,
+                emissiveIntensity: 0.5,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z);
+            mesh.userData = { label: data.label, originalScale: 1 };
+
+            networkGroup.add(mesh);
+            nodes.push(mesh);
+            clickableObjects.push(mesh);
+
+            // Connect to core
+            const points = [new THREE.Vector3(0,0,0), new THREE.Vector3(x,y,z)];
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const lineMat = new THREE.LineBasicMaterial({ color: data.color, transparent: true, opacity: 0.1 });
+            const line = new THREE.Line(lineGeo, lineMat);
+            networkGroup.add(line);
+            lines.push({ line, mesh }); // store ref to update
+        });
+
+        // 3. Gallery Planes (Floating Images)
+        const galleryGroup = new THREE.Group();
+        scene.add(galleryGroup);
+        const textureLoader = new THREE.TextureLoader();
+
+        ASSETS.gallery.forEach((url, i) => {
+            const tex = textureLoader.load(url);
+            const aspect = 1; // Assuming squareish, will stretch if not, but okay for art
+            const geo = new THREE.PlaneGeometry(3, 3);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0 });
+            const mesh = new THREE.Mesh(geo, mat);
+
+            // Random positions in a cloud
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            const radius = 10 + Math.random() * 5;
+
+            mesh.position.x = radius * Math.sin(phi) * Math.cos(theta);
+            mesh.position.y = radius * Math.sin(phi) * Math.sin(theta);
+            mesh.position.z = radius * Math.cos(phi);
+
+            mesh.lookAt(0,0,0);
+            galleryGroup.add(mesh);
+        });
+
+        // --- Interaction ---
+        let mouse = new THREE.Vector2();
+        let raycaster = new THREE.Raycaster();
+        let hoveredObj = null;
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Tooltip follow
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY + 15) + 'px';
+        });
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // Core Rotation
+            core.rotation.x = t * 0.2;
+            core.rotation.y = t * 0.3;
+
+            // Network Orbit
+            networkGroup.rotation.y = t * 0.1;
+
+            // Pulse Lines
+            lines.forEach((item, i) => {
+                const opacity = 0.1 + Math.sin(t * 2 + i) * 0.1;
+                item.line.material.opacity = opacity;
+            });
+
+            // Raycasting
+            if (document.body.style.overflow === 'auto') { // Only interact when unlocked
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(clickableObjects);
+
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    if (hoveredObj !== obj) {
+                        // Reset prev
+                        if (hoveredObj) gsap.to(hoveredObj.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
+
+                        hoveredObj = obj;
+                        document.body.style.cursor = 'pointer';
+
+                        // Highlight
+                        gsap.to(obj.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.3, ease: "back.out" });
+
+                        // Tooltip
+                        const tooltip = document.getElementById('tooltip');
+                        tooltip.innerText = obj.userData.label;
+                        tooltip.style.opacity = 1;
+                    }
+                } else {
+                    if (hoveredObj) {
+                        gsap.to(hoveredObj.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
+                        hoveredObj = null;
+                        document.body.style.cursor = 'default';
+                        document.getElementById('tooltip').style.opacity = 0;
+                    }
+                }
+            }
+
+            composer.render();
+        }
+        animate();
+
+        // --- Entry & Scroll Logic ---
+        window.startExperience = () => {
+            const overlay = document.getElementById('intro-overlay');
+            overlay.style.opacity = 0;
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Unlock scroll
+                initScroll();
+            }, 1000);
+
+            // Initial Camera Move
+            gsap.to(camera.position, { z: 12, duration: 2, ease: "power2.inOut" });
+        };
+
+        function initScroll() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Timeline linked to scroll
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".scroll-spacer",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
+            // 1. Philosophy: Zoom In & Wireframe
+            tl.to(camera.position, { z: 5, duration: 2 })
+              .to(coreMat, { wireframe: true, emissiveIntensity: 1, duration: 1 }, "<")
+              .to(coreWire.material, { opacity: 0.5 }, "<")
+              .to("#sec-1", { opacity: 0, duration: 0.5 }, 0)
+              .to("#sec-2", { opacity: 1, duration: 0.5 }, 0.5);
+
+            // 2. Skills: Pull Back & Show Network
+            tl.to(camera.position, { z: 20, y: 5, duration: 2 })
+              .to(coreMat, { wireframe: false, emissiveIntensity: 0.2 }, "<")
+              .to(coreWire.material, { opacity: 0.1 }, "<")
+              .to("#sec-2", { opacity: 0, duration: 0.5 }, ">-1")
+              .to("#sec-3", { opacity: 1, duration: 0.5 }, ">-0.5");
+
+            // 3. Status: Show Gallery & Cats
+            tl.to(camera.position, { x: 10, z: 10, duration: 2 })
+              .to(galleryGroup.children.map(m => m.material), { opacity: 0.8, duration: 1 }, "<")
+              .to("#sec-3", { opacity: 0, duration: 0.5 }, ">-1")
+              .to("#sec-4", { opacity: 1, duration: 0.5 }, ">-0.5");
+
+            // 4. Footer
+            tl.to(camera.position, { x: 0, y: 0, z: 8, duration: 2 })
+              .to("#sec-4", { opacity: 0, duration: 0.5 }, ">-1")
+              .to("#sec-5", { opacity: 1, duration: 0.5 }, ">-0.5");
+        }
+
+        // --- Resize ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
