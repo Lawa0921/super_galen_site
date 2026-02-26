@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nick | Automation 8-BIT</title>
+    <meta name="description" content="Nick - Automation Architect. Building automated systems with pixel-perfect precision.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        retro: ['"Press Start 2P"', 'cursive'],
+                        terminal: ['VT323', 'monospace'],
+                    },
+                    colors: {
+                        retro: {
+                            green: '#00ff41',
+                            dark: '#0d0208',
+                            purple: '#bd00ff',
+                            cyan: '#00ffff',
+                            yellow: '#ffff00',
+                            gray: '#2d2d2d'
+                        }
+                    },
+                    animation: {
+                        'blink': 'blink 1s steps(1) infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        blink: {
+                            '50%': { opacity: 0 }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        }
+                    },
+                    boxShadow: {
+                        'pixel': '4px 4px 0px 0px rgba(0,0,0,1)',
+                        'pixel-green': '4px 4px 0px 0px #00ff41',
+                        'pixel-cyan': '4px 4px 0px 0px #00ffff',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0d0208;
+            color: #ffffff;
+            overflow-x: hidden;
+            font-family: 'VT323', monospace;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%2300ff41" d="M0 0h14v2H0zm0 2h2v14H0zm2 14h10v2H2zm12-2h2v-2h-2zm2-2h2v-2h-2zm2-2h2v-2h-2zm2-2h2v-2h-2zm-2-2h-2v2h2zm-2 2h-2v2h2zm-2 2h-2v2h2z"/></svg>'), auto;
+            image-rendering: pixelated;
+        }
+
+        #webgl {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        /* Retro Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+            background: #0d0208;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00ff41;
+            border: 2px solid #0d0208;
+        }
+
+        /* CRT Effect */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            z-index: 50;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Dark Gradient Overlay for Readability */
+        .vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, transparent 40%, #0d0208 90%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Pixel Borders */
+        .pixel-border {
+            border: 4px solid white;
+            box-shadow: 6px 6px 0px 0px #000;
+            position: relative;
+            background: #0d0208;
+        }
+        .pixel-border-green {
+            border: 4px solid #00ff41;
+            box-shadow: 6px 6px 0px 0px #000;
+        }
+
+        .pixel-btn {
+            display: inline-block;
+            background: #00ff41;
+            color: black;
+            padding: 8px 16px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            text-transform: uppercase;
+            border: 4px solid white;
+            box-shadow: 4px 4px 0px 0px #000;
+            transition: transform 0.1s;
+            cursor: pointer;
+        }
+        .pixel-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px 0px #000;
+        }
+        .pixel-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px 0px #000;
+        }
+
+        .glitch-load {
+            animation: glitch-skew 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+        }
+        @keyframes glitch-skew {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-2deg); }
+            40% { transform: skew(2deg); }
+            60% { transform: skew(-1deg); }
+            80% { transform: skew(1deg); }
+            100% { transform: skew(0deg); }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-retro-green selection:text-black">
+
+    <div class="crt"></div>
+    <div class="vignette-overlay"></div>
+
+    <!-- WebGL Background -->
+    <canvas id="webgl"></canvas>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-40 p-4 flex justify-between items-center pointer-events-none mix-blend-screen">
+        <div class="pointer-events-auto">
+            <a href="/guild" class="flex items-center gap-2 group pixel-btn bg-white !text-black border-black !shadow-none hover:!translate-none">
+                <i class="fa-solid fa-arrow-left"></i> ESC
+            </a>
+        </div>
+        <div class="pointer-events-auto flex gap-4 bg-black border-2 border-white p-2">
+             <a href="https://znstudio216.com/" target="_blank" class="text-white hover:text-retro-green text-xl"><i class="fa-solid fa-globe"></i></a>
+             <a href="https://www.threads.net/@nickai216" target="_blank" class="text-white hover:text-retro-green text-xl"><i class="fa-brands fa-threads"></i></a>
+             <div class="text-retro-green font-terminal text-lg animate-blink">_ONLINE</div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 w-full max-w-5xl mx-auto px-4 py-20 flex flex-col gap-32">
+
+        <!-- Hero Section -->
+        <section class="min-h-[80vh] flex flex-col justify-center items-center text-center relative" id="hero">
+
+            <div class="pixel-border p-2 mb-8 animate-float bg-retro-green">
+                <div class="bg-black p-1">
+                    <img src="/assets/img/guild/nick/avatar.webp" alt="Nick" class="w-32 h-32 object-cover grayscale contrast-125 pixelated">
+                </div>
+            </div>
+
+            <div class="space-y-4 relative">
+                <h1 class="font-retro text-4xl md:text-6xl text-white mb-2 leading-tight">
+                    PLAYER <span class="text-retro-green">NICK</span>
+                </h1>
+                <h2 class="font-terminal text-3xl md:text-5xl text-retro-cyan bg-black inline-block px-2">
+                    LVL.99 AUTOMATION ARCHITECT
+                </h2>
+
+                <div class="flex justify-center gap-4 mt-8 flex-wrap">
+                    <div class="bg-black border-2 border-retro-green px-4 py-2 text-retro-green font-terminal text-xl">
+                        STR: N8N
+                    </div>
+                    <div class="bg-black border-2 border-retro-purple px-4 py-2 text-retro-purple font-terminal text-xl">
+                        INT: VIBE_CODING
+                    </div>
+                    <div class="bg-black border-2 border-retro-cyan px-4 py-2 text-retro-cyan font-terminal text-xl">
+                        DEX: WORKFLOWS
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 max-w-2xl bg-black/95 p-6 border-2 border-white text-left font-terminal text-xl md:text-2xl leading-relaxed shadow-lg shadow-black">
+                <span class="text-retro-green">></span> SYSTEM_LOG: Environmental Engineer rebooted as AI Specialist.<br>
+                <span class="text-retro-green">></span> CURRENT_QUEST: Building self-driving business logic.<br>
+                <span class="text-retro-green">></span> STATUS: <span class="animate-blink">READY_TO_DEPLOY</span>
+            </div>
+
+            <div class="absolute bottom-10 animate-bounce font-retro text-xs text-retro-green">
+                INSERT COIN OR SCROLL DOWN
+            </div>
+        </section>
+
+        <!-- Stats / Inventory -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-8" id="stats">
+            <div class="pixel-border p-6 bg-black/90 text-center group hover:bg-retro-green hover:text-black transition-colors">
+                <h3 class="font-retro text-xs mb-4">ACTIVE BOTS</h3>
+                <div class="font-terminal text-6xl">30+</div>
+                <p class="font-terminal text-lg opacity-70 mt-2">Running on Line/Discord</p>
+            </div>
+            <div class="pixel-border p-6 bg-black/90 text-center group hover:bg-retro-cyan hover:text-black transition-colors">
+                <h3 class="font-retro text-xs mb-4">WORKFLOWS</h3>
+                <div class="font-terminal text-6xl">33+</div>
+                <p class="font-terminal text-lg opacity-70 mt-2">Enterprise n8n Nodes</p>
+            </div>
+            <div class="pixel-border p-6 bg-black/90 text-center group hover:bg-retro-purple hover:text-black transition-colors">
+                <h3 class="font-retro text-xs mb-4">STUDENTS</h3>
+                <div class="font-terminal text-6xl">∞</div>
+                <p class="font-terminal text-lg opacity-70 mt-2">Soochow Univ. Class</p>
+            </div>
+        </section>
+
+        <!-- Project Cartridges -->
+        <section class="relative" id="projects">
+            <div class="text-center mb-16">
+                <h2 class="font-retro text-2xl md:text-4xl text-white mb-4">
+                    <span class="text-retro-yellow">★</span> SELECT MISSION <span class="text-retro-yellow">★</span>
+                </h2>
+                <div class="h-1 w-24 bg-white mx-auto"></div>
+            </div>
+
+            <div class="space-y-24">
+                <!-- Project 1 -->
+                <div class="pixel-border p-2 bg-retro-gray relative group">
+                    <div class="absolute -top-4 -left-4 bg-retro-green text-black font-retro text-xs px-2 py-1 border-2 border-white z-10 transform rotate-[-5deg]">
+                        MISSION 01
+                    </div>
+                    <div class="bg-black p-4 grid md:grid-cols-2 gap-8 items-center">
+                        <div class="border-4 border-white h-64 overflow-hidden relative">
+                             <img src="/assets/img/guild/nick/project_sewage.webp" alt="Sewage AI" class="w-full h-full object-cover pixelated hover:scale-110 transition-transform duration-500">
+                             <!-- Scanline on image -->
+                             <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 opacity-50 pointer-events-none" style="background-size: 100% 4px;"></div>
+                        </div>
+                        <div class="space-y-4">
+                            <h3 class="font-retro text-xl md:text-2xl text-retro-green">SEWAGE_AI_SYSTEM</h3>
+                            <p class="font-terminal text-xl text-gray-300">
+                                Automated CAD blueprint generation. Transforms dirty water specs into clean logic.
+                            </p>
+                            <ul class="font-terminal text-lg text-retro-green space-y-1">
+                                <li>> PYTHON_SCRIPT_LOADED</li>
+                                <li>> OPENAI_API_CONNECTED</li>
+                                <li>> OUTPUT: BLUEPRINT.DWG</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="pixel-border p-2 bg-retro-gray relative group">
+                    <div class="absolute -top-4 -right-4 bg-retro-cyan text-black font-retro text-xs px-2 py-1 border-2 border-white z-10 transform rotate-[5deg]">
+                        MISSION 02
+                    </div>
+                    <div class="bg-black p-4 grid md:grid-cols-2 gap-8 items-center">
+                        <div class="order-2 md:order-1 space-y-4 text-right">
+                            <h3 class="font-retro text-xl md:text-2xl text-retro-cyan">N8N_MEGA_SUITE</h3>
+                            <p class="font-terminal text-xl text-gray-300">
+                                Complete business automation ecosystem. Replacing humans with efficient loops.
+                            </p>
+                            <ul class="font-terminal text-lg text-retro-cyan space-y-1">
+                                <li>> CRM_SYNC_ACTIVE</li>
+                                <li>> QUOTATION_BOT_ONLINE</li>
+                                <li>> ERROR_RATE: 0%</li>
+                            </ul>
+                        </div>
+                        <div class="order-1 md:order-2 border-4 border-white h-64 overflow-hidden relative">
+                             <img src="/assets/img/guild/nick/n8n_workflow.webp" alt="n8n" class="w-full h-full object-cover pixelated hover:scale-110 transition-transform duration-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project 3 -->
+                <div class="pixel-border p-2 bg-retro-gray relative group">
+                    <div class="absolute -top-4 -left-4 bg-retro-purple text-black font-retro text-xs px-2 py-1 border-2 border-white z-10 transform rotate-[-5deg]">
+                        MISSION 03
+                    </div>
+                    <div class="bg-black p-4 grid md:grid-cols-2 gap-8 items-center">
+                        <div class="border-4 border-white h-64 overflow-hidden relative">
+                             <img src="/assets/img/guild/nick/teaching_soochow.webp" alt="Teaching" class="w-full h-full object-cover pixelated hover:scale-110 transition-transform duration-500">
+                        </div>
+                        <div class="space-y-4">
+                            <h3 class="font-retro text-xl md:text-2xl text-retro-purple">ACADEMIC_PROTOCOL</h3>
+                            <p class="font-terminal text-xl text-gray-300">
+                                Teaching Vibe Coding at Soochow University. Uploading knowledge to new users.
+                            </p>
+                            <a href="https://nickleo9.github.io/znstudiocard/" target="_blank" class="pixel-btn inline-block mt-4 !bg-retro-purple !text-white hover:!bg-white hover:!text-purple-700">
+                                VIEW_CREDENTIALS
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side Quests (Mini Layout) -->
+                <div class="grid md:grid-cols-2 gap-6 mt-16">
+                     <div class="border-2 border-dashed border-white p-6 bg-black/50 hover:bg-retro-green/10 transition-colors cursor-help">
+                        <h4 class="font-retro text-xs text-retro-yellow mb-2">BONUS_STAGE_01</h4>
+                        <h3 class="font-terminal text-2xl text-white mb-2">GF_ANNIVERSARY_SITES</h3>
+                        <p class="font-terminal text-lg text-gray-400">Custom coded romantic logic gates.</p>
+                     </div>
+                     <div class="border-2 border-dashed border-white p-6 bg-black/50 hover:bg-retro-cyan/10 transition-colors cursor-help">
+                        <h4 class="font-retro text-xs text-retro-yellow mb-2">BONUS_STAGE_02</h4>
+                        <h3 class="font-terminal text-2xl text-white mb-2">AI_PSYCH_TEST</h3>
+                        <p class="font-terminal text-lg text-gray-400">LLM-powered personality analysis engine.</p>
+                     </div>
+                </div>
+
+            </div>
+
+            <div class="mt-24 text-center">
+                 <a href="https://nickleo051216.github.io/nick-n8n/" target="_blank" class="pixel-btn text-lg py-4 px-8">
+                    Start New Game (Full Archive)
+                 </a>
+            </div>
+        </section>
+
+        <!-- Contact / Game Over -->
+        <section class="min-h-[50vh] flex flex-col items-center justify-center relative pb-20" id="contact">
+            <h2 class="font-retro text-3xl md:text-5xl text-white mb-12 animate-pulse">
+                GAME OVER
+            </h2>
+            <p class="font-terminal text-xl text-retro-green mb-8">CONTINUE? 10...</p>
+
+            <div class="flex flex-wrap justify-center gap-6 w-full max-w-4xl px-4">
+                <a href="https://line.me/ti/g2/m9R6Fd9CF2SiMIA2wheULFoBZUtsoFV7ckW8MA" target="_blank" class="pixel-btn !bg-[#06c755] !text-white !border-white flex items-center gap-2">
+                    <i class="fa-brands fa-line"></i> LINE
+                </a>
+                <a href="https://www.threads.net/@nickai216" target="_blank" class="pixel-btn !bg-black !text-white !border-white flex items-center gap-2">
+                    <i class="fa-brands fa-threads"></i> THREADS
+                </a>
+                <a href="https://portaly.cc/zn.studio" target="_blank" class="pixel-btn !bg-retro-yellow !text-black !border-white flex items-center gap-2">
+                    <i class="fa-solid fa-link"></i> PORTALY
+                </a>
+                <a href="https://znstudio216.com/" target="_blank" class="pixel-btn !bg-retro-cyan !text-black !border-white flex items-center gap-2">
+                    <i class="fa-solid fa-laptop-code"></i> STUDIO
+                </a>
+            </div>
+
+            <footer class="absolute bottom-4 w-full text-center border-t-2 border-white pt-4 bg-black">
+                 <p class="font-terminal text-lg text-white">
+                    MADE WITH <i class="fa-solid fa-heart text-red-600 animate-pulse"></i> BY SUPERGALEN'S DUNGEON
+                 </p>
+            </footer>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        // --- Three.js Scene: "Isometric Voxel Sea" ---
+        const canvas = document.querySelector('#webgl');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0d0208); // Dark purple/black
+
+        // Orthographic Camera for Isometric View
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = 20;
+        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+
+        camera.position.set(20, 20, 20); // Isometric angle
+        camera.lookAt(scene.position);
+
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: false }); // Pixel art style needs aliasing
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Create Voxel Grid (InstancedMesh)
+        const gridSize = 40;
+        const count = gridSize * gridSize;
+        const geometry = new THREE.BoxGeometry(0.9, 0.9, 0.9); // Slightly smaller than 1 for grid lines
+
+        // Material with Vertex Colors
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+        const mesh = new THREE.InstancedMesh(geometry, material, count);
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        scene.add(mesh);
+
+        const dummy = new THREE.Object3D();
+        const color = new THREE.Color();
+        const colors = [];
+
+        // Initialize Grid
+        for (let i = 0; i < count; i++) {
+             colors.push(0, 1, 0); // Green placeholder
+        }
+
+        // Lighting (Simulated via Color)
+
+        // Animation Loop
+        let time = 0;
+        const mouse = new THREE.Vector2(-100, -100); // Start off screen
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.05;
+
+            let i = 0;
+            const offset = (gridSize - 1) / 2;
+
+            for (let x = 0; x < gridSize; x++) {
+                for (let z = 0; z < gridSize; z++) {
+
+                    // Wave Logic
+                    const dist = Math.sqrt((x - 20) ** 2 + (z - 20) ** 2);
+                    let y = Math.sin(dist * 0.5 - time) * 2; // Ripple
+
+                    // Mouse Interaction
+                    // Map mouse (screen) to grid roughly for effect (not exact raycasting for performance)
+                    // Just purely visual noise based on time
+
+                    // Add perlin-like noise
+                    y += Math.sin(x * 0.5 + time) * Math.cos(z * 0.5 + time) * 2;
+
+                    dummy.position.set(x - offset, y, z - offset);
+                    dummy.updateMatrix();
+                    mesh.setMatrixAt(i, dummy.matrix);
+
+                    // Color based on height
+                    const heightFactor = (y + 4) / 8; // Normalize roughly 0-1
+                    // Gradient: Black -> Green -> Cyan -> White
+                    // Adjusted for darker palette to improve text readability
+                    if (heightFactor < 0.4) {
+                        mesh.setColorAt(i, color.setHex(0x050103)); // Very Dark
+                    } else if (heightFactor < 0.6) {
+                         mesh.setColorAt(i, color.setHex(0x002208)); // Deep Dark Green
+                    } else if (heightFactor < 0.8) {
+                        mesh.setColorAt(i, color.setHex(0x008822)); // Muted Green
+                    } else {
+                        mesh.setColorAt(i, color.setHex(0x00cc33)); // Bright Green (No White)
+                    }
+
+                    i++;
+                }
+            }
+            mesh.instanceMatrix.needsUpdate = true;
+            mesh.instanceColor.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.top = d;
+            camera.bottom = -d;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate Cards
+        gsap.utils.toArray('.pixel-border').forEach(card => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.5,
+                ease: "steps(5)" // Stepped ease for retro feel
+            });
+        });
+
+    </script>
+</body>
+</html>
