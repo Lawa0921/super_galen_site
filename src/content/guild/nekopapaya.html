@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Illustrated Haven</title>
+    <title>NEKOPAPAYA | The Living Haven</title>
     <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
 
     <!-- Fonts -->
@@ -28,15 +28,23 @@
 
     <style>
         :root {
-            /* Palette: Illustrated Minimalist */
+            /* Palette: Day Mode (Default) */
             --c-bg: #F4F1EC;
             --c-text: #2D3436;
             --c-accent: #78C0A8;
-            --c-warm: #FDCB6E;
-            --c-stroke: #2D3436; /* Outline color */
+            --c-stroke: #2D3436;
+            --c-card: rgba(255, 255, 255, 0.9);
 
             --f-en: 'Nunito', sans-serif;
             --f-zh: 'Noto Sans TC', sans-serif;
+        }
+
+        body.night-mode {
+            --c-bg: #2C3E50;
+            --c-text: #ECF0F1;
+            --c-accent: #F1C40F; /* Moon Yellow */
+            --c-stroke: #ECF0F1;
+            --c-card: rgba(44, 62, 80, 0.9);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,6 +55,7 @@
             font-family: var(--f-zh);
             overflow-x: hidden;
             line-height: 1.7;
+            transition: background-color 1s, color 1s;
         }
 
         #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
@@ -56,9 +65,9 @@
         /* --- Bubble Tooltip --- */
         #tooltip {
             position: fixed; pointer-events: none; opacity: 0;
-            background: white; padding: 0.8rem 1.2rem;
+            background: var(--c-card); padding: 0.8rem 1.2rem;
             border: 2px solid var(--c-stroke); border-radius: 12px;
-            box-shadow: 4px 4px 0px var(--c-stroke); /* Comic shadow */
+            box-shadow: 4px 4px 0px var(--c-stroke);
             font-family: var(--f-en); color: var(--c-text);
             transform: translate(-50%, -150%); transition: opacity 0.2s, transform 0.2s;
             z-index: 100;
@@ -69,6 +78,17 @@
             border-color: var(--c-stroke) transparent transparent transparent;
         }
 
+        /* --- UI Overlay: Mode Switch --- */
+        .mode-switch {
+            position: fixed; top: 2rem; right: 2rem; z-index: 50;
+            background: var(--c-card); border: 2px solid var(--c-stroke);
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; cursor: pointer; pointer-events: auto;
+            transition: transform 0.2s, background 0.5s;
+        }
+        .mode-switch:hover { transform: scale(1.1); }
+
         /* --- Sections --- */
         .section {
             height: 120vh;
@@ -77,15 +97,15 @@
         }
 
         .content-card {
-            background: white;
+            background: var(--c-card);
             padding: 2.5rem;
             border-radius: 16px;
             border: 2px solid var(--c-stroke);
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.05);
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.1);
             max-width: 450px;
-            transition: transform 0.3s;
+            transition: transform 0.3s, background-color 1s, border-color 1s;
         }
-        .content-card:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px rgba(0,0,0,0.1); }
+        .content-card:hover { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px rgba(0,0,0,0.15); }
 
         .pos-left { margin-right: auto; margin-left: 5vw; }
         .pos-right { margin-left: auto; margin-right: 5vw; }
@@ -94,30 +114,31 @@
         h1 { font-family: var(--f-en); font-weight: 900; font-size: 3rem; line-height: 1.1; margin-bottom: 0.5rem; color: var(--c-text); }
         h2 { font-family: var(--f-en); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--c-accent); margin-bottom: 1rem; border-bottom: 2px dashed var(--c-accent); display: inline-block; }
         h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
-        p { font-size: 1rem; color: #555; margin-bottom: 1rem; }
+        p { font-size: 1rem; color: inherit; opacity: 0.8; margin-bottom: 1rem; }
 
         .tag {
             display: inline-block; padding: 0.3rem 0.8rem; background: var(--c-bg);
             border: 1px solid var(--c-text); border-radius: 50px;
             font-size: 0.8rem; font-weight: 700; margin-right: 0.5rem;
+            transition: background-color 1s, color 1s, border-color 1s;
         }
 
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
             font-family: var(--f-en); font-weight: 900; color: var(--c-text); text-decoration: none;
-            padding: 0.5rem 1.2rem; background: white; border: 2px solid var(--c-text); border-radius: 50px;
-            pointer-events: auto; transition: transform 0.2s;
+            padding: 0.5rem 1.2rem; background: var(--c-card); border: 2px solid var(--c-stroke); border-radius: 50px;
+            pointer-events: auto; transition: transform 0.2s, background-color 1s;
         }
         .nav-fixed:hover { transform: scale(1.05); }
 
         .social-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 50px; height: 50px; border-radius: 50%; background: white;
+            width: 50px; height: 50px; border-radius: 50%; background: var(--c-card);
             color: var(--c-text); font-size: 1.2rem; margin: 0 0.5rem;
-            border: 2px solid var(--c-text);
+            border: 2px solid var(--c-stroke);
             transition: transform 0.2s, background 0.2s; text-decoration: none;
         }
-        .social-link:hover { transform: translateY(-3px); background: var(--c-accent); color: white; border-color: var(--c-text); }
+        .social-link:hover { transform: translateY(-3px); background: var(--c-accent); color: white; border-color: var(--c-stroke); }
 
         @media(max-width: 768px) {
             .content-card { margin: 0 auto !important; width: 100%; max-width: 100%; padding: 1.5rem; }
@@ -130,6 +151,7 @@
 <body>
 
     <a href="/guild" class="nav-fixed">← GUILD</a>
+    <div class="mode-switch" id="mode-switch">☀</div>
     <div id="tooltip"></div>
     <div id="webgl-container"></div>
 
@@ -142,7 +164,7 @@
                 <h1 style="margin-top: 1rem;">NEKOPAPAYA</h1>
                 <p>人體狀態觀察分析師 | 康樂股長</p>
                 <p style="font-style: italic; color: var(--c-accent);">"Hydrogen knocking on your soul."</p>
-                <div style="font-size: 0.9rem; color: #888; margin-top: 1rem;">
+                <div style="font-size: 0.9rem; opacity: 0.6; margin-top: 1rem;">
                     <i class="fa-solid fa-arrow-pointer"></i> Interact with the Room
                 </div>
             </div>
@@ -154,7 +176,7 @@
                 <h2>METHODOLOGY</h2>
                 <h1>The Analysis.</h1>
                 <p>無聲地觀察每個人的狀態與需求。就像科學家在實驗室調配配方，我調配的是「氛圍」。</p>
-                <div style="background: var(--c-bg); padding: 1rem; border-radius: 8px; border: 1px dashed var(--c-text);">
+                <div style="background: var(--c-bg); padding: 1rem; border-radius: 8px; border: 1px dashed var(--c-text); transition: background-color 1s;">
                     <strong>Toolkit:</strong> Empathy, Observation, Vibe Check.
                 </div>
             </div>
@@ -175,6 +197,7 @@
                 <h2>CORE</h2>
                 <h1>Safe Haven.</h1>
                 <p>這裡是一個可以停下來、坐一下的地方。沒有強迫，只有邀請。</p>
+                <p>找到角落的貓咪了嗎？那是我的守護者。</p>
             </div>
         </section>
 
@@ -200,8 +223,10 @@
         // --- Setup ---
         const container = document.getElementById('webgl-container');
         const tooltip = document.getElementById('tooltip');
+        const modeSwitch = document.getElementById('mode-switch');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xF4F1EC);
+        const bgColor = new THREE.Color(0xF4F1EC);
+        scene.background = bgColor;
 
         // Isometric Camera
         const aspect = window.innerWidth / window.innerHeight;
@@ -218,9 +243,10 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // Lights
+        // --- Lighting (Day/Night) ---
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
+
         const dirLight = new THREE.DirectionalLight(0xFFE4C4, 0.8);
         dirLight.position.set(10, 20, 5);
         dirLight.castShadow = true;
@@ -228,8 +254,12 @@
         dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        // --- Toon Materials & Outline Helper ---
-        // Create a 3-step gradient map for toon shading
+        // Night Mode Lamp (Starts off)
+        const lampLight = new THREE.PointLight(0xF1C40F, 0, 10);
+        lampLight.position.set(3, 4, 3); // Above lounge
+        scene.add(lampLight);
+
+        // --- Toon Materials ---
         const format = ( renderer.capabilities.isWebGL2 ) ? THREE.RedFormat : THREE.LuminanceFormat;
         const colors = new Uint8Array([0, 128, 255]);
         const gradientMap = new THREE.DataTexture( colors, colors.length, 1, format );
@@ -238,10 +268,7 @@
         gradientMap.magFilter = THREE.NearestFilter;
 
         function createToonMat(color) {
-            return new THREE.MeshToonMaterial({
-                color: color,
-                gradientMap: gradientMap
-            });
+            return new THREE.MeshToonMaterial({ color: color, gradientMap: gradientMap });
         }
 
         const matWood = createToonMat(0xE5CFA9);
@@ -250,11 +277,10 @@
         const matAccent = createToonMat(0x78C0A8);
         const matBlue = createToonMat(0x74B9FF);
         const matYellow = createToonMat(0xFDCB6E);
-
         const lineMat = new THREE.LineBasicMaterial({ color: 0x2D3436, linewidth: 2 });
 
         function addOutline(mesh, geo) {
-            const edges = new THREE.EdgesGeometry(geo, 15); // Threshold angle
+            const edges = new THREE.EdgesGeometry(geo, 15);
             const line = new THREE.LineSegments(edges, lineMat);
             mesh.add(line);
         }
@@ -267,173 +293,201 @@
         const floorGeo = new THREE.BoxGeometry(14, 0.5, 14);
         const floor = new THREE.Mesh(floorGeo, matWood);
         floor.position.y = -0.25; floor.receiveShadow = true;
-        addOutline(floor, floorGeo);
-        room.add(floor);
+        addOutline(floor, floorGeo); room.add(floor);
 
-        // Floor Grid Texture (Illustration Style)
         const gridHelper = new THREE.GridHelper(14, 14, 0x000000, 0x000000);
-        gridHelper.position.y = 0.01;
-        gridHelper.material.opacity = 0.1;
-        gridHelper.material.transparent = true;
+        gridHelper.position.y = 0.01; gridHelper.material.opacity = 0.1; gridHelper.material.transparent = true;
         room.add(gridHelper);
 
-        const wallGeo1 = new THREE.BoxGeometry(14, 8, 0.5);
-        const wall1 = new THREE.Mesh(wallGeo1, matWall);
-        wall1.position.set(0, 4, -7.25); wall1.receiveShadow = true;
-        addOutline(wall1, wallGeo1);
-        room.add(wall1);
+        const wall1 = new THREE.Mesh(new THREE.BoxGeometry(14, 8, 0.5), matWall);
+        wall1.position.set(0, 4, -7.25); wall1.receiveShadow = true; addOutline(wall1, wall1.geometry); room.add(wall1);
+        const wall2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 8, 14), matWall);
+        wall2.position.set(-7.25, 4, 0); wall2.receiveShadow = true; addOutline(wall2, wall2.geometry); room.add(wall2);
 
-        const wallGeo2 = new THREE.BoxGeometry(0.5, 8, 14);
-        const wall2 = new THREE.Mesh(wallGeo2, matWall);
-        wall2.position.set(-7.25, 4, 0); wall2.receiveShadow = true;
-        addOutline(wall2, wallGeo2);
-        room.add(wall2);
+        // Switch (Wall)
+        const switchGeo = new THREE.BoxGeometry(0.1, 0.4, 0.4);
+        const switchMesh = new THREE.Mesh(switchGeo, matDark);
+        switchMesh.position.set(-7, 3, 2);
+        switchMesh.userData = { name: "Light Switch", desc: "Day / Night Toggle", type: "switch" };
+        room.add(switchMesh);
 
-        // Baseboards
-        const base1 = new THREE.Mesh(new THREE.BoxGeometry(14, 0.5, 0.6), matWall);
-        base1.position.set(0, 0.25, -7.2); room.add(base1);
-        const base2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 14), matWall);
-        base2.position.set(-7.2, 0.25, 0); room.add(base2);
-
-        // Window
-        const winGroup = new THREE.Group(); winGroup.position.set(-7, 5, -2); room.add(winGroup);
-        const winFrameGeo = new THREE.BoxGeometry(0.2, 3, 2);
-        const winFrame = new THREE.Mesh(winFrameGeo, matWood); addOutline(winFrame, winFrameGeo);
-        winGroup.add(winFrame);
-        // Sky Plane
-        const skyGeo = new THREE.PlaneGeometry(0.1, 2.5, 1.5);
-        const sky = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 1.5), matBlue);
-        sky.position.x = -0.1; winGroup.add(sky);
-
-        // 2. Desk (Rounded)
+        // 2. Desk
         const desk = new THREE.Group(); desk.position.set(-4, 0, -4); room.add(desk);
         const topGeo = new THREE.BoxGeometry(4, 0.2, 2.5);
         const top = new THREE.Mesh(topGeo, matWood);
         top.position.y = 1.5; top.castShadow = true; top.receiveShadow = true;
-        addOutline(top, topGeo);
-        desk.add(top);
+        addOutline(top, topGeo); desk.add(top);
 
-        // Drawers
-        const drawGeo = new THREE.BoxGeometry(1, 1.2, 2);
-        const draw = new THREE.Mesh(drawGeo, matWood);
-        draw.position.set(1.2, 0.6, 0); addOutline(draw, drawGeo); desk.add(draw);
+        // Interactive Drawer
+        const drawerGeo = new THREE.BoxGeometry(1, 1.1, 2);
+        const drawer = new THREE.Mesh(drawerGeo, matWood);
+        drawer.position.set(1.2, 0.6, 0); addOutline(drawer, drawerGeo);
+        drawer.userData = { name: "Secret Drawer", desc: "Click to Open", type: "drawer", isOpen: false };
+        desk.add(drawer);
+        // Hidden Item inside
+        const heartGeo = new THREE.IcosahedronGeometry(0.3);
+        const heart = new THREE.Mesh(heartGeo, matAccent);
+        heart.position.set(1.2, 0.6, 0); heart.visible = false; desk.add(heart);
 
-        // Leg
-        const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.5);
-        const leg = new THREE.Mesh(legGeo, matDark); leg.position.set(-1.5, 0.75, 0); desk.add(leg);
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), matDark);
+        leg.position.set(-1.5, 0.75, 0); desk.add(leg);
 
-        // Props
-        // Monitor
-        const monGeo = new THREE.BoxGeometry(2, 1.2, 0.2);
-        const mon = new THREE.Mesh(monGeo, matDark); mon.position.set(0, 2.4, -0.5);
-        addOutline(mon, monGeo); desk.add(mon);
-        mon.userData = { name: "PC", desc: "Analyzing Vibes" };
+        const mon = new THREE.Mesh(new THREE.BoxGeometry(2, 1.2, 0.2), matDark);
+        mon.position.set(0, 2.4, -0.5); addOutline(mon, mon.geometry); desk.add(mon);
+        mon.userData = { name: "Status Monitor", desc: "Energy: 92%" };
 
-        // Photo
+        // Dynamic Screen (Canvas Texture)
+        const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const screenTex = new THREE.CanvasTexture(canvas);
+        const screenMat = new THREE.MeshBasicMaterial({ map: screenTex });
+        const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1), screenMat);
+        screenMesh.position.set(0, 2.4, -0.39); desk.add(screenMesh);
+
+        // Photo Frame
         const photoGeo = new THREE.PlaneGeometry(0.8, 0.8);
         const photoTex = new THREE.TextureLoader().load('/assets/img/guild/nekopapaya/avatar.webp');
         const photo = new THREE.Mesh(photoGeo, new THREE.MeshBasicMaterial({ map: photoTex }));
         photo.position.set(1.2, 1.8, -0.8); photo.rotation.set(-0.1, -0.2, 0); desk.add(photo);
-        // Frame
-        const frameGeo = new THREE.BoxGeometry(0.9, 0.9, 0.05);
-        const frame = new THREE.Mesh(frameGeo, matWall);
-        frame.position.set(1.2, 1.8, -0.85); frame.rotation.set(-0.1, -0.2, 0);
-        addOutline(frame, frameGeo); desk.add(frame);
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.05), matWall);
+        frame.position.set(1.2, 1.8, -0.85); frame.rotation.set(-0.1, -0.2, 0); addOutline(frame, frame.geometry); desk.add(frame);
 
         // 3. Bookshelf
         const shelf = new THREE.Group(); shelf.position.set(0, 0, -6.5); room.add(shelf);
-        const bodyGeo = new THREE.BoxGeometry(4, 5, 1);
-        const body = new THREE.Mesh(bodyGeo, matWood);
-        body.position.y = 2.5; body.castShadow = true; addOutline(body, bodyGeo); shelf.add(body);
+        const shelfBody = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 1), matWood);
+        shelfBody.position.y = 2.5; shelfBody.castShadow = true; addOutline(shelfBody, shelfBody.geometry); shelf.add(shelfBody);
 
         const bCols = [matAccent, matBlue, matYellow, matDark];
         for(let i=0; i<12; i++) {
-            const bGeo = new THREE.BoxGeometry(0.2, Math.random()*0.5+0.5, 0.8);
-            const b = new THREE.Mesh(bGeo, bCols[i%4]);
-            b.position.set((i-6)*0.25, Math.random()*3+1, 0.2);
-            addOutline(b, bGeo);
-            b.userData = { name: "Book", desc: "A Story" };
-            shelf.add(b);
+            const b = new THREE.Mesh(new THREE.BoxGeometry(0.2, Math.random()*0.5+0.5, 0.8), bCols[i%4]);
+            b.position.set((i-6)*0.25, Math.random()*3+1, 0.2); addOutline(b, b.geometry);
+            b.userData = { name: "Archive", desc: `Memory #${i+1}` }; shelf.add(b);
         }
 
-        // 4. Lounge
+        // 4. Lounge & Cat
         const lounge = new THREE.Group(); lounge.position.set(3, 0, 3); room.add(lounge);
         const rug = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 0.05, 32), matAccent);
         rug.position.y = 0.05; rug.receiveShadow = true; lounge.add(rug);
-        // Beanbag (Icosahedron for low poly look)
-        const beanGeo = new THREE.IcosahedronGeometry(1, 1);
-        const bean = new THREE.Mesh(beanGeo, matBlue);
-        bean.position.set(0, 0.7, 0); bean.scale.y = 0.7; bean.castShadow = true;
-        addOutline(bean, beanGeo); bean.userData = { name: "Beanbag", desc: "Relaxation Zone" };
-        lounge.add(bean);
+        const bean = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), matBlue);
+        bean.position.set(0, 0.7, 0); bean.scale.y = 0.7; bean.castShadow = true; addOutline(bean, bean.geometry);
+        bean.userData = { name: "Rest", desc: "Safe Zone" }; lounge.add(bean);
 
-        // 5. Hanging Mobile (Top Interaction)
-        const mobileGroup = new THREE.Group();
-        mobileGroup.position.set(0, 7, 0); room.add(mobileGroup);
+        // Neko (Abstract Cat)
+        const nekoGroup = new THREE.Group();
+        nekoGroup.position.set(2, 0.5, 2);
+        nekoGroup.userData = { name: "Neko", desc: "The Guardian", type: "cat" };
+        lounge.add(nekoGroup);
 
-        // Center String
-        const stringMat = new THREE.LineBasicMaterial({ color: 0x000000 });
-        const stringGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-2,0)]);
-        const string = new THREE.Line(stringGeo, stringMat);
-        mobileGroup.add(string);
+        const catBody = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), matWall); // White cat
+        catBody.castShadow = true; addOutline(catBody, catBody.geometry);
+        nekoGroup.add(catBody);
 
-        // Planets
-        const planets = [];
+        const catHead = new THREE.Group();
+        catHead.position.set(0, 0.5, 0);
+        nekoGroup.add(catHead);
+
+        const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), matWall);
+        addOutline(headMesh, headMesh.geometry); catHead.add(headMesh);
+
+        const earGeo = new THREE.ConeGeometry(0.1, 0.2, 4);
+        const earL = new THREE.Mesh(earGeo, matDark); earL.position.set(-0.15, 0.25, 0); earL.rotation.z = 0.5; catHead.add(earL);
+        const earR = new THREE.Mesh(earGeo, matDark); earR.position.set(0.15, 0.25, 0); earR.rotation.z = -0.5; catHead.add(earR);
+
+        // 5. Mobile
+        const mobile = new THREE.Group(); mobile.position.set(0, 7, 0); room.add(mobile);
+        const string = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-2,0)]), lineMat);
+        mobile.add(string);
         for(let i=0; i<3; i++) {
-            const pGroup = new THREE.Group();
-            pGroup.position.y = -2;
-            mobileGroup.add(pGroup);
-
-            const armGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(1.5,0,0)]);
-            const arm = new THREE.Line(armGeo, stringMat);
-            arm.rotation.y = (Math.PI * 2 / 3) * i;
-            pGroup.add(arm);
-
-            const shapeGeo = new THREE.IcosahedronGeometry(0.3, 0);
-            const shape = new THREE.Mesh(shapeGeo, i==0?matAccent:i==1?matYellow:matBlue);
-            shape.position.set(1.5 * Math.cos(arm.rotation.y), 0, -1.5 * Math.sin(arm.rotation.y));
-            addOutline(shape, shapeGeo);
-
-            shape.userData = { name: "Joy", desc: "Spinning..." };
-            pGroup.add(shape);
-            planets.push(pGroup);
+            const pGroup = new THREE.Group(); pGroup.position.y = -2; mobile.add(pGroup);
+            const arm = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(1.5,0,0)]), lineMat);
+            arm.rotation.y = (Math.PI*2/3)*i; pGroup.add(arm);
+            const shape = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3,0), [matAccent,matYellow,matBlue][i]);
+            shape.position.set(1.5*Math.cos(arm.rotation.y), 0, -1.5*Math.sin(arm.rotation.y));
+            addOutline(shape, shape.geometry); shape.userData = { name: "Joy", desc: "Spinning..." }; pGroup.add(shape);
         }
 
 
-        // --- Interaction ---
+        // --- Interaction State ---
         let scrollY = 0;
         let targetCamPos = new THREE.Vector3(20, 20, 20);
         let targetZoom = 1;
         let targetLookAt = new THREE.Vector3(0,0,0);
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2(-1, -1);
+        let isNight = false;
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
             const progress = scrollY / (document.body.scrollHeight - window.innerHeight);
-
-            if(progress < 0.1) {
-                targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0);
-            } else if(progress < 0.35) {
-                targetCamPos.set(-5, 10, 5); targetZoom = 2; targetLookAt.set(-4, 2, -4);
-            } else if(progress < 0.6) {
-                targetCamPos.set(5, 8, -5); targetZoom = 2; targetLookAt.set(0, 3, -6.5);
-            } else if(progress < 0.85) {
-                targetCamPos.set(5, 10, 5); targetZoom = 2; targetLookAt.set(3, 1, 3);
-            } else {
-                targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0);
-            }
+            if(progress < 0.1) { targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0); }
+            else if(progress < 0.35) { targetCamPos.set(-5, 10, 5); targetZoom = 2; targetLookAt.set(-4, 2, -4); }
+            else if(progress < 0.6) { targetCamPos.set(5, 8, -5); targetZoom = 2; targetLookAt.set(0, 3, -6.5); }
+            else if(progress < 0.85) { targetCamPos.set(5, 10, 5); targetZoom = 2; targetLookAt.set(3, 1, 3); }
+            else { targetCamPos.set(20, 20, 20); targetZoom = 1; targetLookAt.set(0,0,0); }
         });
 
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            tooltip.style.left = e.clientX + 'px';
-            tooltip.style.top = e.clientY + 'px';
+            tooltip.style.left = e.clientX + 'px'; tooltip.style.top = e.clientY + 'px';
         });
+
+        // UI Switch Listener
+        modeSwitch.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent 3D click
+            toggleNightMode();
+        });
+
+        window.addEventListener('click', () => {
+            if(!hoveredObj) return;
+
+            // Logic based on type
+            if (hoveredObj.userData.type === 'switch') {
+                toggleNightMode();
+            } else if (hoveredObj.userData.type === 'drawer') {
+                toggleDrawer(hoveredObj);
+            } else if (hoveredObj.userData.type === 'cat') {
+                gsap.to(hoveredObj.position, { y: 1.5, duration: 0.2, yoyo: true, repeat: 1 }); // Jump
+            }
+        });
+
+        function toggleNightMode() {
+            isNight = !isNight;
+            modeSwitch.innerText = isNight ? '🌙' : '☀';
+
+            // GSAP Transitions
+            if (isNight) {
+                document.body.classList.add('night-mode');
+                gsap.to(scene.background, { r: 44/255, g: 62/255, b: 80/255, duration: 1 });
+                gsap.to(ambientLight, { intensity: 0.2, duration: 1 });
+                gsap.to(dirLight, { intensity: 0.2, duration: 1 });
+                gsap.to(lampLight, { intensity: 1.5, duration: 1 });
+                gsap.to(lineMat.color, { r: 1, g: 1, b: 1, duration: 1 }); // White lines at night
+            } else {
+                document.body.classList.remove('night-mode');
+                gsap.to(scene.background, { r: 244/255, g: 241/255, b: 236/255, duration: 1 });
+                gsap.to(ambientLight, { intensity: 0.6, duration: 1 });
+                gsap.to(dirLight, { intensity: 0.8, duration: 1 });
+                gsap.to(lampLight, { intensity: 0, duration: 1 });
+                gsap.to(lineMat.color, { r: 45/255, g: 52/255, b: 54/255, duration: 1 });
+            }
+        }
+
+        function toggleDrawer(obj) {
+            obj.userData.isOpen = !obj.userData.isOpen;
+            gsap.to(obj.position, { z: obj.userData.isOpen ? 1 : 0, duration: 0.5 });
+            heart.visible = obj.userData.isOpen;
+            if(obj.userData.isOpen) {
+                gsap.fromTo(heart.position, { y: 0.6 }, { y: 1.2, duration: 0.5, yoyo: true, repeat: -1 });
+            }
+        }
+
+        // --- Loop ---
+        let hoveredObj = null;
 
         function animate() {
             requestAnimationFrame(animate);
+            const time = Date.now() * 0.001;
 
             // Camera
             camera.position.lerp(targetCamPos, 0.05);
@@ -443,16 +497,42 @@
             window.camTarget.lerp(targetLookAt, 0.05);
             camera.lookAt(window.camTarget);
 
-            // Mobile Animation (Sway)
-            mobileGroup.rotation.y += 0.005 + mouse.x * 0.01;
-            mobileGroup.rotation.z = Math.sin(Date.now()*0.001) * 0.05;
+            // Animations
+            mobile.rotation.y += 0.005;
+
+            // Cat LookAt Mouse
+            if (nekoGroup) {
+                // Simplified lookAt logic
+                catHead.lookAt(targetLookAt.x + mouse.x*5, 2, targetLookAt.z - mouse.y*5);
+            }
+
+            // Monitor Animation
+            ctx.fillStyle = isNight ? '#2C3E50' : '#2D3436';
+            ctx.fillRect(0, 0, 256, 128);
+            ctx.strokeStyle = '#78C0A8';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, 64);
+            for(let i=0; i<256; i++) {
+                ctx.lineTo(i, 64 + Math.sin(i*0.1 + time*5)*20 * Math.sin(time));
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#FFF';
+            ctx.font = '20px monospace';
+            ctx.fillText(isNight ? "SLEEP MODE" : "ANALYZING", 10, 30);
+            screenTex.needsUpdate = true;
 
             // Raycasting
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(room.children, true);
             let hit = null;
+            // Traverse up to find parent with userData
             for(let i=0; i<intersects.length; i++) {
-                if(intersects[i].object.userData.name) { hit = intersects[i].object; break; }
+                let obj = intersects[i].object;
+                while(obj.parent && obj.parent !== room && !obj.userData.name) {
+                    obj = obj.parent;
+                }
+                if(obj.userData.name) { hit = obj; break; }
             }
 
             if(hit) {
@@ -460,19 +540,20 @@
                 tooltip.style.opacity = 1;
                 tooltip.innerHTML = `<strong>${hit.userData.name}</strong><br>${hit.userData.desc}`;
 
-                // Pop effect
-                if (!hit.userData.originalScale) hit.userData.originalScale = hit.scale.clone();
-                const targetScale = hit.userData.originalScale.clone().multiplyScalar(1.1);
-                hit.scale.lerp(targetScale, 0.2);
+                // Scale Effect
+                if(!hit.userData.origScale) hit.userData.origScale = hit.scale.clone();
+                hit.scale.lerp(hit.userData.origScale.clone().multiplyScalar(1.1), 0.2);
+                hoveredObj = hit;
             } else {
                 document.body.style.cursor = 'default';
                 tooltip.style.opacity = 0;
+                hoveredObj = null;
             }
 
-            // Reset all scales slowly
+            // Reset Scales
             room.traverse(obj => {
-                if (obj.userData.originalScale && obj !== hit) {
-                    obj.scale.lerp(obj.userData.originalScale, 0.1);
+                if(obj.userData.origScale && obj !== hit) {
+                    obj.scale.lerp(obj.userData.origScale, 0.1);
                 }
             });
 
@@ -480,7 +561,7 @@
         }
         animate();
 
-        // GSAP
+        // GSAP Scroll
         gsap.registerPlugin(ScrollTrigger);
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.to(elem, {
