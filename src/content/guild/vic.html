@@ -21,6 +21,7 @@
             --c-accent: #ff003c; /* Cyber Red */
             --c-sec: #00f3ff;    /* Cyber Cyan */
             --c-text: #ffffff;
+            --c-dim: #444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,14 +37,16 @@
         #gl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
+            /* pointer-events: none; Remove this so canvas can maybe capture scroll? No, scroll is on body */
         }
 
         /* --- UI Overlay --- */
         .ui-layer {
             position: relative; z-index: 10;
-            pointer-events: none; /* Let scroll pass through mostly */
+            pointer-events: none; /* Let scroll pass through */
         }
 
+        /* --- Navigation --- */
         nav {
             position: fixed; top: 0; left: 0; width: 100%;
             padding: 2rem;
@@ -65,156 +68,198 @@
             border: 1px solid #fff; padding: 0.5rem 1rem;
             text-decoration: none; color: #fff;
             transition: 0.3s;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
         }
         .menu-btn:hover { background: #fff; color: #000; }
 
-        /* --- Sections --- */
-        section {
-            position: relative;
-            min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center;
-            padding: 10vw;
-        }
-
-        .hero-title {
-            font-family: 'Anton', sans-serif;
-            font-size: clamp(4rem, 15vw, 12rem);
-            line-height: 0.85;
-            text-transform: uppercase;
-            mix-blend-mode: exclusion;
-            opacity: 0; /* Animated in */
-            transform: translateY(50px);
-        }
-        .hero-subtitle {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.2rem; margin-top: 2rem;
-            color: var(--c-sec);
-            max-width: 600px;
-        }
-        .hero-tags {
-            margin-top: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem; color: #666;
-        }
-
-        .content-box {
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            border-left: 4px solid var(--c-accent);
-            padding: 3rem;
-            max-width: 800px;
-            margin-left: auto; /* Align right */
-            transform: translateX(100px); opacity: 0;
-        }
-        .content-box.left { margin-left: 0; margin-right: auto; transform: translateX(-100px); border-left: none; border-right: 4px solid var(--c-sec); }
-
-        h2 {
-            font-family: 'Anton', sans-serif;
-            font-size: 4rem; margin-bottom: 2rem;
-            text-transform: uppercase;
-            -webkit-text-stroke: 1px #fff; color: transparent;
-        }
-        .content-box:hover h2 { color: #fff; }
-
-        p {
-            font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;
-            color: #ccc;
-        }
-
-        /* --- Custom Lists --- */
-        .tech-list {
-            list-style: none;
-            margin-top: 1rem;
-            border-top: 1px solid #333;
-            padding-top: 1rem;
-        }
-        .tech-list li {
-            font-family: 'JetBrains Mono', monospace;
-            margin-bottom: 0.5rem;
-            color: var(--c-sec);
-            display: flex; align-items: center;
-        }
-        .tech-list li::before {
-            content: '>';
-            margin-right: 1rem;
-            color: var(--c-accent);
-        }
-
-        /* --- Modules Grid --- */
-        .modules-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px; margin-top: 2rem;
-        }
-        .module-tag {
-            border: 1px solid #333;
-            padding: 0.5rem;
-            text-align: center;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: #888;
-            transition: 0.3s;
-        }
-        .module-tag:hover {
-            border-color: var(--c-accent);
-            color: #fff;
-            background: rgba(255, 0, 60, 0.1);
-        }
-
-        .stats {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
-            font-family: 'JetBrains Mono', monospace;
-            margin-top: 2rem;
-            border-top: 1px solid #333; padding-top: 1rem;
-        }
-        .stat-item h3 { font-size: 2rem; color: var(--c-sec); }
-        .stat-item span { font-size: 0.8rem; color: #888; text-transform: uppercase; }
-
-        .social-links {
-            display: flex; gap: 20px; margin-top: 2rem; pointer-events: auto;
-        }
-        .social-icon {
-            font-size: 1.5rem; color: #fff; transition: 0.3s;
-        }
-        .social-icon:hover { color: var(--c-accent); transform: scale(1.2); }
-
-        /* --- Scroll Progress --- */
+        /* --- Global Scroll Progress --- */
         .progress-bar {
             position: fixed; right: 2rem; top: 50%; transform: translateY(-50%);
-            height: 200px; width: 2px; background: rgba(255,255,255,0.2);
+            height: 200px; width: 2px; background: rgba(255,255,255,0.1);
             z-index: 90;
         }
         .progress-fill {
             width: 100%; height: 0%; background: var(--c-accent);
+            box-shadow: 0 0 10px var(--c-accent);
         }
+
+        /* --- Section Styling --- */
+        section {
+            position: relative;
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 5vw 10vw;
+            pointer-events: auto; /* Allow interaction with text */
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 { font-family: 'Anton', sans-serif; text-transform: uppercase; }
+
+        .hero-title {
+            font-size: clamp(4rem, 12vw, 10rem);
+            line-height: 0.85;
+            mix-blend-mode: exclusion;
+            opacity: 0; transform: translateY(50px);
+        }
+        .hero-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem; margin-top: 2rem;
+            color: var(--c-sec);
+            border-left: 2px solid var(--c-sec);
+            padding-left: 1rem;
+            max-width: 600px;
+        }
+
+        /* --- Content Panels --- */
+        .panel {
+            background: rgba(10, 10, 10, 0.85);
+            border: 1px solid #333;
+            padding: 3rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .panel::before {
+            content: ''; position: absolute; top: -1px; left: -1px;
+            width: 20px; height: 20px;
+            border-top: 2px solid var(--c-sec); border-left: 2px solid var(--c-sec);
+        }
+        .panel::after {
+            content: ''; position: absolute; bottom: -1px; right: -1px;
+            width: 20px; height: 20px;
+            border-bottom: 2px solid var(--c-sec); border-right: 2px solid var(--c-sec);
+        }
+
+        .panel h2 {
+            font-size: 3.5rem; margin-bottom: 2rem;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .panel h2 span { color: var(--c-accent); }
+
+        .panel p {
+            font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;
+            color: #ccc;
+        }
+        .panel strong { color: #fff; font-weight: 700; }
+
+        /* --- Logic Flow Visualization (S2) --- */
+        .logic-flow {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem; margin-top: 3rem;
+        }
+        .logic-step {
+            border: 1px solid #333; padding: 1.5rem;
+            position: relative; transition: 0.3s;
+        }
+        .logic-step:hover { border-color: var(--c-sec); background: rgba(0, 243, 255, 0.05); }
+        .logic-step h3 { color: var(--c-sec); font-size: 1.5rem; margin-bottom: 1rem; }
+        .logic-step p { font-size: 0.9rem; color: #888; margin: 0; }
+        .logic-step .step-num {
+            position: absolute; top: -15px; right: 10px;
+            background: #000; padding: 0 10px;
+            font-family: 'JetBrains Mono', monospace; color: var(--c-accent);
+        }
+
+        /* --- Skill Matrix (S4) --- */
+        .skill-matrix {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px; margin-top: 3rem;
+        }
+        .skill-card {
+            border: 1px solid #333; padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            transition: 0.3s;
+        }
+        .skill-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--c-accent);
+            box-shadow: 0 5px 15px rgba(255, 0, 60, 0.2);
+        }
+        .skill-header {
+            font-size: 0.8rem; color: #666; margin-bottom: 0.5rem;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .skill-title {
+            font-size: 1.1rem; color: #fff; font-weight: bold; margin-bottom: 0.5rem;
+        }
+        .skill-desc { font-size: 0.8rem; color: #888; line-height: 1.4; }
+
+        /* --- System Status (S5) --- */
+        .status-terminal {
+            background: #111; border: 1px solid #333;
+            padding: 1.5rem; font-family: 'JetBrains Mono', monospace;
+            color: #0f0; margin-top: 2rem;
+            border-radius: 4px;
+        }
+        .cmd-line { margin-bottom: 0.5rem; display: flex; }
+        .cmd-line::before { content: '>'; color: var(--c-accent); margin-right: 10px; }
+        .cmd-line span { color: #fff; }
+
+        /* --- Gallery Section (S3) --- */
+        #s3 {
+            height: 100vh; /* Full viewport */
+            pointer-events: none; /* Let clicks pass to 3D if needed, though mostly visual */
+            display: flex; align-items: flex-end; padding-bottom: 5rem;
+            justify-content: center;
+        }
+        .gallery-ui-hint {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--c-sec);
+            background: rgba(0,0,0,0.8); padding: 0.5rem 1rem;
+            border: 1px solid var(--c-sec);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0; /* Animated */
+            transition: opacity 0.5s;
+        }
+
+        /* --- Socials --- */
+        .social-grid {
+            display: flex; gap: 2rem; margin-top: 2rem; justify-content: flex-end;
+        }
+        .social-link {
+            font-size: 2rem; color: #555; transition: 0.3s;
+        }
+        .social-link:hover { color: var(--c-sec); transform: scale(1.1); text-shadow: 0 0 10px var(--c-sec); }
 
         /* --- Loader --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 999;
-            display: flex; justify-content: center; align-items: center;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--c-sec);
-            font-size: 1.5rem;
-            letter-spacing: 0.2em;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .loader-text {
+            font-family: 'JetBrains Mono', monospace; color: var(--c-accent);
+            font-size: 1.5rem; letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+        }
+        .loader-bar {
+            width: 200px; height: 2px; background: #333; position: relative;
+        }
+        .loader-progress {
+            position: absolute; left: 0; top: 0; height: 100%; width: 0%;
+            background: var(--c-sec);
         }
 
-        .gallery-hint {
-             position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
-             font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #666;
-             opacity: 0;
-        }
     </style>
 </head>
 <body>
 
-    <div id="loader">DECRYPTING LOGIC...</div>
+    <div id="loader">
+        <div class="loader-text">INITIALIZING SYSTEM...</div>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
+    </div>
 
     <div id="gl-container"></div>
 
     <div class="ui-layer">
         <nav>
             <div class="brand">VIC <span>NAIL</span></div>
-            <a href="/guild/" class="menu-btn">GUILD_INDEX</a>
+            <a href="/guild/" class="menu-btn">RETURN_GUILD</a>
         </nav>
 
         <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
@@ -223,75 +268,105 @@
         <section id="s1">
             <h1 class="hero-title">LOGIC<br>ALCHEMIST</h1>
             <div class="hero-subtitle">
-                // NAIL ARTIST . EDUCATOR . MAKER<br>
-                <span style="color: #fff;">EST. 18 YEARS</span>
-            </div>
-            <div class="hero-tags">
-                [SYSTEM: ONLINE] [STATUS: EXPLORING] [MODE: CREATIVE]
+                &gt; TARGET: PERFECT FORM<br>
+                &gt; ROLE: EDUCATOR / MAKER / EXPLORER<br>
+                &gt; EXP: 18 YEARS
             </div>
         </section>
 
         <!-- S2: PHILOSOPHY -->
         <section id="s2">
-            <div class="content-box">
-                <h2>Decode<br>The Art</h2>
-                <p>我是東東老師。身為 PRESTO 台灣區講師，我拒絕照表操課的死記硬背。</p>
-                <p>「知其然，更要知其所以然。」是我對專業的絕對堅持。</p>
-                <p>我擅長將複雜的美甲技術拆解成「邏輯完善」的系統化課程。我相信，唯有通透邏輯，才能將技術真正內化為自己的武器，而不僅僅是模仿。</p>
-                <ul class="tech-list">
-                    <li>ALGORITHM: DECONSTRUCTION</li>
-                    <li>PROCESS: LOGIC_ANALYSIS</li>
-                    <li>OUTPUT: MASTERY</li>
-                </ul>
+            <div class="panel">
+                <h2>DECODE THE <span>ART</span></h2>
+                <p>我是東東老師。身為日系品牌 <strong>PRESTO 台灣區講師</strong>，在 18 年的美甲生涯中，我堅持拒絕照表操課的死記硬背。</p>
+                <p>「知其然，更要知其所以然。」</p>
+                <p>美甲不只是塗抹色彩，更是結構工程學與化學的結合。我將複雜的技術拆解成「邏輯完善」的系統化課程，帶領學生理解每一個步驟背後的原理。</p>
+
+                <div class="logic-flow">
+                    <div class="logic-step">
+                        <div class="step-num">01</div>
+                        <h3>Input Analysis</h3>
+                        <p>分析原生甲況、生活習慣與材質特性。不盲目施作，先理解基礎結構。</p>
+                    </div>
+                    <div class="logic-step">
+                        <div class="step-num">02</div>
+                        <h3>Logic Processing</h3>
+                        <p>拆解施作步驟，運用物理支撐原理與化學凝膠特性，建構最穩固的基底。</p>
+                    </div>
+                    <div class="logic-step">
+                        <div class="step-num">03</div>
+                        <h3>Perfect Output</h3>
+                        <p>不僅是外觀的精緻，更是持久度與健康度的完美平衡。內化技術成為武器。</p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- S3: GALLERY SHOWCASE (Trigger for 3D Gallery) -->
-        <section id="s3" style="height: 150vh;">
-            <div class="gallery-hint">[ SCROLL TO SCAN ARCHIVES ]</div>
+        <!-- S3: GALLERY SHOWCASE -->
+        <section id="s3">
+            <div class="gallery-ui-hint">// DRAG TO ROTATE ARCHIVES //</div>
         </section>
 
-        <!-- S4: LIFE -->
+        <!-- S4: LIFE SKILLS -->
         <section id="s4">
-            <div class="content-box left">
-                <h2>Full Stack<br>Life</h2>
-                <p>脫下講師袍，我是一個用生命在努力活著的冒險家。</p>
-                <p>我的履歷表可能比我的色卡還豐富。這些經歷讓我對世界充滿好奇，從 3C 智慧居家、生活水電 DIY、創意手作到料理烹飪，甚至是平面設計與影音剪輯，我都略懂略懂。</p>
+            <div class="panel">
+                <h2>FULL STACK <span>LIFE</span></h2>
+                <p>脫下講師袍，我是一個技能點滿的雜學家。我的履歷表比色卡還豐富，這些看似不相關的經歷，都是我理解世界的獨特視角。</p>
 
-                <div class="modules-grid">
-                    <div class="module-tag">HOT_POT.exe</div>
-                    <div class="module-tag">UBER_DELIVERY</div>
-                    <div class="module-tag">CONSTRUCTION</div>
-                    <div class="module-tag">HR_SYSTEM</div>
-                    <div class="module-tag">TEACHER_V1</div>
-                    <div class="module-tag">DIY_MASTER</div>
-                    <div class="module-tag">VIDEO_EDIT</div>
-                </div>
-
-                <div class="stats">
-                    <div class="stat-item">
-                        <h3>18y</h3>
-                        <span>Nail Exp</span>
+                <div class="skill-matrix">
+                    <div class="skill-card">
+                        <div class="skill-header">Service.exe</div>
+                        <div class="skill-title">火鍋店 / Uber</div>
+                        <div class="skill-desc">練就極致的服務效率與動線規劃邏輯。</div>
                     </div>
-                    <div class="stat-item">
-                        <h3>Lv.99</h3>
-                        <span>Curiosity</span>
+                    <div class="skill-card">
+                        <div class="skill-header">Hard_Labor.dll</div>
+                        <div class="skill-title">工地 / 水電 DIY</div>
+                        <div class="skill-desc">從結構補強到居家修繕，對「穩固」有著工科般的執著。</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-header">Manage.sys</div>
+                        <div class="skill-title">人力派遣 / HR</div>
+                        <div class="skill-desc">精準的人力資源配置與系統化管理思維。</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-header">Edu_Core.bat</div>
+                        <div class="skill-title">學校老師</div>
+                        <div class="skill-desc">因材施教，將艱澀知識轉化為易懂語言的傳授能力。</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-header">Creative.app</div>
+                        <div class="skill-title">平面設計 / 影音</div>
+                        <div class="skill-desc">視覺美感的數位化呈現，從指尖延伸到螢幕。</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-header">Life.config</div>
+                        <div class="skill-title">烹飪 / 手作</div>
+                        <div class="skill-desc">對生活細節的熱愛，是所有創作的靈感泉源。</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- S5: CURRENT -->
+        <!-- S5: CURRENT STATUS -->
         <section id="s5">
-            <div class="content-box">
-                <h2>System<br>Update</h2>
-                <p>目前狀態：家有兩隻貓主子 🐈 擔任高階監工。</p>
-                <p>最近正沉迷於 N8N 自動化工作流，努力扮演一個科技業的「慣老闆」。每天指使我的廉價勞工（AI Gemini）幫我寫程式、開發軟體，致力於將生活與工作全面自動化。</p>
+            <div class="panel">
+                <h2>SYSTEM <span>UPDATE</span></h2>
                 <p>這就是我，一個專業與斜槓並存的靈魂。歡迎跟我聊聊邏輯縝密的美甲技術，或是各種天馬行空的科技與生活！✨</p>
-                <div class="social-links">
-                    <a href="https://www.threads.com/@dwng1274" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.facebook.com/VicNailArt" target="_blank" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
-                    <a href="https://www.instagram.com/dwng1274/" target="_blank" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+
+                <div class="status-terminal">
+                    <div class="cmd-line"><span>CURRENT_TASK: Automation_Workflow_Optimization</span></div>
+                    <div class="cmd-line"><span>TOOL: N8N (Node-based Workflow Automation)</span></div>
+                    <div class="cmd-line"><span>ROLE: Tech_Lead (Self-Appointed)</span></div>
+                    <div class="cmd-line"><span>WORKFORCE: AI_Gemini (Cheap_Labor)</span></div>
+                    <div class="cmd-line"><span>SUPERVISORS: 2 Cats (Feline_Overlords)</span></div>
+                    <div class="cmd-line"><span>STATUS: Building the ultimate automated lifestyle...</span></div>
+                </div>
+
+                <div class="social-grid">
+                    <a href="https://www.threads.com/@dwng1274" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.facebook.com/VicNailArt" target="_blank" class="social-link"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="https://www.instagram.com/dwng1274/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
                 </div>
             </div>
         </section>
@@ -316,7 +391,7 @@
 
         // --- Config ---
         const CONFIG = {
-            shardCount: 800,
+            shardCount: 1200, // Increased density
             galleryImages: [
                 '/assets/img/guild/vic/gallery_01.webp',
                 '/assets/img/guild/vic/gallery_02.webp',
@@ -331,7 +406,7 @@
         // --- Scene Setup ---
         const container = document.getElementById('gl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.03);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 10;
@@ -339,6 +414,8 @@
         const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        // Use default tonemapping or none to keep images bright
+        renderer.toneMapping = THREE.NoToneMapping;
         container.appendChild(renderer.domElement);
 
         // --- Post Processing ---
@@ -346,9 +423,10 @@
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
 
+        // Bloom - adjusted to be subtle but present
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.0; // Slightly reduced bloom to not wash out images
+        bloomPass.threshold = 0.2;
+        bloomPass.strength = 0.8;
         bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
@@ -356,285 +434,233 @@
         rgbShiftPass.uniforms['amount'].value = 0.001;
         composer.addPass(rgbShiftPass);
 
-        // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 2);
-        scene.add(ambientLight);
-
-        const spotLight = new THREE.SpotLight(0xffffff, 50);
-        spotLight.position.set(10, 20, 10);
-        spotLight.angle = 0.3;
-        spotLight.penumbra = 1;
-        scene.add(spotLight);
-
-        const blueLight = new THREE.PointLight(0x00f3ff, 5, 20);
-        blueLight.position.set(-5, 0, 5);
-        scene.add(blueLight);
-
-        const redLight = new THREE.PointLight(0xff003c, 5, 20);
-        redLight.position.set(5, -5, 5);
-        scene.add(redLight);
-
-        // --- Objects: The "Perfect Form" (Instanced Shards) ---
-
-        const shardGeo = new THREE.ConeGeometry(0.1, 0.4, 3); // Spikes
-        const shardMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0.9,
-            roughness: 0.1,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.1,
-            transparent: true, // Enable transparency for fading
-            opacity: 1
+        // --- Objects: The Shard Cloud (Abstract Data) ---
+        // Use Tetrahedron for "Data Crystals" look
+        const shardGeo = new THREE.TetrahedronGeometry(0.2, 0);
+        const shardMat = new THREE.MeshBasicMaterial({
+            color: 0x00f3ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.4
         });
-
         const shards = new THREE.InstancedMesh(shardGeo, shardMat, CONFIG.shardCount);
+
         const dummy = new THREE.Object3D();
         const shardData = [];
 
-        // Distribute in a Capsule shape
+        // Initialize Shards in a "Tornado" or "Cloud"
         for (let i = 0; i < CONFIG.shardCount; i++) {
-            // Random point in capsule
-            // Simplified: Just a tall cylinder with noise
-            const r = (Math.random() * 2 - 1) * 2; // radius var
+            const r = 5 + Math.random() * 10;
             const theta = Math.random() * Math.PI * 2;
-            const y = (Math.random() * 2 - 1) * 4; // Height
+            const y = (Math.random() - 0.5) * 20;
 
-            // Constrain to "Perfect" shape initially
-            const perfectR = 1.5;
-            const x = Math.cos(theta) * perfectR;
-            const z = Math.sin(theta) * perfectR;
-
-            // Store target (Perfect) and Explosion vector
-            shardData.push({
-                idx: i,
-                origin: { x, y, z }, // The perfect shell
-                exploded: { // The chaotic explosion
-                    x: x * (2 + Math.random() * 5),
-                    y: y * (2 + Math.random() * 5),
-                    z: z * (2 + Math.random() * 5)
-                },
-                rotation: {
-                    x: Math.random() * Math.PI,
-                    y: Math.random() * Math.PI,
-                    z: Math.random() * Math.PI
-                },
-                speed: 0.5 + Math.random() * 0.5
-            });
-
-            dummy.position.set(x, y, z);
-            dummy.rotation.set(Math.random(), Math.random(), Math.random());
+            dummy.position.set(
+                Math.cos(theta) * r,
+                y,
+                Math.sin(theta) * r
+            );
+            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            dummy.scale.setScalar(Math.random() * 0.5 + 0.5);
             dummy.updateMatrix();
             shards.setMatrixAt(i, dummy.matrix);
+
+            shardData.push({
+                idx: i,
+                basePos: dummy.position.clone(),
+                speed: 0.005 + Math.random() * 0.01,
+                radius: r,
+                yOffset: y
+            });
         }
-        shards.instanceMatrix.needsUpdate = true;
         scene.add(shards);
 
-        // --- Objects: The Logic Core (Wireframe) ---
-        const coreGeo = new THREE.IcosahedronGeometry(1.2, 1);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xff003c, wireframe: true, transparent: true, opacity: 0 });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        scene.add(core);
-
-        // --- Objects: Gallery Panels ---
-        const textureLoader = new THREE.TextureLoader();
+        // --- Objects: The Gallery (Cylinder) ---
         const galleryGroup = new THREE.Group();
         scene.add(galleryGroup);
-
         const panels = [];
+        const textureLoader = new THREE.TextureLoader();
 
         CONFIG.galleryImages.forEach((url, i) => {
             const tex = textureLoader.load(url);
-            // Increased scale for better visibility (5x7 approx)
-            const geo = new THREE.PlaneGeometry(5, 7);
-            const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0 });
+            tex.colorSpace = THREE.SRGBColorSpace; // Ensure correct colors
+
+            // Standard aspect ratio frame
+            const geo = new THREE.PlaneGeometry(6, 8);
+            // Use BasicMaterial to avoid lighting issues, toneMapped=false to keep colors vivid
+            const mat = new THREE.MeshBasicMaterial({
+                map: tex,
+                side: THREE.DoubleSide,
+                toneMapped: false,
+                transparent: true,
+                opacity: 0 // Start invisible
+            });
             const mesh = new THREE.Mesh(geo, mat);
-
-            // Position them in a circle around the center
-            const angle = (i / CONFIG.galleryImages.length) * Math.PI * 2;
-            const radius = 8; // Slightly larger radius for larger images
-            mesh.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-            mesh.lookAt(0, 0, 0);
-
-            mesh.userData = {
-                angle: angle,
-                radius: radius,
-                y: 0
-            };
 
             galleryGroup.add(mesh);
             panels.push(mesh);
         });
 
-        // --- Animation State ---
-        let scrollProgress = 0; // 0 to 1
+        // Hide gallery initially
+        galleryGroup.visible = false;
 
-        // --- GSAP Setup ---
+
+        // --- GSAP & Scroll Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Section Animations
-        gsap.utils.toArray('.content-box').forEach(box => {
-            gsap.to(box, {
-                scrollTrigger: {
-                    trigger: box,
-                    start: "top 80%",
-                    end: "top 50%",
-                    scrub: 1
-                },
-                x: 0,
-                opacity: 1
-            });
-        });
+        let scrollProgress = 0;
 
-        // Hint Animation
-        gsap.to('.gallery-hint', {
-            scrollTrigger: {
-                 trigger: '#s3',
-                 start: "top center",
-                 end: "center center",
-                 scrub: true
-            },
-            opacity: 1,
-            y: -10
-        });
-
-        // Main 3D Timeline
-        // We map the entire scroll height to a timeline
+        // Main Progress Bar
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
             end: "bottom bottom",
             onUpdate: (self) => {
                 scrollProgress = self.progress;
+                gsap.set('#prog-fill', { height: (self.progress * 100) + '%' });
 
-                // Progress Bar
-                const progFill = document.getElementById('prog-fill');
-                if (progFill) progFill.style.height = (self.progress * 100) + '%';
-
-                // RGB Shift based on velocity
+                // RGB Glitch on scroll
                 const vel = Math.abs(self.getVelocity());
-                gsap.to(rgbShiftPass.uniforms['amount'], { value: 0.001 + vel * 0.00005, duration: 0.1 });
+                gsap.to(rgbShiftPass.uniforms['amount'], { value: 0.001 + vel * 0.0001, duration: 0.1 });
             }
+        });
+
+        // Intro Animation
+        const tl = gsap.timeline();
+        tl.to('.loader-progress', { width: '100%', duration: 1, ease: 'power2.inOut' })
+          .to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() })
+          .to('.hero-title', { opacity: 1, y: 0, duration: 1, ease: 'power4.out' });
+
+        // Panel Animations
+        gsap.utils.toArray('.panel').forEach(panel => {
+            gsap.from(panel, {
+                scrollTrigger: {
+                    trigger: panel,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 100,
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.out"
+            });
         });
 
         // --- Render Loop ---
         const clock = new THREE.Clock();
+        let galleryRotation = 0; // Accumulated rotation for gallery
 
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // 1. Shard Animation (Implosion/Explosion)
-            let explosionFactor = 0;
-            // S1 (0-0.2): Stable
-            // S2 (0.2-0.5): Explode
-            if (scrollProgress < 0.2) explosionFactor = scrollProgress * 0.5;
-            else if (scrollProgress < 0.6) explosionFactor = 0.1 + (scrollProgress - 0.2) * 5;
-            else explosionFactor = 2.1; // Maximum Chaos
+            // 1. Shard Animation (Background)
+            // Rotate the entire cloud slowly
+            shards.rotation.y = t * 0.05;
 
-            // Visibility Logic for Gallery
-            // When Gallery (0.3 - 0.7) is active, shards should fade out
-            let shardOpacity = 1;
-            if (scrollProgress > 0.3 && scrollProgress < 0.7) {
-                 shardOpacity = Math.max(0, 1 - (scrollProgress - 0.3) * 10); // Rapid fade out
-            } else if (scrollProgress >= 0.7) {
-                 shardOpacity = Math.min(1, (scrollProgress - 0.7) * 5); // Fade back in
-            }
-            shardMat.opacity = shardOpacity;
-            shardMat.transparent = shardOpacity < 0.99;
+            // 2. Logic: Scene Switching based on Scroll
+            // We define "Gallery Mode" strictly for Section 3
+            // Section 3 is roughly at scroll progress 0.4 to 0.6 depending on height
+            // Let's use specific triggers for robustness if possible, but scrollProgress is fine for this bespoke page.
+            // S1 (0-0.2), S2 (0.2-0.4), S3 (0.4-0.6), S4 (0.6-0.8), S5 (0.8-1.0)
 
-            // Update Shards
-            if (shardOpacity > 0.01) {
-                for (let i = 0; i < CONFIG.shardCount; i++) {
-                    const data = shardData[i];
+            // Adjust ranges based on content height
+            const isGalleryMode = (scrollProgress > 0.35 && scrollProgress < 0.60);
 
-                    // Lerp between Origin and Exploded
-                    const lerpFactor = Math.min(1, explosionFactor);
+            if (isGalleryMode) {
+                // GALLERY MODE
+                shards.visible = false;
+                galleryGroup.visible = true;
 
-                    const tx = THREE.MathUtils.lerp(data.origin.x, data.exploded.x, lerpFactor);
-                    const ty = THREE.MathUtils.lerp(data.origin.y, data.exploded.y, lerpFactor);
-                    const tz = THREE.MathUtils.lerp(data.origin.z, data.exploded.z, lerpFactor);
+                const hint = document.querySelector('.gallery-ui-hint');
+                if(hint) hint.style.opacity = 1;
 
-                    // Add some noise based on time
-                    const noiseX = Math.sin(t + i) * 0.1;
+                // Local scroll within gallery section (approx 0.35 to 0.60)
+                // Normalize 0.35->0, 0.60->1
+                let localP = (scrollProgress - 0.35) / 0.25;
+                if (localP < 0) localP = 0;
+                if (localP > 1) localP = 1;
 
-                    dummy.position.set(tx + noiseX, ty, tz);
+                // Layout: Horizontal Cylinder/Carousel
+                const radius = 10;
 
-                    // Rotation
-                    dummy.rotation.x = data.rotation.x + t * data.speed;
-                    dummy.rotation.y = data.rotation.y + t * data.speed;
+                // Map localP to rotation angle.
+                // We want to scroll through all images.
+                // Total angle needed = panels.length * spacing
+                const spacing = 0.6; // radians between panels
+                const totalRotation = (panels.length - 1) * spacing;
 
-                    // Scale decreases as it explodes to simulate disintegration
-                    const scale = Math.max(0.1, 1 - explosionFactor * 0.4);
-                    dummy.scale.setScalar(scale);
+                // Target rotation based on scroll
+                const targetRot = -localP * totalRotation;
 
-                    dummy.updateMatrix();
-                    shards.setMatrixAt(i, dummy.matrix);
+                // Smooth lerp for rotation
+                galleryRotation += (targetRot - galleryRotation) * 0.1;
+
+                panels.forEach((mesh, i) => {
+                    // Base position
+                    // We want index 0 at center when scroll is 0
+                    // We want index N at center when scroll is 1
+
+                    // Current angle for this panel
+                    // Panel 0 starts at 0. Panel 1 at spacing...
+                    // Subtract galleryRotation to move them
+                    const angle = (i * spacing) + galleryRotation;
+
+                    // Circular placement
+                    // Center is at Z=0, X=0
+                    // We want them to form an arc in front of camera
+                    // Camera is at Z=12
+
+                    // Simple Arc:
+                    // x = sin(angle) * r
+                    // z = cos(angle) * r - r (to center arc at 0,0)
+
+                    mesh.position.x = Math.sin(angle) * radius;
+                    mesh.position.z = (Math.cos(angle) * radius) - radius;
+
+                    // Face inward
+                    mesh.rotation.y = -angle;
+
+                    // Visibility logic:
+                    // If angle is close to 0 (center), visible.
+                    // If angle is large, fade out.
+                    const dist = Math.abs(angle);
+                    const opacity = Math.max(0, 1 - dist * 0.8); // Fade out quickly
+
+                    mesh.material.opacity = opacity;
+                    mesh.visible = opacity > 0.01;
+                });
+
+                camera.position.z = 12; // Fixed viewing distance
+
+            } else {
+                // DATA/SHARD MODE
+                shards.visible = true;
+                galleryGroup.visible = false;
+                const hint = document.querySelector('.gallery-ui-hint');
+                if(hint) hint.style.opacity = 0;
+
+                // Camera flythrough
+                // Start z=10, move slightly
+                // S1->S2->S3 transition
+
+                let targetZ = 10;
+                let targetY = 0;
+
+                if (scrollProgress <= 0.35) {
+                    // Hero & Philosophy
+                    targetZ = 10 + scrollProgress * 5;
+                    targetY = -scrollProgress * 2;
+                } else {
+                    // Life & Footer (S4+)
+                    // Fly past the gallery zone
+                    targetZ = 10;
+                    targetY = -5; // Lower down
                 }
-                shards.instanceMatrix.needsUpdate = true;
-                shards.rotation.y = t * 0.1; // General spin
-            } else {
-                 // Hide completely to save GPU
-                 shards.instanceMatrix.needsUpdate = false;
+
+                // Lerp camera
+                camera.position.z += (targetZ - camera.position.z) * 0.1;
+                camera.position.y += (targetY - camera.position.y) * 0.1;
             }
-
-            // 2. Core Logic Reveal
-            if (scrollProgress > 0.15 && scrollProgress < 0.3) { // Stop earlier
-                const opacity = Math.min(1, (scrollProgress - 0.15) * 5);
-                core.material.opacity = opacity;
-                core.rotation.x = t;
-                core.rotation.y = t * 1.5;
-            } else {
-                core.material.opacity = Math.max(0, core.material.opacity - 0.05);
-            }
-
-            // 3. Gallery Panels
-            // Appear at S3 (around 0.4 - 0.7)
-            let galleryOp = 0;
-            if (scrollProgress > 0.3 && scrollProgress < 0.7) {
-                galleryOp = Math.min(1, (scrollProgress - 0.3) * 5);
-            } else if (scrollProgress >= 0.7) {
-                 galleryOp = Math.max(0, 1 - (scrollProgress - 0.7) * 5);
-            }
-
-            panels.forEach((mesh, i) => {
-                mesh.material.opacity = galleryOp;
-
-                if (galleryOp > 0.01) {
-                    // Spiral motion
-                    const angleOffset = t * 0.2;
-                    // Move them closer as we scroll?
-                    // Currently fixed radius 8
-                    const r = mesh.userData.radius + Math.sin(t + i) * 0.5;
-
-                    mesh.position.x = Math.cos(mesh.userData.angle + angleOffset) * r;
-                    mesh.position.z = Math.sin(mesh.userData.angle + angleOffset) * r;
-                    // Gentle float
-                    mesh.position.y = Math.sin(t + i * 0.5) * 0.5;
-
-                    mesh.lookAt(camera.position);
-                }
-            });
-
-            // 4. Camera Movement
-            // S1: Front (z=10)
-            // S2: Zoom out slightly
-            // S3: Orbit (Gallery) - Camera should be far enough to see panels (Radius 8, Panels size 5x7)
-
-            let camTargetZ = 10;
-            if (scrollProgress < 0.3) {
-                 camTargetZ = 10 + scrollProgress * 10;
-            } else if (scrollProgress < 0.7) {
-                 camTargetZ = 20; // Move back to see the circle of images
-            } else {
-                 camTargetZ = 15;
-            }
-
-            camera.position.z += (camTargetZ - camera.position.z) * 0.05;
-
-            const camTargetY = Math.sin(scrollProgress * Math.PI) * 2; // Reduced sway
-            camera.position.y += (camTargetY - camera.position.y) * 0.05;
-
-            camera.lookAt(0, 0, 0);
 
             composer.render();
         }
@@ -648,38 +674,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        // --- Init ---
-        let introStarted = false;
-        function startIntro() {
-            if (introStarted) return;
-            introStarted = true;
-
-            const tl = gsap.timeline();
-            tl.to('#loader', {
-                opacity: 0,
-                duration: 0.8,
-                ease: 'power2.inOut',
-                onComplete: () => {
-                    const loader = document.getElementById('loader');
-                    if(loader) {
-                        loader.style.display = 'none';
-                        loader.remove(); // Remove from DOM completely to prevent ghosting
-                    }
-                }
-            })
-            .to('.hero-title', { opacity: 1, y: 0, duration: 1.5, ease: 'power4.out' }, "-=0.5");
-        }
-
-        window.addEventListener('load', startIntro);
-
-        // Failsafe: Force start after 1.5s regardless of load state
-        setTimeout(() => {
-            if (!introStarted) {
-                console.warn('Loader fallback triggered');
-                startIntro();
-            }
-        }, 1500);
 
     </script>
 </body>
