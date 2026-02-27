@@ -19,501 +19,365 @@
             --neon-pink: #ff0055;
             --warm-gold: #ffd700;
             --void-black: #050505;
+            --glass-bg: rgba(10, 20, 30, 0.75);
+            --border-glow: 0 0 10px rgba(0, 240, 255, 0.5);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { overflow-x: hidden; scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; }
         body {
             background-color: var(--void-black);
             color: #fff;
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
+            line-height: 1.6;
         }
 
-        /* === CANVAS === */
+        /* === 1. BACKGROUND LAYER (Three.js) === */
         #webgl-canvas {
             position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
             z-index: -1;
         }
 
-        /* === HUD OVERLAY === */
-        .hud-overlay {
+        .scanline-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100;
-            background: radial-gradient(circle at center, transparent 60%, rgba(0,0,0,0.8));
-        }
-        .scanline {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, transparent 50%, rgba(0, 240, 255, 0.03) 51%);
-            background-size: 100% 4px; pointer-events: none; z-index: 90;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none; z-index: 0; opacity: 0.6;
         }
 
-        /* === SCROLL CONTENT === */
-        .scroll-container {
-            position: relative; width: 100%; height: 600vh;
+        /* === 2. LAYOUT CONTAINER === */
+        .container {
+            max-width: 1200px; margin: 0 auto; padding: 0 20px;
+            position: relative; z-index: 10;
         }
 
-        .section {
-            position: absolute; width: 100%; height: 100vh;
-            display: flex; justify-content: center; align-items: center;
-            pointer-events: none; opacity: 0; transition: opacity 0.5s;
+        /* === 3. SECTIONS === */
+        section {
+            padding: 80px 0;
+            min-height: auto;
         }
-        .section.active { opacity: 1; pointer-events: auto; }
 
-        /* HERO */
-        #hero-section { top: 0; z-index: 10; }
-        .hero-content {
-            text-align: center;
-            text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+        /* HERO SECTION */
+        .hero {
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; flex-direction: column;
         }
+        .hero-avatar-wrapper {
+            position: relative; width: 220px; height: 220px; margin: 0 auto 2rem;
+        }
+        .hero-avatar {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+            border: 4px solid var(--neon-cyan);
+            box-shadow: 0 0 30px var(--neon-cyan);
+            position: relative; z-index: 2;
+        }
+        .hero-ring {
+            position: absolute; inset: -20px; border: 2px dashed var(--warm-gold);
+            border-radius: 50%; animation: spin 20s linear infinite; z-index: 1;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
         .hero-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(4rem, 10vw, 8rem);
-            font-weight: 900;
-            color: transparent;
-            -webkit-text-stroke: 2px var(--neon-cyan);
-            position: relative;
-            animation: glitch 2s infinite;
+            font-family: 'Orbitron', sans-serif; font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 900; color: #fff; text-transform: uppercase;
+            text-shadow: 2px 2px 0 var(--neon-pink); margin-bottom: 0.5rem;
         }
         .hero-subtitle {
-            font-size: 1.5rem; letter-spacing: 5px; color: var(--warm-gold);
-            margin-top: 1rem; text-transform: uppercase;
+            font-family: 'Orbitron', sans-serif; color: var(--warm-gold);
+            letter-spacing: 4px; font-size: 1.2rem; margin-bottom: 2rem;
+        }
+        .hero-bio {
+            max-width: 700px; margin: 0 auto; font-size: 1.1rem;
+            background: var(--glass-bg); padding: 1.5rem; border-left: 4px solid var(--neon-pink);
+            backdrop-filter: blur(10px);
         }
 
-        /* ANALYST CARD */
-        #analyst-section { top: 150vh; justify-content: flex-start; padding-left: 10vw; }
-        .glass-card {
-            background: rgba(10, 25, 47, 0.6);
-            border: 1px solid var(--neon-cyan);
-            padding: 3rem; max-width: 600px; /* Wider to accommodate avatar */
-            backdrop-filter: blur(15px);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);
-            transform: perspective(1000px) rotateY(10deg);
-            display: flex; gap: 2rem; align-items: flex-start;
+        /* ANALYST (Skills) */
+        .grid-split {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+            align-items: center;
         }
-        .analyst-avatar {
-            width: 120px; height: 120px; border-radius: 50%;
-            border: 2px solid var(--neon-cyan);
-            box-shadow: 0 0 20px var(--neon-cyan);
-            object-fit: cover; flex-shrink: 0;
-        }
-        .analyst-content { flex: 1; }
-        .skill-stat {
-            display: flex; justify-content: space-between; margin-bottom: 0.5rem;
-            font-family: 'Orbitron'; color: var(--neon-cyan); font-size: 0.9rem;
-        }
-        .progress-bar {
-            height: 6px; background: rgba(255, 255, 255, 0.1); width: 100%; margin-bottom: 1.5rem;
+        @media (max-width: 768px) { .grid-split { grid-template-columns: 1fr; gap: 2rem; } }
+
+        .glass-panel {
+            background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1);
+            padding: 2rem; backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             position: relative; overflow: hidden;
         }
-        .progress-fill {
-            height: 100%; background: var(--neon-cyan); width: 0;
-            box-shadow: 0 0 10px var(--neon-cyan);
-            transition: width 1s ease-out;
+        .glass-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--warm-gold), var(--neon-pink));
         }
 
-        /* WEAVER CARD */
-        #weaver-section { top: 300vh; justify-content: flex-end; padding-right: 10vw; }
-        .weaver-card {
-            background: rgba(255, 215, 0, 0.1);
-            border: 1px solid var(--warm-gold);
-            padding: 3rem; max-width: 500px;
-            backdrop-filter: blur(15px);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
-            transform: perspective(1000px) rotateY(-10deg);
+        .section-title {
+            font-family: 'Orbitron'; font-size: 2.5rem; margin-bottom: 2rem;
+            color: var(--neon-cyan); text-transform: uppercase;
         }
-        .weaver-title {
-            font-family: 'Zen Maru Gothic'; color: var(--warm-gold);
-            font-size: 2rem; margin-bottom: 1rem;
-            border-bottom: 2px solid var(--warm-gold); padding-bottom: 0.5rem;
-            display: inline-block;
-        }
+        .section-title.warm { color: var(--warm-gold); }
 
-        /* GALLERY (3D Carousel Placeholder) */
-        #gallery-section { top: 450vh; }
-        .gallery-ui {
-            text-align: center; pointer-events: none;
-        }
-        .gallery-h1 {
-            font-family: 'Orbitron'; font-size: 3rem; color: var(--neon-pink);
-            text-shadow: 0 0 20px var(--neon-pink);
-            margin-bottom: 1rem;
-        }
-        .gallery-instr {
-            font-family: 'Space Mono', monospace; color: #aaa; font-size: 0.9rem;
-        }
+        .skill-item { margin-bottom: 1.5rem; }
+        .skill-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-family: 'Orbitron'; font-size: 0.9rem; }
+        .skill-track { height: 8px; background: rgba(255,255,255,0.1); width: 100%; }
+        .skill-bar { height: 100%; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); width: 0; transition: width 1.5s ease-out; }
 
-        /* CONNECT */
-        #connect-section { top: 550vh; }
-        .social-row {
-            display: flex; gap: 2rem;
+        /* WEAVER (Interests) */
+        .weaver-tags { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
+        .tag {
+            padding: 0.5rem 1rem; border: 1px solid var(--warm-gold);
+            color: var(--warm-gold); font-family: 'Orbitron'; font-size: 0.9rem;
+            transition: 0.3s; cursor: default;
         }
+        .tag:hover { background: var(--warm-gold); color: #000; box-shadow: 0 0 15px var(--warm-gold); }
+
+        /* GALLERY */
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .gallery-card {
+            aspect-ratio: 1; position: relative; overflow: hidden;
+            border: 2px solid #333; transition: 0.3s;
+        }
+        .gallery-card img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.5s;
+        }
+        .gallery-card:hover { border-color: var(--neon-pink); box-shadow: 0 0 20px rgba(255,0,85,0.4); }
+        .gallery-card:hover img { transform: scale(1.1); }
+
+        .gallery-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            padding: 1rem; background: rgba(0,0,0,0.8);
+            transform: translateY(100%); transition: 0.3s;
+            font-family: 'Orbitron'; font-size: 0.8rem; color: var(--neon-pink);
+        }
+        .gallery-card:hover .gallery-overlay { transform: translateY(0); }
+
+        /* FOOTER */
+        .footer {
+            padding: 4rem 0; text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.8);
+        }
+        .social-links { display: flex; justify-content: center; gap: 2rem; margin-top: 2rem; }
         .social-btn {
-            width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;
-            border: 2px solid var(--warm-gold); border-radius: 50%;
-            font-size: 2rem; color: var(--warm-gold); text-decoration: none;
-            transition: all 0.3s; background: rgba(0,0,0,0.5);
+            font-size: 2rem; color: #fff; transition: 0.3s;
         }
-        .social-btn:hover {
-            background: var(--warm-gold); color: #000;
-            box-shadow: 0 0 30px var(--warm-gold); transform: scale(1.1);
-        }
+        .social-btn:hover { color: var(--neon-cyan); transform: scale(1.2); text-shadow: 0 0 15px var(--neon-cyan); }
 
-        /* LOADER */
-        #loader {
-            position: fixed; inset: 0; background: #000; z-index: 9999;
-            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        /* EASTER EGG */
+        .egg-trigger {
+            font-size: 3rem; cursor: pointer; display: inline-block; margin-top: 2rem;
+            transition: transform 0.3s;
         }
-        .loader-ring {
-            width: 100px; height: 100px; border: 4px solid rgba(0, 240, 255, 0.2);
-            border-top: 4px solid var(--neon-cyan); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loader-text {
-            margin-top: 20px; font-family: 'Orbitron'; color: var(--neon-cyan); letter-spacing: 2px;
-            animation: blink 1s infinite;
-        }
-        @keyframes blink { 50% { opacity: 0.5; } }
-        @keyframes glitch {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 2px) }
-            40% { transform: translate(-2px, -2px) }
-            60% { transform: translate(2px, 2px) }
-            80% { transform: translate(2px, -2px) }
-            100% { transform: translate(0) }
-        }
+        .egg-trigger:hover { transform: scale(1.2) rotate(10deg); }
 
-        /* EASTER EGG OVERLAY */
         #pooh-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000;
-            display: flex; justify-content: center; align-items: center;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.5s;
         }
         #pooh-overlay.visible { opacity: 1; pointer-events: auto; }
-        .pooh-content { text-align: center; color: var(--warm-gold); }
-        .pooh-svg { width: 200px; height: 200px; animation: bounce 2s infinite; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        .pooh-svg { width: 250px; height: 250px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="loader-ring"></div>
-        <div class="loader-text">INITIALIZING SYSTEM...</div>
-    </div>
-
+    <!-- 1. BACKGROUND -->
     <canvas id="webgl-canvas"></canvas>
-    <div class="hud-overlay"></div>
-    <div class="scanline"></div>
+    <div class="scanline-overlay"></div>
 
-    <div class="scroll-container">
+    <!-- 2. CONTENT -->
+    <div class="container">
 
         <!-- HERO -->
-        <div class="section active" id="sec-0">
-            <div class="hero-content">
-                <h1 class="hero-title">LO YU</h1>
-                <div class="hero-subtitle">CYBER-WEAVER // ANALYST // ARTIST</div>
+        <section class="hero">
+            <div class="hero-avatar-wrapper">
+                <div class="hero-ring"></div>
+                <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu" class="hero-avatar">
             </div>
-        </div>
+            <h1 class="hero-title">LO YU</h1>
+            <div class="hero-subtitle">CYBER-WEAVER // ANALYST // STRATEGIST</div>
+            <div class="hero-bio">
+                <p>專注於人際關係的行銷策劃師。擅長處理人際問題與跨世代溝通，透過線上課程教授如何運用自身優勢、學習說話技巧，與陌生人建立良好連結。</p>
+            </div>
+        </section>
 
-        <!-- ANALYST -->
-        <div class="section" id="sec-1">
-            <div class="glass-card">
-                <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu Avatar" class="analyst-avatar">
-                <div class="analyst-content">
-                    <h2 style="font-family: 'Orbitron'; color: var(--neon-cyan); margin-bottom: 2rem;">>> SYSTEM_ANALYSIS</h2>
+        <!-- ABOUT SPLIT -->
+        <section id="about">
+            <div class="grid-split">
+                <!-- ANALYST -->
+                <div class="glass-panel" data-animate="slide-right">
+                    <h2 class="section-title">SYSTEM_ANALYST</h2>
+                    <p style="margin-bottom: 2rem;">將人際溝通技巧運用於職場，提升合作與人緣。幫助人們透過模仿技巧、讚美、良好聆聽，快速建立共鳴。</p>
 
-                    <div class="skill-stat"><span>COMMUNICATION_PROTOCOL</span><span>98%</span></div>
-                    <div class="progress-bar"><div class="progress-fill" style="width: 98%"></div></div>
+                    <div class="skill-item">
+                        <div class="skill-header"><span>COMMUNICATION</span><span>98%</span></div>
+                        <div class="skill-track"><div class="skill-bar" style="width: 98%"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-header"><span>MARKETING</span><span>90%</span></div>
+                        <div class="skill-track"><div class="skill-bar" style="width: 90%"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-header"><span>LOGIC (INTJ)</span><span>100%</span></div>
+                        <div class="skill-track"><div class="skill-bar" style="width: 100%"></div></div>
+                    </div>
+                </div>
 
-                    <div class="skill-stat"><span>SOCIAL_DISTANCE_CALC</span><span>95%</span></div>
-                    <div class="progress-bar"><div class="progress-fill" style="width: 95%"></div></div>
+                <!-- WEAVER -->
+                <div class="glass-panel" style="border-bottom: 4px solid var(--warm-gold);" data-animate="slide-left">
+                    <h2 class="section-title warm">THE WEAVER</h2>
+                    <p>我希望透過我的手作，能讓人們帶來幸福。期望我的朋友們在收到作品時，能夠會心一笑。<br>日文的雞蛋寫作玉子，正好我的名字之中有玉這個字。</p>
 
-                    <div class="skill-stat"><span>INTJ_LOGIC_CORE</span><span>100%</span></div>
-                    <div class="progress-bar"><div class="progress-fill" style="width: 100%"></div></div>
-
-                    <p style="margin-top: 2rem; line-height: 1.6; color: #ccc;">
-                        擅長運用邏輯解構人際關係。如同編寫程式一般，找出溝通中的 Bug，並運用正確的語法（話術）修復連結。
-                    </p>
+                    <div class="weaver-tags">
+                        <span class="tag">#Crochet</span>
+                        <span class="tag">#Handmade</span>
+                        <span class="tag">#WinnieThePooh</span>
+                        <span class="tag">#EggLover</span>
+                        <span class="tag">#Happiness</span>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- WEAVER -->
-        <div class="section" id="sec-2">
-            <div class="weaver-card">
-                <h2 class="weaver-title">🧶 溫暖的編織者</h2>
-                <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;">
-                    在冰冷的數據與邏輯之外，我是追求幸福的編織者。<br>
-                    每一針、每一線，都是將人與人連結起來的魔法。
-                </p>
-                <ul style="list-style: none; padding-left: 1rem; border-left: 2px solid var(--warm-gold);">
-                    <li style="margin-bottom: 0.5rem;">✨ 善用優勢 (Identify Strengths)</li>
-                    <li style="margin-bottom: 0.5rem;">🗣️ 魔法話語 (Magic Words)</li>
-                    <li>🤝 模仿共鳴 (Mirroring)</li>
-                </ul>
-            </div>
-        </div>
+        </section>
 
         <!-- GALLERY -->
-        <div class="section" id="sec-3">
-            <div class="gallery-ui">
-                <h1 class="gallery-h1">PROJECT_GALLERY</h1>
-                <p class="gallery-instr">SCROLL TO ROTATE THE ARCHIVE</p>
+        <section id="gallery">
+            <h2 class="section-title" style="text-align: center;">PROJECT_ARCHIVE</h2>
+            <div class="gallery-grid">
+                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_01.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_01</div></div>
+                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_02.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_02</div></div>
+                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_03.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_03</div></div>
+                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_04.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_04</div></div>
+                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_05.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_05</div></div>
+                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_06.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_06</div></div>
             </div>
-        </div>
+        </section>
 
-        <!-- CONNECT -->
-        <div class="section" id="sec-4">
-            <div style="text-align: center;">
-                <h2 style="font-family: 'Orbitron'; font-size: 2rem; margin-bottom: 2rem; color: var(--warm-gold);">ESTABLISH_LINK</h2>
-                <div class="social-row">
-                    <a href="https://www.threads.com/@loyu1230" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/loyu1230/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" class="social-btn"><i class="fa-solid fa-globe"></i></a>
-                </div>
+        <!-- FOOTER -->
+        <footer class="footer">
+            <h2 style="font-family: 'Orbitron'; color: var(--neon-cyan);">INITIALIZE_CONNECTION</h2>
+            <div class="social-links">
+                <a href="https://www.threads.com/@loyu1230" target="_blank" rel="noopener noreferrer" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/loyu1230/" target="_blank" rel="noopener noreferrer" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" rel="noopener noreferrer" class="social-btn"><i class="fa-solid fa-globe"></i></a>
             </div>
-        </div>
+
+            <div class="egg-trigger" onclick="toggleEgg()">🥚</div>
+            <p style="margin-top: 1rem; color: #555; font-size: 0.8rem;">Click the egg to hatch happiness.</p>
+        </footer>
 
     </div>
 
-    <!-- EASTER EGG -->
+    <!-- EASTER EGG OVERLAY -->
     <div id="pooh-overlay">
-        <div class="pooh-content">
-            <!-- CSS/SVG Pooh Bear (No external images) -->
-            <svg viewBox="0 0 100 100" class="pooh-svg">
-                <!-- Head -->
-                <circle cx="50" cy="50" r="45" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
-                <!-- Ears -->
-                <circle cx="20" cy="25" r="15" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
-                <circle cx="80" cy="25" r="15" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
-                <!-- Eyes -->
-                <circle cx="35" cy="45" r="4" fill="#000" />
-                <circle cx="65" cy="45" r="4" fill="#000" />
-                <!-- Nose -->
-                <path d="M45 55 Q50 60 55 55 L50 65 Z" fill="#000" />
-                <!-- Smile -->
-                <path d="M35 70 Q50 85 65 70" stroke="#000" stroke-width="3" fill="none" stroke-linecap="round" />
-                <!-- Shirt -->
-                <path d="M15 80 Q50 110 85 80 L85 100 L15 100 Z" fill="#ff0000" />
-            </svg>
-            <h2 style="margin-top: 1rem; font-family: 'Orbitron';">SECRET_FOUND: HONEY_CORE</h2>
-            <p style="font-family: 'Zen Maru Gothic'; font-size: 1.2rem;">Winnie the Pooh loves honey, and Lo Yu loves eggs! 🍯🥚</p>
-            <button onclick="document.getElementById('pooh-overlay').classList.remove('visible')" style="margin-top: 1rem; padding: 0.8rem 2rem; background: var(--warm-gold); border: none; font-weight: bold; cursor: pointer; font-family: 'Orbitron'; letter-spacing: 2px;">CLOSE_DATA_STREAM</button>
-        </div>
+        <svg viewBox="0 0 100 100" class="pooh-svg">
+            <circle cx="50" cy="50" r="45" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
+            <circle cx="20" cy="25" r="15" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
+            <circle cx="80" cy="25" r="15" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
+            <circle cx="35" cy="45" r="4" fill="#000" />
+            <circle cx="65" cy="45" r="4" fill="#000" />
+            <path d="M45 55 Q50 60 55 55 L50 65 Z" fill="#000" />
+            <path d="M35 70 Q50 85 65 70" stroke="#000" stroke-width="3" fill="none" stroke-linecap="round" />
+            <path d="M15 80 Q50 110 85 80 L85 100 L15 100 Z" fill="#ff0000" />
+        </svg>
+        <h2 style="font-family: 'Orbitron'; margin-top: 2rem; color: var(--warm-gold);">SECRET_FOUND</h2>
+        <p style="font-size: 1.5rem; margin-bottom: 2rem;">"Sometimes the smallest things take up the most room in your heart."</p>
+        <button onclick="toggleEgg()" style="padding: 10px 30px; background: transparent; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: 'Orbitron'; cursor: pointer;">CLOSE_STREAM</button>
     </div>
 
     <!-- SCRIPTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-
     <script>
-        gsap.registerPlugin(ScrollTrigger);
+        // === TOGGLE EGG ===
+        function toggleEgg() {
+            document.getElementById('pooh-overlay').classList.toggle('visible');
+        }
 
-        // === THREE.JS SETUP ===
+        // === THREE.JS BACKGROUND ===
+        // Robust, non-interfering background scene
+        const canvas = document.getElementById('webgl-canvas');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.002);
-
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 20;
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
 
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl-canvas'), antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.toneMapping = THREE.ReinhardToneMapping;
+        camera.position.z = 30;
 
-        // === OBJECTS ===
+        // Objects
+        const group = new THREE.Group();
+        scene.add(group);
 
-        // 1. THE CORE (Golden Egg)
-        const eggGeo = new THREE.IcosahedronGeometry(4, 2); // Low poly look but smooth enough
-        const eggMat = new THREE.MeshStandardMaterial({
-            color: 0xffd700,
-            emissive: 0xffaa00,
-            emissiveIntensity: 0.8,
-            roughness: 0.2,
-            metalness: 1.0,
-            wireframe: true
+        // 1. Wireframe Globe (The Logic World)
+        const geometry = new THREE.IcosahedronGeometry(15, 1);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x0044aa,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.1
         });
-        const egg = new THREE.Mesh(eggGeo, eggMat);
-        scene.add(egg);
+        const sphere = new THREE.Mesh(geometry, material);
+        group.add(sphere);
 
-        // 2. THE WEAVE (Particles / Lines)
-        const particleCount = 1000;
-        const particles = new THREE.BufferGeometry();
-        const posArray = new Float32Array(particleCount * 3);
-        for(let i=0; i<particleCount*3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 60;
+        // 2. Golden Particles (The Warmth)
+        const pGeo = new THREE.BufferGeometry();
+        const pCount = 300;
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount*3; i++) {
+            pPos[i] = (Math.random() - 0.5) * 60;
         }
-        particles.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particleMat = new THREE.PointsMaterial({
-            size: 0.15, color: 0x00f0ff, transparent: true, opacity: 0.8
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({
+            size: 0.15, color: 0xffd700, transparent: true, opacity: 0.6
         });
-        const particleMesh = new THREE.Points(particles, particleMat);
-        scene.add(particleMesh);
+        const particles = new THREE.Points(pGeo, pMat);
+        group.add(particles);
 
-        // 3. GALLERY CAROUSEL
-        const galleryGroup = new THREE.Group();
-        scene.add(galleryGroup);
-        galleryGroup.visible = false; // Hidden initially
-
-        const textureLoader = new THREE.TextureLoader();
-        const galleryImages = [
-            '/assets/img/guild/loyu/gallery_01.webp',
-            '/assets/img/guild/loyu/gallery_02.webp',
-            '/assets/img/guild/loyu/gallery_03.webp',
-            '/assets/img/guild/loyu/gallery_04.webp',
-            '/assets/img/guild/loyu/gallery_05.webp',
-            '/assets/img/guild/loyu/gallery_06.webp',
-        ];
-
-        const radius = 12;
-        galleryImages.forEach((url, i) => {
-            const angle = (i / galleryImages.length) * Math.PI * 2;
-            const geometry = new THREE.PlaneGeometry(6, 6);
-            const material = new THREE.MeshBasicMaterial({
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.9
-            });
-
-            // Async load texture
-            textureLoader.load(url, (tex) => {
-                material.map = tex;
-                material.needsUpdate = true;
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-            mesh.lookAt(0, 0, 0); // Face center
-            mesh.rotation.y += Math.PI; // Flip to face outward if needed, or inward
-
-            // Add a border/frame
-            const frameGeo = new THREE.EdgesGeometry(geometry);
-            const frameMat = new THREE.LineBasicMaterial({ color: 0xff0055 });
-            const frame = new THREE.LineSegments(frameGeo, frameMat);
-            mesh.add(frame);
-
-            galleryGroup.add(mesh);
-        });
-
-
-        // 4. LIGHTS
-        const pointLight = new THREE.PointLight(0xffd700, 2, 100);
-        pointLight.position.set(0, 0, 0);
-        scene.add(pointLight);
-
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-
-        // === ANIMATION LOOP ===
-        let time = 0;
+        // Animation
         function animate() {
             requestAnimationFrame(animate);
-            time += 0.005;
 
-            // Idle animations
-            egg.rotation.y += 0.002;
-            egg.rotation.z += 0.001;
+            group.rotation.y += 0.001;
+            group.rotation.x += 0.0005;
 
-            // Pulse effect
-            egg.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
-
-            // Particles drift
-            particleMesh.rotation.y -= 0.0005;
-
-            // Gallery rotation (if visible)
-            if(galleryGroup.visible) {
-                // Controlled by scroll mostly, but maybe a slow drift
-            }
+            // Subtle "breathing"
+            const scale = 1 + Math.sin(Date.now() * 0.001) * 0.05;
+            sphere.scale.setScalar(scale);
 
             renderer.render(scene, camera);
         }
         animate();
-
-        // === SCROLL INTERACTIONS (GSAP) ===
-
-        // Timeline
-        let tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: ".scroll-container",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // 1. Hero -> Analyst (Camera Zoom In, Egg Explodes/Fades)
-        tl.to(camera.position, { z: 10, duration: 1 })
-          .to(egg.scale, { x: 0.1, y: 0.1, z: 0.1, duration: 1 }, "<")
-          .to(eggMat, { opacity: 0, transparent: true, duration: 0.5 }, "<")
-
-        // 2. Analyst -> Weaver (Camera Moves Side, Particles form Net)
-          .to(camera.position, { x: -10, z: 15, duration: 1 })
-          .to(particleMesh.rotation, { y: Math.PI / 2, duration: 1 }, "<")
-
-        // 3. Weaver -> Gallery (Show Carousel)
-          .to(camera.position, { x: 0, z: 0, y: 20, duration: 1 }) // Move camera up to look down? Or center
-          .to(camera.rotation, { x: -Math.PI/2, duration: 1 }, "<") // Look down
-          .call(() => { galleryGroup.visible = true; }, null, "<")
-          .to(galleryGroup.rotation, { y: Math.PI * 2, duration: 2 }) // Rotate carousel
-
-        // 4. Connect
-          .to(camera.position, { y: 40, duration: 1 });
-
-
-        // === SECTION VISIBILITY ===
-        const sections = document.querySelectorAll('.section');
-        sections.forEach((sec, i) => {
-            ScrollTrigger.create({
-                trigger: sec,
-                start: "top 60%",
-                end: "bottom 40%",
-                onEnter: () => sec.classList.add('active'),
-                onLeave: () => sec.classList.remove('active'),
-                onEnterBack: () => sec.classList.add('active'),
-                onLeaveBack: () => sec.classList.remove('active')
-            });
-        });
-
-        // === LOADER ===
-        window.addEventListener('load', () => {
-            gsap.to("#loader", {
-                opacity: 0,
-                duration: 1,
-                onComplete: () => document.getElementById("loader").style.display = "none"
-            });
-        });
-
-        // === EASTER EGG INTERACTION ===
-        // Raycaster for clicking the "hidden" egg core if it was still there,
-        // OR just a hidden trigger in the DOM.
-        // Let's make the "Egg" in the Hero section clickable before it shrinks.
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(egg);
-
-            if (intersects.length > 0) {
-                // Trigger Easter Egg
-                document.getElementById('pooh-overlay').classList.add('visible');
-            }
-        });
 
         // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // === SIMPLE SCROLL REVEAL (Vanilla JS, no heavy libs for logic) ===
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Just a hook for CSS transitions if needed
+                    entry.target.style.opacity = 1;
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.glass-panel, .gallery-card').forEach(el => {
+            el.style.opacity = 0;
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+            observer.observe(el);
         });
 
     </script>
