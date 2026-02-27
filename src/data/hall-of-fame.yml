@@ -969,3 +969,27 @@ members:
         label: "模型車改裝"
       - id: "rider"
         label: "摩旅愛好者"
+
+  - id: "cmy_fantasy"
+    name: "原色⭐︎ふぁんたじー"
+    avatar: "/assets/img/guild/cmy_fantasy/avatar.webp"
+    page: "/guild/cmy_fantasy.html"
+    tags:
+      - id: "idol"
+        label: "日系偶像"
+      - id: "cosplay"
+        label: "Cosplay"
+      - id: "stage"
+        label: "舞台表演"
+
+  - id: "nick"
+    name: "Nick"
+    avatar: "/assets/img/guild/nick/avatar.webp"
+    page: "/guild/nick.html"
+    tags:
+      - id: "engineer"
+        label: "工程師"
+      - id: "retro"
+        label: "復古愛好者"
+      - id: "music"
+        label: "音樂"
