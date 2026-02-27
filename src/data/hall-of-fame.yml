@@ -984,6 +984,18 @@ members:
       - id: "rider"
         label: "摩旅愛好者"
 
+  - id: "cmy_fantasy"
+    name: "原色⭐︎ふぁんたじー"
+    avatar: "/assets/img/guild/cmy_fantasy/avatar.webp"
+    page: "/guild/cmy_fantasy.html"
+    tags:
+      - id: "idol"
+        label: "日系偶像"
+      - id: "cosplay"
+        label: "Cosplay"
+      - id: "stage"
+        label: "舞台表演"
+
   - id: "nick"
     name: "自動化架構師 Nick"
     avatar: "/assets/img/guild/nick/avatar.webp"
