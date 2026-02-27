@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joanna | Visual Kei Chaos</title>
-    <meta name="description" content="Joanna - Visual Communication, Chaos Artist, Dreamer.">
+    <title>Joanna | Bauhaus Construct</title>
+    <meta name="description" content="Joanna - Visual Communication, Form & Function.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Rubik+Glitch&family=Noto+Sans+TC:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Archivo+Black&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -17,33 +17,26 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        'chaos-black': '#050005',
-                        'chaos-red': '#ff003c',
-                        'chaos-cyan': '#00f0ff',
-                        'chaos-purple': '#b026ff',
-                        'chaos-dark': '#1a0b1a'
+                        'bauhaus-red': '#e22d2d',
+                        'bauhaus-blue': '#004cdd',
+                        'bauhaus-yellow': '#f4d03f',
+                        'bauhaus-black': '#1a1a1a',
+                        'bauhaus-white': '#fdfbf7',
                     },
                     fontFamily: {
-                        'horror': ['"Creepster"', 'cursive'],
-                        'glitch': ['"Rubik Glitch"', 'display'],
-                        'mono': ['"Share Tech Mono"', 'monospace'],
+                        'display': ['"Archivo Black"', 'sans-serif'],
+                        'sans': ['"Space Grotesk"', 'sans-serif'],
                         'body': ['"Noto Sans TC"', 'sans-serif'],
                     },
-                    animation: {
-                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite',
-                        'spin-slow': 'spin 8s linear infinite',
+                    borderWidth: {
+                        '3': '3px',
+                        '6': '6px',
                     },
-                    keyframes: {
-                        shake: {
-                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
-                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
-                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
-                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
-                        }
+                    animation: {
+                        'spin-slow': 'spin 12s linear infinite',
                     }
                 }
             }
@@ -52,271 +45,214 @@
 
     <style>
         body {
-            background-color: #050005;
-            color: #ffffff;
+            background-color: #fdfbf7;
+            color: #1a1a1a;
             overflow-x: hidden;
-            cursor: crosshair;
         }
 
-        /* Glitch Text Effect */
-        .glitch-text {
-            position: relative;
-        }
-        .glitch-text::before,
-        .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        .glitch-text::before {
-            left: 2px;
-            text-shadow: -1px 0 #ff003c;
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
-        }
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -1px 0 #00f0ff;
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, rgba(26, 26, 26, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(26, 26, 26, 0.1) 1px, transparent 1px);
         }
 
-        @keyframes glitch-anim-1 {
-            0% { clip: rect(20px, 9999px, 15px, 0); }
-            20% { clip: rect(60px, 9999px, 80px, 0); }
-            40% { clip: rect(30px, 9999px, 100px, 0); }
-            60% { clip: rect(90px, 9999px, 5px, 0); }
-            80% { clip: rect(10px, 9999px, 60px, 0); }
-            100% { clip: rect(70px, 9999px, 30px, 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(10px, 9999px, 90px, 0); }
-            20% { clip: rect(80px, 9999px, 20px, 0); }
-            40% { clip: rect(20px, 9999px, 60px, 0); }
-            60% { clip: rect(60px, 9999px, 10px, 0); }
-            80% { clip: rect(90px, 9999px, 40px, 0); }
-            100% { clip: rect(30px, 9999px, 70px, 0); }
+        .bauhaus-border {
+            border: 3px solid #1a1a1a;
         }
 
-        #canvas-container {
+        .shape-circle { border-radius: 50%; }
+        .shape-square { border-radius: 0; }
+        .shape-tri { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+
+        #webgl-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
             z-index: -1;
+            opacity: 0.6;
         }
 
-        #p5-container {
+        #p5-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
-            z-index: 50;
-            pointer-events: none; /* Let clicks pass through unless on specific areas */
+            z-index: 0;
+            pointer-events: none;
         }
 
-        .torn-paper {
-            background: #1a0b1a;
+        .content-layer {
             position: relative;
-            clip-path: polygon(0% 10px, 5% 0%, 10% 10px, 15% 0%, 20% 10px, 25% 0%, 30% 10px, 35% 0%, 40% 10px, 45% 0%, 50% 10px, 55% 0%, 60% 10px, 65% 0%, 70% 10px, 75% 0%, 80% 10px, 85% 0%, 90% 10px, 95% 0%, 100% 10px, 100% calc(100% - 10px), 95% 100%, 90% calc(100% - 10px), 85% 100%, 80% calc(100% - 10px), 75% 100%, 70% calc(100% - 10px), 65% 100%, 60% calc(100% - 10px), 55% 100%, 50% calc(100% - 10px), 45% 100%, 40% calc(100% - 10px), 35% 100%, 30% calc(100% - 10px), 25% 100%, 20% calc(100% - 10px), 15% 100%, 10% calc(100% - 10px), 5% 100%, 0% calc(100% - 10px));
+            z-index: 10;
         }
 
-        .hazard-stripe {
-            background: repeating-linear-gradient(
-                45deg,
-                #000,
-                #000 10px,
-                #ff003c 10px,
-                #ff003c 20px
-            );
+        .nav-link {
+            position: relative;
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: #1a1a1a;
+            z-index: -1;
+            transition: height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .nav-link:hover::before { height: 100%; }
+        .nav-link:hover { color: #fdfbf7; }
+
+        /* Asymmetric Grid Layout */
+        .bauhaus-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 0;
+            border: 3px solid #1a1a1a;
+            background: #fdfbf7;
+        }
+        .grid-cell {
+            padding: 2rem;
+            border: 1px solid #1a1a1a;
+            position: relative;
+            overflow: hidden;
+        }
+        .grid-cell-bold {
+            border: 3px solid #1a1a1a;
+        }
+
+        .text-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
         }
     </style>
 </head>
-<body class="selection:bg-chaos-red selection:text-white">
+<body class="selection:bg-bauhaus-yellow selection:text-bauhaus-black font-sans grid-bg">
 
-    <!-- Three.js Background -->
-    <div id="canvas-container"></div>
+    <div id="webgl-container"></div>
+    <div id="p5-overlay"></div>
 
-    <!-- p5.js Overlay -->
-    <div id="p5-container"></div>
-
-    <!-- Preloader -->
-    <div id="preloader" class="fixed inset-0 bg-chaos-black z-[100] flex flex-col justify-center items-center text-chaos-red font-mono">
-        <div class="text-6xl animate-pulse glitch-text" data-text="LOADING...">LOADING...</div>
-        <div id="progress" class="mt-4 text-2xl">0%</div>
-        <div class="mt-8 text-sm text-chaos-cyan">SYSTEM CRASH IMMINENT</div>
-    </div>
-
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full z-40 p-6 flex justify-between items-center mix-blend-difference pointer-events-none">
-        <a href="/guild" class="pointer-events-auto text-white hover:text-chaos-red transition-colors text-xl font-glitch">
-            <i class="fa-solid fa-arrow-left"></i> EXIT
+    <!-- Nav -->
+    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center p-6 mix-blend-multiply pointer-events-none">
+        <a href="/guild" class="pointer-events-auto nav-link text-xl border-3 border-black bg-white">
+            <i class="fa-solid fa-square text-bauhaus-red text-xs align-middle mr-2"></i>EXIT
         </a>
-        <div class="flex gap-4 pointer-events-auto">
-             <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="text-white hover:text-chaos-cyan text-2xl"><i class="fa-brands fa-instagram"></i></a>
-             <a href="https://www.threads.com/@joanna._.army" target="_blank" class="text-white hover:text-chaos-purple text-2xl"><i class="fa-brands fa-threads"></i></a>
+        <div class="pointer-events-auto flex gap-4">
+             <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="nav-link border-3 border-black bg-white hover:border-bauhaus-blue"><i class="fa-brands fa-instagram"></i></a>
+             <a href="https://www.threads.com/@joanna._.army" target="_blank" class="nav-link border-3 border-black bg-white hover:border-bauhaus-yellow"><i class="fa-brands fa-threads"></i></a>
         </div>
     </nav>
 
-    <main class="relative z-10 w-full overflow-hidden">
+    <main class="content-layer w-full min-h-screen pt-24 pb-20 px-4 md:px-12">
 
-        <!-- Hero Section -->
-        <section class="min-h-screen flex flex-col justify-center items-center relative p-4">
-            <div class="relative w-64 h-64 md:w-80 md:h-80 mb-8 group">
-                <div class="absolute inset-0 bg-chaos-red rounded-full blur-xl opacity-50 group-hover:opacity-100 transition-opacity animate-pulse"></div>
-                <img src="/assets/img/guild/joanna_army/avatar.webp" alt="Joanna" class="w-full h-full object-cover rounded-full border-4 border-white relative z-10 filter grayscale contrast-125 group-hover:grayscale-0 transition-all duration-300">
-                <div class="absolute inset-0 rounded-full border-4 border-chaos-cyan scale-105 opacity-0 group-hover:opacity-100 animate-spin-slow pointer-events-none"></div>
-            </div>
+        <!-- Hero Grid -->
+        <div class="bauhaus-grid max-w-7xl mx-auto shadow-[10px_10px_0px_0px_rgba(26,26,26,1)] transform transition-transform duration-500 hover:translate-x-[-5px] hover:translate-y-[-5px] hover:shadow-[15px_15px_0px_0px_rgba(26,26,26,1)]">
 
-            <h1 class="text-6xl md:text-9xl font-glitch text-white mb-2 glitch-text text-center" data-text="JOANNA">
-                JOANNA
-            </h1>
-            <p class="text-xl md:text-2xl font-mono text-chaos-cyan bg-black/80 px-4 py-2 mt-4">
-                VISUAL KEI // CHAOS ARTIST
-            </p>
-
-            <div class="absolute bottom-10 animate-bounce text-chaos-red font-mono">
-                SCROLL TO CRASH <i class="fa-solid fa-arrow-down"></i>
-            </div>
-        </section>
-
-        <!-- Bio: Brain Overflow -->
-        <section class="min-h-screen flex items-center justify-center p-8 relative">
-            <div class="max-w-4xl w-full torn-paper p-12 text-center md:text-left border-2 border-chaos-purple">
-                <h2 class="text-4xl md:text-6xl font-horror text-chaos-purple mb-8 text-center transform -rotate-2">
-                    BRAIN OVERFLOW
+            <!-- Title Block -->
+            <div class="col-span-12 md:col-span-8 grid-cell bg-white flex flex-col justify-center min-h-[300px] border-r-3 border-b-3 border-black">
+                <h1 class="font-display text-8xl md:text-9xl leading-none tracking-tighter mix-blend-exclusion text-bauhaus-black">
+                    JOANNA
+                </h1>
+                <h2 class="font-sans font-bold text-2xl md:text-4xl mt-4 text-bauhaus-blue">
+                    FORM <span class="text-bauhaus-red">&</span> FUNCTION
                 </h2>
-
-                <div class="font-body text-lg md:text-xl leading-relaxed space-y-6">
-                    <p class="scramble-text">
-                        胡思亂想是日常，天馬行空是技能。我是一個腦袋經常當機的人。
-                    </p>
-                    <p class="text-gray-300">
-                        生活不是提早補眠，就是熬夜把設計作業撐到天亮。
-                        <span class="text-chaos-cyan">創作對我來說是替腦袋找一個出口，讓亂跑的想法有地方落地。</span>
-                    </p>
-                </div>
-
-                <div class="mt-8 border-t border-dashed border-gray-600 pt-4 flex flex-wrap gap-4 justify-center md:justify-start">
-                    <span class="bg-chaos-red/20 text-chaos-red px-3 py-1 font-mono text-sm border border-chaos-red">VISUAL_COMMUNICATION</span>
-                    <span class="bg-chaos-cyan/20 text-chaos-cyan px-3 py-1 font-mono text-sm border border-chaos-cyan">SLEEP_DEPRIVED</span>
-                    <span class="bg-chaos-purple/20 text-chaos-purple px-3 py-1 font-mono text-sm border border-chaos-purple">SYSTEM_FAILURE</span>
-                </div>
             </div>
-        </section>
 
-        <!-- Skills: DIY / Fashion -->
-        <section class="py-20 px-4 relative bg-chaos-dark/50">
-            <div class="max-w-6xl mx-auto">
-                <h2 class="text-5xl md:text-8xl font-glitch text-white mb-16 text-right glitch-text" data-text="SELF_MADE">
-                    SELF_MADE
-                </h2>
-
-                <div class="grid md:grid-cols-2 gap-12">
-                    <!-- Item 1 -->
-                    <div class="group relative bg-black border border-white p-6 hover:bg-white hover:text-black transition-colors duration-300">
-                        <div class="absolute -top-4 -left-4 w-full h-full border border-chaos-red -z-10 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform"></div>
-                        <h3 class="text-3xl font-mono font-bold mb-4">DIY AESTHETIC</h3>
-                        <p class="font-body text-lg">
-                            我習慣什麼都自己來。自學美甲、自己染頭髮、改造衣服和褲子。
-                        </p>
-                        <p class="font-body text-sm mt-4 opacity-70">
-                            > 因為買不到我要畫的圖案跟那種手繪才有的質感。
-                        </p>
-                    </div>
-
-                    <!-- Item 2 -->
-                    <div class="group relative bg-black border border-white p-6 hover:bg-chaos-cyan hover:text-black transition-colors duration-300 mt-8 md:mt-20">
-                        <div class="absolute -top-4 -right-4 w-full h-full border border-chaos-purple -z-10 group-hover:translate-x-[-8px] group-hover:translate-y-2 transition-transform"></div>
-                        <h3 class="text-3xl font-mono font-bold mb-4">CHAOS STYLE</h3>
-                        <p class="font-body text-lg">
-                            穿搭風格看起來玲玲亂亂，但會在混亂中維持某種詭異的協調感。
-                        </p>
-                        <p class="font-body text-sm mt-4 opacity-70">
-                            > "我的風格一看就是我"
-                        </p>
-                    </div>
-                </div>
+            <!-- Avatar Block -->
+            <div class="col-span-12 md:col-span-4 grid-cell bg-bauhaus-yellow flex justify-center items-center border-b-3 border-black p-0 relative overflow-hidden group">
+                <div class="absolute w-full h-full bg-bauhaus-black opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                <img src="/assets/img/guild/joanna_army/avatar.webp" alt="Joanna" class="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full border-6 border-black shadow-[5px_5px_0px_0px_#fff]">
+                <div class="absolute top-4 right-4 w-8 h-8 bg-bauhaus-red rounded-full"></div>
+                <div class="absolute bottom-4 left-4 w-8 h-8 bg-bauhaus-blue transform rotate-45"></div>
             </div>
-        </section>
 
-        <!-- Warning Section: Bleach -->
-        <section class="py-32 relative overflow-hidden">
-            <div class="hazard-stripe absolute top-0 left-0 w-full h-4"></div>
-            <div class="hazard-stripe absolute bottom-0 left-0 w-full h-4"></div>
+            <!-- Role / Tag -->
+            <div class="col-span-6 md:col-span-3 grid-cell bg-bauhaus-red text-white flex flex-col justify-between border-r-3 border-b-3 border-black">
+                <span class="font-display text-4xl">01</span>
+                <span class="font-sans font-bold text-lg uppercase">Visual<br>Communication</span>
+            </div>
 
-            <div class="max-w-3xl mx-auto text-center px-4 relative z-10 bg-black/90 p-8 border-l-4 border-r-4 border-chaos-red">
-                <i class="fa-solid fa-triangle-exclamation text-6xl text-chaos-red mb-6 animate-pulse"></i>
-                <h2 class="text-4xl font-horror text-white mb-6">TOXIC CREATIVITY</h2>
-                <p class="font-body text-xl text-gray-200 leading-relaxed">
-                    曾經用漂白水在深色褲子上作畫，結果忘記通風，<span class="text-chaos-red font-bold">直接中毒嘔吐昏睡</span>。
+            <!-- Bio -->
+            <div class="col-span-6 md:col-span-6 grid-cell bg-white border-r-3 border-b-3 border-black flex items-center">
+                <p class="font-body text-lg leading-relaxed font-medium">
+                    "胡思亂想是日常，天馬行空是技能。"
+                    <br><br>
+                    我是一個腦袋經常當機的人。生活不是提早補眠，就是熬夜把設計作業撐到天亮。
                 </p>
-                <div class="mt-6 bg-chaos-red text-black font-bold p-4 font-mono transform rotate-1 inline-block">
-                    醒來的第一個念頭不是後悔，而是先去確認圖畫得如何。
-                </div>
-            </div>
-        </section>
-
-        <!-- Interests Grid -->
-        <section class="py-20 px-4">
-            <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-
-                <!-- Card 1 -->
-                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-chaos-cyan transition-all">
-                    <i class="fa-solid fa-ring text-5xl text-gray-500 group-hover:text-chaos-cyan group-hover:scale-125 transition-transform"></i>
-                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">PIERCINGS</span>
-                </div>
-
-                <!-- Card 2 -->
-                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-chaos-purple transition-all">
-                    <i class="fa-solid fa-palette text-5xl text-gray-500 group-hover:text-chaos-purple group-hover:scale-125 transition-transform"></i>
-                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">ART</span>
-                </div>
-
-                <!-- Card 3 -->
-                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-white transition-all">
-                    <div class="text-5xl font-glitch text-gray-500 group-hover:text-white group-hover:scale-125 transition-transform">SK8</div>
-                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">SKATEBOARD</span>
-                </div>
-
-                <!-- Card 4 -->
-                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-chaos-red transition-all">
-                    <i class="fa-solid fa-wine-glass text-5xl text-gray-500 group-hover:text-chaos-red group-hover:rotate-12 transition-transform"></i>
-                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">ALCOHOL</span>
-                </div>
-
             </div>
 
-            <div class="text-center mt-12 max-w-2xl mx-auto">
-                 <p class="font-body text-gray-400 italic">
-                    "身體過敏時眼睛會整個腫起來，讓我看起來像一隻凸眼吉娃娃，算是特徵吧哈"
-                 </p>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="py-20 text-center relative border-t border-gray-800">
-            <h2 class="text-3xl md:text-5xl font-glitch text-white mb-8 hover:text-chaos-cyan transition-colors cursor-default">
-                EXISTENCE PROOF
-            </h2>
-            <p class="font-body text-gray-400 mb-12">
-                "我喜歡這個瘋狂計畫，用時間幫陌生人留下存在證明這件事，本身就很浪漫。"
-            </p>
-
-            <div class="flex justify-center gap-8 text-3xl">
-                <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="text-white hover:text-chaos-red hover:animate-shake"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@joanna._.army" target="_blank" class="text-white hover:text-chaos-purple hover:animate-shake"><i class="fa-brands fa-threads"></i></a>
+            <!-- Decoration -->
+            <div class="col-span-12 md:col-span-3 grid-cell bg-bauhaus-blue border-b-3 border-black flex justify-center items-center overflow-hidden">
+                <div class="w-full h-full flex justify-center items-center animate-spin-slow">
+                    <div class="w-24 h-24 border-6 border-white rounded-full"></div>
+                </div>
             </div>
 
-            <div class="mt-12 text-sm text-gray-600 font-mono">
-                CHAOS GENERATED BY <span class="text-chaos-cyan">JOANNA</span> // 2024
+            <!-- Skills Row -->
+            <div class="col-span-12 grid-cell p-0 border-b-3 border-black">
+                <div class="grid grid-cols-1 md:grid-cols-3 h-full">
+                    <div class="p-8 border-b md:border-b-0 md:border-r-3 border-black hover:bg-bauhaus-yellow transition-colors group">
+                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">DIY CRAFT</h3>
+                        <p class="font-body text-sm">自學美甲、染髮、服裝改造。買不到的設計，就自己動手做。</p>
+                        <div class="mt-4 w-8 h-8 bg-black rounded-full"></div>
+                    </div>
+                    <div class="p-8 border-b md:border-b-0 md:border-r-3 border-black hover:bg-bauhaus-red hover:text-white transition-colors group">
+                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">PIERCING</h3>
+                        <p class="font-body text-sm">對耳朵穿孔文化的熱情。那是身體與美感間粗暴的溝通。</p>
+                        <div class="mt-4 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-b-[26px] border-b-black group-hover:border-b-white"></div>
+                    </div>
+                    <div class="p-8 hover:bg-bauhaus-blue hover:text-white transition-colors group">
+                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">STYLE</h3>
+                        <p class="font-body text-sm">穿搭風格玲玲亂亂，但在混亂中維持詭異的協調感。</p>
+                        <div class="mt-4 w-8 h-8 bg-black group-hover:bg-white"></div>
+                    </div>
+                </div>
             </div>
-        </footer>
+
+            <!-- Case Study: Bleach -->
+            <div class="col-span-12 md:col-span-9 grid-cell bg-white border-r-3 border-b-3 border-black">
+                <div class="flex flex-col md:flex-row gap-8 items-start">
+                    <div class="w-16 h-16 bg-bauhaus-black text-white flex justify-center items-center font-display text-2xl flex-shrink-0">!</div>
+                    <div>
+                        <h3 class="font-display text-2xl mb-2">CASE STUDY: TOXICITY</h3>
+                        <p class="font-body text-lg text-gray-700">
+                            曾經用漂白水在深色褲子上作畫，結果忘記通風，直接中毒嘔吐昏睡。醒來的第一個念頭不是後悔，而是先去確認圖畫得如何。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vertical Text -->
+            <div class="col-span-12 md:col-span-3 grid-cell bg-bauhaus-yellow border-b-3 border-black flex justify-center items-center">
+                <span class="font-display text-4xl text-vertical tracking-widest">OBSESSION</span>
+            </div>
+
+            <!-- Footer / Contact -->
+            <div class="col-span-12 grid-cell bg-bauhaus-black text-white text-center py-12">
+                <h2 class="font-display text-4xl md:text-6xl mb-6">EXISTENCE PROOF</h2>
+                <p class="font-body text-gray-400 mb-8 max-w-2xl mx-auto">
+                    "我喜歡這個瘋狂計畫，用時間幫陌生人留下存在證明這件事，本身就很浪漫。"
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="w-12 h-12 bg-white text-black flex justify-center items-center rounded-full hover:bg-bauhaus-red transition-colors text-xl">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    <a href="https://www.threads.com/@joanna._.army" target="_blank" class="w-12 h-12 bg-white text-black flex justify-center items-center rounded-full hover:bg-bauhaus-blue transition-colors text-xl">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
 
     </main>
 
@@ -324,164 +260,125 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <script>
-        // --- Preloader ---
-        window.addEventListener('load', () => {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.floor(Math.random() * 10) + 5;
-                if(progress > 100) progress = 100;
-                document.getElementById('progress').innerText = progress + '%';
-
-                if(progress === 100) {
-                    clearInterval(interval);
-                    gsap.to('#preloader', {
-                        opacity: 0,
-                        duration: 0.5,
-                        onComplete: () => {
-                            document.getElementById('preloader').style.display = 'none';
-                            initAnimations();
-                        }
-                    });
-                }
-            }, 100);
-        });
-
-        // --- Three.js Background: Chaos Sphere ---
+        // --- Three.js: Geometric Primitives ---
         const initThree = () => {
-            const container = document.getElementById('canvas-container');
+            const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            // Light background handled by CSS, keep scene transparent
 
+            // Orthographic Camera for that flat, architectural look
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 10;
+            const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(renderer.domElement);
 
-            // Particles
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 2000;
-            const posArray = new Float32Array(particlesCount * 3);
+            // Objects
+            const group = new THREE.Group();
+            scene.add(group);
 
-            for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 10;
-            }
+            // Material: Flat shading, bold colors
+            const matRed = new THREE.MeshBasicMaterial({ color: 0xe22d2d });
+            const matBlue = new THREE.MeshBasicMaterial({ color: 0x004cdd });
+            const matYellow = new THREE.MeshBasicMaterial({ color: 0xf4d03f });
+            const matBlack = new THREE.MeshBasicMaterial({ color: 0x1a1a1a, wireframe: true });
 
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            // Sphere
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), matRed);
+            sphere.position.set(-4, 2, 0);
+            group.add(sphere);
 
-            const material = new THREE.PointsMaterial({
-                size: 0.02,
-                color: 0xff003c,
-                transparent: true,
-                opacity: 0.8,
-            });
+            // Cube
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), matBlue);
+            cube.position.set(4, -1, 0);
+            group.add(cube);
 
-            const particlesMesh = new THREE.Points(particlesGeometry, material);
-            scene.add(particlesMesh);
+            // Cone
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 32), matYellow);
+            cone.position.set(0, 0, 0);
+            group.add(cone);
 
-            // Wireframe Sphere (Distorted)
-            const geometry = new THREE.IcosahedronGeometry(2, 1);
-            const wireframeMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00f0ff,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.2
-            });
-            const sphere = new THREE.Mesh(geometry, wireframeMaterial);
-            scene.add(sphere);
+            // Wireframe Icosahedron
+            const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), matBlack);
+            ico.position.set(-2, -3, -2);
+            group.add(ico);
 
-            camera.position.z = 5;
-
-            // Mouse interaction
-            let mouseX = 0;
-            let mouseY = 0;
-
-            document.addEventListener('mousemove', (event) => {
-                mouseX = event.clientX / window.innerWidth - 0.5;
-                mouseY = event.clientY / window.innerHeight - 0.5;
-            });
+            camera.position.set(10, 10, 10);
+            camera.lookAt(scene.position);
 
             const clock = new THREE.Clock();
 
             function animate() {
                 requestAnimationFrame(animate);
-                const elapsedTime = clock.getElapsedTime();
+                const time = clock.getElapsedTime();
 
-                // Rotate Sphere
-                sphere.rotation.y = elapsedTime * 0.2;
-                sphere.rotation.x = mouseY * 0.5;
+                // Slow, mechanical rotation
+                sphere.rotation.y = time * 0.2;
+                cube.rotation.x = time * 0.15;
+                cube.rotation.y = time * 0.15;
+                cone.rotation.z = time * 0.1;
+                cone.position.y = Math.sin(time) * 0.5; // Bobbing
+                ico.rotation.x = -time * 0.1;
+                ico.rotation.y = -time * 0.1;
 
-                // Distort Particles
-                particlesMesh.rotation.y = -elapsedTime * 0.1;
-                particlesMesh.rotation.x = mouseY * 0.2;
-                particlesMesh.rotation.y += mouseX * 0.2;
-
-                // Breathing effect
-                const scale = 1 + Math.sin(elapsedTime) * 0.1;
-                sphere.scale.set(scale, scale, scale);
+                // Subtle parallax based on scroll
+                group.rotation.y = window.scrollY * 0.0005;
 
                 renderer.render(scene, camera);
             }
             animate();
 
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
+                const aspect = window.innerWidth / window.innerHeight;
+                camera.left = -d * aspect;
+                camera.right = d * aspect;
+                camera.top = d;
+                camera.bottom = -d;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
         };
         initThree();
 
-        // --- p5.js Overlay: Interactive Chaos ---
+        // --- p5.js: Interactive Grid Lines ---
         const sketch = (p) => {
-            let paths = [];
-
             p.setup = () => {
                 const c = p.createCanvas(window.innerWidth, window.innerHeight);
-                c.parent('p5-container');
-                p.clear();
+                c.parent('p5-overlay');
                 p.noFill();
-                p.strokeWeight(2);
+                p.stroke(26, 26, 26, 50); // Light black stroke
+                p.strokeWeight(1);
             };
 
             p.draw = () => {
                 p.clear();
+                const gridSize = 100;
 
-                // Draw all paths
-                for (let path of paths) {
+                // Draw dynamic grid lines that bend near mouse
+                for (let x = 0; x < p.width; x += gridSize) {
                     p.beginShape();
-                    p.stroke(path.color);
-                    for (let pt of path.points) {
-                        p.vertex(pt.x, pt.y);
-                        // Jitter effect
-                        if (p.random() > 0.9) {
-                            pt.x += p.random(-1, 1);
-                            pt.y += p.random(-1, 1);
+                    for (let y = 0; y < p.height; y += 20) {
+                        let d = p.dist(x, y, p.mouseX, p.mouseY);
+                        let offset = 0;
+                        if (d < 200) {
+                            offset = p.map(d, 0, 200, 20, 0);
                         }
+                        // If mouse is to the right, bend left, etc.
+                        let dir = (p.mouseX > x) ? -1 : 1;
+                        p.vertex(x + offset * dir, y);
                     }
                     p.endShape();
                 }
 
-                // Current drawing
-                if (p.mouseIsPressed) {
-                    let currentPath = paths[paths.length - 1];
-                    if (currentPath) {
-                        currentPath.points.push({x: p.mouseX, y: p.mouseY});
-                    }
+                // Horizontal Lines
+                for (let y = 0; y < p.height; y += gridSize) {
+                    p.line(0, y, p.width, y);
                 }
-
-                // Cleanup old paths to save performance
-                if(paths.length > 5) paths.shift();
-            };
-
-            p.mousePressed = () => {
-                const colors = ['#ff003c', '#00f0ff', '#b026ff', '#ffffff'];
-                paths.push({
-                    color: p.random(colors),
-                    points: [{x: p.mouseX, y: p.mouseY}]
-                });
             };
 
             p.windowResized = () => {
@@ -491,52 +388,43 @@
         new p5(sketch);
 
         // --- GSAP Animations ---
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+        gsap.registerPlugin(ScrollTrigger);
 
-        function initAnimations() {
-            // Text Scramble Effect
-            const scrambleText = document.querySelector('.scramble-text');
-            if (scrambleText) {
-                gsap.to(scrambleText, {
-                    duration: 3,
-                    text: {
-                        value: "胡思亂想是日常，天馬行空是技能。我是一個腦袋經常當機的人。",
-                        delimiter: ""
-                    },
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: scrambleText,
-                        start: "top 80%",
-                    }
-                });
-            }
-
-            // Reveal sections
-            gsap.utils.toArray('section').forEach((section, i) => {
-                gsap.from(section.children, {
-                    y: 50,
-                    opacity: 0,
-                    duration: 1,
-                    stagger: 0.2,
-                    ease: "power3.out",
-                    scrollTrigger: {
-                        trigger: section,
-                        start: "top 70%",
-                    }
-                });
-            });
-
-            // Image glitch/reveal
-            gsap.from(".group img", {
-                scale: 1.2,
-                filter: "blur(10px) grayscale(100%)",
-                duration: 1.5,
+        // Animate Grid Cells
+        gsap.utils.toArray('.grid-cell').forEach((cell, i) => {
+            gsap.from(cell, {
                 scrollTrigger: {
-                    trigger: ".group",
-                    start: "top 80%"
-                }
+                    trigger: cell,
+                    start: "top 85%",
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.8,
+                ease: "power3.out",
+                delay: i * 0.05 // Stagger effect
             });
-        }
+        });
+
+        // Hover effect for main container
+        const container = document.querySelector('.bauhaus-grid');
+        container.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 10;
+            const y = (e.clientY / window.innerHeight - 0.5) * 10;
+            gsap.to(container, {
+                rotationY: x,
+                rotationX: -y,
+                duration: 0.5,
+                ease: "power1.out"
+            });
+        });
+        container.addEventListener('mouseleave', () => {
+            gsap.to(container, {
+                rotationY: 0,
+                rotationX: 0,
+                duration: 0.5
+            });
+        });
+
     </script>
 </body>
 </html>
