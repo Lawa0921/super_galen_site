@@ -969,3 +969,27 @@ members:
         label: "模型車改裝"
       - id: "rider"
         label: "摩旅愛好者"
+
+  - id: "nick"
+    name: "Nick"
+    avatar: "/assets/img/guild/nick/avatar.webp"
+    page: "/guild/nick.html"
+    tags:
+      - id: "automation"
+        label: "Automation"
+      - id: "n8n"
+        label: "n8n"
+      - id: "vibe_coding"
+        label: "Vibe Coding"
+
+  - id: "joanna_army"
+    name: "Joanna"
+    avatar: "/assets/img/guild/joanna_army/avatar.webp"
+    page: "/guild/joanna_army.html"
+    tags:
+      - id: "visual_kei"
+        label: "視覺系"
+      - id: "chaos_artist"
+        label: "混沌藝術"
+      - id: "imaginative"
+        label: "天馬行空"

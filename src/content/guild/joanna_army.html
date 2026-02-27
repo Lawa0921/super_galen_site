@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joanna | Visual Kei Chaos</title>
+    <meta name="description" content="Joanna - Visual Communication, Chaos Artist, Dreamer.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Rubik+Glitch&family=Noto+Sans+TC:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'chaos-black': '#050005',
+                        'chaos-red': '#ff003c',
+                        'chaos-cyan': '#00f0ff',
+                        'chaos-purple': '#b026ff',
+                        'chaos-dark': '#1a0b1a'
+                    },
+                    fontFamily: {
+                        'horror': ['"Creepster"', 'cursive'],
+                        'glitch': ['"Rubik Glitch"', 'display'],
+                        'mono': ['"Share Tech Mono"', 'monospace'],
+                        'body': ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    animation: {
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #050005;
+            color: #ffffff;
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+
+        /* Glitch Text Effect */
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff003c;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 #00f0ff;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 15px, 0); }
+            20% { clip: rect(60px, 9999px, 80px, 0); }
+            40% { clip: rect(30px, 9999px, 100px, 0); }
+            60% { clip: rect(90px, 9999px, 5px, 0); }
+            80% { clip: rect(10px, 9999px, 60px, 0); }
+            100% { clip: rect(70px, 9999px, 30px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(10px, 9999px, 90px, 0); }
+            20% { clip: rect(80px, 9999px, 20px, 0); }
+            40% { clip: rect(20px, 9999px, 60px, 0); }
+            60% { clip: rect(60px, 9999px, 10px, 0); }
+            80% { clip: rect(90px, 9999px, 40px, 0); }
+            100% { clip: rect(30px, 9999px, 70px, 0); }
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 50;
+            pointer-events: none; /* Let clicks pass through unless on specific areas */
+        }
+
+        .torn-paper {
+            background: #1a0b1a;
+            position: relative;
+            clip-path: polygon(0% 10px, 5% 0%, 10% 10px, 15% 0%, 20% 10px, 25% 0%, 30% 10px, 35% 0%, 40% 10px, 45% 0%, 50% 10px, 55% 0%, 60% 10px, 65% 0%, 70% 10px, 75% 0%, 80% 10px, 85% 0%, 90% 10px, 95% 0%, 100% 10px, 100% calc(100% - 10px), 95% 100%, 90% calc(100% - 10px), 85% 100%, 80% calc(100% - 10px), 75% 100%, 70% calc(100% - 10px), 65% 100%, 60% calc(100% - 10px), 55% 100%, 50% calc(100% - 10px), 45% 100%, 40% calc(100% - 10px), 35% 100%, 30% calc(100% - 10px), 25% 100%, 20% calc(100% - 10px), 15% 100%, 10% calc(100% - 10px), 5% 100%, 0% calc(100% - 10px));
+        }
+
+        .hazard-stripe {
+            background: repeating-linear-gradient(
+                45deg,
+                #000,
+                #000 10px,
+                #ff003c 10px,
+                #ff003c 20px
+            );
+        }
+    </style>
+</head>
+<body class="selection:bg-chaos-red selection:text-white">
+
+    <!-- Three.js Background -->
+    <div id="canvas-container"></div>
+
+    <!-- p5.js Overlay -->
+    <div id="p5-container"></div>
+
+    <!-- Preloader -->
+    <div id="preloader" class="fixed inset-0 bg-chaos-black z-[100] flex flex-col justify-center items-center text-chaos-red font-mono">
+        <div class="text-6xl animate-pulse glitch-text" data-text="LOADING...">LOADING...</div>
+        <div id="progress" class="mt-4 text-2xl">0%</div>
+        <div class="mt-8 text-sm text-chaos-cyan">SYSTEM CRASH IMMINENT</div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-40 p-6 flex justify-between items-center mix-blend-difference pointer-events-none">
+        <a href="/guild" class="pointer-events-auto text-white hover:text-chaos-red transition-colors text-xl font-glitch">
+            <i class="fa-solid fa-arrow-left"></i> EXIT
+        </a>
+        <div class="flex gap-4 pointer-events-auto">
+             <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="text-white hover:text-chaos-cyan text-2xl"><i class="fa-brands fa-instagram"></i></a>
+             <a href="https://www.threads.com/@joanna._.army" target="_blank" class="text-white hover:text-chaos-purple text-2xl"><i class="fa-brands fa-threads"></i></a>
+        </div>
+    </nav>
+
+    <main class="relative z-10 w-full overflow-hidden">
+
+        <!-- Hero Section -->
+        <section class="min-h-screen flex flex-col justify-center items-center relative p-4">
+            <div class="relative w-64 h-64 md:w-80 md:h-80 mb-8 group">
+                <div class="absolute inset-0 bg-chaos-red rounded-full blur-xl opacity-50 group-hover:opacity-100 transition-opacity animate-pulse"></div>
+                <img src="/assets/img/guild/joanna_army/avatar.webp" alt="Joanna" class="w-full h-full object-cover rounded-full border-4 border-white relative z-10 filter grayscale contrast-125 group-hover:grayscale-0 transition-all duration-300">
+                <div class="absolute inset-0 rounded-full border-4 border-chaos-cyan scale-105 opacity-0 group-hover:opacity-100 animate-spin-slow pointer-events-none"></div>
+            </div>
+
+            <h1 class="text-6xl md:text-9xl font-glitch text-white mb-2 glitch-text text-center" data-text="JOANNA">
+                JOANNA
+            </h1>
+            <p class="text-xl md:text-2xl font-mono text-chaos-cyan bg-black/80 px-4 py-2 mt-4">
+                VISUAL KEI // CHAOS ARTIST
+            </p>
+
+            <div class="absolute bottom-10 animate-bounce text-chaos-red font-mono">
+                SCROLL TO CRASH <i class="fa-solid fa-arrow-down"></i>
+            </div>
+        </section>
+
+        <!-- Bio: Brain Overflow -->
+        <section class="min-h-screen flex items-center justify-center p-8 relative">
+            <div class="max-w-4xl w-full torn-paper p-12 text-center md:text-left border-2 border-chaos-purple">
+                <h2 class="text-4xl md:text-6xl font-horror text-chaos-purple mb-8 text-center transform -rotate-2">
+                    BRAIN OVERFLOW
+                </h2>
+
+                <div class="font-body text-lg md:text-xl leading-relaxed space-y-6">
+                    <p class="scramble-text">
+                        胡思亂想是日常，天馬行空是技能。我是一個腦袋經常當機的人。
+                    </p>
+                    <p class="text-gray-300">
+                        生活不是提早補眠，就是熬夜把設計作業撐到天亮。
+                        <span class="text-chaos-cyan">創作對我來說是替腦袋找一個出口，讓亂跑的想法有地方落地。</span>
+                    </p>
+                </div>
+
+                <div class="mt-8 border-t border-dashed border-gray-600 pt-4 flex flex-wrap gap-4 justify-center md:justify-start">
+                    <span class="bg-chaos-red/20 text-chaos-red px-3 py-1 font-mono text-sm border border-chaos-red">VISUAL_COMMUNICATION</span>
+                    <span class="bg-chaos-cyan/20 text-chaos-cyan px-3 py-1 font-mono text-sm border border-chaos-cyan">SLEEP_DEPRIVED</span>
+                    <span class="bg-chaos-purple/20 text-chaos-purple px-3 py-1 font-mono text-sm border border-chaos-purple">SYSTEM_FAILURE</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills: DIY / Fashion -->
+        <section class="py-20 px-4 relative bg-chaos-dark/50">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-5xl md:text-8xl font-glitch text-white mb-16 text-right glitch-text" data-text="SELF_MADE">
+                    SELF_MADE
+                </h2>
+
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Item 1 -->
+                    <div class="group relative bg-black border border-white p-6 hover:bg-white hover:text-black transition-colors duration-300">
+                        <div class="absolute -top-4 -left-4 w-full h-full border border-chaos-red -z-10 group-hover:translate-x-2 group-hover:translate-y-2 transition-transform"></div>
+                        <h3 class="text-3xl font-mono font-bold mb-4">DIY AESTHETIC</h3>
+                        <p class="font-body text-lg">
+                            我習慣什麼都自己來。自學美甲、自己染頭髮、改造衣服和褲子。
+                        </p>
+                        <p class="font-body text-sm mt-4 opacity-70">
+                            > 因為買不到我要畫的圖案跟那種手繪才有的質感。
+                        </p>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div class="group relative bg-black border border-white p-6 hover:bg-chaos-cyan hover:text-black transition-colors duration-300 mt-8 md:mt-20">
+                        <div class="absolute -top-4 -right-4 w-full h-full border border-chaos-purple -z-10 group-hover:translate-x-[-8px] group-hover:translate-y-2 transition-transform"></div>
+                        <h3 class="text-3xl font-mono font-bold mb-4">CHAOS STYLE</h3>
+                        <p class="font-body text-lg">
+                            穿搭風格看起來玲玲亂亂，但會在混亂中維持某種詭異的協調感。
+                        </p>
+                        <p class="font-body text-sm mt-4 opacity-70">
+                            > "我的風格一看就是我"
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Warning Section: Bleach -->
+        <section class="py-32 relative overflow-hidden">
+            <div class="hazard-stripe absolute top-0 left-0 w-full h-4"></div>
+            <div class="hazard-stripe absolute bottom-0 left-0 w-full h-4"></div>
+
+            <div class="max-w-3xl mx-auto text-center px-4 relative z-10 bg-black/90 p-8 border-l-4 border-r-4 border-chaos-red">
+                <i class="fa-solid fa-triangle-exclamation text-6xl text-chaos-red mb-6 animate-pulse"></i>
+                <h2 class="text-4xl font-horror text-white mb-6">TOXIC CREATIVITY</h2>
+                <p class="font-body text-xl text-gray-200 leading-relaxed">
+                    曾經用漂白水在深色褲子上作畫，結果忘記通風，<span class="text-chaos-red font-bold">直接中毒嘔吐昏睡</span>。
+                </p>
+                <div class="mt-6 bg-chaos-red text-black font-bold p-4 font-mono transform rotate-1 inline-block">
+                    醒來的第一個念頭不是後悔，而是先去確認圖畫得如何。
+                </div>
+            </div>
+        </section>
+
+        <!-- Interests Grid -->
+        <section class="py-20 px-4">
+            <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                <!-- Card 1 -->
+                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-chaos-cyan transition-all">
+                    <i class="fa-solid fa-ring text-5xl text-gray-500 group-hover:text-chaos-cyan group-hover:scale-125 transition-transform"></i>
+                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">PIERCINGS</span>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-chaos-purple transition-all">
+                    <i class="fa-solid fa-palette text-5xl text-gray-500 group-hover:text-chaos-purple group-hover:scale-125 transition-transform"></i>
+                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">ART</span>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-white transition-all">
+                    <div class="text-5xl font-glitch text-gray-500 group-hover:text-white group-hover:scale-125 transition-transform">SK8</div>
+                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">SKATEBOARD</span>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="aspect-square bg-gray-900 flex flex-col justify-center items-center group cursor-pointer border border-gray-800 hover:border-chaos-red transition-all">
+                    <i class="fa-solid fa-wine-glass text-5xl text-gray-500 group-hover:text-chaos-red group-hover:rotate-12 transition-transform"></i>
+                    <span class="mt-4 font-mono text-gray-400 group-hover:text-white">ALCOHOL</span>
+                </div>
+
+            </div>
+
+            <div class="text-center mt-12 max-w-2xl mx-auto">
+                 <p class="font-body text-gray-400 italic">
+                    "身體過敏時眼睛會整個腫起來，讓我看起來像一隻凸眼吉娃娃，算是特徵吧哈"
+                 </p>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-20 text-center relative border-t border-gray-800">
+            <h2 class="text-3xl md:text-5xl font-glitch text-white mb-8 hover:text-chaos-cyan transition-colors cursor-default">
+                EXISTENCE PROOF
+            </h2>
+            <p class="font-body text-gray-400 mb-12">
+                "我喜歡這個瘋狂計畫，用時間幫陌生人留下存在證明這件事，本身就很浪漫。"
+            </p>
+
+            <div class="flex justify-center gap-8 text-3xl">
+                <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="text-white hover:text-chaos-red hover:animate-shake"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.com/@joanna._.army" target="_blank" class="text-white hover:text-chaos-purple hover:animate-shake"><i class="fa-brands fa-threads"></i></a>
+            </div>
+
+            <div class="mt-12 text-sm text-gray-600 font-mono">
+                CHAOS GENERATED BY <span class="text-chaos-cyan">JOANNA</span> // 2024
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <script>
+        // --- Preloader ---
+        window.addEventListener('load', () => {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 10) + 5;
+                if(progress > 100) progress = 100;
+                document.getElementById('progress').innerText = progress + '%';
+
+                if(progress === 100) {
+                    clearInterval(interval);
+                    gsap.to('#preloader', {
+                        opacity: 0,
+                        duration: 0.5,
+                        onComplete: () => {
+                            document.getElementById('preloader').style.display = 'none';
+                            initAnimations();
+                        }
+                    });
+                }
+            }, 100);
+        });
+
+        // --- Three.js Background: Chaos Sphere ---
+        const initThree = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 2000;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.02,
+                color: 0xff003c,
+                transparent: true,
+                opacity: 0.8,
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, material);
+            scene.add(particlesMesh);
+
+            // Wireframe Sphere (Distorted)
+            const geometry = new THREE.IcosahedronGeometry(2, 1);
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00f0ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.2
+            });
+            const sphere = new THREE.Mesh(geometry, wireframeMaterial);
+            scene.add(sphere);
+
+            camera.position.z = 5;
+
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX / window.innerWidth - 0.5;
+                mouseY = event.clientY / window.innerHeight - 0.5;
+            });
+
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const elapsedTime = clock.getElapsedTime();
+
+                // Rotate Sphere
+                sphere.rotation.y = elapsedTime * 0.2;
+                sphere.rotation.x = mouseY * 0.5;
+
+                // Distort Particles
+                particlesMesh.rotation.y = -elapsedTime * 0.1;
+                particlesMesh.rotation.x = mouseY * 0.2;
+                particlesMesh.rotation.y += mouseX * 0.2;
+
+                // Breathing effect
+                const scale = 1 + Math.sin(elapsedTime) * 0.1;
+                sphere.scale.set(scale, scale, scale);
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+        initThree();
+
+        // --- p5.js Overlay: Interactive Chaos ---
+        const sketch = (p) => {
+            let paths = [];
+
+            p.setup = () => {
+                const c = p.createCanvas(window.innerWidth, window.innerHeight);
+                c.parent('p5-container');
+                p.clear();
+                p.noFill();
+                p.strokeWeight(2);
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Draw all paths
+                for (let path of paths) {
+                    p.beginShape();
+                    p.stroke(path.color);
+                    for (let pt of path.points) {
+                        p.vertex(pt.x, pt.y);
+                        // Jitter effect
+                        if (p.random() > 0.9) {
+                            pt.x += p.random(-1, 1);
+                            pt.y += p.random(-1, 1);
+                        }
+                    }
+                    p.endShape();
+                }
+
+                // Current drawing
+                if (p.mouseIsPressed) {
+                    let currentPath = paths[paths.length - 1];
+                    if (currentPath) {
+                        currentPath.points.push({x: p.mouseX, y: p.mouseY});
+                    }
+                }
+
+                // Cleanup old paths to save performance
+                if(paths.length > 5) paths.shift();
+            };
+
+            p.mousePressed = () => {
+                const colors = ['#ff003c', '#00f0ff', '#b026ff', '#ffffff'];
+                paths.push({
+                    color: p.random(colors),
+                    points: [{x: p.mouseX, y: p.mouseY}]
+                });
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(window.innerWidth, window.innerHeight);
+            };
+        };
+        new p5(sketch);
+
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+        function initAnimations() {
+            // Text Scramble Effect
+            const scrambleText = document.querySelector('.scramble-text');
+            if (scrambleText) {
+                gsap.to(scrambleText, {
+                    duration: 3,
+                    text: {
+                        value: "胡思亂想是日常，天馬行空是技能。我是一個腦袋經常當機的人。",
+                        delimiter: ""
+                    },
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: scrambleText,
+                        start: "top 80%",
+                    }
+                });
+            }
+
+            // Reveal sections
+            gsap.utils.toArray('section').forEach((section, i) => {
+                gsap.from(section.children, {
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 70%",
+                    }
+                });
+            });
+
+            // Image glitch/reveal
+            gsap.from(".group img", {
+                scale: 1.2,
+                filter: "blur(10px) grayscale(100%)",
+                duration: 1.5,
+                scrollTrigger: {
+                    trigger: ".group",
+                    start: "top 80%"
+                }
+            });
+        }
+    </script>
+</body>
+</html>
