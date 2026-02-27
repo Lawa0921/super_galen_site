@@ -1049,3 +1049,15 @@ members:
         label: "全能斜槓"
       - id: "cat_parent"
         label: "貓奴"
+
+  - id: "joanna_army"
+    name: "Joanna"
+    avatar: "/assets/img/guild/joanna_army/avatar.webp"
+    page: "/guild/joanna_army.html"
+    tags:
+      - id: "visual_kei"
+        label: "視覺系"
+      - id: "chaos_artist"
+        label: "混沌藝術"
+      - id: "imaginative"
+        label: "天馬行空"
