@@ -37,7 +37,7 @@
         #gl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            /* pointer-events: none; Remove this so canvas can maybe capture scroll? No, scroll is on body */
+            pointer-events: none;
         }
 
         /* --- UI Overlay --- */
@@ -391,7 +391,7 @@
 
         // --- Config ---
         const CONFIG = {
-            shardCount: 1200, // Increased density
+            shardCount: 1500, // High density for the "Cool" explosion
             galleryImages: [
                 '/assets/img/guild/vic/gallery_01.webp',
                 '/assets/img/guild/vic/gallery_02.webp',
@@ -414,7 +414,6 @@
         const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        // Use default tonemapping or none to keep images bright
         renderer.toneMapping = THREE.NoToneMapping;
         container.appendChild(renderer.domElement);
 
@@ -423,10 +422,10 @@
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
 
-        // Bloom - adjusted to be subtle but present
+        // Bloom - Intense for the "Cool" factor
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.8;
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2;
         bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
@@ -434,42 +433,49 @@
         rgbShiftPass.uniforms['amount'].value = 0.001;
         composer.addPass(rgbShiftPass);
 
-        // --- Objects: The Shard Cloud (Abstract Data) ---
-        // Use Tetrahedron for "Data Crystals" look
-        const shardGeo = new THREE.TetrahedronGeometry(0.2, 0);
+        // --- Objects: The Shard Cloud (Spikes/Cone) ---
+        // Revert to "Cool" Spikes
+        const shardGeo = new THREE.ConeGeometry(0.1, 0.5, 3);
         const shardMat = new THREE.MeshBasicMaterial({
             color: 0x00f3ff,
-            wireframe: true,
+            wireframe: true, // Wireframe is cool
             transparent: true,
-            opacity: 0.4
+            opacity: 0.8
         });
         const shards = new THREE.InstancedMesh(shardGeo, shardMat, CONFIG.shardCount);
 
         const dummy = new THREE.Object3D();
         const shardData = [];
 
-        // Initialize Shards in a "Tornado" or "Cloud"
+        // Initialize Shards in a "Tornado/Tunnel"
         for (let i = 0; i < CONFIG.shardCount; i++) {
-            const r = 5 + Math.random() * 10;
+            const r = 4 + Math.random() * 8; // Initial radius
             const theta = Math.random() * Math.PI * 2;
-            const y = (Math.random() - 0.5) * 20;
+            const y = (Math.random() - 0.5) * 40; // Tall tunnel
 
             dummy.position.set(
                 Math.cos(theta) * r,
                 y,
                 Math.sin(theta) * r
             );
-            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            dummy.scale.setScalar(Math.random() * 0.5 + 0.5);
+
+            // Random rotation
+            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+
             dummy.updateMatrix();
             shards.setMatrixAt(i, dummy.matrix);
 
             shardData.push({
                 idx: i,
                 basePos: dummy.position.clone(),
+                baseR: r,
+                theta: theta,
+                y: y,
                 speed: 0.005 + Math.random() * 0.01,
-                radius: r,
-                yOffset: y
+                rotSpeed: {
+                    x: (Math.random() - 0.5) * 0.05,
+                    y: (Math.random() - 0.5) * 0.05
+                }
             });
         }
         scene.add(shards);
@@ -482,11 +488,10 @@
 
         CONFIG.galleryImages.forEach((url, i) => {
             const tex = textureLoader.load(url);
-            tex.colorSpace = THREE.SRGBColorSpace; // Ensure correct colors
+            tex.colorSpace = THREE.SRGBColorSpace;
 
-            // Standard aspect ratio frame
-            const geo = new THREE.PlaneGeometry(6, 8);
-            // Use BasicMaterial to avoid lighting issues, toneMapped=false to keep colors vivid
+            // Large Portrait Frame
+            const geo = new THREE.PlaneGeometry(7, 10);
             const mat = new THREE.MeshBasicMaterial({
                 map: tex,
                 side: THREE.DoubleSide,
@@ -496,12 +501,19 @@
             });
             const mesh = new THREE.Mesh(geo, mat);
 
+            // Add a solid black backing to ensure readability even with shards behind
+            const backGeo = new THREE.PlaneGeometry(7.2, 10.2);
+            const backMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const backMesh = new THREE.Mesh(backGeo, backMat);
+            backMesh.position.z = -0.1; // Slightly behind
+            mesh.add(backMesh); // Attach to main mesh
+
             galleryGroup.add(mesh);
             panels.push(mesh);
         });
 
-        // Hide gallery initially
-        galleryGroup.visible = false;
+        // Hide gallery initially? No, let opacity handle it.
+        galleryGroup.visible = true; // Always visible, opacity controlled
 
 
         // --- GSAP & Scroll Logic ---
@@ -518,9 +530,9 @@
                 scrollProgress = self.progress;
                 gsap.set('#prog-fill', { height: (self.progress * 100) + '%' });
 
-                // RGB Glitch on scroll
+                // Intense RGB Glitch on scroll
                 const vel = Math.abs(self.getVelocity());
-                gsap.to(rgbShiftPass.uniforms['amount'], { value: 0.001 + vel * 0.0001, duration: 0.1 });
+                gsap.to(rgbShiftPass.uniforms['amount'], { value: 0.001 + vel * 0.0002, duration: 0.1 });
             }
         });
 
@@ -547,117 +559,139 @@
 
         // --- Render Loop ---
         const clock = new THREE.Clock();
-        let galleryRotation = 0; // Accumulated rotation for gallery
+        let galleryRotation = 0;
 
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // 1. Shard Animation (Background)
-            // Rotate the entire cloud slowly
-            shards.rotation.y = t * 0.05;
+            // 1. Shard Animation Logic
+            // Based on Scroll Progress, shards should "Explode" outward to clear the center
+            // S1 (0-0.2): Tight Tunnel
+            // S2 (0.2-0.4): Expanding
+            // S3 (0.4-0.6): MAX EXPANSION (Gallery Mode) - Clear view
 
-            // 2. Logic: Scene Switching based on Scroll
-            // We define "Gallery Mode" strictly for Section 3
-            // Section 3 is roughly at scroll progress 0.4 to 0.6 depending on height
-            // Let's use specific triggers for robustness if possible, but scrollProgress is fine for this bespoke page.
-            // S1 (0-0.2), S2 (0.2-0.4), S3 (0.4-0.6), S4 (0.6-0.8), S5 (0.8-1.0)
+            let explosionRadius = 0;
+            const isGalleryZone = (scrollProgress > 0.35 && scrollProgress < 0.65);
 
-            // Adjust ranges based on content height
-            const isGalleryMode = (scrollProgress > 0.35 && scrollProgress < 0.60);
+            if (isGalleryZone) {
+                // Max explosion
+                explosionRadius = 20;
+            } else {
+                // Normal tunnel
+                explosionRadius = 0;
+            }
 
-            if (isGalleryMode) {
-                // GALLERY MODE
-                shards.visible = false;
-                galleryGroup.visible = true;
+            // Lerp the explosion factor for smoothness
+            // We use a global lerp factor
+            // Actually, let's calculate per frame
 
-                const hint = document.querySelector('.gallery-ui-hint');
+            // Animate Shards
+            for (let i = 0; i < CONFIG.shardCount; i++) {
+                const d = shardData[i];
+
+                // Basic Rotation
+                d.theta += d.speed;
+
+                // Calculate Target Radius
+                // If in gallery zone, radius becomes HUGE to clear view
+                let targetR = d.baseR;
+                if (isGalleryZone) targetR = d.baseR + 25; // Push WAY out
+
+                // We can't easily lerp per particle without storing state,
+                // but we can lerp based on scrollProgress generally.
+                // Let's rely on scrollProgress being continuous.
+
+                // To make it "Cool", add some noise
+                const noise = Math.sin(t * 2 + d.idx) * 0.5;
+
+                // Interpolate current radius based on scroll range
+                // Smooth transition manually:
+                // 0.3 -> 0.4: Radius grows
+                // 0.6 -> 0.7: Radius shrinks
+                let expansion = 0;
+                if (scrollProgress > 0.3 && scrollProgress < 0.4) expansion = (scrollProgress - 0.3) * 10; // 0 to 1
+                else if (scrollProgress >= 0.4 && scrollProgress <= 0.6) expansion = 1;
+                else if (scrollProgress > 0.6 && scrollProgress < 0.7) expansion = 1 - (scrollProgress - 0.6) * 10;
+
+                const currentR = d.baseR + (expansion * 20);
+
+                dummy.position.x = Math.cos(d.theta) * (currentR + noise);
+                dummy.position.z = Math.sin(d.theta) * (currentR + noise);
+                dummy.position.y = d.y + Math.sin(t + d.idx) * 1; // Float
+
+                // Rotation
+                dummy.rotation.x += d.rotSpeed.x;
+                dummy.rotation.y += d.rotSpeed.y;
+
+                dummy.updateMatrix();
+                shards.setMatrixAt(i, dummy.matrix);
+            }
+            shards.instanceMatrix.needsUpdate = true;
+
+
+            // 2. Gallery Logic
+            const hint = document.querySelector('.gallery-ui-hint');
+
+            if (isGalleryZone) {
                 if(hint) hint.style.opacity = 1;
 
-                // Local scroll within gallery section (approx 0.35 to 0.60)
-                // Normalize 0.35->0, 0.60->1
+                // Show panels
+                // Local scroll logic
                 let localP = (scrollProgress - 0.35) / 0.25;
                 if (localP < 0) localP = 0;
                 if (localP > 1) localP = 1;
 
-                // Layout: Horizontal Cylinder/Carousel
-                const radius = 10;
-
-                // Map localP to rotation angle.
-                // We want to scroll through all images.
-                // Total angle needed = panels.length * spacing
-                const spacing = 0.6; // radians between panels
+                const radius = 14; // Larger radius for bigger images
+                const spacing = 0.5; // radians
                 const totalRotation = (panels.length - 1) * spacing;
-
-                // Target rotation based on scroll
                 const targetRot = -localP * totalRotation;
 
-                // Smooth lerp for rotation
                 galleryRotation += (targetRot - galleryRotation) * 0.1;
 
                 panels.forEach((mesh, i) => {
-                    // Base position
-                    // We want index 0 at center when scroll is 0
-                    // We want index N at center when scroll is 1
-
-                    // Current angle for this panel
-                    // Panel 0 starts at 0. Panel 1 at spacing...
-                    // Subtract galleryRotation to move them
                     const angle = (i * spacing) + galleryRotation;
 
-                    // Circular placement
-                    // Center is at Z=0, X=0
-                    // We want them to form an arc in front of camera
-                    // Camera is at Z=12
-
-                    // Simple Arc:
-                    // x = sin(angle) * r
-                    // z = cos(angle) * r - r (to center arc at 0,0)
-
                     mesh.position.x = Math.sin(angle) * radius;
-                    mesh.position.z = (Math.cos(angle) * radius) - radius;
-
-                    // Face inward
+                    mesh.position.z = (Math.cos(angle) * radius) - radius + 2; // Offset slightly
                     mesh.rotation.y = -angle;
 
-                    // Visibility logic:
-                    // If angle is close to 0 (center), visible.
-                    // If angle is large, fade out.
                     const dist = Math.abs(angle);
-                    const opacity = Math.max(0, 1 - dist * 0.8); // Fade out quickly
+                    // More generous visibility range
+                    const opacity = Math.max(0, 1 - dist * 0.5);
 
                     mesh.material.opacity = opacity;
+                    // Scale effect: Center image is bigger
+                    const scale = 1 + Math.max(0, 1 - dist) * 0.2;
+                    mesh.scale.setScalar(scale);
+
                     mesh.visible = opacity > 0.01;
                 });
 
-                camera.position.z = 12; // Fixed viewing distance
+                // Move camera back to see the large images
+                camera.position.z = 18;
 
             } else {
-                // DATA/SHARD MODE
-                shards.visible = true;
-                galleryGroup.visible = false;
-                const hint = document.querySelector('.gallery-ui-hint');
                 if(hint) hint.style.opacity = 0;
 
-                // Camera flythrough
-                // Start z=10, move slightly
-                // S1->S2->S3 transition
+                // Hide panels
+                panels.forEach(m => {
+                    m.material.opacity = 0;
+                    m.visible = false;
+                });
 
-                let targetZ = 10;
+                // Camera flythrough logic
+                let targetZ = 5; // Closer flythrough
                 let targetY = 0;
 
                 if (scrollProgress <= 0.35) {
-                    // Hero & Philosophy
-                    targetZ = 10 + scrollProgress * 5;
-                    targetY = -scrollProgress * 2;
+                    targetZ = 10 - scrollProgress * 10; // Zoom in
+                    targetY = -scrollProgress * 5;
                 } else {
-                    // Life & Footer (S4+)
-                    // Fly past the gallery zone
                     targetZ = 10;
-                    targetY = -5; // Lower down
+                    targetY = -5;
                 }
 
-                // Lerp camera
                 camera.position.z += (targetZ - camera.position.z) * 0.1;
                 camera.position.y += (targetY - camera.position.y) * 0.1;
             }
