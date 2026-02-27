@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Cozy Haven</title>
+    <title>NEKOPAPAYA | The Safe Haven</title>
     <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Nunito:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -28,15 +28,17 @@
 
     <style>
         :root {
-            /* Palette: Soft Clay */
-            --c-bg: #F4F1EC;
-            --c-text: #2D3436;
-            --c-accent: #8FA891; /* Sage */
-            --c-warm: #E6B89C;   /* Terracotta */
-            --c-wood: #D7B698;
+            /* Palette: Gentle Haven (Explicit Request) */
+            --c-bg: #F4F1EC;       /* Milk Tea White */
+            --c-bg-sec: #E8E2D9;   /* Sand */
+            --c-accent: #A8B2A1;   /* Sage Green */
+            --c-text: #3F3F3F;     /* Warm Dark Grey */
+            --c-note: #8C8C8C;     /* Light Grey */
+            --c-boat: #D7B698;     /* Wood */
+            --c-sea: #A8B2A1;      /* Sage Sea */
 
+            --f-main: 'Noto Sans TC', sans-serif;
             --f-en: 'Nunito', sans-serif;
-            --f-zh: 'Noto Sans TC', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -44,88 +46,81 @@
         body {
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: var(--f-zh);
+            font-family: var(--f-main);
             overflow-x: hidden;
-            line-height: 1.7;
+            line-height: 1.8;
         }
 
-        /* --- Layout --- */
-        #webgl-container {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; pointer-events: none;
-        }
-
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
         .scroller { position: relative; z-index: 10; pointer-events: none; }
         .interactive-layer { pointer-events: auto; }
 
-        .split-layout {
-            display: grid; grid-template-columns: 1fr;
+        /* --- Layout --- */
+        .section {
             min-height: 100vh;
-        }
-        @media(min-width: 900px) {
-            .split-layout { grid-template-columns: 1fr 1fr; }
-        }
-
-        /* --- Content Sections --- */
-        .content-col {
-            padding: 4rem 2rem;
-            display: flex; flex-direction: column; gap: 80vh; /* Spacer */
-            margin-top: 20vh;
-        }
-        @media(min-width: 900px) {
-            .content-col { grid-column: 2; padding-left: 4rem; padding-right: 10%; }
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 4rem 2rem; position: relative;
+            text-align: center;
         }
 
-        .text-block {
-            background: rgba(255,255,255,0.85);
-            backdrop-filter: blur(10px);
+        .content-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
             padding: 3rem;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-            border: 1px solid white;
-            transition: transform 0.3s;
-            opacity: 0; transform: translateY(50px); /* Init hidden for GSAP */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(168, 178, 161, 0.15); /* Sage shadow */
+            max-width: 600px;
+            margin-bottom: 2rem;
+            transform: translateY(30px); opacity: 0;
+            border: 1px solid rgba(255,255,255,0.8);
         }
-        .text-block:hover { transform: translateY(-5px); }
 
-        h1 { font-family: var(--f-en); font-weight: 900; font-size: 3.5rem; line-height: 1.1; margin-bottom: 1rem; color: var(--c-text); }
-        h2 { font-family: var(--f-en); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.2em; color: var(--c-accent); text-transform: uppercase; margin-bottom: 1.5rem; }
-        h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; }
-        p { font-size: 1.1rem; color: #555; margin-bottom: 1.5rem; }
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--f-en); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem);
+            color: var(--c-text); margin-bottom: 1rem; letter-spacing: 0.05em;
+        }
+        h2 {
+            font-size: 1.1rem; color: var(--c-accent); margin-bottom: 1.5rem;
+            font-weight: 700; letter-spacing: 0.1em;
+        }
+        p {
+            font-size: 1.1rem; color: var(--c-text); margin-bottom: 1.5rem;
+            font-weight: 300;
+        }
+        .note { font-size: 0.9rem; color: var(--c-note); }
 
-        .tag-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        .tag { background: white; padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.8rem; font-weight: 700; color: var(--c-accent); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .tag {
+            display: inline-block; padding: 0.3rem 1rem;
+            background: var(--c-bg-sec); color: var(--c-text);
+            border-radius: 50px; font-size: 0.9rem; margin: 0 0.3rem;
+        }
 
         /* --- Avatar --- */
         .avatar-circle {
-            width: 100px; height: 100px; border-radius: 50%;
-            border: 4px solid white; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            overflow: hidden; margin-bottom: 2rem;
+            width: 140px; height: 140px; border-radius: 50%;
+            border: 4px solid white; margin: 0 auto 2rem;
+            overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05);
         }
         .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- Nav & Social --- */
+        /* --- Nav --- */
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: var(--f-en); font-weight: 900;
+            font-family: var(--f-en); font-weight: 700;
             color: var(--c-text); text-decoration: none;
-            padding: 0.5rem 1.2rem; background: white; border-radius: 50px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05); pointer-events: auto;
+            padding: 0.5rem 1.2rem; background: rgba(255,255,255,0.8);
+            border-radius: 50px; pointer-events: auto;
         }
 
+        /* --- Social --- */
         .social-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 50px; height: 50px; border-radius: 50%; background: var(--c-bg);
-            color: var(--c-text); font-size: 1.2rem; margin-right: 1rem;
-            transition: 0.2s; text-decoration: none;
+            width: 50px; height: 50px; border-radius: 50%; background: white;
+            color: var(--c-text); font-size: 1.2rem; margin: 0 0.5rem;
+            transition: 0.2s; text-decoration: none; box-shadow: 0 5px 10px rgba(0,0,0,0.05);
         }
-        .social-link:hover { transform: scale(1.1); background: var(--c-accent); color: white; }
-
-        /* --- Mobile Overlay --- */
-        @media(max-width: 900px) {
-            #webgl-container { opacity: 0.3; } /* Fade out bg on mobile for text readability */
-            .content-col { gap: 40vh; margin-top: 10vh; }
-        }
+        .social-link:hover { transform: translateY(-3px); color: var(--c-accent); }
 
     </style>
 </head>
@@ -135,61 +130,54 @@
     <div id="webgl-container"></div>
 
     <div class="scroller">
-        <div class="split-layout">
 
-            <!-- Left: 3D Scene Space (Empty in Grid) -->
-            <div></div>
-
-            <!-- Right: Content -->
-            <div class="content-col">
-
-                <!-- 1. Hero -->
-                <div class="text-block interactive-layer gs-reveal">
-                    <div class="avatar-circle">
-                        <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar">
-                    </div>
-                    <div class="tag-row">
-                        <span class="tag">#Analyst</span>
-                        <span class="tag">#SafeHaven</span>
-                    </div>
-                    <h1>NEKOPAPAYA</h1>
-                    <p style="font-weight: 500;">人體狀態觀察分析師 | 康樂股長</p>
-                    <p style="font-style: italic; color: var(--c-accent);">"Hydrogen knocking on your soul."</p>
+        <!-- 1. Hero -->
+        <section class="section">
+            <div class="content-card interactive-layer gs-reveal">
+                <div class="avatar-circle">
+                    <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar">
                 </div>
-
-                <!-- 2. Methodology -->
-                <div class="text-block interactive-layer gs-reveal">
-                    <h2>THE METHOD</h2>
-                    <h3>Observer & Tuner.</h3>
-                    <p>無聲地觀察每個人的狀態與需求。在熱鬧的背後，看見靈魂的頻率。</p>
-                    <p>就像科學家在實驗室調配配方，我調配的是「氛圍」。消除雜訊，讓每個人都能找到最舒適的波長。</p>
+                <h1>NEKOPAPAYA</h1>
+                <p style="font-weight: 500;">康樂股長 | 人體狀態觀察分析師</p>
+                <div style="margin-top: 1rem;">
+                    <span class="tag">#避風港</span>
+                    <span class="tag">#熱情</span>
+                    <span class="tag">#魔人揪揪</span>
                 </div>
-
-                <!-- 3. Philosophy -->
-                <div class="text-block interactive-layer gs-reveal">
-                    <h2>CORE VALUE</h2>
-                    <h3>Safe Haven.</h3>
-                    <p>這裡是一個可以停下來、坐一下的地方。有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。</p>
-                    <p style="border-left: 3px solid var(--c-accent); padding-left: 1rem;">
-                        <strong>Safety Protocol:</strong> 沒有強迫，只有邀請。隨時歡迎，也隨時自由。
-                    </p>
-                </div>
-
-                <!-- 4. Contact -->
-                <div class="text-block interactive-layer gs-reveal">
-                    <h2>SYNC</h2>
-                    <h3>Connect.</h3>
-                    <p>魔人揪揪出動！如果你剛好想參與、想一起感受，就可以私訊我。</p>
-                    <div style="margin-top: 2rem;">
-                        <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                        <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                    </div>
-                </div>
-
-                <div style="height: 20vh;"></div>
-
             </div>
-        </div>
+        </section>
+
+        <!-- 2. Intro -->
+        <section class="section">
+            <div class="content-card interactive-layer gs-reveal">
+                <h2>CORE CONCEPT</h2>
+                <p>這裡是一個可以停下來、坐一下的地方。<br>有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。</p>
+                <p class="note">不是為了任何目的，也不需要報名或承諾。</p>
+            </div>
+        </section>
+
+        <!-- 3. Methodology -->
+        <section class="section">
+            <div class="content-card interactive-layer gs-reveal">
+                <h2>ANALYSIS</h2>
+                <p><strong>氫氫敲醒你的心靈</strong></p>
+                <p>喜歡可愛人事物星人。我觀察、我感受、我連結。<br>將散落的個體，透過熱情重新編織成網。</p>
+            </div>
+        </section>
+
+        <!-- 4. Contact -->
+        <section class="section">
+            <div class="content-card interactive-layer gs-reveal">
+                <h2>CONNECTION</h2>
+                <p>如果你剛好想參與、想一起感受，就可以私訊我。<br>每個人都可以自由選擇，這裡只留一個空間給願意的人。</p>
+                <div style="margin-top: 2rem;">
+                    <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <p class="note" style="margin-top: 1rem;">(私訊請不要用小帳 全當作詐騙不理)</p>
+            </div>
+        </section>
+
     </div>
 
     <!-- SCRIPT -->
@@ -199,160 +187,139 @@
         // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // scene.background = new THREE.Color(0xF4F1EC);
-        // Soft gradient bg via shader later? Or just simple fog.
-        scene.fog = new THREE.Fog(0xF4F1EC, 15, 30);
+        const bgColor = 0xF4F1EC;
+        scene.background = new THREE.Color(bgColor);
+        scene.fog = new THREE.FogExp2(bgColor, 0.08); // Heavy fog for "Soft/Blurry" feel
 
-        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(8, 6, 12);
-        camera.lookAt(0, 1, 0);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.SoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Lights (Studio Soft) ---
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        // --- Lights ---
+        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambient);
+        const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+        sun.position.set(5, 10, 5);
+        scene.add(sun);
 
-        const dirLight = new THREE.DirectionalLight(0xFFE4C4, 1.2);
-        dirLight.position.set(5, 10, 5);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.bias = -0.0001;
-        scene.add(dirLight);
+        // --- Objects ---
 
-        const fillLight = new THREE.DirectionalLight(0xE6F3FF, 0.5); // Cool fill
-        fillLight.position.set(-5, 2, -5);
-        scene.add(fillLight);
+        // 1. The Sea (Toon Shader)
+        const seaGeo = new THREE.PlaneGeometry(100, 100, 128, 128);
+        const seaMat = new THREE.MeshToonMaterial({
+            color: 0xA8B2A1, // Sage
+            transparent: true, opacity: 0.8
+        });
+        const sea = new THREE.Mesh(seaGeo, seaMat);
+        sea.rotation.x = -Math.PI / 2;
+        scene.add(sea);
 
-        // --- Materials (Clay) ---
-        const matClay = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 1, metalness: 0 });
-        const matAccent = new THREE.MeshStandardMaterial({ color: 0x8FA891, roughness: 1 });
-        const matWarm = new THREE.MeshStandardMaterial({ color: 0xE6B89C, roughness: 1 });
-        const matWood = new THREE.MeshStandardMaterial({ color: 0xD7B698, roughness: 0.9 });
-        const matDark = new THREE.MeshStandardMaterial({ color: 0x4A4A4A, roughness: 1 });
+        // 2. The Boat
+        const boatGroup = new THREE.Group();
+        scene.add(boatGroup);
 
-        // --- Scene Builder (Diorama) ---
-        const stage = new THREE.Group();
-        scene.add(stage);
+        // Hull
+        const hullGeo = new THREE.CylinderGeometry(1.2, 0.8, 3.5, 6, 1, false, 0, Math.PI);
+        const hullMat = new THREE.MeshToonMaterial({ color: 0xD7B698 }); // Wood
+        const hull = new THREE.Mesh(hullGeo, hullMat);
+        hull.rotation.z = Math.PI / 2;
+        hull.scale.set(1, 0.6, 1); hull.position.y = 0.3;
+        boatGroup.add(hull);
+        // Deck
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 1.5), hullMat);
+        deck.position.y = 0.2; boatGroup.add(deck);
 
-        // 1. Floor Platform
-        const floorGeo = new THREE.CylinderGeometry(6, 6, 0.5, 64);
-        const floor = new THREE.Mesh(floorGeo, matClay);
-        floor.position.y = -0.25; floor.receiveShadow = true;
-        stage.add(floor);
-
-        // 2. The Cozy Armchair
-        const chairGroup = new THREE.Group();
-        chairGroup.position.set(0, 0, 0);
-        stage.add(chairGroup);
-        // Base
-        const seatGeo = new THREE.CylinderGeometry(1.5, 1.2, 0.8, 32);
-        const seat = new THREE.Mesh(seatGeo, matWarm);
-        seat.position.y = 0.4; seat.castShadow = true; chairGroup.add(seat);
-        // Backrest (Torus segment trick or sphere cut)
-        const backGeo = new THREE.SphereGeometry(1.5, 32, 16, 0, Math.PI * 2, 0, Math.PI/2);
-        const back = new THREE.Mesh(backGeo, matWarm);
-        back.rotation.x = Math.PI; back.position.y = 1.2; back.scale.z = 0.5;
-        back.castShadow = true; chairGroup.add(back);
-
-        // 3. Sleeping Cat (Minimalist)
-        const catGroup = new THREE.Group();
-        catGroup.position.set(0, 0.8, 0);
-        chairGroup.add(catGroup);
-        const catBody = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 16, 0, Math.PI*2, 0, Math.PI/2), matDark);
-        catBody.scale.y = 0.6; catBody.castShadow = true; catGroup.add(catBody);
-        const catHead = new THREE.Mesh(new THREE.SphereGeometry(0.35), matDark);
-        catHead.position.set(0.4, 0.1, 0.2); catHead.castShadow = true; catGroup.add(catHead);
+        // 3. The Passenger (Cute Blob/Cat)
+        const charGroup = new THREE.Group();
+        charGroup.position.set(0, 0.3, 0);
+        boatGroup.add(charGroup);
+        // Body (Capsule-ish)
+        const bodyGeo = new THREE.CapsuleGeometry(0.3, 0.4, 4, 8);
+        const charMat = new THREE.MeshToonMaterial({ color: 0x8AB6D6 }); // Soft Blue
+        const body = new THREE.Mesh(bodyGeo, charMat);
+        body.rotation.z = Math.PI/2;
+        charGroup.add(body);
         // Ears
         const earGeo = new THREE.ConeGeometry(0.1, 0.2, 4);
-        const ear1 = new THREE.Mesh(earGeo, matDark); ear1.position.set(0.3, 0.4, 0.2); catHead.add(ear1);
-        const ear2 = new THREE.Mesh(earGeo, matDark); ear2.position.set(0.5, 0.4, 0.2); catHead.add(ear2);
+        const ear1 = new THREE.Mesh(earGeo, charMat); ear1.position.set(-0.2, 0.3, 0); charGroup.add(ear1);
+        const ear2 = new THREE.Mesh(earGeo, charMat); ear2.position.set(0.2, 0.3, 0); charGroup.add(ear2);
 
-        // 4. Side Table & Plant
-        const table = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.6, 32), matWood);
-        table.position.set(2.5, 0.3, 1); table.castShadow = true; stage.add(table);
-        // Plant
-        const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.3, 0.5), matClay);
-        pot.position.set(0, 0.55, 0); pot.castShadow = true; table.add(pot);
-        const leafGeo = new THREE.SphereGeometry(0.3);
-        const l1 = new THREE.Mesh(leafGeo, matAccent); l1.position.set(0, 0.5, 0); pot.add(l1);
-        const l2 = new THREE.Mesh(leafGeo, matAccent); l2.position.set(0.2, 0.7, 0); pot.add(l2);
-        const l3 = new THREE.Mesh(leafGeo, matAccent); l3.position.set(-0.2, 0.6, 0.1); pot.add(l3);
+        // 4. Floating Messages (Bottles)
+        const bottleCount = 20;
+        const bottleInst = new THREE.InstancedMesh(
+            new THREE.CylinderGeometry(0.1, 0.1, 0.4),
+            new THREE.MeshToonMaterial({ color: 0xFFFFFF }), // Glass/White
+            bottleCount
+        );
+        scene.add(bottleInst);
 
-        // 5. Paper Boat (Floor)
-        const boatGroup = new THREE.Group();
-        boatGroup.position.set(-2, 0.1, 2); boatGroup.rotation.y = 0.5;
-        stage.add(boatGroup);
-        const boatGeo = new THREE.ConeGeometry(0.5, 0.4, 4, 1, true); // Simplified
-        const boat = new THREE.Mesh(boatGeo, new THREE.MeshStandardMaterial({color: 0xFFFFFF, roughness: 0.9}));
-        boat.rotation.z = Math.PI; boat.scale.z = 2; boat.castShadow = true;
-        boatGroup.add(boat);
-
-        // 6. Floating Hydrogen Bubbles
-        const bubbles = [];
-        const bubbleGeo = new THREE.SphereGeometry(0.2, 16, 16);
-        const bubbleMat = new THREE.MeshStandardMaterial({ color: 0x8AB6D6, transparent: true, opacity: 0.6 });
-
-        for(let i=0; i<12; i++) {
-            const b = new THREE.Mesh(bubbleGeo, bubbleMat);
-            b.position.set(
-                (Math.random()-0.5)*5,
-                Math.random()*4 + 1,
-                (Math.random()-0.5)*5
-            );
-            b.userData = { speed: Math.random()*0.02 + 0.01, offset: Math.random()*10 };
-            stage.add(b);
-            bubbles.push(b);
+        const dummy = new THREE.Object3D();
+        const bottles = [];
+        for(let i=0; i<bottleCount; i++) {
+            const x = (Math.random()-0.5) * 30;
+            const z = -Math.random() * 50 - 5;
+            bottles.push({ x, z, speed: Math.random()*0.02 + 0.01, offset: Math.random()*10 });
         }
+
+        // 5. Passion Sparks (Particles)
+        const pCount = 50;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount; i++) {
+            pPos[i*3] = (Math.random()-0.5) * 2; // Close to boat
+            pPos[i*3+1] = Math.random() * 2;
+            pPos[i*3+2] = (Math.random()-0.5) * 2;
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({ color: 0xEAC435, size: 0.1 });
+        const particles = new THREE.Points(pGeo, pMat);
+        boatGroup.add(particles);
 
 
         // --- Interaction ---
         let scrollY = 0;
-        let targetRotation = 0;
-        const mouse = new THREE.Vector2();
+        window.addEventListener('scroll', () => scrollY = window.scrollY);
 
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-            // Rotate stage based on scroll
-            targetRotation = scrollY * 0.002;
-        });
+        const clock = new THREE.Clock();
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        // Loop
         function animate() {
             requestAnimationFrame(animate);
-            const time = Date.now() * 0.001;
+            const time = clock.getElapsedTime();
 
-            // Turntable Effect
-            stage.rotation.y += (targetRotation - stage.rotation.y) * 0.05;
+            // Waves
+            const pos = seaGeo.attributes.position;
+            for(let i=0; i<pos.count; i++) {
+                const x = pos.getX(i);
+                const y = pos.getY(i);
+                // Gentle, slow wave
+                const z = Math.sin(x * 0.3 + time * 0.5) * 0.3 + Math.cos(y * 0.2 + time * 0.3) * 0.2;
+                pos.setZ(i, z);
+            }
+            pos.needsUpdate = true;
 
-            // Subtle Idle Animation
-            catGroup.scale.y = 1 + Math.sin(time * 2) * 0.02; // Breathing
-            catGroup.scale.x = 1 - Math.sin(time * 2) * 0.01;
-            catGroup.scale.z = 1 - Math.sin(time * 2) * 0.01;
+            // Boat Bobbing
+            boatGroup.position.y = Math.sin(time) * 0.1;
+            boatGroup.rotation.z = Math.sin(time * 0.5) * 0.05;
+            boatGroup.rotation.x = Math.sin(time * 0.3) * 0.05;
 
-            boatGroup.rotation.z = Math.sin(time) * 0.1; // Rocking
+            // Floating Bottles (Scroll Driven)
+            const speed = 0.05 + scrollY * 0.001;
+            for(let i=0; i<bottleCount; i++) {
+                const b = bottles[i];
+                b.z += speed;
+                if(b.z > 5) b.z = -50; // Loop
 
-            // Bubbles
-            bubbles.forEach(b => {
-                b.position.y += Math.sin(time + b.userData.offset) * 0.005;
-                b.position.x += Math.cos(time + b.userData.offset) * 0.002;
-            });
-
-            // Camera Parallax
-            camera.position.x += (8 + mouse.x - camera.position.x) * 0.05;
-            camera.position.y += (6 + mouse.y - camera.position.y) * 0.05;
-            camera.lookAt(0, 1, 0);
+                dummy.position.set(b.x, 0.1 + Math.sin(time + b.offset)*0.1, b.z);
+                dummy.rotation.z = Math.sin(time + b.offset) * 0.5;
+                dummy.updateMatrix();
+                bottleInst.setMatrixAt(i, dummy.matrix);
+            }
+            bottleInst.instanceMatrix.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
@@ -367,7 +334,6 @@
             });
         });
 
-        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
