@@ -6,18 +6,16 @@
     <title>原色⭐︎ふぁんたじー | CMY Fantasy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
             --cyan: #00ffff;
             --magenta: #ff00ff;
             --yellow: #ffff00;
-            --dark: #050505;
-            --glass: rgba(255, 255, 255, 0.05);
+            --dark: #000;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,7 +23,7 @@
         body {
             background-color: var(--dark);
             color: white;
-            font-family: 'Zen Maru Gothic', sans-serif;
+            font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             width: 100vw;
         }
@@ -35,24 +33,12 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: all;
-        }
-
-        #p5-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
-            opacity: 0.3;
-            pointer-events: none;
-            mix-blend-mode: screen;
         }
 
         main {
             position: relative;
-            z-index: 2;
+            z-index: 10;
             width: 100%;
-            pointer-events: none; /* Let clicks pass through to 3D scene */
         }
 
         .section {
@@ -63,409 +49,294 @@
             align-items: center;
             padding: 2rem;
             position: relative;
-            pointer-events: none;
         }
 
         .hero-title {
-            font-family: 'Noto Sans JP', sans-serif;
-            font-weight: 900;
-            font-size: clamp(3rem, 12vw, 9rem);
-            line-height: 0.85;
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 1.1;
             text-align: center;
             text-transform: uppercase;
-            mix-blend-mode: lighten;
-            pointer-events: none;
-            text-shadow: 0 0 30px rgba(255,255,255,0.5);
-            perspective: 1000px;
+            letter-spacing: 0.1em;
+            background: linear-gradient(90deg, #fff, var(--cyan), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% auto;
+            animation: shine 5s linear infinite;
+            text-shadow: 0 0 30px rgba(0,255,255,0.4);
         }
 
-        .glitch-text {
-            position: relative;
-            display: block;
-            transform-style: preserve-3d;
+        @keyframes shine {
+            to { background-position: 200% center; }
         }
 
-        .glitch-layer {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            opacity: 0.8;
-            mix-blend-mode: screen;
-            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        .hero-subtitle {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: rgba(255,255,255,0.7);
+            letter-spacing: 0.3em;
+            margin-top: 1rem;
+            text-transform: uppercase;
         }
 
-        @keyframes glitch-anim {
-            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); }
-            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
-            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
-            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
-            80% { clip-path: inset(10% 0 60% 0); transform: translate(-1px, 1px); }
-            100% { clip-path: inset(30% 0 40% 0); transform: translate(1px, -1px); }
-        }
-
-        .content-card {
-            background: rgba(10, 10, 10, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 3rem;
-            border-radius: 30px;
-            max-width: 900px;
-            width: 100%;
-            margin: 10vh auto;
-            pointer-events: auto;
-            border-left: 6px solid var(--cyan);
-            border-right: 6px solid var(--magenta);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        .glass-card {
+            background: rgba(10, 10, 10, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 4rem;
+            border-radius: 40px;
+            max-width: 1000px;
+            width: 90%;
+            margin: 0 auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             position: relative;
             overflow: hidden;
         }
 
-        .content-card::before {
+        /* Subtle holographic shine on card */
+        .glass-card::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; height: 2px;
-            background: linear-gradient(90deg, var(--cyan), var(--magenta), var(--yellow));
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(60deg, transparent 40%, rgba(255,255,255,0.05) 45%, transparent 50%);
+            animation: holo-sweep 8s infinite linear;
+            pointer-events: none;
         }
 
-        .profile-header {
-            display: flex;
+        @keyframes holo-sweep {
+            0% { transform: rotate(0deg) translate(-20%, -20%); }
+            100% { transform: rotate(360deg) translate(-20%, -20%); }
+        }
+
+        .profile-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 3rem;
             align-items: center;
-            gap: 2.5rem;
-            margin-bottom: 2.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            text-align: center;
         }
 
         @media (min-width: 768px) {
-            .profile-header { justify-content: flex-start; text-align: left; }
+            .profile-layout { grid-template-columns: 300px 1fr; }
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
         }
 
         .avatar {
-            width: 140px;
-            height: 140px;
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            border: 4px solid white;
-            box-shadow: 0 0 25px var(--cyan), 0 0 50px var(--magenta);
             object-fit: cover;
-            animation: pulse-border 3s infinite;
+            border: 2px solid rgba(255,255,255,0.2);
+            position: relative;
+            z-index: 2;
         }
 
-        @keyframes pulse-border {
-            0%, 100% { box-shadow: 0 0 25px var(--cyan), 0 0 50px var(--magenta); }
-            50% { box-shadow: 0 0 40px var(--yellow), 0 0 70px var(--cyan); }
+        .avatar-glow {
+            position: absolute;
+            inset: -20px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--cyan), var(--magenta), var(--yellow), var(--cyan));
+            filter: blur(30px);
+            opacity: 0.6;
+            animation: spin 10s linear infinite;
+            z-index: 1;
         }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
         h2 {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
-            background: linear-gradient(90deg, #fff, var(--cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: white;
             font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 2px;
         }
 
-        .subtitle {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--yellow);
-            text-transform: uppercase;
+        .tags {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 0.85rem;
             letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-            display: block;
+            text-transform: uppercase;
+            color: var(--cyan);
         }
 
         p {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             line-height: 1.8;
             margin-bottom: 1.2rem;
-            color: #ddd;
-            font-weight: 500;
+            color: #ccc;
+            font-weight: 300;
         }
 
-        .highlight {
-            color: var(--cyan);
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(0,255,255,0.3);
-        }
+        .highlight { color: white; font-weight: 500; }
 
         .social-links {
             display: flex;
             gap: 1.5rem;
-            margin-top: 3rem;
-            justify-content: center;
-            flex-wrap: wrap;
+            margin-top: 2rem;
         }
 
         .social-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 70px;
-            height: 70px;
-            border-radius: 16px;
+            width: 50px; height: 50px;
+            border-radius: 50%;
             background: rgba(255,255,255,0.05);
-            border: 2px solid rgba(255,255,255,0.2);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 900;
-            text-decoration: none;
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .social-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(45deg, var(--cyan), var(--magenta));
-            opacity: 0;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex; justify-content: center; align-items: center;
+            color: white; text-decoration: none; font-weight: bold;
             transition: 0.3s;
-            z-index: -1;
         }
 
         .social-btn:hover {
-            transform: translateY(-5px) scale(1.05);
-            border-color: transparent;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: white; color: black;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
         }
-        .social-btn:hover::before { opacity: 1; }
 
-        .gallery-container {
+        /* Horizontal Scroll Gallery */
+        .gallery-wrapper {
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            pointer-events: auto;
+            overflow-x: auto;
+            padding-bottom: 2rem;
+            margin-top: 3rem;
+            scrollbar-width: none; /* Firefox */
         }
+        .gallery-wrapper::-webkit-scrollbar { display: none; }
 
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        .gallery-track {
+            display: flex;
             gap: 2rem;
-            width: 100%;
+            padding: 0 1rem;
+            width: max-content;
         }
 
         .gallery-item {
-            position: relative;
+            width: 300px;
             aspect-ratio: 3/4;
-            overflow: hidden;
             border-radius: 20px;
-            background: #111;
-            transform-style: preserve-3d;
-            perspective: 1000px;
+            overflow: hidden;
+            position: relative;
+            transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             cursor: pointer;
         }
 
         .gallery-item img {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
-            transition: 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            filter: grayscale(0.5) contrast(1.2);
+            transition: 0.6s;
         }
 
-        .gallery-item:hover img {
-            transform: scale(1.1);
-            filter: grayscale(0) contrast(1.1);
-        }
-
-        .gallery-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            opacity: 0;
-            transition: 0.3s;
-            display: flex;
-            align-items: flex-end;
-            padding: 1.5rem;
-        }
-        .gallery-item:hover .gallery-overlay { opacity: 1; }
-
-        .gallery-tag {
-            color: var(--cyan);
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 0.9rem;
-            transform: translateY(20px);
-            transition: 0.3s;
-        }
-        .gallery-item:hover .gallery-tag { transform: translateY(0); }
+        .gallery-item:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .gallery-item:hover img { transform: scale(1.05); }
 
         .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
             z-index: 100;
-            color: white;
+            color: rgba(255,255,255,0.7);
             text-decoration: none;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            background: rgba(0,0,0,0.6);
-            padding: 0.8rem 1.5rem;
-            border-radius: 50px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
             transition: 0.3s;
-            pointer-events: auto;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            mix-blend-mode: difference;
         }
+        .nav-back:hover { color: white; transform: translateX(-5px); }
 
-        .nav-back:hover {
-            background: white;
-            color: black;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5);
-        }
-
-        /* Loading Screen */
+        /* Loader */
         #loader {
-            position: fixed;
-            inset: 0;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            transition: opacity 0.8s ease-out;
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 1s ease-out;
         }
-
-        .loader-bar {
-            width: 200px;
-            height: 4px;
-            background: #333;
-            margin-top: 20px;
-            position: relative;
-            overflow: hidden;
-            border-radius: 2px;
-        }
-
-        .loader-progress {
-            position: absolute;
-            top: 0; left: 0; bottom: 0;
-            width: 0%;
-            background: linear-gradient(90deg, var(--cyan), var(--magenta));
-            transition: width 0.2s;
-            box-shadow: 0 0 10px var(--cyan);
-        }
-
-        .loader-text {
-            font-family: 'Noto Sans JP', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: white;
-            letter-spacing: 4px;
-            text-transform: uppercase;
+        .loader-ring {
+            width: 60px; height: 60px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: var(--cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="loader-text">INITIALIZING STAGE</div>
-        <div class="loader-bar"><div class="loader-progress" id="load-prog"></div></div>
-    </div>
+    <div id="loader"><div class="loader-ring"></div></div>
 
-    <a href="/guild/" class="nav-back">
-        <span>←</span> BACK
-    </a>
-
-    <div id="p5-container"></div>
+    <a href="/guild/" class="nav-back">BACK</a>
     <div id="canvas-container"></div>
 
     <main>
         <section class="section" id="hero">
-            <h1 class="hero-title">
-                <div class="glitch-text" style="color:var(--cyan)">
-                    CMY
-                    <div class="glitch-layer" style="color:var(--magenta)">CMY</div>
-                    <div class="glitch-layer" style="color:var(--yellow); animation-delay:-0.5s">CMY</div>
-                </div>
-                <div class="glitch-text" style="color:white; font-size: 0.8em;">
-                    FANTASY
-                </div>
-            </h1>
+            <h1 class="hero-title">CMY<br>FANTASY</h1>
+            <div class="hero-subtitle">VIRTUAL IDOL STAGE</div>
         </section>
 
         <section class="section" id="profile">
-            <div class="content-card">
-                <div class="profile-header">
-                    <img src="/assets/img/guild/cmy_fantasy/avatar.webp" alt="Avatar" class="avatar">
-                    <div>
-                        <span class="subtitle">KAOHSIUNG IDOL UNIT</span>
+            <div class="glass-card">
+                <div class="profile-layout">
+                    <div class="avatar-container">
+                        <div class="avatar-glow"></div>
+                        <img src="/assets/img/guild/cmy_fantasy/avatar.webp" alt="CMY Fantasy" class="avatar">
+                    </div>
+
+                    <div class="profile-content">
+                        <div class="tags">
+                            <span class="tag">Idol Group</span>
+                            <span class="tag">Cosplay</span>
+                            <span class="tag">Performance</span>
+                        </div>
                         <h2>原色⭐︎ふぁんたじー</h2>
-                        <p style="color:var(--cyan); font-weight:bold; margin:0;">高雄雙人偶像系 Cosplay 表演團體</p>
+                        <p>來自高雄之雙人偶像系 Cosplay 表演團體。<br>由 <span class="highlight">筱喵</span> 和 <span class="highlight">婷婷</span> 兩位可愛吃貨妹子組成。</p>
+                        <p>團體成立滿一週年以來，以「每次站上舞台，皆是為觀眾帶來歡樂並實現夢想的重要時刻」為核心理念，活躍於各類日系主題活動及動漫祭舞台。</p>
+                        <p>未來將持續拓展多元表演形式，為活動現場注入獨具風格之偶像系舞台魅力。</p>
+
+                        <div style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8; border-left: 2px solid var(--yellow); padding-left: 1rem;">
+                            <strong style="color:var(--yellow)">Message:</strong><br>
+                            希望有機會被製作到！我們的作品為影像居多，若可以放影片的話，可再提供給您 ><
+                        </div>
+
+                        <div class="social-links">
+                            <a href="https://www.threads.com/@cmy_fantasy" target="_blank" class="social-btn">T</a>
+                            <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="social-btn">IG</a>
+                            <a href="https://www.youtube.com/@cmy_fantasy" target="_blank" class="social-btn">YT</a>
+                        </div>
                     </div>
                 </div>
 
-                <p>您好，我們是南部日系偶像團體⭐️ <span class="highlight">「原色⭐︎ふぁんたじー」</span>。</p>
-                <p>來自高雄之雙人偶像系 Cosplay 表演團體，因對 Cosplay、舞蹈與舞台表演的共同熱忱而成立。由 <span class="highlight">筱喵</span> 和 <span class="highlight">婷婷</span> 兩位可愛吃貨妹子組成～</p>
-                <p>團體成立滿一週年以來，已活躍於各類日系主題活動及動漫祭舞台，並持續累積豐富之演出經驗與舞台實績。</p>
-                <p>團體成立之初，便以「每次站上舞台，皆是為觀眾帶來歡樂並實現夢想的重要時刻」作為核心理念，不僅致力於呈現創意與實力之表演內容，亦期望透過舞台傳遞給觀眾驚喜、感動與深刻的觀賞體驗。</p>
-                <p>未來將持續拓展多元表演形式，為活動現場注入獨具風格之偶像系舞台魅力。</p>
-
-                <div style="margin-top:2rem; padding: 1.5rem; background: rgba(255,255,0,0.1); border: 1px dashed var(--yellow); border-radius: 12px; text-align: center;">
-                    <p style="margin:0; font-weight:bold; color:var(--yellow); font-size: 1.2rem;">✨ 希望有機會被製作到！</p>
-                    <p style="margin:0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">我們的作品為影像居多，若可以放影片的話，可再提供給您 ><</p>
-                </div>
-
-                <div class="social-links">
-                    <a href="https://www.threads.com/@cmy_fantasy" target="_blank" rel="noopener noreferrer" class="social-btn">Threads</a>
-                    <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" rel="noopener noreferrer" class="social-btn">IG</a>
-                    <a href="https://www.youtube.com/@cmy_fantasy" target="_blank" rel="noopener noreferrer" class="social-btn">YT</a>
+                <div class="gallery-wrapper">
+                    <div class="gallery-track">
+                        <!-- Gallery Items -->
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_3.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_4.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_5.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_6.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_7.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_8.webp" loading="lazy"></div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <section class="section" style="justify-content: flex-start; padding-top: 10vh;">
-            <div class="gallery-container">
-                <h2 style="text-align:center; margin-bottom: 3rem; font-size: 3rem; text-shadow: 0 0 20px var(--cyan);">STAGE RECORD</h2>
-                <div class="gallery-grid">
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 01</span></div>
-                    </div>
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 02</span></div>
-                    </div>
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_3.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 03</span></div>
-                    </div>
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_4.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 04</span></div>
-                    </div>
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_5.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 05</span></div>
-                    </div>
-                    <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_6.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 06</span></div>
-                    </div>
-                     <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_7.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 07</span></div>
-                    </div>
-                     <div class="gallery-item">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_8.webp" loading="lazy">
-                        <div class="gallery-overlay"><span class="gallery-tag">PERFORMANCE 08</span></div>
-                    </div>
-                </div>
-            </div>
-            <div style="height: 20vh;"></div>
-        </section>
+        <div style="height: 20vh;"></div>
     </main>
 
     <script type="importmap">
@@ -477,327 +348,176 @@
         }
     </script>
 
-    <script>
-        // --- p5.js Background Effect (Digital Noise / Matrix) ---
-        const sketch = (p) => {
-            let cols, rows;
-            let scl = 40; // Scale of the grid
-            let w, h;
-            let particles = [];
-            let flowfield;
-
-            p.setup = () => {
-                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-container');
-                w = p.width;
-                h = p.height;
-                cols = p.floor(w / scl);
-                rows = p.floor(h / scl);
-                flowfield = new Array(cols * rows);
-
-                for (let i = 0; i < 200; i++) {
-                    particles[i] = new Particle();
-                }
-                p.background(0);
-            };
-
-            p.draw = () => {
-                // Fade effect
-                p.noStroke();
-                p.fill(0, 10);
-                p.rect(0, 0, w, h);
-
-                let yoff = 0;
-                for (let y = 0; y < rows; y++) {
-                    let xoff = 0;
-                    for (let x = 0; x < cols; x++) {
-                        let index = x + y * cols;
-                        let angle = p.noise(xoff, yoff, p.frameCount * 0.002) * p.TWO_PI * 4;
-                        let v = p5.Vector.fromAngle(angle);
-                        v.setMag(1);
-                        flowfield[index] = v;
-                        xoff += 0.1;
-                    }
-                    yoff += 0.1;
-                }
-
-                for (let i = 0; i < particles.length; i++) {
-                    particles[i].follow(flowfield);
-                    particles[i].update();
-                    particles[i].edges();
-                    particles[i].show();
-                }
-            };
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-                w = p.width;
-                h = p.height;
-                cols = p.floor(w / scl);
-                rows = p.floor(h / scl);
-                flowfield = new Array(cols * rows);
-            };
-
-            class Particle {
-                constructor() {
-                    this.pos = p.createVector(p.random(w), p.random(h));
-                    this.vel = p.createVector(0, 0);
-                    this.acc = p.createVector(0, 0);
-                    this.maxspeed = 4;
-                    this.color = p.random([p.color(0, 255, 255), p.color(255, 0, 255), p.color(255, 255, 0)]);
-                }
-
-                follow(vectors) {
-                    let x = p.floor(this.pos.x / scl);
-                    let y = p.floor(this.pos.y / scl);
-                    let index = x + y * cols;
-                    if (index >= 0 && index < vectors.length) {
-                        let force = vectors[index];
-                        this.applyForce(force);
-                    }
-                }
-
-                applyForce(force) {
-                    this.acc.add(force);
-                }
-
-                update() {
-                    this.vel.add(this.acc);
-                    this.vel.limit(this.maxspeed);
-                    this.pos.add(this.vel);
-                    this.acc.mult(0);
-                }
-
-                edges() {
-                    if (this.pos.x > w) this.pos.x = 0;
-                    if (this.pos.x < 0) this.pos.x = w;
-                    if (this.pos.y > h) this.pos.y = 0;
-                    if (this.pos.y < 0) this.pos.y = h;
-                }
-
-                show() {
-                    p.stroke(this.color);
-                    p.strokeWeight(2);
-                    p.point(this.pos.x, this.pos.y);
-                }
-            }
-        };
-        new p5(sketch);
-    </script>
-
     <script type="module">
         import * as THREE from 'three';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Loader Logic ---
-        const loader = document.getElementById('loader');
-        const loadProg = document.getElementById('load-prog');
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if(progress > 100) progress = 100;
-            loadProg.style.width = progress + '%';
-            if(progress === 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.remove(), 800);
-                }, 500);
-            }
-        }, 100);
-
-        // --- Three.js Scene Setup ---
+        // --- Scene Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // scene.background = new THREE.Color(0x050505); // Use transparent background to see p5
-        scene.fog = new THREE.FogExp2(0x000000, 0.03);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 15;
-        camera.position.y = 2;
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.set(0, 5, 20);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Bloom) ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2; // High bloom for neon effect
-        bloomPass.radius = 0.5;
-
+        // --- Post Processing ---
         const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
-        const outputPass = new OutputPass();
-        composer.addPass(outputPass);
+        // --- Stage Floor ---
+        const floorGeo = new THREE.PlaneGeometry(200, 200);
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x111111,
+            roughness: 0.1,
+            metalness: 0.8,
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -2;
+        scene.add(floor);
 
-        // --- Objects: Neon Geometry ---
-        const geometries = [];
-        const shapes = [
-            new THREE.IcosahedronGeometry(1, 0),
-            new THREE.OctahedronGeometry(1, 0),
-            new THREE.TetrahedronGeometry(1, 0),
-            new THREE.TorusGeometry(0.8, 0.2, 16, 50)
-        ];
+        // --- Volumetric Spotlights (Cones) ---
+        const spotLights = [];
+        const colors = [0x00ffff, 0xff00ff, 0xffff00];
 
-        const colors = [0x00ffff, 0xff00ff, 0xffff00]; // CMY
+        for(let i=0; i<6; i++) {
+            const group = new THREE.Group();
 
-        // Create floating background objects
-        for(let i=0; i<40; i++) {
-            const geo = shapes[Math.floor(Math.random() * shapes.length)];
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const material = new THREE.MeshBasicMaterial({
-                color: color,
-                wireframe: true,
+            // The visible light cone
+            const coneGeo = new THREE.ConeGeometry(2, 40, 32, 1, true);
+            coneGeo.translate(0, -20, 0); // Pivot at top
+            const coneMat = new THREE.MeshBasicMaterial({
+                color: colors[i % 3],
                 transparent: true,
-                opacity: 0.6
-            });
-
-            const mesh = new THREE.Mesh(geo, material);
-
-            // Random spread
-            mesh.position.x = (Math.random() - 0.5) * 40;
-            mesh.position.y = (Math.random() - 0.5) * 40;
-            mesh.position.z = (Math.random() - 0.5) * 20 - 5;
-
-            mesh.rotation.x = Math.random() * Math.PI;
-            mesh.rotation.y = Math.random() * Math.PI;
-
-            const scale = Math.random() * 0.8 + 0.2;
-            mesh.scale.set(scale, scale, scale);
-
-            // Store custom animation data
-            mesh.userData = {
-                rotSpeed: {
-                    x: (Math.random() - 0.5) * 0.02,
-                    y: (Math.random() - 0.5) * 0.02
-                },
-                floatSpeed: Math.random() * 0.01 + 0.005,
-                floatOffset: Math.random() * Math.PI * 2,
-                baseY: mesh.position.y
-            };
-
-            scene.add(mesh);
-            geometries.push(mesh);
-        }
-
-        // --- Central "Stage" Elements (Rings) ---
-        const rings = [];
-        for(let i=0; i<3; i++) {
-            const ringGeo = new THREE.TorusGeometry(3 + i*2, 0.05, 16, 100);
-            const ringMat = new THREE.MeshBasicMaterial({ color: colors[i], transparent: true, opacity: 0.5 });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.PI / 2;
-            scene.add(ring);
-            rings.push(ring);
-        }
-
-        // --- Light Beams (Cylinders) ---
-        const beams = [];
-        for(let i=0; i<5; i++) {
-            const beamGeo = new THREE.CylinderGeometry(0.1, 2, 20, 32, 1, true);
-            const beamMat = new THREE.MeshBasicMaterial({
-                color: colors[i%3],
-                transparent: true,
-                opacity: 0.1,
+                opacity: 0.03,
                 side: THREE.DoubleSide,
-                blending: THREE.AdditiveBlending
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
             });
-            const beam = new THREE.Mesh(beamGeo, beamMat);
-            beam.position.set((i-2)*5, 0, -10);
-            scene.add(beam);
-            beams.push(beam);
+            const cone = new THREE.Mesh(coneGeo, coneMat);
+            group.add(cone);
+
+            // Actual PointLight for floor reflection
+            const light = new THREE.PointLight(colors[i % 3], 2, 30);
+            light.position.y = 0;
+            group.add(light);
+
+            // Position spread
+            group.position.set((i - 2.5) * 8, 15, -10);
+
+            scene.add(group);
+            spotLights.push({ mesh: group, speed: Math.random() * 0.5 + 0.2, offset: Math.random() * 10 });
         }
 
-        // --- Interaction: Mouse Parallax ---
-        let mouseX = 0, mouseY = 0;
-        let targetX = 0, targetY = 0;
+        // --- Particles (Stardust) ---
+        const particleCount = 1000;
+        const posArray = new Float32Array(particleCount * 3);
 
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.01;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.01;
+        for(let i=0; i<particleCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 100; // Spread wide
+        }
+
+        const particleGeo = new THREE.BufferGeometry();
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particleMat = new THREE.PointsMaterial({
+            size: 0.15,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
         });
-
-        // --- GSAP Setup ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Animate content entry
-        gsap.from("#profile", {
-            scrollTrigger: {
-                trigger: "#profile",
-                start: "top 80%",
-            },
-            y: 100,
-            opacity: 0,
-            duration: 1.2,
-            ease: "power3.out"
-        });
-
-        // Camera scroll movement
-        const timeline = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        timeline.to(camera.position, { z: 5, y: -2, ease: "none" });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
+        let mouseX = 0, mouseY = 0;
 
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
 
-            // Parallax Smoothing
-            targetX += (mouseX - targetX) * 0.05;
-            targetY += (mouseY - targetY) * 0.05;
-            camera.rotation.y = -targetX * 0.2;
-            camera.rotation.x = -targetY * 0.2;
-
-            // Animate floating objects
-            geometries.forEach(mesh => {
-                mesh.rotation.x += mesh.userData.rotSpeed.x;
-                mesh.rotation.y += mesh.userData.rotSpeed.y;
-                mesh.position.y = mesh.userData.baseY + Math.sin(t + mesh.userData.floatOffset) * 0.5;
+            // Animate Spotlights
+            spotLights.forEach((spot, i) => {
+                // Sweep motion
+                spot.mesh.rotation.z = Math.sin(t * spot.speed + spot.offset) * 0.3;
+                spot.mesh.rotation.x = Math.cos(t * spot.speed * 0.5) * 0.1;
             });
 
-            // Animate rings (Stage floor)
-            rings.forEach((ring, i) => {
-                ring.rotation.z = t * (0.1 + i*0.05) * (i%2===0 ? 1 : -1);
-                ring.scale.setScalar(1 + Math.sin(t*2 + i)*0.05); // Pulse to beat
-            });
+            // Animate Particles (Gentle rise)
+            const positions = particleGeo.attributes.position.array;
+            for(let i=1; i<particleCount * 3; i+=3) { // Y is index 1, 4, 7...
+                positions[i] += 0.02;
+                if(positions[i] > 20) positions[i] = -10; // Reset to bottom
+            }
+            particleGeo.attributes.position.needsUpdate = true;
+            particles.rotation.y = t * 0.05; // Slow rotation
 
-            // Animate Beams
-            beams.forEach((beam, i) => {
-                beam.rotation.y = t * 0.2;
-                beam.scale.y = 1 + Math.sin(t*3 + i)*0.2;
-                beam.material.opacity = 0.1 + Math.max(0, Math.sin(t*5 + i)*0.1); // Flicker
-            });
+            // Subtle Parallax
+            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 2 + 5 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
 
-            // Render
             composer.render();
         }
-
         animate();
 
-        // Handle Resize
+        // --- Interaction ---
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+        });
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
-            bloomPass.setSize(new THREE.Vector2(window.innerWidth, window.innerHeight));
+        });
+
+        // --- Loader & GSAP ---
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 1000);
+
+            // Scroll Animation
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Move camera closer on scroll
+            gsap.to(camera.position, {
+                z: 10, // Zoom in
+                y: 2,  // Lower angle
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 2
+                }
+            });
+
+            // Fade in content
+            gsap.from(".glass-card", {
+                y: 100,
+                opacity: 0,
+                duration: 1.5,
+                ease: "power3.out",
+                delay: 0.5
+            });
         });
 
     </script>
