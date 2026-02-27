@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joanna | Bauhaus Construct</title>
+    <meta name="description" content="Joanna - Visual Communication, Form & Function.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Archivo+Black&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bauhaus-red': '#e22d2d',
+                        'bauhaus-blue': '#004cdd',
+                        'bauhaus-yellow': '#f4d03f',
+                        'bauhaus-black': '#1a1a1a',
+                        'bauhaus-white': '#fdfbf7',
+                    },
+                    fontFamily: {
+                        'display': ['"Archivo Black"', 'sans-serif'],
+                        'sans': ['"Space Grotesk"', 'sans-serif'],
+                        'body': ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    borderWidth: {
+                        '3': '3px',
+                        '6': '6px',
+                    },
+                    animation: {
+                        'spin-slow': 'spin 12s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #fdfbf7;
+            color: #1a1a1a;
+            overflow-x: hidden;
+        }
+
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, rgba(26, 26, 26, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(26, 26, 26, 0.1) 1px, transparent 1px);
+        }
+
+        .bauhaus-border {
+            border: 3px solid #1a1a1a;
+        }
+
+        .shape-circle { border-radius: 50%; }
+        .shape-square { border-radius: 0; }
+        .shape-tri { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        #p5-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-link {
+            position: relative;
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: #1a1a1a;
+            z-index: -1;
+            transition: height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .nav-link:hover::before { height: 100%; }
+        .nav-link:hover { color: #fdfbf7; }
+
+        /* Asymmetric Grid Layout */
+        .bauhaus-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 0;
+            border: 3px solid #1a1a1a;
+            background: #fdfbf7;
+        }
+        .grid-cell {
+            padding: 2rem;
+            border: 1px solid #1a1a1a;
+            position: relative;
+            overflow: hidden;
+        }
+        .grid-cell-bold {
+            border: 3px solid #1a1a1a;
+        }
+
+        .text-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+    </style>
+</head>
+<body class="selection:bg-bauhaus-yellow selection:text-bauhaus-black font-sans grid-bg">
+
+    <div id="webgl-container"></div>
+    <div id="p5-overlay"></div>
+
+    <!-- Nav -->
+    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center p-6 mix-blend-multiply pointer-events-none">
+        <a href="/guild" class="pointer-events-auto nav-link text-xl border-3 border-black bg-white">
+            <i class="fa-solid fa-square text-bauhaus-red text-xs align-middle mr-2"></i>EXIT
+        </a>
+        <div class="pointer-events-auto flex gap-4">
+             <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="nav-link border-3 border-black bg-white hover:border-bauhaus-blue"><i class="fa-brands fa-instagram"></i></a>
+             <a href="https://www.threads.com/@joanna._.army" target="_blank" class="nav-link border-3 border-black bg-white hover:border-bauhaus-yellow"><i class="fa-brands fa-threads"></i></a>
+        </div>
+    </nav>
+
+    <main class="content-layer w-full min-h-screen pt-24 pb-20 px-4 md:px-12">
+
+        <!-- Hero Grid -->
+        <div class="bauhaus-grid max-w-7xl mx-auto shadow-[10px_10px_0px_0px_rgba(26,26,26,1)] transform transition-transform duration-500 hover:translate-x-[-5px] hover:translate-y-[-5px] hover:shadow-[15px_15px_0px_0px_rgba(26,26,26,1)]">
+
+            <!-- Title Block -->
+            <div class="col-span-12 md:col-span-8 grid-cell bg-white flex flex-col justify-center min-h-[300px] border-r-3 border-b-3 border-black">
+                <h1 class="font-display text-8xl md:text-9xl leading-none tracking-tighter mix-blend-exclusion text-bauhaus-black">
+                    JOANNA
+                </h1>
+                <h2 class="font-sans font-bold text-2xl md:text-4xl mt-4 text-bauhaus-blue">
+                    FORM <span class="text-bauhaus-red">&</span> FUNCTION
+                </h2>
+            </div>
+
+            <!-- Avatar Block -->
+            <div class="col-span-12 md:col-span-4 grid-cell bg-bauhaus-yellow flex justify-center items-center border-b-3 border-black p-0 relative overflow-hidden group">
+                <div class="absolute w-full h-full bg-bauhaus-black opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                <img src="/assets/img/guild/joanna_army/avatar.webp" alt="Joanna" class="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full border-6 border-black shadow-[5px_5px_0px_0px_#fff]">
+                <div class="absolute top-4 right-4 w-8 h-8 bg-bauhaus-red rounded-full"></div>
+                <div class="absolute bottom-4 left-4 w-8 h-8 bg-bauhaus-blue transform rotate-45"></div>
+            </div>
+
+            <!-- Role / Tag -->
+            <div class="col-span-6 md:col-span-3 grid-cell bg-bauhaus-red text-white flex flex-col justify-between border-r-3 border-b-3 border-black">
+                <span class="font-display text-4xl">01</span>
+                <span class="font-sans font-bold text-lg uppercase">Visual<br>Communication</span>
+            </div>
+
+            <!-- Bio -->
+            <div class="col-span-6 md:col-span-6 grid-cell bg-white border-r-3 border-b-3 border-black flex items-center">
+                <p class="font-body text-lg leading-relaxed font-medium">
+                    "胡思亂想是日常，天馬行空是技能。"
+                    <br><br>
+                    我是一個腦袋經常當機的人。生活不是提早補眠，就是熬夜把設計作業撐到天亮。
+                </p>
+            </div>
+
+            <!-- Decoration -->
+            <div class="col-span-12 md:col-span-3 grid-cell bg-bauhaus-blue border-b-3 border-black flex justify-center items-center overflow-hidden">
+                <div class="w-full h-full flex justify-center items-center animate-spin-slow">
+                    <div class="w-24 h-24 border-6 border-white rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Skills Row -->
+            <div class="col-span-12 grid-cell p-0 border-b-3 border-black">
+                <div class="grid grid-cols-1 md:grid-cols-3 h-full">
+                    <div class="p-8 border-b md:border-b-0 md:border-r-3 border-black hover:bg-bauhaus-yellow transition-colors group">
+                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">DIY CRAFT</h3>
+                        <p class="font-body text-sm">自學美甲、染髮、服裝改造。買不到的設計，就自己動手做。</p>
+                        <div class="mt-4 w-8 h-8 bg-black rounded-full"></div>
+                    </div>
+                    <div class="p-8 border-b md:border-b-0 md:border-r-3 border-black hover:bg-bauhaus-red hover:text-white transition-colors group">
+                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">PIERCING</h3>
+                        <p class="font-body text-sm">對耳朵穿孔文化的熱情。那是身體與美感間粗暴的溝通。</p>
+                        <div class="mt-4 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-b-[26px] border-b-black group-hover:border-b-white"></div>
+                    </div>
+                    <div class="p-8 hover:bg-bauhaus-blue hover:text-white transition-colors group">
+                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">STYLE</h3>
+                        <p class="font-body text-sm">穿搭風格玲玲亂亂，但在混亂中維持詭異的協調感。</p>
+                        <div class="mt-4 w-8 h-8 bg-black group-hover:bg-white"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case Study: Bleach -->
+            <div class="col-span-12 md:col-span-9 grid-cell bg-white border-r-3 border-b-3 border-black">
+                <div class="flex flex-col md:flex-row gap-8 items-start">
+                    <div class="w-16 h-16 bg-bauhaus-black text-white flex justify-center items-center font-display text-2xl flex-shrink-0">!</div>
+                    <div>
+                        <h3 class="font-display text-2xl mb-2">CASE STUDY: TOXICITY</h3>
+                        <p class="font-body text-lg text-gray-700">
+                            曾經用漂白水在深色褲子上作畫，結果忘記通風，直接中毒嘔吐昏睡。醒來的第一個念頭不是後悔，而是先去確認圖畫得如何。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vertical Text -->
+            <div class="col-span-12 md:col-span-3 grid-cell bg-bauhaus-yellow border-b-3 border-black flex justify-center items-center">
+                <span class="font-display text-4xl text-vertical tracking-widest">OBSESSION</span>
+            </div>
+
+            <!-- Footer / Contact -->
+            <div class="col-span-12 grid-cell bg-bauhaus-black text-white text-center py-12">
+                <h2 class="font-display text-4xl md:text-6xl mb-6">EXISTENCE PROOF</h2>
+                <p class="font-body text-gray-400 mb-8 max-w-2xl mx-auto">
+                    "我喜歡這個瘋狂計畫，用時間幫陌生人留下存在證明這件事，本身就很浪漫。"
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="w-12 h-12 bg-white text-black flex justify-center items-center rounded-full hover:bg-bauhaus-red transition-colors text-xl">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    <a href="https://www.threads.com/@joanna._.army" target="_blank" class="w-12 h-12 bg-white text-black flex justify-center items-center rounded-full hover:bg-bauhaus-blue transition-colors text-xl">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <script>
+        // --- Three.js: Geometric Primitives ---
+        const initThree = () => {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            // Light background handled by CSS, keep scene transparent
+
+            // Orthographic Camera for that flat, architectural look
+            const aspect = window.innerWidth / window.innerHeight;
+            const d = 10;
+            const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Objects
+            const group = new THREE.Group();
+            scene.add(group);
+
+            // Material: Flat shading, bold colors
+            const matRed = new THREE.MeshBasicMaterial({ color: 0xe22d2d });
+            const matBlue = new THREE.MeshBasicMaterial({ color: 0x004cdd });
+            const matYellow = new THREE.MeshBasicMaterial({ color: 0xf4d03f });
+            const matBlack = new THREE.MeshBasicMaterial({ color: 0x1a1a1a, wireframe: true });
+
+            // Sphere
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), matRed);
+            sphere.position.set(-4, 2, 0);
+            group.add(sphere);
+
+            // Cube
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), matBlue);
+            cube.position.set(4, -1, 0);
+            group.add(cube);
+
+            // Cone
+            const cone = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 32), matYellow);
+            cone.position.set(0, 0, 0);
+            group.add(cone);
+
+            // Wireframe Icosahedron
+            const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), matBlack);
+            ico.position.set(-2, -3, -2);
+            group.add(ico);
+
+            camera.position.set(10, 10, 10);
+            camera.lookAt(scene.position);
+
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const time = clock.getElapsedTime();
+
+                // Slow, mechanical rotation
+                sphere.rotation.y = time * 0.2;
+                cube.rotation.x = time * 0.15;
+                cube.rotation.y = time * 0.15;
+                cone.rotation.z = time * 0.1;
+                cone.position.y = Math.sin(time) * 0.5; // Bobbing
+                ico.rotation.x = -time * 0.1;
+                ico.rotation.y = -time * 0.1;
+
+                // Subtle parallax based on scroll
+                group.rotation.y = window.scrollY * 0.0005;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                const aspect = window.innerWidth / window.innerHeight;
+                camera.left = -d * aspect;
+                camera.right = d * aspect;
+                camera.top = d;
+                camera.bottom = -d;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+        initThree();
+
+        // --- p5.js: Interactive Grid Lines ---
+        const sketch = (p) => {
+            p.setup = () => {
+                const c = p.createCanvas(window.innerWidth, window.innerHeight);
+                c.parent('p5-overlay');
+                p.noFill();
+                p.stroke(26, 26, 26, 50); // Light black stroke
+                p.strokeWeight(1);
+            };
+
+            p.draw = () => {
+                p.clear();
+                const gridSize = 100;
+
+                // Draw dynamic grid lines that bend near mouse
+                for (let x = 0; x < p.width; x += gridSize) {
+                    p.beginShape();
+                    for (let y = 0; y < p.height; y += 20) {
+                        let d = p.dist(x, y, p.mouseX, p.mouseY);
+                        let offset = 0;
+                        if (d < 200) {
+                            offset = p.map(d, 0, 200, 20, 0);
+                        }
+                        // If mouse is to the right, bend left, etc.
+                        let dir = (p.mouseX > x) ? -1 : 1;
+                        p.vertex(x + offset * dir, y);
+                    }
+                    p.endShape();
+                }
+
+                // Horizontal Lines
+                for (let y = 0; y < p.height; y += gridSize) {
+                    p.line(0, y, p.width, y);
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(window.innerWidth, window.innerHeight);
+            };
+        };
+        new p5(sketch);
+
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate Grid Cells
+        gsap.utils.toArray('.grid-cell').forEach((cell, i) => {
+            gsap.from(cell, {
+                scrollTrigger: {
+                    trigger: cell,
+                    start: "top 85%",
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.8,
+                ease: "power3.out",
+                delay: i * 0.05 // Stagger effect
+            });
+        });
+
+        // Hover effect for main container
+        const container = document.querySelector('.bauhaus-grid');
+        container.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 10;
+            const y = (e.clientY / window.innerHeight - 0.5) * 10;
+            gsap.to(container, {
+                rotationY: x,
+                rotationX: -y,
+                duration: 0.5,
+                ease: "power1.out"
+            });
+        });
+        container.addEventListener('mouseleave', () => {
+            gsap.to(container, {
+                rotationY: 0,
+                rotationX: 0,
+                duration: 0.5
+            });
+        });
+
+    </script>
+</body>
+</html>
