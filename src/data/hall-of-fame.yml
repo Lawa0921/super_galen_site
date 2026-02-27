@@ -969,3 +969,15 @@ members:
         label: "模型車改裝"
       - id: "rider"
         label: "摩旅愛好者"
+
+  - id: "vic"
+    name: "VIC NAIL 東東老師"
+    avatar: "/assets/img/guild/vic/avatar.webp"
+    page: "/guild/vic.html"
+    tags:
+      - id: "logic_nail_art"
+        label: "邏輯美甲"
+      - id: "n8n_automation"
+        label: "N8N 自動化"
+      - id: "slashie"
+        label: "全能斜槓"

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIC NAIL | THE LOGIC ALCHEMIST</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@300;700&family=Noto+Sans+TC:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #000000;
+            --c-accent: #ff003c; /* Cyber Red */
+            --c-sec: #00f3ff;    /* Cyber Cyan */
+            --c-text: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- Canvas --- */
+        #gl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        /* --- UI Overlay --- */
+        .ui-layer {
+            position: relative; z-index: 10;
+            pointer-events: none; /* Let scroll pass through mostly */
+        }
+
+        nav {
+            position: fixed; top: 0; left: 0; width: 100%;
+            padding: 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            mix-blend-mode: difference;
+            z-index: 100;
+        }
+        .brand {
+            font-family: 'Anton', sans-serif;
+            font-size: 2rem; letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .brand span { color: var(--c-accent); }
+
+        .menu-btn {
+            pointer-events: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            border: 1px solid #fff; padding: 0.5rem 1rem;
+            text-decoration: none; color: #fff;
+            transition: 0.3s;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+        }
+        .menu-btn:hover { background: #fff; color: #000; }
+
+        /* --- Sections --- */
+        section {
+            position: relative;
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 10vw;
+            pointer-events: none; /* Allow click through to 3D, enable on content */
+        }
+
+        .hero-title {
+            font-family: 'Anton', sans-serif;
+            font-size: clamp(4rem, 15vw, 12rem);
+            line-height: 0.85;
+            text-transform: uppercase;
+            mix-blend-mode: exclusion;
+            opacity: 0; /* Animated in */
+            transform: translateY(50px);
+        }
+        .hero-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem; margin-top: 2rem;
+            color: var(--c-sec);
+            max-width: 600px;
+        }
+
+        .content-box {
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            border-left: 4px solid var(--c-accent);
+            padding: 3rem;
+            max-width: 900px;
+            margin-left: auto; /* Align right */
+            transform: translateX(100px); opacity: 0;
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .content-box.left {
+            margin-left: 0; margin-right: auto;
+            transform: translateX(-100px);
+            border-left: 1px solid #333;
+            border-right: 4px solid var(--c-sec);
+        }
+
+        h2 {
+            font-family: 'Anton', sans-serif;
+            font-size: 3.5rem; margin-bottom: 2rem;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+        .content-box h2 span { color: var(--c-accent); }
+        .content-box.left h2 span { color: var(--c-sec); }
+
+        p {
+            font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem;
+            color: #ccc;
+        }
+        strong { color: #fff; font-weight: 700; }
+
+        /* --- Logic Flow (S2) --- */
+        .logic-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem; margin-top: 2rem; border-top: 1px solid #333; padding-top: 2rem;
+        }
+        .logic-item {
+            border: 1px solid #333; padding: 1rem;
+            transition: 0.3s;
+        }
+        .logic-item:hover { border-color: var(--c-accent); background: rgba(255,0,60,0.1); }
+        .logic-item h3 { font-family: 'JetBrains Mono', monospace; color: var(--c-sec); margin-bottom: 0.5rem; font-size: 1rem; }
+        .logic-item p { font-size: 0.9rem; margin: 0; color: #888; }
+
+        /* --- Skill Matrix (S4) --- */
+        .skill-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px; margin-top: 2rem;
+        }
+        .skill-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #333; padding: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .skill-card:hover {
+            border-color: var(--c-sec);
+            background: rgba(0, 243, 255, 0.1);
+            transform: translateY(-3px);
+        }
+        .skill-name { color: #fff; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold; }
+        .skill-tag { color: #666; font-size: 0.7rem; text-transform: uppercase; }
+
+        /* --- Terminal (S5) --- */
+        .terminal {
+            background: #000; border: 1px solid #333;
+            padding: 1.5rem; font-family: 'JetBrains Mono', monospace;
+            color: #0f0; margin-top: 2rem; font-size: 0.9rem;
+        }
+        .term-line { margin-bottom: 0.5rem; display: flex; }
+        .term-line::before { content: '>'; color: var(--c-accent); margin-right: 10px; }
+
+        .social-links {
+            display: flex; gap: 20px; margin-top: 2rem; pointer-events: auto; justify-content: flex-end;
+        }
+        .social-icon {
+            font-size: 1.5rem; color: #555; transition: 0.3s;
+        }
+        .social-icon:hover { color: var(--c-sec); transform: scale(1.2); text-shadow: 0 0 10px var(--c-sec); }
+
+        /* --- Scroll Progress --- */
+        .progress-bar {
+            position: fixed; right: 2rem; top: 50%; transform: translateY(-50%);
+            height: 200px; width: 2px; background: rgba(255,255,255,0.2);
+            z-index: 90;
+        }
+        .progress-fill {
+            width: 100%; height: 0%; background: var(--c-accent);
+        }
+
+        /* --- Gallery Hint --- */
+        .gallery-hint {
+             position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+             font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--c-sec);
+             opacity: 0; background: rgba(0,0,0,0.8); padding: 5px 10px;
+        }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 999;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--c-accent);
+            font-size: 1.5rem; letter-spacing: 0.2em;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">SYSTEM_INITIALIZING...</div>
+
+    <div id="gl-container"></div>
+
+    <div class="ui-layer">
+        <nav>
+            <div class="brand">VIC <span>NAIL</span></div>
+            <a href="/guild/" class="menu-btn">GUILD_INDEX</a>
+        </nav>
+
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+
+        <!-- S1: HERO -->
+        <section id="s1">
+            <h1 class="hero-title">LOGIC<br>ALCHEMIST</h1>
+            <div class="hero-subtitle">
+                // NAIL ARTIST . EDUCATOR . MAKER<br>
+                <span style="color: #fff;">EST. 18 YEARS</span>
+            </div>
+        </section>
+
+        <!-- S2: PHILOSOPHY -->
+        <section id="s2">
+            <div class="content-box">
+                <h2>Decode<br><span>The Art</span></h2>
+                <p>我是東東老師。身為 PRESTO 台灣區講師，我拒絕照表操課的死記硬背。</p>
+                <p>「知其然，更要知其所以然。」是我對專業的絕對堅持。</p>
+
+                <div class="logic-grid">
+                    <div class="logic-item">
+                        <h3>01. INPUT</h3>
+                        <p>分析原生甲況與材質特性。</p>
+                    </div>
+                    <div class="logic-item">
+                        <h3>02. PROCESS</h3>
+                        <p>運用物理結構與化學原理建構。</p>
+                    </div>
+                    <div class="logic-item">
+                        <h3>03. OUTPUT</h3>
+                        <p>完美持久的健康美甲。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- S3: GALLERY SHOWCASE -->
+        <section id="s3" style="height: 150vh;">
+            <div class="gallery-hint">[ SCROLL TO SCAN ARCHIVES ]</div>
+        </section>
+
+        <!-- S4: LIFE -->
+        <section id="s4">
+            <div class="content-box left">
+                <h2>Full Stack<br><span>Life</span></h2>
+                <p>脫下講師袍，我是一個用生命在努力活著的冒險家。我的履歷表比色卡還豐富，這些經歷都是我理解世界的獨特視角。</p>
+
+                <div class="skill-grid">
+                    <div class="skill-card">
+                        <div class="skill-name">火鍋/Uber</div>
+                        <div class="skill-tag">Service.exe</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-name">工地/水電</div>
+                        <div class="skill-tag">Construction.dll</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-name">人力派遣</div>
+                        <div class="skill-tag">HR.sys</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-name">學校老師</div>
+                        <div class="skill-tag">Edu.bat</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-name">平面/影音</div>
+                        <div class="skill-tag">Creative.app</div>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-name">烹飪/手作</div>
+                        <div class="skill-tag">Life.config</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- S5: CURRENT -->
+        <section id="s5">
+            <div class="content-box">
+                <h2>System<br><span>Update</span></h2>
+                <p>目前狀態：家有兩隻貓主子 🐈 擔任高階監工。</p>
+
+                <div class="terminal">
+                    <div class="term-line">Target: Automation_Life</div>
+                    <div class="term-line">Tool: N8N_Workflow</div>
+                    <div class="term-line">Worker: AI_Gemini (Slave)</div>
+                    <div class="term-line">Status: Coding...</div>
+                </div>
+
+                <div class="social-links">
+                    <a href="https://www.threads.com/@dwng1274" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.facebook.com/VicNailArt" target="_blank" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="https://www.instagram.com/dwng1274/" target="_blank" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import { RGBShiftShader } from 'three/addons/shaders/RGBShiftShader.js';
+
+        // --- Config ---
+        const CONFIG = {
+            shardCount: 1500,
+            galleryImages: [
+                '/assets/img/guild/vic/gallery_01.webp',
+                '/assets/img/guild/vic/gallery_02.webp',
+                '/assets/img/guild/vic/gallery_03.webp',
+                '/assets/img/guild/vic/gallery_04.webp',
+                '/assets/img/guild/vic/gallery_05.webp',
+                '/assets/img/guild/vic/gallery_06.webp',
+                '/assets/img/guild/vic/gallery_07.webp'
+            ]
+        };
+
+        // --- Scene Setup ---
+        const container = document.getElementById('gl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 10;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        // Tone mapping disabled for readability
+        renderer.toneMapping = THREE.NoToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // --- Post Processing ---
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.0;
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        const rgbShiftPass = new ShaderPass(RGBShiftShader);
+        rgbShiftPass.uniforms['amount'].value = 0.001;
+        composer.addPass(rgbShiftPass);
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 3); // Brighter ambient
+        scene.add(ambientLight);
+
+        const blueLight = new THREE.PointLight(0x00f3ff, 5, 20);
+        blueLight.position.set(-5, 0, 5);
+        scene.add(blueLight);
+
+        const redLight = new THREE.PointLight(0xff003c, 5, 20);
+        redLight.position.set(5, -5, 5);
+        scene.add(redLight);
+
+        // --- Objects: Shards (V2 Spikes) ---
+        const shardGeo = new THREE.ConeGeometry(0.1, 0.4, 3); // The "Cool" Spikes
+        const shardMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0.9,
+            roughness: 0.1,
+            clearcoat: 1.0,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const shards = new THREE.InstancedMesh(shardGeo, shardMat, CONFIG.shardCount);
+        const dummy = new THREE.Object3D();
+        const shardData = [];
+
+        // Distribute in a Cloud/Capsule
+        for (let i = 0; i < CONFIG.shardCount; i++) {
+            const r = (Math.random() * 2 - 1) * 3;
+            const theta = Math.random() * Math.PI * 2;
+            const y = (Math.random() * 2 - 1) * 5;
+
+            // Initial chaotic position
+            const x = Math.cos(theta) * r;
+            const z = Math.sin(theta) * r;
+
+            shardData.push({
+                idx: i,
+                origin: { x, y, z },
+                // Explosion target: Push WAY out
+                exploded: {
+                    x: x * 15,
+                    y: y * 15,
+                    z: z * 15
+                },
+                rotation: {
+                    x: Math.random() * Math.PI,
+                    y: Math.random() * Math.PI,
+                    z: Math.random() * Math.PI
+                },
+                speed: 0.5 + Math.random() * 0.5
+            });
+
+            dummy.position.set(x, y, z);
+            dummy.updateMatrix();
+            shards.setMatrixAt(i, dummy.matrix);
+        }
+        scene.add(shards);
+
+        // --- Objects: Gallery Panels (Fixed for Readability) ---
+        const textureLoader = new THREE.TextureLoader();
+        const galleryGroup = new THREE.Group();
+        scene.add(galleryGroup);
+
+        const panels = [];
+
+        CONFIG.galleryImages.forEach((url, i) => {
+            const tex = textureLoader.load(url);
+            tex.colorSpace = THREE.SRGBColorSpace;
+
+            // Geometry
+            const geo = new THREE.PlaneGeometry(6, 8);
+            const mat = new THREE.MeshBasicMaterial({
+                map: tex,
+                side: THREE.DoubleSide,
+                toneMapped: false // Ensure colors are correct
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+
+            // ** READABILITY FIX: Black Background Plane **
+            const bgGeo = new THREE.PlaneGeometry(6.2, 8.2);
+            const bgMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const bgMesh = new THREE.Mesh(bgGeo, bgMat);
+            bgMesh.position.z = -0.1; // Slightly behind
+            mesh.add(bgMesh);
+
+            // Circular arrangement
+            const angle = (i / CONFIG.galleryImages.length) * Math.PI * 2;
+            const radius = 10;
+
+            mesh.userData = {
+                angle: angle,
+                radius: radius,
+                baseY: 0
+            };
+
+            // Initial placement
+            mesh.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            mesh.lookAt(0, 0, 0); // Face center initially
+
+            galleryGroup.add(mesh);
+            panels.push(mesh);
+        });
+
+        // --- GSAP Setup ---
+        gsap.registerPlugin(ScrollTrigger);
+        let scrollProgress = 0;
+
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                scrollProgress = self.progress;
+
+                // Progress Bar
+                const progFill = document.getElementById('prog-fill');
+                if (progFill) progFill.style.height = (self.progress * 100) + '%';
+
+                // RGB Shift
+                const vel = Math.abs(self.getVelocity());
+                gsap.to(rgbShiftPass.uniforms['amount'], { value: 0.001 + vel * 0.0001, duration: 0.1 });
+            }
+        });
+
+        // Section Animations
+        gsap.utils.toArray('.content-box').forEach(box => {
+            gsap.to(box, {
+                scrollTrigger: {
+                    trigger: box,
+                    start: "top 80%",
+                    end: "top 50%",
+                    scrub: 1
+                },
+                x: 0,
+                opacity: 1
+            });
+        });
+
+        // Hint
+        gsap.to('.gallery-hint', {
+            scrollTrigger: {
+                 trigger: '#s3',
+                 start: "top center",
+                 end: "center center",
+                 scrub: true
+            },
+            opacity: 1,
+            y: -10
+        });
+
+        // --- Render Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // 1. Shard Explosion Logic (The "Cool" Effect)
+            // S1 (0-0.2): Stable
+            // S2 (0.2-0.4): Expanding slightly
+            // S3 (0.4-0.6): EXPLODE OUTWARD (Clear the view)
+
+            let explosionFactor = 0;
+            if (scrollProgress < 0.2) explosionFactor = scrollProgress * 0.5;
+            else if (scrollProgress >= 0.2 && scrollProgress < 0.7) {
+                 // Ramping up to full explosion for gallery
+                 explosionFactor = 0.1 + (scrollProgress - 0.2) * 2;
+                 // Cap it to ensure max clearance during S3
+                 if (scrollProgress > 0.35 && scrollProgress < 0.65) explosionFactor = 1.0;
+            } else {
+                 explosionFactor = 1.0 - (scrollProgress - 0.7) * 2; // Come back in?
+            }
+            explosionFactor = Math.max(0, Math.min(1, explosionFactor));
+
+            // Move Shards
+            for (let i = 0; i < CONFIG.shardCount; i++) {
+                const data = shardData[i];
+
+                // Lerp position
+                const tx = THREE.MathUtils.lerp(data.origin.x, data.exploded.x, explosionFactor);
+                const ty = THREE.MathUtils.lerp(data.origin.y, data.exploded.y, explosionFactor);
+                const tz = THREE.MathUtils.lerp(data.origin.z, data.exploded.z, explosionFactor);
+
+                // Add noise
+                const noise = Math.sin(t + i) * 0.2;
+
+                dummy.position.set(tx + noise, ty, tz);
+
+                // Rotate
+                dummy.rotation.x = data.rotation.x + t * data.speed;
+                dummy.rotation.y = data.rotation.y + t * data.speed;
+
+                dummy.updateMatrix();
+                shards.setMatrixAt(i, dummy.matrix);
+            }
+            shards.instanceMatrix.needsUpdate = true;
+            shards.rotation.y = t * 0.1; // Spin the cloud
+
+            // 2. Gallery Animation
+            // Active during S3 (0.3 - 0.7)
+            let galleryOp = 0;
+            if (scrollProgress > 0.3 && scrollProgress < 0.7) {
+                // Fade in/out
+                if (scrollProgress < 0.4) galleryOp = (scrollProgress - 0.3) * 10;
+                else if (scrollProgress > 0.6) galleryOp = 1 - (scrollProgress - 0.6) * 10;
+                else galleryOp = 1;
+            }
+
+            panels.forEach((mesh, i) => {
+                // Visibility
+                mesh.visible = galleryOp > 0.01;
+                // Note: We don't set opacity on material here because BasicMaterial doesn't support alpha per instance easily without custom shader,
+                // but since these are individual meshes, we can set material opacity.
+                // However, we want them FULLY opaque for readability when active.
+                // Let's use scale to hide them if opacity is tricky, or just set opacity.
+                mesh.material.opacity = galleryOp;
+
+                if (galleryOp > 0.01) {
+                    // ** READABILITY FIX: Always Face Camera **
+                    // Instead of looking at 0,0,0, they should orbit but FACE the camera or be billboarded?
+                    // Actually, a cylinder layout looking at 0,0,0 is fine IF the camera is outside looking in.
+                    // But shards block it. We cleared shards.
+                    // The issue might be they are too far or angled away.
+
+                    // Let's rotate the whole gallery group based on time/scroll
+                    const angleOffset = t * 0.2;
+                    const r = mesh.userData.radius;
+
+                    mesh.position.x = Math.cos(mesh.userData.angle + angleOffset) * r;
+                    mesh.position.z = Math.sin(mesh.userData.angle + angleOffset) * r;
+
+                    // Floating
+                    mesh.position.y = Math.sin(t + i * 0.5) * 0.5;
+
+                    // ** CRITICAL: Look at Camera **
+                    // This ensures the image is always flat to the viewer, maximizing readability
+                    mesh.lookAt(camera.position);
+                }
+            });
+
+            // 3. Camera Movement
+            // Fly through the tunnel
+            // S1: z=10
+            // S3: z=20 (Pull back to see gallery ring)
+
+            let camTargetZ = 10;
+            if (scrollProgress > 0.3 && scrollProgress < 0.7) {
+                 camTargetZ = 22; // Pull back further to see the ring clearly inside the exploded shards
+            } else {
+                 camTargetZ = 12;
+            }
+
+            camera.position.z += (camTargetZ - camera.position.z) * 0.05;
+            camera.position.y += (Math.sin(scrollProgress * Math.PI) * 2 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+
+            composer.render();
+        }
+
+        animate();
+
+        // --- Resize ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Init ---
+        function startIntro() {
+            const tl = gsap.timeline();
+            tl.to('#loader', {
+                opacity: 0,
+                duration: 0.8,
+                onComplete: () => { document.getElementById('loader').remove(); }
+            })
+            .to('.hero-title', { opacity: 1, y: 0, duration: 1.5, ease: 'power4.out' }, "-=0.5");
+        }
+        window.addEventListener('load', startIntro);
+        setTimeout(startIntro, 1500); // Fallback
+
+    </script>
+</body>
+</html>
