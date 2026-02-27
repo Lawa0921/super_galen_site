@@ -3,382 +3,399 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lo Yu | The Cyber-Weaver</title>
-    <meta name="description" content="羅玉 Lo Yu - Relationship Strategist & Digital Weaver.">
+    <title>Lo Yu | The Golden Thread</title>
+    <meta name="description" content="羅玉 Lo Yu - Tactical Analyst & Golden Weaver.">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --neon-cyan: #00f0ff;
-            --neon-pink: #ff0055;
-            --warm-gold: #ffd700;
-            --void-black: #050505;
-            --glass-bg: rgba(10, 20, 30, 0.75);
-            --border-glow: 0 0 10px rgba(0, 240, 255, 0.5);
+            --navy-dark: #0a1128;
+            --navy-light: #1c2541;
+            --gold-bright: #ffd700;
+            --gold-mute: #c5a000;
+            --text-light: #f8f9fa;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        html { overflow-x: hidden; scroll-behavior: smooth; }
         body {
-            background-color: var(--void-black);
-            color: #fff;
-            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: var(--navy-dark);
+            color: var(--text-light);
+            font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
-            line-height: 1.6;
         }
 
-        /* === 1. BACKGROUND LAYER (Three.js) === */
+        /* === LAYERS === */
         #webgl-canvas {
             position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
             z-index: -1;
         }
 
-        .scanline-overlay {
+        /* === UI & HUD === */
+        .hud-layer {
+            position: fixed; inset: 0; pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 20px;
+        }
+        .hud-top { display: flex; justify-content: space-between; align-items: center; }
+        .hud-bottom { display: flex; justify-content: space-between; align-items: center; }
+
+        .logo-text { font-family: 'Cinzel', serif; font-weight: 700; font-size: 1.5rem; color: var(--gold-bright); letter-spacing: 2px; }
+        .scroll-indicator { color: var(--gold-mute); font-size: 0.8rem; letter-spacing: 1px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* === SCROLL CONTENT === */
+        /* We use a long container to drive the 3D scroll, but content appears fixed/faded in based on JS */
+        .scroll-driver {
+            height: 800vh; /* Determines length of the journey */
+        }
+
+        .content-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none; z-index: 0; opacity: 0.6;
+            pointer-events: none; z-index: 5;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* === 2. LAYOUT CONTAINER === */
-        .container {
-            max-width: 1200px; margin: 0 auto; padding: 0 20px;
-            position: relative; z-index: 10;
+        .slide {
+            position: absolute;
+            width: 100%; max-width: 1000px; padding: 2rem;
+            opacity: 0; transform: translateY(20px); transition: all 0.8s ease-out;
+            display: flex; gap: 3rem; align-items: center;
+        }
+        .slide.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .slide.exit { opacity: 0; transform: translateY(-20px); }
+
+        /* HERO SLIDE */
+        .hero-layout { display: flex; align-items: center; gap: 3rem; text-align: left; width: 100%; }
+        .avatar-frame {
+            width: 280px; height: 280px; flex-shrink: 0;
+            border: 2px solid var(--gold-bright); padding: 10px;
+            position: relative;
+        }
+        .avatar-frame::before {
+            content: ''; position: absolute; top: -5px; left: -5px; width: 20px; height: 20px;
+            border-top: 2px solid var(--gold-bright); border-left: 2px solid var(--gold-bright);
+        }
+        .avatar-frame::after {
+            content: ''; position: absolute; bottom: -5px; right: -5px; width: 20px; height: 20px;
+            border-bottom: 2px solid var(--gold-bright); border-right: 2px solid var(--gold-bright);
+        }
+        .hero-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(20%) contrast(110%); }
+
+        .hero-text h1 { font-family: 'Cinzel', serif; font-size: 3.5rem; margin-bottom: 0.5rem; color: var(--gold-bright); }
+        .hero-text h2 { font-size: 1.2rem; margin-bottom: 1.5rem; letter-spacing: 3px; color: #aaa; text-transform: uppercase; }
+        .hero-desc { font-size: 1.1rem; line-height: 1.8; max-width: 500px; color: #ddd; }
+
+        /* ANALYST SLIDE */
+        .analyst-layout { text-align: left; width: 100%; position: relative; }
+        .tactical-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+            margin-top: 2rem; border-top: 1px solid var(--gold-mute); padding-top: 2rem;
+        }
+        .stat-box h3 { font-family: 'Cinzel'; color: var(--gold-bright); margin-bottom: 0.5rem; }
+        .stat-box p { font-size: 0.9rem; color: #bbb; }
+
+        /* WEAVER SLIDE */
+        .weaver-layout { text-align: center; width: 100%; }
+        .quote-box {
+            font-family: 'Great Vibes', cursive; font-size: 2.5rem; color: var(--gold-bright);
+            margin-bottom: 2rem; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
         }
 
-        /* === 3. SECTIONS === */
-        section {
-            padding: 80px 0;
-            min-height: auto;
-        }
-
-        /* HERO SECTION */
-        .hero {
-            min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            text-align: center; flex-direction: column;
-        }
-        .hero-avatar-wrapper {
-            position: relative; width: 220px; height: 220px; margin: 0 auto 2rem;
-        }
-        .hero-avatar {
-            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
-            border: 4px solid var(--neon-cyan);
-            box-shadow: 0 0 30px var(--neon-cyan);
-            position: relative; z-index: 2;
-        }
-        .hero-ring {
-            position: absolute; inset: -20px; border: 2px dashed var(--warm-gold);
-            border-radius: 50%; animation: spin 20s linear infinite; z-index: 1;
-        }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        .hero-title {
-            font-family: 'Orbitron', sans-serif; font-size: clamp(3rem, 8vw, 5rem);
-            font-weight: 900; color: #fff; text-transform: uppercase;
-            text-shadow: 2px 2px 0 var(--neon-pink); margin-bottom: 0.5rem;
-        }
-        .hero-subtitle {
-            font-family: 'Orbitron', sans-serif; color: var(--warm-gold);
-            letter-spacing: 4px; font-size: 1.2rem; margin-bottom: 2rem;
-        }
-        .hero-bio {
-            max-width: 700px; margin: 0 auto; font-size: 1.1rem;
-            background: var(--glass-bg); padding: 1.5rem; border-left: 4px solid var(--neon-pink);
-            backdrop-filter: blur(10px);
-        }
-
-        /* ANALYST (Skills) */
-        .grid-split {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
-            align-items: center;
-        }
-        @media (max-width: 768px) { .grid-split { grid-template-columns: 1fr; gap: 2rem; } }
-
-        .glass-panel {
-            background: var(--glass-bg); border: 1px solid rgba(255,255,255,0.1);
-            padding: 2rem; backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative; overflow: hidden;
-        }
-        .glass-panel::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, var(--neon-cyan), var(--warm-gold), var(--neon-pink));
-        }
-
-        .section-title {
-            font-family: 'Orbitron'; font-size: 2.5rem; margin-bottom: 2rem;
-            color: var(--neon-cyan); text-transform: uppercase;
-        }
-        .section-title.warm { color: var(--warm-gold); }
-
-        .skill-item { margin-bottom: 1.5rem; }
-        .skill-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-family: 'Orbitron'; font-size: 0.9rem; }
-        .skill-track { height: 8px; background: rgba(255,255,255,0.1); width: 100%; }
-        .skill-bar { height: 100%; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); width: 0; transition: width 1.5s ease-out; }
-
-        /* WEAVER (Interests) */
-        .weaver-tags { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
-        .tag {
-            padding: 0.5rem 1rem; border: 1px solid var(--warm-gold);
-            color: var(--warm-gold); font-family: 'Orbitron'; font-size: 0.9rem;
-            transition: 0.3s; cursor: default;
-        }
-        .tag:hover { background: var(--warm-gold); color: #000; box-shadow: 0 0 15px var(--warm-gold); }
-
-        /* GALLERY */
+        /* GALLERY SLIDE */
         .gallery-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
+            width: 100%;
         }
-        .gallery-card {
-            aspect-ratio: 1; position: relative; overflow: hidden;
-            border: 2px solid #333; transition: 0.3s;
-        }
-        .gallery-card img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.5s;
-        }
-        .gallery-card:hover { border-color: var(--neon-pink); box-shadow: 0 0 20px rgba(255,0,85,0.4); }
-        .gallery-card:hover img { transform: scale(1.1); }
+        .gallery-item { aspect-ratio: 1; border: 1px solid var(--gold-mute); overflow: hidden; opacity: 0; transform: scale(0.9); }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+        .gallery-item:hover img { transform: scale(1.1); }
 
-        .gallery-overlay {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            padding: 1rem; background: rgba(0,0,0,0.8);
-            transform: translateY(100%); transition: 0.3s;
-            font-family: 'Orbitron'; font-size: 0.8rem; color: var(--neon-pink);
-        }
-        .gallery-card:hover .gallery-overlay { transform: translateY(0); }
+        /* FINAL SLIDE */
+        .final-layout { text-align: center; }
+        .social-row { display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; }
+        .social-btn { font-size: 2rem; color: var(--gold-bright); transition: 0.3s; }
+        .social-btn:hover { transform: scale(1.2); color: #fff; }
 
-        /* FOOTER */
-        .footer {
-            padding: 4rem 0; text-align: center;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.8);
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .hero-layout { flex-direction: column; text-align: center; }
+            .avatar-frame { width: 200px; height: 200px; margin: 0 auto; }
+            .tactical-grid { grid-template-columns: 1fr; }
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        .social-links { display: flex; justify-content: center; gap: 2rem; margin-top: 2rem; }
-        .social-btn {
-            font-size: 2rem; color: #fff; transition: 0.3s;
-        }
-        .social-btn:hover { color: var(--neon-cyan); transform: scale(1.2); text-shadow: 0 0 15px var(--neon-cyan); }
-
-        /* EASTER EGG */
-        .egg-trigger {
-            font-size: 3rem; cursor: pointer; display: inline-block; margin-top: 2rem;
-            transition: transform 0.3s;
-        }
-        .egg-trigger:hover { transform: scale(1.2) rotate(10deg); }
-
-        #pooh-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.5s;
-        }
-        #pooh-overlay.visible { opacity: 1; pointer-events: auto; }
-        .pooh-svg { width: 250px; height: 250px; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
     </style>
 </head>
 <body>
 
-    <!-- 1. BACKGROUND -->
     <canvas id="webgl-canvas"></canvas>
-    <div class="scanline-overlay"></div>
 
-    <!-- 2. CONTENT -->
-    <div class="container">
-
-        <!-- HERO -->
-        <section class="hero">
-            <div class="hero-avatar-wrapper">
-                <div class="hero-ring"></div>
-                <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu" class="hero-avatar">
-            </div>
-            <h1 class="hero-title">LO YU</h1>
-            <div class="hero-subtitle">CYBER-WEAVER // ANALYST // STRATEGIST</div>
-            <div class="hero-bio">
-                <p>專注於人際關係的行銷策劃師。擅長處理人際問題與跨世代溝通，透過線上課程教授如何運用自身優勢、學習說話技巧，與陌生人建立良好連結。</p>
-            </div>
-        </section>
-
-        <!-- ABOUT SPLIT -->
-        <section id="about">
-            <div class="grid-split">
-                <!-- ANALYST -->
-                <div class="glass-panel" data-animate="slide-right">
-                    <h2 class="section-title">SYSTEM_ANALYST</h2>
-                    <p style="margin-bottom: 2rem;">將人際溝通技巧運用於職場，提升合作與人緣。幫助人們透過模仿技巧、讚美、良好聆聽，快速建立共鳴。</p>
-
-                    <div class="skill-item">
-                        <div class="skill-header"><span>COMMUNICATION</span><span>98%</span></div>
-                        <div class="skill-track"><div class="skill-bar" style="width: 98%"></div></div>
-                    </div>
-                    <div class="skill-item">
-                        <div class="skill-header"><span>MARKETING</span><span>90%</span></div>
-                        <div class="skill-track"><div class="skill-bar" style="width: 90%"></div></div>
-                    </div>
-                    <div class="skill-item">
-                        <div class="skill-header"><span>LOGIC (INTJ)</span><span>100%</span></div>
-                        <div class="skill-track"><div class="skill-bar" style="width: 100%"></div></div>
-                    </div>
-                </div>
-
-                <!-- WEAVER -->
-                <div class="glass-panel" style="border-bottom: 4px solid var(--warm-gold);" data-animate="slide-left">
-                    <h2 class="section-title warm">THE WEAVER</h2>
-                    <p>我希望透過我的手作，能讓人們帶來幸福。期望我的朋友們在收到作品時，能夠會心一笑。<br>日文的雞蛋寫作玉子，正好我的名字之中有玉這個字。</p>
-
-                    <div class="weaver-tags">
-                        <span class="tag">#Crochet</span>
-                        <span class="tag">#Handmade</span>
-                        <span class="tag">#WinnieThePooh</span>
-                        <span class="tag">#EggLover</span>
-                        <span class="tag">#Happiness</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- GALLERY -->
-        <section id="gallery">
-            <h2 class="section-title" style="text-align: center;">PROJECT_ARCHIVE</h2>
-            <div class="gallery-grid">
-                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_01.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_01</div></div>
-                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_02.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_02</div></div>
-                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_03.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_03</div></div>
-                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_04.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_04</div></div>
-                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_05.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_05</div></div>
-                <div class="gallery-card"><img src="/assets/img/guild/loyu/gallery_06.webp" loading="lazy"><div class="gallery-overlay">ARCHIVE_06</div></div>
-            </div>
-        </section>
-
-        <!-- FOOTER -->
-        <footer class="footer">
-            <h2 style="font-family: 'Orbitron'; color: var(--neon-cyan);">INITIALIZE_CONNECTION</h2>
-            <div class="social-links">
-                <a href="https://www.threads.com/@loyu1230" target="_blank" rel="noopener noreferrer" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/loyu1230/" target="_blank" rel="noopener noreferrer" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" rel="noopener noreferrer" class="social-btn"><i class="fa-solid fa-globe"></i></a>
-            </div>
-
-            <div class="egg-trigger" onclick="toggleEgg()">🥚</div>
-            <p style="margin-top: 1rem; color: #555; font-size: 0.8rem;">Click the egg to hatch happiness.</p>
-        </footer>
-
+    <!-- HUD -->
+    <div class="hud-layer">
+        <div class="hud-top">
+            <div class="logo-text">LO YU</div>
+            <div style="font-family: monospace;">SYS.STATUS: ONLINE</div>
+        </div>
+        <div class="hud-bottom">
+            <div style="font-family: monospace;">COORD: <span id="coord-display">000.000</span></div>
+            <div class="scroll-indicator">FOLLOW THE THREAD ↓</div>
+        </div>
     </div>
 
-    <!-- EASTER EGG OVERLAY -->
-    <div id="pooh-overlay">
-        <svg viewBox="0 0 100 100" class="pooh-svg">
-            <circle cx="50" cy="50" r="45" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
-            <circle cx="20" cy="25" r="15" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
-            <circle cx="80" cy="25" r="15" fill="#ffd700" stroke="#c5a000" stroke-width="2" />
-            <circle cx="35" cy="45" r="4" fill="#000" />
-            <circle cx="65" cy="45" r="4" fill="#000" />
-            <path d="M45 55 Q50 60 55 55 L50 65 Z" fill="#000" />
-            <path d="M35 70 Q50 85 65 70" stroke="#000" stroke-width="3" fill="none" stroke-linecap="round" />
-            <path d="M15 80 Q50 110 85 80 L85 100 L15 100 Z" fill="#ff0000" />
-        </svg>
-        <h2 style="font-family: 'Orbitron'; margin-top: 2rem; color: var(--warm-gold);">SECRET_FOUND</h2>
-        <p style="font-size: 1.5rem; margin-bottom: 2rem;">"Sometimes the smallest things take up the most room in your heart."</p>
-        <button onclick="toggleEgg()" style="padding: 10px 30px; background: transparent; border: 2px solid var(--neon-cyan); color: var(--neon-cyan); font-family: 'Orbitron'; cursor: pointer;">CLOSE_STREAM</button>
+    <!-- DRIVER -->
+    <div class="scroll-driver"></div>
+
+    <!-- CONTENT SLIDES -->
+    <div class="content-layer">
+
+        <!-- 1. HERO -->
+        <div class="slide active" id="slide-0">
+            <div class="hero-layout">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu" class="hero-img">
+                </div>
+                <div class="hero-text">
+                    <h1>羅玉 LO YU</h1>
+                    <h2>The Tactical Weaver</h2>
+                    <p class="hero-desc">
+                        專注於人際關係的行銷策劃師。<br>
+                        前國軍招募專員 / 知識平台處長 / 牛津能力分析師。<br>
+                        用嚴謹的邏輯與溫暖的編織，連結人與人的心。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ANALYST (Logic) -->
+        <div class="slide" id="slide-1">
+            <div class="analyst-layout">
+                <h2 style="font-family: 'Cinzel'; font-size: 2.5rem; color: var(--gold-bright); margin-bottom: 1rem;">STRATEGIC ANALYST</h2>
+                <p style="font-size: 1.1rem; max-width: 600px;">
+                    將軍事般的精準度帶入人際溝通。擅長分析跨世代語境，找出連結斷點，並制定修復策略。
+                </p>
+                <div class="tactical-grid">
+                    <div class="stat-box">
+                        <h3>RECRUITMENT</h3>
+                        <p>前國軍人才招募專員<br>識人術與談判技巧</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>ANALYSIS</h3>
+                        <p>牛津能力分析師<br>數據化人格特質</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>STRATEGY</h3>
+                        <p>人際關係訓練<br>社交恐懼克服與職場應用</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. WEAVER (Art) -->
+        <div class="slide" id="slide-2">
+            <div class="weaver-layout">
+                <div class="quote-box">"Weaving happiness, one loop at a time."</div>
+                <p style="max-width: 600px; margin: 0 auto 2rem; font-size: 1.1rem;">
+                    卸下分析師的理性，我是熱愛雞蛋與維尼的編織者。<br>
+                    日文的雞蛋寫作「玉子」，我的名字也有「玉」。<br>
+                    我希望透過手作，傳遞那份純粹的溫暖與美好。
+                </p>
+                <div style="font-family: 'Cinzel'; color: var(--gold-mute);">
+                    INTJ // HANDMADE // WINNIE THE POOH
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. GALLERY -->
+        <div class="slide" id="slide-3">
+            <div style="text-align: center; width: 100%;">
+                <h2 style="font-family: 'Cinzel'; margin-bottom: 2rem; color: var(--gold-bright);">PORTFOLIO ARCHIVE</h2>
+                <div class="gallery-grid">
+                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_01.webp"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_02.webp"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_03.webp"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_04.webp"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_05.webp"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_06.webp"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. FINALE -->
+        <div class="slide" id="slide-4">
+            <div class="final-layout">
+                <h2 style="font-family: 'Cinzel'; font-size: 3rem; color: var(--gold-bright);">INITIATE LINK</h2>
+                <p style="margin-top: 1rem; color: #ccc;">與陌生人建立良好連結，並保持舒適的社交距離。</p>
+
+                <div class="social-row">
+                    <a href="https://www.threads.com/@loyu1230" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/loyu1230/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" class="social-btn"><i class="fa-solid fa-globe"></i></a>
+                </div>
+
+                <div style="margin-top: 3rem; opacity: 0.5;">
+                    <i class="fa-solid fa-egg" style="font-size: 2rem; color: var(--gold-bright);"></i>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- SCRIPTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // === TOGGLE EGG ===
-        function toggleEgg() {
-            document.getElementById('pooh-overlay').classList.toggle('visible');
+        // === CONFIG ===
+        const CONFIG = {
+            lineColor: 0xffd700,
+            bgColor: 0x0a1128,
+            pipeSegments: 200,
+            pipeRadius: 0.3,
+            camSpeed: 0.0005
+        };
+
+        // === SCENE SETUP ===
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(CONFIG.bgColor, 0.02);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl-canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(CONFIG.bgColor);
+
+        // === THE THREAD (Spline) ===
+        // Define a complex path: Origin -> Straight (Logic) -> Curve (Weave) -> Spiral (Finale)
+        const points = [];
+
+        // 1. Origin Burst
+        points.push(new THREE.Vector3(0, 0, 0));
+        points.push(new THREE.Vector3(0, 0, -20)); // Zoom out
+
+        // 2. Logic (Sharp turns)
+        points.push(new THREE.Vector3(10, 5, -40));
+        points.push(new THREE.Vector3(-10, 5, -60));
+        points.push(new THREE.Vector3(-10, -5, -80));
+        points.push(new THREE.Vector3(10, -5, -100));
+
+        // 3. Weaving (Curves)
+        for (let i = 0; i < 20; i++) {
+            const angle = i * 0.5;
+            const z = -120 - (i * 5);
+            const x = Math.sin(angle) * 15;
+            const y = Math.cos(angle) * 15;
+            points.push(new THREE.Vector3(x, y, z));
         }
 
-        // === THREE.JS BACKGROUND ===
-        // Robust, non-interfering background scene
-        const canvas = document.getElementById('webgl-canvas');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        // 4. Finale (Straight)
+        points.push(new THREE.Vector3(0, 0, -250));
 
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        camera.position.z = 30;
-
-        // Objects
-        const group = new THREE.Group();
-        scene.add(group);
-
-        // 1. Wireframe Globe (The Logic World)
-        const geometry = new THREE.IcosahedronGeometry(15, 1);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x0044aa,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.1
+        const curve = new THREE.CatmullRomCurve3(points);
+        const tubeGeo = new THREE.TubeGeometry(curve, CONFIG.pipeSegments, CONFIG.pipeRadius, 8, false);
+        const tubeMat = new THREE.MeshStandardMaterial({
+            color: CONFIG.lineColor,
+            emissive: 0xaa8800,
+            roughness: 0.3,
+            metalness: 0.8
         });
-        const sphere = new THREE.Mesh(geometry, material);
-        group.add(sphere);
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(tube);
 
-        // 2. Golden Particles (The Warmth)
-        const pGeo = new THREE.BufferGeometry();
-        const pCount = 300;
+        // === PARTICLES (The Egg Explosion / Dust) ===
+        const particlesGeo = new THREE.BufferGeometry();
+        const pCount = 500;
         const pPos = new Float32Array(pCount * 3);
         for(let i=0; i<pCount*3; i++) {
-            pPos[i] = (Math.random() - 0.5) * 60;
+            pPos[i] = (Math.random() - 0.5) * 100;
         }
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({
-            size: 0.15, color: 0xffd700, transparent: true, opacity: 0.6
-        });
-        const particles = new THREE.Points(pGeo, pMat);
-        group.add(particles);
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const particlesMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.5 });
+        const particles = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particles);
 
-        // Animation
-        function animate() {
-            requestAnimationFrame(animate);
+        // === LIGHTS ===
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
 
-            group.rotation.y += 0.001;
-            group.rotation.x += 0.0005;
+        const pointLight = new THREE.PointLight(CONFIG.lineColor, 1, 50);
+        scene.add(pointLight); // Will follow camera
 
-            // Subtle "breathing"
-            const scale = 1 + Math.sin(Date.now() * 0.001) * 0.05;
-            sphere.scale.setScalar(scale);
+        // === SCROLL SYNC ===
+        let scrollPercent = 0;
+        const driver = document.querySelector('.scroll-driver');
+        const slides = document.querySelectorAll('.slide');
 
-            renderer.render(scene, camera);
+        function updateScroll() {
+            const h = document.documentElement;
+            const st = window.pageYOffset || h.scrollTop;
+            const sh = h.scrollHeight || document.body.scrollHeight;
+            scrollPercent = st / (sh - h.clientHeight);
+
+            // Camera Path
+            const p1 = curve.getPointAt(scrollPercent);
+            const p2 = curve.getPointAt(Math.min(scrollPercent + 0.05, 1)); // Look ahead
+
+            camera.position.copy(p1);
+            camera.lookAt(p2);
+
+            // Move Light with Camera
+            pointLight.position.copy(p1);
+
+            // Update HUD
+            document.getElementById('coord-display').innerText = `${p1.x.toFixed(2)} / ${p1.z.toFixed(2)}`;
+
+            // Slide Transition Logic
+            // Map scrollPercent (0-1) to slides (0-4)
+            const totalSlides = slides.length;
+            // Zones: 0-0.15 (Hero), 0.15-0.35 (Analyst), 0.35-0.6 (Weaver), 0.6-0.85 (Gallery), 0.85-1 (Finale)
+            let activeIndex = -1;
+
+            if (scrollPercent < 0.15) activeIndex = 0;
+            else if (scrollPercent < 0.35) activeIndex = 1;
+            else if (scrollPercent < 0.60) activeIndex = 2;
+            else if (scrollPercent < 0.85) activeIndex = 3;
+            else activeIndex = 4;
+
+            slides.forEach((slide, i) => {
+                if (i === activeIndex) {
+                    slide.classList.add('active');
+                    slide.classList.remove('exit');
+                    // Animate gallery children staggered
+                    if (i === 3) {
+                        const items = slide.querySelectorAll('.gallery-item');
+                        items.forEach((item, k) => {
+                            setTimeout(() => { item.style.opacity = 1; item.style.transform = 'scale(1)'; }, k * 100);
+                        });
+                    }
+                } else if (i < activeIndex) {
+                    slide.classList.add('exit');
+                    slide.classList.remove('active');
+                } else {
+                    slide.classList.remove('active');
+                    slide.classList.remove('exit');
+                }
+            });
         }
-        animate();
 
-        // Resize
+        window.addEventListener('scroll', updateScroll);
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // === SIMPLE SCROLL REVEAL (Vanilla JS, no heavy libs for logic) ===
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    // Just a hook for CSS transitions if needed
-                    entry.target.style.opacity = 1;
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, { threshold: 0.1 });
-
-        document.querySelectorAll('.glass-panel, .gallery-card').forEach(el => {
-            el.style.opacity = 0;
-            el.style.transform = 'translateY(20px)';
-            el.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
-            observer.observe(el);
-        });
+        // Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            particles.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate();
+        updateScroll(); // Init
 
     </script>
 </body>
