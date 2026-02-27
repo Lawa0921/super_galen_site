@@ -3,31 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>原色⭐︎ふぁんたじー | CMY Fantasy | KAWAII STAGE!</title>
+    <title>原色⭐︎ふぁんたじー | CMY Fantasy | AKIBA LIVE!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Kiwi+Maru:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --pink: #ff9ecc;
-            --hot-pink: #ff69b4;
-            --cyan: #a0e8ef;
-            --yellow: #fffacd;
+            --pop-pink: #ff1493;
+            --pop-cyan: #00ffff;
+            --pop-yellow: #ffd700;
             --white: #ffffff;
-            --text: #5d4037;
+            --black: #222222;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: linear-gradient(135deg, #fff0f5, #e0ffff);
-            color: var(--text);
+            background-color: var(--white);
+            color: var(--black);
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
+            /* Manga Speed Lines Background */
+            background-image: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 100px,
+                rgba(0, 255, 255, 0.05) 100px,
+                rgba(0, 255, 255, 0.05) 102px
+            ),
+            repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 100px,
+                rgba(255, 20, 147, 0.05) 100px,
+                rgba(255, 20, 147, 0.05) 102px
+            );
         }
 
         #canvas-container {
@@ -45,6 +59,9 @@
             overflow: hidden;
         }
 
+        /* --- TYPOGRAPHY --- */
+        h1, h2, h3 { font-family: 'Dela Gothic One', sans-serif; text-transform: uppercase; }
+
         /* --- HERO SECTION --- */
         .hero-section {
             min-height: 100vh;
@@ -52,52 +69,47 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
             position: relative;
         }
 
-        .hero-bg-circle {
-            position: absolute;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
-            border-radius: 50%;
-            z-index: -1;
-            animation: pulse 3s infinite ease-in-out;
+        .hero-banner {
+            background: var(--white);
+            border: 8px solid var(--black);
+            padding: 3rem 5rem;
+            transform: skew(-5deg) rotate(-3deg);
+            box-shadow: 15px 15px 0 var(--pop-pink);
+            position: relative;
+            z-index: 2;
+            animation: hero-bounce 2s infinite ease-in-out;
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 0.6; }
+        @keyframes hero-bounce {
+            0%, 100% { transform: skew(-5deg) rotate(-3deg) translateY(0); }
+            50% { transform: skew(-5deg) rotate(-3deg) translateY(-15px); }
         }
 
         .hero-title {
-            font-family: 'Kiwi Maru', serif;
-            font-weight: 900;
-            font-size: clamp(3rem, 8vw, 6rem);
-            color: var(--hot-pink);
-            text-shadow: 4px 4px 0 var(--white), 8px 8px 0 var(--cyan);
-            margin-bottom: 1rem;
-            animation: float 3s ease-in-out infinite;
+            font-size: clamp(3rem, 10vw, 7rem);
+            line-height: 0.9;
+            color: var(--black);
+            -webkit-text-stroke: 3px var(--white); /* Fallback */
+            text-shadow: 5px 5px 0 var(--pop-cyan);
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(-2deg); }
-            50% { transform: translateY(-15px) rotate(2deg); }
-        }
-
-        .hero-subtitle {
+        .hero-sub {
+            background: var(--pop-yellow);
+            color: var(--black);
             font-size: clamp(1.2rem, 3vw, 2rem);
-            background: var(--white);
-            color: var(--hot-pink);
-            padding: 0.5rem 2rem;
-            border-radius: 50px;
-            border: 3px solid var(--cyan);
-            box-shadow: 5px 5px 0 var(--pink);
-            font-weight: bold;
+            padding: 0.5rem 1.5rem;
+            position: absolute;
+            bottom: -20px; right: -30px;
+            border: 4px solid var(--black);
+            transform: rotate(5deg);
+            font-weight: 900;
         }
 
-        /* --- IDOL CARDS --- */
-        .idol-section {
+        /* --- PROFILE CARDS (Trading Card Style) --- */
+        .profile-section {
             padding: 6rem 2rem;
             display: flex;
             justify-content: center;
@@ -105,309 +117,245 @@
             gap: 4rem;
         }
 
-        .idol-card {
+        .trading-card {
+            width: 320px;
             background: var(--white);
-            width: 100%;
-            max-width: 450px;
+            border: 6px solid var(--black);
+            border-radius: 20px;
+            padding: 1.5rem;
+            position: relative;
+            box-shadow: 12px 12px 0 var(--black);
+            transition: transform 0.2s;
+        }
+
+        .trading-card:hover { transform: translateY(-10px) rotate(2deg); }
+        .trading-card.cyan { box-shadow: 12px 12px 0 var(--pop-cyan); }
+        .trading-card.magenta { box-shadow: 12px 12px 0 var(--pop-pink); }
+
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem; border-bottom: 4px dashed #ddd; padding-bottom: 0.5rem;
+        }
+        .card-rank { font-weight: 900; font-size: 1.5rem; color: var(--pop-yellow); -webkit-text-stroke: 1px var(--black); }
+        .card-type { background: var(--black); color: var(--white); padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+
+        .card-img-box {
+            width: 100%; aspect-ratio: 1;
+            background: #eee;
+            border: 4px solid var(--black);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .card-img-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        .card-name { font-size: 2rem; text-align: center; margin-bottom: 0.5rem; color: var(--black); }
+
+        .card-stats {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+            background: rgba(0,0,0,0.05); padding: 0.8rem; border-radius: 8px;
+        }
+        .stat-box { text-align: center; }
+        .stat-val { font-family: 'Dela Gothic One'; font-size: 1.2rem; color: var(--pop-pink); }
+        .stat-lbl { font-size: 0.7rem; font-weight: bold; }
+
+        /* --- STICKER DECORATIONS --- */
+        .sticker {
+            position: absolute;
+            background: var(--white);
+            border: 3px solid var(--black);
+            padding: 0.5rem 1rem;
+            font-weight: 900;
+            border-radius: 50px;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+            z-index: 5;
+            font-size: 0.9rem;
+        }
+        .sticker.s1 { top: -20px; left: -20px; transform: rotate(-15deg); background: var(--pop-yellow); }
+        .sticker.s2 { bottom: -15px; right: -15px; transform: rotate(10deg); background: var(--pop-cyan); }
+
+        /* --- QUEST BOARD --- */
+        .quest-section {
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+
+        .quest-board {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--pop-pink);
+            border: 8px solid var(--black);
             border-radius: 30px;
-            padding: 2rem;
+            padding: 3rem;
+            color: var(--white);
             position: relative;
-            border: 4px solid var(--white);
-            box-shadow: 10px 10px 0 var(--pink), inset 0 0 20px rgba(255,182,193,0.2);
-            transition: transform 0.3s;
-            overflow: hidden;
+            box-shadow: 0 20px 0 rgba(0,0,0,0.2);
         }
 
-        .idol-card:hover { transform: translateY(-10px) rotate(1deg); }
-
-        .idol-card::before {
-            content: '♥';
-            position: absolute;
-            top: -10px; right: -10px;
-            font-size: 4rem;
-            color: var(--cyan);
-            opacity: 0.3;
-            transform: rotate(20deg);
+        .quest-board::before {
+            content: ''; position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border: 4px dashed var(--white); border-radius: 20px; pointer-events: none;
         }
 
-        .idol-avatar-frame {
-            width: 180px; height: 180px;
-            margin: 0 auto 1.5rem;
-            border-radius: 50%;
-            border: 6px solid var(--cyan);
-            overflow: hidden;
-            background: var(--white);
-        }
-        .idol-avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .quest-title { font-size: 3rem; margin-bottom: 1.5rem; text-shadow: 4px 4px 0 var(--black); }
+        .quest-text { font-size: 1.2rem; line-height: 1.8; font-weight: bold; }
 
-        .idol-name {
-            font-size: 2.5rem;
-            text-align: center;
-            color: var(--hot-pink);
-            margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 0 var(--white);
-        }
-
-        .idol-stats {
-            background: #f9f9f9;
-            border-radius: 15px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            border: 2px dashed var(--pink);
-        }
-
-        .stat-row {
-            display: flex; align-items: center; margin-bottom: 0.5rem; font-weight: bold; font-size: 0.9rem;
-        }
-        .stat-label { width: 60px; color: var(--text); }
-        .stat-bar-bg { flex: 1; height: 12px; background: #eee; border-radius: 10px; overflow: hidden; }
-        .stat-bar-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--hot-pink)); border-radius: 10px; }
-
-        .idol-desc {
-            font-size: 1rem;
-            line-height: 1.6;
-            text-align: center;
-            color: var(--text);
-        }
-
-        /* --- RIBBON DECORATION --- */
-        .ribbon-deco {
-            position: absolute;
-            top: -15px; left: 50%; transform: translateX(-50%);
-            width: 120px; height: 40px;
-            background: var(--hot-pink);
-            color: white;
-            display: flex; justify-content: center; align-items: center;
-            font-weight: bold;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%);
-            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
-        }
-
-        /* --- GALLERY --- */
-        .gallery-section {
-            padding: 4rem 2rem;
-            text-align: center;
-        }
-
-        .section-title {
-            font-size: 3rem;
-            color: var(--cyan);
-            text-shadow: 3px 3px 0 var(--white), 6px 6px 0 var(--pink);
-            margin-bottom: 3rem;
+        .quest-btn {
             display: inline-block;
-            position: relative;
+            margin-top: 2rem;
+            background: var(--pop-yellow);
+            color: var(--black);
+            padding: 1rem 3rem;
+            font-family: 'Dela Gothic One';
+            font-size: 1.5rem;
+            text-decoration: none;
+            border: 4px solid var(--black);
+            box-shadow: 8px 8px 0 var(--black);
+            transition: 0.1s;
+            transform: rotate(-2deg);
         }
+        .quest-btn:hover { transform: translate(4px, 4px) rotate(-2deg); box-shadow: 0 0 0 var(--black); }
 
-        .section-title::after {
-            content: '✨';
-            position: absolute; top: -20px; right: -30px; font-size: 2rem;
-        }
-
+        /* --- GALLERY GRID --- */
+        .gallery-section { padding: 4rem 2rem; }
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
+            gap: 1rem;
             max-width: 1000px;
             margin: 0 auto;
         }
-
-        .gallery-item {
-            aspect-ratio: 1;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 4px solid var(--white);
-            box-shadow: 5px 5px 0 var(--cyan);
+        .gallery-cell {
+            background: var(--black);
+            padding: 0.5rem;
+            transform: rotate(var(--r));
             transition: 0.3s;
-            background: var(--white);
         }
+        .gallery-cell:hover { transform: scale(1.1) rotate(0deg); z-index: 10; }
+        .gallery-cell img { width: 100%; height: 100%; object-fit: cover; border: 2px solid var(--white); }
 
-        .gallery-item img {
-            width: 100%; height: 100%; object-fit: cover; transition: 0.5s;
-        }
-
-        .gallery-item:hover { transform: scale(1.05) rotate(2deg); box-shadow: 8px 8px 0 var(--hot-pink); z-index: 5; }
-
-        /* --- CTA / FOOTER --- */
-        .cta-section {
-            padding: 6rem 2rem;
-            text-align: center;
-            background: url('data:image/svg+xml;utf8,<svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="2" fill="%23ffffff" opacity="0.4"/></svg>');
-        }
-
-        .producer-card {
-            background: var(--white);
-            display: inline-block;
-            padding: 3rem 4rem;
-            border-radius: 40px;
-            border: 5px solid var(--hot-pink);
-            box-shadow: 0 10px 30px rgba(255,105,180,0.3);
-            max-width: 800px;
-        }
-
-        .cta-btn {
-            display: inline-block;
-            margin-top: 2rem;
-            background: linear-gradient(45deg, var(--hot-pink), var(--pink));
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            padding: 1rem 3rem;
-            border-radius: 50px;
-            text-decoration: none;
-            box-shadow: 0 5px 15px rgba(255,105,180,0.4);
-            transition: 0.3s;
-            border: 2px solid white;
-        }
-
-        .cta-btn:hover {
-            transform: scale(1.1) rotate(-2deg);
-            box-shadow: 0 10px 25px rgba(255,105,180,0.6);
-        }
-
-        .social-row {
-            margin-top: 2rem;
-            display: flex; justify-content: center; gap: 1rem;
-        }
-
-        .social-icon {
-            width: 50px; height: 50px;
-            background: var(--cyan);
-            color: white;
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-weight: bold; text-decoration: none;
-            transition: 0.2s;
-            border: 2px solid white;
-            box-shadow: 3px 3px 0 var(--text);
-        }
-        .social-icon:hover { transform: translateY(-5px); background: var(--hot-pink); }
-
+        /* --- NAV --- */
         .nav-back {
-            position: fixed;
-            top: 1.5rem; left: 1.5rem;
-            background: var(--white);
-            color: var(--hot-pink);
+            position: fixed; top: 1.5rem; left: 1.5rem;
+            background: var(--black); color: var(--pop-yellow);
             padding: 0.5rem 1.2rem;
-            border-radius: 20px;
-            text-decoration: none;
-            font-weight: bold;
-            border: 2px solid var(--pink);
-            box-shadow: 3px 3px 0 var(--cyan);
-            transition: 0.2s;
+            font-weight: 900; text-decoration: none;
+            border: 3px solid var(--pop-yellow);
             z-index: 100;
+            transform: skew(-10deg);
         }
-        .nav-back:hover { transform: scale(1.1); box-shadow: 5px 5px 0 var(--cyan); }
 
-        /* Loader */
+        /* --- LOADER --- */
         #loader {
-            position: fixed; inset: 0; background: var(--pink); z-index: 9999;
+            position: fixed; inset: 0; background: var(--pop-cyan); z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            transition: opacity 0.8s;
+            transition: transform 0.6s cubic-bezier(0.8, 0, 0.2, 1);
+            transform-origin: bottom;
         }
-        .heart-beat { font-size: 4rem; animation: beat 0.8s infinite; }
-        @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        .loader-text { font-family: 'Dela Gothic One'; font-size: 4rem; color: var(--white); -webkit-text-stroke: 2px var(--black); }
 
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="heart-beat">💖</div></div>
-    <a href="/guild/" class="nav-back">← GUILD</a>
+    <div id="loader"><div class="loader-text">READY?</div></div>
+    <a href="/guild/" class="nav-back">← BACK</a>
     <div id="canvas-container"></div>
 
     <main>
+        <!-- Hero -->
         <section class="hero-section">
-            <div class="hero-bg-circle"></div>
-            <h1 class="hero-title">原色<br>ふぁんたじー</h1>
-            <div class="hero-subtitle">KAWAII IDOL UNIT ✨ START!</div>
+            <div class="hero-banner">
+                <h1 class="hero-title">CMY<br>FANTASY</h1>
+                <div class="hero-sub">AKIBA IDOL PROJECT</div>
+            </div>
         </section>
 
-        <section class="idol-section" id="idols">
+        <!-- Profiles -->
+        <section class="profile-section">
             <!-- Xiao Miao -->
-            <div class="idol-card">
-                <div class="ribbon-deco">MEMBER</div>
-                <div class="idol-avatar-frame">
+            <div class="trading-card cyan">
+                <div class="sticker s1">Cute!</div>
+                <div class="card-header">
+                    <span class="card-rank">SSR</span>
+                    <span class="card-type">IDOL</span>
+                </div>
+                <div class="card-img-box">
                     <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" alt="Xiao Miao">
                 </div>
-                <h2 class="idol-name">筱喵</h2>
-                <div class="idol-stats">
-                    <div class="stat-row">
-                        <span class="stat-label">萌度</span>
-                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 95%"></div></div>
+                <h2 class="card-name">筱喵</h2>
+                <div class="card-stats">
+                    <div class="stat-box">
+                        <div class="stat-val">99</div>
+                        <div class="stat-lbl">MOE</div>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">食量</span>
-                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 90%"></div></div>
+                    <div class="stat-box">
+                        <div class="stat-val">MAX</div>
+                        <div class="stat-lbl">EAT</div>
                     </div>
                 </div>
-                <p class="idol-desc">
-                    嗨嗨！我是筱喵！🐱<br>
-                    雖然看起來呆呆的，<br>但站上舞台就會閃閃發光喔！✨<br>
-                    #吃貨 #Cosplay #日系偶像
+                <p style="margin-top:1rem; text-align:center; font-weight:bold;">
+                    吃貨擔當！<br>希望能用笑容感染每一個觀眾！
                 </p>
             </div>
 
             <!-- Ting Ting -->
-            <div class="idol-card">
-                <div class="ribbon-deco">MEMBER</div>
-                <div class="idol-avatar-frame">
+            <div class="trading-card magenta">
+                <div class="sticker s2">Pop!</div>
+                <div class="card-header">
+                    <span class="card-rank">SSR</span>
+                    <span class="card-type">DANCE</span>
+                </div>
+                <div class="card-img-box">
                     <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" alt="Ting Ting">
                 </div>
-                <h2 class="idol-name">婷婷</h2>
-                <div class="idol-stats">
-                    <div class="stat-row">
-                        <span class="stat-label">元氣</span>
-                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 98%"></div></div>
+                <h2 class="card-name">婷婷</h2>
+                <div class="card-stats">
+                    <div class="stat-box">
+                        <div class="stat-val">100</div>
+                        <div class="stat-lbl">ENERGY</div>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">舞力</span>
-                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width: 92%"></div></div>
+                    <div class="stat-box">
+                        <div class="stat-val">MAX</div>
+                        <div class="stat-lbl">POWER</div>
                     </div>
                 </div>
-                <p class="idol-desc">
-                    Hello！我是婷婷！💃<br>
-                    充滿活力的舞蹈擔當！<br>
-                    讓我們一起創造最棒的回憶吧！💖<br>
-                    #舞蹈 #舞台 #元氣滿滿
+                <p style="margin-top:1rem; text-align:center; font-weight:bold;">
+                    舞蹈擔當！<br>讓我們一起High翻全場吧！
                 </p>
             </div>
         </section>
 
-        <section class="gallery-section">
-            <h2 class="section-title">STAGE MEMORIES</h2>
-            <div class="gallery-grid">
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_1.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_2.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_3.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_4.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_5.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_6.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_7.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_8.webp"></div>
-            </div>
-        </section>
-
-        <section class="cta-section">
-            <div class="producer-card">
-                <h2 style="color:var(--hot-pink); margin-bottom:1rem;">Dear Producer-san!</h2>
-                <p style="font-size:1.2rem; line-height:1.6;">
+        <!-- Quest -->
+        <section class="quest-section">
+            <div class="quest-board">
+                <h2 class="quest-title">PRODUCER WANTED!</h2>
+                <p class="quest-text">
                     我們是「原色⭐︎ふぁんたじー」！<br>
-                    希望能用我們的表演，帶給你滿滿的笑容！😊<br>
-                    <strong style="color:var(--cyan)">請多多指教！✨</strong>
-                </p>
-                <div style="margin-top:1.5rem; font-size:0.9rem; color:#aaa;">
+                    來自高雄的雙人偶像系 Cosplay 表演團體。<br>
+                    致力於呈現創意與實力之表演內容！<br><br>
                     (若可以放影片的話，可再提供給您 ><)
-                </div>
-
-                <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="cta-btn">成為製作人！</a>
-
-                <div class="social-row">
-                    <a href="https://www.threads.com/@cmy_fantasy" target="_blank" class="social-icon">T</a>
-                    <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="social-icon">IG</a>
-                    <a href="https://www.youtube.com/@cmy_fantasy" target="_blank" class="social-icon">YT</a>
-                </div>
+                </p>
+                <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="quest-btn">JOIN US!</a>
             </div>
         </section>
+
+        <!-- Gallery -->
+        <section class="gallery-section">
+            <h2 style="text-align:center; margin-bottom:2rem; font-size:2.5rem; -webkit-text-stroke:1px var(--black);">LIVE SNAPSHOTS</h2>
+            <div class="gallery-grid">
+                <div class="gallery-cell" style="--r:2deg"><img src="/assets/img/guild/cmy_fantasy/gallery_1.webp"></div>
+                <div class="gallery-cell" style="--r:-1deg"><img src="/assets/img/guild/cmy_fantasy/gallery_2.webp"></div>
+                <div class="gallery-cell" style="--r:3deg"><img src="/assets/img/guild/cmy_fantasy/gallery_3.webp"></div>
+                <div class="gallery-cell" style="--r:-2deg"><img src="/assets/img/guild/cmy_fantasy/gallery_4.webp"></div>
+                <div class="gallery-cell" style="--r:1deg"><img src="/assets/img/guild/cmy_fantasy/gallery_5.webp"></div>
+                <div class="gallery-cell" style="--r:-3deg"><img src="/assets/img/guild/cmy_fantasy/gallery_6.webp"></div>
+                <div class="gallery-cell" style="--r:2deg"><img src="/assets/img/guild/cmy_fantasy/gallery_7.webp"></div>
+                <div class="gallery-cell" style="--r:-1deg"><img src="/assets/img/guild/cmy_fantasy/gallery_8.webp"></div>
+            </div>
+        </section>
+
+        <div style="height:20vh"></div>
     </main>
 
     <script type="importmap">
@@ -423,151 +371,116 @@
         import * as THREE from 'three';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Scene Setup ---
+        // --- Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Light pastel fog for depth
-        scene.fog = new THREE.FogExp2(0xfff0f5, 0.02);
+        // White background for pop feel
+        scene.background = new THREE.Color(0xffffff);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-        camera.position.set(0, 0, 20);
+        camera.position.set(0, 2, 15);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- Toon Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
+        // --- Post Processing (Bloom for glow sticks) ---
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight.position.set(10, 10, 10);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.5;
+        bloomPass.strength = 1.0;
+        bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        // --- Floating Music Notes (Toon Shader) ---
+        const noteGroup = new THREE.Group();
+        const noteGeo = new THREE.TorusGeometry(1, 0.3, 16, 32); // Simple ring note representation
+        const noteMat = new THREE.MeshToonMaterial({ color: 0xff1493 }); // Pop Pink
+        const noteMat2 = new THREE.MeshToonMaterial({ color: 0x00ffff }); // Pop Cyan
+
+        for(let i=0; i<30; i++) {
+            const mesh = new THREE.Mesh(noteGeo, i%2==0 ? noteMat : noteMat2);
+            mesh.position.set(
+                (Math.random()-0.5)*40,
+                (Math.random()-0.5)*30,
+                (Math.random()-0.5)*20
+            );
+            mesh.rotation.x = Math.random()*Math.PI;
+            mesh.rotation.y = Math.random()*Math.PI;
+            mesh.scale.setScalar(Math.random()*0.5 + 0.5);
+            noteGroup.add(mesh);
+        }
+        scene.add(noteGroup);
+
+        // --- "Penlight" Grid Floor ---
+        const floorGroup = new THREE.Group();
+        const geometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 8);
+        const material = new THREE.MeshBasicMaterial({ color: 0xffd700 }); // Yellow glow sticks
+
+        for (let i = 0; i < 100; i++) {
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.x = (Math.random() - 0.5) * 60;
+            mesh.position.y = -5;
+            mesh.position.z = (Math.random() - 0.5) * 40;
+            mesh.userData = { offset: Math.random() * 100, speed: Math.random() * 0.1 + 0.05 };
+            floorGroup.add(mesh);
+        }
+        scene.add(floorGroup);
+
+        // --- Lights ---
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-        // --- Falling Hearts/Stars (Instanced) ---
-        const count = 300;
-        const dummy = new THREE.Object3D();
-
-        // Heart Shape
-        const heartShape = new THREE.Shape();
-        heartShape.moveTo(0, 0);
-        heartShape.bezierCurveTo(0, 0, -0.5, 0.8, -1, 0.8);
-        heartShape.bezierCurveTo(-2, 0.8, -2, -0.5, -2, -0.5);
-        heartShape.bezierCurveTo(-2, -1.5, 0, -3, 0, -3);
-        heartShape.bezierCurveTo(0, -3, 2, -1.5, 2, -0.5);
-        heartShape.bezierCurveTo(2, -0.5, 2, 0.8, 1, 0.8);
-        heartShape.bezierCurveTo(0.5, 0.8, 0, 0, 0, 0);
-
-        const heartGeo = new THREE.ExtrudeGeometry(heartShape, { depth: 0.4, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 });
-        const heartMat = new THREE.MeshToonMaterial({ color: 0xff69b4 }); // Hot Pink
-        const hearts = new THREE.InstancedMesh(heartGeo, heartMat, count);
-
-        // Star Shape
-        const starShape = new THREE.Shape();
-        const pts = 5;
-        const outerRad = 1.2;
-        const innerRad = 0.6;
-        for(let i=0; i<pts*2; i++) {
-            const r = (i%2===0)? outerRad : innerRad;
-            const a = (i / (pts*2)) * Math.PI * 2;
-            starShape.lineTo(Math.cos(a)*r, Math.sin(a)*r);
-        }
-        const starGeo = new THREE.ExtrudeGeometry(starShape, { depth: 0.4, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 });
-        const starMat = new THREE.MeshToonMaterial({ color: 0x00ffff }); // Cyan
-        const stars = new THREE.InstancedMesh(starGeo, starMat, count);
-
-        // Init Positions
-        const instances = [];
-        for(let i=0; i<count; i++) {
-            instances.push({
-                x: (Math.random() - 0.5) * 60,
-                y: (Math.random() - 0.5) * 60,
-                z: (Math.random() - 0.5) * 40 - 10,
-                rotSpeed: Math.random() * 0.05,
-                fallSpeed: Math.random() * 0.1 + 0.02,
-                type: Math.random() > 0.5 ? 'heart' : 'star'
-            });
-        }
-
-        scene.add(hearts);
-        scene.add(stars);
-
-        // --- Animation Loop ---
+        // --- Animate ---
         function animate() {
             requestAnimationFrame(animate);
+            const time = Date.now() * 0.002;
 
-            let hIdx = 0;
-            let sIdx = 0;
+            // Rotate Notes
+            noteGroup.children.forEach(note => {
+                note.rotation.x += 0.02;
+                note.rotation.y += 0.01;
+            });
+            noteGroup.position.y = Math.sin(time) * 0.5;
 
-            for(let i=0; i<count; i++) {
-                const data = instances[i];
+            // Wave Penlights
+            floorGroup.children.forEach(stick => {
+                stick.position.y = -5 + Math.sin(time * stick.userData.speed + stick.userData.offset) * 1.5;
+                stick.scale.y = 1 + Math.sin(time * 5) * 0.5; // Pulse
+            });
 
-                // Fall animation
-                data.y -= data.fallSpeed;
-                if(data.y < -30) data.y = 30; // Reset to top
-
-                dummy.position.set(data.x, data.y, data.z);
-                dummy.rotation.x += data.rotSpeed;
-                dummy.rotation.y += data.rotSpeed;
-                dummy.scale.setScalar(0.5); // Smaller cute size
-                dummy.updateMatrix();
-
-                if(data.type === 'heart') {
-                    hearts.setMatrixAt(hIdx++, dummy.matrix);
-                } else {
-                    stars.setMatrixAt(sIdx++, dummy.matrix);
-                }
-            }
-            hearts.instanceMatrix.needsUpdate = true;
-            stars.instanceMatrix.needsUpdate = true;
-
-            // Camera subtle sway
-            const t = Date.now() * 0.0005;
-            camera.position.x = Math.sin(t) * 1;
-            camera.position.y = Math.cos(t * 0.8) * 1;
+            // Camera Sway
+            camera.position.x = Math.sin(time * 0.2) * 1;
             camera.lookAt(0, 0, 0);
 
-            renderer.render(scene, camera);
+            composer.render();
         }
         animate();
 
         // --- GSAP ---
         window.addEventListener('load', () => {
             const loader = document.getElementById('loader');
-            loader.style.opacity = '0';
-            setTimeout(() => loader.remove(), 1000);
+            loader.style.transform = 'scaleY(0)';
+            setTimeout(()=>loader.remove(), 600);
 
             gsap.registerPlugin(ScrollTrigger);
 
-            // Pop-in cards
-            gsap.utils.toArray('.idol-card').forEach((card, i) => {
-                gsap.from(card, {
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top 85%"
-                    },
-                    y: 100,
-                    opacity: 0,
-                    rotation: i % 2 === 0 ? -5 : 5,
-                    duration: 0.8,
-                    ease: "elastic.out(1, 0.5)"
-                });
+            gsap.from(".trading-card", {
+                scrollTrigger: { trigger: ".profile-section", start: "top 80%" },
+                y: 100, opacity: 0, stagger: 0.2, duration: 0.8, ease: "back.out(1.7)"
             });
 
-            // Gallery bounce
-            gsap.from(".gallery-item", {
-                scrollTrigger: {
-                    trigger: ".gallery-grid",
-                    start: "top 80%"
-                },
-                scale: 0,
-                opacity: 0,
-                stagger: 0.05,
-                duration: 0.5,
-                ease: "back.out(2)"
+            gsap.from(".gallery-cell", {
+                scrollTrigger: { trigger: ".gallery-section", start: "top 80%" },
+                scale: 0, rotation: 180, stagger: 0.05, duration: 0.5, ease: "back.out(1.5)"
             });
         });
 
@@ -575,6 +488,7 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
