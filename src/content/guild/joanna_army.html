@@ -1,42 +1,45 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="light">
+<html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Joanna | Bauhaus Construct</title>
-    <meta name="description" content="Joanna - Visual Communication, Form & Function.">
+    <title>Joanna | CHROME SOUL</title>
+    <meta name="description" content="Joanna - Visual Communication. Liquid Chrome, Piercing, and Chaos.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Archivo+Black&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        'bauhaus-red': '#e22d2d',
-                        'bauhaus-blue': '#004cdd',
-                        'bauhaus-yellow': '#f4d03f',
-                        'bauhaus-black': '#1a1a1a',
-                        'bauhaus-white': '#fdfbf7',
+                        'acid-green': '#ccff00',
+                        'chrome': '#e0e0e0',
+                        'void': '#050505',
+                        'bleach': '#f0f0f5',
                     },
                     fontFamily: {
-                        'display': ['"Archivo Black"', 'sans-serif'],
-                        'sans': ['"Space Grotesk"', 'sans-serif'],
+                        'syne': ['"Syne"', 'sans-serif'],
                         'body': ['"Noto Sans TC"', 'sans-serif'],
                     },
-                    borderWidth: {
-                        '3': '3px',
-                        '6': '6px',
-                    },
                     animation: {
-                        'spin-slow': 'spin 12s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
                     }
                 }
             }
@@ -45,214 +48,229 @@
 
     <style>
         body {
-            background-color: #fdfbf7;
-            color: #1a1a1a;
+            background-color: #050505;
+            color: #e0e0e0;
             overflow-x: hidden;
+            cursor: none; /* Custom Cursor */
         }
 
-        .grid-bg {
-            background-size: 40px 40px;
-            background-image:
-                linear-gradient(to right, rgba(26, 26, 26, 0.1) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(26, 26, 26, 0.1) 1px, transparent 1px);
+        /* Custom Cursor */
+        #cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid #ccff00;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
         }
-
-        .bauhaus-border {
-            border: 3px solid #1a1a1a;
+        .hovered #cursor {
+            width: 50px; height: 50px;
+            background-color: rgba(204, 255, 0, 0.2);
+            border-color: transparent;
         }
-
-        .shape-circle { border-radius: 50%; }
-        .shape-square { border-radius: 0; }
-        .shape-tri { clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
 
         #webgl-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
             z-index: -1;
-            opacity: 0.6;
         }
 
-        #p5-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
+        /* Glassmorphism Cards */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .glass-panel:hover {
+            border-color: rgba(204, 255, 0, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-5px);
         }
 
-        .content-layer {
-            position: relative;
-            z-index: 10;
+        /* Typography Effects */
+        .text-stroke {
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.5);
+            color: transparent;
+            transition: all 0.3s;
+        }
+        .text-stroke:hover {
+            color: #ccff00;
+            -webkit-text-stroke: 0px;
+            text-shadow: 0 0 10px #ccff00;
         }
 
-        .nav-link {
-            position: relative;
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .nav-link::before {
-            content: '';
+        /* Bleach Stain Effect */
+        .bleach-stain {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 0%;
-            background: #1a1a1a;
-            z-index: -1;
-            transition: height 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .nav-link:hover::before { height: 100%; }
-        .nav-link:hover { color: #fdfbf7; }
-
-        /* Asymmetric Grid Layout */
-        .bauhaus-grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 0;
-            border: 3px solid #1a1a1a;
-            background: #fdfbf7;
-        }
-        .grid-cell {
-            padding: 2rem;
-            border: 1px solid #1a1a1a;
-            position: relative;
-            overflow: hidden;
-        }
-        .grid-cell-bold {
-            border: 3px solid #1a1a1a;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(40px);
         }
 
-        .text-vertical {
+        /* Layout Utilities */
+        .vertical-rl {
             writing-mode: vertical-rl;
             text-orientation: mixed;
         }
     </style>
 </head>
-<body class="selection:bg-bauhaus-yellow selection:text-bauhaus-black font-sans grid-bg">
+<body class="selection:bg-acid-green selection:text-black font-body">
 
+    <div id="cursor"></div>
     <div id="webgl-container"></div>
-    <div id="p5-overlay"></div>
 
-    <!-- Nav -->
-    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center p-6 mix-blend-multiply pointer-events-none">
-        <a href="/guild" class="pointer-events-auto nav-link text-xl border-3 border-black bg-white">
-            <i class="fa-solid fa-square text-bauhaus-red text-xs align-middle mr-2"></i>EXIT
+    <!-- Bleach Stains -->
+    <div class="bleach-stain w-96 h-96 top-[-10%] left-[-10%] animate-pulse-slow"></div>
+    <div class="bleach-stain w-[500px] h-[500px] bottom-[-10%] right-[-20%] animate-pulse-slow delay-700"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 p-8 flex justify-between items-center mix-blend-difference text-white pointer-events-none">
+        <a href="/guild" class="pointer-events-auto font-syne font-bold text-xl tracking-widest hover:text-acid-green transition-colors">
+            <i class="fa-solid fa-arrow-left mr-2"></i>EXIT
         </a>
-        <div class="pointer-events-auto flex gap-4">
-             <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="nav-link border-3 border-black bg-white hover:border-bauhaus-blue"><i class="fa-brands fa-instagram"></i></a>
-             <a href="https://www.threads.com/@joanna._.army" target="_blank" class="nav-link border-3 border-black bg-white hover:border-bauhaus-yellow"><i class="fa-brands fa-threads"></i></a>
+        <div class="pointer-events-auto flex gap-6 text-xl">
+            <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="hover:text-acid-green transition-transform hover:scale-125"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.threads.com/@joanna._.army" target="_blank" class="hover:text-acid-green transition-transform hover:scale-125"><i class="fa-brands fa-threads"></i></a>
         </div>
     </nav>
 
-    <main class="content-layer w-full min-h-screen pt-24 pb-20 px-4 md:px-12">
+    <!-- Main Content -->
+    <main class="relative z-10 w-full min-h-screen pt-32 pb-20 px-4 md:px-12 flex flex-col gap-32">
 
-        <!-- Hero Grid -->
-        <div class="bauhaus-grid max-w-7xl mx-auto shadow-[10px_10px_0px_0px_rgba(26,26,26,1)] transform transition-transform duration-500 hover:translate-x-[-5px] hover:translate-y-[-5px] hover:shadow-[15px_15px_0px_0px_rgba(26,26,26,1)]">
-
-            <!-- Title Block -->
-            <div class="col-span-12 md:col-span-8 grid-cell bg-white flex flex-col justify-center min-h-[300px] border-r-3 border-b-3 border-black">
-                <h1 class="font-display text-8xl md:text-9xl leading-none tracking-tighter mix-blend-exclusion text-bauhaus-black">
-                    JOANNA
+        <!-- Hero Section -->
+        <section class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center min-h-[70vh]">
+            <div class="md:col-span-8 relative">
+                <h1 class="font-syne font-extrabold text-7xl md:text-9xl leading-[0.8] tracking-tighter mix-blend-overlay opacity-50 absolute -top-20 -left-10 select-none pointer-events-none">
+                    CHAOS
                 </h1>
-                <h2 class="font-sans font-bold text-2xl md:text-4xl mt-4 text-bauhaus-blue">
-                    FORM <span class="text-bauhaus-red">&</span> FUNCTION
+                <h2 class="font-syne font-bold text-6xl md:text-8xl leading-tight relative z-10 pointer-events-none">
+                    JOANNA<br>
+                    <span class="text-stroke pointer-events-auto cursor-help">VISUAL</span><br>
+                    <span class="text-acid-green">ARTIST</span>
                 </h2>
+                <div class="mt-8 max-w-xl glass-panel p-6 rounded-none border-l-4 border-acid-green">
+                    <p class="text-lg md:text-xl font-light leading-relaxed">
+                        "胡思亂想是日常，天馬行空是技能。"<br>
+                        <span class="text-gray-400 text-sm mt-2 block font-syne tracking-wide">// SYSTEM ERROR: BRAIN_OVERLOAD</span>
+                    </p>
+                </div>
             </div>
 
-            <!-- Avatar Block -->
-            <div class="col-span-12 md:col-span-4 grid-cell bg-bauhaus-yellow flex justify-center items-center border-b-3 border-black p-0 relative overflow-hidden group">
-                <div class="absolute w-full h-full bg-bauhaus-black opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                <img src="/assets/img/guild/joanna_army/avatar.webp" alt="Joanna" class="w-48 h-48 md:w-64 md:h-64 object-cover rounded-full border-6 border-black shadow-[5px_5px_0px_0px_#fff]">
-                <div class="absolute top-4 right-4 w-8 h-8 bg-bauhaus-red rounded-full"></div>
-                <div class="absolute bottom-4 left-4 w-8 h-8 bg-bauhaus-blue transform rotate-45"></div>
+            <!-- Avatar Float -->
+            <div class="md:col-span-4 flex justify-center md:justify-end relative pointer-events-none">
+                <div class="relative w-64 h-64 md:w-80 md:h-80 animate-float pointer-events-auto">
+                    <div class="absolute inset-0 bg-acid-green rounded-full blur-3xl opacity-20"></div>
+                    <img src="/assets/img/guild/joanna_army/avatar.webp" alt="Joanna" class="w-full h-full object-cover rounded-full border-2 border-white/20 grayscale hover:grayscale-0 transition-all duration-700 relative z-10 mix-blend-luminosity">
+
+                    <!-- Decor Elements -->
+                    <div class="absolute -top-10 -right-10 font-syne font-bold text-6xl text-white/10 rotate-12">01</div>
+                    <div class="absolute bottom-0 -left-10 w-20 h-1 bg-acid-green"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Manifesto / Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Card 1: The Creator -->
+            <div class="glass-panel p-8 flex flex-col justify-between h-full min-h-[300px]">
+                <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-bolt"></i></div>
+                <div>
+                    <h3 class="font-syne font-bold text-3xl mb-4 uppercase">Creator</h3>
+                    <p class="text-gray-300 leading-relaxed text-justify">
+                        生活不是提早補眠，就是熬夜把設計作業撐到天亮。創作對我來說是替腦袋找一個出口，讓亂跑的想法有地方落地。
+                    </p>
+                </div>
+                <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 001</div>
             </div>
 
-            <!-- Role / Tag -->
-            <div class="col-span-6 md:col-span-3 grid-cell bg-bauhaus-red text-white flex flex-col justify-between border-r-3 border-b-3 border-black">
-                <span class="font-display text-4xl">01</span>
-                <span class="font-sans font-bold text-lg uppercase">Visual<br>Communication</span>
+            <!-- Card 2: DIY / Craft -->
+            <div class="glass-panel p-8 flex flex-col justify-between h-full min-h-[300px] md:translate-y-12">
+                <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-scissors"></i></div>
+                <div>
+                    <h3 class="font-syne font-bold text-3xl mb-4 uppercase">DIY SOUL</h3>
+                    <p class="text-gray-300 leading-relaxed text-justify">
+                        習慣什麼都自己來。自學美甲、染髮、改造衣服。
+                        買不到的圖案跟質感，就自己動手畫。
+                    </p>
+                </div>
+                <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 002</div>
             </div>
 
-            <!-- Bio -->
-            <div class="col-span-6 md:col-span-6 grid-cell bg-white border-r-3 border-b-3 border-black flex items-center">
-                <p class="font-body text-lg leading-relaxed font-medium">
-                    "胡思亂想是日常，天馬行空是技能。"
-                    <br><br>
-                    我是一個腦袋經常當機的人。生活不是提早補眠，就是熬夜把設計作業撐到天亮。
+            <!-- Card 3: Piercing / Style -->
+            <div class="glass-panel p-8 flex flex-col justify-between h-full min-h-[300px]">
+                <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-ring"></i></div>
+                <div>
+                    <h3 class="font-syne font-bold text-3xl mb-4 uppercase">Piercing</h3>
+                    <p class="text-gray-300 leading-relaxed text-justify">
+                        對耳朵穿孔文化有特殊的熱情。那是身體與美感間粗暴的溝通。
+                        穿搭風格玲玲亂亂，但在混亂中維持詭異的協調感。
+                    </p>
+                </div>
+                <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 003</div>
+            </div>
+
+        </section>
+
+        <!-- Case Study: Toxicity -->
+        <section class="relative py-20 border-t border-white/10 border-b border-white/10 my-20">
+            <div class="absolute top-0 left-0 w-full h-full bg-acid-green/5 mix-blend-overlay pointer-events-none"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+                <div>
+                     <h2 class="font-syne font-black text-5xl md:text-7xl mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">
+                        TOXIC<br>ART
+                     </h2>
+                     <div class="w-24 h-2 bg-acid-green mb-8"></div>
+                </div>
+                <div class="glass-panel p-10 relative group">
+                    <i class="fa-solid fa-skull-crossbones absolute -top-6 -right-6 text-6xl text-white/10 rotate-12 group-hover:text-acid-green/20 transition-colors"></i>
+                    <p class="text-lg leading-loose text-gray-200">
+                        曾經用漂白水在深色褲子上作畫，結果忘記通風，直接中毒嘔吐昏睡。醒來的第一個念頭不是後悔，而是先去確認圖畫得如何。<br><br>
+                        <span class="text-acid-green font-syne font-bold">> OBSESSION OVER SURVIVAL</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Truth & Footer -->
+        <section class="text-center max-w-4xl mx-auto pb-32">
+            <h3 class="font-syne font-bold text-4xl md:text-5xl mb-12">
+                "MY STYLE IS <span class="text-acid-green underline decoration-wavy underline-offset-8">ME</span>"
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-20">
+                <div class="border-l-2 border-white/20 pl-6 hover:border-acid-green transition-colors">
+                    <h4 class="font-syne font-bold text-xl mb-2 text-gray-400">PERSONALITY</h4>
+                    <p>我很愛講大實話維權，也容易讓人破防。身邊的人通常用「我的風格一看就是我」形容我。</p>
+                </div>
+                <div class="border-l-2 border-white/20 pl-6 hover:border-acid-green transition-colors">
+                    <h4 class="font-syne font-bold text-xl mb-2 text-gray-400">AESTHETIC</h4>
+                    <p>風格游走在詭異、甜美，以及一坨我自己也難以定義的混沌之間。</p>
+                </div>
+            </div>
+
+            <div class="glass-panel inline-block px-12 py-8 rounded-full border border-acid-green/30 hover:bg-acid-green hover:text-black transition-all duration-500 group cursor-pointer">
+                <p class="font-syne font-bold text-xl group-hover:tracking-widest transition-all">
+                    EXISTENCE PROOF COMPLETED
                 </p>
             </div>
 
-            <!-- Decoration -->
-            <div class="col-span-12 md:col-span-3 grid-cell bg-bauhaus-blue border-b-3 border-black flex justify-center items-center overflow-hidden">
-                <div class="w-full h-full flex justify-center items-center animate-spin-slow">
-                    <div class="w-24 h-24 border-6 border-white rounded-full"></div>
-                </div>
-            </div>
-
-            <!-- Skills Row -->
-            <div class="col-span-12 grid-cell p-0 border-b-3 border-black">
-                <div class="grid grid-cols-1 md:grid-cols-3 h-full">
-                    <div class="p-8 border-b md:border-b-0 md:border-r-3 border-black hover:bg-bauhaus-yellow transition-colors group">
-                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">DIY CRAFT</h3>
-                        <p class="font-body text-sm">自學美甲、染髮、服裝改造。買不到的設計，就自己動手做。</p>
-                        <div class="mt-4 w-8 h-8 bg-black rounded-full"></div>
-                    </div>
-                    <div class="p-8 border-b md:border-b-0 md:border-r-3 border-black hover:bg-bauhaus-red hover:text-white transition-colors group">
-                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">PIERCING</h3>
-                        <p class="font-body text-sm">對耳朵穿孔文化的熱情。那是身體與美感間粗暴的溝通。</p>
-                        <div class="mt-4 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-b-[26px] border-b-black group-hover:border-b-white"></div>
-                    </div>
-                    <div class="p-8 hover:bg-bauhaus-blue hover:text-white transition-colors group">
-                        <h3 class="font-display text-2xl mb-4 group-hover:translate-x-2 transition-transform">STYLE</h3>
-                        <p class="font-body text-sm">穿搭風格玲玲亂亂，但在混亂中維持詭異的協調感。</p>
-                        <div class="mt-4 w-8 h-8 bg-black group-hover:bg-white"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Case Study: Bleach -->
-            <div class="col-span-12 md:col-span-9 grid-cell bg-white border-r-3 border-b-3 border-black">
-                <div class="flex flex-col md:flex-row gap-8 items-start">
-                    <div class="w-16 h-16 bg-bauhaus-black text-white flex justify-center items-center font-display text-2xl flex-shrink-0">!</div>
-                    <div>
-                        <h3 class="font-display text-2xl mb-2">CASE STUDY: TOXICITY</h3>
-                        <p class="font-body text-lg text-gray-700">
-                            曾經用漂白水在深色褲子上作畫，結果忘記通風，直接中毒嘔吐昏睡。醒來的第一個念頭不是後悔，而是先去確認圖畫得如何。
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Vertical Text -->
-            <div class="col-span-12 md:col-span-3 grid-cell bg-bauhaus-yellow border-b-3 border-black flex justify-center items-center">
-                <span class="font-display text-4xl text-vertical tracking-widest">OBSESSION</span>
-            </div>
-
-            <!-- Footer / Contact -->
-            <div class="col-span-12 grid-cell bg-bauhaus-black text-white text-center py-12">
-                <h2 class="font-display text-4xl md:text-6xl mb-6">EXISTENCE PROOF</h2>
-                <p class="font-body text-gray-400 mb-8 max-w-2xl mx-auto">
-                    "我喜歡這個瘋狂計畫，用時間幫陌生人留下存在證明這件事，本身就很浪漫。"
-                </p>
-                <div class="flex justify-center gap-4">
-                    <a href="https://www.instagram.com/joanna._.army/" target="_blank" class="w-12 h-12 bg-white text-black flex justify-center items-center rounded-full hover:bg-bauhaus-red transition-colors text-xl">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                    <a href="https://www.threads.com/@joanna._.army" target="_blank" class="w-12 h-12 bg-white text-black flex justify-center items-center rounded-full hover:bg-bauhaus-blue transition-colors text-xl">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                </div>
-            </div>
-
-        </div>
+            <footer class="mt-20 text-gray-600 font-syne text-sm">
+                DESIGNED BY SUPERGALEN'S DUNGEON<br>
+                Rendered in Liquid Chrome v1.0
+            </footer>
+        </section>
 
     </main>
 
@@ -260,169 +278,167 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <script>
-        // --- Three.js: Geometric Primitives ---
+        // --- Custom Cursor Logic ---
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        document.querySelectorAll('a, .glass-panel, h2, .cursor-help').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovered'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovered'));
+        });
+
+        // --- Three.js: Liquid Chrome Spike Ball ---
         const initThree = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            // Light background handled by CSS, keep scene transparent
+            // No background color, let CSS handle the void
 
-            // Orthographic Camera for that flat, architectural look
-            const aspect = window.innerWidth / window.innerHeight;
-            const d = 10;
-            const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 6;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Objects
-            const group = new THREE.Group();
-            scene.add(group);
+            // Lighting for Chrome Effect
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
 
-            // Material: Flat shading, bold colors
-            const matRed = new THREE.MeshBasicMaterial({ color: 0xe22d2d });
-            const matBlue = new THREE.MeshBasicMaterial({ color: 0x004cdd });
-            const matYellow = new THREE.MeshBasicMaterial({ color: 0xf4d03f });
-            const matBlack = new THREE.MeshBasicMaterial({ color: 0x1a1a1a, wireframe: true });
+            const pointLight = new THREE.PointLight(0xffffff, 2);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
 
-            // Sphere
-            const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), matRed);
-            sphere.position.set(-4, 2, 0);
-            group.add(sphere);
+            const pointLight2 = new THREE.PointLight(0xccff00, 3); // Acid green rim light
+            pointLight2.position.set(-10, -10, 5);
+            scene.add(pointLight2);
 
-            // Cube
-            const cube = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), matBlue);
-            cube.position.set(4, -1, 0);
-            group.add(cube);
+            // Geometry: Spiky Sphere (Icosahedron with noise)
+            // Using standard Geometry for vertex manipulation (easier in older ThreeJS versions like r128)
+            // But r128 uses BufferGeometry by default for primitives. We need to access attributes directly.
+            const geometry = new THREE.IcosahedronGeometry(2, 6); // High detail
 
-            // Cone
-            const cone = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3, 32), matYellow);
-            cone.position.set(0, 0, 0);
-            group.add(cone);
+            // Material: Liquid Chrome
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                metalness: 1.0,
+                roughness: 0.1,
+                wireframe: false,
+            });
 
-            // Wireframe Icosahedron
-            const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 0), matBlack);
-            ico.position.set(-2, -3, -2);
-            group.add(ico);
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
 
-            camera.position.set(10, 10, 10);
-            camera.lookAt(scene.position);
+            // Store original positions for vertex animation
+            const positionAttribute = geometry.attributes.position;
+            const originalPositions = [];
+
+            for (let i = 0; i < positionAttribute.count; i++) {
+                originalPositions.push(
+                    positionAttribute.getX(i),
+                    positionAttribute.getY(i),
+                    positionAttribute.getZ(i)
+                );
+            }
+
+            // Mouse Interaction State
+            const mouse = new THREE.Vector2();
+            const target = new THREE.Vector2();
+            const windowHalf = new THREE.Vector2( window.innerWidth / 2, window.innerHeight / 2 );
+
+            document.addEventListener( 'mousemove', ( event ) => {
+                mouse.x = ( event.clientX - windowHalf.x );
+                mouse.y = ( event.clientY - windowHalf.y );
+            });
 
             const clock = new THREE.Clock();
+
+            // Noise function replacement (simple sine waves)
+            function getNoise(x, y, z, time) {
+                return Math.sin(x * 1.5 + time) * Math.cos(y * 1.5 + time) * Math.sin(z * 1.5 + time);
+            }
 
             function animate() {
                 requestAnimationFrame(animate);
                 const time = clock.getElapsedTime();
 
-                // Slow, mechanical rotation
-                sphere.rotation.y = time * 0.2;
-                cube.rotation.x = time * 0.15;
-                cube.rotation.y = time * 0.15;
-                cone.rotation.z = time * 0.1;
-                cone.position.y = Math.sin(time) * 0.5; // Bobbing
-                ico.rotation.x = -time * 0.1;
-                ico.rotation.y = -time * 0.1;
+                // Parallax Movement
+                target.x = ( mouse.x - target.x ) * 0.05;
+                target.y = ( - mouse.y - target.y ) * 0.05;
 
-                // Subtle parallax based on scroll
-                group.rotation.y = window.scrollY * 0.0005;
+                mesh.rotation.y = time * 0.1;
+                mesh.rotation.z = time * 0.05;
+
+                // Position follow (subtle)
+                mesh.position.x += ( (mouse.x * 0.001) - mesh.position.x ) * 0.05;
+                mesh.position.y += ( (-mouse.y * 0.001) - mesh.position.y ) * 0.05;
+
+                // Vertex Displacement (Spikes)
+                const positions = geometry.attributes.position;
+
+                // Breathing Magnitude
+                const spikeMagnitude = 0.4 + (Math.sin(time * 0.8) * 0.1);
+
+                for (let i = 0; i < positions.count; i++) {
+                    const ox = originalPositions[i * 3];
+                    const oy = originalPositions[i * 3 + 1];
+                    const oz = originalPositions[i * 3 + 2];
+
+                    // Noise based on original position + time
+                    const n = getNoise(ox, oy, oz, time);
+                    const scale = 1 + n * spikeMagnitude;
+
+                    positions.setXYZ(i, ox * scale, oy * scale, oz * scale);
+                }
+
+                positions.needsUpdate = true;
+                geometry.computeVertexNormals();
 
                 renderer.render(scene, camera);
             }
             animate();
 
             window.addEventListener('resize', () => {
-                const aspect = window.innerWidth / window.innerHeight;
-                camera.left = -d * aspect;
-                camera.right = d * aspect;
-                camera.top = d;
-                camera.bottom = -d;
+                camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                windowHalf.set( window.innerWidth / 2, window.innerHeight / 2 );
             });
         };
         initThree();
 
-        // --- p5.js: Interactive Grid Lines ---
-        const sketch = (p) => {
-            p.setup = () => {
-                const c = p.createCanvas(window.innerWidth, window.innerHeight);
-                c.parent('p5-overlay');
-                p.noFill();
-                p.stroke(26, 26, 26, 50); // Light black stroke
-                p.strokeWeight(1);
-            };
-
-            p.draw = () => {
-                p.clear();
-                const gridSize = 100;
-
-                // Draw dynamic grid lines that bend near mouse
-                for (let x = 0; x < p.width; x += gridSize) {
-                    p.beginShape();
-                    for (let y = 0; y < p.height; y += 20) {
-                        let d = p.dist(x, y, p.mouseX, p.mouseY);
-                        let offset = 0;
-                        if (d < 200) {
-                            offset = p.map(d, 0, 200, 20, 0);
-                        }
-                        // If mouse is to the right, bend left, etc.
-                        let dir = (p.mouseX > x) ? -1 : 1;
-                        p.vertex(x + offset * dir, y);
-                    }
-                    p.endShape();
-                }
-
-                // Horizontal Lines
-                for (let y = 0; y < p.height; y += gridSize) {
-                    p.line(0, y, p.width, y);
-                }
-            };
-
-            p.windowResized = () => {
-                p.resizeCanvas(window.innerWidth, window.innerHeight);
-            };
-        };
-        new p5(sketch);
-
-        // --- GSAP Animations ---
+        // --- GSAP ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Animate Grid Cells
-        gsap.utils.toArray('.grid-cell').forEach((cell, i) => {
-            gsap.from(cell, {
+        gsap.utils.toArray('.glass-panel').forEach(panel => {
+            gsap.from(panel, {
                 scrollTrigger: {
-                    trigger: cell,
-                    start: "top 85%",
+                    trigger: panel,
+                    start: "top 90%",
                 },
-                y: 50,
+                y: 100,
                 opacity: 0,
-                duration: 0.8,
-                ease: "power3.out",
-                delay: i * 0.05 // Stagger effect
+                duration: 1.2,
+                ease: "power3.out"
             });
         });
 
-        // Hover effect for main container
-        const container = document.querySelector('.bauhaus-grid');
-        container.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth - 0.5) * 10;
-            const y = (e.clientY / window.innerHeight - 0.5) * 10;
-            gsap.to(container, {
-                rotationY: x,
-                rotationX: -y,
-                duration: 0.5,
-                ease: "power1.out"
-            });
-        });
-        container.addEventListener('mouseleave', () => {
-            gsap.to(container, {
-                rotationY: 0,
-                rotationX: 0,
-                duration: 0.5
-            });
+        // Staggered text reveal for Manifesto
+        gsap.from('.border-l-2', {
+            scrollTrigger: {
+                trigger: '.border-l-2',
+                start: "top 80%",
+            },
+            x: -50,
+            opacity: 0,
+            duration: 0.8,
+            stagger: 0.2,
+            ease: "power2.out"
         });
 
     </script>
