@@ -3,302 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>原色⭐︎ふぁんたじー | CMY Fantasy | OFFICIAL SITE</title>
+    <title>原色⭐︎ふぁんたじー | CMY Fantasy | DREAM STAGE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&family=Potta+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --c-pink: #ff4081;
-            --c-cyan: #00bcd4;
-            --c-yellow: #ffeb3b;
-            --c-white: #ffffff;
-            --c-bg: #fff5f8;
-            --s-shadow: 0 4px 15px rgba(255, 64, 129, 0.25);
+            --pop-pink: #ff69b4;
+            --pop-cyan: #40e0d0;
+            --pop-yellow: #ffd700;
+            --pastel-pink: #ffe4e1;
+            --pastel-blue: #e0ffff;
+            --deep-text: #5d4037;
+            --white: #ffffff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-bg);
-            color: #333;
-            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: var(--pastel-pink);
+            color: var(--deep-text);
+            font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
+            /* Gingham Check Pattern */
             background-image:
-                radial-gradient(var(--c-pink) 15%, transparent 16%),
-                radial-gradient(var(--c-cyan) 15%, transparent 16%);
-            background-size: 60px 60px;
-            background-position: 0 0, 30px 30px;
-            animation: bgScroll 20s linear infinite;
+                linear-gradient(45deg, #ffc0cb 25%, transparent 25%, transparent 75%, #ffc0cb 75%, #ffc0cb),
+                linear-gradient(45deg, #ffc0cb 25%, transparent 25%, transparent 75%, #ffc0cb 75%, #ffc0cb);
+            background-position: 0 0, 20px 20px;
+            background-size: 40px 40px;
         }
 
-        @keyframes bgScroll { from { background-position: 0 0, 30px 30px; } to { background-position: 60px 60px, 90px 90px; } }
-
-        /* Canvas */
+        /* 3D Background */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; pointer-events: none; opacity: 0.6;
+            z-index: 0; pointer-events: none;
         }
 
-        main { position: relative; z-index: 10; max-width: 1200px; margin: 0 auto; background: rgba(255,255,255,0.9); box-shadow: 0 0 50px rgba(0,0,0,0.1); }
-
-        /* --- HEADER --- */
-        header {
-            background: linear-gradient(90deg, var(--c-cyan), var(--c-pink));
-            padding: 1rem;
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        /* Main Layout */
+        main {
+            position: relative;
+            z-index: 10;
+            max-width: 1000px;
+            margin: 2rem auto;
+            background: rgba(255, 255, 255, 0.95);
+            border: 8px solid var(--white);
+            border-radius: 40px;
+            box-shadow: 0 0 0 10px var(--pop-cyan), 0 20px 50px rgba(0,0,0,0.2);
+            overflow: hidden;
         }
-        .logo { font-family: 'Potta One', cursive; color: white; font-size: 1.5rem; text-shadow: 2px 2px 0 rgba(0,0,0,0.1); text-decoration: none; }
-        .nav-menu { display: flex; gap: 1.5rem; }
-        .nav-item { color: white; text-decoration: none; font-weight: bold; font-size: 1.1rem; transition: 0.3s; }
-        .nav-item:hover { transform: scale(1.1); text-shadow: 0 0 10px white; }
+
+        /* --- DECORATIONS --- */
+        .lace-border {
+            width: 100%; height: 20px;
+            background: radial-gradient(circle, var(--white) 10px, transparent 11px);
+            background-size: 30px 30px;
+            background-position: center bottom;
+            position: relative;
+            z-index: 20;
+            margin-top: -15px;
+        }
 
         /* --- HERO --- */
         .hero {
-            height: 80vh;
-            display: flex; align-items: center; justify-content: center;
+            padding: 6rem 2rem;
+            text-align: center;
+            background: linear-gradient(180deg, var(--pastel-blue), var(--white));
             position: relative;
             overflow: hidden;
-            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
         }
-        .hero-content { text-align: center; z-index: 2; transform: translateY(20px); opacity: 0; animation: heroIn 1s ease-out forwards 0.5s; }
-        @keyframes heroIn { to { transform: translateY(0); opacity: 1; } }
 
         .hero-title {
-            font-family: 'Potta One', cursive;
-            font-size: 5rem;
-            background: linear-gradient(45deg, var(--c-cyan), var(--c-pink), var(--c-yellow));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.1));
+            font-family: 'Mochiy Pop One', sans-serif;
+            font-size: clamp(3rem, 8vw, 5rem);
+            color: var(--white);
+            -webkit-text-stroke: 8px var(--pop-pink);
+            paint-order: stroke fill;
+            text-shadow: 6px 6px 0 var(--pop-yellow);
+            animation: bounce 2s infinite ease-in-out;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        .hero-subtitle {
+            display: inline-block;
+            background: var(--pop-yellow);
+            color: var(--deep-text);
+            font-weight: 900;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            border: 4px solid var(--white);
+            box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+            font-size: 1.2rem;
+            transform: rotate(-2deg);
+        }
+
+        /* --- NEWS TICKER (CSS MARQUEE) --- */
+        .marquee-container {
+            background: var(--pop-cyan);
+            padding: 0.8rem 0;
+            overflow: hidden;
+            border-top: 4px solid var(--white);
+            border-bottom: 4px solid var(--white);
+            white-space: nowrap;
+            position: relative;
+            z-index: 5;
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+            font-family: 'Mochiy Pop One';
+            color: var(--white);
+            font-size: 1.1rem;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .marquee-item { margin-right: 3rem; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* --- PROFILES --- */
+        .section-header {
+            text-align: center;
+            margin: 4rem 0 3rem;
+            position: relative;
+        }
+        .section-title {
+            font-family: 'Mochiy Pop One';
+            font-size: 2.5rem;
+            color: var(--pop-pink);
+            display: inline-block;
+            background: var(--white);
+            padding: 0.5rem 2rem;
+            border: 4px dashed var(--pop-cyan);
+            border-radius: 20px;
+            transform: rotate(-3deg);
+        }
+
+        .profile-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            padding: 0 2rem;
+            flex-wrap: wrap;
+        }
+
+        .idol-card {
+            width: 320px;
+            background: var(--white);
+            border-radius: 25px;
+            padding: 1.5rem;
+            position: relative;
+            border: 6px solid var(--pastel-pink);
+            box-shadow: 10px 10px 0 var(--pop-pink);
+            transition: transform 0.3s;
+        }
+        .idol-card:hover { transform: translateY(-10px); }
+
+        .idol-card.cyan { border-color: var(--pop-cyan); box-shadow: 10px 10px 0 var(--pop-cyan); }
+
+        .idol-photo {
+            width: 100%; height: 300px;
+            object-fit: cover;
+            border-radius: 15px;
+            border: 4px solid var(--white);
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
             margin-bottom: 1rem;
         }
-        .hero-tagline { font-size: 1.5rem; color: #666; font-weight: bold; letter-spacing: 2px; }
 
-        /* --- NEWS TICKER --- */
-        .news-section { padding: 2rem; background: var(--c-white); margin-bottom: 2rem; border-bottom: 4px dashed #eee; }
-        .section-title { font-family: 'Potta One'; font-size: 2.5rem; color: var(--c-pink); text-align: center; margin-bottom: 2rem; position: relative; }
-        .section-title::after { content: '★'; position: absolute; top: -10px; margin-left: 10px; color: var(--c-yellow); }
-
-        .news-list { list-style: none; max-width: 800px; margin: 0 auto; }
-        .news-item { display: flex; align-items: center; padding: 1rem; border-bottom: 1px solid #eee; transition: 0.2s; }
-        .news-item:hover { background: #fffcf0; transform: translateX(10px); }
-        .news-date { background: var(--c-cyan); color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.9rem; margin-right: 1rem; }
-        .news-text { font-weight: bold; color: #444; }
-
-        /* --- MEMBER --- */
-        .member-section { padding: 4rem 2rem; background: linear-gradient(to bottom, #fff, #f0f8ff); }
-        .member-grid { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; }
-
-        .member-card {
-            width: 350px;
-            background: white;
-            border-radius: 30px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: 0.3s;
-            border: 4px solid transparent;
+        .idol-name {
+            font-family: 'Mochiy Pop One';
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: var(--deep-text);
         }
-        .member-card:hover { transform: translateY(-15px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
 
-        .member-card.cyan { border-color: var(--c-cyan); }
-        .member-card.magenta { border-color: var(--c-pink); }
+        .idol-info p { font-weight: bold; line-height: 1.8; text-align: center; color: #666; font-size: 0.95rem; }
 
-        .member-img { width: 100%; height: 350px; object-fit: cover; }
-        .member-info { padding: 2rem; text-align: center; }
-        .member-name { font-size: 2rem; font-weight: 900; margin-bottom: 0.5rem; }
-        .member-role { display: inline-block; padding: 0.3rem 1rem; border-radius: 50px; color: white; font-weight: bold; font-size: 0.9rem; margin-bottom: 1rem; }
+        /* --- SCHEDULE LIST --- */
+        .schedule-box {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            border: 4px solid var(--pop-yellow);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.05);
+        }
 
-        .cyan .member-name { color: var(--c-cyan); }
-        .cyan .member-role { background: var(--c-cyan); }
-        .magenta .member-name { color: var(--c-pink); }
-        .magenta .member-role { background: var(--c-pink); }
+        .sch-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 2px dashed #eee;
+        }
+        .sch-item:last-child { border-bottom: none; }
 
-        .member-detail { text-align: left; font-size: 0.95rem; line-height: 1.6; color: #666; }
+        .sch-date {
+            background: var(--pop-pink);
+            color: white;
+            font-weight: 900;
+            padding: 0.3rem 0.8rem;
+            border-radius: 10px;
+            margin-right: 1rem;
+            font-size: 0.9rem;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        .sch-title { font-weight: bold; font-size: 1.1rem; }
 
-        /* --- SCHEDULE --- */
-        .schedule-section { padding: 4rem 2rem; background: #fff; }
-        .schedule-table { max-width: 900px; margin: 0 auto; border-collapse: collapse; width: 100%; }
-        .schedule-row { border-bottom: 1px solid #eee; }
-        .schedule-row td { padding: 1.5rem; }
-        .sch-date { font-weight: 900; color: var(--c-pink); font-size: 1.2rem; width: 150px; }
-        .sch-event { font-weight: bold; font-size: 1.1rem; }
-        .sch-loc { color: #888; font-size: 0.9rem; text-align: right; }
-        .tag-live { background: var(--c-pink); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; vertical-align: middle; margin-right: 5px; }
-        .tag-event { background: var(--c-cyan); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; vertical-align: middle; margin-right: 5px; }
-
-        /* --- MEDIA --- */
-        .media-section { padding: 4rem 2rem; background: #fffaf0; text-align: center; }
-        .video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 1000px; margin: 0 auto; }
-        .video-card { background: white; padding: 1rem; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .video-thumb { width: 100%; aspect-ratio: 16/9; background: #ddd; border-radius: 10px; margin-bottom: 1rem; overflow: hidden; position: relative; }
-        .video-thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: white; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        /* --- MEDIA GRID --- */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 0 2rem;
+        }
+        .media-item {
+            border-radius: 15px;
+            overflow: hidden;
+            border: 4px solid var(--white);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+            aspect-ratio: 16/9;
+            position: relative;
+            background: #ddd;
+        }
+        .media-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .media-item:hover img { transform: scale(1.1); }
 
         /* --- FOOTER --- */
-        footer { background: #333; color: white; padding: 4rem 2rem; text-align: center; }
-        .footer-logo { font-family: 'Potta One'; font-size: 2rem; margin-bottom: 1rem; display: block; }
-        .social-box { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
-        .footer-link { color: white; font-size: 1.5rem; transition: 0.3s; }
-        .footer-link:hover { color: var(--c-cyan); transform: translateY(-5px); }
-        .copyright { font-size: 0.8rem; color: #888; }
+        .footer {
+            margin-top: 4rem;
+            background: var(--pop-cyan);
+            padding: 3rem;
+            text-align: center;
+            color: white;
+            border-top: 8px solid var(--white);
+        }
+        .footer-logo { font-family: 'Mochiy Pop One'; font-size: 2rem; margin-bottom: 1rem; display: block; }
 
-        /* --- NAV BACK --- */
-        .back-btn { position: fixed; bottom: 2rem; right: 2rem; background: var(--c-pink); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; text-decoration: none; box-shadow: 0 5px 15px rgba(255,64,129,0.4); z-index: 200; transition: 0.3s; }
-        .back-btn:hover { transform: scale(1.1); background: var(--c-cyan); }
+        .btn-producer {
+            display: inline-block;
+            background: var(--white);
+            color: var(--pop-pink);
+            font-family: 'Mochiy Pop One';
+            font-size: 1.5rem;
+            padding: 1rem 3rem;
+            border-radius: 50px;
+            text-decoration: none;
+            border: 4px solid var(--pop-pink);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: 0.2s;
+            margin-bottom: 2rem;
+        }
+        .btn-producer:hover { transform: scale(1.05); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+
+        .social-row { display: flex; justify-content: center; gap: 1.5rem; }
+        .social-link { color: white; font-weight: 900; text-decoration: none; border-bottom: 2px solid white; }
+
+        /* --- ANIMATION CLASSES --- */
+        .reveal { opacity: 0; transform: translateY(30px); transition: 0.8s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        .nav-back {
+            position: fixed; top: 1.5rem; left: 1.5rem;
+            background: var(--white); color: var(--pop-pink);
+            padding: 0.5rem 1.2rem;
+            font-weight: 900; border-radius: 20px;
+            text-decoration: none; border: 3px solid var(--pop-pink);
+            z-index: 100; box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
 
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
-    <a href="/guild/" class="back-btn">←</a>
-
-    <header>
-        <a href="#" class="logo">CMY FANTASY</a>
-        <nav class="nav-menu">
-            <a href="#news" class="nav-item">NEWS</a>
-            <a href="#member" class="nav-item">MEMBER</a>
-            <a href="#schedule" class="nav-item">SCHEDULE</a>
-            <a href="#media" class="nav-item">MEDIA</a>
-        </nav>
-    </header>
+    <a href="/guild/" class="nav-back">← GUILD</a>
 
     <main>
         <section class="hero">
-            <div class="hero-content">
-                <h1 class="hero-title">原色<br>ふぁんたじー</h1>
-                <p class="hero-tagline">KAOHSIUNG IDOL UNIT OFFICIAL SITE</p>
-                <p style="margin-top: 2rem; font-weight: bold; color: var(--c-pink);">
-                    「每次站上舞台，都是實現夢想的重要時刻」
-                </p>
+            <h1 class="hero-title">原色<br>ふぁんたじー</h1>
+            <div class="hero-subtitle">KAOHSIUNG IDOL UNIT</div>
+        </section>
+
+        <!-- Infinite Marquee -->
+        <div class="marquee-container">
+            <div class="marquee-content">
+                <span class="marquee-item">★ WELCOME TO OFFICIAL SITE ★</span>
+                <span class="marquee-item">★ 團體成立滿一週年 ★</span>
+                <span class="marquee-item">★ 尋找製作人中 ★</span>
+                <span class="marquee-item">★ WELCOME TO OFFICIAL SITE ★</span>
+                <span class="marquee-item">★ 團體成立滿一週年 ★</span>
+                <span class="marquee-item">★ 尋找製作人中 ★</span>
             </div>
-        </section>
+        </div>
 
-        <section id="news" class="news-section">
-            <h2 class="section-title">LATEST NEWS</h2>
-            <ul class="news-list">
-                <li class="news-item">
-                    <span class="news-date">2024.10.20</span>
-                    <span class="news-text">團體成立滿一週年！感謝大家的支持！✨</span>
-                </li>
-                <li class="news-item">
-                    <span class="news-date">2024.09.15</span>
-                    <span class="news-text">參與「高雄動漫祭」舞台演出決定！</span>
-                </li>
-                <li class="news-item">
-                    <span class="news-date">2024.08.01</span>
-                    <span class="news-text">YouTube 頻道新影片上架：夏日特別企劃 🏖️</span>
-                </li>
-                <li class="news-item">
-                    <span class="news-date">2024.07.07</span>
-                    <span class="news-text">「原色⭐︎ふぁんたじー」官方網站正式上線！</span>
-                </li>
-            </ul>
-        </section>
+        <div class="lace-border"></div>
 
-        <section id="member" class="member-section">
+        <section class="section-header reveal">
             <h2 class="section-title">MEMBER</h2>
-            <div class="member-grid">
-                <!-- Xiao Miao -->
-                <div class="member-card cyan">
-                    <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" class="member-img">
-                    <div class="member-info">
-                        <div class="member-name">筱喵</div>
-                        <div class="member-role">Cosplay / Foodie</div>
-                        <div class="member-detail">
-                            <p>生日：秘密 ✨</p>
-                            <p>代表色：Cyan 🩵</p>
-                            <p>喜歡：好吃的東西、日系歌曲</p>
-                            <br>
-                            <p>「希望能用笑容感染每一個觀眾！雖然我是個吃貨～」</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ting Ting -->
-                <div class="member-card magenta">
-                    <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" class="member-img">
-                    <div class="member-info">
-                        <div class="member-name">婷婷</div>
-                        <div class="member-role">Dance / Performance</div>
-                        <div class="member-detail">
-                            <p>生日：秘密 ✨</p>
-                            <p>代表色：Magenta 🩷</p>
-                            <p>喜歡：舞台、舞蹈</p>
-                            <br>
-                            <p>「對舞蹈有著無比的熱忱！讓我們一起High翻全場！」</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </section>
 
-        <section id="schedule" class="schedule-section">
+        <div class="profile-container">
+            <!-- Xiao Miao -->
+            <div class="idol-card cyan reveal">
+                <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" class="idol-photo">
+                <h3 class="idol-name">筱喵</h3>
+                <div class="idol-info">
+                    <p>✨ 屬性：吃貨 / 天然呆</p>
+                    <p>🎤 擔當：可愛擔當</p>
+                    <p>💖 喜歡：甜點、日系歌曲</p>
+                    <br>
+                    <p>「希望能用笑容感染每一個觀眾！雖然我是個吃貨～」</p>
+                </div>
+            </div>
+
+            <!-- Ting Ting -->
+            <div class="idol-card reveal">
+                <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" class="idol-photo">
+                <h3 class="idol-name">婷婷</h3>
+                <div class="idol-info">
+                    <p>✨ 屬性：元氣 / 舞台魂</p>
+                    <p>💃 擔當：舞蹈擔當</p>
+                    <p>💖 喜歡：舞台表演、挑戰</p>
+                    <br>
+                    <p>「對舞蹈有著無比的熱忱！讓我們一起High翻全場！」</p>
+                </div>
+            </div>
+        </div>
+
+        <section class="section-header reveal">
             <h2 class="section-title">SCHEDULE</h2>
-            <table class="schedule-table">
-                <tr class="schedule-row">
-                    <td class="sch-date">2024.11.02</td>
-                    <td class="sch-event"><span class="tag-live">LIVE</span> 秋日祭典舞台表演</td>
-                    <td class="sch-loc">高雄</td>
-                </tr>
-                <tr class="schedule-row">
-                    <td class="sch-date">2024.11.15</td>
-                    <td class="sch-event"><span class="tag-event">EVENT</span> Cosplay 攝影會</td>
-                    <td class="sch-loc">台南</td>
-                </tr>
-                <tr class="schedule-row">
-                    <td class="sch-date">2024.12.24</td>
-                    <td class="sch-event"><span class="tag-live">LIVE</span> 聖誕特別演出</td>
-                    <td class="sch-loc">待定</td>
-                </tr>
-            </table>
         </section>
 
-        <section id="media" class="media-section">
+        <div class="schedule-box reveal">
+            <div class="sch-item">
+                <span class="sch-date">11.02</span>
+                <span class="sch-title">秋日祭典舞台表演 @高雄</span>
+            </div>
+            <div class="sch-item">
+                <span class="sch-date">11.15</span>
+                <span class="sch-title">Cosplay 攝影會 @台南</span>
+            </div>
+            <div class="sch-item">
+                <span class="sch-date">12.24</span>
+                <span class="sch-title">聖誕特別演出 (預定)</span>
+            </div>
+        </div>
+
+        <section class="section-header reveal">
             <h2 class="section-title">MEDIA</h2>
-            <div class="video-grid">
-                <div class="video-card">
-                    <div class="video-thumb">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_3.webp">
-                        <div class="play-btn">▶</div>
-                    </div>
-                    <p style="font-weight:bold;">舞台演出 Highlights Vol.1</p>
-                </div>
-                <div class="video-card">
-                    <div class="video-thumb">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_4.webp">
-                        <div class="play-btn">▶</div>
-                    </div>
-                    <p style="font-weight:bold;">舞蹈練習日記 #05</p>
-                </div>
-                <div class="video-card">
-                    <div class="video-thumb">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_5.webp">
-                        <div class="play-btn">▶</div>
-                    </div>
-                    <p style="font-weight:bold;">活動花絮 & 訪談</p>
-                </div>
-            </div>
         </section>
 
-        <footer>
-            <span class="footer-logo">CMY FANTASY</span>
-            <div class="social-box">
-                <a href="https://www.threads.com/@cmy_fantasy" target="_blank" class="footer-link">Threads</a>
-                <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="footer-link">Instagram</a>
-                <a href="https://www.youtube.com/@cmy_fantasy" target="_blank" class="footer-link">YouTube</a>
+        <div class="media-grid reveal">
+            <div class="media-item"><img src="/assets/img/guild/cmy_fantasy/gallery_3.webp"></div>
+            <div class="media-item"><img src="/assets/img/guild/cmy_fantasy/gallery_4.webp"></div>
+            <div class="media-item"><img src="/assets/img/guild/cmy_fantasy/gallery_5.webp"></div>
+            <div class="media-item"><img src="/assets/img/guild/cmy_fantasy/gallery_6.webp"></div>
+        </div>
+
+        <footer class="footer">
+            <h2 class="footer-logo">CMY FANTASY</h2>
+            <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="btn-producer">BECOME A PRODUCER!</a>
+            <div class="social-row">
+                <a href="https://www.threads.com/@cmy_fantasy" target="_blank" class="social-link">THREADS</a>
+                <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="social-link">INSTAGRAM</a>
+                <a href="https://www.youtube.com/@cmy_fantasy" target="_blank" class="social-link">YOUTUBE</a>
             </div>
-            <p class="copyright">© 2024 CMY FANTASY. All Rights Reserved.</p>
-            <p style="margin-top:1rem; color:#666; font-size:0.8rem;">
-                Looking for Producer! Works mainly in Video/Image.
-            </p>
         </footer>
 
     </main>
@@ -315,55 +393,83 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- Simple Confetti Scene ---
+        // --- Intersection Observer for Scroll Animations ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        });
+
+        // --- Three.js Background (Waving Penlights) ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
+        // Transparent bg to show CSS gingham pattern
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 20;
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.set(0, 10, 30);
+        camera.lookAt(0, 0, 0);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // Confetti
-        const geometry = new THREE.PlaneGeometry(0.5, 0.5);
-        const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-        const confetti = new THREE.InstancedMesh(geometry, material, 500);
+        // Penlights
+        const count = 200;
+        const geometry = new THREE.CylinderGeometry(0.2, 0.2, 3, 16);
+        geometry.translate(0, 1.5, 0); // Pivot at bottom
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const mesh = new THREE.InstancedMesh(geometry, material, count);
 
         const dummy = new THREE.Object3D();
-        const colors = [0xff4081, 0x00bcd4, 0xffeb3b, 0xffffff];
+        const colors = [0xff69b4, 0x40e0d0, 0xffd700]; // Pink, Cyan, Yellow
 
-        const particles = [];
-        for(let i=0; i<500; i++) {
-            particles.push({
-                x: (Math.random()-0.5)*50,
-                y: (Math.random()-0.5)*50,
-                z: (Math.random()-0.5)*20,
-                speed: Math.random()*0.1 + 0.02,
-                rotX: Math.random()*0.1,
-                rotY: Math.random()*0.1
+        const lightsData = [];
+
+        for(let i=0; i<count; i++) {
+            const x = (Math.random() - 0.5) * 80;
+            const z = (Math.random() - 0.5) * 60 - 20;
+
+            dummy.position.set(x, -10, z);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+
+            mesh.setColorAt(i, new THREE.Color(colors[Math.floor(Math.random() * colors.length)]));
+
+            lightsData.push({
+                x, z,
+                speed: Math.random() * 0.003 + 0.002,
+                offset: Math.random() * 100
             });
-            confetti.setColorAt(i, new THREE.Color(colors[Math.floor(Math.random()*colors.length)]));
         }
-        scene.add(confetti);
+        scene.add(mesh);
+
+        // Ambient Light
+        const ambient = new THREE.AmbientLight(0xffffff, 1);
+        scene.add(ambient);
 
         function animate() {
             requestAnimationFrame(animate);
+            const time = Date.now();
 
-            for(let i=0; i<500; i++) {
-                const p = particles[i];
-                p.y -= p.speed;
-                if(p.y < -25) p.y = 25;
+            for(let i=0; i<count; i++) {
+                const d = lightsData[i];
 
-                dummy.position.set(p.x, p.y, p.z);
-                dummy.rotation.x += p.rotX;
-                dummy.rotation.y += p.rotY;
+                dummy.position.set(d.x, -10, d.z);
+                // Waving motion
+                dummy.rotation.x = Math.sin(time * d.speed + d.offset) * 0.5;
+                dummy.rotation.z = Math.cos(time * d.speed + d.offset) * 0.3;
+
                 dummy.updateMatrix();
-                confetti.setMatrixAt(i, dummy.matrix);
+                mesh.setMatrixAt(i, dummy.matrix);
             }
-            confetti.instanceMatrix.needsUpdate = true;
+            mesh.instanceMatrix.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
@@ -373,19 +479,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // --- GSAP ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        gsap.from(".member-card", {
-            scrollTrigger: { trigger: "#member", start: "top 80%" },
-            y: 50, opacity: 0, stagger: 0.2, duration: 0.8
-        });
-
-        gsap.from(".news-item", {
-            scrollTrigger: { trigger: "#news", start: "top 80%" },
-            x: -20, opacity: 0, stagger: 0.1, duration: 0.5
         });
 
     </script>
