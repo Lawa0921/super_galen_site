@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Safe Haven</title>
+    <title>NEKOPAPAYA | The River of Lights</title>
     <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Nunito:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -28,17 +28,14 @@
 
     <style>
         :root {
-            /* Palette: Gentle Haven (Explicit Request) */
-            --c-bg: #F4F1EC;       /* Milk Tea White */
-            --c-bg-sec: #E8E2D9;   /* Sand */
-            --c-accent: #A8B2A1;   /* Sage Green */
-            --c-text: #3F3F3F;     /* Warm Dark Grey */
-            --c-note: #8C8C8C;     /* Light Grey */
-            --c-boat: #D7B698;     /* Wood */
-            --c-sea: #A8B2A1;      /* Sage Sea */
+            /* Palette: River Night */
+            --c-bg: #050A14;
+            --c-text: #F0E6D2;
+            --c-accent: #FFD700;
+            --c-glass: rgba(10, 20, 40, 0.7);
 
-            --f-main: 'Noto Sans TC', sans-serif;
-            --f-en: 'Nunito', sans-serif;
+            --f-en: 'Cinzel', serif;
+            --f-zh: 'Noto Serif TC', serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,7 +43,7 @@
         body {
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: var(--f-main);
+            font-family: var(--f-zh);
             overflow-x: hidden;
             line-height: 1.8;
         }
@@ -55,72 +52,64 @@
         .scroller { position: relative; z-index: 10; pointer-events: none; }
         .interactive-layer { pointer-events: auto; }
 
-        /* --- Layout --- */
+        /* --- Sections --- */
         .section {
-            min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 4rem 2rem; position: relative;
-            text-align: center;
+            min-height: 150vh; /* Long sections for travel */
+            display: flex; flex-direction: column; justify-content: center; align-items: flex-end; /* Right align */
+            padding: 4rem 10%; position: relative;
         }
+        .section:nth-child(even) { align-items: flex-start; } /* Zigzag */
 
-        .content-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(8px);
+        .story-card {
+            background: var(--c-glass);
+            backdrop-filter: blur(12px);
             padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(168, 178, 161, 0.15); /* Sage shadow */
-            max-width: 600px;
-            margin-bottom: 2rem;
+            border-left: 2px solid var(--c-accent);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.1);
+            max-width: 500px;
             transform: translateY(30px); opacity: 0;
-            border: 1px solid rgba(255,255,255,0.8);
         }
 
         /* --- Typography --- */
         h1 {
-            font-family: var(--f-en); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4rem);
-            color: var(--c-text); margin-bottom: 1rem; letter-spacing: 0.05em;
+            font-family: var(--f-en); font-weight: 700; font-size: clamp(3rem, 6vw, 5rem);
+            color: var(--c-text); margin-bottom: 1rem; text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
         }
         h2 {
-            font-size: 1.1rem; color: var(--c-accent); margin-bottom: 1.5rem;
-            font-weight: 700; letter-spacing: 0.1em;
+            font-family: var(--f-en); font-weight: 400; font-size: 1.2rem; letter-spacing: 0.2em;
+            color: var(--c-accent); margin-bottom: 1.5rem; text-transform: uppercase;
         }
         p {
-            font-size: 1.1rem; color: var(--c-text); margin-bottom: 1.5rem;
-            font-weight: 300;
-        }
-        .note { font-size: 0.9rem; color: var(--c-note); }
-
-        .tag {
-            display: inline-block; padding: 0.3rem 1rem;
-            background: var(--c-bg-sec); color: var(--c-text);
-            border-radius: 50px; font-size: 0.9rem; margin: 0 0.3rem;
+            font-size: 1.1rem; color: #ccc; margin-bottom: 1.5rem; font-weight: 300;
         }
 
         /* --- Avatar --- */
-        .avatar-circle {
-            width: 140px; height: 140px; border-radius: 50%;
-            border: 4px solid white; margin: 0 auto 2rem;
-            overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        .avatar-diamond {
+            width: 120px; height: 120px;
+            transform: rotate(45deg);
+            border: 2px solid var(--c-accent);
+            margin: 0 auto 3rem;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
         }
-        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-diamond img {
+            width: 140%; height: 140%; object-fit: cover;
+            transform: rotate(-45deg) translate(-15%, -15%); /* Counter rotate */
+        }
 
-        /* --- Nav --- */
+        /* --- Nav & Social --- */
         .nav-fixed {
             position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: var(--f-en); font-weight: 700;
-            color: var(--c-text); text-decoration: none;
-            padding: 0.5rem 1.2rem; background: rgba(255,255,255,0.8);
-            border-radius: 50px; pointer-events: auto;
+            font-family: var(--f-en); font-weight: 700; color: var(--c-accent);
+            text-decoration: none; opacity: 0.7; pointer-events: auto; letter-spacing: 0.1em;
         }
-
-        /* --- Social --- */
         .social-link {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 50px; height: 50px; border-radius: 50%; background: white;
+            width: 50px; height: 50px; border: 1px solid var(--c-accent);
             color: var(--c-text); font-size: 1.2rem; margin: 0 0.5rem;
-            transition: 0.2s; text-decoration: none; box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+            transition: 0.3s; text-decoration: none;
         }
-        .social-link:hover { transform: translateY(-3px); color: var(--c-accent); }
+        .social-link:hover { background: var(--c-accent); color: var(--c-bg); }
 
     </style>
 </head>
@@ -131,50 +120,52 @@
 
     <div class="scroller">
 
-        <!-- 1. Hero -->
-        <section class="section">
-            <div class="content-card interactive-layer gs-reveal">
-                <div class="avatar-circle">
+        <!-- 1. Start -->
+        <section class="section" style="align-items: center; text-align: center;">
+            <div class="interactive-layer gs-reveal">
+                <div class="avatar-diamond">
                     <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar">
                 </div>
+                <h2>THE FERRYMAN</h2>
                 <h1>NEKOPAPAYA</h1>
-                <p style="font-weight: 500;">康樂股長 | 人體狀態觀察分析師</p>
-                <div style="margin-top: 1rem;">
-                    <span class="tag">#避風港</span>
-                    <span class="tag">#熱情</span>
-                    <span class="tag">#魔人揪揪</span>
+                <p>人體狀態觀察分析師 | 康樂股長</p>
+                <p style="color: var(--c-accent); font-style: italic;">"Hydrogen knocking on your soul."</p>
+                <div style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.6;">
+                    ↓ Scroll to Embark
                 </div>
             </div>
         </section>
 
-        <!-- 2. Intro -->
+        <!-- 2. The Haven (Left) -->
         <section class="section">
-            <div class="content-card interactive-layer gs-reveal">
-                <h2>CORE CONCEPT</h2>
-                <p>這裡是一個可以停下來、坐一下的地方。<br>有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。</p>
-                <p class="note">不是為了任何目的，也不需要報名或承諾。</p>
+            <div class="story-card interactive-layer gs-reveal">
+                <h2>SAFE HAVEN</h2>
+                <h1>The River.</h1>
+                <p>這裡是一條安靜的河流，一個避風港。</p>
+                <p>有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。沒有強迫，只有邀請。</p>
             </div>
         </section>
 
-        <!-- 3. Methodology -->
+        <!-- 3. The Passion (Right) -->
         <section class="section">
-            <div class="content-card interactive-layer gs-reveal">
-                <h2>ANALYSIS</h2>
-                <p><strong>氫氫敲醒你的心靈</strong></p>
-                <p>喜歡可愛人事物星人。我觀察、我感受、我連結。<br>將散落的個體，透過熱情重新編織成網。</p>
+            <div class="story-card interactive-layer gs-reveal">
+                <h2>GATHERING</h2>
+                <h1>The Lanterns.</h1>
+                <p>每一個飄過的燈籠，都是一個被連結的靈魂。</p>
+                <p>我喜歡熱鬧，喜歡可愛的人事物。熱情是我燃燒的燃料。</p>
             </div>
         </section>
 
-        <!-- 4. Contact -->
-        <section class="section">
-            <div class="content-card interactive-layer gs-reveal">
-                <h2>CONNECTION</h2>
-                <p>如果你剛好想參與、想一起感受，就可以私訊我。<br>每個人都可以自由選擇，這裡只留一個空間給願意的人。</p>
+        <!-- 4. Destination -->
+        <section class="section" style="align-items: center; text-align: center;">
+            <div class="story-card interactive-layer gs-reveal">
+                <h2>DESTINATION</h2>
+                <h1>Connect.</h1>
+                <p>如果你剛好想參與、想一起感受，就可以私訊我。</p>
                 <div style="margin-top: 2rem;">
                     <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p class="note" style="margin-top: 1rem;">(私訊請不要用小帳 全當作詐騙不理)</p>
             </div>
         </section>
 
@@ -187,98 +178,115 @@
         // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        const bgColor = 0xF4F1EC;
-        scene.background = new THREE.Color(bgColor);
-        scene.fog = new THREE.FogExp2(bgColor, 0.08); // Heavy fog for "Soft/Blurry" feel
+        scene.fog = new THREE.FogExp2(0x050A14, 0.04);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 5, 10);
-        camera.lookAt(0, 0, 0);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // renderer.toneMapping = THREE.ReinhardToneMapping;
         container.appendChild(renderer.domElement);
 
-        // --- Lights ---
-        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambient);
-        const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-        sun.position.set(5, 10, 5);
-        scene.add(sun);
+        // --- Path (The River) ---
+        // A winding curve
+        const curve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 0, 50),
+            new THREE.Vector3(-10, 0, 20),
+            new THREE.Vector3(15, 0, -10),
+            new THREE.Vector3(-20, 0, -50),
+            new THREE.Vector3(10, 0, -100),
+            new THREE.Vector3(0, 0, -150)
+        ]);
 
-        // --- Objects ---
-
-        // 1. The Sea (Toon Shader)
-        const seaGeo = new THREE.PlaneGeometry(100, 100, 128, 128);
-        const seaMat = new THREE.MeshToonMaterial({
-            color: 0xA8B2A1, // Sage
-            transparent: true, opacity: 0.8
+        // River Mesh
+        const riverGeo = new THREE.TubeGeometry(curve, 100, 8, 8, false);
+        const riverMat = new THREE.MeshStandardMaterial({
+            color: 0x112244, roughness: 0.1, metalness: 0.8,
+            side: THREE.DoubleSide
         });
-        const sea = new THREE.Mesh(seaGeo, seaMat);
-        sea.rotation.x = -Math.PI / 2;
-        scene.add(sea);
+        const river = new THREE.Mesh(riverGeo, riverMat);
+        river.position.y = -0.5; // Slightly below water level
+        // Actually, Tube is round. Let's flatten it visually or use it as a guide.
+        // Let's use it as the water surface directly but scale it flat?
+        river.scale.set(1, 0.1, 1);
+        scene.add(river);
 
-        // 2. The Boat
+        // Terrain (Banks)
+        const bankGeo = new THREE.PlaneGeometry(200, 300, 64, 64);
+        const bankMat = new THREE.MeshStandardMaterial({ color: 0x050810, roughness: 1, flatShading: true });
+        const bank = new THREE.Mesh(bankGeo, bankMat);
+        bank.rotation.x = -Math.PI/2;
+        bank.position.y = -1;
+        // Displace vertices to make mountains
+        const pos = bankGeo.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i); // Z in world
+            // Distance from curve center (approx)
+            const dist = Math.abs(x * 0.1 + Math.sin(y*0.05)*10); // Noise factor
+            if(dist > 10) {
+                pos.setZ(i, (dist-10) * 0.5 + Math.random()*2);
+            }
+        }
+        bankGeo.computeVertexNormals();
+        scene.add(bank);
+
+
+        // --- Lights ---
+        const ambient = new THREE.AmbientLight(0x404040);
+        scene.add(ambient);
+
+        // --- The Boat ---
         const boatGroup = new THREE.Group();
         scene.add(boatGroup);
 
         // Hull
-        const hullGeo = new THREE.CylinderGeometry(1.2, 0.8, 3.5, 6, 1, false, 0, Math.PI);
-        const hullMat = new THREE.MeshToonMaterial({ color: 0xD7B698 }); // Wood
+        const hullGeo = new THREE.CylinderGeometry(0.8, 0.6, 2.5, 6, 1, false, 0, Math.PI);
+        const hullMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
         const hull = new THREE.Mesh(hullGeo, hullMat);
-        hull.rotation.z = Math.PI / 2;
-        hull.scale.set(1, 0.6, 1); hull.position.y = 0.3;
+        hull.rotation.z = Math.PI/2; hull.rotation.y = Math.PI; hull.scale.y = 0.7;
+        hull.position.y = 0.2;
         boatGroup.add(hull);
-        // Deck
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 1.5), hullMat);
-        deck.position.y = 0.2; boatGroup.add(deck);
 
-        // 3. The Passenger (Cute Blob/Cat)
-        const charGroup = new THREE.Group();
-        charGroup.position.set(0, 0.3, 0);
-        boatGroup.add(charGroup);
-        // Body (Capsule-ish)
-        const bodyGeo = new THREE.CapsuleGeometry(0.3, 0.4, 4, 8);
-        const charMat = new THREE.MeshToonMaterial({ color: 0x8AB6D6 }); // Soft Blue
-        const body = new THREE.Mesh(bodyGeo, charMat);
-        body.rotation.z = Math.PI/2;
-        charGroup.add(body);
-        // Ears
-        const earGeo = new THREE.ConeGeometry(0.1, 0.2, 4);
-        const ear1 = new THREE.Mesh(earGeo, charMat); ear1.position.set(-0.2, 0.3, 0); charGroup.add(ear1);
-        const ear2 = new THREE.Mesh(earGeo, charMat); ear2.position.set(0.2, 0.3, 0); charGroup.add(ear2);
+        // Lantern on Boat
+        const lanternGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.3);
+        const lanternMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+        const lantern = new THREE.Mesh(lanternGeo, lanternMat);
+        lantern.position.set(0, 0.8, 1);
+        boatGroup.add(lantern);
 
-        // 4. Floating Messages (Bottles)
-        const bottleCount = 20;
-        const bottleInst = new THREE.InstancedMesh(
-            new THREE.CylinderGeometry(0.1, 0.1, 0.4),
-            new THREE.MeshToonMaterial({ color: 0xFFFFFF }), // Glass/White
-            bottleCount
+        const boatLight = new THREE.PointLight(0xFFD700, 2, 15);
+        boatLight.position.set(0, 1, 1);
+        boatGroup.add(boatLight);
+
+        // --- Floating Lanterns (Instanced) ---
+        const lCount = 100;
+        const lInst = new THREE.InstancedMesh(
+            new THREE.CylinderGeometry(0.15, 0.1, 0.3, 4),
+            new THREE.MeshBasicMaterial({ color: 0xFF9900 }),
+            lCount
         );
-        scene.add(bottleInst);
+        scene.add(lInst);
 
+        const lData = [];
         const dummy = new THREE.Object3D();
-        const bottles = [];
-        for(let i=0; i<bottleCount; i++) {
-            const x = (Math.random()-0.5) * 30;
-            const z = -Math.random() * 50 - 5;
-            bottles.push({ x, z, speed: Math.random()*0.02 + 0.01, offset: Math.random()*10 });
-        }
 
-        // 5. Passion Sparks (Particles)
-        const pCount = 50;
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(pCount * 3);
-        for(let i=0; i<pCount; i++) {
-            pPos[i*3] = (Math.random()-0.5) * 2; // Close to boat
-            pPos[i*3+1] = Math.random() * 2;
-            pPos[i*3+2] = (Math.random()-0.5) * 2;
+        for(let i=0; i<lCount; i++) {
+            // Pick a point along the curve
+            const t = Math.random();
+            const point = curve.getPoint(t);
+            // Offset
+            const offset = (Math.random()-0.5) * 6;
+            point.x += offset;
+
+            dummy.position.copy(point);
+            dummy.position.y = 0.2 + Math.random()*0.2;
+            dummy.updateMatrix();
+            lInst.setMatrixAt(i, dummy.matrix);
+
+            lData.push({ t, offset, speed: Math.random()*0.0005 + 0.0001, y: dummy.position.y });
         }
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({ color: 0xEAC435, size: 0.1 });
-        const particles = new THREE.Points(pGeo, pMat);
-        boatGroup.add(particles);
 
 
         // --- Interaction ---
@@ -291,35 +299,54 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Waves
-            const pos = seaGeo.attributes.position;
-            for(let i=0; i<pos.count; i++) {
-                const x = pos.getX(i);
-                const y = pos.getY(i);
-                // Gentle, slow wave
-                const z = Math.sin(x * 0.3 + time * 0.5) * 0.3 + Math.cos(y * 0.2 + time * 0.3) * 0.2;
-                pos.setZ(i, z);
-            }
-            pos.needsUpdate = true;
+            // Calculate Scroll Progress (0 to 1)
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = Math.min(Math.max(scrollY / maxScroll, 0), 1); // Clamp
 
-            // Boat Bobbing
-            boatGroup.position.y = Math.sin(time) * 0.1;
-            boatGroup.rotation.z = Math.sin(time * 0.5) * 0.05;
-            boatGroup.rotation.x = Math.sin(time * 0.3) * 0.05;
+            // 1. Move Boat along Curve
+            // We only use 80% of the curve for the scroll to avoid running out
+            const t = progress * 0.9 + 0.02;
+            const pos = curve.getPoint(t);
+            const look = curve.getPoint(t + 0.01);
 
-            // Floating Bottles (Scroll Driven)
-            const speed = 0.05 + scrollY * 0.001;
-            for(let i=0; i<bottleCount; i++) {
-                const b = bottles[i];
-                b.z += speed;
-                if(b.z > 5) b.z = -50; // Loop
+            boatGroup.position.copy(pos);
+            boatGroup.lookAt(look);
 
-                dummy.position.set(b.x, 0.1 + Math.sin(time + b.offset)*0.1, b.z);
-                dummy.rotation.z = Math.sin(time + b.offset) * 0.5;
+            // Bobbing
+            boatGroup.position.y += Math.sin(time * 2) * 0.05;
+            boatGroup.rotation.z += Math.sin(time) * 0.05;
+
+            // 2. Camera Follow
+            // Place camera behind and above boat
+            const camOffset = new THREE.Vector3(0, 3, 8);
+            camOffset.applyQuaternion(boatGroup.quaternion); // Rotate offset with boat
+            const camPos = pos.clone().add(camOffset);
+
+            // Smooth Camera
+            camera.position.lerp(camPos, 0.1);
+            camera.lookAt(pos);
+
+            // 3. Animate Lanterns
+            for(let i=0; i<lCount; i++) {
+                let d = lData[i];
+                // Flow down stream (increase t)
+                d.t += d.speed;
+                if(d.t > 1) d.t = 0;
+
+                const p = curve.getPoint(d.t);
+                // Re-apply offset based on tangent? Simplified: just add X offset relative to world
+                // Better: Offset perpendicular to curve tangent.
+                const tangent = curve.getTangent(d.t);
+                const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+                p.add(normal.multiplyScalar(d.offset));
+
+                dummy.position.copy(p);
+                dummy.position.y = d.y + Math.sin(time + i)*0.05;
+                dummy.rotation.y += 0.01;
                 dummy.updateMatrix();
-                bottleInst.setMatrixAt(i, dummy.matrix);
+                lInst.setMatrixAt(i, dummy.matrix);
             }
-            bottleInst.instanceMatrix.needsUpdate = true;
+            lInst.instanceMatrix.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
@@ -329,8 +356,8 @@
         gsap.registerPlugin(ScrollTrigger);
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.to(elem, {
-                y: 0, opacity: 1, duration: 1, ease: "power2.out",
-                scrollTrigger: { trigger: elem, start: "top 85%" }
+                y: 0, opacity: 1, duration: 1.5, ease: "power2.out",
+                scrollTrigger: { trigger: elem, start: "top 80%" }
             });
         });
 
