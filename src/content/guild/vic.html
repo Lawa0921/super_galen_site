@@ -91,13 +91,18 @@
             color: var(--c-sec);
             max-width: 600px;
         }
+        .hero-tags {
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem; color: #666;
+        }
 
         .content-box {
             background: rgba(0,0,0,0.6);
             backdrop-filter: blur(10px);
             border-left: 4px solid var(--c-accent);
-            padding: 2rem;
-            max-width: 600px;
+            padding: 3rem;
+            max-width: 800px;
             margin-left: auto; /* Align right */
             transform: translateX(100px); opacity: 0;
         }
@@ -105,7 +110,7 @@
 
         h2 {
             font-family: 'Anton', sans-serif;
-            font-size: 4rem; margin-bottom: 1rem;
+            font-size: 4rem; margin-bottom: 2rem;
             text-transform: uppercase;
             -webkit-text-stroke: 1px #fff; color: transparent;
         }
@@ -116,10 +121,50 @@
             color: #ccc;
         }
 
+        /* --- Custom Lists --- */
+        .tech-list {
+            list-style: none;
+            margin-top: 1rem;
+            border-top: 1px solid #333;
+            padding-top: 1rem;
+        }
+        .tech-list li {
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 0.5rem;
+            color: var(--c-sec);
+            display: flex; align-items: center;
+        }
+        .tech-list li::before {
+            content: '>';
+            margin-right: 1rem;
+            color: var(--c-accent);
+        }
+
+        /* --- Modules Grid --- */
+        .modules-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px; margin-top: 2rem;
+        }
+        .module-tag {
+            border: 1px solid #333;
+            padding: 0.5rem;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #888;
+            transition: 0.3s;
+        }
+        .module-tag:hover {
+            border-color: var(--c-accent);
+            color: #fff;
+            background: rgba(255, 0, 60, 0.1);
+        }
+
         .stats {
             display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
             font-family: 'JetBrains Mono', monospace;
             margin-top: 2rem;
+            border-top: 1px solid #333; padding-top: 1rem;
         }
         .stat-item h3 { font-size: 2rem; color: var(--c-sec); }
         .stat-item span { font-size: 0.8rem; color: #888; text-transform: uppercase; }
@@ -152,6 +197,12 @@
             font-size: 1.5rem;
             letter-spacing: 0.2em;
         }
+
+        .gallery-hint {
+             position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+             font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #666;
+             opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -173,7 +224,10 @@
             <h1 class="hero-title">LOGIC<br>ALCHEMIST</h1>
             <div class="hero-subtitle">
                 // NAIL ARTIST . EDUCATOR . MAKER<br>
-                EST. 18 YEARS
+                <span style="color: #fff;">EST. 18 YEARS</span>
+            </div>
+            <div class="hero-tags">
+                [SYSTEM: ONLINE] [STATUS: EXPLORING] [MODE: CREATIVE]
             </div>
         </section>
 
@@ -182,29 +236,45 @@
             <div class="content-box">
                 <h2>Decode<br>The Art</h2>
                 <p>我是東東老師。身為 PRESTO 台灣區講師，我拒絕照表操課的死記硬背。</p>
-                <p>「知其然，更要知其所以然。」</p>
-                <p>我將複雜的技術拆解成「邏輯完善」的系統。唯有通透邏輯，才能將技術真正內化為武器。</p>
+                <p>「知其然，更要知其所以然。」是我對專業的絕對堅持。</p>
+                <p>我擅長將複雜的美甲技術拆解成「邏輯完善」的系統化課程。我相信，唯有通透邏輯，才能將技術真正內化為自己的武器，而不僅僅是模仿。</p>
+                <ul class="tech-list">
+                    <li>ALGORITHM: DECONSTRUCTION</li>
+                    <li>PROCESS: LOGIC_ANALYSIS</li>
+                    <li>OUTPUT: MASTERY</li>
+                </ul>
             </div>
         </section>
 
         <!-- S3: GALLERY SHOWCASE (Trigger for 3D Gallery) -->
         <section id="s3" style="height: 150vh;">
-            <!-- Spacer for 3D gallery interaction -->
+            <div class="gallery-hint">[ SCROLL TO SCAN ARCHIVES ]</div>
         </section>
 
         <!-- S4: LIFE -->
         <section id="s4">
             <div class="content-box left">
                 <h2>Full Stack<br>Life</h2>
-                <p>脫下講師袍，我是個點滿技能樹的雜學家。</p>
-                <p>火鍋店、Uber、工地、水電 DIY、平面設計、影音剪輯... 我的履歷比色卡還豐富。</p>
+                <p>脫下講師袍，我是一個用生命在努力活著的冒險家。</p>
+                <p>我的履歷表可能比我的色卡還豐富。這些經歷讓我對世界充滿好奇，從 3C 智慧居家、生活水電 DIY、創意手作到料理烹飪，甚至是平面設計與影音剪輯，我都略懂略懂。</p>
+
+                <div class="modules-grid">
+                    <div class="module-tag">HOT_POT.exe</div>
+                    <div class="module-tag">UBER_DELIVERY</div>
+                    <div class="module-tag">CONSTRUCTION</div>
+                    <div class="module-tag">HR_SYSTEM</div>
+                    <div class="module-tag">TEACHER_V1</div>
+                    <div class="module-tag">DIY_MASTER</div>
+                    <div class="module-tag">VIDEO_EDIT</div>
+                </div>
+
                 <div class="stats">
                     <div class="stat-item">
                         <h3>18y</h3>
-                        <span>Experience</span>
+                        <span>Nail Exp</span>
                     </div>
                     <div class="stat-item">
-                        <h3>∞</h3>
+                        <h3>Lv.99</h3>
                         <span>Curiosity</span>
                     </div>
                 </div>
@@ -215,8 +285,9 @@
         <section id="s5">
             <div class="content-box">
                 <h2>System<br>Update</h2>
-                <p>家有兩隻貓主子 🐈。</p>
-                <p>最近沉迷於 N8N 自動化，扮演科技業的「慣老闆」，每天指使 AI 幫我寫程式。</p>
+                <p>目前狀態：家有兩隻貓主子 🐈 擔任高階監工。</p>
+                <p>最近正沉迷於 N8N 自動化工作流，努力扮演一個科技業的「慣老闆」。每天指使我的廉價勞工（AI Gemini）幫我寫程式、開發軟體，致力於將生活與工作全面自動化。</p>
+                <p>這就是我，一個專業與斜槓並存的靈魂。歡迎跟我聊聊邏輯縝密的美甲技術，或是各種天馬行空的科技與生活！✨</p>
                 <div class="social-links">
                     <a href="https://www.threads.com/@dwng1274" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.facebook.com/VicNailArt" target="_blank" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
@@ -277,7 +348,7 @@
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0;
-        bloomPass.strength = 1.2;
+        bloomPass.strength = 1.0; // Slightly reduced bloom to not wash out images
         bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
@@ -312,6 +383,8 @@
             roughness: 0.1,
             clearcoat: 1.0,
             clearcoatRoughness: 0.1,
+            transparent: true, // Enable transparency for fading
+            opacity: 1
         });
 
         const shards = new THREE.InstancedMesh(shardGeo, shardMat, CONFIG.shardCount);
@@ -371,13 +444,14 @@
 
         CONFIG.galleryImages.forEach((url, i) => {
             const tex = textureLoader.load(url);
-            const geo = new THREE.PlaneGeometry(3, 4); // Portrait
+            // Increased scale for better visibility (5x7 approx)
+            const geo = new THREE.PlaneGeometry(5, 7);
             const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0 });
             const mesh = new THREE.Mesh(geo, mat);
 
             // Position them in a circle around the center
             const angle = (i / CONFIG.galleryImages.length) * Math.PI * 2;
-            const radius = 6;
+            const radius = 8; // Slightly larger radius for larger images
             mesh.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
             mesh.lookAt(0, 0, 0);
 
@@ -409,6 +483,18 @@
                 x: 0,
                 opacity: 1
             });
+        });
+
+        // Hint Animation
+        gsap.to('.gallery-hint', {
+            scrollTrigger: {
+                 trigger: '#s3',
+                 start: "top center",
+                 end: "center center",
+                 scrub: true
+            },
+            opacity: 1,
+            y: -10
         });
 
         // Main 3D Timeline
@@ -445,38 +531,54 @@
             else if (scrollProgress < 0.6) explosionFactor = 0.1 + (scrollProgress - 0.2) * 5;
             else explosionFactor = 2.1; // Maximum Chaos
 
-            // Update Shards
-            for (let i = 0; i < CONFIG.shardCount; i++) {
-                const data = shardData[i];
-
-                // Lerp between Origin and Exploded
-                const lerpFactor = Math.min(1, explosionFactor);
-
-                const tx = THREE.MathUtils.lerp(data.origin.x, data.exploded.x, lerpFactor);
-                const ty = THREE.MathUtils.lerp(data.origin.y, data.exploded.y, lerpFactor);
-                const tz = THREE.MathUtils.lerp(data.origin.z, data.exploded.z, lerpFactor);
-
-                // Add some noise based on time
-                const noiseX = Math.sin(t + i) * 0.1;
-
-                dummy.position.set(tx + noiseX, ty, tz);
-
-                // Rotation
-                dummy.rotation.x = data.rotation.x + t * data.speed;
-                dummy.rotation.y = data.rotation.y + t * data.speed;
-
-                // Scale decreases as it explodes to simulate disintegration
-                const scale = Math.max(0.1, 1 - explosionFactor * 0.4);
-                dummy.scale.setScalar(scale);
-
-                dummy.updateMatrix();
-                shards.setMatrixAt(i, dummy.matrix);
+            // Visibility Logic for Gallery
+            // When Gallery (0.3 - 0.7) is active, shards should fade out
+            let shardOpacity = 1;
+            if (scrollProgress > 0.3 && scrollProgress < 0.7) {
+                 shardOpacity = Math.max(0, 1 - (scrollProgress - 0.3) * 10); // Rapid fade out
+            } else if (scrollProgress >= 0.7) {
+                 shardOpacity = Math.min(1, (scrollProgress - 0.7) * 5); // Fade back in
             }
-            shards.instanceMatrix.needsUpdate = true;
-            shards.rotation.y = t * 0.1; // General spin
+            shardMat.opacity = shardOpacity;
+            shardMat.transparent = shardOpacity < 0.99;
+
+            // Update Shards
+            if (shardOpacity > 0.01) {
+                for (let i = 0; i < CONFIG.shardCount; i++) {
+                    const data = shardData[i];
+
+                    // Lerp between Origin and Exploded
+                    const lerpFactor = Math.min(1, explosionFactor);
+
+                    const tx = THREE.MathUtils.lerp(data.origin.x, data.exploded.x, lerpFactor);
+                    const ty = THREE.MathUtils.lerp(data.origin.y, data.exploded.y, lerpFactor);
+                    const tz = THREE.MathUtils.lerp(data.origin.z, data.exploded.z, lerpFactor);
+
+                    // Add some noise based on time
+                    const noiseX = Math.sin(t + i) * 0.1;
+
+                    dummy.position.set(tx + noiseX, ty, tz);
+
+                    // Rotation
+                    dummy.rotation.x = data.rotation.x + t * data.speed;
+                    dummy.rotation.y = data.rotation.y + t * data.speed;
+
+                    // Scale decreases as it explodes to simulate disintegration
+                    const scale = Math.max(0.1, 1 - explosionFactor * 0.4);
+                    dummy.scale.setScalar(scale);
+
+                    dummy.updateMatrix();
+                    shards.setMatrixAt(i, dummy.matrix);
+                }
+                shards.instanceMatrix.needsUpdate = true;
+                shards.rotation.y = t * 0.1; // General spin
+            } else {
+                 // Hide completely to save GPU
+                 shards.instanceMatrix.needsUpdate = false;
+            }
 
             // 2. Core Logic Reveal
-            if (scrollProgress > 0.15 && scrollProgress < 0.6) {
+            if (scrollProgress > 0.15 && scrollProgress < 0.3) { // Stop earlier
                 const opacity = Math.min(1, (scrollProgress - 0.15) * 5);
                 core.material.opacity = opacity;
                 core.rotation.x = t;
@@ -500,11 +602,14 @@
                 if (galleryOp > 0.01) {
                     // Spiral motion
                     const angleOffset = t * 0.2;
+                    // Move them closer as we scroll?
+                    // Currently fixed radius 8
                     const r = mesh.userData.radius + Math.sin(t + i) * 0.5;
 
                     mesh.position.x = Math.cos(mesh.userData.angle + angleOffset) * r;
                     mesh.position.z = Math.sin(mesh.userData.angle + angleOffset) * r;
-                    mesh.position.y = Math.sin(t + i) * 1;
+                    // Gentle float
+                    mesh.position.y = Math.sin(t + i * 0.5) * 0.5;
 
                     mesh.lookAt(camera.position);
                 }
@@ -513,12 +618,20 @@
             // 4. Camera Movement
             // S1: Front (z=10)
             // S2: Zoom out slightly
-            // S3: Orbit
+            // S3: Orbit (Gallery) - Camera should be far enough to see panels (Radius 8, Panels size 5x7)
 
-            const camTargetZ = 10 + scrollProgress * 10;
+            let camTargetZ = 10;
+            if (scrollProgress < 0.3) {
+                 camTargetZ = 10 + scrollProgress * 10;
+            } else if (scrollProgress < 0.7) {
+                 camTargetZ = 20; // Move back to see the circle of images
+            } else {
+                 camTargetZ = 15;
+            }
+
             camera.position.z += (camTargetZ - camera.position.z) * 0.05;
 
-            const camTargetY = Math.sin(scrollProgress * Math.PI) * 5;
+            const camTargetY = Math.sin(scrollProgress * Math.PI) * 2; // Reduced sway
             camera.position.y += (camTargetY - camera.position.y) * 0.05;
 
             camera.lookAt(0, 0, 0);
