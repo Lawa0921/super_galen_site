@@ -969,3 +969,15 @@ members:
         label: "模型車改裝"
       - id: "rider"
         label: "摩旅愛好者"
+
+  - id: "nick"
+    name: "自動化架構師 Nick"
+    avatar: "/assets/img/guild/nick/avatar.webp"
+    page: "/guild/nick.html"
+    tags:
+      - id: "automation_architect"
+        label: "自動化架構師"
+      - id: "n8n_expert"
+        label: "N8N 專家"
+      - id: "vibe_coder"
+        label: "Vibe Coder"
