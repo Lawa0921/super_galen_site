@@ -981,3 +981,15 @@ members:
         label: "混沌藝術"
       - id: "imaginative"
         label: "天馬行空"
+
+  - id: "nick"
+    name: "Nick"
+    avatar: "/assets/img/guild/nick/avatar.webp"
+    page: "/guild/nick.html"
+    tags:
+      - id: "automation"
+        label: "自動化"
+      - id: "vibe_coding"
+        label: "Vibe Coding"
+      - id: "pixel_art"
+        label: "像素藝術"

@@ -122,12 +122,55 @@
             writing-mode: vertical-rl;
             text-orientation: mixed;
         }
+
+        /* Glitch Overlay */
+        #glitch-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: black;
+            z-index: 99999;
+            pointer-events: none;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .glitch-text {
+            font-family: 'Courier New', monospace;
+            color: #ccff00;
+            font-size: 2rem;
+            text-shadow: 2px 2px #ff0000, -2px -2px #0000ff;
+            animation: text-flicker 0.1s infinite;
+        }
+        @keyframes text-flicker {
+            0% { opacity: 1; transform: translateX(0); }
+            50% { opacity: 0.8; transform: translateX(2px); }
+            100% { opacity: 1; transform: translateX(-2px); }
+        }
+        .bg-stripes {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(0,0,0,0.1),
+                rgba(0,0,0,0.1) 10px,
+                rgba(255,255,255,0.1) 10px,
+                rgba(255,255,255,0.1) 20px
+            );
+        }
     </style>
 </head>
 <body class="selection:bg-acid-green selection:text-black font-body">
 
     <div id="cursor"></div>
     <div id="webgl-container"></div>
+
+    <div id="glitch-overlay">
+        <div class="glitch-text">SYSTEM FAILURE</div>
+        <div class="mt-4 text-white font-mono text-sm">Rebooting in safe mode...</div>
+        <div class="w-64 h-2 bg-gray-800 mt-8 rounded overflow-hidden">
+            <div id="reboot-bar" class="h-full bg-acid-green w-0"></div>
+        </div>
+    </div>
 
     <!-- Bleach Stains -->
     <div class="bleach-stain w-96 h-96 top-[-10%] left-[-10%] animate-pulse-slow"></div>
@@ -183,41 +226,53 @@
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
             <!-- Card 1: The Creator -->
-            <div class="glass-panel p-8 flex flex-col justify-between h-full min-h-[300px]">
-                <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-bolt"></i></div>
-                <div>
+            <div class="glass-panel p-0 flex flex-col justify-between h-full min-h-[400px] relative overflow-hidden group">
+                <div class="absolute inset-0">
+                    <img src="/assets/img/guild/joanna_army/art_placeholder.webp" alt="Creator Art" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700 mix-blend-luminosity">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                </div>
+                <div class="relative z-10 p-8 flex flex-col justify-end h-full">
+                    <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-bolt"></i></div>
                     <h3 class="font-syne font-bold text-3xl mb-4 uppercase">Creator</h3>
-                    <p class="text-gray-300 leading-relaxed text-justify">
+                    <p class="text-gray-300 leading-relaxed text-justify text-sm">
                         生活不是提早補眠，就是熬夜把設計作業撐到天亮。創作對我來說是替腦袋找一個出口，讓亂跑的想法有地方落地。
                     </p>
+                    <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 001</div>
                 </div>
-                <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 001</div>
             </div>
 
             <!-- Card 2: DIY / Craft -->
-            <div class="glass-panel p-8 flex flex-col justify-between h-full min-h-[300px] md:translate-y-12">
-                <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-scissors"></i></div>
-                <div>
+            <div class="glass-panel p-0 flex flex-col justify-between h-full min-h-[400px] md:translate-y-12 relative overflow-hidden group">
+                <div class="absolute inset-0">
+                    <img src="/assets/img/guild/joanna_army/craft_placeholder.webp" alt="DIY Craft" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700 mix-blend-luminosity">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                </div>
+                <div class="relative z-10 p-8 flex flex-col justify-end h-full">
+                    <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-scissors"></i></div>
                     <h3 class="font-syne font-bold text-3xl mb-4 uppercase">DIY SOUL</h3>
-                    <p class="text-gray-300 leading-relaxed text-justify">
+                    <p class="text-gray-300 leading-relaxed text-justify text-sm">
                         習慣什麼都自己來。自學美甲、染髮、改造衣服。
                         買不到的圖案跟質感，就自己動手畫。
                     </p>
+                    <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 002</div>
                 </div>
-                <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 002</div>
             </div>
 
             <!-- Card 3: Piercing / Style -->
-            <div class="glass-panel p-8 flex flex-col justify-between h-full min-h-[300px]">
-                <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-ring"></i></div>
-                <div>
+            <div class="glass-panel p-0 flex flex-col justify-between h-full min-h-[400px] relative overflow-hidden group">
+                <div class="absolute inset-0">
+                    <img src="/assets/img/guild/joanna_army/piercing_placeholder.webp" alt="Piercing Style" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700 mix-blend-luminosity">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+                </div>
+                <div class="relative z-10 p-8 flex flex-col justify-end h-full">
+                    <div class="mb-4 text-acid-green text-3xl"><i class="fa-solid fa-ring"></i></div>
                     <h3 class="font-syne font-bold text-3xl mb-4 uppercase">Piercing</h3>
-                    <p class="text-gray-300 leading-relaxed text-justify">
+                    <p class="text-gray-300 leading-relaxed text-justify text-sm">
                         對耳朵穿孔文化有特殊的熱情。那是身體與美感間粗暴的溝通。
                         穿搭風格玲玲亂亂，但在混亂中維持詭異的協調感。
                     </p>
+                    <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 003</div>
                 </div>
-                <div class="mt-6 text-right font-syne text-sm text-gray-500">/ 003</div>
             </div>
 
         </section>
@@ -260,11 +315,13 @@
                 </div>
             </div>
 
-            <div class="glass-panel inline-block px-12 py-8 rounded-full border border-acid-green/30 hover:bg-acid-green hover:text-black transition-all duration-500 group cursor-pointer">
-                <p class="font-syne font-bold text-xl group-hover:tracking-widest transition-all">
-                    EXISTENCE PROOF COMPLETED
+            <button id="self-destruct-btn" class="relative glass-panel inline-block px-12 py-8 rounded-full border border-acid-green/30 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-100 group cursor-pointer overflow-hidden">
+                <div class="absolute inset-0 bg-stripes opacity-0 group-hover:opacity-20 animate-pulse"></div>
+                <p class="font-syne font-bold text-xl group-hover:tracking-widest transition-all relative z-10 flex items-center gap-3">
+                    <i class="fa-solid fa-radiation animate-spin-slow"></i>
+                    INITIATE SYSTEM CRASH
                 </p>
-            </div>
+            </button>
 
             <footer class="mt-20 text-gray-600 font-syne text-sm">
                 DESIGNED BY SUPERGALEN'S DUNGEON<br>
@@ -439,6 +496,46 @@
             duration: 0.8,
             stagger: 0.2,
             ease: "power2.out"
+        });
+
+        // --- Glitch Button Logic ---
+        const btn = document.getElementById('self-destruct-btn');
+        const overlay = document.getElementById('glitch-overlay');
+        const bar = document.getElementById('reboot-bar');
+
+        btn.addEventListener('click', () => {
+            // 1. Shake the world
+            gsap.to('main', {
+                duration: 0.5,
+                x: "random(-20, 20)",
+                y: "random(-20, 20)",
+                skewX: "random(-10, 10)",
+                rotation: "random(-5, 5)",
+                filter: "invert(1) hue-rotate(180deg) blur(2px)",
+                ease: "rough({ strength: 2, points: 20, template: none, randomize: true })",
+                onComplete: () => {
+                    // 2. Fade in overlay
+                    gsap.to(overlay, { opacity: 1, duration: 0.1, pointerEvents: 'all' });
+
+                    // 3. Progress Bar
+                    gsap.to(bar, {
+                        width: "100%",
+                        duration: 2,
+                        ease: "linear",
+                        onComplete: () => {
+                            // 4. Reset page
+                            window.scrollTo(0, 0);
+                            gsap.set('main', { clearProps: "all" });
+                            gsap.to(overlay, {
+                                opacity: 0,
+                                duration: 0.5,
+                                delay: 0.5,
+                                pointerEvents: 'none'
+                            });
+                        }
+                    });
+                }
+            });
         });
 
     </script>
