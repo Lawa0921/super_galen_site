@@ -3,314 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIC NAIL - 邏輯美甲與科技雜學</title>
+    <title>VIC NAIL | LOGIC & AESTHETICS</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Libraries -->
+    <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #02020a;
-            --accent-cyan: #00f3ff;
-            --accent-gold: #ffd700;
-            --accent-magenta: #ff0055;
-            --text-main: #e0e0e0;
-            --glass-bg: rgba(2, 2, 10, 0.85);
-            --border-color: rgba(0, 243, 255, 0.2);
+            --c-dark: #050505;
+            --c-cyan: #00f3ff;
+            --c-magenta: #ff0055;
+            --c-gold: #ffd700;
+            --c-glass: rgba(255, 255, 255, 0.03);
+            --c-border: rgba(255, 255, 255, 0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--c-dark);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
             overflow-x: hidden;
-            overflow-y: hidden; /* Locked initially */
+            overflow-y: hidden; /* Lock until loaded */
         }
 
-        /* --- 3D Background --- */
-        #canvas-container {
+        /* --- Canvas --- */
+        #gl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: all; /* Allow raycasting */
+            z-index: 0; pointer-events: auto;
         }
 
-        /* --- UI Overlay --- */
-        #ui-layer {
+        /* --- HUD UI --- */
+        .hud-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 10;
+            pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 2rem;
         }
 
-        /* --- Navigation --- */
-        .nav-return {
-            position: fixed; top: 2rem; left: 2rem;
-            color: var(--accent-cyan); text-decoration: none;
-            font-family: 'Orbitron', sans-serif; font-size: 0.9rem; letter-spacing: 2px;
+        .hud-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .logo {
+            font-size: 2rem; font-weight: 700; letter-spacing: 0.1em;
+            color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        .logo span { color: var(--c-cyan); }
+
+        .sys-status {
+            text-align: right; font-size: 0.8rem; color: var(--c-cyan);
+            font-family: monospace; line-height: 1.4;
+            opacity: 0.7;
+        }
+
+        .nav-back {
             pointer-events: auto;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px 20px;
-            border: 1px solid var(--accent-cyan);
-            backdrop-filter: blur(5px);
+            color: var(--c-magenta); text-decoration: none;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 2px;
+            border: 1px solid var(--c-magenta); padding: 8px 16px;
+            background: rgba(255, 0, 85, 0.1);
             transition: 0.3s;
-            text-transform: uppercase;
-            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
-        .nav-return:hover {
-            background: var(--accent-cyan); color: #000;
-            box-shadow: 0 0 15px var(--accent-cyan);
-        }
+        .nav-back:hover { background: var(--c-magenta); color: #000; box-shadow: 0 0 20px var(--c-magenta); }
 
-        /* --- Sections (Scroll Driven) --- */
-        .scroll-spacer { height: 600vh; } /* Defines scroll length */
+        /* --- Content Panels --- */
+        .scroll-track { height: 800vh; } /* Long scroll for the journey */
 
-        .content-section {
-            position: absolute;
-            width: 100%; height: 100vh;
-            display: flex; flex-direction: column; justify-content: center;
-            padding: 0 10vw;
-            opacity: 0; pointer-events: none;
+        .panel-section {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; opacity: 0;
             transition: opacity 0.5s;
         }
-        .content-section.active { opacity: 1; pointer-events: auto; }
+        .panel-section.active { opacity: 1; pointer-events: auto; }
 
-        .section-right { align-items: flex-end; text-align: right; }
-        .section-left { align-items: flex-start; text-align: left; }
-        .section-center { align-items: center; text-align: center; }
-
-        /* Typography */
-        h1, h2 {
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-            line-height: 1.1;
-        }
-        h1 { font-size: 4rem; color: var(--accent-gold); text-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-        h2 { font-size: 2.5rem; color: var(--accent-cyan); }
-
-        .subtitle {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 1.2rem; color: var(--accent-magenta);
-            margin-bottom: 2rem; letter-spacing: 2px;
-        }
-
-        .text-block {
-            max-width: 600px;
-            background: var(--glass-bg);
-            border: 1px solid var(--border-color);
-            border-left: 3px solid var(--accent-cyan);
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-            font-size: 1.1rem; line-height: 1.8;
+        .glass-card {
+            background: rgba(5, 5, 10, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--c-border);
+            border-left: 2px solid var(--c-cyan);
+            padding: 3rem;
+            max-width: 600px; width: 90%;
+            transform: skewX(-5deg);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             position: relative;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
         }
-        .text-block::before {
-            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
-            border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan);
+        .glass-card::before {
+            content: ''; position: absolute; top: -2px; right: -2px; width: 20px; height: 20px;
+            border-top: 2px solid var(--c-cyan); border-right: 2px solid var(--c-cyan);
         }
-        .text-block::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
-            border-bottom: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan);
-        }
+        .glass-card.right { margin-left: auto; margin-right: 10%; border-left: 1px solid var(--c-border); border-right: 2px solid var(--c-magenta); }
+        .glass-card.left { margin-right: auto; margin-left: 10%; }
 
-        /* --- Specific Elements --- */
-        .avatar-container {
-            position: relative;
-            width: 160px; height: 160px;
-            margin-bottom: 2rem;
-        }
-        .avatar-img {
-            width: 100%; height: 100%; border-radius: 50%;
-            border: 2px solid var(--accent-cyan);
-            object-fit: cover;
-            position: relative; z-index: 2;
-        }
-        .avatar-glow {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 180px; height: 180px; border-radius: 50%;
-            border: 1px dashed var(--accent-cyan);
-            animation: spin-slow 10s linear infinite;
-            z-index: 1;
-        }
-        @keyframes spin-slow { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        .card-content { transform: skewX(5deg); } /* Counter skew */
 
-        .skill-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem; margin-top: 2rem; width: 100%; max-width: 800px;
-        }
-        .skill-tag {
+        h1 { font-size: 3.5rem; line-height: 0.9; margin-bottom: 0.5rem; text-transform: uppercase; color: #fff; }
+        h1 span { color: transparent; -webkit-text-stroke: 1px var(--c-cyan); }
+
+        h2 { font-size: 2rem; margin-bottom: 1.5rem; color: var(--c-gold); text-transform: uppercase; letter-spacing: 2px; }
+
+        p { font-family: 'Noto Sans TC', sans-serif; font-size: 1.1rem; line-height: 1.8; color: #ddd; margin-bottom: 1.5rem; }
+
+        .tags { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2rem; }
+        .tag {
+            font-size: 0.8rem; color: var(--c-cyan); border: 1px solid var(--c-cyan);
+            padding: 5px 10px; text-transform: uppercase; letter-spacing: 1px;
             background: rgba(0, 243, 255, 0.05);
-            border: 1px solid var(--border-color);
-            color: var(--accent-cyan);
-            padding: 15px; text-align: center;
-            font-family: 'Share Tech Mono';
-            cursor: default; transition: 0.3s;
-            position: relative; overflow: hidden;
-        }
-        .skill-tag::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(0, 243, 255, 0.2), transparent);
-            transform: translateX(-100%); transition: 0.5s;
-        }
-        .skill-tag:hover::before { transform: translateX(100%); }
-        .skill-tag:hover {
-            border-color: var(--accent-gold); color: var(--accent-gold);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
         }
 
-        /* --- Intro Overlay --- */
-        #intro-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #02020a; z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; transition: opacity 1.5s;
+        .avatar-frame {
+            width: 150px; height: 150px;
+            border: 2px solid var(--c-cyan);
+            border-radius: 50%; padding: 5px;
+            margin-bottom: 2rem;
+            position: relative;
         }
-        .intro-loader {
-            width: 60px; height: 60px; border: 2px solid var(--accent-cyan);
-            position: relative; margin-bottom: 20px;
-            animation: pulse-border 2s infinite;
+        .avatar-frame img {
+            width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+            filter: grayscale(0.5) contrast(1.2);
         }
-        .intro-loader::after {
-            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 40px; height: 40px; background: var(--accent-cyan);
-            animation: pulse-inner 2s infinite;
+        .avatar-frame::after {
+            content: ''; position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border: 1px dashed var(--c-magenta); border-radius: 50%;
+            animation: spin 20s linear infinite;
         }
-        @keyframes pulse-border { 0% { transform: rotate(0deg); opacity: 0.5; } 50% { opacity: 1; } 100% { transform: rotate(90deg); opacity: 0.5; } }
-        @keyframes pulse-inner { 0% { transform: translate(-50%, -50%) scale(0.8); } 50% { transform: translate(-50%, -50%) scale(1); } 100% { transform: translate(-50%, -50%) scale(0.8); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .glitch-text {
-            font-family: 'Orbitron'; font-size: 2rem; color: var(--accent-cyan);
-            position: relative; letter-spacing: 5px;
-        }
-
-        /* --- Footer --- */
-        .footer-socials {
-            display: flex; gap: 2rem; margin-top: 2rem; pointer-events: auto;
-        }
-        .social-link {
+        /* --- Socials --- */
+        .social-row { display: flex; gap: 20px; margin-top: 2rem; }
+        .social-btn {
             width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
-            border: 1px solid var(--accent-cyan); color: var(--accent-cyan);
-            font-size: 1.5rem; transition: 0.3s;
+            border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.2rem;
+            transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .social-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-cyan); transform: translateY(100%); transition: 0.3s; z-index: -1;
+        }
+        .social-btn:hover::before { transform: translateY(0); }
+        .social-btn:hover { color: #000; border-color: var(--c-cyan); }
+
+        /* --- Loading Screen --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 1s;
+        }
+        .load-bar {
+            width: 200px; height: 2px; background: #333; margin-top: 20px;
             position: relative; overflow: hidden;
         }
-        .social-link:hover {
-            background: var(--accent-cyan); color: #000;
-            box-shadow: 0 0 20px var(--accent-cyan);
+        .load-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--c-cyan);
+            transition: width 0.2s;
         }
+        .load-text { font-family: monospace; color: var(--c-cyan); letter-spacing: 5px; }
 
-        /* --- Tooltip --- */
-        #tooltip {
-            position: fixed; pointer-events: none;
-            background: rgba(2, 2, 10, 0.9); border: 1px solid var(--accent-gold);
-            color: var(--accent-gold); padding: 8px 16px;
-            font-family: 'Share Tech Mono'; font-size: 0.9rem;
-            transform: translate(15px, 15px);
-            opacity: 0; transition: opacity 0.2s;
-            z-index: 100;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-        }
-        #tooltip::before {
-            content: '['; margin-right: 5px; color: #fff;
-        }
-        #tooltip::after {
-            content: ']'; margin-left: 5px; color: #fff;
-        }
     </style>
 </head>
 <body>
 
-    <!-- Intro -->
-    <div id="intro-overlay" onclick="startExperience()">
-        <div class="intro-loader"></div>
-        <div class="glitch-text">SYSTEM LOADING...</div>
-        <div style="margin-top: 1rem; color: #666; font-family: 'Share Tech Mono';">CLICK TO INITIALIZE BLUEPRINT</div>
+    <!-- Loading -->
+    <div id="loader" onclick="startSequence()">
+        <div class="load-text">INITIALIZING CORE...</div>
+        <div class="load-bar"><div class="load-progress" id="progress"></div></div>
+        <div style="margin-top: 10px; font-size: 0.7rem; color: #666; opacity: 0;" id="click-hint">[ CLICK TO ENTER ]</div>
     </div>
 
-    <!-- 3D Canvas -->
-    <div id="canvas-container"></div>
+    <!-- 3D Scene -->
+    <div id="gl-container"></div>
 
-    <!-- UI -->
-    <div id="ui-layer">
-        <a href="/guild/" class="nav-return">Return to Guild</a>
-        <div id="tooltip"></div>
+    <!-- HUD -->
+    <div class="hud-layer">
+        <div class="hud-header">
+            <div class="logo">VIC <span>NAIL</span></div>
+            <a href="/guild/" class="nav-back">Guild</a>
+        </div>
+        <div class="sys-status">
+            SYS.OP: NORMAL<br>
+            LOGIC.CORE: ONLINE<br>
+            FPS: <span id="fps">60</span>
+        </div>
+    </div>
 
-        <!-- Section 1: Hero -->
-        <div class="content-section section-left active" id="sec-1">
-            <div class="avatar-container">
-                <div class="avatar-glow"></div>
-                <img src="/assets/img/guild/vic/avatar.webp" class="avatar-img" alt="VIC NAIL Avatar">
-            </div>
-            <h1>VIC NAIL</h1>
-            <div class="subtitle">LOGIC // ARCHITECT // MAKER</div>
-            <div class="text-block">
-                <p>我是東東老師。<br>在 0 與 1 的邏輯世界中，構建指尖的藍圖。</p>
+    <!-- Content Sections -->
+    <div class="scroll-track"></div>
+
+    <!-- Section 1: Hero -->
+    <div class="panel-section active" id="sec-1">
+        <div class="glass-card left">
+            <div class="card-content">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/vic/avatar.webp" alt="Vic">
+                </div>
+                <h1>VIC<span>NAIL</span></h1>
+                <h2>The Logic Architect</h2>
+                <p>我是東東老師。在 0 與 1 的邏輯世界中，構建指尖的藍圖。</p>
+                <div class="tags">
+                    <div class="tag">PRESTO INSTRUCTOR</div>
+                    <div class="tag">LOGIC</div>
+                    <div class="tag">MAKER</div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Section 2: Philosophy -->
-        <div class="content-section section-right" id="sec-2">
-            <h2>THE BLUEPRINT</h2>
-            <div class="subtitle">KNOW THE STRUCTURE</div>
-            <div class="text-block">
-                <p>「知其然，更要知其所以然。」</p>
-                <p>如同建築藍圖，我拒絕死記硬背，將複雜的技術拆解為「邏輯完善」的系統。</p>
-                <p>看透結構，技術就是你的積木。</p>
+    <!-- Section 2: Philosophy -->
+    <div class="panel-section" id="sec-2">
+        <div class="glass-card right">
+            <div class="card-content">
+                <h1>DECODE<span>THE ART</span></h1>
+                <h2>知其然，知其所以然</h2>
+                <p>至今已過 18 個年頭。身為日系品牌 PRESTO 的台灣區講師，我的哲學很簡單：拒絕死記硬背。</p>
+                <p>我擅長將複雜的技術拆解成「邏輯完善」的系統化課程。唯有通透邏輯，才能將技術真正內化為自己的武器。</p>
             </div>
         </div>
+    </div>
 
-        <!-- Section 3: Skills -->
-        <div class="content-section section-center" id="sec-3">
-            <h2>THE WORKSHOP</h2>
-            <div class="subtitle">TOOLS OF THE TRADE</div>
-            <div class="text-block" style="text-align: left;">
-                <p>脫下講師袍，我是用生命在組裝生活的 Maker。<br>履歷表就是我的工具箱。</p>
-            </div>
-            <div class="skill-grid">
-                <div class="skill-tag">PRESTO INSTRUCTOR</div>
-                <div class="skill-tag">UBER DRIVER</div>
-                <div class="skill-tag">CONSTRUCTION</div>
-                <div class="skill-tag">DIY / MAKER</div>
-                <div class="skill-tag">COOKING</div>
-                <div class="skill-tag">VIDEO EDITING</div>
+    <!-- Section 3: Life -->
+    <div class="panel-section" id="sec-3">
+        <div class="glass-card left">
+            <div class="card-content">
+                <h1>FULL STACK<span>LIFE</span></h1>
+                <h2>點滿技能樹的雜學家</h2>
+                <p>脫下講師袍，我是一個用生命在努力活著的冒險家。</p>
+                <p>火鍋店、Uber、工地、水電 DIY、平面設計、影音剪輯... 我的履歷比色卡還豐富。這些經歷讓我對世界充滿好奇。</p>
+                <div class="tags">
+                    <div class="tag">UBER</div>
+                    <div class="tag">CONSTRUCTION</div>
+                    <div class="tag">DIY</div>
+                    <div class="tag">COOKING</div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Section 4: Status -->
-        <div class="content-section section-left" id="sec-4">
-            <h2>CURRENT STATUS</h2>
-            <div class="subtitle">CATS & CODE</div>
-            <div class="text-block">
+    <!-- Section 4: Current Status (Cats & N8N) -->
+    <div class="panel-section" id="sec-4">
+        <div class="glass-card right">
+            <div class="card-content">
+                <h1>SYSTEM<span>UPDATE</span></h1>
+                <h2>慣老闆與貓</h2>
                 <p>家有兩隻貓主子 🐈。</p>
-                <p>正沉迷於 N8N 自動化，努力扮演科技業的「慣老闆」，指使 AI 幫我寫程式。</p>
+                <p>最近沉迷於 N8N 自動化，努力扮演一個科技業的「慣老闆」，每天指使 AI 幫我寫程式、開發軟體。</p>
+                <div class="social-row">
+                    <a href="https://www.threads.com/@dwng1274" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.facebook.com/VicNailArt" target="_blank" class="social-btn"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="https://www.instagram.com/dwng1274/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                </div>
             </div>
-        </div>
-
-        <!-- Section 5: Footer -->
-        <div class="content-section section-center" id="sec-5">
-            <h1>CONNECT</h1>
-            <div class="subtitle">LET'S BUILD SOMETHING COOL</div>
-            <div class="footer-socials">
-                <a href="https://www.threads.com/@dwng1274" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.facebook.com/VicNailArt" target="_blank" class="social-link"><i class="fa-brands fa-facebook"></i></a>
-                <a href="https://www.instagram.com/dwng1274/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <div style="margin-top: 2rem; font-size: 0.8rem; color: #666;">MADE WITH <i class="fa-solid fa-heart" style="color: var(--accent-magenta);"></i> BY SUPERGALEN'S DUNGEON</div>
         </div>
     </div>
 
-    <!-- Scroll Spacer -->
-    <div class="scroll-spacer"></div>
-
-    <!-- Scripts -->
     <script type="importmap">
         {
             "imports": {
@@ -322,311 +275,253 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import { RGBShiftShader } from 'three/addons/shaders/RGBShiftShader.js';
 
-        // --- Configuration ---
-        const ASSETS = {
-            avatar: '/assets/img/guild/vic/avatar.webp',
-            gallery: [
-                '/assets/img/guild/vic/gallery_01.webp',
-                '/assets/img/guild/vic/gallery_02.webp',
-                '/assets/img/guild/vic/gallery_03.webp',
-                '/assets/img/guild/vic/gallery_04.webp',
-                '/assets/img/guild/vic/gallery_05.webp',
-                '/assets/img/guild/vic/gallery_06.webp',
-                '/assets/img/guild/vic/gallery_07.webp'
-            ]
+        // --- Config ---
+        const CONFIG = {
+            particleCount: 1500,
+            coreSize: 4,
+            colors: [0x00f3ff, 0xff0055, 0xffd700, 0xffffff]
         };
 
-        // --- Scene Setup ---
-        const container = document.getElementById('canvas-container');
+        // --- Setup ---
+        const container = document.getElementById('gl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x02020a, 0.02);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 20);
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+        const pointLight1 = new THREE.PointLight(0x00f3ff, 2, 50);
+        pointLight1.position.set(10, 10, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xff0055, 2, 50);
+        pointLight2.position.set(-10, -10, 10);
+        scene.add(pointLight2);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Bloom) ---
+        // --- Post Processing ---
         const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
+        composer.addPass(new RenderPass(scene, camera));
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.0;
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2;
         bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
-        const outputPass = new OutputPass();
-        composer.addPass(outputPass);
+        const rgbShiftPass = new ShaderPass(RGBShiftShader);
+        rgbShiftPass.uniforms['amount'].value = 0.001;
+        composer.addPass(rgbShiftPass);
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-        scene.add(ambientLight);
+        // --- Objects: The Core (Logic Reactor) ---
+        const coreGroup = new THREE.Group();
+        scene.add(coreGroup);
 
-        const blueLight = new THREE.PointLight(0x00f3ff, 2, 20);
-        blueLight.position.set(-5, 5, 5);
-        scene.add(blueLight);
+        // 1. Inner Geometry (Torus Knot)
+        const knotGeo = new THREE.TorusKnotGeometry(2, 0.5, 128, 16);
+        const knotMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.1 });
+        const knot = new THREE.Mesh(knotGeo, knotMat);
+        coreGroup.add(knot);
 
-        const goldLight = new THREE.PointLight(0xffd700, 2, 20);
-        goldLight.position.set(5, -5, 5);
-        scene.add(goldLight);
+        // 2. Outer Shell (Icosahedron)
+        const shellGeo = new THREE.IcosahedronGeometry(4, 1);
+        const shellMat = new THREE.MeshBasicMaterial({ color: 0xff0055, wireframe: true, transparent: true, opacity: 0.2 });
+        const shell = new THREE.Mesh(shellGeo, shellMat);
+        coreGroup.add(shell);
 
-        // --- Objects (The Construct) ---
-        const clickableObjects = [];
-        const mainGroup = new THREE.Group();
-        scene.add(mainGroup);
+        // 3. Floating Data Rings
+        const ringGeo = new THREE.TorusGeometry(6, 0.05, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        coreGroup.add(ring);
 
-        // Helper: Create "Blueprint" Mesh (Wireframe + Transparent Fill)
-        function createBlueprintMesh(geometry, color, opacity = 0.1) {
-            const material = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: opacity,
-                side: THREE.DoubleSide
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-
-            const edges = new THREE.EdgesGeometry(geometry);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: color, opacity: 0.8, transparent: true }));
-            mesh.add(line);
-
-            return mesh;
-        }
-
-        // 1. The Polish (Central Totem)
-        const polishGroup = new THREE.Group();
-        mainGroup.add(polishGroup);
-
-        const bottleGeo = new THREE.CylinderGeometry(2, 2, 6, 16);
-        const bottle = createBlueprintMesh(bottleGeo, 0x00f3ff, 0.1);
-        polishGroup.add(bottle);
-        bottle.userData = { label: "18 YEARS EXPERT", originalScale: 1 };
-        clickableObjects.push(bottle);
-
-        const capGeo = new THREE.CylinderGeometry(1.5, 1.5, 3, 16);
-        const cap = createBlueprintMesh(capGeo, 0xffffff, 0.2);
-        cap.position.y = 4.5;
-        polishGroup.add(cap);
-
-        // 2. The Drill (Construction)
-        const drillGroup = new THREE.Group();
-        drillGroup.position.set(-8, 2, 0);
-        mainGroup.add(drillGroup);
-
-        const drillBodyGeo = new THREE.BoxGeometry(3, 2, 1);
-        const drillBody = createBlueprintMesh(drillBodyGeo, 0xffd700, 0.2);
-
-        const drillHandleGeo = new THREE.BoxGeometry(1, 2, 1);
-        const drillHandle = createBlueprintMesh(drillHandleGeo, 0xffd700, 0.2);
-        drillHandle.position.set(0, -2, 0);
-
-        const drillBitGeo = new THREE.CylinderGeometry(0.2, 0.2, 2, 8);
-        drillBitGeo.rotateZ(Math.PI / 2);
-        const drillBit = createBlueprintMesh(drillBitGeo, 0xff0055, 0.8);
-        drillBit.position.set(2.5, 0, 0);
-
-        drillGroup.add(drillBody, drillHandle, drillBit);
-        drillBody.userData = { label: "RENOVATION & DIY", originalScale: 1 };
-        clickableObjects.push(drillBody);
-
-        // 3. The Tech (N8N Nodes) & Gallery
-        const techGroup = new THREE.Group();
-        techGroup.position.set(8, -2, 2);
-        mainGroup.add(techGroup);
-
-        const planeGeo = new THREE.PlaneGeometry(4, 3);
-        const textureLoader = new THREE.TextureLoader();
-
-        ASSETS.gallery.forEach((url, i) => {
-            const plane = createBlueprintMesh(planeGeo, 0x00f3ff, 0.1);
-
-            // Scatter them in a ring
-            const angle = (i / ASSETS.gallery.length) * Math.PI * 2;
-            const radius = 4;
-            plane.position.set(Math.cos(angle) * radius, (i % 2 === 0 ? 1.5 : -1.5), Math.sin(angle) * radius);
-            plane.lookAt(0, 0, 0); // Face inward
-            plane.rotateY(Math.PI); // Face outward
-
-            textureLoader.load(url, (tex) => {
-                plane.material.map = tex;
-                plane.material.opacity = 0.8;
-                plane.material.needsUpdate = true;
-            });
-
-            plane.userData = { label: i === 0 ? "N8N AUTOMATION" : "PROJECT 0" + (i + 1), originalScale: 1 };
-            techGroup.add(plane);
-            clickableObjects.push(plane);
-        });
-
-        // 4. The Cats (Voxel Style)
+        // 4. Holographic Cats (Guardians)
         const catGroup = new THREE.Group();
-        catGroup.position.set(0, -6, 4);
-        mainGroup.add(catGroup);
+        coreGroup.add(catGroup);
 
-        function createVoxelCat(color) {
+        function createHoloCat(xOffset) {
             const cat = new THREE.Group();
-            const headGeo = new THREE.BoxGeometry(1.5, 1.2, 1.2);
-            const head = createBlueprintMesh(headGeo, color, 0.3);
 
+            // Wireframe Material
+            const mat = new THREE.MeshBasicMaterial({
+                color: 0x00f3ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.3
+            });
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.2, 1.2), mat);
             const earGeo = new THREE.ConeGeometry(0.3, 0.5, 4);
-            const earL = createBlueprintMesh(earGeo, color, 0.8);
+            const earL = new THREE.Mesh(earGeo, mat);
             earL.position.set(-0.5, 0.8, 0);
-            earL.rotation.y = Math.PI / 4;
-
+            earL.rotation.y = Math.PI/4;
             const earR = earL.clone();
             earR.position.set(0.5, 0.8, 0);
 
             cat.add(head, earL, earR);
+            cat.position.set(xOffset, 0, 0);
             return cat;
         }
 
-        const cat1 = createVoxelCat(0xffffff); // White
-        cat1.position.x = -2;
-        catGroup.add(cat1);
-        cat1.children[0].userData = { label: "CAT LOGIC", originalScale: 1 };
-        clickableObjects.push(cat1.children[0]);
+        const cat1 = createHoloCat(-3);
+        const cat2 = createHoloCat(3);
+        catGroup.add(cat1, cat2);
 
-        const cat2 = createVoxelCat(0xaaaaaa); // Grey
-        cat2.position.x = 2;
-        catGroup.add(cat2);
+        // --- Objects: Particle Cloud (Polish Drops) ---
+        // Using InstancedMesh for performance - "Glossy Polish"
+        const particleGeo = new THREE.IcosahedronGeometry(0.2, 1);
+        const particleMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            roughness: 0.1,
+            metalness: 0.1,
+            transmission: 0.2, // Glass-like
+            transparent: true,
+            opacity: 0.9
+        });
+        const particles = new THREE.InstancedMesh(particleGeo, particleMat, CONFIG.particleCount);
 
+        const dummy = new THREE.Object3D();
+        const particleData = [];
 
-        // --- Interaction ---
+        for (let i = 0; i < CONFIG.particleCount; i++) {
+            // Random position in a sphere distribution
+            const r = 10 + Math.random() * 40;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            dummy.position.set(x, y, z);
+            dummy.updateMatrix();
+            particles.setMatrixAt(i, dummy.matrix);
+
+            // Store original pos and color for animation
+            const color = new THREE.Color(CONFIG.colors[Math.floor(Math.random() * CONFIG.colors.length)]);
+            particles.setColorAt(i, color);
+
+            particleData.push({
+                x, y, z,
+                vx: (Math.random() - 0.5) * 0.05,
+                vy: (Math.random() - 0.5) * 0.05,
+                vz: (Math.random() - 0.5) * 0.05,
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+        particles.instanceMatrix.needsUpdate = true;
+        scene.add(particles);
+
+        // --- Animation State ---
+        let scrollY = 0;
+        let targetScrollY = 0;
         let mouse = new THREE.Vector2();
-        let raycaster = new THREE.Raycaster();
-        let hoveredObj = null;
+        let targetMouse = new THREE.Vector2();
 
+        // --- Event Listeners ---
         window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            const tooltip = document.getElementById('tooltip');
-            tooltip.style.left = (e.clientX + 15) + 'px';
-            tooltip.style.top = (e.clientY + 15) + 'px';
+            targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // --- Animation Loop ---
+        window.addEventListener('scroll', () => {
+            targetScrollY = window.scrollY;
+        });
+
+        // --- Loop ---
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
+            const dt = clock.getDelta();
 
-            // Passive Animations
-            polishGroup.rotation.y = t * 0.2;
-            drillGroup.rotation.z = Math.sin(t) * 0.1;
-            drillGroup.position.y = 2 + Math.sin(t * 2) * 0.2;
+            // Smooth Scroll & Mouse
+            scrollY += (targetScrollY - scrollY) * 0.1;
+            mouse.lerp(targetMouse, 0.1);
 
-            techGroup.rotation.y = -0.5 + Math.sin(t * 0.5) * 0.1;
+            // Core Animation
+            knot.rotation.x = t * 0.5;
+            knot.rotation.y = t * 0.3;
+            shell.rotation.y = -t * 0.2;
+            ring.rotation.z = t * 0.1;
+            ring.rotation.x = Math.sin(t * 0.5) * 0.2 + (Math.PI / 2);
 
-            catGroup.children.forEach((cat, i) => {
-                cat.position.y = Math.sin(t * 3 + i) * 0.3;
-                cat.rotation.y = Math.sin(t + i) * 0.2;
-            });
+            // Cat Animation
+            catGroup.rotation.y = t * 0.5;
+            cat1.position.y = Math.sin(t * 2) * 0.2;
+            cat2.position.y = Math.cos(t * 2) * 0.2;
 
-            // Drill Bit Spin
-            drillBit.rotation.y = t * 10;
+            // "Explosion" Effect based on Scroll Velocity
+            const scrollVel = Math.abs(targetScrollY - scrollY);
+            const warpFactor = Math.min(scrollVel * 0.01, 1); // 0 to 1
 
-            // Raycasting
-            if (document.body.style.overflow === 'auto') {
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(clickableObjects);
+            // Post Process Reaction
+            rgbShiftPass.uniforms['amount'].value = 0.001 + warpFactor * 0.01;
+            bloomPass.strength = 1.2 + warpFactor * 2.0;
 
-                // Find first object with a valid label (ignoring wireframes/parts without labels)
-                const hit = intersects.find(i => i.object.userData && i.object.userData.label);
+            // Camera Movement (Scroll Journey)
+            // Move camera through the cloud based on scroll
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = Math.max(0, Math.min(1, scrollY / maxScroll));
 
-                if (hit) {
-                    const obj = hit.object;
+            camera.position.z = 30 - progress * 50; // Move into the void
+            camera.position.y = Math.sin(progress * Math.PI) * 10;
+            camera.rotation.z = progress * Math.PI * 0.5; // Dutch angle twist
 
-                    if (hoveredObj !== obj) {
-                        if (hoveredObj) gsap.to(hoveredObj.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
+            // Mouse Look
+            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
+            camera.position.y += (mouse.y * 2 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
 
-                        hoveredObj = obj;
-                        document.body.style.cursor = 'pointer';
+            // Particle Animation (The Cloud)
+            for (let i = 0; i < CONFIG.particleCount; i++) {
+                const data = particleData[i];
 
-                        gsap.to(obj.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.3, ease: "back.out" });
+                // Orbit
+                const radius = Math.sqrt(data.x*data.x + data.z*data.z);
+                const angle = Math.atan2(data.z, data.x) + 0.001 * (radius * 0.1);
 
-                        const tooltip = document.getElementById('tooltip');
-                        tooltip.innerText = obj.userData.label;
-                        tooltip.style.opacity = 1;
-                    }
-                } else {
-                    if (hoveredObj) {
-                        gsap.to(hoveredObj.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
-                        hoveredObj = null;
-                        document.body.style.cursor = 'default';
-                        document.getElementById('tooltip').style.opacity = 0;
-                    }
+                // Repulsion from mouse ray (approximate)
+                // Simplify: just noise movement
+
+                dummy.position.set(
+                    Math.cos(angle) * radius,
+                    data.y + Math.sin(t + data.phase) * 0.5,
+                    Math.sin(angle) * radius
+                );
+
+                // Warp stretch
+                dummy.scale.setScalar(1);
+                if (warpFactor > 0.1) {
+                    dummy.scale.z = 1 + warpFactor * 10;
+                    dummy.lookAt(camera.position);
                 }
+
+                dummy.updateMatrix();
+                particles.setMatrixAt(i, dummy.matrix);
             }
+            particles.instanceMatrix.needsUpdate = true;
+
+            // FPS Update
+            // if (Math.random() > 0.9) document.getElementById('fps').innerText = Math.round(1/dt);
 
             composer.render();
-        }
-        animate();
-
-        // --- Entry & Scroll Logic ---
-        window.startExperience = () => {
-            const overlay = document.getElementById('intro-overlay');
-            overlay.style.opacity = 0;
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                document.body.style.overflow = 'auto'; // Unlock scroll
-                initScroll();
-            }, 1000);
-
-            // Initial Camera Move (Zoom out to see Construct)
-            gsap.fromTo(camera.position,
-                { z: 50, y: 20 },
-                { z: 25, y: 0, duration: 2.5, ease: "power2.inOut" }
-            );
-        };
-
-        function initScroll() {
-            gsap.registerPlugin(ScrollTrigger);
-
-            const tl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: ".scroll-spacer",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 1
-                }
-            });
-
-            // 1. Philosophy: Assemble / Focus on Polish
-            tl.to(camera.position, { z: 15, y: 2, x: 0, duration: 2 })
-              .to(drillGroup.position, { x: -4, y: 0, z: 0, duration: 2 }, "<") // Snap in
-              .to(techGroup.position, { x: 4, y: 0, z: 0, duration: 2 }, "<")
-              .to("#sec-1", { opacity: 0, duration: 0.5 }, 0)
-              .to("#sec-2", { opacity: 1, duration: 0.5 }, 0.5);
-
-            // 2. Skills: Explode Out / Orbit
-            tl.to(camera.position, { z: 30, y: 10, x: 10, duration: 2 })
-              .to(drillGroup.position, { x: -12, y: 5, z: 5, duration: 2 }, "<") // Explode out
-              .to(techGroup.position, { x: 12, y: -5, z: -5, duration: 2 }, "<")
-              .to("#sec-2", { opacity: 0, duration: 0.5 }, ">-1")
-              .to("#sec-3", { opacity: 1, duration: 0.5 }, ">-0.5");
-
-            // 3. Status: Focus on Tech & Cats
-            tl.to(camera.position, { x: 0, y: -5, z: 12, duration: 2 })
-              .to(catGroup.position, { y: -2, z: 8, duration: 2 }, "<") // Bring cats close
-              .to("#sec-3", { opacity: 0, duration: 0.5 }, ">-1")
-              .to("#sec-4", { opacity: 1, duration: 0.5 }, ">-0.5");
-
-            // 4. Footer
-            tl.to(camera.position, { z: 40, duration: 2 })
-              .to("#sec-4", { opacity: 0, duration: 0.5 }, ">-1")
-              .to("#sec-5", { opacity: 1, duration: 0.5 }, ">-0.5");
         }
 
         // --- Resize ---
@@ -636,6 +531,63 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // --- Loader ---
+        let loadProgress = 0;
+        const bar = document.getElementById('progress');
+        const hint = document.getElementById('click-hint');
+
+        const loadInterval = setInterval(() => {
+            loadProgress += Math.random() * 10;
+            if (loadProgress >= 100) {
+                loadProgress = 100;
+                clearInterval(loadInterval);
+                hint.style.opacity = 1;
+                bar.style.width = '100%';
+            } else {
+                bar.style.width = loadProgress + '%';
+            }
+        }, 100);
+
+        window.startSequence = () => {
+            if (loadProgress < 100) return;
+
+            const loader = document.getElementById('loader');
+            loader.style.opacity = 0;
+            setTimeout(() => {
+                loader.style.display = 'none';
+                document.body.style.overflow = 'auto';
+                animate();
+                initScrollTriggers();
+            }, 1000);
+        };
+
+        // --- GSAP Sections ---
+        function initScrollTriggers() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            const sections = ['#sec-1', '#sec-2', '#sec-3', '#sec-4'];
+
+            sections.forEach((id, i) => {
+                const el = document.querySelector(id);
+                // Simple fade in/out logic based on scroll progress mapping
+                // We use the full scroll height to map sections
+
+                ScrollTrigger.create({
+                    trigger: ".scroll-track",
+                    start: `${i * 20}% top`,
+                    end: `${(i + 1) * 20}% top`,
+                    onEnter: () => {
+                        sections.forEach(s => document.querySelector(s).classList.remove('active'));
+                        el.classList.add('active');
+                    },
+                    onEnterBack: () => {
+                        sections.forEach(s => document.querySelector(s).classList.remove('active'));
+                        el.classList.add('active');
+                    }
+                });
+            });
+        }
 
     </script>
 </body>
