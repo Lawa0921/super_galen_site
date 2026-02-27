@@ -8,6 +8,18 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "loyu"
+    name: "羅玉 Lo Yu"
+    avatar: "/assets/img/guild/loyu/avatar.webp"
+    page: "/guild/loyu.html"
+    tags:
+      - id: "relationship_expert"
+        label: "人際關係專家"
+      - id: "weaver"
+        label: "編織/手作"
+      - id: "analyst"
+        label: "牛津能力分析師"
+
   - id: "pineapple"
     name: "鳳梨老師"
     avatar: "/assets/img/guild/pineapple/avatar.webp"
@@ -969,3 +981,15 @@ members:
         label: "模型車改裝"
       - id: "rider"
         label: "摩旅愛好者"
+
+  - id: "nick"
+    name: "Nick"
+    avatar: "/assets/img/guild/nick/avatar.webp"
+    page: "/guild/nick.html"
+    tags:
+      - id: "frontend"
+        label: "前端工程師"
+      - id: "pixel_art"
+        label: "像素藝術"
+      - id: "retro_gaming"
+        label: "復古遊戲"
