@@ -3,448 +3,641 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bèbè Liu | The Adventure Map 🗺️</title>
+    <title>Bèbè Liu | The Adventure Map</title>
     <meta name="description" content="Bèbè Liu - Graphic Designer, Illustrator, & Life Explorer.">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;500;600&family=Noto+Sans+TC:wght@300;400;500;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@700&family=Noto+Serif+TC:wght@400;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            /* Palette: Vibrant, Flat, Graphic Design */
-            --bg-color: #fffdf5; /* Warm paper */
+            --bg-color: #fffdf5;
             --ink-black: #1a1a1a;
             --pop-orange: #ff6b35;
             --pop-cyan: #00b4d8;
             --pop-yellow: #fdec00;
             --pop-pink: #f72585;
+            --pop-green: #06d6a0;
+            --pop-purple: #7209b7;
             --grid-line: rgba(26, 26, 26, 0.05);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
             background-color: var(--bg-color);
             color: var(--ink-black);
-            font-family: 'Noto Sans TC', sans-serif;
+            font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
-            cursor: crosshair; /* Custom cursor indicator */
         }
 
-        /* P5 Canvas Container */
-        #p5-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            opacity: 0.6; /* Let content pop */
-            transition: opacity 0.5s;
+
+
+        #bg-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -1; opacity: 0.4;
         }
 
-        /* Grid Background Pattern (CSS) */
         .bg-grid {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -2;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: -2;
             background-image:
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
             background-size: 40px 40px;
         }
 
-        /* Loader */
+        /* === LOADER === */
         #loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-color);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Montserrat', sans-serif;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 10000;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-family: 'Syne', sans-serif;
         }
 
-        .loader-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--pop-cyan);
-            border-top: 4px solid var(--pop-pink);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .loader-icon {
+            position: relative; width: 80px; height: 80px;
+            margin: 0 auto 1.5rem;
         }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Scroll Layout */
-        .scroll-wrapper {
-            position: relative;
-            width: 100%;
-            /* Length determines pacing */
-            height: 600vh;
+        .loader-icon .pencil {
+            position: absolute; font-size: 2rem;
+            animation: draw-loop 2s ease-in-out infinite;
+            color: var(--pop-orange);
         }
+        .loader-icon .line {
+            position: absolute; bottom: 10px; left: 10px;
+            width: 0; height: 3px; background: var(--ink-black);
+            animation: line-grow 2s ease-in-out infinite;
+        }
+        @keyframes draw-loop {
+            0%, 100% { left: 10px; bottom: 15px; transform: rotate(-30deg); }
+            50% { left: 55px; bottom: 15px; transform: rotate(-30deg); }
+        }
+        @keyframes line-grow {
+            0% { width: 0; } 50% { width: 50px; } 100% { width: 0; left: 60px; }
+        }
+        .loader-text { font-weight: 700; letter-spacing: 3px; font-size: 0.85rem; }
+        .loader-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+        @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
 
+        /* === SCROLL MAP === */
+        .scroll-map {
+            position: fixed; right: 24px; top: 50%;
+            transform: translateY(-50%); z-index: 100;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .scroll-map-track {
+            width: 3px; height: 280px;
+            background: rgba(26, 26, 26, 0.1);
+            position: relative; border-radius: 2px;
+        }
+        .scroll-map-fill {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 0%;
+            background: linear-gradient(180deg, var(--pop-cyan), var(--pop-orange), var(--pop-pink));
+            border-radius: 2px; transition: height 0.3s ease;
+        }
+        .scroll-map-dot {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            width: 12px; height: 12px; border-radius: 50%;
+            border: 2px solid var(--ink-black); background: #fff;
+            cursor: pointer; transition: all 0.3s; pointer-events: auto;
+        }
+        .scroll-map-dot.active { background: var(--pop-orange); transform: translateX(-50%) scale(1.3); }
+        .scroll-map-dot:hover { background: var(--pop-yellow); transform: translateX(-50%) scale(1.5); }
+        .scroll-map-label {
+            position: absolute; right: 20px; white-space: nowrap;
+            font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 400;
+            opacity: 0; transform: translateX(5px); transition: all 0.3s;
+            pointer-events: none; color: var(--ink-black);
+        }
+        .scroll-map-dot:hover .scroll-map-label,
+        .scroll-map-dot.active .scroll-map-label { opacity: 1; transform: translateX(0); }
+
+        /* === LAYOUT === */
+        .scroll-wrapper { position: relative; width: 100%; height: 880vh; }
         .section {
-            position: absolute;
-            width: 100%;
-            min-height: 100vh;
-            padding: 2rem;
-            display: flex;
-            justify-content: center; /* Default center */
-            align-items: center;
-            pointer-events: none;
+            position: absolute; width: 100%; min-height: 100vh;
+            padding: 2rem; display: flex; justify-content: center;
+            align-items: center; pointer-events: none;
         }
-
-        /* Section Positioning */
         .section:nth-child(1) { top: 0; z-index: 2; }
         .section:nth-child(2) { top: 100vh; justify-content: flex-start; padding-left: 5vw; z-index: 2; }
         .section:nth-child(3) { top: 200vh; justify-content: flex-end; padding-right: 5vw; z-index: 2; }
-        .section:nth-child(4) { top: 300vh; justify-content: center; z-index: 2; }
-        .section:nth-child(5) { top: 400vh; justify-content: center; z-index: 2; }
-        .section:nth-child(6) { top: 500vh; justify-content: center; padding-bottom: 10vh; z-index: 2; }
+        .section:nth-child(4) { top: 300vh; z-index: 2; }
+        .section:nth-child(5) { top: 430vh; justify-content: flex-start; padding-left: 5vw; z-index: 2; }
+        .section:nth-child(6) { top: 560vh; z-index: 2; }
+        .section:nth-child(7) { top: 680vh; justify-content: flex-end; padding-right: 5vw; z-index: 2; }
+        .section:nth-child(8) { top: 790vh; padding-bottom: 10vh; z-index: 2; }
 
-
-        /* Typography */
+        /* === TYPOGRAPHY === */
         h1 {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 900;
-            font-size: clamp(3rem, 8vw, 6rem);
-            color: var(--ink-black);
-            line-height: 0.9;
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            margin-bottom: 1rem;
-            position: relative;
-            z-index: 1;
+            font-family: 'Syne', sans-serif;
+            font-weight: 800; font-size: clamp(3.5rem, 10vw, 7rem);
+            color: var(--ink-black); line-height: 0.85;
+            text-transform: uppercase; letter-spacing: -3px;
+            margin-bottom: 1rem; position: relative; z-index: 1;
         }
-
         h1 span.highlight {
-            color: var(--pop-orange);
-            display: inline-block; /* Allow transforms */
+            color: var(--pop-orange); display: inline-block;
+            position: relative;
+        }
+        /* Hand-drawn circle around Bèbè */
+        h1 span.highlight::after {
+            content: '';
+            position: absolute;
+            top: -12px; left: -18px; right: -18px; bottom: -8px;
+            border: 3px solid var(--pop-orange);
+            border-radius: 55% 45% 50% 50% / 40% 60% 45% 55%;
+            opacity: 0.4;
+            transform: rotate(-3deg);
         }
 
         h2 {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 2.5rem;
+            font-family: 'Syne', 'Noto Serif TC', serif;
+            font-weight: 700; font-size: 2.5rem;
             margin-bottom: 1.5rem;
-            /* Gradient Text */
-            background: linear-gradient(120deg, var(--pop-cyan) 0%, var(--pop-pink) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: inline-block;
-            position: relative;
+            color: var(--ink-black);
+            display: inline-block; position: relative;
+        }
+        /* Wavy underline */
+        h2::after {
+            content: '';
+            position: absolute; bottom: -4px; left: 0;
+            width: 100%; height: 8px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10'%3E%3Cpath d='M0 5 Q12.5 0 25 5 T50 5 T75 5 T100 5' fill='none' stroke='%23ff6b35' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x;
+            background-size: 50px 10px;
+            opacity: 0.6;
         }
 
         h3 {
-            font-family: 'Fredoka', sans-serif;
-            font-size: 1.2rem;
-            color: var(--ink-black);
-            background: var(--pop-yellow);
-            display: inline-block;
-            padding: 0.2rem 0.8rem;
-            transform: rotate(-2deg);
-            margin-bottom: 1rem;
+            font-family: 'Space Mono', monospace; font-size: 1.1rem;
+            color: var(--ink-black); background: var(--pop-yellow);
+            display: inline-block; padding: 0.2rem 0.8rem;
+            transform: rotate(-2deg); margin-bottom: 1rem;
             border: 2px solid var(--ink-black);
-            box-shadow: 4px 4px 0 var(--ink-black);
+            box-shadow: 3px 3px 0 var(--ink-black);
         }
 
         p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #333;
-            margin-bottom: 1.5rem;
-            font-weight: 500;
-            text-align: justify;
+            font-size: 1.05rem; line-height: 1.85; color: #444;
+            margin-bottom: 1.5rem; font-weight: 400;
         }
 
-        /* Cards / Panels */
+        .handwritten {
+            font-family: 'Caveat', cursive;
+            font-size: 1.5rem; color: var(--pop-orange); font-weight: 700;
+        }
+
+        /* Marker highlight effect */
+        .marker {
+            background: linear-gradient(180deg, transparent 55%, rgba(253, 236, 0, 0.5) 55%);
+            padding: 0 4px;
+        }
+        .marker-pink {
+            background: linear-gradient(180deg, transparent 55%, rgba(247, 37, 133, 0.25) 55%);
+            padding: 0 4px;
+        }
+        .marker-cyan {
+            background: linear-gradient(180deg, transparent 55%, rgba(0, 180, 216, 0.25) 55%);
+            padding: 0 4px;
+        }
+
+        /* === PANELS === */
         .panel {
             background: #fff;
             border: 3px solid var(--ink-black);
-            box-shadow: 10px 10px 0 var(--ink-black); /* Brutalist shadow */
-            padding: 3rem;
-            max-width: 550px;
-            width: 100%;
-            pointer-events: auto;
-            position: relative;
-            transition: transform 0.1s ease; /* Faster for parallax */
+            box-shadow: 10px 10px 0 var(--ink-black);
+            padding: 3rem; max-width: 550px; width: 100%;
+            pointer-events: auto; position: relative;
+            transition: transform 0.1s ease;
+        }
+        .panel:hover { box-shadow: 12px 12px 0 var(--pop-pink); }
+        .panel.wide { max-width: 900px; }
+        .panel.extra-wide { max-width: 1000px; }
+
+        /* Panel variants */
+        .panel--warm {
+            background: linear-gradient(135deg, #fff8f0 0%, #fff 60%);
+            border-color: var(--pop-orange);
+            box-shadow: 10px 10px 0 var(--pop-orange);
+        }
+        .panel--warm:hover { box-shadow: 12px 12px 0 var(--pop-pink); }
+
+        .panel--cool {
+            background: linear-gradient(135deg, #f0faff 0%, #fff 60%);
+            border-color: var(--pop-pink);
+            box-shadow: 10px 10px 0 var(--pop-pink);
+        }
+        .panel--cool:hover { box-shadow: 12px 12px 0 var(--pop-cyan); }
+
+        .panel--nature {
+            background: linear-gradient(135deg, #f0fdf8 0%, #fff 60%);
+            border-color: var(--pop-cyan);
+            box-shadow: 10px 10px 0 var(--pop-cyan);
+        }
+        .panel--nature:hover { box-shadow: 12px 12px 0 var(--pop-green); }
+
+        .panel--golden {
+            background: linear-gradient(135deg, #fffde0 0%, #fff 60%);
         }
 
-        .panel:hover {
-            box-shadow: 12px 12px 0 var(--pop-pink);
+        /* Color top bar on panels */
+        .panel-bar {
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 6px;
         }
 
-        .panel.wide {
-            max-width: 900px;
-        }
-
-        /* Decoration: Tape */
+        /* Tape */
         .tape {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            width: 100px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.8);
+            position: absolute; top: -15px; left: 50%;
+            width: 100px; height: 28px;
             transform: translateX(-50%) rotate(-2deg);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08); z-index: 10;
+            opacity: 0.85;
         }
 
-        /* Avatar Styling */
+        .tape--yellow { background: rgba(253, 236, 0, 0.45); }
+        .tape--pink { background: rgba(247, 37, 133, 0.25); }
+        .tape--cyan { background: rgba(0, 180, 216, 0.25); }
+        .tape--green { background: rgba(6, 214, 160, 0.25); }
+
+        /* Stamps */
+        .stamp {
+            position: absolute; width: 60px; height: 60px;
+            border: 3px solid currentColor; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-weight: 800; font-size: 0.5rem;
+            text-transform: uppercase; text-align: center; line-height: 1.1;
+            transform: rotate(-15deg); opacity: 0.6; pointer-events: none;
+        }
+        .stamp::before {
+            content: ''; position: absolute;
+            border: 1.5px dashed currentColor; border-radius: 50%;
+            width: calc(100% + 8px); height: calc(100% + 8px);
+        }
+
+        /* SVG Doodle Decorations */
+        .deco {
+            position: absolute; pointer-events: none; z-index: 1;
+        }
+        .deco-arrow {
+            width: 60px; height: 30px; opacity: 0.2;
+        }
+        .deco-circle {
+            width: 50px; height: 50px; opacity: 0.15;
+        }
+        .deco-star {
+            width: 40px; height: 40px; opacity: 0.15;
+        }
+        .deco-zigzag {
+            width: 80px; height: 20px; opacity: 0.12;
+        }
+
+        /* === HERO === */
+        .hero-inner {
+            text-align: center; position: relative;
+            max-width: 700px;
+        }
+
         .avatar-wrapper {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            margin: 0 auto 2rem;
-            perspective: 1000px; /* For 3D tilt */
+            position: relative; width: 200px; height: 200px;
+            margin: 0 auto 1.5rem;
         }
-
         .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 4px solid var(--ink-black);
-            position: relative;
-            z-index: 2;
-            background: #fff;
+            width: 100%; height: 100%; object-fit: cover;
+            border-radius: 50%; border: 4px solid var(--ink-black);
+            position: relative; z-index: 2; background: #fff;
             transition: transform 0.3s ease;
         }
-
         .avatar-bg {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: var(--pop-cyan);
-            border: 4px solid var(--ink-black);
-            z-index: 1;
-            transition: transform 0.3s ease;
+            position: absolute; top: 8px; left: 8px;
+            width: 100%; height: 100%; border-radius: 50%;
+            background: var(--pop-cyan); border: 4px solid var(--ink-black);
+            z-index: 1; transition: transform 0.3s ease;
+        }
+        .avatar-ring {
+            position: absolute; top: -15px; left: -15px;
+            width: calc(100% + 30px); height: calc(100% + 30px);
+            border-radius: 50%; border: 2px dashed var(--pop-orange);
+            z-index: 0; animation: ring-spin 25s linear infinite;
+        }
+        @keyframes ring-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .avatar-wrapper:hover .avatar-img { transform: translate(-5px, -5px) scale(1.03); }
+        .avatar-wrapper:hover .avatar-bg { transform: translate(5px, 5px); }
+
+        .hero-label {
+            font-family: 'Caveat', cursive; font-size: 1.1rem;
+            color: var(--pop-pink); font-weight: 600;
+            margin-bottom: 0.5rem; letter-spacing: 1px;
         }
 
-        .avatar-wrapper:hover .avatar-img {
-            transform: translate(-5px, -5px);
+        .subtitle {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; text-align: center;
+            font-size: 1rem; color: #666;
+            min-height: 1.5em;
         }
-
-        .avatar-wrapper:hover .avatar-bg {
-            transform: translate(5px, 5px);
+        .typing-cursor {
+            display: inline-block; width: 2px; height: 1.1em;
+            background: var(--pop-orange); margin-left: 3px;
+            vertical-align: text-bottom;
+            animation: blink-cursor 0.8s step-end infinite;
         }
+        @keyframes blink-cursor { 50% { opacity: 0; } }
 
         /* Tags */
         .tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-            margin-bottom: 1.5rem;
-            justify-content: center;
-            pointer-events: auto; /* Allow dragging later? */
+            display: flex; flex-wrap: wrap; gap: 0.7rem;
+            margin: 1.5rem 0; justify-content: center;
+            pointer-events: auto;
         }
-
         .tag {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--ink-black);
-            border: 2px solid var(--ink-black);
-            padding: 0.3rem 1rem;
-            border-radius: 30px;
-            background: #fff;
-            transition: all 0.2s;
-            cursor: grab;
+            font-family: 'DM Sans', 'Noto Serif TC', sans-serif;
+            font-weight: 700; font-size: 0.85rem;
+            color: var(--ink-black); border: 2px solid var(--ink-black);
+            padding: 0.25rem 0.9rem; border-radius: 30px;
+            background: #fff; transition: all 0.2s; cursor: grab;
         }
-
-        .tag:hover {
-            transform: scale(1.1) rotate(3deg);
-            box-shadow: 4px 4px 0 var(--ink-black);
-        }
-
-        .tag:nth-child(1):hover { background: var(--pop-orange); }
-        .tag:nth-child(2):hover { background: var(--pop-cyan); }
+        .tag:hover { transform: scale(1.1) rotate(3deg); box-shadow: 4px 4px 0 var(--ink-black); }
+        .tag:nth-child(1):hover { background: var(--pop-orange); color: #fff; }
+        .tag:nth-child(2):hover { background: var(--pop-cyan); color: #fff; }
         .tag:nth-child(3):hover { background: var(--pop-yellow); }
-        .tag:nth-child(4):hover { background: var(--pop-pink); }
+        .tag:nth-child(4):hover { background: var(--pop-pink); color: #fff; }
+        .tag:nth-child(5):hover { background: var(--pop-green); }
+        .tag:nth-child(6):hover { background: var(--pop-purple); color: #fff; }
 
-        /* Grid Layouts */
+
+
+        /* === GRID CARDS === */
         .grid-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.2rem;
         }
-
         .mini-card {
-            border: 2px solid var(--ink-black);
-            padding: 1.5rem;
-            text-align: center;
-            background: #fff;
-            transition: transform 0.2s;
-            position: relative;
+            border: 2px solid var(--ink-black); padding: 1.2rem;
+            text-align: center; background: #fff;
+            transition: all 0.3s; position: relative;
+            cursor: pointer; overflow: hidden;
         }
-
-        .mini-card::before {
-            content: '';
-            position: absolute;
-            top: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 10px;
-            background: rgba(0,0,0,0.1); /* Tape effect */
+        .mini-card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 4px; background: var(--pop-cyan);
+            transition: height 0.3s;
         }
+        .mini-card:nth-child(1)::after { background: var(--pop-green); }
+        .mini-card:nth-child(2)::after { background: var(--pop-orange); }
+        .mini-card:nth-child(3)::after { background: var(--pop-cyan); }
+        .mini-card:nth-child(4)::after { background: var(--pop-purple); }
+        .mini-card:nth-child(5)::after { background: var(--pop-pink); }
+        .mini-card:nth-child(6)::after { background: var(--pop-yellow); }
 
         .mini-card:hover {
-            transform: scale(1.05) rotate(1deg);
-            background: var(--pop-yellow);
-            z-index: 10;
-            box-shadow: 8px 8px 0 var(--ink-black);
+            transform: translateY(-6px);
+            box-shadow: 6px 6px 0 var(--ink-black);
         }
+        .mini-card:hover::after { height: 100%; opacity: 0.08; }
 
         .mini-card i {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            color: var(--ink-black);
+            font-size: 1.8rem; margin-bottom: 0.5rem;
+            color: var(--ink-black); transition: transform 0.3s;
+            position: relative; z-index: 1;
         }
+        .mini-card:hover i { transform: scale(1.15); }
 
         .mini-card h4 {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            margin-bottom: 0.2rem;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700; font-size: 0.8rem; margin-bottom: 0.15rem;
+            position: relative; z-index: 1;
+        }
+        .mini-card p { position: relative; z-index: 1; }
+        .mini-card .card-detail {
+            font-size: 0.7rem; color: #888; margin-top: 0.4rem;
+            max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+            position: relative; z-index: 1;
+        }
+        .mini-card:hover .card-detail { max-height: 80px; }
+
+        /* === SKILL BADGES === */
+        .skill-domains { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; }
+        .skill-badge {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.7rem 1.1rem; border: 2px solid var(--ink-black);
+            background: #fff; transition: all 0.3s; cursor: default;
+        }
+        .skill-badge:hover {
+            transform: translateY(-4px) rotate(1deg);
+            box-shadow: 5px 5px 0 var(--ink-black);
+        }
+        .skill-badge:nth-child(1):hover { background: var(--pop-orange); color: #fff; }
+        .skill-badge:nth-child(2):hover { background: var(--pop-pink); color: #fff; }
+        .skill-badge:nth-child(3):hover { background: var(--pop-cyan); color: #fff; }
+        .skill-badge:nth-child(4):hover { background: var(--pop-yellow); }
+        .skill-badge:nth-child(5):hover { background: var(--pop-green); }
+        .skill-badge i { font-size: 1.2rem; }
+        .skill-badge-text {
+            font-family: 'DM Sans', 'Noto Serif TC', sans-serif;
+            font-weight: 700; font-size: 0.8rem;
         }
 
-        /* Philosophy Points */
-        .point-list {
-            list-style: none;
-            margin-top: 1rem;
+        /* === GALLERY — Polaroid Style === */
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem; margin-top: 1.5rem;
+            transform: rotate(-1deg);
+        }
+        .polaroid {
+            background: #fff; padding: 10px 10px 40px;
+            border: 1px solid #ddd;
+            box-shadow: 2px 3px 12px rgba(0,0,0,0.1);
+            transition: all 0.4s; cursor: pointer;
+            position: relative;
+        }
+        .polaroid:nth-child(1) { transform: rotate(-2deg); }
+        .polaroid:nth-child(2) { transform: rotate(1.5deg); }
+        .polaroid:nth-child(3) { transform: rotate(-1deg); }
+        .polaroid:nth-child(4) { transform: rotate(2deg); }
+        .polaroid:nth-child(5) { transform: rotate(-0.5deg); }
+
+        .polaroid:hover {
+            transform: scale(1.05) rotate(0deg);
+            box-shadow: 8px 8px 24px rgba(0,0,0,0.15);
+            z-index: 10;
         }
 
-        .point-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: rgba(255,255,255,0.8);
-            border-left: 4px solid var(--pop-cyan);
+        .polaroid-img {
+            width: 100%; aspect-ratio: 1;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .polaroid-img i { font-size: 2.5rem; transition: transform 0.4s; }
+        .polaroid:hover .polaroid-img i { transform: scale(1.15) rotate(-5deg); }
+
+        .polaroid-label {
+            position: absolute; bottom: 10px; left: 0; right: 0;
+            text-align: center;
+            font-family: 'Caveat', cursive; font-size: 1rem;
+            font-weight: 600; color: var(--ink-black);
         }
 
-        .point-icon {
-            font-size: 1.5rem;
-            color: var(--pop-orange);
+        .pat-1 { background: linear-gradient(135deg, #ffe0cc 0%, #ffcc99 100%); }
+        .pat-2 { background: repeating-linear-gradient(45deg, var(--pop-cyan), var(--pop-cyan) 8px, #e0f7fa 8px, #e0f7fa 16px); }
+        .pat-3 { background: radial-gradient(circle, rgba(247,37,133,0.3) 8px, transparent 8px),
+                  radial-gradient(circle, rgba(247,37,133,0.3) 8px, transparent 8px);
+                  background-size: 24px 24px; background-position: 0 0, 12px 12px; background-color: #fff0f6; }
+        .pat-4 { background: linear-gradient(rgba(6,214,160,0.2) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(6,214,160,0.2) 1px, transparent 1px);
+                  background-size: 16px 16px; background-color: #f0fdf8; }
+        .pat-5 { background: conic-gradient(from 0deg, #fff3b0, #ffd6a5, #ffadad, #d5aaff, #a0c4ff, #fff3b0); }
+
+        /* === QUOTE === */
+        .quote-block {
+            position: relative; margin: 1.5rem 0; padding: 1.2rem 1.8rem;
+            border-left: 5px solid var(--pop-orange);
+            background: rgba(255, 107, 53, 0.04);
+        }
+        .quote-block::before {
+            content: '\201C'; font-family: 'Syne', sans-serif;
+            font-size: 3.5rem; font-weight: 800;
+            color: var(--pop-orange); opacity: 0.2;
+            position: absolute; top: -8px; left: 8px; line-height: 1;
+        }
+        .quote-block p {
+            font-family: 'Caveat', cursive;
+            font-size: 1.35rem; font-weight: 600;
+            color: var(--ink-black); margin: 0; text-align: left;
         }
 
-        /* Socials */
-        .social-row {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            margin-top: 2rem;
+        /* === MOTTO === */
+        .motto-banner {
+            width: 100%; overflow: hidden; white-space: nowrap;
+            padding: 0.8rem 0;
+            border-top: 2px solid var(--ink-black);
+            border-bottom: 2px solid var(--ink-black);
+            background: var(--ink-black); color: var(--pop-yellow);
+            font-family: 'Syne', sans-serif;
+            font-weight: 800; font-size: 1rem;
+            letter-spacing: 3px; text-transform: uppercase;
+            margin-top: 1.5rem;
         }
+        .motto-track { display: inline-block; animation: marquee 22s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
+        /* === SOCIALS === */
+        .social-row { display: flex; justify-content: center; gap: 1.5rem; margin-top: 2rem; }
         .social-btn {
-            width: 70px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 3px solid var(--ink-black);
-            border-radius: 50%; /* Circle */
-            font-size: 2rem;
-            color: var(--ink-black);
-            background: #fff;
+            width: 64px; height: 64px;
+            display: flex; align-items: center; justify-content: center;
+            border: 3px solid var(--ink-black); border-radius: 50%;
+            font-size: 1.8rem; color: var(--ink-black); background: #fff;
             box-shadow: 4px 4px 0 var(--ink-black);
-            transition: all 0.2s;
-            text-decoration: none;
+            transition: all 0.2s; text-decoration: none;
         }
-
         .social-btn:hover {
-            transform: translate(-3px, -3px) rotate(10deg);
+            transform: translate(-3px, -3px) rotate(8deg);
             box-shadow: 8px 8px 0 var(--pop-pink);
             background: var(--pop-yellow);
         }
 
-        /* HUD Overlay */
+        /* === HUD === */
         .hud {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background: var(--ink-black);
-            color: #fff;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 0.8rem;
+            position: fixed; bottom: 20px; right: 20px;
+            padding: 8px 16px;
+            background: var(--ink-black); color: #fff;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700; font-size: 0.75rem;
             z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            display: flex; align-items: center; gap: 8px;
             border: 2px solid #fff;
-            box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
         }
 
-        /* Scroll Indicator */
-        .scroll-hint {
-            position: absolute;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 0.8rem;
-            color: var(--ink-black);
-            animation: bounce 2s infinite;
-            text-align: center;
-            opacity: 0.7;
+        /* === BACK TO TOP === */
+        .back-to-top {
+            position: fixed; bottom: 65px; right: 24px;
+            width: 40px; height: 40px;
+            border: 3px solid var(--ink-black); background: var(--pop-yellow);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; cursor: pointer; z-index: 100;
+            opacity: 0; transform: translateY(20px);
+            transition: all 0.3s;
+            box-shadow: 3px 3px 0 var(--ink-black);
+            pointer-events: none;
+        }
+        .back-to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .back-to-top:hover {
+            background: var(--pop-orange);
+            transform: translateY(-3px); box-shadow: 5px 5px 0 var(--ink-black);
         }
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
-            40% { transform: translateX(-50%) translateY(-10px); }
-            60% { transform: translateX(-50%) translateY(-5px); }
-        }
-
-        /* Mobile Adjustments */
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .section { padding: 1rem; justify-content: center !important; }
-            .panel { padding: 2rem; margin: 0; max-width: 100%; box-shadow: 6px 6px 0 var(--ink-black); }
+            .section { padding: 1rem; justify-content: center; }
+            .panel { padding: 2rem; max-width: 100%; box-shadow: 6px 6px 0 var(--ink-black); }
+            .panel--warm { box-shadow: 6px 6px 0 var(--pop-orange); }
+            .panel--cool { box-shadow: 6px 6px 0 var(--pop-pink); }
+            .panel--nature { box-shadow: 6px 6px 0 var(--pop-cyan); }
             h1 { font-size: 3rem; }
-            .grid-cards { grid-template-columns: 1fr 1fr; } /* 2 cols on mobile */
+            h2 { font-size: 1.8rem; }
+            .grid-cards { grid-template-columns: 1fr 1fr; }
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); transform: none; }
+            .polaroid { transform: none; }
+            .scroll-map { display: none; }
+            .back-to-top { right: 12px; bottom: 60px; }
+            .skill-domains { gap: 0.6rem; }
+            .skill-badge { padding: 0.5rem 0.7rem; }
+            .deco { display: none; }
         }
-
+        @media (max-width: 480px) {
+            .grid-cards { grid-template-columns: 1fr; }
+            .gallery-grid { grid-template-columns: 1fr 1fr; }
+            h1 { font-size: 2.5rem; letter-spacing: -1px; }
+        }
     </style>
 </head>
 <body>
 
     <!-- Loader -->
     <div id="loader">
-        <div class="loader-spinner"></div>
-        <div style="margin-top: 1rem; font-weight: 700; letter-spacing: 2px;">LOADING SKETCHBOOK</div>
+        <div>
+            <div class="loader-icon">
+                <i class="fa-solid fa-pencil pencil"></i>
+                <div class="line"></div>
+            </div>
+            <div class="loader-text">OPENING SKETCHBOOK<span class="loader-dots"></span></div>
+        </div>
     </div>
 
-    <!-- Background Grid -->
     <div class="bg-grid"></div>
+    <canvas id="bg-canvas"></canvas>
 
-    <!-- P5 Canvas -->
-    <div id="p5-container"></div>
+    <!-- Scroll Map -->
+    <nav class="scroll-map" aria-label="Scroll progress">
+        <div class="scroll-map-track">
+            <div class="scroll-map-fill"></div>
+            <div class="scroll-map-dot" data-section="0" style="top: 0%"><span class="scroll-map-label">START</span></div>
+            <div class="scroll-map-dot" data-section="1" style="top: 14%"><span class="scroll-map-label">ARTIST</span></div>
+            <div class="scroll-map-dot" data-section="2" style="top: 28%"><span class="scroll-map-label">EXPLORER</span></div>
+            <div class="scroll-map-dot" data-section="3" style="top: 38%"><span class="scroll-map-label">OUTDOOR</span></div>
+            <div class="scroll-map-dot" data-section="4" style="top: 52%"><span class="scroll-map-label">CREATIVE</span></div>
+            <div class="scroll-map-dot" data-section="5" style="top: 66%"><span class="scroll-map-label">GALLERY</span></div>
+            <div class="scroll-map-dot" data-section="6" style="top: 80%"><span class="scroll-map-label">PHILOSOPHY</span></div>
+            <div class="scroll-map-dot" data-section="7" style="top: 96%"><span class="scroll-map-label">CONNECT</span></div>
+        </div>
+    </nav>
 
-    <!-- HUD -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fa-solid fa-arrow-up"></i></button>
+
     <div class="hud">
         <i class="fa-solid fa-pen-nib"></i>
         <span>DESIGN MODE: ON</span>
@@ -452,17 +645,24 @@
 
     <div class="scroll-wrapper">
 
-        <!-- 1. Hero -->
-        <div class="section">
-            <div style="text-align: center; position: relative;">
+        <!-- 1. HERO -->
+        <div class="section" id="sec-0">
+            <div class="hero-inner">
+                <!-- SVG Doodles -->
+                <svg class="deco deco-arrow" style="top: -30px; left: -60px; transform: rotate(20deg);" viewBox="0 0 60 30"><path d="M5 15 Q15 5 30 15 T55 12" fill="none" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/><path d="M48 6 L55 12 L47 16" fill="none" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/></svg>
+                <svg class="deco deco-star" style="top: 30px; right: -40px;" viewBox="0 0 40 40"><path d="M20 5 L23 16 L35 16 L25 23 L28 35 L20 27 L12 35 L15 23 L5 16 L17 16 Z" fill="none" stroke="#f72585" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                <svg class="deco deco-circle" style="bottom: 100px; left: -40px;" viewBox="0 0 50 50"><circle cx="25" cy="25" r="18" fill="none" stroke="#00b4d8" stroke-width="2" stroke-dasharray="4 3"/></svg>
+                <svg class="deco deco-zigzag" style="bottom: 60px; right: -50px; transform: rotate(-5deg);" viewBox="0 0 80 20"><path d="M5 15 L15 5 L25 15 L35 5 L45 15 L55 5 L65 15 L75 5" fill="none" stroke="#fdec00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
                 <div class="avatar-wrapper">
+                    <div class="avatar-ring"></div>
                     <div class="avatar-bg"></div>
                     <img src="/assets/img/guild/bebe_liu/avatar.webp" alt="Bèbè Liu" class="avatar-img">
                 </div>
-                <h3>HELLO WORLD</h3>
+                <p class="hero-label">nice to meet you!</p>
                 <h1>I AM <span class="highlight">Bèbè</span></h1>
-                <p style="font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">
-                    Graphic Designer / Illustrator / Life Gamer
+                <p class="subtitle">
+                    <span class="typed-text"></span><span class="typing-cursor"></span>
                 </p>
 
                 <div class="tags">
@@ -470,107 +670,204 @@
                     <span class="tag">#網頁設計</span>
                     <span class="tag">#插畫</span>
                     <span class="tag">#自媒體</span>
+                    <span class="tag">#旅行冒險</span>
+                    <span class="tag">#遊戲人生</span>
                 </div>
-
-                <div class="scroll-hint">SCROLL TO EXPLORE <br> <i class="fa-solid fa-arrow-down"></i></div>
             </div>
         </div>
 
-        <!-- 2. The Artist (Flow State) -->
-        <div class="section">
-            <div class="panel">
-                <div class="tape"></div>
+        <!-- 2. THE ARTIST -->
+        <div class="section" id="sec-1">
+            <div class="panel panel--warm" data-panel>
+                <div class="tape tape--yellow" style="transform: translateX(-50%) rotate(-3deg);"></div>
+                <div class="stamp" style="top: -20px; right: -15px; color: var(--pop-orange); transform: rotate(12deg);">
+                    FLOW<br>STATE
+                </div>
                 <h3>THE ARTIST</h3>
                 <h2>畫畫與心流</h2>
                 <p>
-                    我是 Bèbè Liu，一位自由工作者。平時以平面設計、插畫和自媒體來賺取在地球的遊戲金幣💰
+                    我是 Bèbè Liu，一位自由工作者。平時以<span class="marker">平面設計</span>、<span class="marker">插畫</span>和<span class="marker">自媒體</span>來賺取在地球的遊戲金幣。
                 </p>
                 <p>
-                    曾經跑遍台北各大市集擺攤畫似顏繪，也舉辦過小型的畫展。對我來說，畫畫是一種進入「心流」的過程。
+                    曾經跑遍台北各大市集擺攤畫似顏繪，也舉辦過小型的畫展。對我來說，畫畫是一種進入「心流」的過程 —— 時間會靜止，世界會消失，只剩下筆尖和色彩之間的對話。
                 </p>
-                <div class="point-item">
-                    <i class="fa-solid fa-palette point-icon"></i>
-                    <div>
-                        <strong>專注當下</strong><br>
-                        <span style="font-size: 0.9rem;">「能讓人廢寢忘食地持續做著，就會是我一直持續做的事。」</span>
-                    </div>
+                <div class="quote-block">
+                    <p>能讓人廢寢忘食地持續做著，就會是我一直持續做的事。</p>
                 </div>
                 <p>重質不重量，我只想把握每一個當下，創造出讓人會心一笑的作品。</p>
             </div>
         </div>
 
-        <!-- 3. The Explorer (Unknown) -->
-        <div class="section">
-            <div class="panel">
-                <div class="tape"></div>
-                <h3>THE EXPLORER</h3>
+        <!-- 3. THE EXPLORER -->
+        <div class="section" id="sec-2">
+            <div class="panel panel--cool" data-panel>
+                <div class="tape tape--pink" style="transform: translateX(-50%) rotate(1deg);"></div>
+                <div class="stamp" style="top: -20px; left: -15px; color: var(--pop-pink); transform: rotate(-8deg);">
+                    WANDER<br>LUST
+                </div>
+                <h3 style="background: var(--pop-pink); color: #fff;">THE EXPLORER</h3>
                 <h2>冒險與未知</h2>
                 <p>
-                    喜歡冒險與探索，害怕未知又期待它帶給我的驚喜，我想人生也是如此。
+                    喜歡冒險與探索，害怕未知又期待它帶給我的驚喜，我想人生也是如此。每一次踏上未知的旅途，都像是在地圖上點亮一個新的座標。
                 </p>
-                <div class="point-item" style="border-left-color: var(--pop-pink);">
-                    <i class="fa-solid fa-map-location-dot point-icon" style="color: var(--pop-pink);"></i>
-                    <div>
-                        <strong>旅行的意義</strong><br>
-                        <span style="font-size: 0.9rem;">旅行能帶給我生命力，不論幾歲都能閃閃發光 ✨</span>
-                    </div>
+                <div class="quote-block" style="border-left-color: var(--pop-pink);">
+                    <p>旅行能帶給我生命力，不論幾歲都能閃閃發光。</p>
                 </div>
                 <p>
-                    熱愛閱讀，也喜歡與人深度談話，對世界保持著永遠的好奇心。
+                    熱愛閱讀，也喜歡與人深度談話，對世界保持著<span class="marker-pink">永遠的好奇心</span>。
                 </p>
             </div>
         </div>
 
-        <!-- 4. Outdoors (Activities) -->
-        <div class="section">
-            <div class="panel wide">
-                <div class="tape"></div>
-                <h3>OUTDOOR LIFE</h3>
+        <!-- 4. OUTDOOR LIFE -->
+        <div class="section" id="sec-3">
+            <div class="panel panel--nature wide" data-panel>
+                <div class="tape tape--cyan" style="transform: translateX(-50%) rotate(-1deg);"></div>
+                <div class="panel-bar" style="background: linear-gradient(90deg, var(--pop-cyan), var(--pop-green));"></div>
+                <h3 style="background: var(--pop-cyan); color: #fff;">OUTDOOR LIFE</h3>
                 <h2>山與海的呼喚</h2>
                 <p style="text-align: center; margin-bottom: 2rem;">
-                    生活體驗家｜不發動態的日子都在好好生活。<br>
+                    <span class="marker-cyan">生活體驗家</span> | 不發動態的日子都在好好生活。<br>
                     喜歡投入大自然的懷抱，感受最純粹的快樂。
                 </p>
-                <div class="grid-cards">
+                <div class="grid-cards" data-stagger-grid>
                     <div class="mini-card">
                         <i class="fa-solid fa-mountain-sun"></i>
                         <h4>CLIMBING</h4>
                         <p style="font-size: 0.8rem; margin:0;">爬山健行</p>
+                        <div class="card-detail">踏上稜線，與雲海對話</div>
                     </div>
                     <div class="mini-card">
                         <i class="fa-solid fa-campground"></i>
                         <h4>CAMPING</h4>
                         <p style="font-size: 0.8rem; margin:0;">露營野營</p>
+                        <div class="card-detail">星空下的自由呼吸</div>
                     </div>
                     <div class="mini-card">
                         <i class="fa-solid fa-water"></i>
                         <h4>SUP</h4>
                         <p style="font-size: 0.8rem; margin:0;">立槳探索</p>
+                        <div class="card-detail">在水面上漫步的浪漫</div>
                     </div>
                     <div class="mini-card">
                         <i class="fa-solid fa-mask-ventilator"></i>
                         <h4>DIVING</h4>
                         <p style="font-size: 0.8rem; margin:0;">潛水悠遊</p>
+                        <div class="card-detail">探索海底的異世界</div>
                     </div>
                     <div class="mini-card">
                         <i class="fa-solid fa-person-surfing"></i>
                         <h4>SURFING</h4>
                         <p style="font-size: 0.8rem; margin:0;">衝浪挑戰</p>
+                        <div class="card-detail">與浪共舞的勇氣</div>
                     </div>
                     <div class="mini-card">
                         <i class="fa-solid fa-dog"></i>
                         <h4>DOG LOVER</h4>
                         <p style="font-size: 0.8rem; margin:0;">玩玩狗勾</p>
+                        <div class="card-detail">最療癒的冒險夥伴</div>
+                    </div>
+                </div>
+                <div class="motto-banner">
+                    <div class="motto-track">
+                        MOUNTAIN & SEA &nbsp;&bull;&nbsp; CLIMB HIGHER &nbsp;&bull;&nbsp; DIVE DEEPER &nbsp;&bull;&nbsp; EXPLORE MORE &nbsp;&bull;&nbsp; LIVE FULLY &nbsp;&bull;&nbsp;
+                        MOUNTAIN & SEA &nbsp;&bull;&nbsp; CLIMB HIGHER &nbsp;&bull;&nbsp; DIVE DEEPER &nbsp;&bull;&nbsp; EXPLORE MORE &nbsp;&bull;&nbsp; LIVE FULLY &nbsp;&bull;&nbsp;
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 5. Philosophy (Game of Life) -->
-        <div class="section">
-            <div class="panel">
-                <div class="tape"></div>
-                <h3>PHILOSOPHY</h3>
+        <!-- 5. CREATOR -->
+        <div class="section" id="sec-4">
+            <div class="panel panel--golden" data-panel>
+                <div class="tape tape--yellow" style="transform: translateX(-50%) rotate(2deg);"></div>
+                <div class="stamp" style="bottom: -15px; right: -15px; color: var(--pop-cyan); transform: rotate(20deg);">
+                    CREATE<br>&amp; SHARE
+                </div>
+                <h3 style="background: var(--pop-orange); color: #fff;">CREATOR</h3>
+                <h2>創作身分</h2>
+                <p>
+                    從市集似顏繪到小型畫展，從平面設計到自媒體經營，每一個創作都是用不同方式說故事。
+                </p>
+                <div class="skill-domains" data-stagger-grid>
+                    <div class="skill-badge">
+                        <i class="fa-solid fa-palette"></i>
+                        <span class="skill-badge-text">平面設計</span>
+                    </div>
+                    <div class="skill-badge">
+                        <i class="fa-solid fa-paintbrush"></i>
+                        <span class="skill-badge-text">插畫創作</span>
+                    </div>
+                    <div class="skill-badge">
+                        <i class="fa-solid fa-desktop"></i>
+                        <span class="skill-badge-text">網頁設計</span>
+                    </div>
+                    <div class="skill-badge">
+                        <i class="fa-solid fa-camera"></i>
+                        <span class="skill-badge-text">攝影</span>
+                    </div>
+                    <div class="skill-badge">
+                        <i class="fa-solid fa-video"></i>
+                        <span class="skill-badge-text">影片剪輯</span>
+                    </div>
+                </div>
+                <p style="margin-top: 1.5rem;">
+                    從市集擺攤到自由接案，每一個創作都是一次新的冒險。
+                </p>
+            </div>
+        </div>
+
+        <!-- 6. GALLERY -->
+        <div class="section" id="sec-5">
+            <div class="panel extra-wide" data-panel style="background: transparent; border: none; box-shadow: none;">
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <h3>GALLERY</h3>
+                    <h2>創作領域</h2>
+                    <p class="handwritten" style="text-align: center;">用色彩說故事，用線條寫日記。</p>
+                </div>
+                <div class="gallery-grid" data-stagger-grid>
+                    <div class="polaroid">
+                        <div class="polaroid-img pat-1">
+                            <i class="fa-solid fa-palette" style="color: #fff;"></i>
+                        </div>
+                        <span class="polaroid-label">平面設計</span>
+                    </div>
+                    <div class="polaroid">
+                        <div class="polaroid-img pat-2">
+                            <i class="fa-solid fa-pen-nib"></i>
+                        </div>
+                        <span class="polaroid-label">插畫</span>
+                    </div>
+                    <div class="polaroid">
+                        <div class="polaroid-img pat-3">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <span class="polaroid-label">攝影</span>
+                    </div>
+                    <div class="polaroid">
+                        <div class="polaroid-img pat-4">
+                            <i class="fa-solid fa-desktop"></i>
+                        </div>
+                        <span class="polaroid-label">網頁設計</span>
+                    </div>
+                    <div class="polaroid">
+                        <div class="polaroid-img pat-5">
+                            <i class="fa-solid fa-hashtag" style="color: #fff;"></i>
+                        </div>
+                        <span class="polaroid-label">自媒體</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. PHILOSOPHY -->
+        <div class="section" id="sec-6">
+            <div class="panel" data-panel>
+                <div class="tape tape--green" style="transform: translateX(-50%) rotate(-2deg);"></div>
+                <div class="stamp" style="top: -20px; right: -15px; color: var(--pop-green); transform: rotate(15deg);">
+                    GAME<br>ON
+                </div>
+                <h3 style="background: var(--pop-green);">PHILOSOPHY</h3>
                 <h2>遊戲人生</h2>
                 <p>
                     繼續抱持著熱情，在地球上實行遊戲人生。
@@ -578,24 +875,20 @@
                 <p>
                     我是一個拍照、剪片、偶爾畫畫的創作者。我想把這個世界的美好，透過我的眼睛和手，傳遞給每一個遇見的人。
                 </p>
-                <div class="point-item" style="border-left-color: var(--pop-yellow);">
-                    <i class="fa-solid fa-gamepad point-icon" style="color: var(--ink-black);"></i>
-                    <div>
-                        <strong>玩家精神</strong><br>
-                        <span style="font-size: 0.9rem;">認真玩樂，努力賺取金幣，然後去解鎖更多地圖！</span>
-                    </div>
+                <div class="quote-block" style="border-left-color: var(--pop-green); margin-top: 1.5rem;">
+                    <p>認真玩樂，努力賺取金幣，然後去解鎖更多地圖！</p>
                 </div>
             </div>
         </div>
 
-        <!-- 6. Connect -->
-        <div class="section">
-            <div class="panel" style="text-align: center; border-style: dashed;">
-                <h3>CONNECT</h3>
+        <!-- 8. CONNECT -->
+        <div class="section" id="sec-7">
+            <div class="panel" data-panel style="text-align: center; border-style: dashed; max-width: 500px;">
+                <h3 style="background: var(--pop-pink); color: #fff;">CONNECT</h3>
                 <h2>一起冒險吧！</h2>
-                <p>
-                    如果你也喜歡我的作品，或者想一起去探索世界，歡迎追蹤我！<br>
-                    （我可以整理圖文作品集給你唷如果快輪到我的話🥹🥹☺️）
+                <p>如果你也喜歡我的作品，或者想一起去探索世界，歡迎追蹤我！</p>
+                <p class="handwritten" style="font-size: 1.6rem; text-align: center;">
+                    Let's create something beautiful together.
                 </p>
                 <div class="social-row">
                     <a href="https://www.threads.com/@kewpiebay" target="_blank" rel="noopener noreferrer" class="social-btn" title="Threads">
@@ -605,292 +898,245 @@
                         <i class="fa-brands fa-instagram"></i>
                     </a>
                 </div>
+                <p style="margin-top: 2rem; font-size: 0.8rem; color: #bbb; text-align: center;">
+                    Made with love & pixels
+                </p>
             </div>
         </div>
 
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <script>
-        // --- GSAP & P5 Integration ---
+        // === CANVAS BACKGROUND (scroll-driven) ===
+        (() => {
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            let w, h, lines = [], scrollY = 0, drawing = false;
+            const LINE_SP = 42;
 
-        // Use Global mode for P5 or Instance mode? Instance is safer.
-        const s = (p) => {
-            let canvas;
-            let width, height;
+            function init() {
+                w = window.innerWidth; h = window.innerHeight;
+                canvas.width = w; canvas.height = h;
+                const total = Math.max(document.body.scrollHeight, h * 9);
+                const n = Math.ceil(total / LINE_SP);
+                lines = [];
+                for (let i = 0; i < n; i++) lines.push({ y: i * LINE_SP, s: i * 1.7 });
+                render();
+            }
 
-            // Animation States driven by Scroll
-            let scrollY = 0;
-            let targetScrollY = 0;
+            function wave(x, seed, freq) {
+                return Math.sin(x * freq + seed) * 0.5
+                     + Math.sin(x * freq * 1.7 + seed * 1.3) * 0.3
+                     + Math.sin(x * freq * 0.5 + seed * 0.8) * 0.2;
+            }
 
-            // Map / Terrain Lines
-            let lines = [];
-            const numLines = 25;
+            function render() {
+                const target = window.scrollY;
+                scrollY += (target - scrollY) * 0.15;
+                const maxScroll = document.body.scrollHeight - h;
+                const progress = maxScroll > 0 ? scrollY / maxScroll : 0;
+                let color, amp, freq;
 
-            // Mouse Trail
-            let trail = [];
+                if (progress < 0.15)      { color = '#1a1a1a'; amp = 20; freq = 0.005; }
+                else if (progress < 0.3)  { color = '#ff6b35'; amp = 50; freq = 0.008; }
+                else if (progress < 0.45) { color = '#f72585'; amp = 150; freq = 0.015; }
+                else if (progress < 0.6)  { color = '#00b4d8'; amp = 100; freq = 0.005; }
+                else if (progress < 0.75) { color = '#06d6a0'; amp = 60; freq = 0.01; }
+                else if (progress < 0.9)  { color = '#f72585'; amp = 90; freq = 0.009; }
+                else                      { color = '#1a1a1a'; amp = 80; freq = 0.01; }
 
-            // Colors
-            const cOrange = p.color('#ff6b35');
-            const cCyan = p.color('#00b4d8');
-            const cYellow = p.color('#fdec00');
-            const cPink = p.color('#f72585');
-            const cDark = p.color('#1a1a1a');
+                ctx.clearRect(0, 0, w, h);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
 
-            // Current Theme Color
-            let themeColor;
-
-            p.setup = () => {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas = p.createCanvas(width, height);
-                canvas.parent('p5-container');
-
-                themeColor = cDark;
-
-                // Initialize lines
-                for(let i = 0; i < numLines; i++) {
-                    lines.push({
-                        y: p.map(i, 0, numLines, height * 0.1, height * 0.9),
-                        offset: i * 100, // Noise offset
-                        baseColor: (i % 2 === 0) ? cCyan : cOrange
-                    });
+                const vTop = scrollY - 60, vBot = scrollY + h + 60;
+                for (let i = 0, len = lines.length; i < len; i++) {
+                    const ln = lines[i];
+                    if (ln.y < vTop || ln.y > vBot) continue;
+                    const baseY = ln.y - scrollY;
+                    ctx.beginPath();
+                    ctx.moveTo(0, baseY + wave(0, ln.s, freq) * amp);
+                    for (let x = 50; x <= w + 50; x += 50) {
+                        ctx.lineTo(x, baseY + wave(x, ln.s, freq) * amp);
+                    }
+                    ctx.stroke();
                 }
-            };
 
-            p.draw = () => {
-                p.clear();
-
-                // Lerp scroll for smoothness
-                targetScrollY = window.scrollY;
-                scrollY = p.lerp(scrollY, targetScrollY, 0.1);
-
-                // Scroll Progress (0 to 1 roughly)
-                const maxScroll = document.body.scrollHeight - window.innerHeight;
-                const progress = scrollY / maxScroll;
-
-                // --- 1. Dynamic Background Logic ---
-                // Morph based on progress
-                let amplitude, freq, speed;
-
-                if (progress < 0.2) {
-                    // Intro: Sketchy
-                    p.stroke(cDark);
-                    amplitude = 20;
-                    freq = 0.005;
-                    speed = 0.01;
-                } else if (progress < 0.4) {
-                    // Art: Flowy
-                    p.stroke(cOrange);
-                    amplitude = 50 + p.sin(p.frameCount * 0.05) * 20;
-                    freq = 0.008;
-                    speed = 0.02;
-                } else if (progress < 0.6) {
-                    // Explorer: Mountains
-                    p.stroke(cPink);
-                    amplitude = 150;
-                    freq = 0.015; // Sharp
-                    speed = 0.01;
-                } else if (progress < 0.8) {
-                    // Outdoors: Waves
-                    p.stroke(cCyan);
-                    amplitude = 100;
-                    freq = 0.005;
-                    speed = 0.04;
+                if (Math.abs(target - scrollY) > 0.5) {
+                    requestAnimationFrame(render);
                 } else {
-                    // Philosophy: Complex
-                    p.stroke(cDark);
-                    amplitude = 80;
-                    freq = 0.01;
-                    speed = 0.02;
+                    drawing = false;
                 }
+            }
 
-                p.noFill();
-                p.strokeWeight(2);
+            function onScroll() {
+                if (!drawing) { drawing = true; requestAnimationFrame(render); }
+            }
 
-                lines.forEach((line, index) => {
-                    p.beginShape();
-                    for (let x = 0; x <= width + 50; x += 30) {
-                        // Calculate Y with noise
-                        let noiseVal = p.noise(
-                            x * freq,
-                            (line.offset + p.frameCount * speed) * 0.5,
-                            progress * 3
-                        );
+            init();
+            window.addEventListener('scroll', onScroll, { passive: true });
+            window.addEventListener('resize', init);
+        })();
 
-                        // Mouse Interaction (Ripple)
-                        let d = p.dist(x, line.y, p.mouseX, p.mouseY);
-                        let mousePush = 0;
-                        if(d < 300) {
-                            mousePush = p.map(d, 0, 300, 50, 0) * p.sin(d * 0.1 - p.frameCount * 0.2);
-                        }
-
-                        let y = line.y + (noiseVal - 0.5) * amplitude + mousePush;
-
-                        // Parallax Y
-                        y -= scrollY * 0.15;
-
-                        // Loop y if off screen?
-                        // Instead, just keep drawing.
-
-                        p.vertex(x, y);
-                    }
-                    p.endShape();
-                });
-
-                // --- 2. Ink Trail ---
-                // Add point if mouse moved
-                if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
-                    trail.push({ x: p.mouseX, y: p.mouseY, age: 0 });
-                }
-
-                p.noStroke();
-                for (let i = trail.length - 1; i >= 0; i--) {
-                    let t = trail[i];
-                    t.age += 1;
-                    let size = p.map(t.age, 0, 50, 20, 0);
-
-                    if (size <= 0) {
-                        trail.splice(i, 1);
-                        continue;
-                    }
-
-                    // Color cycles
-                    let col = p.lerpColor(cYellow, cPink, (t.age / 50));
-                    col.setAlpha(150);
-                    p.fill(col);
-                    p.circle(t.x, t.y, size);
-                }
-            };
-
-            p.windowResized = () => {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                p.resizeCanvas(width, height);
-            };
-        };
-
-        new p5(s);
-
-        // --- GSAP Animations ---
+        // === GSAP ===
         gsap.registerPlugin(ScrollTrigger);
 
-        window.onload = () => {
-            // Hide Loader
-            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => {
-                document.getElementById("loader").style.display = "none";
-            }});
-
-            // 1. Panel Animations
-            const panels = document.querySelectorAll('.panel');
-            panels.forEach((panel) => {
-                gsap.fromTo(panel,
-                    { opacity: 0, y: 100, rotation: 3 },
-                    {
-                        scrollTrigger: {
-                            trigger: panel,
-                            start: "top 85%",
-                            end: "top 30%",
-                            toggleActions: "play none none reverse"
-                        },
-                        opacity: 1,
-                        y: 0,
-                        rotation: 0, // Settle flat
-                        duration: 0.8,
-                        ease: "back.out(1.7)"
-                    }
-                );
+        window.addEventListener('load', () => {
+            gsap.to("#loader", {
+                opacity: 0, duration: 0.8, delay: 0.5,
+                onComplete: () => { document.getElementById("loader").style.display = "none"; ScrollTrigger.refresh(); }
             });
 
-            // 2. Parallax Effect for Panels (Mouse Move)
-            document.addEventListener("mousemove", (e) => {
-                const x = (e.clientX / window.innerWidth - 0.5) * 20;
-                const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            // Typed subtitle
+            const roles = ["Graphic Designer", "Illustrator", "Life Explorer", "Photographer", "Visual Storyteller", "Life Gamer"];
+            let roleIndex = 0, charIndex = 0, isDeleting = false;
+            const typedText = document.querySelector('.typed-text');
+            function typeEffect() {
+                const current = roles[roleIndex];
+                if (isDeleting) charIndex--; else charIndex++;
+                typedText.textContent = current.substring(0, charIndex);
+                let delay = isDeleting ? 40 : 80;
+                if (!isDeleting && charIndex === current.length) { delay = 2000; isDeleting = true; }
+                else if (isDeleting && charIndex === 0) { isDeleting = false; roleIndex = (roleIndex + 1) % roles.length; delay = 300; }
+                setTimeout(typeEffect, delay);
+            }
+            setTimeout(typeEffect, 1500);
 
-                gsap.to(".panel", {
-                    x: x,
-                    y: y,
-                    duration: 0.5,
-                    ease: "power2.out",
-                    overwrite: "auto"
-                });
-
-                gsap.to(".avatar-wrapper", {
-                    x: -x * 1.5,
-                    y: -y * 1.5,
-                    duration: 0.5,
-                    ease: "power2.out"
+            // Panel animations
+            document.querySelectorAll('[data-panel]').forEach((panel) => {
+                const section = panel.closest('.section');
+                gsap.fromTo(panel, { opacity: 0, y: 80, rotation: 2 }, {
+                    scrollTrigger: { trigger: section, start: "top 80%", end: "top 20%", toggleActions: "play none none reverse", invalidateOnRefresh: true },
+                    opacity: 1, y: 0, rotation: 0, duration: 0.8, ease: "back.out(1.5)"
                 });
             });
 
-            // 3. Stagger Grid Items
-            gsap.utils.toArray('.grid-cards').forEach(grid => {
-                gsap.from(grid.children, {
-                    scrollTrigger: {
-                        trigger: grid,
-                        start: "top 80%"
-                    },
-                    y: 50,
-                    opacity: 0,
-                    rotation: 10,
-                    duration: 0.6,
-                    stagger: 0.1,
-                    ease: "elastic.out(1, 0.5)"
+            // Stagger grids
+            document.querySelectorAll('[data-stagger-grid]').forEach(grid => {
+                const section = grid.closest('.section');
+                gsap.fromTo(grid.children, { opacity: 0, y: 40, rotation: 5 }, {
+                    scrollTrigger: { trigger: section, start: "top 60%", toggleActions: "play none none reverse", invalidateOnRefresh: true },
+                    opacity: 1, y: 0, rotation: 0, duration: 0.5, stagger: 0.08, ease: "back.out(1.5)"
                 });
             });
 
-            // 4. Draggable Tags (Robust "Sticker" implementation)
-            const tags = document.querySelectorAll('.tag');
-            tags.forEach(tag => {
+            // Quote reveal
+            document.querySelectorAll('.quote-block').forEach(block => {
+                gsap.fromTo(block, { scaleX: 0, transformOrigin: "left center" }, {
+                    scrollTrigger: { trigger: block.closest('.section'), start: "top 50%", toggleActions: "play none none reverse", invalidateOnRefresh: true },
+                    scaleX: 1, duration: 0.6, ease: "power2.out"
+                });
+            });
+
+            // Stamp spin
+            document.querySelectorAll('.stamp').forEach(stamp => {
+                gsap.to(stamp, {
+                    scrollTrigger: { trigger: stamp.closest('.section'), start: "top bottom", end: "bottom top", scrub: 1, invalidateOnRefresh: true },
+                    rotation: "+=360", ease: "none"
+                });
+            });
+
+            // Handwritten reveal
+            document.querySelectorAll('.handwritten').forEach(text => {
+                gsap.fromTo(text, { opacity: 0, x: -30 }, {
+                    scrollTrigger: { trigger: text.closest('.section'), start: "top 50%", toggleActions: "play none none reverse", invalidateOnRefresh: true },
+                    opacity: 1, x: 0, duration: 0.8, ease: "power2.out"
+                });
+            });
+
+            // Motto banner
+            document.querySelectorAll('.motto-banner').forEach(banner => {
+                gsap.fromTo(banner, { scaleY: 0, opacity: 0 }, {
+                    scrollTrigger: { trigger: banner.closest('.section'), start: "top 40%", toggleActions: "play none none reverse", invalidateOnRefresh: true },
+                    scaleY: 1, opacity: 1, duration: 0.5, ease: "power2.out"
+                });
+            });
+
+            // SVG deco float
+            document.querySelectorAll('.deco').forEach((deco, i) => {
+                gsap.to(deco, {
+                    y: `+=${10 + i * 5}`, rotation: `+=${5 + i * 3}`,
+                    duration: 3 + i * 0.5, repeat: -1, yoyo: true, ease: "sine.inOut"
+                });
+            });
+
+            // Scroll map
+            const scrollMapFill = document.querySelector('.scroll-map-fill');
+            const scrollMapDots = document.querySelectorAll('.scroll-map-dot');
+            const sections = document.querySelectorAll('.section');
+            const backToTopBtn = document.getElementById('backToTop');
+
+            // Cache section offsets to avoid layout reflow on every scroll
+            let sectionOffsets = Array.from(sections, sec => sec.offsetTop);
+            let cachedBodyHeight = document.body.scrollHeight;
+            let cachedWinHeight = window.innerHeight;
+            window.addEventListener('resize', () => {
+                sectionOffsets = Array.from(sections, sec => sec.offsetTop);
+                cachedBodyHeight = document.body.scrollHeight;
+                cachedWinHeight = window.innerHeight;
+            });
+
+            let scrollMapTicking = false;
+            window.addEventListener('scroll', () => {
+                if (!scrollMapTicking) {
+                    scrollMapTicking = true;
+                    requestAnimationFrame(() => {
+                        const scrollTop = window.scrollY;
+                        const maxScroll = cachedBodyHeight - cachedWinHeight;
+                        const progress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0;
+                        scrollMapFill.style.height = progress + '%';
+
+                        const threshold = cachedWinHeight * 0.5;
+                        for (let i = 0; i < sectionOffsets.length; i++) {
+                            if (scrollMapDots[i]) {
+                                if (scrollTop >= sectionOffsets[i] - threshold) scrollMapDots[i].classList.add('active');
+                                else scrollMapDots[i].classList.remove('active');
+                            }
+                        }
+
+                        if (scrollTop > cachedWinHeight) backToTopBtn.classList.add('visible');
+                        else backToTopBtn.classList.remove('visible');
+
+                        scrollMapTicking = false;
+                    });
+                }
+            }, { passive: true });
+
+            scrollMapDots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const target = sections[parseInt(dot.dataset.section)];
+                    if (target) window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+                });
+            });
+
+            backToTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+            // Draggable tags
+            document.querySelectorAll('.tag').forEach(tag => {
                 tag.addEventListener('mousedown', (e) => {
-                    // Prevent default selection
                     e.preventDefault();
-
-                    // Get current position/size before moving to body
                     const rect = tag.getBoundingClientRect();
-                    const offsetX = e.clientX - rect.left;
-                    const offsetY = e.clientY - rect.top;
-
-                    // Move to body to escape transforms and z-index issues
+                    const ox = e.clientX - rect.left, oy = e.clientY - rect.top;
                     document.body.appendChild(tag);
-
-                    tag.style.position = 'fixed'; // Fixed is easier with clientX/Y
-                    tag.style.zIndex = 1000;
-                    tag.style.left = rect.left + 'px';
-                    tag.style.top = rect.top + 'px';
-                    tag.style.margin = 0;
-                    tag.style.transform = 'scale(1.1) rotate(5deg)'; // Pop effect
-                    tag.style.boxShadow = '10px 10px 20px rgba(0,0,0,0.2)';
-
-                    function moveAt(clientX, clientY) {
-                        tag.style.left = clientX - offsetX + 'px';
-                        tag.style.top = clientY - offsetY + 'px';
-                    }
-
-                    function onMouseMove(event) {
-                        moveAt(event.clientX, event.clientY);
-                    }
-
-                    document.addEventListener('mousemove', onMouseMove);
-
-                    tag.onmouseup = function() {
-                        document.removeEventListener('mousemove', onMouseMove);
-                        tag.onmouseup = null;
-
-                        // "Stick" it there
+                    tag.style.position = 'fixed'; tag.style.zIndex = 1000;
+                    tag.style.left = rect.left + 'px'; tag.style.top = rect.top + 'px';
+                    tag.style.margin = '0';
+                    tag.style.transform = 'scale(1.1) rotate(5deg)';
+                    tag.style.boxShadow = '8px 8px 20px rgba(0,0,0,0.15)';
+                    function onMove(ev) { tag.style.left = ev.clientX - ox + 'px'; tag.style.top = ev.clientY - oy + 'px'; }
+                    document.addEventListener('mousemove', onMove);
+                    tag.onmouseup = () => {
+                        document.removeEventListener('mousemove', onMove); tag.onmouseup = null;
                         tag.style.transform = 'scale(1) rotate(' + (Math.random() * 10 - 5) + 'deg)';
-                        tag.style.boxShadow = '4px 4px 0 var(--ink-black)';
-                        tag.style.cursor = 'grab';
+                        tag.style.boxShadow = '4px 4px 0 var(--ink-black)'; tag.style.cursor = 'grab';
                     };
                 });
-                tag.ondragstart = function() { return false; };
+                tag.ondragstart = () => false;
             });
-        };
-
+        });
     </script>
 </body>
 </html>
