@@ -3,399 +3,363 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lo Yu | The Golden Thread</title>
-    <meta name="description" content="羅玉 Lo Yu - Tactical Analyst & Golden Weaver.">
+    <title>Lo Yu | THE TACTICAL EGG</title>
+    <meta name="description" content="羅玉 Lo Yu - Marketing Strategist & Crochet Master">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Serif+TC:wght@700;900&family=Permanent+Marker&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --navy-dark: #0a1128;
-            --navy-light: #1c2541;
-            --gold-bright: #ffd700;
-            --gold-mute: #c5a000;
-            --text-light: #f8f9fa;
+            --pop-yellow: #FFD700;
+            --pop-red: #FF4757;
+            --pop-blue: #2F3542;
+            --pop-white: #FFFFFF;
+            --pop-black: #000000;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { overflow-x: hidden; scroll-behavior: smooth; }
+        html { overflow-x: hidden; }
         body {
-            background-color: var(--navy-dark);
-            color: var(--text-light);
+            background-color: var(--pop-yellow);
+            color: var(--pop-blue);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
         }
 
-        /* === LAYERS === */
-        #webgl-canvas {
+        /* === PHYSICS CANVAS === */
+        #physics-canvas {
             position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
-            z-index: -1;
+            z-index: 0; opacity: 0.5;
+            pointer-events: auto; /* Allow interaction */
         }
 
-        /* === UI & HUD === */
-        .hud-layer {
-            position: fixed; inset: 0; pointer-events: none; z-index: 10;
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 20px;
-        }
-        .hud-top { display: flex; justify-content: space-between; align-items: center; }
-        .hud-bottom { display: flex; justify-content: space-between; align-items: center; }
-
-        .logo-text { font-family: 'Cinzel', serif; font-weight: 700; font-size: 1.5rem; color: var(--gold-bright); letter-spacing: 2px; }
-        .scroll-indicator { color: var(--gold-mute); font-size: 0.8rem; letter-spacing: 1px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-
-        /* === SCROLL CONTENT === */
-        /* We use a long container to drive the 3D scroll, but content appears fixed/faded in based on JS */
-        .scroll-driver {
-            height: 800vh; /* Determines length of the journey */
-        }
-
-        .content-layer {
+        /* === BACKGROUND PATTERN === */
+        .bg-halftone {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 5;
-            display: flex; justify-content: center; align-items: center;
+            background-image: radial-gradient(var(--pop-blue) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.1; z-index: -1;
+            pointer-events: none;
         }
 
-        .slide {
-            position: absolute;
-            width: 100%; max-width: 1000px; padding: 2rem;
-            opacity: 0; transform: translateY(20px); transition: all 0.8s ease-out;
-            display: flex; gap: 3rem; align-items: center;
-        }
-        .slide.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        .slide.exit { opacity: 0; transform: translateY(-20px); }
-
-        /* HERO SLIDE */
-        .hero-layout { display: flex; align-items: center; gap: 3rem; text-align: left; width: 100%; }
-        .avatar-frame {
-            width: 280px; height: 280px; flex-shrink: 0;
-            border: 2px solid var(--gold-bright); padding: 10px;
-            position: relative;
-        }
-        .avatar-frame::before {
-            content: ''; position: absolute; top: -5px; left: -5px; width: 20px; height: 20px;
-            border-top: 2px solid var(--gold-bright); border-left: 2px solid var(--gold-bright);
-        }
-        .avatar-frame::after {
-            content: ''; position: absolute; bottom: -5px; right: -5px; width: 20px; height: 20px;
-            border-bottom: 2px solid var(--gold-bright); border-right: 2px solid var(--gold-bright);
-        }
-        .hero-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(20%) contrast(110%); }
-
-        .hero-text h1 { font-family: 'Cinzel', serif; font-size: 3.5rem; margin-bottom: 0.5rem; color: var(--gold-bright); }
-        .hero-text h2 { font-size: 1.2rem; margin-bottom: 1.5rem; letter-spacing: 3px; color: #aaa; text-transform: uppercase; }
-        .hero-desc { font-size: 1.1rem; line-height: 1.8; max-width: 500px; color: #ddd; }
-
-        /* ANALYST SLIDE */
-        .analyst-layout { text-align: left; width: 100%; position: relative; }
-        .tactical-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
-            margin-top: 2rem; border-top: 1px solid var(--gold-mute); padding-top: 2rem;
-        }
-        .stat-box h3 { font-family: 'Cinzel'; color: var(--gold-bright); margin-bottom: 0.5rem; }
-        .stat-box p { font-size: 0.9rem; color: #bbb; }
-
-        /* WEAVER SLIDE */
-        .weaver-layout { text-align: center; width: 100%; }
-        .quote-box {
-            font-family: 'Great Vibes', cursive; font-size: 2.5rem; color: var(--gold-bright);
-            margin-bottom: 2rem; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        /* === UI LAYER === */
+        .content-layer {
+            position: relative; z-index: 10;
+            max-width: 1000px; margin: 0 auto;
+            padding: 2rem;
+            pointer-events: none; /* Let clicks pass to physics where not on cards */
         }
 
-        /* GALLERY SLIDE */
+        .panel {
+            background: var(--pop-white);
+            border: 4px solid var(--pop-black);
+            box-shadow: 10px 10px 0 var(--pop-black);
+            padding: 2rem; margin-bottom: 4rem;
+            pointer-events: auto; /* Interactive */
+            transform: rotate(-1deg);
+            transition: transform 0.2s;
+        }
+        .panel:hover { transform: rotate(0deg) scale(1.01); }
+        .panel:nth-child(even) { transform: rotate(1deg); }
+        .panel:nth-child(even):hover { transform: rotate(0deg) scale(1.01); }
+
+        /* HERO */
+        .hero-title {
+            font-family: 'Bangers', cursive; font-size: clamp(4rem, 15vw, 8rem);
+            line-height: 0.9; color: var(--pop-white);
+            -webkit-text-stroke: 4px var(--pop-black);
+            text-shadow: 5px 5px 0 var(--pop-black);
+            transform: rotate(-2deg); margin-bottom: 1rem;
+            pointer-events: auto; cursor: help;
+        }
+        .hero-avatar {
+            width: 250px; height: 250px; border-radius: 50%;
+            border: 6px solid var(--pop-black);
+            object-fit: cover; background: #fff;
+            box-shadow: 10px 10px 0 var(--pop-red);
+            margin: 0 auto 2rem; display: block;
+            pointer-events: auto;
+        }
+
+        /* TYPOGRAPHY */
+        h2 {
+            font-family: 'Permanent Marker', cursive; font-size: 2.5rem;
+            color: var(--pop-red); margin-bottom: 1rem;
+            transform: rotate(-2deg); display: inline-block;
+            background: var(--pop-yellow); padding: 0.5rem 1rem;
+            border: 2px solid var(--pop-black);
+        }
+        p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 700; }
+
+        /* GALLERY GRID */
         .gallery-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;
-            width: 100%;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem; margin-top: 2rem;
         }
-        .gallery-item { aspect-ratio: 1; border: 1px solid var(--gold-mute); overflow: hidden; opacity: 0; transform: scale(0.9); }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
-        .gallery-item:hover img { transform: scale(1.1); }
-
-        /* FINAL SLIDE */
-        .final-layout { text-align: center; }
-        .social-row { display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; }
-        .social-btn { font-size: 2rem; color: var(--gold-bright); transition: 0.3s; }
-        .social-btn:hover { transform: scale(1.2); color: #fff; }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .hero-layout { flex-direction: column; text-align: center; }
-            .avatar-frame { width: 200px; height: 200px; margin: 0 auto; }
-            .tactical-grid { grid-template-columns: 1fr; }
-            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+        .polaroid {
+            background: #fff; padding: 10px 10px 40px;
+            border: 2px solid var(--pop-black);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+            transform: rotate(calc(var(--r) * 1deg));
+            transition: 0.3s;
         }
+        .polaroid:hover { transform: scale(1.1) rotate(0deg); z-index: 10; box-shadow: 10px 10px 0 var(--pop-black); }
+        .polaroid img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border: 2px solid #000; }
+
+        /* STICKERS */
+        .sticker {
+            position: absolute; pointer-events: none; z-index: 20;
+            font-family: 'Bangers'; color: #fff; background: var(--pop-red);
+            padding: 0.5rem 1rem; border: 2px solid #000; transform: rotate(15deg);
+            box-shadow: 4px 4px 0 #000; top: -20px; right: -20px; font-size: 1.5rem;
+        }
+
+        /* FOOTER */
+        .footer-links {
+            display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; pointer-events: auto;
+        }
+        .social-btn {
+            background: var(--pop-black); color: var(--pop-yellow);
+            width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; border-radius: 50%; border: 3px solid #fff;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2); transition: 0.2s;
+        }
+        .social-btn:hover { transform: translateY(-5px); background: var(--pop-red); color: #fff; }
+
+        /* LOADING */
+        #loader {
+            position: fixed; inset: 0; background: var(--pop-yellow);
+            z-index: 9999; display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .loader-text {
+            font-family: 'Bangers'; font-size: 3rem; color: #fff;
+            -webkit-text-stroke: 2px #000; animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce { to { transform: scale(1.1); } }
 
     </style>
 </head>
 <body>
 
-    <canvas id="webgl-canvas"></canvas>
-
-    <!-- HUD -->
-    <div class="hud-layer">
-        <div class="hud-top">
-            <div class="logo-text">LO YU</div>
-            <div style="font-family: monospace;">SYS.STATUS: ONLINE</div>
-        </div>
-        <div class="hud-bottom">
-            <div style="font-family: monospace;">COORD: <span id="coord-display">000.000</span></div>
-            <div class="scroll-indicator">FOLLOW THE THREAD ↓</div>
-        </div>
+    <div id="loader">
+        <div class="loader-text">LOADING...</div>
     </div>
 
-    <!-- DRIVER -->
-    <div class="scroll-driver"></div>
+    <!-- 1. PHYSICS BACKGROUND -->
+    <div class="bg-halftone"></div>
+    <div id="physics-canvas"></div>
 
-    <!-- CONTENT SLIDES -->
+    <!-- 2. CONTENT -->
     <div class="content-layer">
 
-        <!-- 1. HERO -->
-        <div class="slide active" id="slide-0">
-            <div class="hero-layout">
-                <div class="avatar-frame">
-                    <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu" class="hero-img">
-                </div>
-                <div class="hero-text">
-                    <h1>羅玉 LO YU</h1>
-                    <h2>The Tactical Weaver</h2>
-                    <p class="hero-desc">
-                        專注於人際關係的行銷策劃師。<br>
-                        前國軍招募專員 / 知識平台處長 / 牛津能力分析師。<br>
-                        用嚴謹的邏輯與溫暖的編織，連結人與人的心。
-                    </p>
-                </div>
+        <!-- HEADER -->
+        <div style="text-align: center; padding: 4rem 0;">
+            <img src="/assets/img/guild/loyu/avatar.webp" class="hero-avatar" alt="Lo Yu">
+            <h1 class="hero-title" onclick="explode()">LO YU</h1>
+            <div style="font-family: 'Permanent Marker'; font-size: 1.5rem; background: #fff; display: inline-block; padding: 0.5rem 2rem; border: 3px solid #000; transform: rotate(2deg);">
+                TACTICAL MARKETING & CROCHET
             </div>
         </div>
 
-        <!-- 2. ANALYST (Logic) -->
-        <div class="slide" id="slide-1">
-            <div class="analyst-layout">
-                <h2 style="font-family: 'Cinzel'; font-size: 2.5rem; color: var(--gold-bright); margin-bottom: 1rem;">STRATEGIC ANALYST</h2>
-                <p style="font-size: 1.1rem; max-width: 600px;">
-                    將軍事般的精準度帶入人際溝通。擅長分析跨世代語境，找出連結斷點，並制定修復策略。
-                </p>
-                <div class="tactical-grid">
-                    <div class="stat-box">
-                        <h3>RECRUITMENT</h3>
-                        <p>前國軍人才招募專員<br>識人術與談判技巧</p>
-                    </div>
-                    <div class="stat-box">
-                        <h3>ANALYSIS</h3>
-                        <p>牛津能力分析師<br>數據化人格特質</p>
-                    </div>
-                    <div class="stat-box">
-                        <h3>STRATEGY</h3>
-                        <p>人際關係訓練<br>社交恐懼克服與職場應用</p>
-                    </div>
-                </div>
+        <!-- ANALYST -->
+        <div class="panel">
+            <div class="sticker">TOP SECRET</div>
+            <h2>THE STRATEGIST</h2>
+            <p>專注於人際關係的行銷策劃師。</p>
+            <p>擁有豐富的網路行銷、平面設計經驗，並曾任國軍人才招募專員與知識平台處長。擅長處理人際問題與跨世代溝通。</p>
+            <hr style="border: 2px dashed #000; margin: 1.5rem 0;">
+            <p><strong>CORE SKILLS:</strong></p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <span style="background: #000; color: #fff; padding: 5px 10px; font-weight: bold;">人際關係訓練</span>
+                <span style="background: #000; color: #fff; padding: 5px 10px; font-weight: bold;">全齡溝通</span>
+                <span style="background: #000; color: #fff; padding: 5px 10px; font-weight: bold;">職場應用</span>
             </div>
         </div>
 
-        <!-- 3. WEAVER (Art) -->
-        <div class="slide" id="slide-2">
-            <div class="weaver-layout">
-                <div class="quote-box">"Weaving happiness, one loop at a time."</div>
-                <p style="max-width: 600px; margin: 0 auto 2rem; font-size: 1.1rem;">
-                    卸下分析師的理性，我是熱愛雞蛋與維尼的編織者。<br>
-                    日文的雞蛋寫作「玉子」，我的名字也有「玉」。<br>
-                    我希望透過手作，傳遞那份純粹的溫暖與美好。
-                </p>
-                <div style="font-family: 'Cinzel'; color: var(--gold-mute);">
-                    INTJ // HANDMADE // WINNIE THE POOH
-                </div>
+        <!-- WEAVER -->
+        <div class="panel" style="background: #fff0f5;">
+            <div class="sticker" style="background: var(--pop-blue); transform: rotate(-10deg); left: -20px; right: auto;">HANDMADE</div>
+            <h2>THE WEAVER</h2>
+            <p>"因為我很喜歡吃蛋，每次吃蛋的時候都覺得人生真美好❤️"</p>
+            <p>日文的雞蛋寫作玉子，正好我的名字之中有玉這個字。我希望透過我的手作，能讓人們帶來幸福。</p>
+
+            <div class="gallery-grid">
+                <div class="polaroid" style="--r: -3;"><img src="/assets/img/guild/loyu/gallery_01.webp"></div>
+                <div class="polaroid" style="--r: 2;"><img src="/assets/img/guild/loyu/gallery_02.webp"></div>
+                <div class="polaroid" style="--r: -1;"><img src="/assets/img/guild/loyu/gallery_03.webp"></div>
+                <div class="polaroid" style="--r: 4;"><img src="/assets/img/guild/loyu/gallery_04.webp"></div>
             </div>
         </div>
 
-        <!-- 4. GALLERY -->
-        <div class="slide" id="slide-3">
-            <div style="text-align: center; width: 100%;">
-                <h2 style="font-family: 'Cinzel'; margin-bottom: 2rem; color: var(--gold-bright);">PORTFOLIO ARCHIVE</h2>
-                <div class="gallery-grid">
-                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_01.webp"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_02.webp"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_03.webp"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_04.webp"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_05.webp"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/loyu/gallery_06.webp"></div>
-                </div>
+        <!-- GALLERY -->
+        <div class="panel">
+            <h2>MORE WORKS</h2>
+            <div class="gallery-grid">
+                <div class="polaroid" style="--r: 1;"><img src="/assets/img/guild/loyu/gallery_05.webp"></div>
+                <div class="polaroid" style="--r: -2;"><img src="/assets/img/guild/loyu/gallery_06.webp"></div>
+                <div class="polaroid" style="--r: 3;"><img src="/assets/img/guild/loyu/gallery_07.webp"></div>
             </div>
         </div>
 
-        <!-- 5. FINALE -->
-        <div class="slide" id="slide-4">
-            <div class="final-layout">
-                <h2 style="font-family: 'Cinzel'; font-size: 3rem; color: var(--gold-bright);">INITIATE LINK</h2>
-                <p style="margin-top: 1rem; color: #ccc;">與陌生人建立良好連結，並保持舒適的社交距離。</p>
-
-                <div class="social-row">
-                    <a href="https://www.threads.com/@loyu1230" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/loyu1230/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" class="social-btn"><i class="fa-solid fa-globe"></i></a>
-                </div>
-
-                <div style="margin-top: 3rem; opacity: 0.5;">
-                    <i class="fa-solid fa-egg" style="font-size: 2rem; color: var(--gold-bright);"></i>
-                </div>
+        <!-- FOOTER -->
+        <div style="text-align: center; margin-bottom: 4rem;">
+            <h2>LET'S CONNECT!</h2>
+            <div class="footer-links">
+                <a href="https://www.threads.com/@loyu1230" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/loyu1230/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" class="social-btn"><i class="fa-solid fa-globe"></i></a>
             </div>
+            <p style="margin-top: 2rem; font-size: 0.9rem;">(Try dragging the falling objects!)</p>
         </div>
 
     </div>
 
     <!-- SCRIPTS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
     <script>
-        // === CONFIG ===
-        const CONFIG = {
-            lineColor: 0xffd700,
-            bgColor: 0x0a1128,
-            pipeSegments: 200,
-            pipeRadius: 0.3,
-            camSpeed: 0.0005
-        };
+        gsap.registerPlugin(ScrollTrigger);
 
-        // === SCENE SETUP ===
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(CONFIG.bgColor, 0.02);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl-canvas'), antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(CONFIG.bgColor);
-
-        // === THE THREAD (Spline) ===
-        // Define a complex path: Origin -> Straight (Logic) -> Curve (Weave) -> Spiral (Finale)
-        const points = [];
-
-        // 1. Origin Burst
-        points.push(new THREE.Vector3(0, 0, 0));
-        points.push(new THREE.Vector3(0, 0, -20)); // Zoom out
-
-        // 2. Logic (Sharp turns)
-        points.push(new THREE.Vector3(10, 5, -40));
-        points.push(new THREE.Vector3(-10, 5, -60));
-        points.push(new THREE.Vector3(-10, -5, -80));
-        points.push(new THREE.Vector3(10, -5, -100));
-
-        // 3. Weaving (Curves)
-        for (let i = 0; i < 20; i++) {
-            const angle = i * 0.5;
-            const z = -120 - (i * 5);
-            const x = Math.sin(angle) * 15;
-            const y = Math.cos(angle) * 15;
-            points.push(new THREE.Vector3(x, y, z));
-        }
-
-        // 4. Finale (Straight)
-        points.push(new THREE.Vector3(0, 0, -250));
-
-        const curve = new THREE.CatmullRomCurve3(points);
-        const tubeGeo = new THREE.TubeGeometry(curve, CONFIG.pipeSegments, CONFIG.pipeRadius, 8, false);
-        const tubeMat = new THREE.MeshStandardMaterial({
-            color: CONFIG.lineColor,
-            emissive: 0xaa8800,
-            roughness: 0.3,
-            metalness: 0.8
+        // === LOADER ===
+        window.addEventListener('load', () => {
+            document.getElementById('loader').style.display = 'none';
+            initPhysics();
         });
-        const tube = new THREE.Mesh(tubeGeo, tubeMat);
-        scene.add(tube);
 
-        // === PARTICLES (The Egg Explosion / Dust) ===
-        const particlesGeo = new THREE.BufferGeometry();
-        const pCount = 500;
-        const pPos = new Float32Array(pCount * 3);
-        for(let i=0; i<pCount*3; i++) {
-            pPos[i] = (Math.random() - 0.5) * 100;
-        }
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const particlesMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.2, transparent: true, opacity: 0.5 });
-        const particles = new THREE.Points(particlesGeo, particlesMat);
-        scene.add(particles);
+        // === MATTER.JS PHYSICS ===
+        let engine, render, runner, composite;
 
-        // === LIGHTS ===
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
+        function initPhysics() {
+            const Engine = Matter.Engine,
+                  Render = Matter.Render,
+                  Runner = Matter.Runner,
+                  Bodies = Matter.Bodies,
+                  Composite = Matter.Composite,
+                  MouseConstraint = Matter.MouseConstraint,
+                  Mouse = Matter.Mouse,
+                  Common = Matter.Common;
 
-        const pointLight = new THREE.PointLight(CONFIG.lineColor, 1, 50);
-        scene.add(pointLight); // Will follow camera
+            engine = Engine.create();
+            composite = engine.world;
 
-        // === SCROLL SYNC ===
-        let scrollPercent = 0;
-        const driver = document.querySelector('.scroll-driver');
-        const slides = document.querySelectorAll('.slide');
+            const canvas = document.getElementById('physics-canvas');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
 
-        function updateScroll() {
-            const h = document.documentElement;
-            const st = window.pageYOffset || h.scrollTop;
-            const sh = h.scrollHeight || document.body.scrollHeight;
-            scrollPercent = st / (sh - h.clientHeight);
-
-            // Camera Path
-            const p1 = curve.getPointAt(scrollPercent);
-            const p2 = curve.getPointAt(Math.min(scrollPercent + 0.05, 1)); // Look ahead
-
-            camera.position.copy(p1);
-            camera.lookAt(p2);
-
-            // Move Light with Camera
-            pointLight.position.copy(p1);
-
-            // Update HUD
-            document.getElementById('coord-display').innerText = `${p1.x.toFixed(2)} / ${p1.z.toFixed(2)}`;
-
-            // Slide Transition Logic
-            // Map scrollPercent (0-1) to slides (0-4)
-            const totalSlides = slides.length;
-            // Zones: 0-0.15 (Hero), 0.15-0.35 (Analyst), 0.35-0.6 (Weaver), 0.6-0.85 (Gallery), 0.85-1 (Finale)
-            let activeIndex = -1;
-
-            if (scrollPercent < 0.15) activeIndex = 0;
-            else if (scrollPercent < 0.35) activeIndex = 1;
-            else if (scrollPercent < 0.60) activeIndex = 2;
-            else if (scrollPercent < 0.85) activeIndex = 3;
-            else activeIndex = 4;
-
-            slides.forEach((slide, i) => {
-                if (i === activeIndex) {
-                    slide.classList.add('active');
-                    slide.classList.remove('exit');
-                    // Animate gallery children staggered
-                    if (i === 3) {
-                        const items = slide.querySelectorAll('.gallery-item');
-                        items.forEach((item, k) => {
-                            setTimeout(() => { item.style.opacity = 1; item.style.transform = 'scale(1)'; }, k * 100);
-                        });
-                    }
-                } else if (i < activeIndex) {
-                    slide.classList.add('exit');
-                    slide.classList.remove('active');
-                } else {
-                    slide.classList.remove('active');
-                    slide.classList.remove('exit');
+            render = Render.create({
+                element: canvas,
+                engine: engine,
+                options: {
+                    width: width,
+                    height: height,
+                    background: 'transparent',
+                    wireframes: false,
+                    showAngleIndicator: false
                 }
+            });
+
+            // Boundaries
+            const ground = Bodies.rectangle(width/2, height + 50, width, 100, { isStatic: true, render: { visible: false } });
+            const leftWall = Bodies.rectangle(-50, height/2, 100, height, { isStatic: true, render: { visible: false } });
+            const rightWall = Bodies.rectangle(width + 50, height/2, 100, height, { isStatic: true, render: { visible: false } });
+            Composite.add(composite, [ground, leftWall, rightWall]);
+
+            // Add Objects (Eggs, Yarn balls - simulated)
+            const colors = ['#FF4757', '#2F3542', '#FFFFFF', '#FFD700'];
+
+            for (let i = 0; i < 40; i++) {
+                const x = Common.random(0, width);
+                const y = Common.random(-500, 0);
+                const size = Common.random(20, 50);
+                const color = Common.choose(colors);
+
+                let body;
+                if (Math.random() > 0.5) {
+                    // Circle (Ball/Yarn)
+                    body = Bodies.circle(x, y, size, {
+                        render: {
+                            fillStyle: color,
+                            strokeStyle: '#000',
+                            lineWidth: 3
+                        },
+                        restitution: 0.9
+                    });
+                } else {
+                    // Egg (Ellipse approx)
+                    body = Bodies.polygon(x, y, 5, size, { // Hexagon approximation looks cool
+                        render: {
+                            fillStyle: color,
+                            strokeStyle: '#000',
+                            lineWidth: 3
+                        },
+                        restitution: 0.6
+                    });
+                }
+                Composite.add(composite, body);
+            }
+
+            // Mouse Interaction
+            const mouse = Mouse.create(render.canvas);
+            const mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: { visible: false }
+                }
+            });
+            Composite.add(composite, mouseConstraint);
+            render.mouse = mouse;
+
+            Render.run(render);
+            const runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // Resize handling
+            window.addEventListener('resize', () => {
+                render.canvas.width = window.innerWidth;
+                render.canvas.height = window.innerHeight;
+                Matter.Body.setPosition(ground, { x: window.innerWidth/2, y: window.innerHeight + 50 });
+                Matter.Body.setPosition(rightWall, { x: window.innerWidth + 50, y: window.innerHeight/2 });
             });
         }
 
-        window.addEventListener('scroll', updateScroll);
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // EXPLOSION EFFECT
+        window.explode = function() {
+            const bodies = Matter.Composite.allBodies(engine.world);
+            bodies.forEach(body => {
+                if (!body.isStatic) {
+                    const force = {
+                        x: (Math.random() - 0.5) * 0.5,
+                        y: -0.5 // Upward burst
+                    };
+                    Matter.Body.applyForce(body, body.position, force);
+                }
+            });
+        };
 
-        // Loop
-        function animate() {
-            requestAnimationFrame(animate);
-            particles.rotation.y += 0.001;
-            renderer.render(scene, camera);
-        }
-        animate();
-        updateScroll(); // Init
+        // Scroll Animations (GSAP)
+        gsap.utils.toArray('.panel').forEach(panel => {
+            gsap.from(panel, {
+                scrollTrigger: {
+                    trigger: panel,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 100,
+                opacity: 0,
+                duration: 0.6,
+                ease: "back.out(1.7)"
+            });
+        });
 
     </script>
 </body>
