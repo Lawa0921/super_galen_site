@@ -1,2 +1,0 @@
-127.0.0.1 - - [27/Feb/2026 03:46:25] "GET /src/content/guild/vic.html HTTP/1.1" 200 -
-127.0.0.1 - - [27/Feb/2026 03:46:25] "GET /assets/img/guild/vic/avatar.webp HTTP/1.1" 200 -
