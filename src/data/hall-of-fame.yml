@@ -981,3 +981,15 @@ members:
         label: "N8N 專家"
       - id: "vibe_coder"
         label: "Vibe Coder"
+
+  - id: "mitsu_jing"
+    name: "Mitsu Jing"
+    avatar: "/assets/img/guild/mitsu_jing/avatar.webp"
+    page: "/guild/mitsu_jing.html"
+    tags:
+      - id: "insurance_specialist"
+        label: "保險業務"
+      - id: "travel_explorer"
+        label: "旅遊住宿"
+      - id: "otaku_collector"
+        label: "公仔收藏"
