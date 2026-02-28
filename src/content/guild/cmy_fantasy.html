@@ -3,445 +3,416 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>原色⭐︎ふぁんたじー | CMY Fantasy | Premium Idol Live</title>
+    <title>原色⭐︎ふぁんたじー OFFICIAL WEBSITE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;800&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --primary: #ff6eb4;   /* Soft Rose Pink */
-            --secondary: #00d2ff; /* Crystal Cyan */
-            --bg-color: #fdfbfb;  /* Warm White */
-            --text-dark: #333333;
-            --text-light: #777777;
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --glass-shadow: 0 8px 32px 0 rgba(255, 110, 180, 0.1);
+            --brand-color: #E60033; /* Traditional Japanese Rose/Crimson */
+            --bg-light: #f8f9fa;
+            --text-main: #1a1a1a;
+            --text-muted: #666666;
+            --border-light: #e0e0e0;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 15% 50%, rgba(255, 110, 180, 0.08), transparent 25%),
-                              radial-gradient(circle at 85% 30%, rgba(0, 210, 255, 0.08), transparent 25%);
-            color: var(--text-dark);
-            font-family: 'Noto Serif TC', serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            font-family: 'Noto Sans TC', sans-serif;
+            -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            width: 100vw;
         }
 
-        /* 3D Canvas Layer */
-        #canvas-container {
+        /* --- GLOBAL & UTILITY --- */
+        .en-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            color: var(--brand-color);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.05em;
+        }
+        .jp-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            letter-spacing: 0.2em;
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+        }
+
+        .section-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+        }
+
+        /* --- HEADER --- */
+        header {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
+            top: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-light);
+            z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            text-decoration: none;
+            letter-spacing: 0.1em;
+        }
+        .logo span { color: var(--brand-color); }
+
+        .nav-links { display: flex; gap: 2rem; }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover { color: var(--brand-color); }
+
+        /* --- HERO SLIDER (Simulated) --- */
+        .hero {
+            height: 100vh;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #hero-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 2; /* Particles over image */
             pointer-events: none;
         }
 
-        /* Content Layer */
-        main {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        h1, h2, h3, .en-text { font-family: 'Montserrat', sans-serif; letter-spacing: 0.1em; }
-
-        /* --- GLASSMORPHISM UTILITY --- */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* --- NAV --- */
-        .nav-back {
-            position: fixed;
-            top: 2rem; left: 2rem;
-            z-index: 100;
-            color: var(--text-dark);
-            text-decoration: none;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 500;
-            letter-spacing: 2px;
-            padding: 0.8rem 1.5rem;
-            border-radius: 50px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-        .nav-back:hover {
-            transform: translateX(-5px);
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* --- HERO SECTION --- */
-        .hero {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
-
-        .hero-title {
-            font-size: clamp(3.5rem, 8vw, 6rem);
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-            line-height: 1.1;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 2vw, 1.2rem);
-            color: var(--text-light);
-            font-weight: 300;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-        }
-
-        /* --- INTRO SECTION --- */
-        .intro-section {
-            padding: 8rem 0;
-            display: flex;
-            justify-content: center;
-        }
-
-        .intro-card {
-            max-width: 800px;
-            padding: 4rem;
-            text-align: center;
-        }
-
-        .intro-text {
-            font-size: 1.1rem;
-            line-height: 2;
-            color: var(--text-dark);
-            margin-bottom: 2rem;
-        }
-
-        .highlight { color: var(--primary); font-weight: 700; }
-
-        /* --- PROFILES SECTION --- */
-        .profiles-section {
-            padding: 6rem 0;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            color: var(--text-dark);
-            font-weight: 300;
-            display: inline-block;
-            position: relative;
-        }
-
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: -10px; left: 50%; transform: translateX(-50%);
-            width: 40px; height: 2px;
-            background: var(--primary);
-        }
-
-        .profiles-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 3rem;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .profile-card {
-            padding: 3rem 2rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: transform 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-
-        .profile-card:hover {
-            transform: translateY(-10px);
-        }
-
-        .avatar-wrap {
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            padding: 8px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            margin-bottom: 2rem;
-        }
-
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid white;
-        }
-
-        .profile-name {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .profile-role {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-        }
-
-        .profile-desc {
-            text-align: center;
-            line-height: 1.8;
-            color: var(--text-light);
-            font-size: 0.95rem;
-        }
-
-        /* --- GALLERY SECTION --- */
-        .gallery-section {
-            padding: 8rem 0;
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-        }
-
-        .gallery-item {
-            border-radius: 16px;
-            overflow: hidden;
-            aspect-ratio: 4/5;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-
-        .gallery-item:hover img {
-            transform: scale(1.05);
-        }
-
-        .gallery-overlay {
+        .hero-image {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
-            opacity: 0;
-            transition: opacity 0.4s;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6; /* Darkened for text readability */
+            transform: scale(1.05);
+            animation: slowZoom 20s linear infinite alternate;
         }
-        .gallery-item:hover .gallery-overlay { opacity: 1; }
 
-        /* --- FOOTER / CTA --- */
-        .footer-section {
-            padding: 8rem 0 4rem;
+        @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        .hero-text-box {
+            position: absolute;
+            bottom: 15%;
+            left: 10%;
+            z-index: 3;
+            color: white;
+        }
+
+        .hero-text-box h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(3rem, 6vw, 5rem);
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .hero-text-box p {
+            font-size: 1rem;
+            letter-spacing: 0.2em;
+            font-weight: 300;
+        }
+
+        /* --- NEWS SECTION --- */
+        .news-section { background: white; }
+
+        .news-list { border-top: 2px solid var(--text-main); list-style: none; }
+
+        .news-item {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border-light);
+            text-decoration: none;
+            color: var(--text-main);
+            transition: background 0.3s;
+        }
+        .news-item:hover { background: var(--bg-light); }
+
+        .news-date { font-family: 'Playfair Display', serif; font-size: 1.1rem; width: 120px; color: var(--text-muted); }
+        .news-category {
+            background: var(--text-main); color: white;
+            font-size: 0.75rem; padding: 0.3rem 0.8rem; margin-right: 1.5rem;
+            letter-spacing: 0.1em;
+        }
+        .news-category.live { background: var(--brand-color); }
+        .news-title { font-weight: 400; font-size: 1.05rem; flex: 1; }
+
+        .btn-more {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 3rem;
+            border: 1px solid var(--text-main);
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            transition: all 0.3s;
+        }
+        .btn-more:hover { background: var(--text-main); color: white; }
+
+        /* --- MEMBER SECTION --- */
+        .member-section { background: var(--bg-light); }
+
+        .member-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 4rem;
+        }
+
+        .member-card {
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .member-photo {
+            width: 100%;
+            aspect-ratio: 3/4;
+            overflow: hidden;
+            position: relative;
+        }
+        .member-photo img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.7s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+        .member-card:hover .member-photo img { transform: scale(1.05); }
+
+        .member-info { padding: 2rem; }
+
+        .member-name-jp { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem; }
+        .member-name-en { font-family: 'Playfair Display', serif; color: var(--brand-color); font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.1em; }
+
+        .member-desc {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-light);
+            padding-top: 1.5rem;
+        }
+
+        /* --- ABOUT / CONCEPT --- */
+        .about-section {
+            background: var(--text-main);
+            color: white;
+            text-align: center;
+        }
+        .about-section .en-title { color: white; }
+        .about-section .jp-title { color: #999; }
+
+        .concept-text {
+            font-size: 1.2rem;
+            line-height: 2.2;
+            font-weight: 300;
+            max-width: 800px;
+            margin: 0 auto 3rem;
+        }
+
+        .concept-highlight { color: var(--brand-color); font-weight: 700; }
+
+        .producer-msg {
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 2rem;
+            display: inline-block;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        /* --- GALLERY --- */
+        .gallery-section { background: white; }
+
+        .gallery-masonry {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .gallery-item { position: relative; overflow: hidden; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.5s; filter: grayscale(0.2); }
+        .gallery-item:hover img { filter: grayscale(0); transform: scale(1.05); }
+
+        /* --- FOOTER --- */
+        footer {
+            background: var(--bg-light);
+            border-top: 1px solid var(--border-light);
+            padding: 4rem 2rem;
             text-align: center;
         }
 
-        .cta-card {
-            max-width: 800px;
-            margin: 0 auto 4rem;
-            padding: 4rem;
-            background: linear-gradient(135deg, rgba(255, 110, 180, 0.1), rgba(0, 210, 255, 0.1));
-            border: 1px solid rgba(255,255,255,0.8);
-        }
-
-        .cta-text {
-            font-size: 1.2rem;
-            line-height: 2;
+        .footer-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
             margin-bottom: 2rem;
         }
 
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-        }
+        .footer-social { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .footer-social a { color: var(--text-main); text-decoration: none; font-size: 0.9rem; letter-spacing: 0.1em; transition: 0.3s; border-bottom: 1px solid transparent; }
+        .footer-social a:hover { color: var(--brand-color); border-color: var(--brand-color); }
 
-        .social-link {
-            font-family: 'Montserrat', sans-serif;
-            text-decoration: none;
-            color: var(--text-dark);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            position: relative;
-            padding-bottom: 5px;
-        }
+        .copyright { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em; }
 
-        .social-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0;
-            width: 0; height: 1px;
-            background: var(--primary);
-            transition: width 0.3s;
-        }
-
-        .social-link:hover::after { width: 100%; }
-
-        .copyright {
-            margin-top: 4rem;
-            font-size: 0.8rem;
-            color: #aaa;
-            font-family: 'Montserrat', sans-serif;
-            letter-spacing: 1px;
-        }
-
-        /* --- LOADER --- */
-        #loader {
-            position: fixed; inset: 0; background: var(--bg-color); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            transition: opacity 1s ease-in-out;
-        }
-        .loader-spinner {
-            width: 40px; height: 40px;
-            border: 2px solid rgba(255, 110, 180, 0.2);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* GSAP Reveal Class */
-        .gsap-reveal { opacity: 0; visibility: hidden; }
+        /* --- GSAP --- */
+        .fade-up { opacity: 0; transform: translateY(40px); }
 
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="loader-spinner"></div></div>
-    <a href="/guild/" class="nav-back">RETURN</a>
-    <div id="canvas-container"></div>
+    <header>
+        <a href="/guild/" class="logo">CMY <span>FANTASY</span></a>
+        <nav class="nav-links">
+            <a href="#news">NEWS</a>
+            <a href="#member">MEMBER</a>
+            <a href="#about">ABOUT</a>
+        </nav>
+    </header>
 
     <main>
-        <!-- Hero -->
-        <section class="hero gsap-reveal">
-            <h1 class="hero-title">CMY FANTASY</h1>
-            <div class="hero-subtitle">Premium Idol Experience</div>
-        </section>
-
-        <!-- Intro -->
-        <section class="intro-section">
-            <div class="glass-panel intro-card gsap-reveal">
-                <p class="intro-text">
-                    您好，我們是來自高雄的雙人偶像系 Cosplay 表演團體<br>
-                    <span class="highlight">「原色⭐︎ふぁんたじー」</span><br><br>
-                    因對 Cosplay、舞蹈與舞台表演的共同熱忱而成立。<br>
-                    以「每次站上舞台，皆是為觀眾帶來歡樂並實現夢想的重要時刻」為核心理念，<br>
-                    期望透過舞台傳遞給觀眾驚喜、感動與深刻的觀賞體驗。
-                </p>
-                <div class="en-text" style="font-size: 0.8rem; color: var(--primary);">EST. 2023</div>
+        <section class="hero">
+            <img src="/assets/img/guild/cmy_fantasy/gallery_3.webp" class="hero-image" alt="CMY Fantasy Live">
+            <div id="hero-canvas"></div>
+            <div class="hero-text-box">
+                <h1>CMY FANTASY<br>OFFICIAL SITE</h1>
+                <p>KAOHSIUNG IDOL UNIT</p>
             </div>
         </section>
 
-        <!-- Profiles -->
-        <section class="profiles-section">
-            <div class="section-header gsap-reveal">
-                <h2 class="section-title">THE MEMBERS</h2>
-            </div>
+        <section id="news" class="news-section">
+            <div class="section-inner">
+                <h2 class="en-title">NEWS</h2>
+                <div class="jp-title">最新消息</div>
 
-            <div class="profiles-grid">
-                <!-- Xiao Miao -->
-                <div class="glass-panel profile-card gsap-reveal">
-                    <div class="avatar-wrap">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" class="avatar-img" alt="Xiao Miao">
-                    </div>
-                    <h3 class="profile-name">筱喵</h3>
-                    <div class="profile-role">Vocal & Cosplay</div>
-                    <p class="profile-desc">
-                        可愛吃貨擔當。<br>
-                        雖然平常是個貪吃鬼，但只要站上舞台，<br>
-                        就會展現出最專業、最閃耀的偶像魅力。<br>
-                        希望能用笑容感染每一個觀眾！
-                    </p>
-                </div>
-
-                <!-- Ting Ting -->
-                <div class="glass-panel profile-card gsap-reveal">
-                    <div class="avatar-wrap" style="background: linear-gradient(135deg, var(--secondary), var(--primary));">
-                        <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" class="avatar-img" alt="Ting Ting">
-                    </div>
-                    <h3 class="profile-name">婷婷</h3>
-                    <div class="profile-role">Dance & Performance</div>
-                    <p class="profile-desc">
-                        舞台能量擔當。<br>
-                        對舞蹈和表演有著無比的熱忱，<br>
-                        無論是帥氣還是可愛的舞步都能完美駕馭。<br>
-                        目標是讓全場觀眾一起High起來！
-                    </p>
+                <ul class="news-list">
+                    <li>
+                        <a href="#" class="news-item fade-up">
+                            <div class="news-date">2024.10.20</div>
+                            <div class="news-category">INFO</div>
+                            <div class="news-title">團體成立滿一週年！感謝大家的支持！</div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="news-item fade-up">
+                            <div class="news-date">2024.09.15</div>
+                            <div class="news-category live">LIVE</div>
+                            <div class="news-title">參與「高雄動漫祭」舞台演出決定！</div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="news-item fade-up">
+                            <div class="news-date">2024.08.01</div>
+                            <div class="news-category">MEDIA</div>
+                            <div class="news-title">YouTube 頻道新影片上架：活動花絮</div>
+                        </a>
+                    </li>
+                </ul>
+                <div style="text-align: center;">
+                    <a href="#" class="btn-more fade-up">VIEW ALL NEWS</a>
                 </div>
             </div>
         </section>
 
-        <!-- Gallery -->
-        <section class="gallery-section">
-            <div class="section-header gsap-reveal">
-                <h2 class="section-title">STAGE ARCHIVE</h2>
-            </div>
-            <div class="gallery-grid">
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_1.webp"><div class="gallery-overlay"></div></div>
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_2.webp"><div class="gallery-overlay"></div></div>
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_3.webp"><div class="gallery-overlay"></div></div>
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_4.webp"><div class="gallery-overlay"></div></div>
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_5.webp"><div class="gallery-overlay"></div></div>
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_6.webp"><div class="gallery-overlay"></div></div>
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_7.webp"><div class="gallery-overlay"></div></div>
-                <div class="gallery-item gsap-reveal"><img src="/assets/img/guild/cmy_fantasy/gallery_8.webp"><div class="gallery-overlay"></div></div>
+        <section id="member" class="member-section">
+            <div class="section-inner">
+                <h2 class="en-title">MEMBER</h2>
+                <div class="jp-title">成員介紹</div>
+
+                <div class="member-grid">
+                    <!-- Xiao Miao -->
+                    <div class="member-card fade-up">
+                        <div class="member-photo">
+                            <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" alt="筱喵 Xiao Miao">
+                        </div>
+                        <div class="member-info">
+                            <div class="member-name-jp">筱喵</div>
+                            <div class="member-name-en">XIAO MIAO</div>
+                            <div class="member-desc">
+                                可愛吃貨妹子。對 Cosplay 與舞台表演充滿熱忱。希望能用笑容感染每一個觀眾，展現出最棒的日系偶像魅力。
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ting Ting -->
+                    <div class="member-card fade-up" style="transition-delay: 0.2s;">
+                        <div class="member-photo">
+                            <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" alt="婷婷 Ting Ting">
+                        </div>
+                        <div class="member-info">
+                            <div class="member-name-jp">婷婷</div>
+                            <div class="member-name-en">TING TING</div>
+                            <div class="member-desc">
+                                舞台表演擔當。擁有豐富之演出經驗與舞台實績。致力於呈現創意與實力之表演內容，傳遞給觀眾驚喜與感動。
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Footer / CTA -->
-        <footer class="footer-section">
-            <div class="glass-panel cta-card gsap-reveal">
-                <h2 class="section-title" style="margin-bottom: 2rem; font-size: 2rem;">PRODUCER WANTED</h2>
-                <p class="cta-text">
+        <section id="about" class="about-section">
+            <div class="section-inner">
+                <h2 class="en-title">CONCEPT</h2>
+                <div class="jp-title">關於我們</div>
+
+                <div class="concept-text fade-up">
+                    您好，我們是南部日系偶像團體<br>
+                    <span class="concept-highlight">「原色⭐︎ふぁんたじー」</span><br><br>
+                    來自高雄之雙人偶像系 Cosplay 表演團體。<br>
+                    團體成立之初，便以「每次站上舞台，<br>皆是為觀眾帶來歡樂並實現夢想的重要時刻」作為核心理念。<br><br>
                     未來將持續拓展多元表演形式，<br>
-                    為活動現場注入獨具風格之偶像系舞台魅力。<br>
-                    <span style="font-size:0.9rem; color:var(--text-light);">(我們的作品為影像居多，若可以放影片的話，可再提供給您)</span>
-                </p>
-            </div>
+                    為活動現場注入獨具風格之偶像系舞台魅力。
+                </div>
 
-            <div class="social-links gsap-reveal">
-                <a href="https://www.threads.com/@cmy_fantasy" target="_blank" class="social-link">THREADS</a>
-                <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="social-link">INSTAGRAM</a>
-                <a href="https://www.youtube.com/@cmy_fantasy" target="_blank" class="social-link">YOUTUBE</a>
+                <div class="producer-msg fade-up">
+                    <strong>PRODUCER WANTED</strong><br><br>
+                    希望有機會被製作到！<br>
+                    我們的作品為影像居多，若可以放影片的話，可再提供給您。
+                </div>
             </div>
+        </section>
 
-            <div class="copyright gsap-reveal">
-                © 2024 CMY FANTASY. CRAFTED FOR THE STAGE.
+        <section class="gallery-section">
+            <div class="gallery-masonry">
+                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_5.webp"></div>
+                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_6.webp"></div>
+                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_7.webp"></div>
+                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_8.webp"></div>
             </div>
+        </section>
+
+        <footer>
+            <div class="footer-logo">CMY FANTASY</div>
+            <div class="footer-social">
+                <a href="https://www.threads.com/@cmy_fantasy" target="_blank">THREADS</a>
+                <a href="https://www.instagram.com/cmy_fantasy/" target="_blank">INSTAGRAM</a>
+                <a href="https://www.youtube.com/@cmy_fantasy" target="_blank">YOUTUBE</a>
+            </div>
+            <div class="copyright">© 2024 CMY FANTASY OFFICIAL. ALL RIGHTS RESERVED.</div>
         </footer>
     </main>
 
@@ -456,149 +427,117 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
-        // --- Three.js High-Fidelity Crystal Setup ---
-        const container = document.getElementById('canvas-container');
+        // --- Three.js Stage Particles (Hero Only) ---
+        const container = document.getElementById('hero-canvas');
         const scene = new THREE.Scene();
-
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 15;
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 50;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
         container.appendChild(renderer.domElement);
 
-        // Lighting setup for glass
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
+        // Create elegant glowing particles (like stage dust / subtle sakura)
+        const particleCount = 400;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-        dirLight.position.set(5, 5, 5);
-        scene.add(dirLight);
-
-        const fillLight = new THREE.DirectionalLight(0xff6eb4, 1.5); // Pink fill
-        fillLight.position.set(-5, 0, 5);
-        scene.add(fillLight);
-
-        // Crystal Material (MeshPhysicalMaterial)
-        // Simulate an environment map using a data texture logic if RGBE fails, but we'll use a strong physical setup
-        const crystalMaterial = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0.1,
-            roughness: 0.05,
-            transmission: 0.9, // glass effect
-            thickness: 1.5,
-            ior: 1.5,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.1,
-            side: THREE.DoubleSide,
-            transparent: true
-        });
-
-        const geometries = [
-            new THREE.OctahedronGeometry(1, 0), // Diamond shape
-            new THREE.IcosahedronGeometry(1, 0)
-        ];
-
-        const crystals = [];
-        for (let i = 0; i < 15; i++) {
-            const geo = geometries[Math.floor(Math.random() * geometries.length)];
-            const mesh = new THREE.Mesh(geo, crystalMaterial);
-
-            // Random spread in background
-            mesh.position.set(
-                (Math.random() - 0.5) * 30,
-                (Math.random() - 0.5) * 30,
-                (Math.random() - 0.5) * 10 - 5
-            );
-
-            const scale = Math.random() * 1.5 + 0.5;
-            mesh.scale.set(scale, scale, scale);
-
-            mesh.rotation.x = Math.random() * Math.PI;
-            mesh.rotation.y = Math.random() * Math.PI;
-
-            mesh.userData = {
-                rotSpeedX: (Math.random() - 0.5) * 0.01,
-                rotSpeedY: (Math.random() - 0.5) * 0.01,
-                floatSpeed: Math.random() * 0.005 + 0.002,
-                baseY: mesh.position.y,
-                offset: Math.random() * Math.PI * 2
-            };
-
-            scene.add(mesh);
-            crystals.push(mesh);
+        for(let i=0; i<particleCount; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 150;
+            positions[i*3+1] = (Math.random() - 0.5) * 150;
+            positions[i*3+2] = (Math.random() - 0.5) * 50;
+            sizes[i] = Math.random() * 2;
         }
 
-        // Mouse Parallax
-        let mouseX = 0, mouseY = 0;
-        let targetX = 0, targetY = 0;
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+        // Custom shader for soft glowing dots
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: new THREE.Color(0xffffff) },
+                time: { value: 0 }
+            },
+            vertexShader: `
+                attribute float size;
+                uniform float time;
+                varying float vAlpha;
+                void main() {
+                    vec3 pos = position;
+                    // Slow drift upwards
+                    pos.y += time * 2.0;
+                    // Wrap around
+                    if(pos.y > 75.0) pos.y -= 150.0;
+
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    gl_PointSize = size * (100.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+
+                    // Twinkle
+                    vAlpha = 0.5 + 0.5 * sin(time * 3.0 + position.x);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                varying float vAlpha;
+                void main() {
+                    // Soft circle
+                    vec2 xy = gl_PointCoord.xy - vec2(0.5);
+                    float ll = length(xy);
+                    if(ll > 0.5) discard;
+
+                    // Soft glow edge
+                    float a = (0.5 - ll) * 2.0 * vAlpha;
+                    gl_FragColor = vec4(color, a * 0.6); // Subtle opacity
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
 
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            material.uniforms.time.value = clock.getElapsedTime();
 
-            // Parallax easing
-            targetX += (mouseX - targetX) * 0.05;
-            targetY += (mouseY - targetY) * 0.05;
-
-            camera.position.x = targetX * 10;
-            camera.position.y = -targetY * 10;
-            camera.lookAt(0, 0, 0);
-
-            // Crystal animation
-            crystals.forEach(crystal => {
-                crystal.rotation.x += crystal.userData.rotSpeedX;
-                crystal.rotation.y += crystal.userData.rotSpeedY;
-                crystal.position.y = crystal.userData.baseY + Math.sin(time + crystal.userData.offset) * 1.5;
-            });
+            // Subtle camera pan
+            camera.position.x = Math.sin(clock.getElapsedTime() * 0.1) * 5;
+            camera.lookAt(0,0,0);
 
             renderer.render(scene, camera);
         }
         animate();
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const width = window.innerWidth;
+            const height = window.innerHeight; // Hero is 100vh
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setSize(width, height);
         });
 
         // --- GSAP Animations ---
-        window.addEventListener('load', () => {
-            const loader = document.getElementById('loader');
-            loader.style.opacity = '0';
-            setTimeout(() => loader.remove(), 1000);
+        gsap.registerPlugin(ScrollTrigger);
 
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Setup elements for reveal
-            gsap.set('.gsap-reveal', { autoAlpha: 1 }); // Remove hidden state before animation
-
-            const revealElements = document.querySelectorAll('.gsap-reveal');
-
-            revealElements.forEach((el) => {
-                gsap.from(el, {
-                    scrollTrigger: {
-                        trigger: el,
-                        start: "top 85%",
-                        toggleActions: "play none none none"
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 1.2,
-                    ease: "power3.out"
-                });
+        const fadeEls = document.querySelectorAll('.fade-up');
+        fadeEls.forEach(el => {
+            gsap.to(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%",
+                },
+                y: 0,
+                opacity: 1,
+                duration: 1,
+                ease: "power3.out"
             });
         });
 
