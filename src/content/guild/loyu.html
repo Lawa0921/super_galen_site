@@ -3,311 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lo Yu | THE TACTICAL EGG</title>
-    <meta name="description" content="羅玉 Lo Yu - Marketing Strategist & Crochet Master">
+    <title>Lo Yu | The Tactical Weaver</title>
+    <meta name="description" content="羅玉 Lo Yu - Marketing Strategist, Crochet Master, and Life Explorer">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Serif+TC:wght@700;900&family=Permanent+Marker&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --pop-yellow: #FFD700;
-            --pop-red: #FF4757;
-            --pop-blue: #2F3542;
-            --pop-white: #FFFFFF;
-            --pop-black: #000000;
-            --pop-cyan: #7bed9f;
+            --c-yellow: #FFD500;
+            --c-red: #F94144;
+            --c-navy: #2F3542;
+            --c-white: #F1F2F6;
+            --c-black: #1E272E;
+            --grid-gap: 24px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { overflow-x: hidden; scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; }
         body {
-            background-color: var(--pop-yellow);
-            color: var(--pop-blue);
-            font-family: 'Comic Neue', 'Noto Serif TC', cursive;
-            font-weight: 700;
+            background-color: var(--c-white);
+            color: var(--c-black);
+            font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
+            line-height: 1.6;
         }
 
-        /* === PHYSICS CANVAS === */
+        /* === BACKGROUND & NOISE === */
         #physics-canvas {
-            position: fixed; top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 0; opacity: 0.6;
-            pointer-events: none; /* Let scroll work naturally */
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0; opacity: 0.15; pointer-events: none;
+        }
+        .noise-bg {
+            position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.4;
+            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
         }
 
-        /* === BACKGROUND PATTERN === */
-        .bg-halftone {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: radial-gradient(var(--pop-blue) 1px, transparent 1px);
-            background-size: 20px 20px;
-            opacity: 0.1; z-index: -1;
-            pointer-events: none;
-        }
-
-        /* === UI LAYER === */
-        .content-layer {
+        /* === LAYOUT === */
+        .container {
             position: relative; z-index: 10;
-            max-width: 1100px; margin: 0 auto;
-            padding: 2rem;
+            max-width: 1400px; margin: 0 auto; padding: 40px 20px;
         }
 
-        /* PANELS */
+        /* Typographic Utilities */
+        .h-anton { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
+        .h-mono { font-family: 'Space Mono', monospace; }
+        .text-hl { background: var(--c-yellow); padding: 0 4px; border: 1px solid var(--c-black); }
+        .text-red { color: var(--c-red); }
+
+        /* === EDITORIAL GRID BLOCKS === */
+
+        /* 1. HERO BLOCK */
+        .hero-block {
+            display: grid; grid-template-columns: 1fr 1fr;
+            border: 4px solid var(--c-black); background: #fff;
+            box-shadow: 12px 12px 0 var(--c-black);
+            margin-bottom: var(--grid-gap);
+        }
+        @media (max-width: 900px) { .hero-block { grid-template-columns: 1fr; } }
+
+        .hero-img-col {
+            border-right: 4px solid var(--c-black);
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--c-yellow); min-height: 400px;
+        }
+        @media (max-width: 900px) { .hero-img-col { border-right: none; border-bottom: 4px solid var(--c-black); } }
+
+        .hero-img {
+            width: 80%; height: 80%; object-fit: cover;
+            border: 4px solid var(--c-black); border-radius: 50%;
+            box-shadow: 8px 8px 0 var(--c-red);
+        }
+
+        .hero-text-col {
+            padding: 3rem; display: flex; flex-direction: column; justify-content: center;
+        }
+        .hero-title { font-size: clamp(3rem, 6vw, 6rem); line-height: 0.9; margin-bottom: 1rem; }
+        .hero-tags {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem;
+            font-family: 'Space Mono'; font-size: 0.9rem; font-weight: 700;
+        }
+        .htag { background: var(--c-black); color: var(--c-yellow); padding: 4px 12px; }
+
+        /* 2. THE STRATEGIST BLOCK (Split Content) */
+        .strat-block {
+            display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--grid-gap);
+            margin-bottom: var(--grid-gap);
+        }
+        @media (max-width: 900px) { .strat-block { grid-template-columns: 1fr; } }
+
         .panel {
-            background: var(--pop-white);
-            border: 4px solid var(--pop-black);
-            box-shadow: 10px 10px 0 var(--pop-black);
-            padding: 3rem; margin-bottom: 5rem;
-            position: relative;
-            transform: rotate(-1deg);
-            transition: transform 0.2s;
+            background: #fff; border: 4px solid var(--c-black);
+            padding: 2.5rem; position: relative;
         }
-        .panel:hover { transform: rotate(0deg) scale(1.01); z-index: 20; }
-        .panel:nth-child(even) { transform: rotate(1deg); }
-        .panel:nth-child(even):hover { transform: rotate(0deg) scale(1.01); }
-
         .panel-header {
-            background: var(--pop-black); color: var(--pop-white);
-            display: inline-block; padding: 0.5rem 1.5rem;
-            font-family: 'Bangers'; font-size: 2rem;
-            transform: skew(-10deg); margin-bottom: 1.5rem;
-            box-shadow: 5px 5px 0 var(--pop-red);
+            font-size: 2rem; margin-bottom: 1.5rem; border-bottom: 4px solid var(--c-black);
+            padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: flex-end;
         }
 
-        /* HERO */
-        .hero-section {
-            text-align: center; padding: 6rem 0 4rem;
-            position: relative;
+        .bullet-list { list-style: none; }
+        .bullet-list li {
+            margin-bottom: 1rem; padding-left: 24px; position: relative;
         }
-        .hero-title {
-            font-family: 'Bangers', cursive; font-size: clamp(4rem, 12vw, 8rem);
-            line-height: 0.9; color: var(--pop-white);
-            -webkit-text-stroke: 4px var(--pop-black);
-            text-shadow: 8px 8px 0 var(--pop-black);
-            transform: rotate(-3deg); margin-bottom: 2rem;
-            cursor: pointer; transition: transform 0.1s;
-            pointer-events: auto; /* Clickable */
-        }
-        .hero-title:active { transform: rotate(-3deg) scale(0.95); }
-
-        .hero-avatar {
-            width: 280px; height: 280px; border-radius: 50%;
-            border: 6px solid var(--pop-black);
-            object-fit: cover; background: #fff;
-            box-shadow: 15px 15px 0 var(--pop-cyan);
-            margin: 0 auto 2rem; display: block;
-            transition: transform 0.3s;
-        }
-        .hero-avatar:hover { transform: rotate(5deg) scale(1.05); }
-
-        /* SPEECH BUBBLE */
-        .speech-bubble {
-            position: absolute; top: 20%; right: 10%;
-            background: #fff; border: 3px solid #000;
-            padding: 1.5rem; border-radius: 50%;
-            font-family: 'Permanent Marker'; font-size: 1.2rem;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
-            animation: float 3s ease-in-out infinite;
-            display: none;
-        }
-        @media (min-width: 768px) { .speech-bubble { display: block; } }
-        .speech-bubble::after {
-            content: ''; position: absolute; bottom: -10px; left: 20px;
-            border-width: 10px 10px 0; border-style: solid;
-            border-color: #000 transparent; display: block; width: 0;
-        }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-        /* TYPOGRAPHY */
-        h2 {
-            font-family: 'Bangers'; font-size: 2.5rem; letter-spacing: 1px;
-            margin-bottom: 1rem;
-        }
-        h3 {
-            font-family: 'Permanent Marker'; font-size: 1.5rem;
-            color: var(--pop-red); margin-bottom: 0.5rem;
-        }
-        p { font-size: 1.2rem; line-height: 1.6; margin-bottom: 1rem; color: #333; }
-
-        /* SKILL BARS */
-        .skill-row { margin-bottom: 1rem; }
-        .skill-label { font-weight: 900; margin-bottom: 0.2rem; display: flex; justify-content: space-between; }
-        .skill-track {
-            height: 20px; background: #eee; border: 2px solid #000;
-            border-radius: 10px; overflow: hidden;
-        }
-        .skill-fill {
-            height: 100%; background: repeating-linear-gradient(45deg, var(--pop-red), var(--pop-red) 10px, var(--pop-black) 10px, var(--pop-black) 20px);
-            width: 0; transition: width 1s ease-out;
+        .bullet-list li::before {
+            content: '▶'; position: absolute; left: 0; color: var(--c-red); font-family: 'Anton';
         }
 
-        /* GALLERY GRID */
-        .gallery-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem; margin-top: 2rem;
+        /* 3. THE WEAVER BLOCK (Image + Text) */
+        .weaver-block {
+            display: grid; grid-template-columns: 1fr 2fr; gap: var(--grid-gap);
+            margin-bottom: var(--grid-gap);
         }
-        .polaroid {
-            background: #fff; padding: 10px 10px 50px;
-            border: 3px solid var(--pop-black);
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
-            transform: rotate(calc(var(--r) * 1deg));
-            transition: 0.3s; cursor: pointer;
+        @media (max-width: 900px) { .weaver-block { grid-template-columns: 1fr; } }
+
+        .img-card {
+            border: 4px solid var(--c-black); background: #fff; padding: 12px;
+            box-shadow: 8px 8px 0 var(--c-black); transition: transform 0.2s;
         }
-        .polaroid:hover { transform: scale(1.1) rotate(0deg); z-index: 10; box-shadow: 10px 10px 0 var(--pop-black); }
-        .polaroid img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border: 2px solid #000; }
-        .polaroid-caption {
-            font-family: 'Permanent Marker'; text-align: center;
-            margin-top: 10px; color: #555;
+        .img-card:hover { transform: translate(-4px, -4px); box-shadow: 12px 12px 0 var(--c-red); }
+        .img-card img { width: 100%; height: auto; border: 2px solid var(--c-black); aspect-ratio: 4/3; object-fit: cover; }
+        .img-caption { font-family: 'Space Mono'; text-align: center; margin-top: 8px; font-weight: bold; font-size: 0.9rem;}
+
+        /* 4. GALLERY WALL (Masonry/Grid) */
+        .gallery-wall {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--grid-gap); margin-bottom: var(--grid-gap);
         }
 
-        /* STICKERS */
-        .sticker {
-            position: absolute; pointer-events: none; z-index: 20;
-            font-family: 'Bangers'; color: #fff; background: var(--pop-red);
-            padding: 0.5rem 1rem; border: 3px solid #000; transform: rotate(15deg);
-            box-shadow: 4px 4px 0 #000; top: -25px; right: -25px; font-size: 1.8rem;
+        /* 5. INTERESTS / PHILOSOPHY BLOCK */
+        .interests-block {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap);
+            margin-bottom: 4rem;
         }
+        @media (max-width: 900px) { .interests-block { grid-template-columns: 1fr; } }
+
+        .int-card {
+            background: var(--c-navy); color: #fff; border: 4px solid var(--c-black);
+            padding: 2rem; text-align: center;
+        }
+        .int-card h3 { color: var(--c-yellow); margin-bottom: 1rem; font-size: 1.5rem; }
+        .int-card i { font-size: 3rem; color: var(--c-red); margin-bottom: 1rem; }
 
         /* FOOTER */
-        .footer-links {
-            display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; pointer-events: auto;
+        .footer-block {
+            border: 4px solid var(--c-black); background: var(--c-yellow);
+            padding: 4rem 2rem; text-align: center; box-shadow: 12px 12px 0 var(--c-black);
         }
-        .social-btn {
-            background: var(--pop-black); color: var(--pop-yellow);
-            width: 70px; height: 70px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; border-radius: 50%; border: 4px solid #fff;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.2); transition: 0.2s;
+        .social-links { display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; }
+        .s-btn {
+            width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;
+            background: #fff; border: 3px solid var(--c-black); font-size: 1.5rem; color: var(--c-black);
+            box-shadow: 4px 4px 0 var(--c-black); transition: 0.2s; text-decoration: none;
         }
-        .social-btn:hover { transform: translateY(-5px) rotate(10deg); background: var(--pop-red); color: #fff; }
+        .s-btn:hover { background: var(--c-red); color: #fff; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--c-black); }
 
-        /* LOADING */
-        #loader {
-            position: fixed; inset: 0; background: var(--pop-yellow);
-            z-index: 9999; display: flex; align-items: center; justify-content: center;
-            flex-direction: column;
+        /* DECO STAMPS */
+        .stamp {
+            position: absolute; border: 3px solid var(--c-red); color: var(--c-red);
+            font-family: 'Anton'; font-size: 1.5rem; padding: 0.2rem 1rem;
+            transform: rotate(-15deg); opacity: 0.8; pointer-events: none;
         }
-        .loader-text {
-            font-family: 'Bangers'; font-size: 3rem; color: #fff;
-            -webkit-text-stroke: 2px #000; animation: bounce 0.5s infinite alternate;
-        }
-        @keyframes bounce { to { transform: scale(1.1); } }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="loader-text">LOADING COMIC...</div>
-    </div>
-
-    <!-- 1. PHYSICS BACKGROUND -->
-    <div class="bg-halftone"></div>
+    <div class="noise-bg"></div>
     <div id="physics-canvas"></div>
 
-    <!-- 2. CONTENT -->
-    <div class="content-layer">
+    <div class="container">
 
-        <!-- HERO -->
-        <div class="hero-section">
-            <div class="speech-bubble">Hi! I'm Lo Yu! <br> Nice to meet you!</div>
-            <img src="/assets/img/guild/loyu/avatar.webp" class="hero-avatar" alt="Lo Yu">
-            <h1 class="hero-title" onclick="explode()">LO YU</h1>
-            <div style="font-family: 'Bangers'; font-size: 2rem; background: #fff; display: inline-block; padding: 0.5rem 3rem; border: 4px solid #000; transform: rotate(2deg); box-shadow: 8px 8px 0 var(--pop-red);">
-                MARKETING STRATEGIST
+        <!-- 1. HERO -->
+        <div class="hero-block">
+            <div class="hero-img-col">
+                <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu" class="hero-img">
+                <div class="stamp" style="top: 20px; right: 20px;">VERIFIED</div>
+            </div>
+            <div class="hero-text-col">
+                <h1 class="h-anton hero-title">LO YU <br><span class="text-red">羅玉</span></h1>
+                <div class="hero-tags">
+                    <span class="htag">INTJ</span>
+                    <span class="htag">CAPRICORN</span>
+                    <span class="htag">MOM OF 2</span>
+                </div>
+                <p style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem;">
+                    專注於<span class="text-hl">人際關係</span>的行銷策劃師與手工鉤織老師。
+                </p>
+                <p style="color: #444;">
+                    曾經擔任國軍人才招募專員與知識平台處長。現為牛津能力分析師，擅長處理人際問題與跨世代溝通。用邏輯解構社交距離，用手作編織生活溫度。
+                </p>
             </div>
         </div>
 
-        <!-- ANALYST: TOP SECRET FILE -->
-        <div class="panel">
-            <div class="sticker">TOP SECRET</div>
-            <div class="panel-header">THE STRATEGIST</div>
-
-            <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 250px;">
-                    <h3>MISSION PROFILE</h3>
-                    <p>專注於人際關係的行銷策劃師。</p>
-                    <p>前國軍人才招募專員與知識平台處長。就像是軍師一樣，我擅長用邏輯分析戰場（人際關係），找出突破口。</p>
-                    <p>透過線上課程，我教大家如何運用「優勢」與「話語」，在職場與生活中建立強大的連結。</p>
+        <!-- 2. THE STRATEGIST -->
+        <div class="strat-block">
+            <div class="panel" style="box-shadow: 8px 8px 0 var(--c-red);">
+                <div class="panel-header h-anton">
+                    <span>01. THE STRATEGIST</span>
+                    <i class="fa-solid fa-chess-knight" style="color: var(--c-red);"></i>
                 </div>
-                <div style="flex: 1; min-width: 250px; background: #f4f4f4; padding: 1.5rem; border: 2px dashed #ccc;">
-                    <h3>SKILL STATS</h3>
+                <h3 style="margin-bottom: 1rem; font-weight: 900;">社交恐懼的破冰專家</h3>
+                <p style="margin-bottom: 1.5rem;">透過線上課程教授如何運用自身優勢、學習說話技巧，與陌生人建立良好連結，並保持舒適的社交距離。</p>
 
-                    <div class="skill-row">
-                        <div class="skill-label"><span>COMMUNICATION</span><span>99%</span></div>
-                        <div class="skill-track"><div class="skill-fill" style="width: 99%"></div></div>
-                    </div>
-                    <div class="skill-row">
-                        <div class="skill-label"><span>MARKETING</span><span>90%</span></div>
-                        <div class="skill-track"><div class="skill-fill" style="width: 90%; background: var(--pop-blue);"></div></div>
-                    </div>
-                    <div class="skill-row">
-                        <div class="skill-label"><span>EMPATHY</span><span>95%</span></div>
-                        <div class="skill-track"><div class="skill-fill" style="width: 95%; background: var(--pop-cyan);"></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- WEAVER: CRAFTING TABLE -->
-        <div class="panel" style="background: #fff0f5;">
-            <div class="sticker" style="background: var(--pop-cyan); transform: rotate(-10deg); left: -20px; right: auto; border-color: #000;">HANDMADE</div>
-            <div class="panel-header" style="background: var(--pop-red);">THE WEAVER</div>
-
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <p style="font-size: 1.5rem; font-family: 'Permanent Marker'; color: var(--pop-red);">"Egg-cellent Happiness!"</p>
-                <p>日文的雞蛋寫作「玉子」，我的名字也有「玉」。<br>我希望透過我的鉤織手作，能讓人們感到幸福。</p>
+                <ul class="bullet-list">
+                    <li><strong>全齡溝通：</strong> 專精於處理不同年齡層之間的溝通斷層。</li>
+                    <li><strong>職場應用：</strong> 將人際溝通技巧精準投入職場，提升團隊合作與個人好感度。</li>
+                    <li><strong>魔法話語：</strong> 掌握能快速拉近距離的「10句魔法話語」。</li>
+                    <li><strong>模仿共鳴：</strong> 運用簡單的動作與情緒帶入，找到頻率相同的共鳴。</li>
+                </ul>
             </div>
 
-            <div class="gallery-grid">
-                <div class="polaroid" style="--r: -3;"><img src="/assets/img/guild/loyu/gallery_01.webp"><div class="polaroid-caption">Cute Dolls</div></div>
-                <div class="polaroid" style="--r: 2;"><img src="/assets/img/guild/loyu/gallery_02.webp"><div class="polaroid-caption">Warm Hats</div></div>
-                <div class="polaroid" style="--r: -1;"><img src="/assets/img/guild/loyu/gallery_03.webp"><div class="polaroid-caption">Cozy Vibes</div></div>
-                <div class="polaroid" style="--r: 4;"><img src="/assets/img/guild/loyu/gallery_04.webp"><div class="polaroid-caption">Handmade Love</div></div>
-            </div>
-        </div>
+            <div class="panel" style="background: var(--c-yellow);">
+                <div class="panel-header h-anton" style="border-bottom-color: var(--c-red);">DATA CORE</div>
+                <p style="font-family: 'Space Mono'; font-size: 0.9rem; margin-bottom: 2rem;">
+                    > ANALYZING PROFILE...<br>
+                    > MATCH FOUND: OXFORD ANALYST<br>
+                    > STATUS: OPTIMAL
+                </p>
 
-        <!-- PHILOSOPHY: EGG THEORY -->
-        <div class="panel" style="background: var(--pop-black); color: #fff; border-color: #fff;">
-            <div class="panel-header" style="background: var(--pop-yellow); color: #000; box-shadow: 5px 5px 0 #fff;">THE PHILOSOPHY</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;">
-                <div>
-                    <h3 style="color: var(--pop-yellow);">CORE VALUES</h3>
-                    <ul style="list-style: none; font-size: 1.2rem;">
-                        <li style="margin-bottom: 1rem;">✨ <strong style="color: var(--pop-cyan);">善用優勢</strong> - Find your superpower.</li>
-                        <li style="margin-bottom: 1rem;">🗣️ <strong style="color: var(--pop-red);">魔法話語</strong> - 10 sentences to connect.</li>
-                        <li style="margin-bottom: 1rem;">🤝 <strong style="color: var(--pop-yellow);">模仿共鳴</strong> - Mirror to build trust.</li>
-                    </ul>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display:flex; justify-content:space-between; font-weight:900;"><span>EMPATHY</span><span>95%</span></div>
+                    <div style="height:12px; border:2px solid #000; background:#fff;"><div style="width:95%; height:100%; background:var(--c-red);"></div></div>
                 </div>
-                <div style="text-align: center; border: 2px dashed #555; padding: 1rem;">
-                    <p style="color: #ccc;">"每天吃蛋的時候都覺得人生真美好❤️<br>自己又能幸福的多活一天，真是太棒了！"</p>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display:flex; justify-content:space-between; font-weight:900;"><span>LOGIC (INTJ)</span><span>100%</span></div>
+                    <div style="height:12px; border:2px solid #000; background:#fff;"><div style="width:100%; height:100%; background:var(--c-navy);"></div></div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display:flex; justify-content:space-between; font-weight:900;"><span>MARKETING</span><span>92%</span></div>
+                    <div style="height:12px; border:2px solid #000; background:#fff;"><div style="width:92%; height:100%; background:var(--c-black);"></div></div>
                 </div>
             </div>
         </div>
 
-        <!-- GALLERY: MORE WORKS -->
-        <div class="panel">
-            <div class="panel-header">ARCHIVE</div>
-            <div class="gallery-grid">
-                <div class="polaroid" style="--r: 1;"><img src="/assets/img/guild/loyu/gallery_05.webp"></div>
-                <div class="polaroid" style="--r: -2;"><img src="/assets/img/guild/loyu/gallery_06.webp"></div>
-                <div class="polaroid" style="--r: 3;"><img src="/assets/img/guild/loyu/gallery_07.webp"></div>
+        <!-- 3. THE WEAVER & PHILOSOPHY -->
+        <div class="weaver-block">
+            <div class="img-card">
+                <img src="/assets/img/guild/loyu/gallery_01.webp" alt="Crochet Art">
+                <div class="img-caption">#Handmade With Love</div>
+            </div>
+            <div class="panel" style="background: var(--c-black); color: var(--c-white);">
+                <div class="panel-header h-anton" style="border-bottom-color: var(--c-white); color: var(--c-yellow);">
+                    <span>02. THE WEAVER</span>
+                    <i class="fa-solid fa-mitten"></i>
+                </div>
+                <h3 style="color: var(--c-red); margin-bottom: 1rem; font-size: 1.8rem;">「吃蛋的時候，覺得人生真美好！」</h3>
+                <p style="font-size: 1.1rem; color: #ccc; margin-bottom: 1.5rem;">
+                    日文的雞蛋寫作「玉子」，正好我的名字之中有「玉」這個字，我也經常被叫阿玉仔。
+                </p>
+                <p style="font-size: 1.1rem; color: #ccc;">
+                    在理性的分析之外，我是一名手工鉤織老師。我希望透過我的手作，能為人們帶來簡單的幸福。期望朋友們在收到作品時，能夠會心一笑。
+                </p>
+                <div class="stamp" style="bottom: 20px; right: 20px; border-color: var(--c-yellow); color: var(--c-yellow);">HAPPINESS</div>
+            </div>
+        </div>
+
+        <!-- 4. GALLERY WALL -->
+        <h2 class="h-anton" style="font-size: 3rem; margin-bottom: 1rem; border-bottom: 6px solid var(--c-black);">PROJECT_ARCHIVE</h2>
+        <div class="gallery-wall">
+            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_02.webp"><div class="img-caption">FILE_002</div></div>
+            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_03.webp"><div class="img-caption">FILE_003</div></div>
+            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_04.webp"><div class="img-caption">FILE_004</div></div>
+            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_05.webp"><div class="img-caption">FILE_005</div></div>
+            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_06.webp"><div class="img-caption">FILE_006</div></div>
+            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_07.webp"><div class="img-caption">FILE_007</div></div>
+        </div>
+
+        <!-- 5. INTERESTS -->
+        <h2 class="h-anton" style="font-size: 3rem; margin-bottom: 1rem;">PERSONAL_LOGS</h2>
+        <div class="interests-block">
+            <div class="int-card">
+                <i class="fa-solid fa-ship"></i>
+                <h3 class="h-anton">ANIME & MANGA</h3>
+                <p>超級喜歡《海賊王》！(🤣) 也熱愛各種動畫作品，跟著主角們一起冒險是舒壓的最佳方式。</p>
+            </div>
+            <div class="int-card" style="background: var(--c-red);">
+                <i class="fa-solid fa-tv" style="color: var(--c-yellow);"></i>
+                <h3 class="h-anton" style="color: #fff;">K-DRAMAS</h3>
+                <p>韓劇愛好者。在緊湊的行銷與教學行程後，沉浸在精彩的劇情中找尋生活靈感。</p>
+            </div>
+            <div class="int-card" style="background: #fff; color: var(--c-black);">
+                <i class="fa-solid fa-paw" style="color: var(--c-yellow); -webkit-text-stroke: 2px #000;"></i>
+                <h3 class="h-anton" style="color: var(--c-black);">WINNIE THE POOH</h3>
+                <p>最喜歡小熊維尼！瘋狂到「有整個房間都是我的收藏」的程度。維尼的溫暖與純粹就是我的避風港。</p>
             </div>
         </div>
 
         <!-- FOOTER -->
-        <div style="text-align: center; margin-bottom: 8rem;">
-            <h2 style="font-size: 3rem; -webkit-text-stroke: 2px #000; color: #fff; text-shadow: 4px 4px 0 #000;">LET'S CONNECT!</h2>
-            <div class="footer-links">
-                <a href="https://www.threads.com/@loyu1230" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/loyu1230/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" class="social-btn"><i class="fa-solid fa-globe"></i></a>
+        <div class="footer-block">
+            <h2 class="h-anton" style="font-size: 4rem; margin-bottom: 0.5rem; line-height: 1;">LET'S CONNECT</h2>
+            <p style="font-weight: 700; font-size: 1.2rem;">建立連結 // 保持舒適距離</p>
+            <div class="social-links">
+                <a href="https://www.threads.com/@loyu1230" target="_blank" rel="noopener noreferrer" class="s-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/loyu1230/" target="_blank" rel="noopener noreferrer" class="s-btn"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" rel="noopener noreferrer" class="s-btn"><i class="fa-solid fa-globe"></i></a>
             </div>
-            <p style="margin-top: 2rem; font-family: 'Bangers'; font-size: 1.5rem;">(Scroll for more Rain!)</p>
         </div>
 
     </div>
@@ -320,15 +315,7 @@
     <script>
         gsap.registerPlugin(ScrollTrigger);
 
-        // === LOADER ===
-        window.addEventListener('load', () => {
-            document.getElementById('loader').style.display = 'none';
-            initPhysics();
-        });
-
-        // === MATTER.JS PHYSICS ===
-        let engine, render, runner, composite;
-
+        // === SUBTLE PHYSICS BACKGROUND (Not overwhelming) ===
         function initPhysics() {
             const Engine = Matter.Engine,
                   Render = Matter.Render,
@@ -338,136 +325,86 @@
                   Common = Matter.Common,
                   Events = Matter.Events;
 
-            engine = Engine.create();
-            composite = engine.world;
+            const engine = Engine.create();
+            // Slow down gravity slightly for a floaty feel
+            engine.gravity.y = 0.5;
 
             const canvas = document.getElementById('physics-canvas');
             let width = window.innerWidth;
             let height = window.innerHeight;
 
-            render = Render.create({
+            const render = Render.create({
                 element: canvas,
                 engine: engine,
                 options: {
-                    width: width,
-                    height: height,
-                    background: 'transparent',
-                    wireframes: false,
+                    width: width, height: height,
+                    background: 'transparent', wireframes: false,
                     pixelRatio: window.devicePixelRatio
                 }
             });
 
-            // Boundaries (Left/Right only, floor is open to let them fall out)
-            const wallOpts = { isStatic: true, render: { visible: false } };
-            const leftWall = Bodies.rectangle(-50, height/2, 100, height * 5, wallOpts);
-            const rightWall = Bodies.rectangle(width + 50, height/2, 100, height * 5, wallOpts);
-            Composite.add(composite, [leftWall, rightWall]);
+            // Spawn smaller, fewer objects so it's a background detail
+            const spawnObject = () => {
+                if(document.visibilityState !== 'visible') return; // Don't spawn if tab hidden
 
-            // SPAWN LOGIC
-            const spawnObject = (x, y) => {
-                const size = Common.random(20, 45);
-                const colors = ['#FF4757', '#2F3542', '#FFFFFF', '#FFD700', '#7bed9f'];
+                const size = Common.random(10, 25);
+                const x = Common.random(0, width);
+
+                // Colors match theme
+                const colors = ['#FFD500', '#F94144', '#2F3542', '#FFFFFF'];
                 const color = Common.choose(colors);
-                let body;
 
-                if (Math.random() > 0.4) {
-                    // Egg (Polygon approx)
-                    body = Bodies.polygon(x, y, 6, size, {
-                        angle: Math.random() * Math.PI,
-                        render: { fillStyle: color, strokeStyle: '#000', lineWidth: 3 },
-                        restitution: 0.6
-                    });
-                } else {
-                    // Yarn (Circle)
-                    body = Bodies.circle(x, y, size, {
-                        render: { fillStyle: color, strokeStyle: '#000', lineWidth: 3 },
-                        restitution: 0.8
-                    });
-                }
-                Composite.add(composite, body);
+                const body = Math.random() > 0.5
+                    ? Bodies.circle(x, -50, size, { render: { fillStyle: color, strokeStyle: '#000', lineWidth: 2 }, restitution: 0.8, frictionAir: 0.05 })
+                    : Bodies.polygon(x, -50, 6, size, { angle: Math.random() * Math.PI, render: { fillStyle: color, strokeStyle: '#000', lineWidth: 2 }, restitution: 0.6, frictionAir: 0.05 });
+
+                Composite.add(engine.world, body);
             };
 
-            // Initial Spawn
-            for (let i = 0; i < 15; i++) {
-                spawnObject(Common.random(0, width), Common.random(-1000, 0));
-            }
+            // Spawn loop
+            setInterval(spawnObject, 2000);
 
-            // Continuous Spawn (Rain)
-            setInterval(() => {
-                spawnObject(Common.random(0, width), -50);
-            }, 800);
-
-            // Scroll Spawn (More rain on scroll)
-            let lastScrollY = window.scrollY;
-            window.addEventListener('scroll', () => {
-                if (Math.abs(window.scrollY - lastScrollY) > 50) {
-                    spawnObject(Common.random(0, width), -50);
-                    lastScrollY = window.scrollY;
-                }
-            });
-
-            // Cleanup Loop (Remove bodies that fall too far)
+            // Cleanup offscreen
             Events.on(engine, 'beforeUpdate', () => {
-                const bodies = Composite.allBodies(composite);
+                const bodies = Composite.allBodies(engine.world);
                 bodies.forEach(body => {
-                    if (body.position.y > height + 200 && !body.isStatic) {
-                        Composite.remove(composite, body);
+                    if (body.position.y > height + 100) {
+                        Composite.remove(engine.world, body);
                     }
                 });
             });
-
-            // EXPLOSION (Global Function)
-            window.explode = function() {
-                const bodies = Composite.allBodies(composite);
-                bodies.forEach(body => {
-                    if (!body.isStatic) {
-                        const force = { x: (Math.random() - 0.5) * 0.2, y: -0.2 };
-                        Matter.Body.applyForce(body, body.position, force);
-                    }
-                });
-                // Spawn extra
-                for(let i=0; i<5; i++) spawnObject(width/2, height/2);
-            };
 
             Render.run(render);
-            const runner = Runner.create();
-            Runner.run(runner, engine);
+            Runner.run(Runner.create(), engine);
 
-            // Resize
             window.addEventListener('resize', () => {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                render.canvas.width = width;
-                render.canvas.height = height;
-                Matter.Body.setPosition(leftWall, { x: -50, y: height/2 });
-                Matter.Body.setPosition(rightWall, { x: width + 50, y: height/2 });
+                width = window.innerWidth; height = window.innerHeight;
+                render.canvas.width = width; render.canvas.height = height;
             });
         }
 
-        // GSAP Scroll Animations
-        gsap.utils.toArray('.panel').forEach(panel => {
-            gsap.from(panel, {
+        window.addEventListener('load', initPhysics);
+
+        // === GSAP ANIMATIONS ===
+        // Simple fade ups for blocks
+        gsap.utils.toArray('.strat-block, .weaver-block, .interests-block, .footer-block').forEach(block => {
+            gsap.from(block, {
                 scrollTrigger: {
-                    trigger: panel,
+                    trigger: block,
                     start: "top 85%",
                     toggleActions: "play none none reverse"
                 },
-                y: 50,
-                opacity: 0,
-                rotation: 5,
-                duration: 0.8,
-                ease: "back.out(1.5)"
+                y: 40, opacity: 0, duration: 0.8, ease: "power2.out"
             });
         });
 
-        // Skill bars fill
-        gsap.utils.toArray('.skill-fill').forEach(bar => {
-            gsap.to(bar, {
-                scrollTrigger: { trigger: bar, start: "top 90%" },
-                width: bar.style.width,
-                duration: 1.5,
-                ease: "power2.out"
-            });
+        // Stagger gallery items
+        gsap.from('.gallery-wall .img-card', {
+            scrollTrigger: {
+                trigger: '.gallery-wall',
+                start: "top 80%"
+            },
+            y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: "back.out(1.2)"
         });
 
     </script>
