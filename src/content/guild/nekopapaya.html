@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEKOPAPAYA | The Floating Atelier</title>
-    <meta name="description" content="NEKOPAPAYA - 人體狀態觀察分析師 | 康樂股長 | 避風港">
+    <title>NEKOPAPAYA | 避風港</title>
+    <meta name="description" content="這是一個「避風港」型的個人頁面，呈現聚人的氛圍。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -28,317 +28,417 @@
 
     <style>
         :root {
-            /* Palette: Golden Hour Cabin */
-            --c-wood: #8B5A2B;
-            --c-wall: #F9F1E6;
-            --c-text: #4A3B2C;
-            --c-accent: #E09F3E;
-            --c-sea: #3E88A5;
+            /* 🎨 Mood Board Colors */
+            --bg-main: #F4F1EC;   /* 奶茶米白，溫柔、避風港感 */
+            --bg-sub: #E8E2D9;    /* 淡沙色，分段落、強調空間感 */
+            --accent: #A8B2A1;    /* 鼠尾草綠，生命感、柔和點綴 */
+            --text-main: #3F3F3F; /* 暖深灰，比黑色更溫柔 */
+            --text-hint: #8C8C8C; /* 輕量提示用 */
 
-            --f-en: 'Nunito', sans-serif;
-            --f-zh: 'Noto Sans TC', sans-serif;
+            --font-tc: 'Noto Sans TC', sans-serif;
+            --font-en: 'Playfair Display', serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-wall);
-            color: var(--c-text);
-            font-family: var(--f-zh);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-tc);
             overflow-x: hidden;
-            line-height: 1.7;
+            line-height: 2.2; /* 略大，段落短 */
+            font-weight: 400;
+            cursor: default;
         }
 
-        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; }
-        .scroller { position: relative; z-index: 10; pointer-events: none; }
-        .interactive-layer { pointer-events: auto; }
+        /* Fullscreen WebGL Background for Soft Atmosphere */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;
+            pointer-events: none;
+        }
 
-        /* --- UI Overlay --- */
-        .ui-grid {
+        /* Overlay to soften the 3D even further */
+        .ambient-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1;
+            background: radial-gradient(circle at center, transparent 0%, rgba(244, 241, 236, 0.4) 100%);
+            pointer-events: none;
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 留白多，空間感 */
+        .section {
             min-height: 100vh;
-            display: grid; grid-template-columns: 1fr;
-            padding: 4rem 2rem;
+            width: 100%;
+            max-width: 1200px;
+            padding: 10vh 5vw;
+            display: flex;
+            align-items: center;
             position: relative;
         }
-        @media(min-width: 900px) {
-            .ui-grid { grid-template-columns: 1fr 1fr; }
-        }
 
-        /* Paper Notes (Content) */
-        .paper-note {
-            background: #FFFCF5;
-            padding: 2.5rem;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.2);
-            transform: rotate(-1deg);
-            max-width: 450px;
-            margin-bottom: 20vh;
-            opacity: 0; transform: translateY(50px) rotate(-1deg); /* Init for GSAP */
-            color: #333;
+        /* Layout Variations */
+        .layout-hero { justify-content: center; text-align: center; flex-direction: column; }
+        .layout-left { justify-content: flex-start; }
+        .layout-right { justify-content: flex-end; }
+        .layout-center { justify-content: center; text-align: center; }
+
+        .text-block {
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 3.5rem;
+            border-radius: 2px; /* Slight edge for a 'card' or 'paper' feel */
+            border-left: 4px solid var(--accent);
+            opacity: 0; /* Init for GSAP */
+            transform: translateY(30px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
             position: relative;
         }
-        .paper-note::before { /* Pin/Tape */
-            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            width: 80px; height: 25px; background: rgba(230, 200, 150, 0.6);
-            border: 1px solid rgba(0,0,0,0.05); transform: translateX(-50%) rotate(2deg);
+
+        .layout-hero .text-block { border-left: none; border-top: 4px solid var(--accent); }
+        .layout-right .text-block { border-left: none; border-right: 4px solid var(--accent); text-align: right; }
+        .layout-center .text-block { border-left: none; border-bottom: 4px solid var(--accent); text-align: center; }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-weight: 500;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+            letter-spacing: 0.05em;
         }
-        .paper-note:nth-child(even) { transform: rotate(1deg); margin-left: auto; }
+        h1 { font-size: 2.2rem; margin-bottom: 2rem; }
+        h2 { font-size: 1.4rem; color: var(--accent); }
+        .en-title { font-family: var(--font-en); font-size: 1.2rem; color: var(--text-hint); font-style: italic; display: block; margin-bottom: 0.5rem; }
 
-        .pos-center { margin: 0 auto 20vh; text-align: center; }
-
-        h1 { font-family: var(--f-en); font-weight: 700; font-size: 2.5rem; color: var(--c-wood); margin-bottom: 0.5rem; }
-        h2 { font-family: var(--f-en); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.1em; color: var(--c-accent); text-transform: uppercase; margin-bottom: 1rem; }
-        p { margin-bottom: 1rem; font-size: 1.05rem; }
-
-        /* Avatar Polaroid */
-        .polaroid {
-            background: white; padding: 0.8rem 0.8rem 2.5rem 0.8rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transform: rotate(-3deg);
-            width: 180px; margin: 0 auto 1.5rem;
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: #555;
         }
-        .polaroid img { width: 100%; display: block; filter: saturate(0.9); }
+        p:last-child { margin-bottom: 0; }
+
+        .hint {
+            font-size: 0.9rem;
+            color: var(--text-hint);
+            margin-top: 1rem;
+        }
+
+        /* Avatar Element */
+        .avatar-container {
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 2.5rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 4px solid var(--bg-main);
+            position: relative;
+            z-index: 2;
+        }
+        .avatar-container img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: contrast(0.9) brightness(1.05) saturate(0.9);
+        }
 
         /* Nav */
         .nav-fixed {
-            position: fixed; top: 2rem; left: 2rem; z-index: 50;
-            font-family: var(--f-en); font-weight: 700; color: var(--c-wood);
-            text-decoration: none; background: rgba(255,255,255,0.8);
-            padding: 0.5rem 1rem; border-radius: 4px; pointer-events: auto;
+            position: fixed; top: 2.5rem; left: 2.5rem; z-index: 50;
+            font-family: var(--font-tc); font-weight: 500; color: var(--text-hint);
+            text-decoration: none; pointer-events: auto;
+            transition: color 0.3s;
+            font-size: 0.95rem;
+            letter-spacing: 0.1em;
+            display: flex; align-items: center; gap: 0.5rem;
         }
+        .nav-fixed:hover { color: var(--text-main); }
 
         /* Social */
-        .social-link {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 50px; height: 50px; border-radius: 50%; background: var(--c-wall);
-            color: var(--c-wood); font-size: 1.2rem; margin: 0 0.5rem;
-            transition: 0.2s; text-decoration: none; border: 1px solid var(--c-wood);
+        .social-links {
+            display: flex; gap: 1rem; margin-top: 2rem;
+            justify-content: center;
         }
-        .social-link:hover { background: var(--c-accent); color: white; border-color: var(--c-accent); }
+        .social-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: white; color: var(--text-main);
+            text-decoration: none; transition: all 0.3s ease;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .social-btn:hover {
+            background: var(--accent); color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(168, 178, 161, 0.3);
+        }
+
+        /* Abstract Decor Element (Pure CSS) */
+        .decor-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--bg-sub);
+            z-index: -1;
+            opacity: 0.5;
+            filter: blur(40px);
+        }
 
     </style>
 </head>
 <body>
 
-    <a href="/guild" class="nav-fixed">← GUILD</a>
+    <a href="/guild" class="nav-fixed"><i class="fa-solid fa-arrow-left"></i> 離開空間</a>
+
     <div id="webgl-container"></div>
+    <div class="ambient-overlay"></div>
 
-    <div class="scroller">
-        <div class="ui-grid">
+    <div class="content-layer">
 
-            <!-- Left Col (Spacer for 3D View) -->
-            <div class="spacer"></div>
+        <!-- 1. Hero / Safe Haven Intro -->
+        <div class="section layout-hero">
+            <!-- CSS Decor -->
+            <div class="decor-circle" style="width: 300px; height: 300px; top: 20%; left: 50%; transform: translateX(-50%); background: #fff;"></div>
 
-            <!-- Right Col (Content) -->
-            <div class="content-col">
-                <div style="height: 30vh;"></div>
-
-                <!-- 1. Hero -->
-                <div class="paper-note interactive-layer gs-reveal">
-                    <div class="polaroid">
-                        <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="Avatar">
-                    </div>
-                    <h1>NEKOPAPAYA</h1>
-                    <p style="font-weight: 500; color: var(--c-wood);">人體狀態觀察分析師 | 康樂股長</p>
-                    <p style="font-style: italic; color: #888;">"Hydrogen knocking on your soul."</p>
+            <div class="text-block gs-reveal">
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/nekopapaya/avatar.webp" alt="NEKOPAPAYA">
                 </div>
-
-                <!-- 2. Safe Haven -->
-                <div class="paper-note interactive-layer gs-reveal">
-                    <h2>CORE CONCEPT</h2>
-                    <h1>The Cabin.</h1>
-                    <p>這裡是一個可以停下來、坐一下的地方。</p>
-                    <p>這艘船就像一個移動的避風港。有時候我會在這裡，人聚在一起，慢慢享受人與人的溫度。</p>
-                    <p style="font-size: 0.9rem; color: #999;">(沒有強迫，只有邀請)</p>
-                </div>
-
-                <!-- 3. Methodology -->
-                <div class="paper-note interactive-layer gs-reveal">
-                    <h2>ANALYSIS</h2>
-                    <h1>Observer.</h1>
-                    <p>喜歡可愛人事物星人。我觀察、我感受、我連結。</p>
-                    <p>在熱鬧的背後，捕捉微弱的訊號。將散落的個體，透過熱情重新編織成網。</p>
-                </div>
-
-                <!-- 4. Connect -->
-                <div class="paper-note interactive-layer gs-reveal">
-                    <h2>SYNC</h2>
-                    <h1>Connect.</h1>
-                    <p>魔人揪揪出動！如果你剛好想參與、想一起感受，就可以私訊我。</p>
-                    <div style="margin-top: 1.5rem;">
-                        <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                        <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                    </div>
-                </div>
-
-                <div style="height: 30vh;"></div>
+                <span class="en-title">The Safe Haven</span>
+                <h1>這裡是一個可以停下來、坐一下的地方。</h1>
+                <p>有時候我會在這裡，人聚在一起，<br>慢慢享受人與人的溫度。</p>
             </div>
-
         </div>
+
+        <!-- 2. The Analyst -->
+        <div class="section layout-left">
+            <div class="decor-circle" style="width: 400px; height: 400px; bottom: 10%; left: -10%;"></div>
+
+            <div class="text-block gs-reveal">
+                <span class="en-title">Human Condition Analyst</span>
+                <h2>人體狀態觀察分析師</h2>
+                <p>喜歡可愛人事物星人。</p>
+                <p>「氫氫敲醒你的心靈。」</p>
+                <p class="hint"><i class="fa-solid fa-seedling" style="color: var(--accent);"></i> 觀察、感受、陪伴。</p>
+            </div>
+        </div>
+
+        <!-- 3. The Coordinator -->
+        <div class="section layout-right">
+            <div class="decor-circle" style="width: 250px; height: 250px; top: 20%; right: 5%; background: var(--accent);"></div>
+
+            <div class="text-block gs-reveal">
+                <span class="en-title">Activities Coordinator</span>
+                <h2>康樂股長 / 魔人揪揪</h2>
+                <p>各位喜歡熱鬧的可以來參與貢獻自己的一份力，<br>什麼都揪一下。</p>
+                <p>不是為了任何目的，也不需要報名或承諾。<br>每個人都可以自由選擇，這裡只留一個空間給願意的人。</p>
+            </div>
+        </div>
+
+        <!-- 4. Contact -->
+        <div class="section layout-center" style="padding-bottom: 20vh;">
+            <div class="text-block gs-reveal">
+                <span class="en-title">Connect</span>
+                <h2>加入空間</h2>
+                <p>如果你剛好想參與、想一起感受，就可以私訊我。</p>
+                <p class="hint">⚠️ 私訊請不要用小帳，全當作詐騙不理。</p>
+
+                <div class="social-links">
+                    <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-btn" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-btn" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- SCRIPT -->
     <script type="module">
         import * as THREE from 'three';
 
-        // --- Setup ---
+        // --- Setup Three.js (Soft Bokeh / Dust Particles) ---
+        // This provides a high-quality, professional ambient background without "baffling" abstract geometry.
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Sky Color (Sunset Gradient via Fog?)
-        const bgCol = new THREE.Color(0xFFE4B5); // Moccasin
-        scene.background = bgCol;
-        scene.fog = new THREE.Fog(0xFFE4B5, 15, 40);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 2, 8); // Inside cabin looking out
+        // Use the exact background color from Mood Board
+        scene.background = new THREE.Color(0xF4F1EC);
+        scene.fog = new THREE.FogExp2(0xF4F1EC, 0.02);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.z = 100;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.SoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Lights ---
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambient);
+        // --- Generate Soft Radial Gradient Texture for Particles ---
+        function createCircleTexture() {
+            const size = 128;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
 
-        const sun = new THREE.DirectionalLight(0xFFD700, 1.2); // Sunset gold
-        sun.position.set(-10, 5, -10); // Coming through window
-        sun.castShadow = true;
-        scene.add(sun);
+            const center = size / 2;
+            const radius = size / 2;
+            const gradient = context.createRadialGradient(center, center, 0, center, center, radius);
 
-        // --- Objects: The Floating Atelier ---
-        const room = new THREE.Group();
-        scene.add(room);
+            // Soft blur edge
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
-        // Materials
-        const matWood = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.9 });
-        const matWall = new THREE.MeshStandardMaterial({ color: 0xF9F1E6, roughness: 1 });
-        const matDark = new THREE.MeshStandardMaterial({ color: 0x4A3B2C, roughness: 1 });
-        const matGlass = new THREE.MeshPhysicalMaterial({ color: 0x88ccff, transparent: true, opacity: 0.3, roughness: 0, transmission: 0.5 });
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, size, size);
 
-        // 1. Cabin Structure
-        // Floor
-        const floor = new THREE.Mesh(new THREE.BoxGeometry(10, 0.5, 10), matWood);
-        floor.position.y = -0.25; floor.receiveShadow = true; room.add(floor);
-        // Back Wall (Window)
-        const wallBack = new THREE.Mesh(new THREE.BoxGeometry(10, 6, 0.5), matWall);
-        wallBack.position.set(0, 3, -5); wallBack.receiveShadow = true; room.add(wallBack);
-
-        // Window Frame (Cutout via scaling trick or primitives)
-        // Let's make a big window opening
-        const winFrameH = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 0.6), matWood);
-        winFrameH.position.set(0, 4, -5); room.add(winFrameH);
-        const winFrameB = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 0.8), matWood); // Sill
-        winFrameB.position.set(0, 1.5, -5); room.add(winFrameB);
-        const winGlass = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.3, 0.1), matGlass);
-        winGlass.position.set(0, 2.75, -5); room.add(winGlass);
-
-        // 2. The Desk (Analyst Station)
-        const deskGroup = new THREE.Group();
-        deskGroup.position.set(0, 0, -3.5);
-        room.add(deskGroup);
-
-        const deskTop = new THREE.Mesh(new THREE.BoxGeometry(5, 0.2, 2), matWood);
-        deskTop.position.y = 1.5; deskTop.castShadow = true; deskGroup.add(deskTop);
-        // Legs
-        const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.5);
-        const l1 = new THREE.Mesh(legGeo, matDark); l1.position.set(-2.2, 0.75, 0.8); deskGroup.add(l1);
-        const l2 = new THREE.Mesh(legGeo, matDark); l2.position.set(2.2, 0.75, 0.8); deskGroup.add(l2);
-
-        // Props
-        // Book
-        const book = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.6), new THREE.MeshStandardMaterial({color:0xA8B2A1}));
-        book.position.set(-1, 1.6, 0.5); deskGroup.add(book);
-        // Mug
-        const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.3), new THREE.MeshStandardMaterial({color:0xE09F3E}));
-        mug.position.set(1, 1.7, 0.5); deskGroup.add(mug);
-        // Lamp
-        const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 0.1), matDark);
-        lampBase.position.set(1.8, 1.6, 0); deskGroup.add(lampBase);
-        const lampStem = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1), matDark);
-        lampStem.position.set(1.8, 2.1, 0); deskGroup.add(lampStem);
-        const lampHead = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.5, 32, 1, true), new THREE.MeshStandardMaterial({color:0xF9F1E6, side:THREE.DoubleSide}));
-        lampHead.position.set(1.6, 2.5, 0); lampHead.rotation.z = 0.5; deskGroup.add(lampHead);
-        // Lamp Light
-        const lampP = new THREE.PointLight(0xFFD700, 0.5, 3);
-        lampP.position.set(1.6, 2.4, 0); deskGroup.add(lampP);
-
-        // 3. The Sea (Outside Window)
-        const seaGeo = new THREE.PlaneGeometry(100, 50, 64, 64);
-        const seaMat = new THREE.MeshStandardMaterial({
-            color: 0x3E88A5, roughness: 0.1, metalness: 0.5,
-            flatShading: true
-        });
-        const sea = new THREE.Mesh(seaGeo, seaMat);
-        sea.rotation.x = -Math.PI/2;
-        sea.position.set(0, -2, -30); // Far back
-        scene.add(sea);
-
-        // 4. Floating Hydrogen Bubbles
-        const bubbles = [];
-        const bGeo = new THREE.SphereGeometry(0.15, 16, 16);
-        const bMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.6 });
-        for(let i=0; i<15; i++) {
-            const b = new THREE.Mesh(bGeo, bMat);
-            b.position.set(
-                (Math.random()-0.5)*4,
-                Math.random()*4,
-                (Math.random()-0.5)*2
-            );
-            b.userData = { speed: Math.random()*0.02 + 0.01, offset: Math.random()*10 };
-            room.add(b);
-            bubbles.push(b);
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
         }
 
+        const particleTexture = createCircleTexture();
 
-        // --- Interaction ---
-        let scrollY = 0;
-        window.addEventListener('scroll', () => scrollY = window.scrollY);
+        // --- Create Particle System (The "Atmosphere") ---
+        const particleCount = 150;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        const colors = new Float32Array(particleCount * 3);
 
+        const colorAccent = new THREE.Color(0xA8B2A1); // Sage Green
+        const colorSub = new THREE.Color(0xE8E2D9);    // Sand
+        const colorWhite = new THREE.Color(0xFFFFFF);  // White
+
+        for (let i = 0; i < particleCount; i++) {
+            // Spread across a large volume
+            positions[i * 3] = (Math.random() - 0.5) * 400;     // x
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 400; // y
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 200; // z
+
+            // Randomize sizes for depth
+            sizes[i] = Math.random() * 20 + 5;
+
+            // Mix colors
+            const mix = Math.random();
+            const pColor = new THREE.Color();
+            if (mix < 0.2) pColor.copy(colorAccent);
+            else if (mix < 0.6) pColor.copy(colorSub);
+            else pColor.copy(colorWhite);
+
+            colors[i * 3] = pColor.r;
+            colors[i * 3 + 1] = pColor.g;
+            colors[i * 3 + 2] = pColor.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Custom Shader Material for size attenuation and soft blending
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                pointTexture: { value: particleTexture },
+                time: { value: 0 }
+            },
+            vertexShader: `
+                attribute float size;
+                attribute vec3 color;
+                varying vec3 vColor;
+                uniform float time;
+
+                void main() {
+                    vColor = color;
+                    // Slow, gentle drift based on time and original position
+                    vec3 pos = position;
+                    pos.y += sin(time * 0.5 + position.x * 0.01) * 10.0;
+                    pos.x += cos(time * 0.3 + position.y * 0.01) * 5.0;
+
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    // Attenuate size based on distance
+                    gl_PointSize = size * (200.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D pointTexture;
+                varying vec3 vColor;
+                void main() {
+                    vec4 texColor = texture2D(pointTexture, gl_PointCoord);
+                    // Extremely soft, low opacity blending
+                    gl_FragColor = vec4(vColor, texColor.a * 0.4);
+                }
+            `,
+            blending: THREE.NormalBlending,
+            depthTest: false,
+            transparent: true
+        });
+
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+
+        // --- Animation Loop ---
         const clock = new THREE.Clock();
+
+        // Mouse interaction for subtle parallax
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.05;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.05;
+        });
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // 1. Sea Waves
-            const pos = seaGeo.attributes.position;
-            for(let i=0; i<pos.count; i++) {
-                const x = pos.getX(i);
-                const y = pos.getY(i);
-                pos.setZ(i, Math.sin(x*0.5 + time)*0.5 + Math.cos(y*0.3 + time*0.8)*0.5);
-            }
-            pos.needsUpdate = true;
+            material.uniforms.time.value = time;
 
-            // 2. Cabin Rocking (Boat feel)
-            room.rotation.z = Math.sin(time * 0.5) * 0.02;
-            room.rotation.x = Math.sin(time * 0.3) * 0.01;
-
-            // 3. Bubbles
-            bubbles.forEach(b => {
-                b.position.y += b.userData.speed;
-                if(b.position.y > 6) b.position.y = 0;
-                b.position.x += Math.sin(time + b.userData.offset) * 0.005;
-            });
-
-            // 4. Parallax Camera
-            // Move camera slightly based on scroll to "look around" room
-            const progress = scrollY / (document.body.scrollHeight - window.innerHeight);
-            camera.position.x = Math.sin(progress * 0.5) * 1;
-            camera.position.y = 2 - progress * 0.5;
-            camera.lookAt(0, 1.5, -5); // Look at window
+            // Gentle parallax
+            targetX = mouseX * 0.5;
+            targetY = mouseY * 0.5;
+            camera.position.x += (targetX - camera.position.x) * 0.02;
+            camera.position.y += (-targetY - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // GSAP
+        // --- GSAP Scroll Animations ---
         gsap.registerPlugin(ScrollTrigger);
+
+        // Fade in text blocks gently
         gsap.utils.toArray('.gs-reveal').forEach(elem => {
             gsap.to(elem, {
-                y: 0, opacity: 1, rotate: 0, duration: 1, ease: "power2.out",
-                scrollTrigger: { trigger: elem, start: "top 85%" }
+                y: 0, opacity: 1, duration: 1.5, ease: "power2.out",
+                scrollTrigger: { trigger: elem, start: "top 80%" }
+            });
+        });
+
+        // Parallax for CSS decor circles
+        gsap.utils.toArray('.decor-circle').forEach((elem, index) => {
+            const dir = index % 2 === 0 ? 1 : -1;
+            gsap.to(elem, {
+                y: 100 * dir,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: elem,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1
+                }
             });
         });
 
