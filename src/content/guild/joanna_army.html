@@ -277,6 +277,34 @@
 
         </section>
 
+        <!-- Skills Marquee -->
+        <section class="w-full overflow-hidden whitespace-nowrap py-12 border-y border-white/10 bg-black/50 backdrop-blur-sm relative z-20 mix-blend-difference mt-20">
+            <div class="marquee-container inline-flex gap-16 items-center">
+                <!-- Content injected via JS -->
+            </div>
+        </section>
+
+        <!-- Brain Crash / p5.js Sketch Area -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-h-[60vh] relative mt-20">
+            <div class="glass-panel p-10 relative z-20 h-full flex flex-col justify-center border-r-4 border-r-acid-green">
+                <h2 class="font-syne font-black text-4xl md:text-6xl mb-6 text-white leading-none">
+                    BRAIN<br><span class="text-acid-green">OVERLOAD</span>
+                </h2>
+                <div class="space-y-4 text-gray-300 font-light leading-relaxed">
+                    <p>我是一個腦袋經常當機的人，因為太愛胡思亂想。我是視覺傳達系大學生。</p>
+                    <p>畫畫、插畫、電繪、紙本都來。<br>真的很閒的時候會拍影片、剪小短片記錄生活，喜歡唱歌。</p>
+                </div>
+            </div>
+
+            <div class="relative w-full h-[400px] md:h-full min-h-[400px] border border-white/10 rounded-3xl overflow-hidden bg-void">
+                <!-- p5.js Canvas Container -->
+                <div id="p5-container" class="absolute inset-0 w-full h-full mix-blend-screen opacity-80 cursor-crosshair"></div>
+                <div class="absolute bottom-4 right-4 font-syne text-xs text-acid-green bg-black/80 px-2 py-1 pointer-events-none">
+                    [INTERACT: DRAW CHAOS]
+                </div>
+            </div>
+        </section>
+
         <!-- Case Study: Toxicity -->
         <section class="relative py-20 border-t border-white/10 border-b border-white/10 my-20">
             <div class="absolute top-0 left-0 w-full h-full bg-acid-green/5 mix-blend-overlay pointer-events-none"></div>
@@ -298,13 +326,34 @@
             </div>
         </section>
 
+        <!-- Random Traits Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-32">
+            <div class="glass-panel p-8 group border-t-2 border-t-white/10 hover:border-t-acid-green transition-colors">
+                <div class="text-acid-green text-2xl mb-4"><i class="fa-solid fa-person-skating"></i></div>
+                <h4 class="font-syne font-bold text-xl mb-2">SKATEBOARD</h4>
+                <p class="text-sm text-gray-400">有滑板這個小喜好。只喜歡平穩地滑和轉彎，不追求技巧。</p>
+            </div>
+
+            <div class="glass-panel p-8 group border-t-2 border-t-white/10 hover:border-t-red-500 transition-colors">
+                <div class="text-red-500 text-2xl mb-4"><i class="fa-solid fa-wine-bottle"></i></div>
+                <h4 class="font-syne font-bold text-xl mb-2">ALCOHOL</h4>
+                <p class="text-sm text-gray-400">喝酒時是酒精流氓。</p>
+            </div>
+
+            <div class="glass-panel p-8 group border-t-2 border-t-white/10 hover:border-t-purple-500 transition-colors">
+                <div class="text-purple-500 text-2xl mb-4"><i class="fa-solid fa-dog"></i></div>
+                <h4 class="font-syne font-bold text-xl mb-2">ALLERGY</h4>
+                <p class="text-sm text-gray-400">身體過敏時眼睛會整個腫起來，讓我看起來像一隻凸眼吉娃娃，算是特徵吧哈-</p>
+            </div>
+        </section>
+
         <!-- Truth & Footer -->
-        <section class="text-center max-w-4xl mx-auto pb-32">
+        <section class="text-center max-w-4xl mx-auto pb-32 relative z-20">
             <h3 class="font-syne font-bold text-4xl md:text-5xl mb-12">
                 "MY STYLE IS <span class="text-acid-green underline decoration-wavy underline-offset-8">ME</span>"
             </h3>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-20">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-16">
                 <div class="border-l-2 border-white/20 pl-6 hover:border-acid-green transition-colors">
                     <h4 class="font-syne font-bold text-xl mb-2 text-gray-400">PERSONALITY</h4>
                     <p>我很愛講大實話維權，也容易讓人破防。身邊的人通常用「我的風格一看就是我」形容我。</p>
@@ -315,7 +364,11 @@
                 </div>
             </div>
 
-            <button id="self-destruct-btn" class="relative glass-panel inline-block px-12 py-8 rounded-full border border-acid-green/30 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-100 group cursor-pointer overflow-hidden">
+            <div class="glass-panel p-6 mb-20 italic text-gray-400 text-sm md:text-base border-dashed border-2 border-white/20 hover:border-acid-green transition-colors">
+                "我喜歡這個瘋狂計畫，用時間幫陌生人留下存在證明這件事，本身就很浪漫，祝福你。"
+            </div>
+
+            <button id="self-destruct-btn" class="relative glass-panel inline-block px-12 py-6 rounded-full border border-acid-green/30 hover:bg-red-600 hover:border-red-600 hover:text-white transition-all duration-100 group cursor-pointer overflow-hidden mt-8">
                 <div class="absolute inset-0 bg-stripes opacity-0 group-hover:opacity-20 animate-pulse"></div>
                 <p class="font-syne font-bold text-xl group-hover:tracking-widest transition-all relative z-10 flex items-center gap-3">
                     <i class="fa-solid fa-radiation animate-spin-slow"></i>
@@ -333,10 +386,24 @@
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
+        // --- Marquee Setup ---
+        const marqueeSkills = ['ILLUSTRATOR', 'DIGITAL ART', 'VISUAL DESIGN', 'VIDEO EDITING', 'SINGING', 'CHAOS', 'VISUAL KEI', 'DIY CRAFT', 'PIERCING'];
+        const marqueeContainer = document.querySelector('.marquee-container');
+
+        let marqueeHTML = '';
+        for(let i=0; i<4; i++) { // Repeat for infinite scroll effect
+            marqueeSkills.forEach(skill => {
+                marqueeHTML += `<span class="font-syne font-black text-4xl md:text-6xl text-transparent text-stroke hover:text-acid-green transition-colors cursor-crosshair px-8">${skill}</span>
+                                <span class="text-acid-green"><i class="fa-solid fa-asterisk"></i></span>`;
+            });
+        }
+        marqueeContainer.innerHTML = marqueeHTML;
+
         // --- Custom Cursor Logic ---
         const cursor = document.getElementById('cursor');
         document.addEventListener('mousemove', (e) => {
@@ -469,8 +536,72 @@
         };
         initThree();
 
+        // --- p5.js: Chaotic Thoughts / Doodle Canvas ---
+        const sketch = (p) => {
+            let points = [];
+            let container;
+
+            p.setup = () => {
+                container = document.getElementById('p5-container');
+                let canvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
+                canvas.parent('p5-container');
+                p.background(5, 5, 5, 0); // Transparent
+                p.strokeWeight(2);
+            };
+
+            p.draw = () => {
+                // Fade out old lines slowly
+                p.background(5, 5, 5, 10);
+
+                // If mouse is pressed inside canvas, add points
+                if (p.mouseIsPressed && p.mouseX >= 0 && p.mouseX <= p.width && p.mouseY >= 0 && p.mouseY <= p.height) {
+                    points.push(p.createVector(p.mouseX, p.mouseY));
+
+                    // Limit array size
+                    if(points.length > 100) {
+                        points.shift();
+                    }
+                }
+
+                // Draw chaotic connections
+                p.noFill();
+                p.beginShape();
+                for (let i = 0; i < points.length; i++) {
+                    // Acid Green with varying opacity
+                    p.stroke(204, 255, 0, p.map(i, 0, points.length, 0, 255));
+
+                    // Add noise/jitter to make it look "glitchy/chaotic"
+                    let jitterX = p.random(-5, 5);
+                    let jitterY = p.random(-5, 5);
+
+                    p.vertex(points[i].x + jitterX, points[i].y + jitterY);
+                }
+                p.endShape();
+
+                // Randomly remove points to create a breaking/decaying thought effect
+                if(points.length > 0 && p.random(1) < 0.2) {
+                    points.shift();
+                }
+            };
+
+            p.windowResized = () => {
+                if(container) {
+                    p.resizeCanvas(container.offsetWidth, container.offsetHeight);
+                }
+            };
+        };
+        new p5(sketch);
+
         // --- GSAP ---
         gsap.registerPlugin(ScrollTrigger);
+
+        // Marquee Animation
+        gsap.to('.marquee-container', {
+            xPercent: -50, // Move half the width (since we duplicated content)
+            ease: "none",
+            duration: 20,
+            repeat: -1
+        });
 
         gsap.utils.toArray('.glass-panel').forEach(panel => {
             gsap.from(panel, {
