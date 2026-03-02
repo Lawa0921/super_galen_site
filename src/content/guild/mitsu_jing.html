@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitsu Jing | The Guardian & Explorer</title>
+
+    <!-- Fonts (only allowed external CDN) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* ═══════════════════════════════════════════
+           CSS VARIABLES & RESET
+           ═══════════════════════════════════════════ */
+        :root {
+            --primary: #FF3D00;
+            --secondary: #00E676;
+            --accent: #FFD600;
+            --dark: #121212;
+            --light: #F5F5F5;
+            --gray-100: #f0f0f0;
+            --gray-200: #e0e0e0;
+            --gray-400: #999;
+            --gray-500: #777;
+            --gray-600: #555;
+            --gray-700: #333;
+            --gray-800: #222;
+            --pink: #FF6B9D;
+            --teal: #00BCD4;
+
+            --font-display: 'Dela Gothic One', sans-serif;
+            --font-body: 'Zen Maru Gothic', sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            cursor: none;
+            line-height: 1.6;
+        }
+        ::selection { background: var(--primary); color: #fff; }
+        img { display: block; max-width: 100%; height: auto; }
+        a { color: inherit; text-decoration: none; }
+
+        /* ═══════════════════════════════════════════
+           CUSTOM CURSOR
+           ═══════════════════════════════════════════ */
+        .cursor-dot {
+            width: 12px; height: 12px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9999;
+            will-change: transform;
+            transition: width 0.15s, height 0.15s, background-color 0.15s;
+        }
+        .cursor-dot.click-burst {
+            width: 24px; height: 24px;
+            background-color: var(--accent);
+        }
+        .cursor-outline {
+            width: 40px; height: 40px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9998;
+            will-change: transform;
+            transition: width 0.2s, height 0.2s, border-color 0.2s;
+        }
+        .cursor-outline.hovering {
+            width: 60px; height: 60px;
+            border-color: var(--accent);
+        }
+
+        /* ═══════════════════════════════════════════
+           CLICK PARTICLES
+           ═══════════════════════════════════════════ */
+        .click-particle {
+            position: fixed; pointer-events: none; z-index: 9997;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+
+        /* ═══════════════════════════════════════════
+           LOADER
+           ═══════════════════════════════════════════ */
+        #loader {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--dark); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; gap: 24px;
+            color: var(--primary);
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            letter-spacing: 0.15em;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loader-text { animation: pulse 1.5s ease-in-out infinite; }
+        .loader-lines { display: flex; flex-direction: column; gap: 4px; align-items: center; font-size: 0.65rem; color: var(--gray-500); font-family: monospace; letter-spacing: 0.05em; }
+        .loader-lines span { opacity: 0; animation: fadeInLine 0.3s forwards; }
+        @keyframes fadeInLine { to { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .loader-bar-wrap {
+            width: min(320px, 80vw); height: 6px;
+            background: var(--gray-800); border-radius: 3px; overflow: hidden;
+        }
+        #loader-bar {
+            height: 100%; width: 0;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            transition: width 0.6s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ═══════════════════════════════════════════
+           CANVAS BACKGROUND
+           ═══════════════════════════════════════════ */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1; opacity: 0.12;
+            pointer-events: none;
+        }
+
+        /* ═══════════════════════════════════════════
+           SCROLL PROGRESS
+           ═══════════════════════════════════════════ */
+        .scroll-progress {
+            position: fixed; top: 0; left: 0;
+            width: 0; height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary));
+            z-index: 9990;
+            transition: width 0.1s linear;
+        }
+
+        /* ═══════════════════════════════════════════
+           NAVIGATION
+           ═══════════════════════════════════════════ */
+        .nav-bar {
+            position: fixed; top: 0; left: 0; right: 0;
+            z-index: 100; padding: 16px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(18,18,18,0.85);
+            backdrop-filter: blur(8px);
+        }
+        .nav-back {
+            display: flex; align-items: center; gap: 8px;
+            color: #fff; font-weight: 700;
+            font-size: 0.85rem; letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+        .nav-back:hover { color: var(--primary); }
+        .nav-back svg { width: 20px; height: 20px; }
+        .nav-links { display: flex; gap: 16px; }
+        .nav-links a {
+            color: #fff; display: flex; align-items: center;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--primary); }
+        .nav-links svg { width: 22px; height: 22px; }
+
+        /* ═══════════════════════════════════════════
+           SECTION SHARED
+           ═══════════════════════════════════════════ */
+        .section { min-height: 100vh; width: 100%; position: relative; overflow: hidden; }
+        .section-inner { max-width: 1200px; margin: 0 auto; padding: 100px 24px 80px; }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            line-height: 1.1; margin-bottom: 16px;
+        }
+        .section-subtitle {
+            font-size: 1.1rem; color: var(--gray-600);
+            max-width: 500px; margin-bottom: 40px;
+        }
+
+        /* Scroll reveal */
+        [data-anim] {
+            opacity: 0; transform: translateY(40px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        [data-anim].visible { opacity: 1; transform: translateY(0); }
+
+        /* ═══════════════════════════════════════════
+           HERO
+           ═══════════════════════════════════════════ */
+        #hero {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            min-height: 100vh;
+            background: var(--dark); color: #fff;
+            text-align: center; padding: 80px 24px 40px;
+            position: relative;
+        }
+        .hero-bg-text {
+            position: absolute; font-family: var(--font-display);
+            font-size: clamp(8rem, 25vw, 22rem);
+            color: rgba(255,61,0,0.03);
+            bottom: 5%; left: 50%; transform: translateX(-50%);
+            white-space: nowrap; user-select: none;
+            z-index: 0;
+        }
+        .hero-content { position: relative; z-index: 1; }
+        .hero-avatar-wrap {
+            width: 180px; height: 180px;
+            border-radius: 50%; overflow: hidden;
+            margin: 0 auto 24px;
+            border: 4px solid var(--primary);
+            box-shadow: 0 0 40px rgba(255,61,0,0.3);
+            animation: floatAvatar 4s ease-in-out infinite;
+        }
+        @keyframes floatAvatar {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        .hero-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-badge {
+            display: inline-block; padding: 6px 18px;
+            background: var(--primary); color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.75rem; letter-spacing: 0.1em;
+            border-radius: 20px; margin-bottom: 16px;
+        }
+        .hero-name {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 1; margin-bottom: 12px;
+            position: relative;
+        }
+        .hero-name::after {
+            content: attr(data-text);
+            position: absolute; top: 3px; left: 3px;
+            color: var(--primary); z-index: -1;
+            opacity: 0.15;
+        }
+        .hero-desc {
+            font-size: 1rem; color: var(--gray-400);
+            letter-spacing: 0.1em; margin-bottom: 8px;
+        }
+        .hero-quote {
+            font-size: 0.95rem; color: var(--gray-500);
+            max-width: 520px; margin: 0 auto 24px;
+            font-style: italic;
+        }
+        .social-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .social-link {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border: 1px solid var(--gray-700);
+            border-radius: 24px; font-size: 0.85rem; font-weight: 700;
+            position: relative; overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .social-link::after {
+            content: ''; position: absolute; inset: 0;
+            background: var(--primary);
+            transform: translateX(-100%);
+            transition: transform 0.3s;
+            z-index: 0;
+        }
+        .social-link:hover::after { transform: translateX(0); }
+        .social-link:hover { color: #fff; border-color: var(--primary); }
+        .social-link span, .social-link svg { position: relative; z-index: 1; }
+        .social-link svg { width: 18px; height: 18px; }
+        .social-link.primary { background: var(--primary); border-color: var(--primary); }
+        .social-link.primary::after { background: var(--dark); }
+        .scroll-hint {
+            position: absolute; bottom: 32px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            color: var(--gray-500); font-size: 0.75rem;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            animation: bobDown 2s ease-in-out infinite;
+        }
+        .scroll-hint svg { width: 24px; height: 24px; }
+        @keyframes bobDown { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }
+
+        /* ═══════════════════════════════════════════
+           MARQUEE STRIP
+           ═══════════════════════════════════════════ */
+        .marquee-strip {
+            overflow: hidden; white-space: nowrap;
+            background: var(--primary); color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.85rem; letter-spacing: 0.15em;
+            padding: 10px 0;
+        }
+        .marquee-inner {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ═══════════════════════════════════════════
+           STATS / BIO
+           ═══════════════════════════════════════════ */
+        .stats-grid {
+            display: grid; grid-template-columns: 1.2fr 1fr;
+            gap: 40px; align-items: start;
+        }
+        .stat-item { margin-bottom: 20px; }
+        .stat-item label {
+            display: flex; justify-content: space-between;
+            font-size: 0.85rem; font-weight: 700;
+            margin-bottom: 6px; letter-spacing: 0.05em;
+        }
+        .stat-lv { color: var(--primary); font-family: var(--font-display); font-size: 0.75rem; }
+        .stat-bar {
+            height: 10px; background: var(--gray-200);
+            border-radius: 5px; overflow: hidden;
+        }
+        .stat-bar-fill {
+            height: 100%; width: 0;
+            border-radius: 5px;
+            transition: width 1.5s cubic-bezier(.22,1,.36,1);
+            position: relative;
+        }
+        .stat-bar-fill::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+            animation: shimmer 2s ease-in-out infinite;
+            will-change: opacity;
+        }
+        @keyframes shimmer { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+        .stat-bar-fill.fill-primary { background: var(--primary); }
+        .stat-bar-fill.fill-secondary { background: var(--secondary); }
+        .stat-bar-fill.fill-accent { background: var(--accent); }
+        .stat-bar-fill.fill-pink { background: var(--pink); }
+        .stat-bar-fill.fill-teal { background: var(--teal); }
+
+        .stat-desc { font-size: 0.75rem; color: var(--gray-500); margin-top: 4px; font-style: italic; }
+        .skill-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+        .skill-tag {
+            padding: 4px 12px; border: 1px solid var(--gray-200);
+            border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+            letter-spacing: 0.05em; color: var(--gray-600);
+            transition: all 0.2s;
+        }
+        .skill-tag:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .bio-box {
+            background: var(--dark); color: #fff;
+            border-radius: 16px; padding: 32px;
+            transform: rotate(-1deg);
+            transition: transform 0.3s;
+            position: relative;
+        }
+        .bio-box:hover { transform: rotate(0); }
+        .bio-label {
+            font-family: var(--font-display);
+            font-size: 0.7rem; letter-spacing: 0.2em;
+            color: var(--primary); margin-bottom: 12px;
+            border-bottom: 2px solid var(--primary);
+            display: inline-block; padding-bottom: 4px;
+        }
+        .bio-box p { font-size: 0.9rem; line-height: 1.8; color: var(--gray-400); }
+        .bio-highlight { color: var(--accent); font-weight: 900; font-size: 1.1rem; }
+
+        /* ═══════════════════════════════════════════
+           FASHION
+           ═══════════════════════════════════════════ */
+        #fashion { background: var(--dark); color: #fff; }
+        .fashion-bg-text {
+            position: absolute; font-family: var(--font-display);
+            font-size: clamp(6rem, 18vw, 16rem);
+            color: rgba(255,255,255,0.03);
+            top: 50%; right: -5%; transform: translateY(-50%);
+            white-space: nowrap; user-select: none;
+        }
+        .fashion-header { text-align: center; margin-bottom: 40px; }
+        .fashion-quote { color: var(--gray-400); font-style: italic; font-size: 1rem; max-width: 500px; margin: 0 auto; }
+        .fashion-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 16px; position: relative;
+        }
+        .comic-panel {
+            position: relative; overflow: hidden;
+            border-radius: 12px; aspect-ratio: 3/4;
+        }
+        .comic-panel img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.5s ease; will-change: transform;
+        }
+        .comic-panel:hover img { transform: scale(1.08); }
+        .panel-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 60%);
+            display: flex; flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px; opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .comic-panel:hover .panel-overlay { opacity: 1; }
+        .panel-overlay h4 { font-family: var(--font-display); font-size: 1.2rem; }
+        .panel-overlay .tag {
+            display: inline-block; background: var(--primary);
+            padding: 2px 10px; border-radius: 10px;
+            font-size: 0.7rem; margin: 6px 0; width: fit-content;
+        }
+        .panel-overlay p { font-size: 0.8rem; color: var(--gray-400); }
+
+
+        /* ═══════════════════════════════════════════
+           TRAVEL
+           ═══════════════════════════════════════════ */
+        #travel { background: #e0f7fa; }
+        .travel-layout { display: grid; grid-template-columns: 300px 1fr; gap: 32px; }
+        .quest-box {
+            background: #fff; border-radius: 12px; padding: 24px;
+            border: 2px dashed var(--gray-200);
+        }
+        .quest-box h4 { font-family: var(--font-display); font-size: 0.85rem; margin-bottom: 16px; letter-spacing: 0.05em; }
+        .quest-list { list-style: none; }
+        .quest-item {
+            padding: 8px 0; border-bottom: 1px solid var(--gray-100);
+            font-size: 0.85rem; display: flex; align-items: center; gap: 8px;
+            transition: color 0.2s;
+        }
+        .quest-item.completed { color: var(--secondary); text-decoration: line-through; }
+        .quest-checkbox { accent-color: var(--secondary); }
+        .travel-masonry { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .travel-card {
+            position: relative; overflow: hidden; border-radius: 12px;
+        }
+        .travel-card img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.4s; will-change: transform;
+        }
+        .travel-card:hover img { transform: scale(1.05); }
+        .travel-label {
+            position: absolute; bottom: 12px; left: 12px;
+            background: rgba(0,0,0,0.7); color: #fff;
+            padding: 4px 14px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 700;
+            letter-spacing: 0.05em; backdrop-filter: blur(4px);
+        }
+
+        /* ═══════════════════════════════════════════
+           FOOD / LIFESTYLE
+           ═══════════════════════════════════════════ */
+        .food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+        .food-text h3 { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 16px; }
+        .food-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+        .food-tag {
+            padding: 4px 12px; background: var(--accent);
+            color: var(--dark); border-radius: 20px;
+            font-size: 0.75rem; font-weight: 700;
+        }
+        .food-img-wrap { border-radius: 16px; overflow: hidden; }
+        .food-img-wrap img { width: 100%; transition: transform 0.4s; will-change: transform; }
+        .food-img-wrap:hover img { transform: scale(1.03); }
+
+        /* ═══════════════════════════════════════════
+           BEAUTY REVIEW
+           ═══════════════════════════════════════════ */
+        #beauty { background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%); }
+        .beauty-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+        .beauty-img-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .beauty-img-stack .beauty-card {
+            border-radius: 12px; overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            transition: transform 0.3s; will-change: transform;
+        }
+        .beauty-card:hover { transform: translateY(-4px); }
+        .beauty-card:nth-child(2) { transform: translateY(24px); }
+        .beauty-card:nth-child(2):hover { transform: translateY(20px); }
+        .beauty-card img { width: 100%; height: 100%; object-fit: cover; }
+        .beauty-text h3 { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem); color: #880e4f; margin-bottom: 16px; }
+        .beauty-text p { color: #6a1b4d; line-height: 1.8; margin-bottom: 12px; }
+        .beauty-brands { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+        .beauty-brand {
+            padding: 6px 16px; border: 2px solid #ad1457;
+            border-radius: 24px; font-size: 0.8rem; font-weight: 700;
+            color: #ad1457; transition: all 0.2s;
+        }
+        .beauty-brand:hover { background: #ad1457; color: #fff; }
+
+        /* ═══════════════════════════════════════════
+           COUPLE / DAILY LIFE
+           ═══════════════════════════════════════════ */
+        #couple { background: var(--dark); color: #fff; }
+        .couple-header { text-align: center; margin-bottom: 48px; }
+        .couple-header h3 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+        }
+        .couple-header h3 span { color: var(--pink); }
+        .couple-header p { color: var(--gray-500); max-width: 500px; margin: 12px auto 0; }
+        .couple-gallery {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        .couple-card {
+            position: relative; border-radius: 12px;
+            overflow: hidden; aspect-ratio: 3/4;
+        }
+        .couple-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; will-change: transform; }
+        .couple-card:hover img { transform: scale(1.06); }
+        .couple-card .couple-label {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 16px; background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            font-size: 0.85rem; font-weight: 700;
+            transform: translateY(100%); transition: transform 0.3s;
+        }
+        .couple-card:hover .couple-label { transform: translateY(0); }
+
+        /* ═══════════════════════════════════════════
+           COLLECTION
+           ═══════════════════════════════════════════ */
+        .pop-out-text {
+            -webkit-text-stroke: 2px var(--dark);
+            color: transparent;
+        }
+        .collection-subtitle {
+            font-size: 0.85rem; color: var(--gray-500);
+            letter-spacing: 0.2em; margin-bottom: 40px;
+        }
+        .collection-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        .collection-card {
+            position: relative; overflow: hidden;
+            border-radius: 12px; aspect-ratio: 3/4;
+            border: 2px solid transparent;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .collection-card:hover { transform: translateY(-4px); }
+        .collection-card:nth-child(1):hover { border-color: var(--primary); }
+        .collection-card:nth-child(2):hover { border-color: var(--secondary); }
+        .collection-card:nth-child(3):hover { border-color: var(--accent); }
+        .collection-card:nth-child(4):hover { border-color: var(--pink); }
+        .collection-card:nth-child(5):hover { border-color: var(--teal); }
+        .collection-card:nth-child(6):hover { border-color: var(--teal); }
+        .collection-card img {
+            width: 100%; height: 100%; object-fit: cover;
+            opacity: 0.85; transition: opacity 0.3s, transform 0.4s;
+        }
+        .collection-card:hover img { opacity: 1; transform: scale(1.1); }
+        .card-badge {
+            position: absolute; top: 8px; right: 8px;
+            padding: 2px 10px; border-radius: 6px;
+            font-family: var(--font-display); font-size: 0.65rem;
+            letter-spacing: 0.1em;
+        }
+        .badge-ssr { background: linear-gradient(135deg, #FFD700, #FFA500); color: #fff; }
+        .badge-sr { background: linear-gradient(135deg, #E040FB, #9C27B0); color: #fff; }
+        .badge-ur { background: linear-gradient(135deg, #00E676, #00BFA5); color: #fff; }
+        .badge-r { background: linear-gradient(135deg, #42A5F5, #1E88E5); color: #fff; }
+        .badge-n { background: var(--gray-600); color: #fff; }
+        .card-info {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s;
+            text-align: center;
+        }
+        .collection-card:hover .card-info { opacity: 1; }
+        .card-info-inner p:first-child {
+            font-family: var(--font-display);
+            font-size: 1rem; color: #fff; margin-bottom: 4px;
+        }
+        .card-info-inner p:last-child { font-size: 0.8rem; color: var(--gray-400); }
+
+        /* ═══════════════════════════════════════════
+           SOCIAL STATS PANEL
+           ═══════════════════════════════════════════ */
+        #social { background: var(--dark); color: #fff; }
+        .social-panel { text-align: center; }
+        .social-panel h3 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 8px;
+        }
+        .social-panel h3 span { color: var(--primary); }
+        .social-panel .sub { color: var(--gray-500); margin-bottom: 48px; }
+        .social-counters { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-bottom: 48px; }
+        .counter-box {
+            min-width: 140px; padding: 24px;
+            border: 1px solid var(--gray-700);
+            border-radius: 16px;
+            transition: border-color 0.3s;
+        }
+        .counter-box:hover { border-color: var(--primary); }
+        .counter-num {
+            font-family: var(--font-display);
+            font-size: 2.5rem; color: var(--primary);
+        }
+        .counter-label {
+            font-size: 0.75rem; color: var(--gray-500);
+            letter-spacing: 0.1em; margin-top: 4px;
+        }
+        .social-tags { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 700px; margin: 0 auto; }
+        .social-tags span {
+            padding: 6px 16px; border: 1px solid var(--gray-700);
+            border-radius: 20px; font-size: 0.8rem; color: var(--gray-400);
+            transition: all 0.2s;
+        }
+        .social-tags span:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        /* ═══════════════════════════════════════════
+           FOOTER
+           ═══════════════════════════════════════════ */
+        footer {
+            background: var(--dark); color: var(--gray-500);
+            text-align: center; padding: 60px 24px 40px;
+            border-top: 1px solid var(--gray-800);
+        }
+        .footer-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem; color: #fff; margin-bottom: 16px;
+        }
+        .footer-credit {
+            font-size: 0.8rem; display: flex;
+            align-items: center; justify-content: center; gap: 4px;
+            margin-bottom: 16px;
+        }
+        .footer-credit svg { width: 16px; height: 16px; }
+        .footer-links { display: flex; gap: 24px; justify-content: center; }
+        .footer-links a { font-size: 0.85rem; transition: color 0.2s; }
+        .footer-links a:hover { color: var(--primary); }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE
+           ═══════════════════════════════════════════ */
+        @media (max-width: 900px) {
+            .stats-grid, .food-grid, .beauty-layout { grid-template-columns: 1fr; }
+            .travel-layout { grid-template-columns: 1fr; }
+            .travel-masonry { grid-template-columns: repeat(2, 1fr); }
+            .fashion-grid { grid-template-columns: repeat(2, 1fr); }
+            .couple-gallery { grid-template-columns: repeat(2, 1fr); }
+            .collection-grid { grid-template-columns: repeat(3, 1fr); }
+            .hero-name { font-size: clamp(2.5rem, 10vw, 5rem); }
+            .hero-bg-text { font-size: clamp(5rem, 20vw, 12rem); }
+            .section-inner { padding: 80px 20px 60px; }
+        }
+        @media (max-width: 600px) {
+            .social-links { flex-direction: column; align-items: center; }
+            .cursor-dot, .cursor-outline { display: none; }
+            .fashion-grid { grid-template-columns: 1fr; }
+            .collection-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .couple-gallery { grid-template-columns: 1fr; }
+            .beauty-img-stack { grid-template-columns: 1fr; }
+            .beauty-card:nth-child(2) { transform: none; }
+            .beauty-card:nth-child(2):hover { transform: translateY(-4px); }
+            .social-counters { gap: 16px; }
+            .counter-box { min-width: 100px; padding: 16px; }
+            .counter-num { font-size: 2rem; }
+            .section-title { font-size: clamp(2rem, 8vw, 3.5rem); }
+            .hero-bg-text { font-size: clamp(4rem, 18vw, 8rem); opacity: 0.8; }
+            .hero-desc { font-size: 0.85rem; }
+            .hero-quote { font-size: 0.85rem; }
+            .bio-box { padding: 24px 16px; transform: none; }
+            .bio-box:hover { transform: none; }
+            .food-grid { gap: 24px; }
+            .beauty-layout { gap: 24px; }
+            .quest-box { padding: 16px; }
+            .travel-masonry { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scroll-progress"></div>
+
+    <!-- Canvas Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-text">LOADING CHARACTER DATA...</div>
+        <div class="loader-lines" id="loader-lines"></div>
+        <div class="loader-bar-wrap">
+            <div id="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <a href="/guild" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            <span>Guild</span>
+        </a>
+        <div class="nav-links">
+            <a href="https://www.instagram.com/mitsu27__jing__/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            </a>
+            <a href="https://www.threads.net/@mitsu27__jing__" target="_blank" rel="noopener noreferrer" aria-label="Threads">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017C1.5 8.418 2.35 5.564 3.995 3.513 5.845 1.21 8.598.028 12.179.004h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.59 12c.025 3.086.718 5.496 2.057 7.164 1.432 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.186.408-2.228 1.33-2.934.812-.621 1.907-.989 3.26-1.096.973-.077 1.933-.032 2.871.134-.084-.576-.26-1.048-.525-1.406-.426-.577-1.11-.882-2.032-.907h-.059c-.725.014-1.605.252-2.19.791l-1.382-1.612c.93-.855 2.17-1.32 3.534-1.298h.086c1.5.04 2.637.588 3.379 1.63.608.854.94 1.95 1.001 3.271.346.156.675.338.984.544 1.132.759 1.96 1.723 2.393 2.787.736 1.806.79 4.537-1.239 6.527C18.1 23.196 15.651 23.974 12.186 24zm.334-10.94c-1.476.113-2.376.702-2.332 1.522.03.552.524 1.12 1.588 1.12l.344-.015c1.037-.063 2.149-.68 2.205-3.41-.604-.108-1.208-.168-1.805-.217z"/></svg>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- ═══ HERO ═══ -->
+        <section class="section" id="hero">
+            <div class="hero-bg-text" aria-hidden="true">JING</div>
+            <div class="hero-content" data-anim="hero">
+                <div class="hero-avatar-wrap">
+                    <img src="/assets/img/guild/mitsu_jing/avatar.webp" alt="Mitsu Jing" width="200" height="200" loading="eager" fetchpriority="high">
+                </div>
+                <div class="hero-badge">Level 10 Guardian</div>
+                <h1 class="hero-name" data-text="MITSU JING">MITSU JING</h1>
+                <p class="hero-desc">Insurance Specialist / Travel Explorer / Plus-Size Fashion / Content Creator</p>
+                <p class="hero-quote">"我是小靜！目前居住在台南。正職工作是一位工作快滿10年的保險業務員！同時也有在經營自己的自媒體～"</p>
+                <div class="social-links">
+                    <a href="https://www.instagram.com/mitsu27__jing__/" target="_blank" rel="noopener noreferrer" class="social-link primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                        <span>Instagram</span>
+                    </a>
+                    <a href="https://www.threads.net/@mitsu27__jing__" target="_blank" rel="noopener noreferrer" class="social-link">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017C1.5 8.418 2.35 5.564 3.995 3.513 5.845 1.21 8.598.028 12.179.004h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.59 12c.025 3.086.718 5.496 2.057 7.164 1.432 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.96-.065-1.186.408-2.228 1.33-2.934.812-.621 1.907-.989 3.26-1.096.973-.077 1.933-.032 2.871.134-.084-.576-.26-1.048-.525-1.406-.426-.577-1.11-.882-2.032-.907h-.059c-.725.014-1.605.252-2.19.791l-1.382-1.612c.93-.855 2.17-1.32 3.534-1.298h.086c1.5.04 2.637.588 3.379 1.63.608.854.94 1.95 1.001 3.271.346.156.675.338.984.544 1.132.759 1.96 1.723 2.393 2.787.736 1.806.79 4.537-1.239 6.527C18.1 23.196 15.651 23.974 12.186 24zm.334-10.94c-1.476.113-2.376.702-2.332 1.522.03.552.524 1.12 1.588 1.12l.344-.015c1.037-.063 2.149-.68 2.205-3.41-.604-.108-1.208-.168-1.805-.217z"/></svg>
+                        <span>Threads</span>
+                    </a>
+                </div>
+            </div>
+            <div class="scroll-hint">
+                <span>Scroll to Start</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+        </section>
+
+        <!-- Marquee -->
+        <div class="marquee-strip">
+            <div class="marquee-inner">INSURANCE GUARDIAN ★ PLUS-SIZE FASHION ★ TAINAN FOODIE ★ TRAVEL EXPLORER ★ FIGURE COLLECTOR ★ CINNAMOROLL LOVER ★ CONTENT CREATOR ★ ANIMAL CROSSING ★ BEAUTY REVIEWER ★ INSURANCE GUARDIAN ★ PLUS-SIZE FASHION ★ TAINAN FOODIE ★ TRAVEL EXPLORER ★ FIGURE COLLECTOR ★ CINNAMOROLL LOVER ★ CONTENT CREATOR ★ ANIMAL CROSSING ★ BEAUTY REVIEWER ★ </div>
+        </div>
+
+        <!-- ═══ STATS / BIO ═══ -->
+        <section class="section" id="stats">
+            <div class="section-inner">
+                <div class="section-title" data-anim="fade">Character <span style="color:var(--primary)">Stats</span></div>
+                <div class="stats-grid">
+                    <div class="stats-bars">
+                        <div class="stat-item" data-anim="fade">
+                            <label><span>Insurance EXP</span><span class="stat-lv">LV. 10</span></label>
+                            <div class="stat-bar"><div class="stat-bar-fill fill-primary" data-width="95%"></div></div>
+                            <div class="stat-desc">"工作快滿10年的保險業務員！"</div>
+                        </div>
+                        <div class="stat-item" data-anim="fade">
+                            <label><span>Empathy</span><span class="stat-lv" style="color:var(--secondary)">MAX</span></label>
+                            <div class="stat-bar"><div class="stat-bar-fill fill-secondary" data-width="100%"></div></div>
+                            <div class="stat-desc">"歡迎各路大家來交朋友ヽ(´∇`)ノ"</div>
+                        </div>
+                        <div class="stat-item" data-anim="fade">
+                            <label><span>Food Radar (Tainan)</span><span class="stat-lv" style="color:var(--accent)">OVERLOAD</span></label>
+                            <div class="stat-bar"><div class="stat-bar-fill fill-accent" data-width="100%"></div></div>
+                            <div class="stat-desc">"平日也可以去開發一些台南的美食！"</div>
+                        </div>
+                        <div class="stat-item" data-anim="fade">
+                            <label><span>Fashion Sense</span><span class="stat-lv" style="color:var(--pink)">LV. 8</span></label>
+                            <div class="stat-bar"><div class="stat-bar-fill fill-pink" data-width="80%"></div></div>
+                            <div class="stat-desc">"穿上喜歡的衣服，就是自信的來源"</div>
+                        </div>
+                        <div class="stat-item" data-anim="fade">
+                            <label><span>Travel Radar</span><span class="stat-lv" style="color:var(--teal)">LV. 9</span></label>
+                            <div class="stat-bar"><div class="stat-bar-fill fill-teal" data-width="88%"></div></div>
+                            <div class="stat-desc">"可以開發不同的旅宿都會讓我很開心～"</div>
+                        </div>
+
+                        <div class="skill-tags" data-anim="fade">
+                            <span class="skill-tag">#AccommodationHunting</span>
+                            <span class="skill-tag">#PlusSizeFashion</span>
+                            <span class="skill-tag">#FigureCollection</span>
+                            <span class="skill-tag">#TravelPlanning</span>
+                            <span class="skill-tag">#TainanFoodie</span>
+                            <span class="skill-tag">#Cinnamoroll</span>
+                            <span class="skill-tag">#AnimalCrossing</span>
+                        </div>
+                    </div>
+                    <div class="bio-box" data-anim="fade">
+                        <div class="bio-label">BIO</div>
+                        <p>
+                            <span class="bio-highlight">Start Game!</span><br><br>
+                            大家好(^ω^)這裡是小靜！在地台南人，目前居住在台南。正職工作是一位工作快滿10年的保險業務員！同時也有在經營自己的自媒體～
+                            <br><br>
+                            我是中大尺碼的肉肉女孩，平時也會分享一些肉肉女孩的穿搭～分享讓更多肉肉女孩知道，我們其實也可以穿上好看的衣服，讓自己充滿自信
+                            <br><br>
+                            很喜歡去旅遊，最喜歡研究住宿！可以開發不同的旅宿都會讓我很開心～平常也熱愛分享自己的工作、生活、與伴侶的日常或自己下廚等等。
+                            <br><br>
+                            今年希望自己的社群可以有更明確的分享目標，目前想到的是想以旅遊住宿為主。平常的興趣還有看動畫、追劇、繪圖（偶爾）、蒐集公仔模型（人形公仔），偶爾也會拍拍公仔開箱～
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ FASHION ═══ -->
+        <section class="section" id="fashion">
+            <div class="section-inner">
+                <div class="fashion-bg-text" aria-hidden="true">FASHION</div>
+                <div class="fashion-header" data-anim="fade">
+                    <div class="section-title" style="color:#fff">CONFIDENCE <span style="color:var(--primary)">UNLOCKED</span></div>
+                    <p class="fashion-quote">"讓更多肉肉女孩知道，我們其實也可以穿上好看的衣服，讓自己充滿自信"</p>
+                </div>
+                <div class="fashion-grid">
+                    <div class="comic-panel" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_1.webp" alt="傳統文化穿搭" width="400" height="600" loading="lazy">
+                        <div class="panel-overlay">
+                            <h4>Heritage Soul</h4>
+                            <div class="tag">#CulturalStyle</div>
+                            <p>"傳統也可以很時尚"</p>
+                        </div>
+                    </div>
+                    <div class="comic-panel" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/ig_figure_fashion.webp" alt="復古文青穿搭" width="640" height="640" loading="lazy">
+                        <div class="panel-overlay">
+                            <h4>Vintage Chic</h4>
+                            <div class="tag">#RetroStyle</div>
+                            <p>"貝雷帽 x 長裙 = 完美公式"</p>
+                        </div>
+                    </div>
+                    <div class="comic-panel" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/ig_fashion_shop.webp" alt="花園穿搭" width="640" height="640" loading="lazy">
+                        <div class="panel-overlay">
+                            <h4>Garden Style</h4>
+                            <div class="tag">#PlusSizeStyle</div>
+                            <p>"蕾絲長裙的優雅力量"</p>
+                        </div>
+                    </div>
+                    <div class="comic-panel" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/ig_night_dress.webp" alt="夜間燈飾穿搭" width="640" height="640" loading="lazy">
+                        <div class="panel-overlay">
+                            <h4>Night Lights</h4>
+                            <div class="tag">#NightStyle</div>
+                            <p>"燈海中的氣質穿搭"</p>
+                        </div>
+                    </div>
+                    <div class="comic-panel" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_2.webp" alt="聖誕市集穿搭" width="400" height="600" loading="lazy">
+                        <div class="panel-overlay">
+                            <h4>Holiday Chic</h4>
+                            <div class="tag">#FestiveStyle</div>
+                            <p>"聖誕市集的甜蜜穿搭"</p>
+                        </div>
+                    </div>
+                    <div class="comic-panel" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_4.webp" alt="日常生活分享" width="400" height="600" loading="lazy">
+                        <div class="panel-overlay">
+                            <h4>Daily Vibes</h4>
+                            <div class="tag">#LifestyleShare</div>
+                            <p>"日常，也可以很不一樣"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ═══ TRAVEL ═══ -->
+        <section class="section" id="travel">
+            <div class="section-inner">
+                <div data-anim="fade">
+                    <div class="hero-badge" style="background:var(--secondary);color:var(--dark);transform:rotate(2deg)">World Map Unlocked</div>
+                    <div class="section-title" style="margin-top:16px">TRAVEL <span style="color:transparent;-webkit-text-stroke:2px var(--dark)">LOGS</span></div>
+                    <div class="section-subtitle">"可以開發不同的旅宿都會讓我很開心～"</div>
+                </div>
+                <div class="travel-layout">
+                    <div class="quest-box" data-anim="fade">
+                        <h4>Quest Objective:</h4>
+                        <ul class="quest-list">
+                            <li class="quest-item" data-quest>
+                                <input type="checkbox" class="quest-checkbox"> 開發不同的旅宿 (Unique Stays)
+                            </li>
+                            <li class="quest-item" data-quest>
+                                <input type="checkbox" class="quest-checkbox"> 北海道獨旅 (Hokkaido Solo Trip)
+                            </li>
+                            <li class="quest-item" data-quest>
+                                <input type="checkbox" class="quest-checkbox"> 旅遊住宿分享 (Travel & Lodging)
+                            </li>
+                            <li class="quest-item" data-quest>
+                                <input type="checkbox" class="quest-checkbox"> 探索世界各地 (World Explorer)
+                            </li>
+                            <li class="quest-item" data-quest>
+                                <input type="checkbox" class="quest-checkbox"> Glamping 露營體驗
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="travel-masonry">
+                        <div class="travel-card" data-anim="fade">
+                            <img src="/assets/img/guild/mitsu_jing/gallery_5.webp" alt="精品旅宿" width="600" height="400" loading="lazy">
+                            <div class="travel-label">Luxury Stay</div>
+                        </div>
+                        <div class="travel-card" data-anim="fade">
+                            <img src="/assets/img/guild/mitsu_jing/gallery_8.webp" alt="高山湖泊旅遊" width="600" height="400" loading="lazy">
+                            <div class="travel-label">Alpine Adventure</div>
+                        </div>
+                        <div class="travel-card" data-anim="fade">
+                            <img src="/assets/img/guild/mitsu_jing/ig_camping.webp" alt="Glamping露營" width="640" height="640" loading="lazy">
+                            <div class="travel-label">Glamping with Friends</div>
+                        </div>
+                        <div class="travel-card" data-anim="fade">
+                            <img src="/assets/img/guild/mitsu_jing/gallery_12.webp" alt="芝加哥夜景" width="600" height="400" loading="lazy">
+                            <div class="travel-label">City Nights - Chicago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ FOOD ═══ -->
+        <section class="section" id="food">
+            <div class="section-inner">
+                <div class="food-grid">
+                    <div class="food-text" data-anim="fade">
+                        <h3>TAINAN <span style="color:var(--accent)">FOODIE</span></h3>
+                        <p>
+                            身為台南人，小靜對美食有著極高的敏銳度。從巷弄裡的傳統小吃到新開的質感餐廳，她的「美食雷達」永遠處於 OVERLOAD 狀態。平日也會去開發一些台南的美食，並在社群上分享給大家！自己下廚也是一大樂趣～
+                        </p>
+                        <div class="food-tags">
+                            <span class="food-tag">#台南美食</span>
+                            <span class="food-tag">#巷弄美食</span>
+                            <span class="food-tag">#健康餐盒</span>
+                            <span class="food-tag">#下廚日常</span>
+                            <span class="food-tag">#椰奶拿鐵</span>
+                        </div>
+                    </div>
+                    <div class="food-img-wrap" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_6.webp" alt="台南美食" width="600" height="600" loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ BEAUTY ═══ -->
+        <section class="section" id="beauty">
+            <div class="section-inner">
+                <div class="beauty-layout">
+                    <div class="beauty-img-stack" data-anim="fade">
+                        <div class="beauty-card">
+                            <img src="/assets/img/guild/mitsu_jing/ig_beauty.webp" alt="美妝開箱" width="640" height="640" loading="lazy">
+                        </div>
+                        <div class="beauty-card">
+                            <img src="/assets/img/guild/mitsu_jing/gallery_3.webp" alt="唇彩分享" width="400" height="600" loading="lazy">
+                        </div>
+                    </div>
+                    <div class="beauty-text" data-anim="fade">
+                        <div class="hero-badge" style="background:#ad1457;color:#fff">Beauty Lab</div>
+                        <h3>BEAUTY <span style="color:var(--pink)">REVIEW</span></h3>
+                        <p>小靜也是美妝愛好者，經常在社群分享各種美妝產品的開箱和使用心得。從唇彩到保養品，她會親自試用後給出最真實的評價。</p>
+                        <p>合作品牌邀約也持續不斷，證明她的分享內容備受信賴！</p>
+                        <div class="beauty-brands">
+                            <span class="beauty-brand">INGA</span>
+                            <span class="beauty-brand">QueenShop</span>
+                            <span class="beauty-brand">Polylulu</span>
+                            <span class="beauty-brand">Ann's</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ COUPLE / DAILY LIFE ═══ -->
+        <section class="section" id="couple">
+            <div class="section-inner">
+                <div class="couple-header" data-anim="fade">
+                    <h3>DAILY <span>LIFE</span></h3>
+                    <p>"平常也熱愛分享自己的工作、生活、與伴侶的日常"</p>
+                </div>
+                <div class="couple-gallery">
+                    <div class="couple-card" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/ig_couple.webp" alt="原住民文化體驗" width="640" height="640" loading="lazy">
+                        <div class="couple-label">Heritage Experience</div>
+                    </div>
+                    <div class="couple-card" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/ig_christmas.webp" alt="聖誕節" width="640" height="640" loading="lazy">
+                        <div class="couple-label">Merry Christmas</div>
+                    </div>
+                    <div class="couple-card" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/ig_drinks.webp" alt="日常開箱" width="640" height="640" loading="lazy">
+                        <div class="couple-label">Daily Unboxing</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ HOBBY / COLLECTION ═══ -->
+        <section class="section" id="hobby">
+            <div class="section-inner">
+                <div class="section-title pop-out-text" data-anim="fade">COLLECTION</div>
+                <div class="collection-subtitle" data-anim="fade">ANIME / FIGURES / DRAMA / CINNAMOROLL / ANIMAL CROSSING</div>
+                <div class="collection-grid">
+                    <div class="collection-card" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_7.webp" alt="動漫收藏" width="300" height="400" loading="lazy">
+                        <div class="card-badge badge-ssr">SSR</div>
+                        <div class="card-info"><div class="card-info-inner"><p>Anime Art</p><p>動漫照片收藏牆</p></div></div>
+                    </div>
+                    <div class="collection-card" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_11.webp" alt="追劇時光" width="300" height="400" loading="lazy">
+                        <div class="card-badge badge-sr">SR</div>
+                        <div class="card-info"><div class="card-info-inner"><p>Drama</p><p>日常追劇時光</p></div></div>
+                    </div>
+                    <div class="collection-card" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_10.webp" alt="居家美學" width="300" height="400" loading="lazy">
+                        <div class="card-badge badge-ur">UR</div>
+                        <div class="card-info"><div class="card-info-inner"><p>Aesthetic</p><p>居家美學空間</p></div></div>
+                    </div>
+                    <div class="collection-card" data-anim="fade">
+                        <img src="/assets/img/guild/mitsu_jing/gallery_9.webp" alt="閱讀時光" width="300" height="400" loading="lazy">
+                        <div class="card-badge badge-r">R</div>
+                        <div class="card-info"><div class="card-info-inner"><p>Reading</p><p>安靜的閱讀角落</p></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ SOCIAL STATS ═══ -->
+        <section class="section" id="social">
+            <div class="section-inner">
+                <div class="social-panel" data-anim="fade">
+                    <h3>CONTENT <span>CREATOR</span></h3>
+                    <p class="sub">"歡迎各路大家來交朋友ヽ(´∇`)ノ"</p>
+                    <div class="social-counters">
+                        <div class="counter-box">
+                            <div class="counter-num" data-count="454">0</div>
+                            <div class="counter-label">IG POSTS</div>
+                        </div>
+                        <div class="counter-box">
+                            <div class="counter-num" data-count="2359">0</div>
+                            <div class="counter-label">IG FOLLOWERS</div>
+                        </div>
+                        <div class="counter-box">
+                            <div class="counter-num" data-count="2503">0</div>
+                            <div class="counter-label">THREADS FOLLOWERS</div>
+                        </div>
+                    </div>
+                    <div class="social-tags">
+                        <span>#靜拍拍</span>
+                        <span>#靜走跳高雄</span>
+                        <span>#ぽっちゃコーデ</span>
+                        <span>#ぽっちゃり女子</span>
+                        <span>#PlusSizeFashion</span>
+                        <span>#TainanFood</span>
+                        <span>#FigureCollection</span>
+                        <span>#HokkaidoTrip</span>
+                        <span>#AnimalCrossing</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ FOOTER ═══ -->
+        <footer>
+            <div class="footer-title">THANKS FOR VISITING</div>
+            <div class="footer-credit">
+                MADE WITH <svg viewBox="0 0 24 24" fill="#ef4444" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> BY SUPERGALEN'S DUNGEON
+            </div>
+            <div class="footer-links">
+                <a href="/guild">Back to Guild</a>
+                <a href="https://www.instagram.com/mitsu27__jing__/" target="_blank" rel="noopener noreferrer">@mitsu27__jing__</a>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- ═══════════════════════════════════════════
+         SCRIPTS (vanilla JS only)
+         ═══════════════════════════════════════════ -->
+    <script>
+    (function() {
+        'use strict';
+
+        // ─── CUSTOM CURSOR ───
+        var cursorDot = document.querySelector('.cursor-dot');
+        var cursorOutline = document.querySelector('.cursor-outline');
+        var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        if (!isTouchDevice && cursorDot && cursorOutline) {
+            var mouseX = 0, mouseY = 0;
+            var outlineX = 0, outlineY = 0;
+
+            document.addEventListener('mousemove', function(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                cursorDot.style.transform = 'translate(' + mouseX + 'px,' + mouseY + 'px)';
+            }, { passive: true });
+
+            function animateOutline() {
+                if (document.hidden) { requestAnimationFrame(animateOutline); return; }
+                outlineX += (mouseX - outlineX) * 0.12;
+                outlineY += (mouseY - outlineY) * 0.12;
+                cursorOutline.style.transform = 'translate(' + outlineX + 'px,' + outlineY + 'px)';
+                requestAnimationFrame(animateOutline);
+            }
+            animateOutline();
+
+            // Hover effect via event delegation
+            var hoverSelectors = 'a, button, .comic-panel, .collection-card, .quest-item, .skill-tag, .beauty-brand, .counter-box, .social-tags span, .couple-card, .travel-card';
+            document.addEventListener('mouseover', function(e) {
+                if (e.target.closest(hoverSelectors)) cursorOutline.classList.add('hovering');
+            });
+            document.addEventListener('mouseout', function(e) {
+                if (e.target.closest(hoverSelectors)) cursorOutline.classList.remove('hovering');
+            });
+
+            // Click burst particles
+            document.addEventListener('click', function(e) {
+                cursorDot.classList.add('click-burst');
+                setTimeout(function() { cursorDot.classList.remove('click-burst'); }, 150);
+
+                var colors = ['#FF3D00', '#00E676', '#FFD600', '#FF6B9D', '#00BCD4'];
+                for (var i = 0; i < 10; i++) {
+                    var p = document.createElement('div');
+                    p.className = 'click-particle';
+                    p.style.left = e.clientX + 'px';
+                    p.style.top = e.clientY + 'px';
+                    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    var angle = (Math.PI * 2 / 10) * i;
+                    var dist = 30 + Math.random() * 40;
+                    var tx = Math.cos(angle) * dist;
+                    var ty = Math.sin(angle) * dist;
+                    p.animate([
+                        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+                        { transform: 'translate(calc(-50% + ' + tx + 'px), calc(-50% + ' + ty + 'px)) scale(0)', opacity: 0 }
+                    ], { duration: 600, easing: 'ease-out' });
+                    document.body.appendChild(p);
+                    setTimeout(function(el) { el.remove(); }, 700, p);
+                }
+            });
+        }
+
+        // ─── PRELOADER WITH BOOT SEQUENCE ───
+        var loaderBar = document.getElementById('loader-bar');
+        var loader = document.getElementById('loader');
+        var loaderLines = document.getElementById('loader-lines');
+        var bootMessages = [
+            '> Initializing character data...',
+            '> Loading insurance_exp.dat [OK]',
+            '> Loading tainan_food_radar.db [OK]',
+            '> Mounting travel_memories.vol [OK]',
+            '> Loading fashion_inventory.json [OK]',
+            '> All systems ready. Welcome, Jing!'
+        ];
+
+        var bootIndex = 0;
+        function addBootLine() {
+            if (bootIndex < bootMessages.length && loaderLines) {
+                var span = document.createElement('span');
+                span.textContent = bootMessages[bootIndex];
+                span.style.animationDelay = '0s';
+                loaderLines.appendChild(span);
+                bootIndex++;
+                if (loaderBar) {
+                    loaderBar.style.width = Math.min(((bootIndex / bootMessages.length) * 80), 80) + '%';
+                }
+                setTimeout(addBootLine, 250);
+            }
+        }
+        setTimeout(addBootLine, 300);
+
+        window.addEventListener('load', function() {
+            if (loaderBar) loaderBar.style.width = '100%';
+            setTimeout(function() {
+                if (loader) {
+                    loader.classList.add('hidden');
+                    initAnimations();
+                    initCounters();
+                }
+            }, 1200);
+        });
+
+        // ─── SCROLL PROGRESS (rAF throttled) ───
+        var scrollProgressEl = document.getElementById('scroll-progress');
+        var scrollTicking = false;
+        window.addEventListener('scroll', function() {
+            if (!scrollTicking) {
+                scrollTicking = true;
+                requestAnimationFrame(function() {
+                    var h = document.documentElement.scrollHeight - window.innerHeight;
+                    var pct = h > 0 ? (window.scrollY / h) * 100 : 0;
+                    if (scrollProgressEl) scrollProgressEl.style.width = pct + '%';
+                    scrollTicking = false;
+                });
+            }
+        }, { passive: true });
+
+        // ─── CANVAS 2D BACKGROUND ───
+        var canvas = document.getElementById('bg-canvas');
+        if (canvas) {
+            var ctx = canvas.getContext('2d');
+            var w, h;
+            var particles = [];
+            var maxParticles = 40;
+
+            function resizeCanvas() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            var resizeTicking = false;
+            window.addEventListener('resize', function() {
+                if (!resizeTicking) { resizeTicking = true; requestAnimationFrame(function() { resizeCanvas(); resizeTicking = false; }); }
+            });
+
+            function Particle() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 3 + 1;
+                this.alpha = Math.random() * 0.5 + 0.2;
+            }
+
+            for (var i = 0; i < maxParticles; i++) {
+                particles.push(new Particle());
+            }
+
+            var connDistSq = 120 * 120; // squared distance threshold to avoid Math.sqrt
+            function drawParticles() {
+                if (document.hidden) { requestAnimationFrame(drawParticles); return; }
+                ctx.clearRect(0, 0, w, h);
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+                    if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 61, 0, ' + p.alpha + ')';
+                    ctx.fill();
+                    for (var j = i + 1; j < particles.length; j++) {
+                        var p2 = particles[j];
+                        var dx = p.x - p2.x, dy = p.y - p2.y;
+                        var dSq = dx * dx + dy * dy;
+                        if (dSq < connDistSq) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = 'rgba(255, 61, 0, ' + (0.15 * (1 - Math.sqrt(dSq) / 120)) + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(drawParticles);
+            }
+            drawParticles();
+        }
+
+        // ─── SCROLL REVEAL (IntersectionObserver) ───
+        function initAnimations() {
+            var animElements = document.querySelectorAll('[data-anim]');
+            if (!animElements.length) return;
+
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+
+            animElements.forEach(function(el, i) {
+                el.style.transitionDelay = (i % 4) * 0.1 + 's';
+                observer.observe(el);
+            });
+
+            // Stat bars animation
+            var statBars = document.querySelectorAll('.stat-bar-fill');
+            var barObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.style.width = entry.target.getAttribute('data-width');
+                        barObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.3 });
+            statBars.forEach(function(bar) { barObserver.observe(bar); });
+        }
+
+        // ─── COUNTER ANIMATION ───
+        function initCounters() {
+            var counters = document.querySelectorAll('[data-count]');
+            var counterObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var el = entry.target;
+                        var target = parseInt(el.getAttribute('data-count'), 10);
+                        var duration = 2000;
+                        var start = 0;
+                        var startTime = null;
+
+                        function animate(ts) {
+                            if (!startTime) startTime = ts;
+                            var progress = Math.min((ts - startTime) / duration, 1);
+                            var eased = 1 - Math.pow(1 - progress, 3);
+                            el.textContent = Math.floor(eased * target).toLocaleString();
+                            if (progress < 1) requestAnimationFrame(animate);
+                            else el.textContent = target.toLocaleString();
+                        }
+                        requestAnimationFrame(animate);
+                        counterObserver.unobserve(el);
+                    }
+                });
+            }, { threshold: 0.5 });
+            counters.forEach(function(c) { counterObserver.observe(c); });
+        }
+
+        // ─── QUEST LOG INTERACTION ───
+        document.querySelectorAll('[data-quest]').forEach(function(item) {
+            item.addEventListener('click', function() {
+                var cb = item.querySelector('.quest-checkbox');
+                if (cb) {
+                    cb.checked = !cb.checked;
+                    item.classList.toggle('completed', cb.checked);
+                }
+            });
+        });
+
+    })();
+    </script>
+</body>
+</html>
