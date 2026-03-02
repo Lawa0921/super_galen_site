@@ -99,7 +99,7 @@ test.describe('Lo Yu Hero 區塊', () => {
   test('Hero 區塊應該顯示頭像', async ({ page }) => {
     await expect(page.locator('.hero-img')).toBeAttached();
     const src = await page.locator('.hero-img').getAttribute('src');
-    expect(src).toContain('avatar');
+    expect(src).toContain('gallery_02');
   });
 
   test('Hero 區塊應該顯示名字「LO YU 羅玉」', async ({ page }) => {
