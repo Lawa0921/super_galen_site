@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEKOPAPAYA | 避風港 — 燈塔守望者</title>
+    <meta name="description" content="歡迎來到避風港。這裡有一座燈塔，為每一艘迷途的船點亮回家的路。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
+
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js" defer></script>
+
+    <!-- Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --navy-deep: #0B1929;
+            --seafoam: #4A9E8E;
+            --seafoam-light: #6CB4A8;
+            --amber-glow: #F5C469;
+            --amber-warm: #E8A838;
+            --cream: #F4F1EC;
+            --sand: #D4C8B8;
+            --text-light: #E8E2D9;
+            --text-hint: #8A9AB5;
+            --font-display: 'Cormorant Garamond', serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: #060E18;
+            color: var(--text-light);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            line-height: 2;
+            font-weight: 300;
+            cursor: none;
+        }
+
+        /* ===== CUSTOM CURSOR ===== */
+        .cursor-dot {
+            position: fixed; width: 6px; height: 6px;
+            background: var(--amber-glow);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background 0.2s;
+            box-shadow: 0 0 10px var(--amber-glow), 0 0 20px rgba(245,196,105,0.3);
+        }
+        .cursor-ring {
+            position: fixed; width: 36px; height: 36px;
+            border: 1.5px solid rgba(245,196,105,0.4);
+            border-radius: 50%; pointer-events: none; z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease, border-color 0.3s, background 0.3s;
+        }
+        body.cursor-hover .cursor-dot {
+            width: 10px; height: 10px; background: var(--seafoam);
+            box-shadow: 0 0 15px var(--seafoam), 0 0 30px rgba(74,158,142,0.4);
+        }
+        body.cursor-hover .cursor-ring {
+            width: 56px; height: 56px;
+            border-color: rgba(74,158,142,0.5); background: rgba(74,158,142,0.08);
+        }
+        body.cursor-click .cursor-dot { width: 4px; height: 4px; }
+        body.cursor-click .cursor-ring { width: 28px; height: 28px; border-color: rgba(245,196,105,0.8); }
+
+        /* ===== CANVASES ===== */
+        #ripple-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 9990;
+        }
+        #p5-ocean {
+            position: fixed; bottom: 0; left: 0;
+            width: 100vw; height: 220px;
+            z-index: 3; pointer-events: none;
+        }
+        #p5-fireflies {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 2; pointer-events: none;
+        }
+
+        /* ===== LIGHTHOUSE INTRO ===== */
+        #lighthouse-intro {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh; z-index: 10000;
+            background: var(--navy-deep);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: opacity 1.8s ease, visibility 1.8s;
+        }
+        #lighthouse-intro.fade-out { opacity: 0; visibility: hidden; }
+
+        .intro-scene { position: relative; width: 300px; height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+
+        /* CSS Lighthouse */
+        .intro-lh { position: relative; display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        .lh-roof { width: 50px; height: 12px; background: #3A3530; border-radius: 50% 50% 0 0; }
+        .lh-lamp-house { width: 44px; height: 30px; background: rgba(245,196,105,0.15); border: 2px solid #5A4D3E; position: relative; display: flex; align-items: center; justify-content: center; }
+        .lh-lamp { width: 16px; height: 16px; background: var(--amber-glow); border-radius: 50%; box-shadow: 0 0 40px var(--amber-glow), 0 0 80px var(--amber-warm), 0 0 160px rgba(245,196,105,0.4); animation: lamp-pulse 2s ease-in-out infinite; }
+        .lh-beam-container { position: absolute; top: 50%; left: 50%; width: 0; height: 0; }
+        .lh-beam { position: absolute; top: 0; left: 0; width: 800px; height: 4px; background: linear-gradient(to right, rgba(245,196,105,0.8), rgba(245,196,105,0.1) 40%, transparent); transform-origin: left center; animation: beam-sweep 5s ease-in-out infinite; filter: blur(3px); }
+        .lh-beam:nth-child(2) { height: 80px; background: linear-gradient(to right, rgba(245,196,105,0.08), transparent 50%); filter: blur(20px); animation: beam-sweep 5s ease-in-out infinite; }
+        .lh-gallery { width: 40px; height: 8px; background: #5A4D3E; }
+        .lh-tower { width: 32px; height: 140px; background: linear-gradient(135deg, #E8E2D9 0%, #D4C8B8 40%, #A8978A 100%); clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); position: relative; }
+        .lh-stripe { position: absolute; width: 100%; height: 15px; background: rgba(180,50,50,0.6); }
+        .lh-stripe:nth-child(1) { top: 20%; }
+        .lh-stripe:nth-child(2) { top: 50%; }
+        .lh-stripe:nth-child(3) { top: 80%; }
+        .lh-window { position: absolute; width: 8px; height: 10px; background: rgba(245,196,105,0.3); border-radius: 4px 4px 0 0; left: 50%; transform: translateX(-50%); }
+        .lh-window:nth-child(4) { top: 30%; }
+        .lh-window:nth-child(5) { top: 60%; }
+        .lh-base { width: 60px; height: 18px; background: #7A6B5D; border-radius: 0 0 6px 6px; }
+        .lh-rocks { display: flex; gap: 2px; margin-top: -2px; }
+        .lh-rock { background: #4A4035; border-radius: 50% 50% 40% 40%; }
+
+        @keyframes lamp-pulse {
+            0%, 100% { box-shadow: 0 0 40px var(--amber-glow), 0 0 80px var(--amber-warm), 0 0 160px rgba(245,196,105,0.4); }
+            50% { box-shadow: 0 0 60px var(--amber-glow), 0 0 120px var(--amber-warm), 0 0 240px rgba(245,196,105,0.5); }
+        }
+        @keyframes beam-sweep {
+            0% { transform: rotate(-35deg); }
+            50% { transform: rotate(35deg); }
+            100% { transform: rotate(-35deg); }
+        }
+
+        /* Intro ocean */
+        .intro-ocean { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; overflow: hidden; }
+        .intro-wave-svg { position: absolute; bottom: 0; width: 200%; animation: intro-wave-move 8s linear infinite; }
+        .intro-wave-svg:nth-child(2) { animation-duration: 12s; animation-direction: reverse; opacity: 0.5; bottom: 5px; }
+
+        @keyframes intro-wave-move { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* Intro ship */
+        .intro-ship { position: absolute; bottom: 45px; animation: ship-sail 6s ease-in-out infinite; }
+        .intro-ship-hull { width: 40px; height: 12px; background: #5A4D3E; clip-path: polygon(5% 0%, 95% 0%, 80% 100%, 20% 100%); border-radius: 0 0 4px 4px; }
+        .intro-ship-mast { position: absolute; bottom: 12px; left: 50%; width: 2px; height: 30px; background: #7A6B5D; transform: translateX(-50%); }
+        .intro-ship-sail { position: absolute; bottom: 18px; left: calc(50% + 2px); width: 18px; height: 22px; background: rgba(244,241,236,0.7); clip-path: polygon(0 0, 100% 30%, 0 100%); }
+        .intro-ship-flag { position: absolute; bottom: 40px; left: calc(50% + 2px); width: 8px; height: 5px; background: var(--amber-glow); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+
+        @keyframes ship-sail {
+            0%, 100% { transform: translateX(-60px) rotate(-1deg); }
+            50% { transform: translateX(60px) rotate(1deg); }
+        }
+
+        .intro-text-container { margin-top: 1.5rem; text-align: center; }
+        .intro-title { font-family: var(--font-display); font-size: 1.4rem; color: var(--amber-glow); letter-spacing: 0.4em; opacity: 0; animation: intro-fade 1.5s ease 0.8s forwards; }
+        .intro-sub { font-family: var(--font-body); font-size: 0.85rem; color: var(--text-hint); letter-spacing: 0.2em; margin-top: 0.3rem; opacity: 0; animation: intro-fade 1.5s ease 1.8s forwards; }
+        .intro-hint { font-size: 0.7rem; color: var(--text-hint); opacity: 0; margin-top: 1.5rem; animation: intro-fade 1s ease 3s forwards; letter-spacing: 0.1em; }
+
+        @keyframes intro-fade { to { opacity: 1; } }
+
+        /* ===== THREE.JS BG ===== */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; }
+
+        /* ===== FIXED LIGHTHOUSE SILHOUETTE ===== */
+        .lighthouse-silhouette {
+            position: fixed; bottom: 220px; right: 6vw;
+            width: 50px; z-index: 4; pointer-events: none; opacity: 0.2;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .sil-top { width: 22px; height: 14px; background: var(--cream); border-radius: 6px 6px 0 0; position: relative; }
+        .sil-glow { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: var(--amber-glow); border-radius: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 20px var(--amber-glow); animation: lamp-pulse 3s ease-in-out infinite; }
+        .sil-beam { position: absolute; top: 50%; left: 50%; width: 600px; height: 2px; background: linear-gradient(to right, rgba(245,196,105,0.4), transparent); transform-origin: left center; animation: beam-sweep 10s ease-in-out infinite; filter: blur(1px); }
+        .sil-tower { width: 16px; height: 160px; background: var(--cream); clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); }
+        .sil-base { width: 36px; height: 10px; background: var(--cream); border-radius: 0 0 3px 3px; }
+
+        /* ===== NAV ===== */
+        .nav-fixed {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            font-family: var(--font-body); font-weight: 400; font-size: 0.85rem;
+            color: var(--text-hint); text-decoration: none;
+            letter-spacing: 0.15em; display: flex; align-items: center; gap: 0.6rem;
+            transition: color 0.3s; opacity: 0;
+        }
+        .nav-fixed:hover { color: var(--amber-glow); }
+
+        /* ===== CONTENT ===== */
+        .content-layer { position: relative; z-index: 10; width: 100%; }
+
+        .section {
+            min-height: 100vh; width: 100%;
+            display: flex; align-items: center; justify-content: center;
+            padding: 10vh 5vw; position: relative;
+        }
+        .section-inner { max-width: 900px; width: 100%; }
+
+        /* ===== HERO ===== */
+        .hero-section { text-align: center; flex-direction: column; padding-top: 12vh; }
+        .avatar-container {
+            width: 140px; height: 140px; border-radius: 50%; overflow: hidden;
+            margin: 0 auto 2.5rem; border: 3px solid rgba(245,196,105,0.3);
+            box-shadow: 0 0 40px rgba(245,196,105,0.15), 0 15px 35px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .avatar-container img { width: 100%; height: 100%; object-fit: cover; filter: brightness(1.05) contrast(0.95); }
+        .avatar-container::after {
+            content: ''; position: absolute; top: -4px; left: -4px;
+            width: calc(100% + 8px); height: calc(100% + 8px);
+            border-radius: 50%; border: 1px solid rgba(245,196,105,0.15);
+            animation: avatar-glow 4s ease-in-out infinite;
+        }
+        @keyframes avatar-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(245,196,105,0.08); transform: scale(1); }
+            50% { box-shadow: 0 0 35px rgba(245,196,105,0.2); transform: scale(1.02); }
+        }
+
+        .hero-section .en-label {
+            font-family: var(--font-display); font-size: 0.95rem;
+            color: var(--amber-glow); letter-spacing: 0.4em; text-transform: uppercase;
+            margin-bottom: 0.8rem; display: block; font-style: italic;
+        }
+        .hero-section h1 {
+            font-family: var(--font-body); font-size: 2.8rem; font-weight: 500;
+            letter-spacing: 0.15em; line-height: 1.4; margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--cream), var(--amber-glow));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-subtitle { font-size: 1.1rem; color: var(--text-hint); font-weight: 300; line-height: 2.2; max-width: 520px; margin: 0 auto; }
+
+        /* ===== SCROLL INDICATOR ===== */
+        .scroll-indicator {
+            position: absolute; bottom: 5vh; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+            animation: scroll-bob 2.5s ease-in-out infinite;
+        }
+        .scroll-indicator span { font-family: var(--font-display); font-size: 0.7rem; color: var(--text-hint); letter-spacing: 0.35em; text-transform: uppercase; }
+        .scroll-line { width: 1px; height: 35px; background: linear-gradient(to bottom, var(--text-hint), transparent); }
+        @keyframes scroll-bob {
+            0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+            50% { transform: translateX(-50%) translateY(10px); opacity: 0.5; }
+        }
+
+        /* ===== TEXT BLOCKS ===== */
+        .text-block {
+            background: rgba(21, 38, 66, 0.5); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+            padding: 3rem 3.5rem; border-radius: 3px; border-left: 3px solid var(--amber-glow);
+            opacity: 0; transform: translateY(40px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+        .text-block.align-right { border-left: none; border-right: 3px solid var(--seafoam); text-align: right; }
+        .text-block.align-center { border-left: none; border-bottom: 3px solid var(--amber-glow); text-align: center; }
+
+        .section-label {
+            font-family: var(--font-display); font-size: 0.85rem; color: var(--amber-glow);
+            letter-spacing: 0.4em; text-transform: uppercase; margin-bottom: 0.4rem;
+            display: block; font-style: italic;
+        }
+        h2 { font-family: var(--font-body); font-size: 1.6rem; font-weight: 500; color: var(--cream); margin-bottom: 1.5rem; letter-spacing: 0.08em; line-height: 1.6; }
+        .text-block p { font-size: 1.05rem; color: var(--text-hint); margin-bottom: 1.2rem; line-height: 2.2; font-weight: 300; }
+        .text-block p:last-child { margin-bottom: 0; }
+        .highlight { color: var(--amber-glow); font-weight: 400; }
+        .accent { color: var(--seafoam-light); font-weight: 400; }
+
+        /* ===== WAVE DIVIDER ===== */
+        .wave-divider { width: 100%; height: 80px; display: flex; align-items: center; justify-content: center; }
+        .wave-divider::before, .wave-divider::after { content: ''; width: 80px; height: 1px; background: linear-gradient(to right, transparent, rgba(245,196,105,0.3), transparent); }
+        .wave-divider .anchor-icon { color: var(--amber-glow); font-size: 0.8rem; margin: 0 1.5rem; opacity: 0.4; }
+
+        /* ===== INTERESTS GRID ===== */
+        .interests-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2.5rem; }
+        .interest-card {
+            background: rgba(21, 38, 66, 0.6); border: 1px solid rgba(245,196,105,0.06);
+            padding: 2rem 1.5rem; border-radius: 3px; text-align: center;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); cursor: none;
+            opacity: 0; transform: translateY(30px);
+        }
+        .interest-card:hover {
+            border-color: rgba(245,196,105,0.3); background: rgba(21, 38, 66, 0.85);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 30px rgba(245,196,105,0.06);
+        }
+        .interest-card .card-icon { font-size: 2rem; margin-bottom: 1rem; display: block; transition: transform 0.3s; }
+        .interest-card:hover .card-icon { transform: scale(1.2) rotate(5deg); }
+        .interest-card h3 { font-family: var(--font-body); font-size: 1rem; font-weight: 500; color: var(--cream); margin-bottom: 0.5rem; }
+        .interest-card p { font-size: 0.85rem; color: var(--text-hint); line-height: 1.8; }
+
+        /* Blur non-hovered cards */
+        .interests-grid:has(.interest-card:hover) .interest-card:not(:hover) {
+            filter: blur(2px) brightness(0.7); transform: scale(0.97);
+        }
+
+        /* ===== QUOTE ===== */
+        .quote-block {
+            background: rgba(21, 38, 66, 0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            padding: 4rem; border-radius: 3px; text-align: center; position: relative;
+            opacity: 0; transform: translateY(40px);
+        }
+        .quote-block::before {
+            content: '\201C'; font-family: var(--font-display); font-size: 8rem;
+            color: var(--amber-glow); opacity: 0.1; position: absolute; top: -1rem; left: 2rem; line-height: 1;
+        }
+        .quote-block blockquote {
+            font-family: var(--font-display); font-size: 1.9rem; font-weight: 400;
+            color: var(--cream); font-style: italic; line-height: 1.9; margin-bottom: 1.5rem;
+        }
+        .quote-block .quote-attr { font-family: var(--font-body); font-size: 0.9rem; color: var(--text-hint); letter-spacing: 0.15em; }
+
+        /* ===== CSS SHIP ===== */
+        .ship-container { width: 180px; height: 120px; position: relative; margin: 0 auto; animation: ship-rock 7s ease-in-out infinite; }
+        .ship-hull { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 130px; height: 35px; background: linear-gradient(to bottom, #6A5D4E, #4A3F32); clip-path: polygon(0% 0%, 100% 0%, 88% 100%, 12% 100%); border-radius: 0 0 8px 8px; }
+        .ship-mast { position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%); width: 3px; height: 70px; background: #8A7B6D; }
+        .ship-sail { position: absolute; bottom: 48px; left: calc(50% + 3px); width: 42px; height: 52px; background: rgba(244,241,236,0.85); clip-path: polygon(0% 0%, 100% 25%, 0% 100%); }
+        .ship-sail-2 { position: absolute; bottom: 50px; right: calc(50% + 3px); width: 28px; height: 40px; background: rgba(244,241,236,0.6); clip-path: polygon(100% 0%, 0% 30%, 100% 100%); }
+        .ship-flag { position: absolute; bottom: 100px; left: calc(50% + 3px); width: 16px; height: 10px; background: var(--amber-glow); clip-path: polygon(0% 0%, 100% 50%, 0% 100%); animation: flag-wave 2.5s ease-in-out infinite; }
+        .ship-wake { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 160px; height: 8px; background: linear-gradient(to right, transparent, rgba(74,158,142,0.2), transparent); filter: blur(3px); }
+
+        @keyframes ship-rock {
+            0%, 100% { transform: rotate(-2deg) translateY(0); }
+            25% { transform: rotate(1.5deg) translateY(-4px); }
+            50% { transform: rotate(-1deg) translateY(-2px); }
+            75% { transform: rotate(2deg) translateY(-5px); }
+        }
+        @keyframes flag-wave {
+            0%, 100% { clip-path: polygon(0% 0%, 100% 50%, 0% 100%); }
+            50% { clip-path: polygon(0% 10%, 100% 40%, 0% 90%); }
+        }
+
+        /* ===== COMPASS ===== */
+        .compass-deco { position: relative; width: 130px; height: 130px; margin: 2rem auto; }
+        .compass-ring-outer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid rgba(245,196,105,0.2); border-radius: 50%; animation: compass-rotate 30s linear infinite; }
+        .compass-ring-inner { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 1px solid rgba(245,196,105,0.12); border-radius: 50%; animation: compass-rotate 20s linear infinite reverse; }
+        .compass-needle { position: absolute; top: 50%; left: 50%; width: 2px; height: 40%; background: linear-gradient(to bottom, var(--amber-glow), transparent); transform-origin: bottom center; transform: translate(-50%, -100%); animation: compass-rotate 15s linear infinite; }
+        .compass-center { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background: var(--amber-glow); border-radius: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 12px var(--amber-glow); }
+        .compass-n { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-family: var(--font-display); font-size: 0.7rem; color: var(--amber-glow); letter-spacing: 0.1em; }
+        @keyframes compass-rotate { to { transform: rotate(360deg); } }
+
+        /* ===== SOCIAL ===== */
+        .social-links { display: flex; gap: 1.2rem; margin-top: 2.5rem; justify-content: center; }
+        .social-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: rgba(21, 38, 66, 0.6); border: 1px solid rgba(245,196,105,0.15);
+            color: var(--text-hint); text-decoration: none;
+            transition: all 0.4s ease; font-size: 1.2rem; cursor: none;
+        }
+        .social-btn:hover {
+            background: rgba(245,196,105,0.15); border-color: var(--amber-glow);
+            color: var(--amber-glow); transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(245,196,105,0.15);
+        }
+
+        /* ===== SERVICE CARDS ===== */
+        .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.8rem; margin-top: 2.5rem; }
+        .service-card {
+            background: rgba(21, 38, 66, 0.55); border: 1px solid rgba(245,196,105,0.06);
+            padding: 2.5rem 2rem; border-radius: 3px; position: relative; overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.25,0.46,0.45,0.94); cursor: none;
+            opacity: 0; transform: translateY(30px);
+        }
+        .service-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(to right, var(--amber-glow), var(--seafoam)); opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .service-card:hover::before { opacity: 1; }
+        .service-card:hover {
+            border-color: rgba(245,196,105,0.2); transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .service-card .svc-icon { font-size: 2.2rem; margin-bottom: 1rem; display: block; }
+        .service-card h3 {
+            font-family: var(--font-body); font-size: 1.1rem; font-weight: 500;
+            color: var(--cream); margin-bottom: 0.3rem;
+        }
+        .service-card .svc-en { font-family: var(--font-display); font-size: 0.75rem; color: var(--amber-glow); letter-spacing: 0.2em; font-style: italic; margin-bottom: 1rem; display: block; }
+        .service-card p { font-size: 0.9rem; color: var(--text-hint); line-height: 1.9; }
+        .service-card .svc-tag {
+            display: inline-block; margin-top: 1rem; padding: 0.3rem 0.8rem;
+            background: rgba(245,196,105,0.08); border: 1px solid rgba(245,196,105,0.15);
+            border-radius: 20px; font-size: 0.75rem; color: var(--amber-glow); letter-spacing: 0.05em;
+        }
+
+        /* ===== FLOATING SCATTERED PHOTOS ===== */
+        .floating-photo {
+            position: absolute;
+            width: clamp(100px, 16vw, 180px);
+            border: 3px solid rgba(244,241,236,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            box-shadow: 0 8px 35px rgba(0,0,0,0.6), 0 0 80px rgba(0,0,0,0.2);
+            opacity: 0;
+            z-index: 5;
+            transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.6s ease;
+            cursor: none;
+        }
+        .floating-photo img {
+            width: 100%; display: block;
+            filter: brightness(0.55) saturate(0.7) contrast(1.15);
+            transition: filter 0.6s ease;
+        }
+        .floating-photo:hover img { filter: brightness(0.85) saturate(0.95) contrast(1.05); }
+        .floating-photo:hover {
+            box-shadow: 0 15px 50px rgba(0,0,0,0.7), 0 0 40px rgba(245,196,105,0.08);
+            z-index: 15;
+        }
+        .floating-photo .photo-label {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 1.5rem 0.6rem 0.5rem;
+            background: linear-gradient(to top, rgba(11,25,41,0.95), transparent);
+            font-size: 0.6rem; color: var(--sand); letter-spacing: 0.08em;
+            font-family: var(--font-display); font-style: italic;
+            opacity: 0; transition: opacity 0.4s;
+        }
+        .floating-photo:hover .photo-label { opacity: 1; }
+
+        /* ===== LIGHTHOUSE BEAM SWEEP ===== */
+        .lighthouse-sweep {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1; pointer-events: none;
+            overflow: hidden;
+        }
+        .lighthouse-sweep::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(
+                from 180deg at 92% 8%,
+                transparent 0deg,
+                rgba(245,196,105,0.01) 1deg,
+                rgba(245,196,105,0.04) 3deg,
+                rgba(245,196,105,0.06) 5deg,
+                rgba(245,196,105,0.04) 7deg,
+                rgba(245,196,105,0.01) 9deg,
+                transparent 11deg,
+                transparent 360deg
+            );
+            animation: sweep-spin 8s linear infinite;
+        }
+        .lighthouse-sweep::after {
+            content: '';
+            position: absolute;
+            top: -50%; right: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(
+                from 180deg at 92% 8%,
+                transparent 0deg,
+                rgba(245,196,105,0.005) 2deg,
+                rgba(245,196,105,0.02) 6deg,
+                rgba(245,196,105,0.005) 10deg,
+                transparent 14deg,
+                transparent 360deg
+            );
+            animation: sweep-spin 8s linear infinite;
+            animation-delay: -4s;
+        }
+        @keyframes sweep-spin { to { transform: rotate(360deg); } }
+
+        /* Lighthouse glow origin */
+        .lighthouse-glow-point {
+            position: fixed; top: 3vh; right: 5vw;
+            width: 6px; height: 6px;
+            background: var(--amber-glow);
+            border-radius: 50%;
+            box-shadow:
+                0 0 20px var(--amber-glow),
+                0 0 60px var(--amber-warm),
+                0 0 120px rgba(245,196,105,0.3),
+                0 0 200px rgba(245,196,105,0.1);
+            z-index: 2; pointer-events: none;
+            animation: glow-breathe 4s ease-in-out infinite;
+        }
+        @keyframes glow-breathe {
+            0%, 100% { box-shadow: 0 0 20px var(--amber-glow), 0 0 60px var(--amber-warm), 0 0 120px rgba(245,196,105,0.3), 0 0 200px rgba(245,196,105,0.1); }
+            50% { box-shadow: 0 0 30px var(--amber-glow), 0 0 80px var(--amber-warm), 0 0 180px rgba(245,196,105,0.4), 0 0 300px rgba(245,196,105,0.15); }
+        }
+
+        /* ===== FOG LAYERS ===== */
+        .fog-layer {
+            position: fixed; top: 0; left: 0;
+            width: 200vw; height: 100vh;
+            z-index: 1; pointer-events: none;
+            background:
+                radial-gradient(ellipse 600px 200px at 20% 60%, rgba(26,78,94,0.08), transparent),
+                radial-gradient(ellipse 500px 150px at 70% 40%, rgba(21,38,66,0.1), transparent),
+                radial-gradient(ellipse 800px 100px at 40% 80%, rgba(11,25,41,0.15), transparent);
+            animation: fog-drift 25s linear infinite;
+        }
+        @keyframes fog-drift {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ===== VIGNETTE ===== */
+        .ocean-vignette {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1; pointer-events: none;
+            background: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 30%, rgba(7,15,26,0.7) 100%);
+        }
+
+        /* ===== TIMELINE ===== */
+        .timeline { position: relative; margin-top: 2.5rem; padding-left: 2rem; }
+        .timeline::before { content: ''; position: absolute; top: 0; left: 8px; width: 1px; height: 100%; background: linear-gradient(to bottom, var(--amber-glow), var(--seafoam), transparent); }
+        .timeline-item { position: relative; margin-bottom: 2.5rem; opacity: 0; transform: translateY(20px); }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -2rem; top: 0.5rem;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--amber-glow); border: 2px solid var(--navy-deep);
+            box-shadow: 0 0 8px rgba(245,196,105,0.4);
+        }
+        .timeline-item .tl-label { font-family: var(--font-display); font-size: 0.8rem; color: var(--amber-glow); letter-spacing: 0.15em; font-style: italic; }
+        .timeline-item h3 { font-family: var(--font-body); font-size: 1.05rem; font-weight: 500; color: var(--cream); margin: 0.3rem 0 0.5rem; }
+        .timeline-item p { font-size: 0.9rem; color: var(--text-hint); line-height: 1.9; }
+
+        /* ===== STATS BAR ===== */
+        .stats-bar { display: flex; justify-content: center; gap: 3rem; margin-top: 2.5rem; flex-wrap: wrap; }
+        .stat-item { text-align: center; opacity: 0; transform: translateY(20px); }
+        .stat-number { font-family: var(--font-display); font-size: 2.5rem; font-weight: 600; color: var(--amber-glow); line-height: 1; }
+        .stat-label { font-size: 0.8rem; color: var(--text-hint); margin-top: 0.3rem; letter-spacing: 0.1em; }
+
+        /* ===== PARALLAX TEXT ===== */
+        .parallax-text {
+            position: fixed; z-index: 1; pointer-events: none;
+            font-family: var(--font-display); font-size: 12rem;
+            color: rgba(245,196,105,0.02); letter-spacing: 0.2em;
+            white-space: nowrap; font-style: italic;
+            top: 50%; left: -10%; transform: translateY(-50%);
+        }
+
+        /* ===== FOOTER ===== */
+        .page-footer { text-align: center; padding: 4rem 2rem 10rem; position: relative; z-index: 10; }
+        .page-footer p { font-size: 0.8rem; color: var(--text-hint); opacity: 0.4; letter-spacing: 0.1em; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            body { cursor: auto; }
+            .cursor-dot, .cursor-ring { display: none; }
+            .hero-section h1 { font-size: 1.8rem; }
+            .text-block { padding: 2rem 1.8rem; }
+            .interests-grid { grid-template-columns: 1fr 1fr; }
+            .services-grid { grid-template-columns: 1fr; }
+            .floating-photo { width: clamp(80px, 25vw, 130px); }
+            .lighthouse-glow-point { display: none; }
+            .lighthouse-sweep { opacity: 0.5; }
+            .quote-block { padding: 2.5rem 1.5rem; }
+            .quote-block blockquote { font-size: 1.3rem; }
+            .lighthouse-silhouette { display: none; }
+            .section { padding: 6vh 4vw; }
+            .parallax-text { display: none; }
+            #p5-ocean { height: 140px; }
+            .stats-bar { gap: 1.5rem; }
+        }
+        @media (max-width: 480px) {
+            .hero-section h1 { font-size: 1.5rem; }
+            .interests-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .interest-card { padding: 1.5rem 1rem; }
+            .service-card { padding: 1.8rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+
+    <!-- Canvas Layers -->
+    <canvas id="ripple-canvas"></canvas>
+    <div id="p5-ocean"></div>
+    <div id="p5-fireflies"></div>
+
+    <!-- Lighthouse Intro -->
+    <div id="lighthouse-intro">
+        <div class="intro-scene">
+            <div class="intro-lh">
+                <div class="lh-roof"></div>
+                <div class="lh-lamp-house">
+                    <div class="lh-lamp"></div>
+                    <div class="lh-beam-container">
+                        <div class="lh-beam"></div>
+                        <div class="lh-beam"></div>
+                    </div>
+                </div>
+                <div class="lh-gallery"></div>
+                <div class="lh-tower">
+                    <div class="lh-stripe"></div>
+                    <div class="lh-stripe"></div>
+                    <div class="lh-stripe"></div>
+                    <div class="lh-window"></div>
+                    <div class="lh-window"></div>
+                </div>
+                <div class="lh-base"></div>
+                <div class="lh-rocks">
+                    <div class="lh-rock" style="width:20px;height:12px;"></div>
+                    <div class="lh-rock" style="width:30px;height:10px;"></div>
+                    <div class="lh-rock" style="width:18px;height:11px;"></div>
+                </div>
+            </div>
+
+            <!-- Intro Ship -->
+            <div class="intro-ship" style="left: 30px;">
+                <div class="intro-ship-flag"></div>
+                <div class="intro-ship-mast"></div>
+                <div class="intro-ship-sail"></div>
+                <div class="intro-ship-hull"></div>
+            </div>
+
+            <!-- Intro Ocean -->
+            <div class="intro-ocean">
+                <svg class="intro-wave-svg" viewBox="0 0 1440 60" preserveAspectRatio="none" style="height:30px;">
+                    <path d="M0,30 C180,60 360,0 540,30 C720,60 900,0 1080,30 C1260,60 1440,0 1440,30 L1440,60 L0,60 Z" fill="rgba(26,78,94,0.4)"/>
+                </svg>
+                <svg class="intro-wave-svg" viewBox="0 0 1440 60" preserveAspectRatio="none" style="height:25px;">
+                    <path d="M0,25 C240,50 480,0 720,25 C960,50 1200,0 1440,25 L1440,60 L0,60 Z" fill="rgba(11,25,41,0.6)"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="intro-text-container">
+            <div class="intro-title">SAFE HAVEN</div>
+            <div class="intro-sub">歡迎來到避風港</div>
+            <div class="intro-hint">· 向下滾動開始航程 ·</div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <a href="/guild" class="nav-fixed hover-trigger"><i class="fa-solid fa-anchor"></i> 離開港口</a>
+
+    <!-- Parallax BG Text -->
+    <div class="parallax-text" id="parallax-text">SAFE HAVEN</div>
+
+    <!-- 3D BG -->
+    <div id="webgl-container"></div>
+
+    <!-- Lighthouse beam sweep -->
+    <div class="lighthouse-sweep"></div>
+    <div class="lighthouse-glow-point"></div>
+
+    <!-- Atmospheric layers -->
+    <div class="fog-layer"></div>
+    <div class="ocean-vignette"></div>
+
+    <!-- Fixed Lighthouse -->
+    <div class="lighthouse-silhouette">
+        <div class="sil-top">
+            <div class="sil-glow"></div>
+            <div class="sil-beam"></div>
+        </div>
+        <div class="sil-tower"></div>
+        <div class="sil-base"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-layer">
+
+        <!-- HERO -->
+        <div class="section hero-section" id="hero">
+            <div class="section-inner">
+                <div class="avatar-container gs-reveal"><img src="/assets/img/guild/nekopapaya/avatar.webp" alt="NEKOPAPAYA"></div>
+                <span class="en-label gs-reveal">The Lighthouse Keeper</span>
+                <h1 class="gs-reveal">避風港</h1>
+                <p class="hero-subtitle gs-reveal">這裡是一座燈塔，在無邊的夜海中<br>為每一艘迷途的船，點亮一盞回家的光。</p>
+            </div>
+            <div class="scroll-indicator">
+                <span>Voyage</span>
+                <div class="scroll-line"></div>
+            </div>
+        </div>
+
+        <div class="wave-divider"><i class="fa-solid fa-anchor anchor-icon"></i></div>
+
+        <!-- ABOUT -->
+        <div class="section" id="about">
+            <div class="floating-photo hover-trigger" style="top: 8%; right: 6%; transform: rotate(4deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_cat.webp" alt="與貓咪的日常" loading="lazy">
+                <div class="photo-label">Neko &amp; Cat</div>
+            </div>
+            <div class="section-inner">
+                <div class="text-block gs-reveal">
+                    <span class="section-label">The Keeper</span>
+                    <h2>御用太醫 — 望聞問切瓜</h2>
+                    <p>我是一個<span class="highlight">人體狀態觀察分析師</span>。</p>
+                    <p>用傳統中醫的溫度，觀察每個人的體徵，分析體況。<br>不急著下結論，而是慢慢地<span class="accent">望、聞、問、切</span>。</p>
+                    <p>就像燈塔守望者觀測海象一樣，<br>在每個人的身體裡，我看見一片需要守護的海。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="wave-divider"><i class="fa-solid fa-ship anchor-icon"></i></div>
+
+        <!-- ACTIVITIES -->
+        <div class="section" id="activities">
+            <div class="floating-photo hover-trigger" style="top: 12%; left: 4%; transform: rotate(-5deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_boardgame.webp" alt="桌遊揪團" loading="lazy">
+                <div class="photo-label">Board Game Night</div>
+            </div>
+            <div class="section-inner">
+                <div class="text-block align-right gs-reveal">
+                    <span class="section-label">The Harbor Master</span>
+                    <h2>康樂股長 / 魔人揪揪</h2>
+                    <p>我是那個永遠在揪人的人。<br><span class="highlight">桌遊、做菜、跑步、游泳、甜點</span>—<br>什麼都揪一下。</p>
+                    <p>不是為了任何目的，也不需要報名或承諾。<br>每個人都可以<span class="accent">自由選擇</span>。</p>
+                    <p>這裡只留一個空間，給願意靠港的人。<br>就像港口對每一艘船說的：<br><span class="highlight">「累了就停下來吧。」</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="wave-divider"><i class="fa-solid fa-compass anchor-icon"></i></div>
+
+        <!-- INTERESTS -->
+        <div class="section" id="interests">
+            <div class="floating-photo hover-trigger" style="bottom: 8%; right: 3%; transform: rotate(6deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_flowers.webp" alt="花田" loading="lazy">
+                <div class="photo-label">Flower Fields</div>
+            </div>
+            <div class="floating-photo hover-trigger" style="top: 5%; left: 2%; transform: rotate(-3deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_portrait.webp" alt="人像" loading="lazy">
+                <div class="photo-label">Portraits</div>
+            </div>
+            <div class="section-inner">
+                <div class="text-block align-center gs-reveal" style="border-bottom-color: var(--seafoam);">
+                    <span class="section-label">Navigation Chart</span>
+                    <h2>航海羅盤</h2>
+                    <p>每一個興趣，都是一座待探索的島嶼。</p>
+                </div>
+                <div class="interests-grid">
+                    <div class="interest-card hover-trigger">
+                        <span class="card-icon"><i class="fa-solid fa-person-swimming"></i></span><h3>游泳</h3><p>在水中找到<br>最自在的節奏</p>
+                    </div>
+                    <div class="interest-card hover-trigger">
+                        <span class="card-icon"><i class="fa-solid fa-cake-candles"></i></span><h3>手作甜點</h3><p>用甜蜜的溫度<br>烘焙每一天</p>
+                    </div>
+                    <div class="interest-card hover-trigger">
+                        <span class="card-icon"><i class="fa-solid fa-dice"></i></span><h3>桌遊</h3><p>在古亭揪團<br>週末不寂寞</p>
+                    </div>
+                    <div class="interest-card hover-trigger">
+                        <span class="card-icon"><i class="fa-solid fa-leaf"></i></span><h3>中醫養生</h3><p>望聞問切<br>傳統智慧新生活</p>
+                    </div>
+                    <div class="interest-card hover-trigger">
+                        <span class="card-icon"><i class="fa-solid fa-utensils"></i></span><h3>美食探索</h3><p>從萬華到淡水<br>尋找巷弄美味</p>
+                    </div>
+                    <div class="interest-card hover-trigger">
+                        <span class="card-icon"><i class="fa-solid fa-face-laugh-squint"></i></span><h3>諧音梗</h3><p>氫氫敲醒<br>你的心靈</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SERVICES -->
+        <div class="wave-divider"><i class="fa-solid fa-life-ring anchor-icon"></i></div>
+        <div class="section" id="services">
+            <div class="floating-photo hover-trigger" style="top: 6%; right: 2%; transform: rotate(3deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_finance.webp" alt="理財插畫" loading="lazy">
+                <div class="photo-label">Financial Wisdom</div>
+            </div>
+            <div class="floating-photo hover-trigger" style="bottom: 10%; left: 3%; transform: rotate(-4deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_hamster.webp" alt="倉鼠理財" loading="lazy">
+                <div class="photo-label">Sandwich Generation</div>
+            </div>
+            <div class="section-inner">
+                <div class="text-block align-center gs-reveal" style="border-bottom-color: var(--seafoam);">
+                    <span class="section-label">Services Aboard</span>
+                    <h2>港口服務</h2>
+                    <p>在這座避風港裡，我能為你做的事。</p>
+                </div>
+                <div class="services-grid">
+                    <div class="service-card hover-trigger">
+                        <span class="svc-icon"><i class="fa-solid fa-stethoscope"></i></span>
+                        <h3>體質觀察分析</h3>
+                        <span class="svc-en">Body Constitution Analysis</span>
+                        <p>透過中醫「望聞問切」四診法，觀察你的體徵與體況。不急著下結論，而是慢慢找出身體想告訴你的事。從體質分析到日常養生建議，用傳統智慧照顧現代人。</p>
+                        <span class="svc-tag"><i class="fa-solid fa-seedling"></i> 中醫 · 望聞問切</span>
+                    </div>
+                    <div class="service-card hover-trigger">
+                        <span class="svc-icon"><i class="fa-solid fa-weight-scale"></i></span>
+                        <h3>體態管理諮詢</h3>
+                        <span class="svc-en">Body Management</span>
+                        <p>結合中醫穴位與營養學知識，提供個人化的體態管理方案。貼瘦身穴、調整早餐營養，兩個月內從 70kg 降至 66.6kg 的真實經驗分享。</p>
+                        <span class="svc-tag"><i class="fa-solid fa-chart-line"></i> 營養 · 穴位調理</span>
+                    </div>
+                    <div class="service-card hover-trigger">
+                        <span class="svc-icon"><i class="fa-solid fa-camera-retro"></i></span>
+                        <h3>生活攝影</h3>
+                        <span class="svc-en">Lifestyle Photography</span>
+                        <p>偶爾會拍照攝影 — 美食、人物、景色都可以找我拍拍。從淡水碼頭到萬華巷弄，用鏡頭記錄你最自然的模樣。</p>
+                        <span class="svc-tag"><i class="fa-solid fa-camera"></i> 攝影 · 記錄生活</span>
+                    </div>
+                    <div class="service-card hover-trigger">
+                        <span class="svc-icon"><i class="fa-solid fa-landmark"></i></span>
+                        <h3>理財知識分享</h3>
+                        <span class="svc-en">Financial Literacy</span>
+                        <p>人生這場大富翁，你手上有幾張功能卡？從退休金規劃到長照預備金，用簡單易懂的方式拆解理財觀念，幫你看清人生這張票的價值。</p>
+                        <span class="svc-tag"><i class="fa-solid fa-coins"></i> 保險 · 退休規劃</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SOCIAL SHOWCASE -->
+        <div class="wave-divider"><i class="fa-solid fa-camera-retro anchor-icon"></i></div>
+        <div class="section" id="social-life">
+            <div class="floating-photo hover-trigger" style="top: 10%; right: 5%; transform: rotate(5deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_stars.webp" alt="星空沉思" loading="lazy">
+                <div class="photo-label">Stargazing</div>
+            </div>
+            <div class="section-inner">
+                <div class="text-block gs-reveal" style="border-left-color: var(--seafoam);">
+                    <span class="section-label">Harbor Life</span>
+                    <h2>港口日常</h2>
+                    <p>在 Instagram 上，用<span class="accent">漫畫風格</span>拆解複雜的保險與理財觀念 — 三明治族群、退休金規劃、長照預備金。人生這張票，越晚買越貴。</p>
+                    <p>也在 Threads 上隨時揪人 — 「有人等下六點半要一起在古亭玩桌遊嗎？」 這就是<span class="highlight">避風港</span>的日常。</p>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-bar">
+                    <div class="stat-item gs-reveal">
+                        <div class="stat-number" data-count="562">0</div>
+                        <div class="stat-label">Threads 追蹤者</div>
+                    </div>
+                    <div class="stat-item gs-reveal">
+                        <div class="stat-number" data-count="56">0</div>
+                        <div class="stat-label">Instagram 貼文</div>
+                    </div>
+                    <div class="stat-item gs-reveal">
+                        <div class="stat-number">∞</div>
+                        <div class="stat-label">揪團次數</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VOYAGE LOG (TIMELINE) -->
+        <div class="wave-divider"><i class="fa-solid fa-book-open anchor-icon"></i></div>
+        <div class="section" id="voyage-log">
+            <div class="floating-photo hover-trigger" style="top: 15%; right: 4%; transform: rotate(-6deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_nightdrive.webp" alt="夜車" loading="lazy">
+                <div class="photo-label">Night Drive</div>
+            </div>
+            <div class="section-inner">
+                <div class="text-block align-center gs-reveal" style="border-bottom-color: var(--amber-glow);">
+                    <span class="section-label">Voyage Log</span>
+                    <h2>航海日誌</h2>
+                    <p>每一段航程，都塑造了今天的燈塔守望者。</p>
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="tl-label">Origin</span>
+                        <h3>2000 年 2 月 4 日 · 啟航</h3>
+                        <p>在台灣這座島嶼上出生，自小對人充滿好奇。「望聞問切瓜」的故事，從這裡開始。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="tl-label">Discovery</span>
+                        <h3>遇見中醫 · 找到羅盤</h3>
+                        <p>接觸傳統中醫的望聞問切，發現自己對「觀察人」有天賦。年輕老中醫的種子，在這裡萌芽。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="tl-label">Harbor</span>
+                        <h3>台北生活 · 建港</h3>
+                        <p>在古亭、萬華、淡水之間穿梭。開始組織各種活動 — 桌遊夜、做菜會、路跑團。從一個人，到一群人。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="tl-label">Lighthouse</span>
+                        <h3>成為燈塔 · 避風港誕生</h3>
+                        <p>不知道什麼時候開始，大家習慣了有個地方可以停靠。「魔人揪揪」不只是個稱號，而是一種生活方式。累了就來坐坐，這裡永遠留一盞燈。</p>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="tl-label">Ongoing</span>
+                        <h3>持續航行中 · 2026</h3>
+                        <p>同時經營健康觀察、攝影記錄、理財分享三條航線。體重管理實測成功（70→66.6kg），持續在 Threads 上揪團中。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHILOSOPHY -->
+        <div class="section" id="philosophy">
+            <div class="section-inner">
+                <div class="quote-block gs-reveal">
+                    <blockquote>有時候我會在這裡，<br>人聚在一起，<br>慢慢享受人與人的溫度。</blockquote>
+                    <div class="quote-attr">— nekopapaya</div>
+                </div>
+                <div style="margin-top: 4rem;">
+                    <div class="ship-container gs-reveal">
+                        <div class="ship-flag"></div>
+                        <div class="ship-mast"></div>
+                        <div class="ship-sail"></div>
+                        <div class="ship-sail-2"></div>
+                        <div class="ship-hull"></div>
+                        <div class="ship-wake"></div>
+                    </div>
+                </div>
+                <div class="text-block align-center gs-reveal" style="margin-top: 3rem; border-bottom-color: var(--seafoam);">
+                    <span class="section-label">Philosophy</span>
+                    <h2>喜歡可愛人事物星人</h2>
+                    <p>這個世界上有太多美好的事物值得去感受。<br>觀察、感受、陪伴 — 這就是我的方式。</p>
+                    <p>不需要轟轟烈烈，只需要一個角落，<br>讓疲憊的靈魂可以暫時<span class="accent">停泊</span>。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTACT -->
+        <div class="section" id="contact" style="padding-bottom: 3rem;">
+            <div class="floating-photo hover-trigger" style="top: 20%; left: 5%; transform: rotate(4deg);">
+                <img src="/assets/img/guild/nekopapaya/gallery_hourglass.webp" alt="時間哲學" loading="lazy">
+                <div class="photo-label">Hourglass</div>
+            </div>
+            <div class="section-inner" style="text-align: center;">
+                <div class="compass-deco gs-reveal">
+                    <div class="compass-ring-outer"></div>
+                    <div class="compass-ring-inner"></div>
+                    <div class="compass-needle"></div>
+                    <div class="compass-center"></div>
+                    <span class="compass-n">N</span>
+                </div>
+                <div class="text-block align-center gs-reveal" style="border-bottom-color: var(--amber-glow);">
+                    <span class="section-label">Port of Call</span>
+                    <h2>靠港</h2>
+                    <p>如果你剛好想靠岸、想停泊一下，<br>就可以私訊我。</p>
+                    <p style="font-size: 0.9rem; color: var(--amber-glow); opacity: 0.7;"><i class="fa-solid fa-triangle-exclamation"></i> 私訊請不要用小帳，全當作詐騙不理。</p>
+                    <div class="social-links">
+                        <a href="https://www.threads.net/@nekopapaya" target="_blank" class="social-btn hover-trigger" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/nekopapaya/" target="_blank" class="social-btn hover-trigger" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-footer"><p>&copy; NEKOPAPAYA — The Safe Haven</p></div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // =============================================
+        // THREE.JS — ENHANCED OCEAN MIST + LIGHTHOUSE BEAM
+        // =============================================
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x060E18);
+        scene.fog = new THREE.FogExp2(0x060E18, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
+        camera.position.set(0, 40, 120);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Mist Texture ---
+        function createSoftTexture() {
+            const s = 128, c = document.createElement('canvas');
+            c.width = s; c.height = s;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+            g.addColorStop(0,'rgba(255,255,255,1)');
+            g.addColorStop(0.25,'rgba(255,255,255,0.6)');
+            g.addColorStop(0.5,'rgba(255,255,255,0.15)');
+            g.addColorStop(1,'rgba(255,255,255,0)');
+            ctx.fillStyle = g; ctx.fillRect(0,0,s,s);
+            return new THREE.CanvasTexture(c);
+        }
+
+        const tex = createSoftTexture();
+        const N = 250;
+        const bGeo = new THREE.BufferGeometry();
+        const bPos = new Float32Array(N*3), bSz = new Float32Array(N), bCol = new Float32Array(N*3);
+        const cA = new THREE.Color(0xF5C469), cT = new THREE.Color(0x4A9E8E), cM = new THREE.Color(0x1E3A5F), cW = new THREE.Color(0x2C4F6F);
+
+        for(let i=0;i<N;i++){
+            bPos[i*3]=(Math.random()-0.5)*700;
+            bPos[i*3+1]=(Math.random()-0.5)*350;
+            bPos[i*3+2]=(Math.random()-0.5)*400;
+            bSz[i]=Math.random()*30+5;
+            const r=Math.random();
+            const c=r<0.08?cA:r<0.2?cT:r<0.5?cW:cM;
+            bCol[i*3]=c.r; bCol[i*3+1]=c.g; bCol[i*3+2]=c.b;
+        }
+        bGeo.setAttribute('position',new THREE.BufferAttribute(bPos,3));
+        bGeo.setAttribute('size',new THREE.BufferAttribute(bSz,1));
+        bGeo.setAttribute('color',new THREE.BufferAttribute(bCol,3));
+
+        const bMat = new THREE.ShaderMaterial({
+            uniforms:{ pointTexture:{value:tex}, time:{value:0}, scrollY:{value:0} },
+            vertexShader:`
+                attribute float size; attribute vec3 color;
+                varying vec3 vColor; uniform float time; uniform float scrollY;
+                void main(){
+                    vColor=color;
+                    vec3 p=position;
+                    float drift = scrollY * 0.05;
+                    p.y += sin(time*0.25 + position.x*0.006)*18.0 - drift;
+                    p.x += cos(time*0.15 + position.z*0.004)*10.0;
+                    p.z += sin(time*0.1 + position.y*0.003)*5.0;
+                    vec4 mv = modelViewMatrix * vec4(p,1.0);
+                    gl_PointSize = size * (280.0 / -mv.z);
+                    gl_Position = projectionMatrix * mv;
+                }
+            `,
+            fragmentShader:`
+                uniform sampler2D pointTexture; varying vec3 vColor;
+                void main(){
+                    vec4 t=texture2D(pointTexture,gl_PointCoord);
+                    gl_FragColor=vec4(vColor,t.a*0.18);
+                }
+            `,
+            blending:THREE.AdditiveBlending, depthTest:false, transparent:true
+        });
+        scene.add(new THREE.Points(bGeo,bMat));
+
+        // --- Lighthouse Beam Light (volumetric cone) ---
+        const beamGeo = new THREE.ConeGeometry(80, 500, 32, 1, true);
+        const beamMat = new THREE.ShaderMaterial({
+            uniforms: { time: { value: 0 } },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                varying vec2 vUv;
+                void main() {
+                    float fade = smoothstep(0.0, 0.5, vUv.y) * (1.0 - smoothstep(0.5, 1.0, vUv.y));
+                    float edge = 1.0 - abs(vUv.x - 0.5) * 2.0;
+                    float alpha = fade * edge * 0.1;
+                    gl_FragColor = vec4(0.96, 0.77, 0.41, alpha);
+                }
+            `,
+            transparent: true, side: THREE.DoubleSide, depthWrite: false
+        });
+        const beam3d = new THREE.Mesh(beamGeo, beamMat);
+        beam3d.position.set(200, 80, -150);
+        beam3d.rotation.z = Math.PI / 2;
+        scene.add(beam3d);
+
+        const clock = new THREE.Clock();
+        let mX=0, mY=0;
+
+        window.addEventListener('mousemove',e=>{
+            mX=(e.clientX-window.innerWidth/2)*0.03;
+            mY=(e.clientY-window.innerHeight/2)*0.03;
+        });
+
+        function threeAnimate(){
+            requestAnimationFrame(threeAnimate);
+            const t = clock.getElapsedTime();
+            bMat.uniforms.time.value = t;
+            bMat.uniforms.scrollY.value = window.scrollY * 0.01;
+            beamMat.uniforms.time.value = t;
+
+            beam3d.rotation.y = Math.sin(t * 0.3) * 0.5;
+            beam3d.rotation.x = Math.sin(t * 0.2) * 0.1;
+
+            camera.position.x += (mX - camera.position.x)*0.012;
+            camera.position.y += (40 - mY - camera.position.y)*0.012;
+            camera.lookAt(0,0,0);
+            renderer.render(scene,camera);
+        }
+        threeAnimate();
+
+        window.addEventListener('resize',()=>{
+            camera.aspect=window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth,window.innerHeight);
+        });
+    </script>
+
+    <script defer>
+    // =============================================
+    // p5.js — INTERACTIVE OCEAN WAVES
+    // =============================================
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // Wait for p5 to load
+        function initP5() {
+            if (typeof p5 === 'undefined') { setTimeout(initP5, 100); return; }
+
+            // --- p5 Ocean Canvas ---
+            new p5(function(p) {
+                let waveOffset = 0;
+                let mouseInfluence = 0;
+
+                p.setup = function() {
+                    const c = p.createCanvas(p.windowWidth, 220);
+                    c.parent('p5-ocean');
+                    p.noStroke();
+                };
+
+                p.draw = function() {
+                    p.clear();
+                    waveOffset += 0.008;
+
+                    // Mouse influence on waves
+                    const mxNorm = p.mouseX / p.width;
+                    mouseInfluence = p.lerp(mouseInfluence, mxNorm, 0.03);
+
+                    // Draw multiple wave layers
+                    for (let layer = 0; layer < 4; layer++) {
+                        const layerAlpha = [25, 35, 50, 70][layer];
+                        const layerSpeed = [0.6, 0.8, 1.0, 1.2][layer];
+                        const layerAmp = [15, 20, 25, 12][layer];
+                        const layerBase = [60, 80, 110, 150][layer];
+                        const r = [26, 20, 15, 11][layer];
+                        const g = [78, 60, 42, 25][layer];
+                        const b = [94, 80, 66, 41][layer];
+
+                        p.fill(r, g, b, layerAlpha);
+                        p.beginShape();
+                        p.vertex(0, p.height);
+                        for (let x = 0; x <= p.width; x += 4) {
+                            const n1 = p.noise(x * 0.003 + waveOffset * layerSpeed, layer * 10);
+                            const n2 = p.noise(x * 0.008 + waveOffset * layerSpeed * 0.5, layer * 10 + 100);
+                            const mouseWave = Math.sin((x - p.mouseX) * 0.02) * mouseInfluence * 8;
+                            const y = layerBase + n1 * layerAmp + n2 * (layerAmp * 0.5) + mouseWave;
+                            p.vertex(x, y);
+                        }
+                        p.vertex(p.width, p.height);
+                        p.endShape(p.CLOSE);
+                    }
+
+                    // Foam highlights
+                    p.fill(244, 241, 236, 15);
+                    for (let x = 0; x < p.width; x += 3) {
+                        const n = p.noise(x * 0.005 + waveOffset * 1.5, 50);
+                        if (n > 0.6) {
+                            const y = 70 + n * 30;
+                            p.ellipse(x, y, 2 + n * 3, 1);
+                        }
+                    }
+                };
+
+                p.windowResized = function() {
+                    p.resizeCanvas(p.windowWidth, 220);
+                };
+            });
+
+            // --- p5 Fireflies Canvas ---
+            new p5(function(p) {
+                const fireflies = [];
+                const NUM = 40;
+
+                p.setup = function() {
+                    const c = p.createCanvas(p.windowWidth, p.windowHeight);
+                    c.parent('p5-fireflies');
+                    p.noStroke();
+
+                    for (let i = 0; i < NUM; i++) {
+                        fireflies.push({
+                            x: p.random(p.width),
+                            y: p.random(p.height * 0.7),
+                            vx: p.random(-0.3, 0.3),
+                            vy: p.random(-0.2, 0.2),
+                            size: p.random(1.5, 4),
+                            phase: p.random(p.TWO_PI),
+                            speed: p.random(0.01, 0.03),
+                            isAmber: p.random() < 0.3
+                        });
+                    }
+                };
+
+                p.draw = function() {
+                    p.clear();
+                    for (const f of fireflies) {
+                        f.phase += f.speed;
+                        f.x += f.vx + Math.sin(f.phase * 2) * 0.3;
+                        f.y += f.vy + Math.cos(f.phase) * 0.2;
+
+                        // Mouse attraction (subtle)
+                        const dx = p.mouseX - f.x;
+                        const dy = p.mouseY - f.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 200 && dist > 0) {
+                            f.x += dx / dist * 0.15;
+                            f.y += dy / dist * 0.15;
+                        }
+
+                        // Wrap around
+                        if (f.x < -10) f.x = p.width + 10;
+                        if (f.x > p.width + 10) f.x = -10;
+                        if (f.y < -10) f.y = p.height * 0.7 + 10;
+                        if (f.y > p.height * 0.7 + 10) f.y = -10;
+
+                        const alpha = (Math.sin(f.phase) * 0.5 + 0.5) * 180;
+                        const glow = f.size * (2 + Math.sin(f.phase) * 0.8);
+
+                        if (f.isAmber) {
+                            p.fill(245, 196, 105, alpha * 0.4);
+                            p.ellipse(f.x, f.y, glow * 4, glow * 4);
+                            p.fill(245, 196, 105, alpha);
+                        } else {
+                            p.fill(108, 180, 168, alpha * 0.3);
+                            p.ellipse(f.x, f.y, glow * 3, glow * 3);
+                            p.fill(108, 180, 168, alpha);
+                        }
+                        p.ellipse(f.x, f.y, glow, glow);
+                    }
+                };
+
+                p.windowResized = function() {
+                    p.resizeCanvas(p.windowWidth, p.windowHeight);
+                };
+            });
+        }
+
+        initP5();
+    });
+    </script>
+
+    <script defer>
+    // =============================================
+    // GSAP + CURSOR + RIPPLE + INTERACTIONS
+    // =============================================
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // --- Custom Cursor ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorRing = document.querySelector('.cursor-ring');
+        let cx=0,cy=0,rx=0,ry=0;
+
+        document.addEventListener('mousemove',e=>{
+            cx=e.clientX; cy=e.clientY;
+            cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px';
+        });
+        function updateRing(){ rx+=(cx-rx)*0.1; ry+=(cy-ry)*0.1; cursorRing.style.left=rx+'px'; cursorRing.style.top=ry+'px'; requestAnimationFrame(updateRing); }
+        updateRing();
+
+        document.querySelectorAll('.hover-trigger').forEach(el=>{
+            el.addEventListener('mouseenter',()=>document.body.classList.add('cursor-hover'));
+            el.addEventListener('mouseleave',()=>document.body.classList.remove('cursor-hover'));
+        });
+        document.addEventListener('mousedown',()=>document.body.classList.add('cursor-click'));
+        document.addEventListener('mouseup',()=>document.body.classList.remove('cursor-click'));
+
+        // --- Ripple Canvas ---
+        const rc = document.getElementById('ripple-canvas');
+        const rCtx = rc.getContext('2d');
+        rc.width=window.innerWidth; rc.height=window.innerHeight;
+        const ripples=[];
+
+        class Ripple {
+            constructor(x,y,opts={}){
+                this.x=x; this.y=y; this.radius=0;
+                this.alpha=opts.alpha||0.5; this.maxR=opts.maxR||(60+Math.random()*40);
+                this.speed=opts.speed||1.8; this.decay=opts.decay||0.007;
+                this.color=opts.color||'245,196,105';
+            }
+            update(){ this.radius+=this.speed; this.alpha-=this.decay; }
+            draw(){
+                rCtx.beginPath();
+                rCtx.arc(this.x,this.y,this.radius,0,Math.PI*2);
+                rCtx.strokeStyle=`rgba(${this.color},${this.alpha})`;
+                rCtx.lineWidth=1.2;
+                rCtx.stroke();
+            }
+            get dead(){ return this.alpha<=0||this.radius>=this.maxR; }
+        }
+
+        document.addEventListener('click',e=>{
+            for(let i=0;i<4;i++){
+                setTimeout(()=>ripples.push(new Ripple(e.clientX,e.clientY,{speed:1.5+i*0.3,maxR:50+i*20})),i*80);
+            }
+            // Also spawn teal ripples
+            setTimeout(()=>ripples.push(new Ripple(e.clientX,e.clientY,{color:'74,158,142',speed:1,maxR:100,alpha:0.3,decay:0.004})),50);
+        });
+
+        let lastTrail=0;
+        document.addEventListener('mousemove',e=>{
+            const now=Date.now();
+            if(now-lastTrail>150&&Math.random()>0.5){
+                ripples.push(new Ripple(e.clientX,e.clientY,{alpha:0.1,maxR:25,speed:0.8,decay:0.005}));
+                lastTrail=now;
+            }
+        });
+
+        function animateRipples(){
+            requestAnimationFrame(animateRipples);
+            rCtx.clearRect(0,0,rc.width,rc.height);
+            for(let i=ripples.length-1;i>=0;i--){
+                ripples[i].update(); ripples[i].draw();
+                if(ripples[i].dead) ripples.splice(i,1);
+            }
+        }
+        animateRipples();
+        window.addEventListener('resize',()=>{ rc.width=window.innerWidth; rc.height=window.innerHeight; });
+
+        // --- Intro ---
+        const intro = document.getElementById('lighthouse-intro');
+        setTimeout(()=> intro.classList.add('fade-out'), 4000);
+
+        // --- GSAP ---
+        function initGSAP() {
+            if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') { setTimeout(initGSAP, 100); return; }
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Nav fade in
+            gsap.to('.nav-fixed', { opacity: 1, duration: 1, delay: 4.5 });
+
+            // Hero stagger with cinematic timing
+            gsap.utils.toArray('.hero-section .gs-reveal').forEach((el,i)=>{
+                gsap.fromTo(el,{y:60,opacity:0,filter:'blur(8px)'},{y:0,opacity:1,filter:'blur(0px)',duration:1.6,delay:4+i*0.35,ease:'power3.out'});
+            });
+
+            // Scroll reveals with fancy easing
+            gsap.utils.toArray('.section:not(.hero-section) .gs-reveal').forEach(el=>{
+                gsap.fromTo(el,
+                    {y:40,opacity:0},
+                    {y:0,opacity:1,duration:1.2,ease:'power2.out',
+                    scrollTrigger:{trigger:el,start:'top 82%'}}
+                );
+            });
+
+            // Interest cards — stagger with rotation
+            gsap.utils.toArray('.interest-card').forEach((el,i)=>{
+                gsap.fromTo(el,
+                    {y:40,opacity:0,rotateY:15},
+                    {y:0,opacity:1,rotateY:0,duration:0.8,delay:i*0.12,ease:'back.out(1.4)',
+                    scrollTrigger:{trigger:el,start:'top 88%'}}
+                );
+            });
+
+            // Parallax background text
+            const pText = document.getElementById('parallax-text');
+            if (pText) {
+                gsap.to(pText,{
+                    x:'30vw', ease:'none',
+                    scrollTrigger:{
+                        trigger:document.body,
+                        start:'top top', end:'bottom bottom',
+                        scrub:2
+                    }
+                });
+            }
+
+            // Lighthouse silhouette parallax
+            gsap.to('.lighthouse-silhouette',{
+                y:-80, ease:'none',
+                scrollTrigger:{
+                    trigger:document.body,
+                    start:'top top', end:'bottom bottom',
+                    scrub:1.5
+                }
+            });
+
+            // === SECTION HEADERS — letter-by-letter reveal ===
+            gsap.utils.toArray('h2').forEach(h2=>{
+                const text = h2.textContent;
+                h2.textContent = '';
+                h2.style.opacity = '1';
+                text.split('').forEach(ch=>{
+                    const span = document.createElement('span');
+                    span.textContent = ch;
+                    span.style.display = 'inline-block';
+                    span.style.opacity = '0';
+                    span.style.transform = 'translateY(20px)';
+                    h2.appendChild(span);
+                });
+                ScrollTrigger.create({
+                    trigger:h2,
+                    start:'top 82%',
+                    onEnter:()=>{
+                        gsap.to(h2.querySelectorAll('span'),{
+                            opacity:1,y:0,duration:0.5,stagger:0.04,ease:'back.out(2)'
+                        });
+                    }
+                });
+            });
+
+            // === SECTION LABELS — typewriter effect ===
+            gsap.utils.toArray('.section-label').forEach(label=>{
+                const text = label.textContent;
+                label.textContent = '';
+                label.style.opacity = '1';
+                ScrollTrigger.create({
+                    trigger:label,
+                    start:'top 85%',
+                    onEnter:()=>{
+                        let i = 0;
+                        const interval = setInterval(()=>{
+                            label.textContent = text.slice(0, ++i);
+                            if (i >= text.length) clearInterval(interval);
+                        }, 50);
+                    }
+                });
+            });
+
+            // Wave divider icons spin on scroll
+            gsap.utils.toArray('.anchor-icon').forEach(icon=>{
+                gsap.to(icon,{
+                    rotation:360, ease:'none',
+                    scrollTrigger:{
+                        trigger:icon,
+                        start:'top bottom', end:'bottom top',
+                        scrub:2
+                    }
+                });
+            });
+
+            // === WAVE DIVIDER — grow line from center ===
+            gsap.utils.toArray('.wave-divider').forEach(divider=>{
+                gsap.fromTo(divider,
+                    {scaleX:0, opacity:0},
+                    {scaleX:1, opacity:1, duration:1, ease:'power2.inOut',
+                    scrollTrigger:{trigger:divider, start:'top 88%'}}
+                );
+            });
+
+            // === TEXT BLOCKS — slide from alternating sides ===
+            gsap.utils.toArray('.text-block').forEach((el,i)=>{
+                const fromLeft = i % 2 === 0;
+                gsap.fromTo(el,
+                    {x: fromLeft ? -60 : 60, opacity:0},
+                    {x:0, opacity:1, duration:1, ease:'power3.out',
+                    scrollTrigger:{trigger:el, start:'top 82%'}}
+                );
+            });
+
+            // === HIGHLIGHT / ACCENT text — glow pulse on scroll ===
+            gsap.utils.toArray('.highlight, .accent').forEach(el=>{
+                gsap.fromTo(el,
+                    {textShadow:'0 0 0px currentColor'},
+                    {textShadow:'0 0 12px currentColor', duration:0.8, ease:'power1.inOut',
+                    yoyo:true, repeat:1,
+                    scrollTrigger:{trigger:el, start:'top 85%'}}
+                );
+            });
+
+            // Service cards — stagger with scale
+            gsap.utils.toArray('.service-card').forEach((el,i)=>{
+                gsap.fromTo(el,
+                    {y:50,opacity:0,scale:0.88,rotateX:8},
+                    {y:0,opacity:1,scale:1,rotateX:0,duration:1,delay:i*0.15,ease:'back.out(1.2)',
+                    scrollTrigger:{trigger:el,start:'top 88%'}}
+                );
+            });
+
+            // === FLOATING PHOTOS — appear from the dark ===
+            gsap.utils.toArray('.floating-photo').forEach((el,i)=>{
+                // Initial reveal: emerge from darkness
+                gsap.fromTo(el,
+                    {opacity:0, scale:0.7, filter:'blur(6px) brightness(0.3)'},
+                    {opacity:1, scale:1, filter:'blur(0px) brightness(1)', duration:1.5, ease:'power2.out',
+                    scrollTrigger:{trigger:el.closest('.section'), start:'top 75%'}}
+                );
+                // Parallax drift — each photo moves at different speed
+                const drift = 20 + (i % 3) * 25;
+                gsap.to(el,{
+                    y: -drift, ease:'none',
+                    scrollTrigger:{
+                        trigger:el.closest('.section'),
+                        start:'top bottom', end:'bottom top',
+                        scrub:2
+                    }
+                });
+            });
+
+            // Timeline items — sequential cascade
+            gsap.utils.toArray('.timeline-item').forEach((el,i)=>{
+                gsap.fromTo(el,
+                    {x:-40,opacity:0},
+                    {x:0,opacity:1,duration:0.9,delay:i*0.2,ease:'power2.out',
+                    scrollTrigger:{trigger:el,start:'top 85%'}}
+                );
+            });
+
+            // Stats — pop in with counter animation
+            gsap.utils.toArray('.stat-item').forEach((el,i)=>{
+                gsap.fromTo(el,
+                    {y:30,opacity:0,scale:0.7},
+                    {y:0,opacity:1,scale:1,duration:0.8,delay:i*0.2,ease:'elastic.out(1,0.5)',
+                    scrollTrigger:{trigger:'.stats-bar',start:'top 85%',
+                    onEnter:()=>{
+                        // Number counter animation
+                        const numEl = el.querySelector('.stat-number[data-count]');
+                        if (numEl) {
+                            const target = parseInt(numEl.dataset.count);
+                            const dur = 1500;
+                            const start = Date.now();
+                            const tick = ()=>{
+                                const elapsed = Date.now() - start;
+                                const progress = Math.min(elapsed / dur, 1);
+                                const eased = 1 - Math.pow(1 - progress, 3);
+                                numEl.textContent = Math.floor(target * eased);
+                                if (progress < 1) requestAnimationFrame(tick);
+                                else numEl.textContent = target;
+                            };
+                            tick();
+                        }
+                    }}}
+                );
+            });
+
+            // === QUOTE BLOCK — cinematic reveal ===
+            gsap.utils.toArray('.quote-block').forEach(el=>{
+                gsap.fromTo(el,
+                    {scale:0.9, opacity:0, filter:'blur(6px)'},
+                    {scale:1, opacity:1, filter:'blur(0px)', duration:1.5, ease:'power2.out',
+                    scrollTrigger:{trigger:el, start:'top 80%'}}
+                );
+            });
+
+            // === BLOCKQUOTE text — line-by-line ===
+            gsap.utils.toArray('blockquote').forEach(bq=>{
+                const html = bq.innerHTML;
+                const lines = html.split('<br>');
+                bq.innerHTML = lines.map(l => `<span class="bq-line" style="display:block;opacity:0;transform:translateX(-20px)">${l}</span>`).join('');
+                ScrollTrigger.create({
+                    trigger:bq,
+                    start:'top 78%',
+                    onEnter:()=>{
+                        gsap.to(bq.querySelectorAll('.bq-line'),{
+                            opacity:1, x:0, duration:0.8, stagger:0.3, ease:'power2.out'
+                        });
+                    }
+                });
+            });
+
+            // === CONTACT LINKS — wave entrance ===
+            gsap.utils.toArray('.social-links a').forEach((el,i)=>{
+                gsap.fromTo(el,
+                    {y:30, opacity:0, rotateZ:-5},
+                    {y:0, opacity:1, rotateZ:0, duration:0.7, delay:i*0.15, ease:'back.out(1.6)',
+                    scrollTrigger:{trigger:'.social-links', start:'top 85%'}}
+                );
+            });
+
+            // === SCROLL VELOCITY — section pinch effect ===
+            gsap.utils.toArray('.section').forEach(section=>{
+                gsap.fromTo(section,
+                    {borderTopColor:'transparent'},
+                    {borderTopColor:'rgba(245,196,105,0.06)', duration:0.3,
+                    scrollTrigger:{trigger:section, start:'top 90%', toggleActions:'play none none reverse'}}
+                );
+            });
+
+            // Compass rotation accelerates on scroll
+            ScrollTrigger.create({
+                trigger:'#contact',
+                start:'top bottom',
+                end:'bottom top',
+                onUpdate:self=>{
+                    const speed = 1 + self.progress * 5;
+                    document.querySelectorAll('.compass-ring-outer,.compass-ring-inner,.compass-needle').forEach(el=>{
+                        el.style.animationDuration = (30/speed)+'s';
+                    });
+                }
+            });
+
+            // Ship rocks more on scroll
+            const shipEl = document.querySelector('.ship-container');
+            if (shipEl) {
+                ScrollTrigger.create({
+                    trigger:'.ship-container',
+                    start:'top bottom',
+                    end:'bottom top',
+                    onUpdate:self=>{
+                        const scale = 1 + self.progress * 0.15;
+                        const sway = Math.sin(self.progress * Math.PI * 2) * 3;
+                        shipEl.style.transform = `scale(${scale}) rotate(${sway}deg)`;
+                    }
+                });
+            }
+
+            // === GLOBAL SCROLL PROGRESS BAR ===
+            const progressBar = document.createElement('div');
+            progressBar.style.cssText = 'position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--seafoam),var(--amber-glow));z-index:10000;transform-origin:left;transform:scaleX(0);transition:none;';
+            document.body.appendChild(progressBar);
+            ScrollTrigger.create({
+                trigger:document.body,
+                start:'top top', end:'bottom bottom',
+                onUpdate:self=>{
+                    progressBar.style.transform = `scaleX(${self.progress})`;
+                }
+            });
+        }
+
+        initGSAP();
+    });
+    </script>
+
+</body>
+</html>

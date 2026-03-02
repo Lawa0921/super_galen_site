@@ -993,3 +993,15 @@ members:
         label: "旅遊住宿"
       - id: "otaku_collector"
         label: "公仔收藏"
+
+  - id: "nekopapaya"
+    name: "御用太醫-望聞問切瓜"
+    avatar: "/assets/img/guild/nekopapaya/avatar.webp"
+    page: "/guild/nekopapaya.html"
+    tags:
+      - id: "tcm_analyst"
+        label: "人體狀態觀察分析師"
+      - id: "activity_organizer"
+        label: "魔人揪揪"
+      - id: "safe_haven"
+        label: "避風港守望者"
