@@ -282,7 +282,7 @@
         .interest-card {
             background: rgba(21, 38, 66, 0.6); border: 1px solid rgba(245,196,105,0.06);
             padding: 2rem 1.5rem; border-radius: 3px; text-align: center;
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); cursor: none;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             opacity: 0; transform: translateY(30px);
         }
         .interest-card:hover {
@@ -352,7 +352,7 @@
             width: 52px; height: 52px; border-radius: 50%;
             background: rgba(21, 38, 66, 0.6); border: 1px solid rgba(245,196,105,0.15);
             color: var(--text-hint); text-decoration: none;
-            transition: all 0.4s ease; font-size: 1.2rem; cursor: none;
+            transition: all 0.4s ease; font-size: 1.2rem;
         }
         .social-btn:hover {
             background: rgba(245,196,105,0.15); border-color: var(--amber-glow);
@@ -365,7 +365,7 @@
         .service-card {
             background: rgba(21, 38, 66, 0.55); border: 1px solid rgba(245,196,105,0.06);
             padding: 2.5rem 2rem; border-radius: 3px; position: relative; overflow: hidden;
-            transition: all 0.5s cubic-bezier(0.25,0.46,0.45,0.94); cursor: none;
+            transition: all 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
             opacity: 0; transform: translateY(30px);
         }
         .service-card::before {
@@ -402,7 +402,6 @@
             opacity: 0;
             z-index: 5;
             transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.6s ease;
-            cursor: none;
         }
         .floating-photo img {
             width: 100%; display: block;
@@ -549,25 +548,59 @@
             body { cursor: auto; }
             .cursor-dot, .cursor-ring { display: none; }
             .hero-section h1 { font-size: 1.8rem; }
-            .text-block { padding: 2rem 1.8rem; }
-            .interests-grid { grid-template-columns: 1fr 1fr; }
+            .hero-subtitle { font-size: 0.95rem; }
+            h2 { font-size: 1.3rem; }
+            .text-block { padding: 2rem 1.5rem; }
+            .text-block p { font-size: 0.95rem; }
+            .interests-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
             .services-grid { grid-template-columns: 1fr; }
-            .floating-photo { width: clamp(80px, 25vw, 130px); }
+            .floating-photo { width: clamp(60px, 18vw, 100px); opacity: 0.6; }
+            .floating-photo .photo-label { display: none; }
             .lighthouse-glow-point { display: none; }
-            .lighthouse-sweep { opacity: 0.5; }
-            .quote-block { padding: 2.5rem 1.5rem; }
-            .quote-block blockquote { font-size: 1.3rem; }
+            .lighthouse-sweep { display: none; }
             .lighthouse-silhouette { display: none; }
-            .section { padding: 6vh 4vw; }
+            .fog-layer { display: none; }
             .parallax-text { display: none; }
-            #p5-ocean { height: 140px; }
+            .quote-block { padding: 2rem 1.5rem; }
+            .quote-block blockquote { font-size: 1.3rem; }
+            .quote-block::before { font-size: 5rem; }
+            .section { padding: 6vh 5vw; min-height: auto; }
+            .nav-fixed { top: 1.2rem; left: 1.2rem; font-size: 0.8rem; }
+            #p5-ocean { height: 100px; }
             .stats-bar { gap: 1.5rem; }
+            .stat-number { font-size: 2rem; }
+            .timeline { padding-left: 1.5rem; }
+            .timeline-item::before { left: -1.5rem; }
+            .ship-container { width: 120px; height: 80px; }
+            .ship-hull { width: 90px; height: 25px; }
+            .ship-mast { height: 50px; }
+            .ship-sail { width: 30px; height: 38px; }
+            .ship-sail-2 { width: 20px; height: 28px; }
+            .compass-deco { width: 90px; height: 90px; }
+            .social-btn { width: 48px; height: 48px; min-width: 48px; min-height: 48px; }
+            .intro-scene { width: 220px; height: 300px; transform: scale(0.85); }
         }
         @media (max-width: 480px) {
-            .hero-section h1 { font-size: 1.5rem; }
-            .interests-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .hero-section h1 { font-size: 1.4rem; }
+            .hero-subtitle { font-size: 0.85rem; }
+            h2 { font-size: 1.15rem; }
+            .text-block { padding: 1.5rem 1.2rem; }
+            .interests-grid { grid-template-columns: 1fr; gap: 0.8rem; }
             .interest-card { padding: 1.5rem 1rem; }
-            .service-card { padding: 1.8rem 1.5rem; }
+            .service-card { padding: 1.5rem 1.2rem; }
+            .floating-photo { display: none; }
+            .section { padding: 4vh 4vw; }
+            .stats-bar { flex-direction: column; gap: 1.2rem; }
+            .stat-number { font-size: 1.8rem; }
+            .quote-block blockquote { font-size: 1.1rem; }
+            .wave-divider { height: 50px; }
+            .wave-divider::before, .wave-divider::after { width: 40px; }
+        }
+        @media (hover: none) and (pointer: coarse) {
+            body { cursor: auto; }
+            .cursor-dot, .cursor-ring { display: none; }
+            .lighthouse-sweep { display: none; }
+            .fog-layer { display: none; }
         }
     </style>
 </head>
@@ -704,8 +737,8 @@
         <!-- ACTIVITIES -->
         <div class="section" id="activities">
             <div class="floating-photo hover-trigger" style="top: 12%; left: 4%; transform: rotate(-5deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_boardgame.webp" alt="桌遊揪團" loading="lazy">
-                <div class="photo-label">Board Game Night</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_hotpot.webp" alt="北投火鍋菜盤" loading="lazy">
+                <div class="photo-label">Hotpot Night</div>
             </div>
             <div class="section-inner">
                 <div class="text-block align-right gs-reveal">
@@ -723,12 +756,12 @@
         <!-- INTERESTS -->
         <div class="section" id="interests">
             <div class="floating-photo hover-trigger" style="bottom: 8%; right: 3%; transform: rotate(6deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_flowers.webp" alt="花田" loading="lazy">
-                <div class="photo-label">Flower Fields</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_cherry_blossom.webp" alt="賞櫻花夕陽" loading="lazy">
+                <div class="photo-label">Cherry Blossom</div>
             </div>
             <div class="floating-photo hover-trigger" style="top: 5%; left: 2%; transform: rotate(-3deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_portrait.webp" alt="人像" loading="lazy">
-                <div class="photo-label">Portraits</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_cat_socks.webp" alt="華山貓咪襪子" loading="lazy">
+                <div class="photo-label">Neko Socks</div>
             </div>
             <div class="section-inner">
                 <div class="text-block align-center gs-reveal" style="border-bottom-color: var(--seafoam);">
@@ -763,12 +796,12 @@
         <div class="wave-divider"><i class="fa-solid fa-life-ring anchor-icon"></i></div>
         <div class="section" id="services">
             <div class="floating-photo hover-trigger" style="top: 6%; right: 2%; transform: rotate(3deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_finance.webp" alt="理財插畫" loading="lazy">
-                <div class="photo-label">Financial Wisdom</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_herbal_book.webp" alt="東方本草" loading="lazy">
+                <div class="photo-label">Eastern Herbal</div>
             </div>
             <div class="floating-photo hover-trigger" style="bottom: 10%; left: 3%; transform: rotate(-4deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_hamster.webp" alt="倉鼠理財" loading="lazy">
-                <div class="photo-label">Sandwich Generation</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_papaya_milk.webp" alt="木瓜牛乳配飯糰" loading="lazy">
+                <div class="photo-label">Papaya Milk</div>
             </div>
             <div class="section-inner">
                 <div class="text-block align-center gs-reveal" style="border-bottom-color: var(--seafoam);">
@@ -813,8 +846,8 @@
         <div class="wave-divider"><i class="fa-solid fa-camera-retro anchor-icon"></i></div>
         <div class="section" id="social-life">
             <div class="floating-photo hover-trigger" style="top: 10%; right: 5%; transform: rotate(5deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_stars.webp" alt="星空沉思" loading="lazy">
-                <div class="photo-label">Stargazing</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_tamsui_harbor.webp" alt="淡水河岸漁港" loading="lazy">
+                <div class="photo-label">Tamsui Harbor</div>
             </div>
             <div class="section-inner">
                 <div class="text-block gs-reveal" style="border-left-color: var(--seafoam);">
@@ -846,8 +879,8 @@
         <div class="wave-divider"><i class="fa-solid fa-book-open anchor-icon"></i></div>
         <div class="section" id="voyage-log">
             <div class="floating-photo hover-trigger" style="top: 15%; right: 4%; transform: rotate(-6deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_nightdrive.webp" alt="夜車" loading="lazy">
-                <div class="photo-label">Night Drive</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_night_lights.webp" alt="夜間燈會" loading="lazy">
+                <div class="photo-label">Night Lights</div>
             </div>
             <div class="section-inner">
                 <div class="text-block align-center gs-reveal" style="border-bottom-color: var(--amber-glow);">
@@ -914,8 +947,8 @@
         <!-- CONTACT -->
         <div class="section" id="contact" style="padding-bottom: 3rem;">
             <div class="floating-photo hover-trigger" style="top: 20%; left: 5%; transform: rotate(4deg);">
-                <img src="/assets/img/guild/nekopapaya/gallery_hourglass.webp" alt="時間哲學" loading="lazy">
-                <div class="photo-label">Hourglass</div>
+                <img src="/assets/img/guild/nekopapaya/gallery_night_street.webp" alt="夜間街景" loading="lazy">
+                <div class="photo-label">Night Street</div>
             </div>
             <div class="section-inner" style="text-align: center;">
                 <div class="compass-deco gs-reveal">
@@ -957,9 +990,10 @@
         camera.position.set(0, 40, 120);
         camera.lookAt(0, 0, 0);
 
+        const isMobile = window.innerWidth <= 768;
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
         // --- Mist Texture ---
@@ -977,7 +1011,7 @@
         }
 
         const tex = createSoftTexture();
-        const N = 250;
+        const N = isMobile ? 80 : 250;
         const bGeo = new THREE.BufferGeometry();
         const bPos = new Float32Array(N*3), bSz = new Float32Array(N), bCol = new Float32Array(N*3);
         const cA = new THREE.Color(0xF5C469), cT = new THREE.Color(0x4A9E8E), cM = new THREE.Color(0x1E3A5F), cW = new THREE.Color(0x2C4F6F);
@@ -1094,26 +1128,30 @@
             if (typeof p5 === 'undefined') { setTimeout(initP5, 100); return; }
 
             // --- p5 Ocean Canvas ---
+            const p5Mobile = window.innerWidth <= 768;
+            const oceanHeight = p5Mobile ? 100 : 220;
+            const oceanLayers = p5Mobile ? 2 : 4;
+            const oceanStep = p5Mobile ? 8 : 4;
+
             new p5(function(p) {
                 let waveOffset = 0;
                 let mouseInfluence = 0;
 
                 p.setup = function() {
-                    const c = p.createCanvas(p.windowWidth, 220);
+                    const c = p.createCanvas(p.windowWidth, oceanHeight);
                     c.parent('p5-ocean');
                     p.noStroke();
+                    if (p5Mobile) p.frameRate(24);
                 };
 
                 p.draw = function() {
                     p.clear();
                     waveOffset += 0.008;
 
-                    // Mouse influence on waves
                     const mxNorm = p.mouseX / p.width;
                     mouseInfluence = p.lerp(mouseInfluence, mxNorm, 0.03);
 
-                    // Draw multiple wave layers
-                    for (let layer = 0; layer < 4; layer++) {
+                    for (let layer = 0; layer < oceanLayers; layer++) {
                         const layerAlpha = [25, 35, 50, 70][layer];
                         const layerSpeed = [0.6, 0.8, 1.0, 1.2][layer];
                         const layerAmp = [15, 20, 25, 12][layer];
@@ -1125,24 +1163,24 @@
                         p.fill(r, g, b, layerAlpha);
                         p.beginShape();
                         p.vertex(0, p.height);
-                        for (let x = 0; x <= p.width; x += 4) {
+                        for (let x = 0; x <= p.width; x += oceanStep) {
                             const n1 = p.noise(x * 0.003 + waveOffset * layerSpeed, layer * 10);
-                            const n2 = p.noise(x * 0.008 + waveOffset * layerSpeed * 0.5, layer * 10 + 100);
-                            const mouseWave = Math.sin((x - p.mouseX) * 0.02) * mouseInfluence * 8;
-                            const y = layerBase + n1 * layerAmp + n2 * (layerAmp * 0.5) + mouseWave;
+                            const mouseWave = p5Mobile ? 0 : Math.sin((x - p.mouseX) * 0.02) * mouseInfluence * 8;
+                            const y = layerBase + n1 * layerAmp + mouseWave;
                             p.vertex(x, y);
                         }
                         p.vertex(p.width, p.height);
                         p.endShape(p.CLOSE);
                     }
 
-                    // Foam highlights
-                    p.fill(244, 241, 236, 15);
-                    for (let x = 0; x < p.width; x += 3) {
-                        const n = p.noise(x * 0.005 + waveOffset * 1.5, 50);
-                        if (n > 0.6) {
-                            const y = 70 + n * 30;
-                            p.ellipse(x, y, 2 + n * 3, 1);
+                    if (!p5Mobile) {
+                        p.fill(244, 241, 236, 15);
+                        for (let x = 0; x < p.width; x += 3) {
+                            const n = p.noise(x * 0.005 + waveOffset * 1.5, 50);
+                            if (n > 0.6) {
+                                const y = 70 + n * 30;
+                                p.ellipse(x, y, 2 + n * 3, 1);
+                            }
                         }
                     }
                 };
@@ -1155,12 +1193,14 @@
             // --- p5 Fireflies Canvas ---
             new p5(function(p) {
                 const fireflies = [];
-                const NUM = 40;
+                const mob = window.innerWidth <= 768;
+                const NUM = mob ? 15 : 40;
 
                 p.setup = function() {
                     const c = p.createCanvas(p.windowWidth, p.windowHeight);
                     c.parent('p5-fireflies');
                     p.noStroke();
+                    if (mob) p.frameRate(20);
 
                     for (let i = 0; i < NUM; i++) {
                         fireflies.push({
@@ -1183,13 +1223,14 @@
                         f.x += f.vx + Math.sin(f.phase * 2) * 0.3;
                         f.y += f.vy + Math.cos(f.phase) * 0.2;
 
-                        // Mouse attraction (subtle)
-                        const dx = p.mouseX - f.x;
-                        const dy = p.mouseY - f.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < 200 && dist > 0) {
-                            f.x += dx / dist * 0.15;
-                            f.y += dy / dist * 0.15;
+                        if (!mob) {
+                            const dx = p.mouseX - f.x;
+                            const dy = p.mouseY - f.y;
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist < 200 && dist > 0) {
+                                f.x += dx / dist * 0.15;
+                                f.y += dy / dist * 0.15;
+                            }
                         }
 
                         // Wrap around
@@ -1202,12 +1243,10 @@
                         const glow = f.size * (2 + Math.sin(f.phase) * 0.8);
 
                         if (f.isAmber) {
-                            p.fill(245, 196, 105, alpha * 0.4);
-                            p.ellipse(f.x, f.y, glow * 4, glow * 4);
+                            if (!mob) { p.fill(245, 196, 105, alpha * 0.4); p.ellipse(f.x, f.y, glow * 4, glow * 4); }
                             p.fill(245, 196, 105, alpha);
                         } else {
-                            p.fill(108, 180, 168, alpha * 0.3);
-                            p.ellipse(f.x, f.y, glow * 3, glow * 3);
+                            if (!mob) { p.fill(108, 180, 168, alpha * 0.3); p.ellipse(f.x, f.y, glow * 3, glow * 3); }
                             p.fill(108, 180, 168, alpha);
                         }
                         p.ellipse(f.x, f.y, glow, glow);
@@ -1230,24 +1269,27 @@
     // =============================================
     document.addEventListener('DOMContentLoaded', function() {
 
-        // --- Custom Cursor ---
-        const cursorDot = document.querySelector('.cursor-dot');
-        const cursorRing = document.querySelector('.cursor-ring');
-        let cx=0,cy=0,rx=0,ry=0;
+        // --- Custom Cursor (desktop only) ---
+        const isMobileCursor = window.innerWidth <= 768 || 'ontouchstart' in window;
+        if (!isMobileCursor) {
+            const cursorDot = document.querySelector('.cursor-dot');
+            const cursorRing = document.querySelector('.cursor-ring');
+            let cx=0,cy=0,rx=0,ry=0;
 
-        document.addEventListener('mousemove',e=>{
-            cx=e.clientX; cy=e.clientY;
-            cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px';
-        });
-        function updateRing(){ rx+=(cx-rx)*0.1; ry+=(cy-ry)*0.1; cursorRing.style.left=rx+'px'; cursorRing.style.top=ry+'px'; requestAnimationFrame(updateRing); }
-        updateRing();
+            document.addEventListener('mousemove',e=>{
+                cx=e.clientX; cy=e.clientY;
+                cursorDot.style.left=cx+'px'; cursorDot.style.top=cy+'px';
+            });
+            function updateRing(){ rx+=(cx-rx)*0.1; ry+=(cy-ry)*0.1; cursorRing.style.left=rx+'px'; cursorRing.style.top=ry+'px'; requestAnimationFrame(updateRing); }
+            updateRing();
 
-        document.querySelectorAll('.hover-trigger').forEach(el=>{
-            el.addEventListener('mouseenter',()=>document.body.classList.add('cursor-hover'));
-            el.addEventListener('mouseleave',()=>document.body.classList.remove('cursor-hover'));
-        });
-        document.addEventListener('mousedown',()=>document.body.classList.add('cursor-click'));
-        document.addEventListener('mouseup',()=>document.body.classList.remove('cursor-click'));
+            document.querySelectorAll('.hover-trigger').forEach(el=>{
+                el.addEventListener('mouseenter',()=>document.body.classList.add('cursor-hover'));
+                el.addEventListener('mouseleave',()=>document.body.classList.remove('cursor-hover'));
+            });
+            document.addEventListener('mousedown',()=>document.body.classList.add('cursor-click'));
+            document.addEventListener('mouseup',()=>document.body.classList.remove('cursor-click'));
+        }
 
         // --- Ripple Canvas ---
         const rc = document.getElementById('ripple-canvas');
@@ -1273,25 +1315,32 @@
             get dead(){ return this.alpha<=0||this.radius>=this.maxR; }
         }
 
+        const isMobileRipple = window.innerWidth <= 768;
         document.addEventListener('click',e=>{
-            for(let i=0;i<4;i++){
+            const count = isMobileRipple ? 2 : 4;
+            for(let i=0;i<count;i++){
                 setTimeout(()=>ripples.push(new Ripple(e.clientX,e.clientY,{speed:1.5+i*0.3,maxR:50+i*20})),i*80);
             }
-            // Also spawn teal ripples
-            setTimeout(()=>ripples.push(new Ripple(e.clientX,e.clientY,{color:'74,158,142',speed:1,maxR:100,alpha:0.3,decay:0.004})),50);
-        });
-
-        let lastTrail=0;
-        document.addEventListener('mousemove',e=>{
-            const now=Date.now();
-            if(now-lastTrail>150&&Math.random()>0.5){
-                ripples.push(new Ripple(e.clientX,e.clientY,{alpha:0.1,maxR:25,speed:0.8,decay:0.005}));
-                lastTrail=now;
+            if (!isMobileRipple) {
+                setTimeout(()=>ripples.push(new Ripple(e.clientX,e.clientY,{color:'74,158,142',speed:1,maxR:100,alpha:0.3,decay:0.004})),50);
             }
         });
 
+        if (!isMobileRipple) {
+            let lastTrail=0;
+            document.addEventListener('mousemove',e=>{
+                const now=Date.now();
+                if(now-lastTrail>150&&Math.random()>0.5){
+                    ripples.push(new Ripple(e.clientX,e.clientY,{alpha:0.1,maxR:25,speed:0.8,decay:0.005}));
+                    lastTrail=now;
+                }
+            });
+        }
+
+        let rippleRAF;
         function animateRipples(){
-            requestAnimationFrame(animateRipples);
+            rippleRAF = requestAnimationFrame(animateRipples);
+            if(ripples.length===0) return;
             rCtx.clearRect(0,0,rc.width,rc.height);
             for(let i=ripples.length-1;i>=0;i--){
                 ripples[i].update(); ripples[i].draw();
