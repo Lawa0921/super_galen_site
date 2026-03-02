@@ -10,9 +10,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@700&family=Noto+Serif+TC:wght@400;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
     <style>
+        .icon-inline {
+            display: inline-block;
+            width: 1em; height: 1em;
+            vertical-align: -0.125em;
+            fill: currentColor;
+        }
         :root {
             --bg-color: #fffdf5;
             --ink-black: #1a1a1a;
@@ -108,14 +112,14 @@
             position: absolute; left: 50%; transform: translateX(-50%);
             width: 12px; height: 12px; border-radius: 50%;
             border: 2px solid var(--ink-black); background: #fff;
-            cursor: pointer; transition: all 0.3s; pointer-events: auto;
+            cursor: pointer; transition: background 0.3s, transform 0.3s; pointer-events: auto;
         }
         .scroll-map-dot.active { background: var(--pop-orange); transform: translateX(-50%) scale(1.3); }
         .scroll-map-dot:hover { background: var(--pop-yellow); transform: translateX(-50%) scale(1.5); }
         .scroll-map-label {
             position: absolute; right: 20px; white-space: nowrap;
             font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 400;
-            opacity: 0; transform: translateX(5px); transition: all 0.3s;
+            opacity: 0; transform: translateX(5px); transition: opacity 0.3s, transform 0.3s;
             pointer-events: none; color: var(--ink-black);
         }
         .scroll-map-dot:hover .scroll-map-label,
@@ -366,7 +370,7 @@
             font-weight: 700; font-size: 0.85rem;
             color: var(--ink-black); border: 2px solid var(--ink-black);
             padding: 0.25rem 0.9rem; border-radius: 30px;
-            background: #fff; transition: all 0.2s; cursor: grab;
+            background: #fff; transition: transform 0.2s, background 0.2s, color 0.2s, box-shadow 0.2s; cursor: grab;
         }
         .tag:hover { transform: scale(1.1) rotate(3deg); box-shadow: 4px 4px 0 var(--ink-black); }
         .tag:nth-child(1):hover { background: var(--pop-orange); color: #fff; }
@@ -387,7 +391,7 @@
         .mini-card {
             border: 2px solid var(--ink-black); padding: 1.2rem;
             text-align: center; background: #fff;
-            transition: all 0.3s; position: relative;
+            transition: transform 0.3s, box-shadow 0.3s; position: relative;
             cursor: pointer; overflow: hidden;
         }
         .mini-card::after {
@@ -408,19 +412,19 @@
         }
         .mini-card:hover::after { height: 100%; opacity: 0.08; }
 
-        .mini-card i {
+        .mini-card .icon-inline {
             font-size: 1.8rem; margin-bottom: 0.5rem;
             color: var(--ink-black); transition: transform 0.3s;
             position: relative; z-index: 1;
         }
-        .mini-card:hover i { transform: scale(1.15); }
+        .mini-card:hover .icon-inline { transform: scale(1.15); }
 
         .mini-card h4 {
             font-family: 'Syne', sans-serif;
             font-weight: 700; font-size: 0.8rem; margin-bottom: 0.15rem;
             position: relative; z-index: 1;
         }
-        .mini-card p { position: relative; z-index: 1; }
+        .mini-card p { font-size: 0.8rem; margin: 0; position: relative; z-index: 1; }
         .mini-card .card-detail {
             font-size: 0.7rem; color: #888; margin-top: 0.4rem;
             max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
@@ -433,7 +437,7 @@
         .skill-badge {
             display: flex; align-items: center; gap: 0.6rem;
             padding: 0.7rem 1.1rem; border: 2px solid var(--ink-black);
-            background: #fff; transition: all 0.3s; cursor: default;
+            background: #fff; transition: transform 0.3s, box-shadow 0.3s, background 0.3s, color 0.3s; cursor: default;
         }
         .skill-badge:hover {
             transform: translateY(-4px) rotate(1deg);
@@ -444,7 +448,7 @@
         .skill-badge:nth-child(3):hover { background: var(--pop-cyan); color: #fff; }
         .skill-badge:nth-child(4):hover { background: var(--pop-yellow); }
         .skill-badge:nth-child(5):hover { background: var(--pop-green); }
-        .skill-badge i { font-size: 1.2rem; }
+        .skill-badge .icon-inline { font-size: 1.2rem; }
         .skill-badge-text {
             font-family: 'DM Sans', 'Noto Serif TC', sans-serif;
             font-weight: 700; font-size: 0.8rem;
@@ -460,7 +464,7 @@
             background: #fff; padding: 10px 10px 40px;
             border: 1px solid #ddd;
             box-shadow: 2px 3px 12px rgba(0,0,0,0.1);
-            transition: all 0.4s; cursor: pointer;
+            transition: transform 0.4s, box-shadow 0.4s; cursor: pointer;
             position: relative;
         }
         .polaroid:nth-child(1) { transform: rotate(-2deg); }
@@ -476,12 +480,14 @@
         }
 
         .polaroid-img {
-            width: 100%; aspect-ratio: 1;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
+            width: 100%; aspect-ratio: 3/4;
+            overflow: hidden; background: #f5f5f5;
         }
-        .polaroid-img i { font-size: 2.5rem; transition: transform 0.4s; }
-        .polaroid:hover .polaroid-img i { transform: scale(1.15) rotate(-5deg); }
+        .polaroid-img img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.4s;
+        }
+        .polaroid:hover .polaroid-img img { transform: scale(1.08); }
 
         .polaroid-label {
             position: absolute; bottom: 10px; left: 0; right: 0;
@@ -489,16 +495,6 @@
             font-family: 'Caveat', cursive; font-size: 1rem;
             font-weight: 600; color: var(--ink-black);
         }
-
-        .pat-1 { background: linear-gradient(135deg, #ffe0cc 0%, #ffcc99 100%); }
-        .pat-2 { background: repeating-linear-gradient(45deg, var(--pop-cyan), var(--pop-cyan) 8px, #e0f7fa 8px, #e0f7fa 16px); }
-        .pat-3 { background: radial-gradient(circle, rgba(247,37,133,0.3) 8px, transparent 8px),
-                  radial-gradient(circle, rgba(247,37,133,0.3) 8px, transparent 8px);
-                  background-size: 24px 24px; background-position: 0 0, 12px 12px; background-color: #fff0f6; }
-        .pat-4 { background: linear-gradient(rgba(6,214,160,0.2) 1px, transparent 1px),
-                  linear-gradient(90deg, rgba(6,214,160,0.2) 1px, transparent 1px);
-                  background-size: 16px 16px; background-color: #f0fdf8; }
-        .pat-5 { background: conic-gradient(from 0deg, #fff3b0, #ffd6a5, #ffadad, #d5aaff, #a0c4ff, #fff3b0); }
 
         /* === QUOTE === */
         .quote-block {
@@ -541,13 +537,36 @@
             border: 3px solid var(--ink-black); border-radius: 50%;
             font-size: 1.8rem; color: var(--ink-black); background: #fff;
             box-shadow: 4px 4px 0 var(--ink-black);
-            transition: all 0.2s; text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s; text-decoration: none;
         }
         .social-btn:hover {
             transform: translate(-3px, -3px) rotate(8deg);
             box-shadow: 8px 8px 0 var(--pop-pink);
             background: var(--pop-yellow);
         }
+
+        /* === FOOTER === */
+        .site-footer {
+            position: relative; z-index: 10;
+            padding: 4rem 2rem 5rem;
+            text-align: center;
+            background: var(--ink-black);
+        }
+        .site-footer::before {
+            content: '';
+            position: absolute; left: 0; right: 0;
+            bottom: 100%; height: 120px;
+            background: linear-gradient(to bottom, transparent, var(--ink-black));
+            pointer-events: none;
+        }
+        .footer-credit {
+            font-size: 0.85rem; color: #999;
+            font-family: 'Space Mono', monospace;
+        }
+        .footer-credit a {
+            color: var(--pop-orange); text-decoration: none;
+        }
+        .footer-credit a:hover { text-decoration: underline; }
 
         /* === HUD === */
         .hud {
@@ -570,7 +589,7 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 1rem; cursor: pointer; z-index: 100;
             opacity: 0; transform: translateY(20px);
-            transition: all 0.3s;
+            transition: opacity 0.3s, transform 0.3s, background 0.3s, box-shadow 0.3s;
             box-shadow: 3px 3px 0 var(--ink-black);
             pointer-events: none;
         }
@@ -580,16 +599,100 @@
             transform: translateY(-3px); box-shadow: 5px 5px 0 var(--ink-black);
         }
 
+        /* === LIGHTBOX === */
+        .lightbox {
+            display: none; position: fixed; inset: 0;
+            z-index: 10000; background: rgba(0,0,0,0.9);
+            justify-content: center; align-items: center;
+            cursor: pointer;
+        }
+        .lightbox.active { display: flex; }
+        .lightbox img {
+            max-width: 90vw; max-height: 85vh;
+            object-fit: contain; border-radius: 4px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+            cursor: default;
+        }
+        .lightbox-close {
+            position: absolute; top: 20px; right: 24px;
+            font-size: 2rem; color: #fff; cursor: pointer;
+            font-family: 'Syne', sans-serif; font-weight: 700;
+            line-height: 1; opacity: 0.8; transition: opacity 0.2s;
+            background: none; border: none;
+        }
+        .lightbox-close:hover { opacity: 1; }
+        .lightbox-caption {
+            position: absolute; bottom: 24px; left: 50%;
+            transform: translateX(-50%);
+            color: #fff; font-family: 'Space Mono', monospace;
+            font-size: 0.9rem; letter-spacing: 1px;
+        }
+
+        /* === EXTRACTED INLINE STYLES === */
+        .h3--pink { background: var(--pop-pink); color: #fff; }
+        .h3--cyan { background: var(--pop-cyan); color: #fff; }
+        .h3--orange { background: var(--pop-orange); color: #fff; }
+        .h3--green { background: var(--pop-green); }
+
+        .tape--rot-neg3 { transform: translateX(-50%) rotate(-3deg); }
+        .tape--rot-1 { transform: translateX(-50%) rotate(1deg); }
+        .tape--rot-neg1 { transform: translateX(-50%) rotate(-1deg); }
+        .tape--rot-2 { transform: translateX(-50%) rotate(2deg); }
+        .tape--rot-neg2 { transform: translateX(-50%) rotate(-2deg); }
+
+        .stamp--artist { top: -20px; right: -15px; color: var(--pop-orange); transform: rotate(12deg); }
+        .stamp--explorer { top: -20px; left: -15px; color: var(--pop-pink); transform: rotate(-8deg); }
+        .stamp--creator { bottom: -15px; right: -15px; color: var(--pop-cyan); transform: rotate(20deg); }
+        .stamp--philosophy { top: -20px; right: -15px; color: var(--pop-green); transform: rotate(15deg); }
+
+        .deco--hero-arrow { top: -30px; left: -60px; transform: rotate(20deg); }
+        .deco--hero-star { top: 30px; right: -40px; }
+        .deco--hero-circle { bottom: 100px; left: -40px; }
+        .deco--hero-zigzag { bottom: 60px; right: -50px; transform: rotate(-5deg); }
+
+        .panel--gallery { background: transparent; border: none; box-shadow: none; }
+        .panel--gallery:hover { box-shadow: none; }
+        .panel--connect { text-align: center; border-style: dashed; max-width: 500px; }
+        .panel-bar--nature { background: linear-gradient(90deg, var(--pop-cyan), var(--pop-green)); }
+        .quote-block--pink { border-left-color: var(--pop-pink); }
+        .quote-block--green { border-left-color: var(--pop-green); margin-top: 1.5rem; }
+        .outdoor-intro { text-align: center; margin-bottom: 2rem; }
+        .gallery-heading { text-align: center; margin-bottom: 1rem; }
+        .handwritten--lg { font-size: 1.6rem; text-align: center; }
+        .footer-heart { color: var(--pop-pink); }
+        .mt-1-5 { margin-top: 1.5rem; }
+        .footer-note { margin-top: 2rem; font-size: 0.8rem; color: #bbb; text-align: center; }
+
         /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .section { padding: 1rem; justify-content: center; }
-            .panel { padding: 2rem; max-width: 100%; box-shadow: 6px 6px 0 var(--ink-black); }
-            .panel--warm { box-shadow: 6px 6px 0 var(--pop-orange); }
-            .panel--cool { box-shadow: 6px 6px 0 var(--pop-pink); }
-            .panel--nature { box-shadow: 6px 6px 0 var(--pop-cyan); }
+            .scroll-wrapper { height: auto; overflow-x: hidden; }
+            .section {
+                position: relative; top: auto;
+                min-height: auto; padding: 1rem;
+                justify-content: center;
+                margin-bottom: 1rem;
+            }
+            .section:nth-child(4) { overflow: hidden; }
+            .section:nth-child(1) { top: auto; min-height: 100vh; }
+            .section:nth-child(2) { top: auto; padding-left: 1rem; }
+            .section:nth-child(3) { top: auto; padding-right: 1rem; }
+            .section:nth-child(4) { top: auto; }
+            .section:nth-child(5) { top: auto; padding-left: 1rem; }
+            .section:nth-child(6) { top: auto; }
+            .section:nth-child(7) { top: auto; padding-right: 1rem; }
+            .section:nth-child(8) { top: auto; padding-bottom: 0; }
+            .panel, .panel:hover { padding: 1.5rem; max-width: calc(100% - 20px); box-shadow: 4px 4px 0 var(--ink-black); }
+            .panel.wide, .panel.extra-wide { max-width: calc(100% - 20px); }
+            .panel--warm, .panel--warm:hover { box-shadow: 4px 4px 0 var(--pop-orange); }
+            .panel--cool, .panel--cool:hover { box-shadow: 4px 4px 0 var(--pop-pink); }
+            .panel--nature, .panel--nature:hover { box-shadow: 4px 4px 0 var(--pop-cyan); }
             h1 { font-size: 3rem; }
             h2 { font-size: 1.8rem; }
-            .grid-cards { grid-template-columns: 1fr 1fr; }
+            .grid-cards { grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+            .mini-card { padding: 0.8rem; }
+            .mini-card h4 { font-size: 0.75rem; }
+            .mini-card .card-detail { display: none; }
+            .mini-card:hover { transform: none; box-shadow: none; }
             .gallery-grid { grid-template-columns: repeat(2, 1fr); transform: none; }
             .polaroid { transform: none; }
             .scroll-map { display: none; }
@@ -597,9 +700,10 @@
             .skill-domains { gap: 0.6rem; }
             .skill-badge { padding: 0.5rem 0.7rem; }
             .deco { display: none; }
+            .stamp { display: none; }
         }
         @media (max-width: 480px) {
-            .grid-cards { grid-template-columns: 1fr; }
+            .grid-cards { grid-template-columns: 1fr 1fr; }
             .gallery-grid { grid-template-columns: 1fr 1fr; }
             h1 { font-size: 2.5rem; letter-spacing: -1px; }
         }
@@ -611,7 +715,7 @@
     <div id="loader">
         <div>
             <div class="loader-icon">
-                <i class="fa-solid fa-pencil pencil"></i>
+                <svg class="icon-inline pencil" viewBox="0 0 512 512"><path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"/></svg>
                 <div class="line"></div>
             </div>
             <div class="loader-text">OPENING SKETCHBOOK<span class="loader-dots"></span></div>
@@ -636,10 +740,10 @@
         </div>
     </nav>
 
-    <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fa-solid fa-arrow-up"></i></button>
+    <button class="back-to-top" id="backToTop" aria-label="Back to top"><svg class="icon-inline" viewBox="0 0 384 512"><path d="M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z"/></svg></button>
 
     <div class="hud">
-        <i class="fa-solid fa-pen-nib"></i>
+        <svg class="icon-inline" viewBox="0 0 512 512"><path d="M368.4 18.3L312.7 74.1 437.9 199.3l55.7-55.7c21.9-21.9 21.9-57.3 0-79.2L447.6 18.3c-21.9-21.9-57.3-21.9-79.2 0zM288 94.6l-9.2 2.8L134.7 140.6c-19.9 6-35.7 21.2-42.3 41L3.8 445.8c-3.8 11.3-1 23.9 7.3 32.4L164.7 324.7c-3-6.3-4.7-13.3-4.7-20.7c0-26.5 21.5-48 48-48s48 21.5 48 48s-21.5 48-48 48c-7.4 0-14.4-1.7-20.7-4.7L33.7 500.9c8.6 8.3 21.1 11.2 32.4 7.3l264.3-88.6c19.7-6.6 35-22.4 41-42.3l43.2-144.1 2.8-9.2L288 94.6z"/></svg>
         <span>DESIGN MODE: ON</span>
     </div>
 
@@ -649,10 +753,10 @@
         <div class="section" id="sec-0">
             <div class="hero-inner">
                 <!-- SVG Doodles -->
-                <svg class="deco deco-arrow" style="top: -30px; left: -60px; transform: rotate(20deg);" viewBox="0 0 60 30"><path d="M5 15 Q15 5 30 15 T55 12" fill="none" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/><path d="M48 6 L55 12 L47 16" fill="none" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/></svg>
-                <svg class="deco deco-star" style="top: 30px; right: -40px;" viewBox="0 0 40 40"><path d="M20 5 L23 16 L35 16 L25 23 L28 35 L20 27 L12 35 L15 23 L5 16 L17 16 Z" fill="none" stroke="#f72585" stroke-width="1.5" stroke-linejoin="round"/></svg>
-                <svg class="deco deco-circle" style="bottom: 100px; left: -40px;" viewBox="0 0 50 50"><circle cx="25" cy="25" r="18" fill="none" stroke="#00b4d8" stroke-width="2" stroke-dasharray="4 3"/></svg>
-                <svg class="deco deco-zigzag" style="bottom: 60px; right: -50px; transform: rotate(-5deg);" viewBox="0 0 80 20"><path d="M5 15 L15 5 L25 15 L35 5 L45 15 L55 5 L65 15 L75 5" fill="none" stroke="#fdec00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg class="deco deco-arrow deco--hero-arrow" viewBox="0 0 60 30"><path d="M5 15 Q15 5 30 15 T55 12" fill="none" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/><path d="M48 6 L55 12 L47 16" fill="none" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/></svg>
+                <svg class="deco deco-star deco--hero-star" viewBox="0 0 40 40"><path d="M20 5 L23 16 L35 16 L25 23 L28 35 L20 27 L12 35 L15 23 L5 16 L17 16 Z" fill="none" stroke="#f72585" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                <svg class="deco deco-circle deco--hero-circle" viewBox="0 0 50 50"><circle cx="25" cy="25" r="18" fill="none" stroke="#00b4d8" stroke-width="2" stroke-dasharray="4 3"/></svg>
+                <svg class="deco deco-zigzag deco--hero-zigzag" viewBox="0 0 80 20"><path d="M5 15 L15 5 L25 15 L35 5 L45 15 L55 5 L65 15 L75 5" fill="none" stroke="#fdec00" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
 
                 <div class="avatar-wrapper">
                     <div class="avatar-ring"></div>
@@ -679,8 +783,8 @@
         <!-- 2. THE ARTIST -->
         <div class="section" id="sec-1">
             <div class="panel panel--warm" data-panel>
-                <div class="tape tape--yellow" style="transform: translateX(-50%) rotate(-3deg);"></div>
-                <div class="stamp" style="top: -20px; right: -15px; color: var(--pop-orange); transform: rotate(12deg);">
+                <div class="tape tape--yellow tape--rot-neg3"></div>
+                <div class="stamp stamp--artist">
                     FLOW<br>STATE
                 </div>
                 <h3>THE ARTIST</h3>
@@ -701,16 +805,16 @@
         <!-- 3. THE EXPLORER -->
         <div class="section" id="sec-2">
             <div class="panel panel--cool" data-panel>
-                <div class="tape tape--pink" style="transform: translateX(-50%) rotate(1deg);"></div>
-                <div class="stamp" style="top: -20px; left: -15px; color: var(--pop-pink); transform: rotate(-8deg);">
+                <div class="tape tape--pink tape--rot-1"></div>
+                <div class="stamp stamp--explorer">
                     WANDER<br>LUST
                 </div>
-                <h3 style="background: var(--pop-pink); color: #fff;">THE EXPLORER</h3>
+                <h3 class="h3--pink">THE EXPLORER</h3>
                 <h2>冒險與未知</h2>
                 <p>
                     喜歡冒險與探索，害怕未知又期待它帶給我的驚喜，我想人生也是如此。每一次踏上未知的旅途，都像是在地圖上點亮一個新的座標。
                 </p>
-                <div class="quote-block" style="border-left-color: var(--pop-pink);">
+                <div class="quote-block quote-block--pink">
                     <p>旅行能帶給我生命力，不論幾歲都能閃閃發光。</p>
                 </div>
                 <p>
@@ -722,49 +826,49 @@
         <!-- 4. OUTDOOR LIFE -->
         <div class="section" id="sec-3">
             <div class="panel panel--nature wide" data-panel>
-                <div class="tape tape--cyan" style="transform: translateX(-50%) rotate(-1deg);"></div>
-                <div class="panel-bar" style="background: linear-gradient(90deg, var(--pop-cyan), var(--pop-green));"></div>
-                <h3 style="background: var(--pop-cyan); color: #fff;">OUTDOOR LIFE</h3>
+                <div class="tape tape--cyan tape--rot-neg1"></div>
+                <div class="panel-bar panel-bar--nature"></div>
+                <h3 class="h3--cyan">OUTDOOR LIFE</h3>
                 <h2>山與海的呼喚</h2>
-                <p style="text-align: center; margin-bottom: 2rem;">
+                <p class="outdoor-intro">
                     <span class="marker-cyan">生活體驗家</span> | 不發動態的日子都在好好生活。<br>
                     喜歡投入大自然的懷抱，感受最純粹的快樂。
                 </p>
                 <div class="grid-cards" data-stagger-grid>
                     <div class="mini-card">
-                        <i class="fa-solid fa-mountain-sun"></i>
+                        <svg class="icon-inline" viewBox="0 0 640 512"><path d="M560 160A80 80 0 1 0 560 0a80 80 0 1 0 0 160zM55.9 512H381.1h75H578.9c33.8 0 61.1-27.4 61.1-61.1c0-11.2-3.1-22.2-8.9-31.8l-132-216.3C495 196.1 487.8 192 480 192s-15 4.1-19.1 10.7l-48.2 79L286.8 81c-6.6-10.6-18.3-17-30.8-17s-24.1 6.4-30.8 17L8.6 426.4C3 435.3 0 445.6 0 456.1C0 487 25 512 55.9 512z"/></svg>
                         <h4>CLIMBING</h4>
-                        <p style="font-size: 0.8rem; margin:0;">爬山健行</p>
+                        <p>爬山健行</p>
                         <div class="card-detail">踏上稜線，與雲海對話</div>
                     </div>
                     <div class="mini-card">
-                        <i class="fa-solid fa-campground"></i>
+                        <svg class="icon-inline" viewBox="0 0 576 512"><path d="M377 52c11-13.8 8.8-33.9-5-45s-33.9-8.8-45 5L288 60.8 249 12c-11-13.8-31.2-16-45-5s-16 31.2-5 45l48 60L12.3 405.4C4.3 415.4 0 427.7 0 440.4V464c0 26.5 21.5 48 48 48H288 528c26.5 0 48-21.5 48-48V440.4c0-12.7-4.3-25.1-12.3-35L329 112l48-60zM288 448H168.5L288 291.7 407.5 448H288z"/></svg>
                         <h4>CAMPING</h4>
-                        <p style="font-size: 0.8rem; margin:0;">露營野營</p>
+                        <p>露營野營</p>
                         <div class="card-detail">星空下的自由呼吸</div>
                     </div>
                     <div class="mini-card">
-                        <i class="fa-solid fa-water"></i>
+                        <svg class="icon-inline" viewBox="0 0 576 512"><path d="M269.5 69.9c11.1-7.9 25.9-7.9 37 0C329 85.4 356.5 96 384 96c26.9 0 55.4-10.8 77.4-26.1l0 0c11.9-8.5 28.1-7.8 39.2 1.7c14.4 11.9 32.5 21 50.6 25.2c17.2 4 27.9 21.2 23.9 38.4s-21.2 27.9-38.4 23.9c-24.5-5.7-44.9-16.5-58.2-25C449.5 149.7 417 160 384 160c-31.9 0-60.6-9.9-80.4-18.9c-5.8-2.7-11.1-5.3-15.6-7.7c-4.5 2.4-9.7 5.1-15.6 7.7c-19.8 9-48.5 18.9-80.4 18.9c-33 0-65.5-10.3-94.5-25.8c-13.4 8.4-33.7 19.3-58.2 25c-17.2 4-34.4-6.7-38.4-23.9s6.7-34.4 23.9-38.4C42.8 92.6 61 83.5 75.3 71.6c11.1-9.5 27.3-10.1 39.2-1.7l0 0C136.7 85.2 165.1 96 192 96c27.5 0 55-10.6 77.5-26.1zm37 288C329 373.4 356.5 384 384 384c26.9 0 55.4-10.8 77.4-26.1l0 0c11.9-8.5 28.1-7.8 39.2 1.7c14.4 11.9 32.5 21 50.6 25.2c17.2 4 27.9 21.2 23.9 38.4s-21.2 27.9-38.4 23.9c-24.5-5.7-44.9-16.5-58.2-25C449.5 437.7 417 448 384 448c-31.9 0-60.6-9.9-80.4-18.9c-5.8-2.7-11.1-5.3-15.6-7.7c-4.5 2.4-9.7 5.1-15.6 7.7c-19.8 9-48.5 18.9-80.4 18.9c-33 0-65.5-10.3-94.5-25.8c-13.4 8.4-33.7 19.3-58.2 25c-17.2 4-34.4-6.7-38.4-23.9s6.7-34.4 23.9-38.4c18.1-4.2 36.2-13.3 50.6-25.2c11.1-9.4 27.3-10.1 39.2-1.7l0 0C136.7 373.2 165.1 384 192 384c27.5 0 55-10.6 77.5-26.1c11.1-7.9 25.9-7.9 37 0zm0-144C329 229.4 356.5 240 384 240c26.9 0 55.4-10.8 77.4-26.1l0 0c11.9-8.5 28.1-7.8 39.2 1.7c14.4 11.9 32.5 21 50.6 25.2c17.2 4 27.9 21.2 23.9 38.4s-21.2 27.9-38.4 23.9c-24.5-5.7-44.9-16.5-58.2-25C449.5 293.7 417 304 384 304c-31.9 0-60.6-9.9-80.4-18.9c-5.8-2.7-11.1-5.3-15.6-7.7c-4.5 2.4-9.7 5.1-15.6 7.7c-19.8 9-48.5 18.9-80.4 18.9c-33 0-65.5-10.3-94.5-25.8c-13.4 8.4-33.7 19.3-58.2 25c-17.2 4-34.4-6.7-38.4-23.9s6.7-34.4 23.9-38.4c18.1-4.2 36.2-13.3 50.6-25.2c11.1-9.5 27.3-10.1 39.2-1.7l0 0C136.7 229.2 165.1 240 192 240c27.5 0 55-10.6 77.5-26.1c11.1-7.9 25.9-7.9 37 0z"/></svg>
                         <h4>SUP</h4>
-                        <p style="font-size: 0.8rem; margin:0;">立槳探索</p>
+                        <p>立槳探索</p>
                         <div class="card-detail">在水面上漫步的浪漫</div>
                     </div>
                     <div class="mini-card">
-                        <i class="fa-solid fa-mask-ventilator"></i>
+                        <svg class="icon-inline" viewBox="0 0 640 512"><path d="M159.1 176C139.4 219.2 128 264.7 128 300.8c0 15.9 2.2 31.4 6.3 46l-31.8-7.9C70.5 330.9 48 302.1 48 269V184c0-4.4 3.6-8 8-8H159.1zm26-48H56c-30.9 0-56 25.1-56 56v85c0 55.1 37.5 103.1 90.9 116.4l71.3 17.8c22.7 30.5 55.4 54.1 93.8 66.6V393.3c-19.7-16.4-32-40.3-32-66.9c0-49.5 43-134.4 96-134.4c52.5 0 96 84.9 96 134.4c0 26.7-12.4 50.4-32 66.8v76.6c38-12.6 70.6-36 93.5-66.4l71.6-17.9C602.5 372.1 640 324.1 640 269V184c0-30.9-25.1-56-56-56H454.5C419.7 73.8 372.1 32 320 32c-52.6 0-100.2 41.8-134.9 96zm295.6 48H584c4.4 0 8 3.6 8 8v85c0 33-22.5 61.8-54.5 69.9l-31.8 8c4.2-14.7 6.4-30.1 6.4-46.1c0-36.1-11.6-81.6-31.3-124.8zM288 320V512h64V320c0-17.7-14.3-32-32-32s-32 14.3-32 32z"/></svg>
                         <h4>DIVING</h4>
-                        <p style="font-size: 0.8rem; margin:0;">潛水悠遊</p>
+                        <p>潛水悠遊</p>
                         <div class="card-detail">探索海底的異世界</div>
                     </div>
                     <div class="mini-card">
-                        <i class="fa-solid fa-person-surfing"></i>
+                        <svg class="icon-inline" viewBox="0 0 576 512"><path d="M309.5 178.4L447.9 297.1c-1.6 .9-3.2 2-4.8 3c-18 12.4-40.1 20.3-59.2 20.3c-19.6 0-40.8-7.7-59.2-20.3c-22.1-15.5-51.6-15.5-73.7 0c-17.1 11.8-38 20.3-59.2 20.3c-10.1 0-21.1-2.2-31.9-6.2C163.1 193.2 262.2 96 384 96h64c17.7 0 32 14.3 32 32s-14.3 32-32 32H384c-26.9 0-52.3 6.6-74.5 18.4zM160 160A64 64 0 1 1 32 160a64 64 0 1 1 128 0zM306.5 325.9C329 341.4 356.5 352 384 352c26.9 0 55.4-10.8 77.4-26.1l0 0c11.9-8.5 28.1-7.8 39.2 1.7c14.4 11.9 32.5 21 50.6 25.2c17.2 4 27.9 21.2 23.9 38.4s-21.2 27.9-38.4 23.9c-24.5-5.7-44.9-16.5-58.2-25C449.5 405.7 417 416 384 416c-31.9 0-60.6-9.9-80.4-18.9c-5.8-2.7-11.1-5.3-15.6-7.7c-4.5 2.4-9.7 5.1-15.6 7.7c-19.8 9-48.5 18.9-80.4 18.9c-33 0-65.5-10.3-94.5-25.8c-13.4 8.4-33.7 19.3-58.2 25c-17.2 4-34.4-6.7-38.4-23.9s6.7-34.4 23.9-38.4c18.1-4.2 36.2-13.3 50.6-25.2c11.1-9.4 27.3-10.1 39.2-1.7l0 0C136.7 341.2 165.1 352 192 352c27.5 0 55-10.6 77.5-26.1c11.1-7.9 25.9-7.9 37 0z"/></svg>
                         <h4>SURFING</h4>
-                        <p style="font-size: 0.8rem; margin:0;">衝浪挑戰</p>
+                        <p>衝浪挑戰</p>
                         <div class="card-detail">與浪共舞的勇氣</div>
                     </div>
                     <div class="mini-card">
-                        <i class="fa-solid fa-dog"></i>
+                        <svg class="icon-inline" viewBox="0 0 576 512"><path d="M309.6 158.5L332.7 19.8C334.6 8.4 344.5 0 356.1 0c7.5 0 14.5 3.5 19 9.5L392 32h52.1c12.7 0 24.9 5.1 33.9 14.1L496 64h56c13.3 0 24 10.7 24 24v24c0 44.2-35.8 80-80 80H464 448 426.7l-5.1 30.5-112-64zM416 256.1L416 480c0 17.7-14.3 32-32 32H352c-17.7 0-32-14.3-32-32V364.8c-24 12.3-51.2 19.2-80 19.2s-56-6.9-80-19.2V480c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V249.8c-28.8-10.9-51.4-35.3-59.2-66.5L1 167.8c-4.3-17.1 6.1-34.5 23.3-38.8s34.5 6.1 38.8 23.3l3.9 15.5C70.5 182 83.3 192 98 192h30 16H303.8L416 256.1zM464 80a16 16 0 1 0 -32 0 16 16 0 1 0 32 0z"/></svg>
                         <h4>DOG LOVER</h4>
-                        <p style="font-size: 0.8rem; margin:0;">玩玩狗勾</p>
+                        <p>玩玩狗勾</p>
                         <div class="card-detail">最療癒的冒險夥伴</div>
                     </div>
                 </div>
@@ -780,38 +884,38 @@
         <!-- 5. CREATOR -->
         <div class="section" id="sec-4">
             <div class="panel panel--golden" data-panel>
-                <div class="tape tape--yellow" style="transform: translateX(-50%) rotate(2deg);"></div>
-                <div class="stamp" style="bottom: -15px; right: -15px; color: var(--pop-cyan); transform: rotate(20deg);">
+                <div class="tape tape--yellow tape--rot-2"></div>
+                <div class="stamp stamp--creator">
                     CREATE<br>&amp; SHARE
                 </div>
-                <h3 style="background: var(--pop-orange); color: #fff;">CREATOR</h3>
+                <h3 class="h3--orange">CREATOR</h3>
                 <h2>創作身分</h2>
                 <p>
                     從市集似顏繪到小型畫展，從平面設計到自媒體經營，每一個創作都是用不同方式說故事。
                 </p>
                 <div class="skill-domains" data-stagger-grid>
                     <div class="skill-badge">
-                        <i class="fa-solid fa-palette"></i>
+                        <svg class="icon-inline" viewBox="0 0 512 512"><path d="M512 256c0 .9 0 1.8 0 2.7c-.4 36.5-33.6 61.3-70.1 61.3H344c-26.5 0-48 21.5-48 48c0 3.4 .4 6.7 1 9.9c2.1 10.2 6.5 20 10.8 29.9c6.1 13.8 12.1 27.5 12.1 42c0 31.8-21.6 60.7-53.4 62c-3.5 .1-7 .2-10.6 .2C114.6 512 0 397.4 0 256S114.6 0 256 0S512 114.6 512 256zM128 288a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-96a32 32 0 1 0 0-64 32 32 0 1 0 0 64zM288 96a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm96 96a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></svg>
                         <span class="skill-badge-text">平面設計</span>
                     </div>
                     <div class="skill-badge">
-                        <i class="fa-solid fa-paintbrush"></i>
+                        <svg class="icon-inline" viewBox="0 0 576 512"><path d="M339.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L568.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S517.7-4.4 499.1 9.6L262.4 187.2c-24 18-38.2 46.1-38.4 76.1L339.3 367.1zm-19.6 25.4l-116-104.4C143.9 290.3 96 339.6 96 400c0 3.9 .2 7.8 .6 11.6C98.4 429.1 86.4 448 68.8 448H64c-17.7 0-32 14.3-32 32s14.3 32 32 32H208c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg>
                         <span class="skill-badge-text">插畫創作</span>
                     </div>
                     <div class="skill-badge">
-                        <i class="fa-solid fa-desktop"></i>
+                        <svg class="icon-inline" viewBox="0 0 576 512"><path d="M64 0C28.7 0 0 28.7 0 64V352c0 35.3 28.7 64 64 64H240l-10.7 32H160c-17.7 0-32 14.3-32 32s14.3 32 32 32H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H346.7L336 416H512c35.3 0 64-28.7 64-64V64c0-35.3-28.7-64-64-64H64zM512 64V288H64V64H512z"/></svg>
                         <span class="skill-badge-text">網頁設計</span>
                     </div>
                     <div class="skill-badge">
-                        <i class="fa-solid fa-camera"></i>
+                        <svg class="icon-inline" viewBox="0 0 512 512"><path d="M149.1 64.8L138.7 96H64C28.7 96 0 124.7 0 160V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V160c0-35.3-28.7-64-64-64H373.3L362.9 64.8C356.4 45.2 338.1 32 317.4 32H194.6c-20.7 0-39 13.2-45.5 32.8zM256 192a96 96 0 1 1 0 192 96 96 0 1 1 0-192z"/></svg>
                         <span class="skill-badge-text">攝影</span>
                     </div>
                     <div class="skill-badge">
-                        <i class="fa-solid fa-video"></i>
+                        <svg class="icon-inline" viewBox="0 0 576 512"><path d="M0 128C0 92.7 28.7 64 64 64H320c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128zM559.1 99.8c10.4 5.6 16.9 16.4 16.9 28.2V384c0 11.8-6.5 22.6-16.9 28.2s-23 5-32.9-1.6l-96-64L416 337.1V320 192 174.9l14.2-9.5 96-64c9.8-6.5 22.4-7.2 32.9-1.6z"/></svg>
                         <span class="skill-badge-text">影片剪輯</span>
                     </div>
                 </div>
-                <p style="margin-top: 1.5rem;">
+                <p class="mt-1-5">
                     從市集擺攤到自由接案，每一個創作都是一次新的冒險。
                 </p>
             </div>
@@ -819,42 +923,42 @@
 
         <!-- 6. GALLERY -->
         <div class="section" id="sec-5">
-            <div class="panel extra-wide" data-panel style="background: transparent; border: none; box-shadow: none;">
-                <div style="text-align: center; margin-bottom: 1rem;">
+            <div class="panel extra-wide panel--gallery" data-panel>
+                <div class="gallery-heading">
                     <h3>GALLERY</h3>
                     <h2>創作領域</h2>
-                    <p class="handwritten" style="text-align: center;">用色彩說故事，用線條寫日記。</p>
+                    <p class="handwritten">用色彩說故事，用線條寫日記。</p>
                 </div>
                 <div class="gallery-grid" data-stagger-grid>
                     <div class="polaroid">
-                        <div class="polaroid-img pat-1">
-                            <i class="fa-solid fa-palette" style="color: #fff;"></i>
+                        <div class="polaroid-img">
+                            <img src="/assets/img/guild/bebe_liu/gallery_01.webp" alt="旅行攝影" loading="lazy">
                         </div>
-                        <span class="polaroid-label">平面設計</span>
+                        <span class="polaroid-label">旅行攝影</span>
                     </div>
                     <div class="polaroid">
-                        <div class="polaroid-img pat-2">
-                            <i class="fa-solid fa-pen-nib"></i>
+                        <div class="polaroid-img">
+                            <img src="/assets/img/guild/bebe_liu/gallery_02.webp" alt="風景探索" loading="lazy">
                         </div>
-                        <span class="polaroid-label">插畫</span>
+                        <span class="polaroid-label">風景探索</span>
                     </div>
                     <div class="polaroid">
-                        <div class="polaroid-img pat-3">
-                            <i class="fa-solid fa-camera"></i>
+                        <div class="polaroid-img">
+                            <img src="/assets/img/guild/bebe_liu/gallery_03.webp" alt="人像寫真" loading="lazy">
                         </div>
-                        <span class="polaroid-label">攝影</span>
+                        <span class="polaroid-label">人像寫真</span>
                     </div>
                     <div class="polaroid">
-                        <div class="polaroid-img pat-4">
-                            <i class="fa-solid fa-desktop"></i>
+                        <div class="polaroid-img">
+                            <img src="/assets/img/guild/bebe_liu/gallery_04.webp" alt="海景秘境" loading="lazy">
                         </div>
-                        <span class="polaroid-label">網頁設計</span>
+                        <span class="polaroid-label">海景秘境</span>
                     </div>
                     <div class="polaroid">
-                        <div class="polaroid-img pat-5">
-                            <i class="fa-solid fa-hashtag" style="color: #fff;"></i>
+                        <div class="polaroid-img">
+                            <img src="/assets/img/guild/bebe_liu/gallery_05.webp" alt="手繪插畫" loading="lazy">
                         </div>
-                        <span class="polaroid-label">自媒體</span>
+                        <span class="polaroid-label">手繪插畫</span>
                     </div>
                 </div>
             </div>
@@ -863,11 +967,11 @@
         <!-- 7. PHILOSOPHY -->
         <div class="section" id="sec-6">
             <div class="panel" data-panel>
-                <div class="tape tape--green" style="transform: translateX(-50%) rotate(-2deg);"></div>
-                <div class="stamp" style="top: -20px; right: -15px; color: var(--pop-green); transform: rotate(15deg);">
+                <div class="tape tape--green tape--rot-neg2"></div>
+                <div class="stamp stamp--philosophy">
                     GAME<br>ON
                 </div>
-                <h3 style="background: var(--pop-green);">PHILOSOPHY</h3>
+                <h3 class="h3--green">PHILOSOPHY</h3>
                 <h2>遊戲人生</h2>
                 <p>
                     繼續抱持著熱情，在地球上實行遊戲人生。
@@ -875,7 +979,7 @@
                 <p>
                     我是一個拍照、剪片、偶爾畫畫的創作者。我想把這個世界的美好，透過我的眼睛和手，傳遞給每一個遇見的人。
                 </p>
-                <div class="quote-block" style="border-left-color: var(--pop-green); margin-top: 1.5rem;">
+                <div class="quote-block quote-block--green">
                     <p>認真玩樂，努力賺取金幣，然後去解鎖更多地圖！</p>
                 </div>
             </div>
@@ -883,22 +987,22 @@
 
         <!-- 8. CONNECT -->
         <div class="section" id="sec-7">
-            <div class="panel" data-panel style="text-align: center; border-style: dashed; max-width: 500px;">
-                <h3 style="background: var(--pop-pink); color: #fff;">CONNECT</h3>
+            <div class="panel panel--connect" data-panel>
+                <h3 class="h3--pink">CONNECT</h3>
                 <h2>一起冒險吧！</h2>
                 <p>如果你也喜歡我的作品，或者想一起去探索世界，歡迎追蹤我！</p>
-                <p class="handwritten" style="font-size: 1.6rem; text-align: center;">
+                <p class="handwritten handwritten--lg">
                     Let's create something beautiful together.
                 </p>
                 <div class="social-row">
                     <a href="https://www.threads.com/@kewpiebay" target="_blank" rel="noopener noreferrer" class="social-btn" title="Threads">
-                        <i class="fa-brands fa-threads"></i>
+                        <svg class="icon-inline" viewBox="0 0 448 512"><path d="M331.5 235.7c2.2 .9 4.2 1.9 6.3 2.8c29.2 14.1 50.6 35.2 61.8 61.4c15.7 36.5 17.2 95.8-30.3 143.2c-36.2 36.2-80.3 52.5-142.6 53h-.3c-70.2-.5-124.1-24.1-160.4-70.2c-32.3-41-48.9-98.1-49.5-169.6V256v-.2C17 184.3 33.6 127.2 65.9 86.2C102.2 40.1 156.2 16.5 226.4 16h.3c70.3 .5 124.9 24 162.3 69.9c18.4 22.7 32 50 40.6 81.7l-40.4 10.8c-7.1-25.8-17.8-47.8-32.2-65.4c-29.2-35.8-73-54.2-130.5-54.6c-57 .5-100.1 18.8-128.2 54.4C72.1 146.1 58.5 194.3 58 256c.5 61.7 14.1 109.9 40.3 143.3c28 35.6 71.2 53.9 128.2 54.4c51.4-.4 85.4-12.6 113.7-40.9c32.3-32.2 31.7-71.8 21.4-95.9c-6.1-14.2-17.1-26-31.9-34.9c-3.7 26.9-11.8 48.3-24.7 64.8c-17.1 21.8-41.4 33.6-72.7 35.3c-23.6 1.3-46.3-4.4-63.9-16c-20.8-13.8-33-34.8-34.3-59.3c-2.5-48.3 35.7-83 95.2-86.4c21.1-1.2 40.9-.3 59.2 2.8c-2.4-14.8-7.3-26.6-14.6-35.2c-10-11.7-25.6-17.7-46.2-17.8H227c-16.6 0-39 4.6-53.3 26.3l-34.4-23.6c19.2-29.1 50.3-45.1 87.8-45.1h.8c62.6 .4 99.9 39.5 103.7 107.7l-.2 .2zm-156 68.8c1.3 25.1 28.4 36.8 54.6 35.3c25.6-1.4 54.6-11.4 59.5-73.2c-13.2-2.9-27.8-4.4-43.4-4.4c-4.8 0-9.6 .1-14.4 .4c-42.9 2.4-57.2 23.2-56.2 41.8l-.1 .1z"/></svg>
                     </a>
                     <a href="https://www.instagram.com/kewpiebay/" target="_blank" rel="noopener noreferrer" class="social-btn" title="Instagram">
-                        <i class="fa-brands fa-instagram"></i>
+                        <svg class="icon-inline" viewBox="0 0 448 512"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
                     </a>
                 </div>
-                <p style="margin-top: 2rem; font-size: 0.8rem; color: #bbb; text-align: center;">
+                <p class="footer-note">
                     Made with love & pixels
                 </p>
             </div>
@@ -906,8 +1010,22 @@
 
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" aria-label="Close">&times;</button>
+        <img src="" alt="">
+        <span class="lightbox-caption"></span>
+    </div>
+
+    <footer class="site-footer">
+        <p class="footer-credit">
+            Made with <svg class="icon-inline footer-heart" viewBox="0 0 512 512"><path d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"/></svg> by
+            <a href="/guild/">SuperGalen's Dungeon</a>
+        </p>
+    </footer>
+
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
     <script>
         // === CANVAS BACKGROUND (scroll-driven) ===
@@ -915,7 +1033,8 @@
             const canvas = document.getElementById('bg-canvas');
             const ctx = canvas.getContext('2d');
             let w, h, lines = [], scrollY = 0, drawing = false;
-            const LINE_SP = 42;
+            const isMobile = window.innerWidth <= 768;
+            const LINE_SP = isMobile ? 80 : 60;
 
             function init() {
                 w = window.innerWidth; h = window.innerHeight;
@@ -981,7 +1100,8 @@
             window.addEventListener('resize', init);
         })();
 
-        // === GSAP ===
+        // === GSAP (wait for deferred scripts) ===
+        document.addEventListener('DOMContentLoaded', () => {
         gsap.registerPlugin(ScrollTrigger);
 
         window.addEventListener('load', () => {
@@ -1031,13 +1151,16 @@
                 });
             });
 
-            // Stamp spin
-            document.querySelectorAll('.stamp').forEach(stamp => {
-                gsap.to(stamp, {
-                    scrollTrigger: { trigger: stamp.closest('.section'), start: "top bottom", end: "bottom top", scrub: 1, invalidateOnRefresh: true },
-                    rotation: "+=360", ease: "none"
+            // Stamp spin (skip on mobile — hidden via CSS)
+            const isMobileView = window.innerWidth <= 768;
+            if (!isMobileView) {
+                document.querySelectorAll('.stamp').forEach(stamp => {
+                    gsap.to(stamp, {
+                        scrollTrigger: { trigger: stamp.closest('.section'), start: "top bottom", end: "bottom top", scrub: 1, invalidateOnRefresh: true },
+                        rotation: "+=360", ease: "none"
+                    });
                 });
-            });
+            }
 
             // Handwritten reveal
             document.querySelectorAll('.handwritten').forEach(text => {
@@ -1055,13 +1178,15 @@
                 });
             });
 
-            // SVG deco float
-            document.querySelectorAll('.deco').forEach((deco, i) => {
-                gsap.to(deco, {
-                    y: `+=${10 + i * 5}`, rotation: `+=${5 + i * 3}`,
-                    duration: 3 + i * 0.5, repeat: -1, yoyo: true, ease: "sine.inOut"
+            // SVG deco float (skip on mobile — hidden via CSS)
+            if (!isMobileView) {
+                document.querySelectorAll('.deco').forEach((deco, i) => {
+                    gsap.to(deco, {
+                        y: `+=${10 + i * 5}`, rotation: `+=${5 + i * 3}`,
+                        duration: 3 + i * 0.5, repeat: -1, yoyo: true, ease: "sine.inOut"
+                    });
                 });
-            });
+            }
 
             // Scroll map
             const scrollMapFill = document.querySelector('.scroll-map-fill');
@@ -1136,7 +1261,36 @@
                 });
                 tag.ondragstart = () => false;
             });
+
+            // Lightbox
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = lightbox.querySelector('img');
+            const lightboxCaption = lightbox.querySelector('.lightbox-caption');
+            const lightboxClose = lightbox.querySelector('.lightbox-close');
+
+            document.querySelectorAll('.polaroid').forEach(p => {
+                p.addEventListener('click', () => {
+                    const img = p.querySelector('img');
+                    const label = p.querySelector('.polaroid-label');
+                    if (img) {
+                        lightboxImg.src = img.src;
+                        lightboxImg.alt = img.alt;
+                        lightboxCaption.textContent = label ? label.textContent : '';
+                        lightbox.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+            });
+
+            function closeLightbox() {
+                lightbox.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+            lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+            lightboxClose.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
         });
+        }); // end DOMContentLoaded
     </script>
 </body>
 </html>
