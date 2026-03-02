@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lo Yu | The Tactical Weaver</title>
-    <meta name="description" content="羅玉 Lo Yu - Marketing Strategist, Crochet Master, and Life Explorer">
+    <title>Lo Yu | The Tactical Recruiter</title>
+    <meta name="description" content="羅玉 Lo Yu - 招募官 / 溝通師 / 行銷策劃師 / 手工鉤織老師">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"></noscript>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 
     <style>
         :root {
@@ -20,6 +22,9 @@
             --c-navy: #2F3542;
             --c-white: #F1F2F6;
             --c-black: #1E272E;
+            --c-olive: #4A5340;
+            --c-manila: #F5E6C8;
+            --c-purple: #9B72AA;
             --grid-gap: 24px;
         }
 
@@ -31,16 +36,181 @@
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             line-height: 1.6;
+            cursor: none;
+        }
+        body.intro-active { overflow-y: hidden; }
+
+        /* === CUSTOM CURSOR === */
+        #custom-cursor {
+            position: fixed; width: 32px; height: 32px;
+            pointer-events: none; z-index: 99999;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s;
+        }
+        #custom-cursor::before, #custom-cursor::after {
+            content: ''; position: absolute; background: var(--c-red);
+        }
+        #custom-cursor::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+        #custom-cursor::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+        #custom-cursor .reticle-ring {
+            position: absolute; inset: 4px; border: 2px solid var(--c-red); border-radius: 50%;
+            animation: reticle-pulse 2s ease-in-out infinite;
+        }
+        @keyframes reticle-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
         }
 
-        /* === BACKGROUND & NOISE === */
+        /* === CLICK RIPPLES === */
+        #click-ripples { position: fixed; inset: 0; pointer-events: none; z-index: 99998; }
+        .click-ping {
+            position: absolute; width: 40px; height: 40px;
+            border: 2px solid var(--c-red); border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            animation: ping-out 0.8s ease-out forwards;
+        }
+        .click-ping:nth-child(2) { animation-delay: 0.15s; }
+        @keyframes ping-out {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+        }
+
+        /* === INTRO OVERLAY === */
+        #intro-overlay {
+            position: fixed; inset: 0; z-index: 90000;
+            background: var(--c-white);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+            overflow: hidden;
+        }
+        #intro-overlay.dismissed { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* Diagonal stripes background */
+        #intro-overlay::before {
+            content: ''; position: absolute; inset: -50%;
+            background: repeating-linear-gradient(
+                -45deg,
+                transparent, transparent 40px,
+                rgba(255,213,0,0.08) 40px, rgba(255,213,0,0.08) 80px
+            );
+            pointer-events: none;
+        }
+
+        .intro-photo-frame {
+            width: 200px; height: 200px; margin-bottom: 2rem;
+            position: relative;
+            border: 6px solid var(--c-black);
+            box-shadow: 10px 10px 0 var(--c-red);
+            background: var(--c-yellow);
+            overflow: hidden;
+            opacity: 0;
+            animation: intro-photo-reveal 0.6s cubic-bezier(0.25,0.8,0.25,1) 0.2s forwards;
+        }
+        .intro-photo-frame img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: contrast(1.1) saturate(0.9);
+        }
+        .intro-photo-frame::after {
+            content: ''; position: absolute; inset: 0;
+            background:
+                radial-gradient(circle at 30% 30%, rgba(255,213,0,0.15), transparent 60%),
+                repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 3px);
+            mix-blend-mode: multiply; pointer-events: none;
+        }
+        @keyframes intro-photo-reveal {
+            0% { opacity: 0; transform: scale(0.7) rotate(-8deg); clip-path: circle(0% at 50% 50%); }
+            60% { clip-path: circle(75% at 50% 50%); }
+            100% { opacity: 1; transform: scale(1) rotate(0); clip-path: circle(100% at 50% 50%); }
+        }
+
+        .intro-title-block {
+            text-align: center; position: relative; z-index: 2;
+        }
+        .intro-title-block h2 {
+            font-family: 'Anton', sans-serif; font-size: clamp(3rem, 8vw, 5rem);
+            text-transform: uppercase; line-height: 0.9; letter-spacing: 2px;
+            color: var(--c-black);
+            opacity: 0; animation: intro-slam 0.5s cubic-bezier(0.25,0.8,0.25,1) 0.3s forwards;
+        }
+        .intro-title-block h2 .intro-red { color: var(--c-red); }
+        .intro-title-block .intro-subtitle {
+            font-family: 'Space Mono', monospace; font-size: 0.9rem; font-weight: 700;
+            color: var(--c-black); margin-top: 0.75rem;
+            opacity: 0; animation: intro-fade-up 0.5s ease 0.8s forwards;
+        }
+        .intro-tags-row {
+            display: flex; gap: 8px; justify-content: center; margin-top: 1rem; flex-wrap: wrap;
+            opacity: 0; animation: intro-fade-up 0.5s ease 1.1s forwards;
+        }
+        .intro-tags-row span {
+            font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700;
+            background: var(--c-black); color: var(--c-yellow); padding: 4px 12px;
+        }
+
+        .intro-stamp {
+            position: absolute; top: 15%; right: 8%;
+            border: 5px solid var(--c-red); color: var(--c-red);
+            font-family: 'Anton', sans-serif; font-size: 2rem; padding: 0.3rem 1.5rem;
+            transform: rotate(-18deg); letter-spacing: 3px;
+            opacity: 0; animation: intro-stamp-in 0.4s cubic-bezier(0.25,0.8,0.25,1) 1.4s forwards;
+        }
+
+        .intro-hint {
+            font-family: 'Space Mono', monospace; color: var(--c-olive);
+            font-size: 0.75rem; margin-top: 2.5rem;
+            opacity: 0; animation: hint-blink 1.5s ease-in-out 1.8s infinite;
+        }
+
+        .intro-corner {
+            position: absolute; width: 40px; height: 40px;
+            border-color: var(--c-black); border-style: solid; border-width: 0;
+        }
+        .intro-corner.tl { top: 20px; left: 20px; border-top-width: 4px; border-left-width: 4px; }
+        .intro-corner.tr { top: 20px; right: 20px; border-top-width: 4px; border-right-width: 4px; }
+        .intro-corner.bl { bottom: 20px; left: 20px; border-bottom-width: 4px; border-left-width: 4px; }
+        .intro-corner.br { bottom: 20px; right: 20px; border-bottom-width: 4px; border-right-width: 4px; }
+
+        .intro-file-label {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            font-family: 'Courier Prime', monospace; font-size: 0.7rem; font-weight: 700;
+            background: var(--c-manila); border: 2px solid var(--c-black); padding: 3px 14px;
+            opacity: 0; animation: intro-fade-up 0.4s ease 0.1s forwards;
+        }
+
+        @keyframes intro-slam {
+            0% { opacity: 0; transform: scale(1.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes intro-fade-up {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes intro-stamp-in {
+            0% { opacity: 0; transform: rotate(-18deg) scale(2); }
+            100% { opacity: 0.85; transform: rotate(-18deg) scale(1); }
+        }
+        @keyframes hint-blink { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        /* === CANVAS BACKGROUND === */
         #physics-canvas {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 0; opacity: 0.15; pointer-events: none;
+            z-index: 0; pointer-events: none;
         }
+        #physics-canvas canvas { display: block; }
+
         .noise-bg {
-            position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.4;
+            position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.3;
             background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+        }
+
+        .classified-watermark {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-35deg);
+            font-family: 'Anton', sans-serif; font-size: 12vw;
+            color: rgba(249,65,68,0.03);
+            text-transform: uppercase; letter-spacing: 1rem;
+            pointer-events: none; z-index: 2; white-space: nowrap;
         }
 
         /* === LAYOUT === */
@@ -49,20 +219,34 @@
             max-width: 1400px; margin: 0 auto; padding: 40px 20px;
         }
 
-        /* Typographic Utilities */
         .h-anton { font-family: 'Anton', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
-        .h-mono { font-family: 'Space Mono', monospace; }
+        .h-courier { font-family: 'Courier Prime', monospace; }
         .text-hl { background: var(--c-yellow); padding: 0 4px; border: 1px solid var(--c-black); }
         .text-red { color: var(--c-red); }
 
-        /* === EDITORIAL GRID BLOCKS === */
+        .section-divider {
+            display: flex; align-items: center; gap: 1rem;
+            margin: 3rem 0 2rem; font-family: 'Space Mono', monospace;
+            font-size: 0.75rem; color: var(--c-olive); opacity: 0.6;
+        }
+        .section-divider::before, .section-divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: repeating-linear-gradient(90deg, var(--c-olive) 0, var(--c-olive) 4px, transparent 4px, transparent 8px);
+        }
 
-        /* 1. HERO BLOCK */
+        /* Scroll progress */
+        #scroll-progress {
+            position: fixed; top: 0; left: 0;
+            width: 0; height: 3px; background: var(--c-red);
+            z-index: 99990; transition: width 0.1s linear;
+        }
+
+        /* === HERO BLOCK === */
         .hero-block {
             display: grid; grid-template-columns: 1fr 1fr;
             border: 4px solid var(--c-black); background: #fff;
             box-shadow: 12px 12px 0 var(--c-black);
-            margin-bottom: var(--grid-gap);
+            margin-bottom: var(--grid-gap); position: relative;
         }
         @media (max-width: 900px) { .hero-block { grid-template-columns: 1fr; } }
 
@@ -78,7 +262,9 @@
             width: 80%; height: 80%; object-fit: cover;
             border: 4px solid var(--c-black); border-radius: 50%;
             box-shadow: 8px 8px 0 var(--c-red);
+            transition: transform 0.4s cubic-bezier(0.25,0.8,0.25,1);
         }
+        .hero-img:hover { transform: scale(1.05) rotate(-2deg); }
 
         .hero-text-col {
             padding: 3rem; display: flex; flex-direction: column; justify-content: center;
@@ -88,9 +274,20 @@
             display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem;
             font-family: 'Space Mono'; font-size: 0.9rem; font-weight: 700;
         }
-        .htag { background: var(--c-black); color: var(--c-yellow); padding: 4px 12px; }
+        .htag {
+            background: var(--c-black); color: var(--c-yellow); padding: 4px 12px;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .htag:hover { background: var(--c-red); transform: translateY(-2px); }
 
-        /* 2. THE STRATEGIST BLOCK (Split Content) */
+        .file-tab {
+            position: absolute; top: -2px; right: 40px;
+            background: var(--c-manila); border: 2px solid var(--c-black);
+            border-top: none; padding: 4px 16px;
+            font-family: 'Courier Prime', monospace; font-size: 0.75rem; font-weight: 700;
+        }
+
+        /* === STRATEGIST BLOCK === */
         .strat-block {
             display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--grid-gap);
             margin-bottom: var(--grid-gap);
@@ -105,16 +302,32 @@
             font-size: 2rem; margin-bottom: 1.5rem; border-bottom: 4px solid var(--c-black);
             padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: flex-end;
         }
-
         .bullet-list { list-style: none; }
-        .bullet-list li {
-            margin-bottom: 1rem; padding-left: 24px; position: relative;
-        }
+        .bullet-list li { margin-bottom: 1rem; padding-left: 24px; position: relative; }
         .bullet-list li::before {
-            content: '▶'; position: absolute; left: 0; color: var(--c-red); font-family: 'Anton';
+            content: '\25B6'; position: absolute; left: 0; color: var(--c-red); font-family: 'Anton';
         }
 
-        /* 3. THE WEAVER BLOCK (Image + Text) */
+        .stat-bar { margin-bottom: 1rem; }
+        .stat-bar-label { display: flex; justify-content: space-between; font-weight: 900; margin-bottom: 4px; }
+        .stat-bar-track { height: 12px; border: 2px solid #000; background: #fff; overflow: hidden; }
+        .stat-bar-fill {
+            height: 100%; width: 0;
+            transition: width 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .stat-bar-fill.animated { width: var(--fill-width); }
+
+        .clip-deco {
+            position: absolute; top: -8px; left: 30px;
+            width: 24px; height: 40px;
+            background: var(--c-olive); border-radius: 4px 4px 0 0; z-index: 20;
+        }
+        .clip-deco::after {
+            content: ''; position: absolute; bottom: 0;
+            width: 100%; height: 12px; background: var(--c-white); border-radius: 0 0 4px 4px;
+        }
+
+        /* === WEAVER BLOCK === */
         .weaver-block {
             display: grid; grid-template-columns: 1fr 2fr; gap: var(--grid-gap);
             margin-bottom: var(--grid-gap);
@@ -123,38 +336,209 @@
 
         .img-card {
             border: 4px solid var(--c-black); background: #fff; padding: 12px;
-            box-shadow: 8px 8px 0 var(--c-black); transition: transform 0.2s;
+            box-shadow: 8px 8px 0 var(--c-black); transition: transform 0.3s cubic-bezier(0.25,0.8,0.25,1), box-shadow 0.3s;
         }
-        .img-card:hover { transform: translate(-4px, -4px); box-shadow: 12px 12px 0 var(--c-red); }
+        .img-card:hover { transform: translate(-4px, -4px) rotate(-1deg); box-shadow: 12px 12px 0 var(--c-red); }
         .img-card img { width: 100%; height: auto; border: 2px solid var(--c-black); aspect-ratio: 4/3; object-fit: cover; }
-        .img-caption { font-family: 'Space Mono'; text-align: center; margin-top: 8px; font-weight: bold; font-size: 0.9rem;}
+        .img-caption { font-family: 'Space Mono'; text-align: center; margin-top: 8px; font-weight: bold; font-size: 0.9rem; }
 
-        /* 4. GALLERY WALL (Masonry/Grid) */
-        .gallery-wall {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--grid-gap); margin-bottom: var(--grid-gap);
+        /* === MISSION BRIEFING === */
+        #section-mission { margin-bottom: 3rem; }
+        .timeline { position: relative; padding-left: 3rem; }
+        .timeline::before {
+            content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 3px;
+            background: repeating-linear-gradient(180deg, var(--c-black) 0, var(--c-black) 8px, transparent 8px, transparent 16px);
+        }
+        .timeline-item {
+            position: relative; margin-bottom: 2.5rem; padding: 1.5rem;
+            background: #fff; border: 3px solid var(--c-black);
+            box-shadow: 6px 6px 0 var(--c-olive);
+            opacity: 0; transform: translateX(-20px);
+            transition: opacity 0.6s, transform 0.6s;
+        }
+        .timeline-item.visible { opacity: 1; transform: translateX(0); }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -2.25rem; top: 1.5rem;
+            width: 14px; height: 14px;
+            background: var(--c-yellow); border: 3px solid var(--c-black); border-radius: 50%;
+        }
+        .timeline-year { font-family: 'Courier Prime', monospace; font-weight: 700; color: var(--c-red); font-size: 0.85rem; margin-bottom: 0.25rem; }
+        .timeline-title { font-weight: 900; font-size: 1.1rem; margin-bottom: 0.25rem; }
+        .timeline-desc { color: #555; font-size: 0.95rem; }
+        .timeline-tag {
+            display: inline-block; margin-top: 0.5rem;
+            font-family: 'Space Mono'; font-size: 0.7rem; font-weight: 700;
+            background: var(--c-manila); border: 2px solid var(--c-black); padding: 2px 8px;
         }
 
-        /* 5. INTERESTS / PHILOSOPHY BLOCK */
+        /* === COMM PROTOCOL === */
+        #section-comm { margin-bottom: 3rem; }
+        .comm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap); }
+        @media (max-width: 900px) { .comm-grid { grid-template-columns: 1fr; } }
+        .comm-card {
+            background: var(--c-navy); color: #fff; border: 4px solid var(--c-black);
+            padding: 2rem; position: relative; overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .comm-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+        .comm-card::before {
+            content: ''; position: absolute; top: -50%; right: -50%;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(255,213,0,0.08) 0%, transparent 70%);
+        }
+        .comm-card .signal-icon { font-size: 2.5rem; color: var(--c-yellow); margin-bottom: 1rem; display: block; }
+        .comm-card h3 {
+            font-family: 'Anton'; font-size: 1.3rem; color: var(--c-yellow);
+            margin-bottom: 0.75rem; text-transform: uppercase;
+        }
+        .comm-card p { color: #bbb; font-size: 0.95rem; line-height: 1.7; }
+        .comm-card .freq-bar {
+            margin-top: 1rem; height: 4px;
+            background: repeating-linear-gradient(90deg, var(--c-yellow) 0, var(--c-yellow) 3px, transparent 3px, transparent 6px);
+            opacity: 0.4;
+        }
+
+        /* === FIELD REPORT === */
+        #section-field-report { margin-bottom: 3rem; }
+        .field-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); }
+        @media (max-width: 900px) { .field-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .field-grid { grid-template-columns: 1fr; } }
+        .field-stat {
+            border: 4px solid var(--c-black); background: #fff; padding: 1.5rem; text-align: center;
+            box-shadow: 6px 6px 0 var(--c-black); transition: transform 0.2s;
+        }
+        .field-stat:hover { transform: translate(-3px, -3px); box-shadow: 9px 9px 0 var(--c-red); }
+        .field-stat .big-num { font-family: 'Anton', sans-serif; font-size: 3rem; color: var(--c-red); line-height: 1; }
+        .field-stat .stat-label {
+            font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700;
+            margin-top: 0.5rem; color: var(--c-olive); text-transform: uppercase;
+        }
+
+        /* === QUOTE WALL === */
+        #section-quotes { margin-bottom: 3rem; }
+        .quote-wall {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--grid-gap);
+        }
+        @media (max-width: 900px) { .quote-wall { grid-template-columns: 1fr; } }
+        .quote-card {
+            padding: 2.5rem; position: relative;
+            background: #fff; border: 4px solid var(--c-black);
+            border-left: 8px solid var(--c-red);
+            box-shadow: 6px 6px 0 var(--c-manila);
+            transition: transform 0.3s;
+        }
+        .quote-card:hover { transform: translateY(-4px); }
+        .quote-card::before {
+            content: '\201C'; position: absolute; top: -10px; left: 12px;
+            font-family: 'Anton'; font-size: 5rem; color: rgba(249,65,68,0.12);
+            line-height: 1;
+        }
+        .quote-card blockquote {
+            font-size: 1.1rem; font-style: italic; line-height: 1.8;
+            color: #333; margin-bottom: 0.75rem; position: relative; z-index: 1;
+        }
+        .quote-card .quote-source {
+            font-family: 'Space Mono'; font-size: 0.75rem; color: var(--c-olive);
+            text-transform: uppercase;
+        }
+
+        /* === ARTISAN SECTION === */
+        #section-artisan { margin-bottom: 3rem; }
+        .product-card {
+            background: #fff; border: 4px solid var(--c-black);
+            padding: 2rem; text-align: center;
+            box-shadow: 6px 6px 0 var(--c-purple);
+            transition: transform 0.3s;
+        }
+        .product-card:hover { transform: translateY(-4px) rotate(-1deg); }
+        .product-card h3 {
+            font-weight: 900; margin-bottom: 0.5rem; font-size: 1.2rem;
+        }
+        .product-card .prod-price {
+            font-family: 'Anton'; color: var(--c-red); font-size: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        .product-card p { color: #666; font-size: 0.95rem; }
+
+        .artisan-showcase {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap);
+        }
+        @media (max-width: 900px) { .artisan-showcase { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .artisan-showcase { grid-template-columns: 1fr; } }
+        .prod-img {
+            width: 100%; aspect-ratio: 1/1; object-fit: cover;
+            border: 3px solid var(--c-black); margin-bottom: 1rem;
+            transition: transform 0.3s;
+        }
+        .product-card:hover .prod-img { transform: scale(1.05); }
+
+        /* === INTERESTS === */
         .interests-block {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap);
-            margin-bottom: 4rem;
+            margin-bottom: var(--grid-gap);
         }
         @media (max-width: 900px) { .interests-block { grid-template-columns: 1fr; } }
-
         .int-card {
             background: var(--c-navy); color: #fff; border: 4px solid var(--c-black);
             padding: 2rem; text-align: center;
+            transition: transform 0.3s cubic-bezier(0.25,0.8,0.25,1), box-shadow 0.3s;
         }
+        .int-card:hover { transform: translateY(-8px) rotate(-1deg); box-shadow: 8px 12px 0 var(--c-black); }
         .int-card h3 { color: var(--c-yellow); margin-bottom: 1rem; font-size: 1.5rem; }
         .int-card i { font-size: 3rem; color: var(--c-red); margin-bottom: 1rem; }
 
-        /* FOOTER */
+        /* === YILAN LIFE SECTION === */
+        #section-yilan { margin-bottom: 3rem; }
+        .yilan-block {
+            display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap);
+            border: 4px solid var(--c-black); background: var(--c-manila);
+            box-shadow: 8px 8px 0 var(--c-olive); overflow: hidden;
+        }
+        @media (max-width: 900px) { .yilan-block { grid-template-columns: 1fr; } }
+        .yilan-text {
+            padding: 3rem; display: flex; flex-direction: column; justify-content: center;
+        }
+        .yilan-text h3 {
+            font-family: 'Anton'; font-size: 2.5rem; margin-bottom: 1rem;
+            text-transform: uppercase; color: var(--c-olive);
+        }
+        .yilan-text p { color: #555; font-size: 1.05rem; line-height: 1.8; margin-bottom: 1rem; }
+        .yilan-features {
+            display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;
+        }
+        .yilan-tag {
+            font-family: 'Space Mono'; font-size: 0.8rem; font-weight: 700;
+            background: var(--c-olive); color: #fff; padding: 4px 12px;
+        }
+        .yilan-visual {
+            position: relative; min-height: 300px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--c-olive); padding: 2rem;
+        }
+        .yilan-visual .location-marker {
+            text-align: center; color: #fff;
+        }
+        .yilan-visual .location-marker i { font-size: 5rem; color: var(--c-yellow); margin-bottom: 1rem; }
+        .yilan-visual .location-marker h4 {
+            font-family: 'Anton'; font-size: 2rem; color: #fff;
+        }
+        .yilan-visual .location-marker p {
+            font-family: 'Space Mono'; font-size: 0.85rem; color: rgba(255,255,255,0.7);
+            margin-top: 0.5rem;
+        }
+
+        /* === FOOTER === */
         .footer-block {
             border: 4px solid var(--c-black); background: var(--c-yellow);
             padding: 4rem 2rem; text-align: center; box-shadow: 12px 12px 0 var(--c-black);
+            position: relative; overflow: hidden;
         }
-        .social-links { display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; }
+        .footer-block::before {
+            content: 'RECRUIT ME'; position: absolute;
+            font-family: 'Anton'; font-size: 8rem; color: rgba(0,0,0,0.04);
+            bottom: -1rem; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none;
+        }
+        .social-links { display: flex; gap: 1.5rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap; }
         .s-btn {
             width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;
             background: #fff; border: 3px solid var(--c-black); font-size: 1.5rem; color: var(--c-black);
@@ -162,24 +546,106 @@
         }
         .s-btn:hover { background: var(--c-red); color: #fff; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--c-black); }
 
-        /* DECO STAMPS */
         .stamp {
             position: absolute; border: 3px solid var(--c-red); color: var(--c-red);
             font-family: 'Anton'; font-size: 1.5rem; padding: 0.2rem 1rem;
             transform: rotate(-15deg); opacity: 0.8; pointer-events: none;
         }
 
+        .section-header {
+            display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .section-header h2 { font-size: 3rem; border-bottom: 6px solid var(--c-black); }
+        .section-header .file-no {
+            font-family: 'Courier Prime', monospace; font-size: 0.8rem; color: var(--c-olive); opacity: 0.6;
+        }
+
+        /* Wave divider */
+        .wave-divider {
+            width: 100%; height: 40px; position: relative; margin: 2rem 0;
+            overflow: hidden;
+        }
+        .wave-divider svg { width: 100%; height: 100%; }
+
+        /* === MOBILE RWD === */
+        @media (max-width: 768px) {
+            .hero-text-col { padding: 1.5rem; }
+            .hero-title { font-size: clamp(2rem, 10vw, 3rem); }
+            .panel { padding: 1.5rem; }
+            .panel-header { font-size: 1.5rem; }
+            .section-header h2 { font-size: 2rem; }
+            .comm-card { padding: 1.5rem; }
+            .comm-card .signal-icon { font-size: 2rem; }
+            .quote-card { padding: 1.5rem; }
+            .product-card { padding: 1.2rem; }
+            .yilan-text { padding: 1.5rem; }
+            .yilan-text h3 { font-size: 1.8rem; }
+            .footer-block { padding: 2.5rem 1.5rem; }
+            .footer-block h2 { font-size: 2.5rem; }
+            .s-btn { width: 48px; height: 48px; font-size: 1.2rem; }
+            .int-card { padding: 1.5rem; }
+            .int-card h3 { font-size: 1.2rem; }
+            .int-card i { font-size: 2rem; }
+            .intro-stamp { font-size: 1.2rem; top: 10%; right: 5%; }
+        }
+        @media (max-width: 500px) {
+            .hero-text-col { padding: 1rem; }
+            .panel { padding: 1rem; }
+            .section-header { flex-direction: column; gap: 0.25rem; }
+            .section-header h2 { font-size: 1.6rem; }
+            .comm-card { padding: 1.2rem; }
+            .field-grid { grid-template-columns: 1fr; }
+            .yilan-text { padding: 1rem; }
+            .footer-block h2 { font-size: 2rem; }
+            .intro-photo-frame { width: 150px; height: 150px; }
+        }
+        @media (hover: none) and (pointer: coarse) {
+            body { cursor: auto; }
+            #custom-cursor { display: none; }
+        }
     </style>
 </head>
-<body>
+<body class="intro-active">
+
+    <div id="scroll-progress"></div>
+    <div id="custom-cursor"><div class="reticle-ring"></div></div>
+    <div id="click-ripples"></div>
+
+    <!-- INTRO OVERLAY -->
+    <div id="intro-overlay">
+        <div class="intro-corner tl"></div>
+        <div class="intro-corner tr"></div>
+        <div class="intro-corner bl"></div>
+        <div class="intro-corner br"></div>
+        <div class="intro-file-label">DOSSIER #LY-0921</div>
+        <div class="intro-stamp">CLASSIFIED</div>
+
+        <div class="intro-photo-frame" id="intro-photo-frame">
+            <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu">
+        </div>
+
+        <div class="intro-title-block">
+            <h2>LO YU<br><span class="intro-red">羅玉</span></h2>
+            <div class="intro-subtitle">TACTICAL RECRUITER / 溝通師</div>
+            <div class="intro-tags-row">
+                <span>RECRUITER</span>
+                <span>CRAFTER</span>
+                <span>ANALYST</span>
+            </div>
+        </div>
+
+        <div class="intro-hint">[ CLICK ANYWHERE TO ACCESS FILE ]</div>
+    </div>
 
     <div class="noise-bg"></div>
+    <div class="classified-watermark">CLASSIFIED</div>
     <div id="physics-canvas"></div>
 
     <div class="container">
 
-        <!-- 1. HERO -->
+        <!-- HERO -->
         <div class="hero-block">
+            <div class="file-tab">DOSSIER #LY-0921</div>
             <div class="hero-img-col">
                 <img src="/assets/img/guild/loyu/avatar.webp" alt="Lo Yu" class="hero-img">
                 <div class="stamp" style="top: 20px; right: 20px;">VERIFIED</div>
@@ -190,34 +656,40 @@
                     <span class="htag">INTJ</span>
                     <span class="htag">CAPRICORN</span>
                     <span class="htag">MOM OF 2</span>
+                    <span class="htag">RECRUITER</span>
+                    <span class="htag">CRAFTER</span>
                 </div>
                 <p style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem;">
-                    專注於<span class="text-hl">人際關係</span>的行銷策劃師與手工鉤織老師。
+                    我把<span class="text-hl">人際溝通</span>當專業、把<span class="text-hl">鉤針編織</span>當志業，是個閒不下來的斜槓工作者。
                 </p>
                 <p style="color: #444;">
-                    曾經擔任國軍人才招募專員與知識平台處長。現為牛津能力分析師，擅長處理人際問題與跨世代溝通。用邏輯解構社交距離，用手作編織生活溫度。
+                    從國軍招募專員到知識平台處長，再到牛津能力分析師與線上課程講師——我的每一段職涯都圍繞著同一件事：理解人。工作之餘，我是「玉子手作」品牌的主理人，用一針一線把理性分析師的另一面編織成作品。
+                </p>
+                <p class="h-courier" style="font-size: 0.8rem; color: var(--c-olive); margin-top: 1rem; opacity: 0.7;">
+                    // 日文的雞蛋寫作「玉子」，所以大家都叫我阿玉仔 //
                 </p>
             </div>
         </div>
 
-        <!-- 2. THE STRATEGIST -->
+        <div class="section-divider">SEC.01 // CAPABILITY ASSESSMENT</div>
+
+        <!-- STRATEGIST -->
         <div class="strat-block">
-            <div class="panel" style="box-shadow: 8px 8px 0 var(--c-red);">
+            <div class="panel" style="box-shadow: 8px 8px 0 var(--c-red); position: relative;">
+                <div class="clip-deco"></div>
                 <div class="panel-header h-anton">
                     <span>01. THE STRATEGIST</span>
                     <i class="fa-solid fa-chess-knight" style="color: var(--c-red);"></i>
                 </div>
-                <h3 style="margin-bottom: 1rem; font-weight: 900;">社交恐懼的破冰專家</h3>
-                <p style="margin-bottom: 1.5rem;">透過線上課程教授如何運用自身優勢、學習說話技巧，與陌生人建立良好連結，並保持舒適的社交距離。</p>
-
+                <h3 style="margin-bottom: 1rem; font-weight: 900;">我能讓大部分的人在三分鐘內卸下防備</h3>
+                <p style="margin-bottom: 1.5rem;">多年招募與行銷經驗，讓我發展出一套系統化的人際溝通方法。目前我在「就去學 JoyToKnow」平台開設線上課程，專門幫那些不知道怎麼跟陌生人開口的人找到突破口。</p>
                 <ul class="bullet-list">
-                    <li><strong>全齡溝通：</strong> 專精於處理不同年齡層之間的溝通斷層。</li>
-                    <li><strong>職場應用：</strong> 將人際溝通技巧精準投入職場，提升團隊合作與個人好感度。</li>
-                    <li><strong>魔法話語：</strong> 掌握能快速拉近距離的「10句魔法話語」。</li>
-                    <li><strong>模仿共鳴：</strong> 運用簡單的動作與情緒帶入，找到頻率相同的共鳴。</li>
+                    <li><strong>跨世代溝通：</strong> 不管對象是學生還是企業主管，我都能找到合適的切入方式。</li>
+                    <li><strong>牛津能力分析：</strong> 我持有 Oxford Proficiency Analyst 認證，用科學方法幫人找到自身優勢。</li>
+                    <li><strong>實戰導向：</strong> 我的方法都來自真實場景——招募面談、團隊管理、客戶經營。</li>
+                    <li><strong>內向者友善：</strong> 身為 INTJ，我深知社交對內向者的消耗，所以格外重視「保持舒適距離」。</li>
                 </ul>
             </div>
-
             <div class="panel" style="background: var(--c-yellow);">
                 <div class="panel-header h-anton" style="border-bottom-color: var(--c-red);">DATA CORE</div>
                 <p style="font-family: 'Space Mono'; font-size: 0.9rem; margin-bottom: 2rem;">
@@ -225,72 +697,290 @@
                     > MATCH FOUND: OXFORD ANALYST<br>
                     > STATUS: OPTIMAL
                 </p>
-
-                <div style="margin-bottom: 1rem;">
-                    <div style="display:flex; justify-content:space-between; font-weight:900;"><span>EMPATHY</span><span>95%</span></div>
-                    <div style="height:12px; border:2px solid #000; background:#fff;"><div style="width:95%; height:100%; background:var(--c-red);"></div></div>
+                <div class="stat-bar">
+                    <div class="stat-bar-label"><span>EMPATHY</span><span>95%</span></div>
+                    <div class="stat-bar-track"><div class="stat-bar-fill" style="--fill-width: 95%; background: var(--c-red);"></div></div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <div style="display:flex; justify-content:space-between; font-weight:900;"><span>LOGIC (INTJ)</span><span>100%</span></div>
-                    <div style="height:12px; border:2px solid #000; background:#fff;"><div style="width:100%; height:100%; background:var(--c-navy);"></div></div>
+                <div class="stat-bar">
+                    <div class="stat-bar-label"><span>LOGIC (INTJ)</span><span>100%</span></div>
+                    <div class="stat-bar-track"><div class="stat-bar-fill" style="--fill-width: 100%; background: var(--c-navy);"></div></div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <div style="display:flex; justify-content:space-between; font-weight:900;"><span>MARKETING</span><span>92%</span></div>
-                    <div style="height:12px; border:2px solid #000; background:#fff;"><div style="width:92%; height:100%; background:var(--c-black);"></div></div>
+                <div class="stat-bar">
+                    <div class="stat-bar-label"><span>MARKETING</span><span>92%</span></div>
+                    <div class="stat-bar-track"><div class="stat-bar-fill" style="--fill-width: 92%; background: var(--c-black);"></div></div>
+                </div>
+                <div class="stat-bar">
+                    <div class="stat-bar-label"><span>RECRUITING</span><span>98%</span></div>
+                    <div class="stat-bar-track"><div class="stat-bar-fill" style="--fill-width: 98%; background: var(--c-olive);"></div></div>
                 </div>
             </div>
         </div>
 
-        <!-- 3. THE WEAVER & PHILOSOPHY -->
+        <div class="section-divider">SEC.02 // PERSONAL DOSSIER</div>
+
+        <!-- WEAVER -->
         <div class="weaver-block">
             <div class="img-card">
-                <img src="/assets/img/guild/loyu/gallery_01.webp" alt="Crochet Art">
-                <div class="img-caption">#Handmade With Love</div>
+                <img src="/assets/img/guild/loyu/gallery_02.webp" alt="Lo Yu" loading="lazy">
+                <div class="img-caption">#THE_WEAVER</div>
             </div>
             <div class="panel" style="background: var(--c-black); color: var(--c-white);">
                 <div class="panel-header h-anton" style="border-bottom-color: var(--c-white); color: var(--c-yellow);">
                     <span>02. THE WEAVER</span>
                     <i class="fa-solid fa-mitten"></i>
                 </div>
-                <h3 style="color: var(--c-red); margin-bottom: 1rem; font-size: 1.8rem;">「吃蛋的時候，覺得人生真美好！」</h3>
+                <h3 style="color: var(--c-red); margin-bottom: 1rem; font-size: 1.8rem;">理性分析師的另一面，是用雙手編織溫度的人</h3>
                 <p style="font-size: 1.1rem; color: #ccc; margin-bottom: 1.5rem;">
-                    日文的雞蛋寫作「玉子」，正好我的名字之中有「玉」這個字，我也經常被叫阿玉仔。
+                    朋友都叫我「阿玉仔」——日文裡雞蛋寫作「玉子」，恰好跟我名字裡的「玉」字相呼應，後來也成了我手作品牌的靈感來源。
                 </p>
                 <p style="font-size: 1.1rem; color: #ccc;">
-                    在理性的分析之外，我是一名手工鉤織老師。我希望透過我的手作，能為人們帶來簡單的幸福。期望朋友們在收到作品時，能夠會心一笑。
+                    脫下職場的理性外衣，我是一位手工鉤織老師。對我來說，每一件作品都不只是物件，而是一份量身訂做的心意——我希望收到的人會心一笑，覺得「阿玉真的懂我」。
                 </p>
                 <div class="stamp" style="bottom: 20px; right: 20px; border-color: var(--c-yellow); color: var(--c-yellow);">HAPPINESS</div>
             </div>
         </div>
 
-        <!-- 4. GALLERY WALL -->
-        <h2 class="h-anton" style="font-size: 3rem; margin-bottom: 1rem; border-bottom: 6px solid var(--c-black);">PROJECT_ARCHIVE</h2>
-        <div class="gallery-wall">
-            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_02.webp"><div class="img-caption">FILE_002</div></div>
-            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_03.webp"><div class="img-caption">FILE_003</div></div>
-            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_04.webp"><div class="img-caption">FILE_004</div></div>
-            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_05.webp"><div class="img-caption">FILE_005</div></div>
-            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_06.webp"><div class="img-caption">FILE_006</div></div>
-            <div class="img-card"><img src="/assets/img/guild/loyu/gallery_07.webp"><div class="img-caption">FILE_007</div></div>
+        <!-- Wave divider -->
+        <div class="wave-divider">
+            <svg viewBox="0 0 1200 40" preserveAspectRatio="none">
+                <path d="M0,20 Q150,0 300,20 T600,20 T900,20 T1200,20" stroke="#2F3542" stroke-width="2" fill="none" opacity="0.3"/>
+                <path d="M0,25 Q150,5 300,25 T600,25 T900,25 T1200,25" stroke="#F94144" stroke-width="1" fill="none" opacity="0.2"/>
+            </svg>
         </div>
 
-        <!-- 5. INTERESTS -->
-        <h2 class="h-anton" style="font-size: 3rem; margin-bottom: 1rem;">PERSONAL_LOGS</h2>
+        <div class="section-divider">SEC.03 // ARTISAN WORKSHOP</div>
+
+        <!-- ARTISAN — 玉子手作 -->
+        <div id="section-artisan">
+            <div class="section-header">
+                <h2 class="h-anton">ARTISAN_WORKSHOP</h2>
+                <span class="file-no">BRAND: 玉子手作</span>
+            </div>
+            <div class="panel" style="box-shadow: 8px 8px 0 var(--c-purple); margin-bottom: var(--grid-gap);">
+                <div class="panel-header h-anton" style="border-bottom-color: var(--c-purple);">
+                    <span>玉子手作</span>
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--c-purple);"></i>
+                </div>
+                <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+                    「玉子手作」是我的個人手作品牌，專注於鉤針編織。作品以馬海毛為主要材質，從披肩、圍巾到玩偶，每一件我都講究細節與觸感。我不怕挑戰高難度花樣，也樂於接受客製化訂單——為每位收件人打造獨一無二的作品，是我最有成就感的事。
+                </p>
+                <div style="font-family: 'Space Mono'; font-size: 0.8rem; color: var(--c-olive);">
+                    > MATERIAL: MOHAIR (馬海毛) &nbsp;|&nbsp; STYLE: 鉤針編織 &nbsp;|&nbsp; ORDER: 接受客製
+                </div>
+            </div>
+            <div class="artisan-showcase">
+                <div class="product-card">
+                    <img src="/assets/img/guild/loyu/gallery_01.webp" alt="海洋漸層披肩" class="prod-img" loading="lazy">
+                    <h3>海洋漸層披肩</h3>
+                    <p>藍綠漸層蕾絲花樣 / 馬海毛材質</p>
+                    <div class="prod-price">NT$2,000</div>
+                </div>
+                <div class="product-card">
+                    <img src="/assets/img/guild/loyu/gallery_07.webp" alt="灰色蕾絲披肩" class="prod-img" loading="lazy">
+                    <h3>灰色蕾絲披肩</h3>
+                    <p>經典灰色 / 窗花紋路 / 柔軟質感</p>
+                    <div class="prod-price">NT$2,000</div>
+                </div>
+                <div class="product-card">
+                    <img src="/assets/img/guild/loyu/gallery_06.webp" alt="繽紛花樣蓋毯" class="prod-img" loading="lazy">
+                    <h3>繽紛花樣蓋毯</h3>
+                    <p>紫粉藍配色 / 多層花紋 / 溫暖厚實</p>
+                    <div class="prod-price">私訊詢價</div>
+                </div>
+                <div class="product-card">
+                    <img src="/assets/img/guild/loyu/gallery_04.webp" alt="寶寶瑪莉珍鞋" class="prod-img" loading="lazy">
+                    <h3>寶寶瑪莉珍鞋</h3>
+                    <p>粉紅配色 / 紅色蝴蝶結 / 珍珠扣飾</p>
+                    <div class="prod-price">私訊詢價</div>
+                </div>
+                <div class="product-card">
+                    <img src="/assets/img/guild/loyu/gallery_05.webp" alt="紫色章魚玩偶" class="prod-img" loading="lazy">
+                    <h3>紫色章魚玩偶</h3>
+                    <p>手掌大小 / Amigurumi 鉤針玩偶</p>
+                    <div class="prod-price">私訊詢價</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider">SEC.04 // MISSION HISTORY</div>
+
+        <!-- MISSION BRIEFING -->
+        <div id="section-mission">
+            <div class="section-header">
+                <h2 class="h-anton">MISSION_BRIEFING</h2>
+                <span class="file-no">FILE: CAREER-LOG.DAT</span>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-year">// PHASE 01</div>
+                    <div class="timeline-title">國軍人才招募中心 — 招募專員</div>
+                    <div class="timeline-desc">負責策略性人才招募，接觸各種背景的對象，在實戰中磨練出敏銳的溝通與說服能力，奠定了我日後人際專業的基礎。</div>
+                    <span class="timeline-tag">RECRUITMENT</span>
+                    <span class="timeline-tag">FIELDWORK</span>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">// PHASE 02</div>
+                    <div class="timeline-title">就去學 JOY TO KNOW — 處長</div>
+                    <div class="timeline-desc">我統籌團隊營運與內容行銷策略，帶領節目累積近 50 萬下載/收聽量，這段經歷讓我在內容策劃與品牌經營上成長很多。</div>
+                    <span class="timeline-tag">LEADERSHIP</span>
+                    <span class="timeline-tag">CONTENT</span>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">// PHASE 03</div>
+                    <div class="timeline-title">牛津能力分析師 — Oxford Proficiency Analyst</div>
+                    <div class="timeline-desc">取得牛津能力分析師認證，讓我能用科學化的人格分析工具，協助個人與團隊發掘優勢、解決職場與人際課題。</div>
+                    <span class="timeline-tag">CERTIFICATION</span>
+                    <span class="timeline-tag">ANALYSIS</span>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">// PHASE 04</div>
+                    <div class="timeline-title">手工鉤織老師 & 自由接案設計師</div>
+                    <div class="timeline-desc">我以 9 年平面設計經驗接案，同時開設手工鉤織課程，經營「阿水鴿園宜蘭店」。創立「玉子手作」品牌，把手作編織發展為我的另一條專業路線。</div>
+                    <span class="timeline-tag">CRAFT</span>
+                    <span class="timeline-tag">DESIGN</span>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-year">// PHASE 05 — CURRENT</div>
+                    <div class="timeline-title">線上課程講師 — 社恐破冰術</div>
+                    <div class="timeline-desc">我開設了「社交恐懼的破冰專家：與陌生人建立好關係」線上課程，把多年實戰溝通經驗系統化，幫助學員找到自信的社交方式。</div>
+                    <span class="timeline-tag">EDUCATION</span>
+                    <span class="timeline-tag">ACTIVE</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider">SEC.05 // COMMUNICATION INTEL</div>
+
+        <!-- COMM PROTOCOL -->
+        <div id="section-comm">
+            <div class="section-header">
+                <h2 class="h-anton">COMM_PROTOCOL</h2>
+                <span class="file-no">FREQ: 432.0 MHz</span>
+            </div>
+            <div class="comm-grid">
+                <div class="comm-card">
+                    <i class="fa-solid fa-satellite-dish signal-icon"></i>
+                    <h3>Signal Acquisition</h3>
+                    <p>我相信每個陌生人都帶著一段值得聆聽的故事。透過傾聽不同背景的人生經歷，我持續拓展自己的視野，也幫助對方重新認識自己。</p>
+                    <div class="freq-bar"></div>
+                </div>
+                <div class="comm-card">
+                    <i class="fa-solid fa-heart-pulse signal-icon"></i>
+                    <h3>Empathy Engine</h3>
+                    <p>跟我聊過的人常說：「妳好像真的懂我在說什麼。」這不是天賦，而是我在招募、分析、教學現場磨練了很多年的真誠傾聽。</p>
+                    <div class="freq-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider">SEC.06 // SIGNAL INTERCEPTS</div>
+
+        <!-- QUOTE WALL -->
+        <div id="section-quotes">
+            <div class="section-header">
+                <h2 class="h-anton">SIGNAL_INTERCEPTS</h2>
+                <span class="file-no">SOURCE: PERSONAL TRANSMISSIONS</span>
+            </div>
+            <div class="quote-wall">
+                <div class="quote-card">
+                    <blockquote>每個人的生命故事都值得被好好聆聽，因為你永遠不知道，一段對話可以改變什麼。</blockquote>
+                    <div class="quote-source">// on communication</div>
+                </div>
+                <div class="quote-card">
+                    <blockquote>社交恐懼不是缺陷，是你還沒找到適合自己的破冰方式。</blockquote>
+                    <div class="quote-source">// course philosophy</div>
+                </div>
+                <div class="quote-card">
+                    <blockquote>手作的意義不在完美，在於你願意花時間，為某個人做一件獨一無二的事。</blockquote>
+                    <div class="quote-source">// artisan notes</div>
+                </div>
+                <div class="quote-card">
+                    <blockquote>我分析過上千份人格報告，最後發現——理解自己，才是理解別人的起點。</blockquote>
+                    <div class="quote-source">// analyst's reflection</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider">SEC.07 // FIELD DATA</div>
+
+        <!-- FIELD REPORT -->
+        <div id="section-field-report">
+            <div class="section-header">
+                <h2 class="h-anton">FIELD_REPORT</h2>
+                <span class="file-no">DATA VERIFIED</span>
+            </div>
+            <div class="field-grid">
+                <div class="field-stat">
+                    <div class="big-num" data-count="50">0</div>
+                    <div class="stat-label">萬+ Podcast Downloads</div>
+                </div>
+                <div class="field-stat">
+                    <div class="big-num" data-count="9">0</div>
+                    <div class="stat-label">年 Graphic Design</div>
+                </div>
+                <div class="field-stat">
+                    <div class="big-num" data-count="5">0</div>
+                    <div class="stat-label">Career Phases</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider">SEC.08 // LOCATION DATA</div>
+
+        <!-- YILAN LIFE -->
+        <div id="section-yilan">
+            <div class="section-header">
+                <h2 class="h-anton">BASE_CAMP</h2>
+                <span class="file-no">ORIGIN: 宜蘭人</span>
+            </div>
+            <div class="yilan-block">
+                <div class="yilan-text">
+                    <h3>Yuanshan, Yilan</h3>
+                    <p>
+                        我住在宜蘭員山——選擇遠離都市的節奏，換一種更貼近土地的生活方式。
+                    </p>
+                    <p>
+                        工作之餘，我經營「阿水鴿園宜蘭店」，也在自家菜園種菜採收，過著半自給自足的田園生活。假日我常去花蓮的文創市集逛逛，支持在地手作與創作者社群。
+                    </p>
+                    <div class="yilan-features">
+                        <span class="yilan-tag">員山</span>
+                        <span class="yilan-tag">宜蘭</span>
+                        <span class="yilan-tag">田園生活</span>
+                        <span class="yilan-tag">文創市集</span>
+                    </div>
+                </div>
+                <div class="yilan-visual">
+                    <div class="location-marker">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <h4>YILAN</h4>
+                        <p>宜蘭員山人</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider">SEC.09 // PERSONAL INTEL</div>
+
+        <!-- INTERESTS -->
+        <div class="section-header">
+            <h2 class="h-anton">PERSONAL_LOGS</h2>
+            <span class="file-no">CLASSIFIED: PERSONAL</span>
+        </div>
         <div class="interests-block">
-            <div class="int-card">
-                <i class="fa-solid fa-ship"></i>
-                <h3 class="h-anton">ANIME & MANGA</h3>
-                <p>超級喜歡《海賊王》！(🤣) 也熱愛各種動畫作品，跟著主角們一起冒險是舒壓的最佳方式。</p>
+            <div class="int-card" style="background: var(--c-manila); color: var(--c-black);">
+                <i class="fa-solid fa-book-open" style="color: var(--c-olive);"></i>
+                <h3 class="h-anton" style="color: var(--c-olive);">NOVELS</h3>
+                <p>武俠小說是我的心頭好，言情小說為輔。閱讀是我切換模式的方式——從理性分析回到純粹的故事享受。</p>
+            </div>
+            <div class="int-card" style="background: var(--c-black);">
+                <i class="fa-solid fa-moon" style="color: var(--c-white);"></i>
+                <h3 class="h-anton" style="color: var(--c-white);">BLACK AESTHETIC</h3>
+                <p>我偏好黑色系穿搭，低調沉穩——很符合我 INTJ 的個性，不張揚但有存在感。</p>
             </div>
             <div class="int-card" style="background: var(--c-red);">
-                <i class="fa-solid fa-tv" style="color: var(--c-yellow);"></i>
-                <h3 class="h-anton" style="color: #fff;">K-DRAMAS</h3>
-                <p>韓劇愛好者。在緊湊的行銷與教學行程後，沉浸在精彩的劇情中找尋生活靈感。</p>
-            </div>
-            <div class="int-card" style="background: #fff; color: var(--c-black);">
-                <i class="fa-solid fa-paw" style="color: var(--c-yellow); -webkit-text-stroke: 2px #000;"></i>
-                <h3 class="h-anton" style="color: var(--c-black);">WINNIE THE POOH</h3>
-                <p>最喜歡小熊維尼！瘋狂到「有整個房間都是我的收藏」的程度。維尼的溫暖與純粹就是我的避風港。</p>
+                <i class="fa-solid fa-pen-fancy" style="color: var(--c-yellow);"></i>
+                <h3 class="h-anton" style="color: #fff;">ROMANTIC WRITING</h3>
+                <p>私底下我是個浪漫派，喜歡校園戀愛故事，也會在社群上寫下對生活與情感的細膩觀察。</p>
             </div>
         </div>
 
@@ -298,115 +988,266 @@
         <div class="footer-block">
             <h2 class="h-anton" style="font-size: 4rem; margin-bottom: 0.5rem; line-height: 1;">LET'S CONNECT</h2>
             <p style="font-weight: 700; font-size: 1.2rem;">建立連結 // 保持舒適距離</p>
+            <p class="h-courier" style="font-size: 0.85rem; color: rgba(0,0,0,0.5); margin-top: 0.5rem;">TRANSMISSION FREQUENCY: OPEN</p>
             <div class="social-links">
-                <a href="https://www.threads.com/@loyu1230" target="_blank" rel="noopener noreferrer" class="s-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/loyu1230/" target="_blank" rel="noopener noreferrer" class="s-btn"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" rel="noopener noreferrer" class="s-btn"><i class="fa-solid fa-globe"></i></a>
+                <a href="https://www.threads.com/@loyu1230" target="_blank" rel="noopener noreferrer" class="s-btn" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/loyu1230/" target="_blank" rel="noopener noreferrer" class="s-btn" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.instagram.com/xiyi2030/" target="_blank" rel="noopener noreferrer" class="s-btn" title="玉子手作 IG (xiyi2030)"><i class="fa-solid fa-scissors"></i></a>
+                <a href="https://joytoknow.com/lecturer-yulo/" target="_blank" rel="noopener noreferrer" class="s-btn" title="JoyToKnow"><i class="fa-solid fa-graduation-cap"></i></a>
             </div>
         </div>
 
     </div>
 
     <!-- SCRIPTS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
     <script>
+    (function() {
+        'use strict';
+
         gsap.registerPlugin(ScrollTrigger);
 
-        // === SUBTLE PHYSICS BACKGROUND (Not overwhelming) ===
-        function initPhysics() {
-            const Engine = Matter.Engine,
-                  Render = Matter.Render,
-                  Runner = Matter.Runner,
-                  Bodies = Matter.Bodies,
-                  Composite = Matter.Composite,
-                  Common = Matter.Common,
-                  Events = Matter.Events;
+        // =========================================
+        // SHARED MOUSE STATE (single listener)
+        // =========================================
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; }, { passive: true });
 
-            const engine = Engine.create();
-            // Slow down gravity slightly for a floaty feel
-            engine.gravity.y = 0.5;
+        // =========================================
+        // VANILLA CANVAS — Neural Network Particles
+        // =========================================
+        function initParticleBackground() {
+            const container = document.getElementById('physics-canvas');
+            const canvas = document.createElement('canvas');
+            canvas.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:0;opacity:0.12;';
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
 
-            const canvas = document.getElementById('physics-canvas');
-            let width = window.innerWidth;
-            let height = window.innerHeight;
+            let w, h, particles = [], animId = 0;
+            const NUM = 45, DIST = 150, DIST_SQ = DIST * DIST;
+            const MOUSE_DIST = DIST * 1.5, MOUSE_DIST_SQ = MOUSE_DIST * MOUSE_DIST;
+            const COLORS = ['#FFD500', '#F94144', '#2F3542', '#4A5340'];
 
-            const render = Render.create({
-                element: canvas,
-                engine: engine,
-                options: {
-                    width: width, height: height,
-                    background: 'transparent', wireframes: false,
-                    pixelRatio: window.devicePixelRatio
-                }
-            });
+            function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+            resize();
+            window.addEventListener('resize', resize, { passive: true });
 
-            // Spawn smaller, fewer objects so it's a background detail
-            const spawnObject = () => {
-                if(document.visibilityState !== 'visible') return; // Don't spawn if tab hidden
-
-                const size = Common.random(10, 25);
-                const x = Common.random(0, width);
-
-                // Colors match theme
-                const colors = ['#FFD500', '#F94144', '#2F3542', '#FFFFFF'];
-                const color = Common.choose(colors);
-
-                const body = Math.random() > 0.5
-                    ? Bodies.circle(x, -50, size, { render: { fillStyle: color, strokeStyle: '#000', lineWidth: 2 }, restitution: 0.8, frictionAir: 0.05 })
-                    : Bodies.polygon(x, -50, 6, size, { angle: Math.random() * Math.PI, render: { fillStyle: color, strokeStyle: '#000', lineWidth: 2 }, restitution: 0.6, frictionAir: 0.05 });
-
-                Composite.add(engine.world, body);
-            };
-
-            // Spawn loop
-            setInterval(spawnObject, 2000);
-
-            // Cleanup offscreen
-            Events.on(engine, 'beforeUpdate', () => {
-                const bodies = Composite.allBodies(engine.world);
-                bodies.forEach(body => {
-                    if (body.position.y > height + 100) {
-                        Composite.remove(engine.world, body);
-                    }
+            for (let i = 0; i < NUM; i++) {
+                particles.push({
+                    x: Math.random() * w, y: Math.random() * h,
+                    vx: (Math.random() - 0.5), vy: (Math.random() - 0.5),
+                    size: 3 + Math.random() * 5, color: COLORS[i % 4]
                 });
-            });
+            }
 
-            Render.run(render);
-            Runner.run(Runner.create(), engine);
+            function frame() {
+                animId = requestAnimationFrame(frame);
+                ctx.clearRect(0, 0, w, h);
 
-            window.addEventListener('resize', () => {
-                width = window.innerWidth; height = window.innerHeight;
-                render.canvas.width = width; render.canvas.height = height;
+                for (let i = 0; i < particles.length; i++) {
+                    const a = particles[i];
+                    const dmx = a.x - mouseX, dmy = a.y - mouseY;
+                    const dm2 = dmx * dmx + dmy * dmy;
+                    if (dm2 < 14400) { const inv = 0.05 / Math.sqrt(dm2 || 1); a.vx += dmx * inv; a.vy += dmy * inv; }
+                    a.x += a.vx; a.y += a.vy; a.vx *= 0.99; a.vy *= 0.99;
+                    if (a.x < 0) a.x = w; if (a.x > w) a.x = 0;
+                    if (a.y < 0) a.y = h; if (a.y > h) a.y = 0;
+
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const b = particles[j], dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
+                        if (d2 < DIST_SQ) {
+                            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+                            ctx.strokeStyle = 'rgba(47,53,66,' + ((1 - Math.sqrt(d2) / DIST) * 0.4) + ')';
+                            ctx.stroke();
+                        }
+                    }
+
+                    if (dm2 < MOUSE_DIST_SQ) {
+                        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(mouseX, mouseY);
+                        ctx.strokeStyle = 'rgba(249,65,68,' + ((1 - Math.sqrt(dm2) / MOUSE_DIST) * 0.6) + ')';
+                        ctx.stroke();
+                    }
+
+                    ctx.beginPath(); ctx.arc(a.x, a.y, a.size / 2, 0, 6.28);
+                    ctx.fillStyle = a.color; ctx.fill();
+                }
+            }
+            frame();
+
+            // Pause canvas when tab is hidden
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    cancelAnimationFrame(animId);
+                } else {
+                    frame();
+                }
             });
         }
 
-        window.addEventListener('load', initPhysics);
+        // =========================================
+        // INTRO OVERLAY
+        // =========================================
+        const introOverlay = document.getElementById('intro-overlay');
+        introOverlay.addEventListener('click', () => {
+            introOverlay.classList.add('dismissed');
+            document.body.classList.remove('intro-active');
+            setTimeout(() => {
+                document.querySelectorAll('.stat-bar-fill').forEach(bar => bar.classList.add('animated'));
+            }, 300);
+        });
 
-        // === GSAP ANIMATIONS ===
-        // Simple fade ups for blocks
-        gsap.utils.toArray('.strat-block, .weaver-block, .interests-block, .footer-block').forEach(block => {
+        // =========================================
+        // CUSTOM CURSOR
+        // =========================================
+        const cursor = document.getElementById('custom-cursor');
+        let currentX = 0, currentY = 0;
+
+        function animateCursor() {
+            currentX += (mouseX - currentX) * 0.15;
+            currentY += (mouseY - currentY) * 0.15;
+            cursor.style.left = currentX + 'px';
+            cursor.style.top = currentY + 'px';
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        document.addEventListener('mouseleave', () => cursor.style.opacity = '0');
+        document.addEventListener('mouseenter', () => cursor.style.opacity = '1');
+
+        // =========================================
+        // CLICK RIPPLES
+        // =========================================
+        const rippleContainer = document.getElementById('click-ripples');
+        document.addEventListener('click', (e) => {
+            for (let i = 0; i < 2; i++) {
+                const ping = document.createElement('div');
+                ping.className = 'click-ping';
+                ping.style.left = e.clientX + 'px';
+                ping.style.top = e.clientY + 'px';
+                rippleContainer.appendChild(ping);
+                setTimeout(() => ping.remove(), 1000);
+            }
+        });
+
+        // =========================================
+        // SCROLL PROGRESS
+        // =========================================
+        const scrollProgress = document.getElementById('scroll-progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            scrollProgress.style.width = (docHeight > 0 ? (scrollTop / docHeight) * 100 : 0) + '%';
+        }, { passive: true });
+
+        // =========================================
+        // GSAP SCROLL ANIMATIONS
+        // =========================================
+
+        // Hero block entrance
+        gsap.from('.hero-block', {
+            y: 60, opacity: 0, duration: 1, ease: "power3.out", delay: 0.2
+        });
+
+        // Fade up blocks (once — won't disappear on scroll back)
+        gsap.utils.toArray('.strat-block, .weaver-block, .interests-block, .footer-block, #section-comm, #section-field-report, #section-quotes, #section-artisan, #section-yilan').forEach(block => {
             gsap.from(block, {
-                scrollTrigger: {
-                    trigger: block,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
-                },
-                y: 40, opacity: 0, duration: 0.8, ease: "power2.out"
+                scrollTrigger: { trigger: block, start: "top 85%", once: true },
+                y: 50, opacity: 0, duration: 0.8, ease: "power2.out"
             });
         });
 
-        // Stagger gallery items
-        gsap.from('.gallery-wall .img-card', {
-            scrollTrigger: {
-                trigger: '.gallery-wall',
-                start: "top 80%"
-            },
-            y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: "back.out(1.2)"
+        // Timeline items
+        gsap.utils.toArray('.timeline-item').forEach(item => {
+            ScrollTrigger.create({
+                trigger: item, start: "top 85%", once: true,
+                onEnter: () => item.classList.add('visible')
+            });
         });
 
+        // Comm cards stagger
+        gsap.from('.comm-card', {
+            scrollTrigger: { trigger: '.comm-grid', start: "top 80%", once: true },
+            y: 50, opacity: 0, duration: 0.6, stagger: 0.15, ease: "power3.out"
+        });
+
+        // Quote cards stagger
+        gsap.from('.quote-card', {
+            scrollTrigger: { trigger: '.quote-wall', start: "top 80%", once: true },
+            y: 40, opacity: 0, duration: 0.6, stagger: 0.12, ease: "power2.out"
+        });
+
+        // Product cards stagger
+        gsap.from('.product-card', {
+            scrollTrigger: { trigger: '.artisan-showcase', start: "top 80%", once: true },
+            y: 30, opacity: 0, scale: 0.95, duration: 0.5, stagger: 0.1, ease: "back.out(1.4)"
+        });
+
+        // Field stats with counter animation
+        const fieldStatTl = gsap.timeline({
+            scrollTrigger: { trigger: '.field-grid', start: "top 80%", once: true }
+        });
+        fieldStatTl.from('.field-stat', {
+            y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: "back.out(1.4)"
+        });
+
+        // Number counter animation
+        document.querySelectorAll('.big-num[data-count]').forEach(el => {
+            const target = parseInt(el.dataset.count);
+            gsap.to({ val: 0 }, {
+                val: target,
+                duration: 2,
+                ease: "power2.out",
+                scrollTrigger: { trigger: el, start: "top 85%", once: true },
+                onUpdate: function() { el.textContent = Math.round(this.targets()[0].val); }
+            });
+        });
+
+        // Interest cards
+        gsap.from('.int-card', {
+            scrollTrigger: { trigger: '.interests-block', start: "top 80%", once: true },
+            y: 40, opacity: 0, scale: 0.95, duration: 0.5, stagger: 0.15, ease: "power2.out"
+        });
+
+        // Section dividers
+        gsap.utils.toArray('.section-divider').forEach(div => {
+            gsap.from(div, {
+                scrollTrigger: { trigger: div, start: "top 90%", once: true },
+                opacity: 0, scaleX: 0.3, duration: 0.6, ease: "power2.out"
+            });
+        });
+
+        // Parallax watermark
+        gsap.to('.classified-watermark', {
+            scrollTrigger: { trigger: document.body, start: "top top", end: "bottom bottom", scrub: 1 },
+            y: -200, ease: "none"
+        });
+
+        // Wave divider draw animation
+        gsap.utils.toArray('.wave-divider path').forEach(path => {
+            const length = path.getTotalLength();
+            gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
+            gsap.to(path, {
+                scrollTrigger: { trigger: path, start: "top 90%", once: true },
+                strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut"
+            });
+        });
+
+        // Yilan block
+        gsap.from('.yilan-block', {
+            scrollTrigger: { trigger: '.yilan-block', start: "top 80%" },
+            y: 60, opacity: 0, duration: 1, ease: "power3.out"
+        });
+
+        // =========================================
+        // INITIALIZATION
+        // =========================================
+        window.addEventListener('load', () => {
+            initParticleBackground();
+        });
+
+    })();
     </script>
 </body>
 </html>
