@@ -6,367 +6,1230 @@
     <title>原色⭐︎ふぁんたじー OFFICIAL WEBSITE</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Zen+Maru+Gothic:wght@400;700;900&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
-            --brand-color: #E60033; /* Traditional Japanese Rose/Crimson */
-            --bg-light: #f8f9fa;
-            --text-main: #1a1a1a;
-            --text-muted: #666666;
-            --border-light: #e0e0e0;
+            --pink-primary: #E8829B;
+            --pink-light: #FFE4EC;
+            --pink-group: #FFB7C5;
+            --white: #FFFFFF;
+            --gray-bg: #FAFAFA;
+            --border: #EEEEEE;
+            --text-dark: #1A1A1A;
+            --text-body: #333333;
+            --text-muted: #888888;
+            --dark-bg: #1A1A2E;
+            --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.06);
+            --font-heading: 'Zen Maru Gothic', 'Noto Sans JP', 'Noto Sans TC', sans-serif;
+            --font-body: 'Noto Sans TC', 'Noto Sans JP', sans-serif;
+            --transition-smooth: cubic-bezier(0.23, 1, 0.32, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
-            background-color: var(--bg-light);
-            color: var(--text-main);
-            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--white);
+            color: var(--text-body);
+            font-family: var(--font-body);
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
+            cursor: none;
         }
 
-        /* --- GLOBAL & UTILITY --- */
-        .en-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 3rem;
-            color: var(--brand-color);
-            margin-bottom: 0.5rem;
-            letter-spacing: 0.05em;
-        }
-        .jp-title {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            letter-spacing: 0.2em;
-            margin-bottom: 3rem;
-            text-transform: uppercase;
-        }
-
-        .section-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 6rem 2rem;
-        }
-
-        /* --- HEADER --- */
-        header {
+        /* ==================== ENTRANCE OVERLAY ==================== */
+        #entrance-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-light);
-            z-index: 1000;
-            padding: 1rem 2rem;
+            inset: 0;
+            z-index: 99999;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-        }
-
-        .logo {
-            font-family: 'Playfair Display', serif;
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: var(--text-main);
-            text-decoration: none;
-            letter-spacing: 0.1em;
-        }
-        .logo span { color: var(--brand-color); }
-
-        .nav-links { display: flex; gap: 2rem; }
-        .nav-links a {
-            text-decoration: none;
-            color: var(--text-main);
-            font-size: 0.85rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            transition: color 0.3s;
-        }
-        .nav-links a:hover { color: var(--brand-color); }
-
-        /* --- HERO SLIDER (Simulated) --- */
-        .hero {
-            height: 100vh;
-            position: relative;
+            justify-content: center;
             background: #000;
+            transition: opacity 1.2s var(--transition-smooth), visibility 1.2s;
+            cursor: pointer;
             overflow: hidden;
         }
 
-        #hero-canvas {
-            position: absolute;
-            inset: 0;
-            z-index: 2; /* Particles over image */
+        #entrance-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
             pointer-events: none;
         }
 
-        .hero-image {
+        /* Decorative top/bottom lines */
+        #entrance-overlay::before,
+        #entrance-overlay::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(232, 130, 155, 0.4), transparent);
+        }
+        #entrance-overlay::before { top: 25%; }
+        #entrance-overlay::after { bottom: 25%; }
+
+        .entrance-logo {
+            width: 180px;
+            height: 180px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .entrance-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 50px rgba(232, 130, 155, 0.5));
+            animation: entranceLogoFloat 3s ease-in-out infinite;
+        }
+
+        /* Glowing ring behind logo */
+        .entrance-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 260px;
+            height: 260px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(232, 130, 155, 0.3);
+            animation: entranceRingPulse 2s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        .entrance-ring-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 220px;
+            height: 220px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(232, 130, 155, 0.2);
+            animation: entranceRingPulse 2s ease-in-out infinite 0.4s;
+            z-index: 1;
+        }
+
+        .entrance-group-name {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: var(--pink-group);
+            letter-spacing: 0.15em;
+            margin-top: 2rem;
+            z-index: 2;
+        }
+
+        .entrance-subtitle {
+            font-family: var(--font-heading);
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.45);
+            letter-spacing: 0.5em;
+            margin-top: 0.5rem;
+            z-index: 2;
+        }
+
+        .entrance-text {
+            font-family: var(--font-heading);
+            font-size: 0.7rem;
+            color: var(--pink-group);
+            letter-spacing: 0.6em;
+            margin-top: 3rem;
+            padding: 0.5rem 2.5rem;
+            border: 1px solid rgba(255, 183, 197, 0.4);
+            border-radius: 30px;
+            animation: entranceBlink 2s ease-in-out infinite;
+            z-index: 2;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .entrance-text:hover {
+            background: var(--pink-primary);
+            color: #000;
+            border-color: var(--pink-primary);
+        }
+
+        .entrance-deco {
+            position: absolute;
+            font-size: 0.55rem;
+            color: rgba(255, 183, 197, 0.2);
+            font-family: var(--font-heading);
+            letter-spacing: 0.3em;
+            z-index: 1;
+        }
+        .entrance-deco-top { top: 18%; }
+        .entrance-deco-bottom { bottom: 18%; }
+
+        @keyframes entranceLogoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes entranceRingPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            15% { transform: translate(-50%, -50%) scale(1.12); opacity: 0.8; }
+            30% { transform: translate(-50%, -50%) scale(1.04); opacity: 0.5; }
+            45% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.7; }
+            60% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+        }
+
+        @keyframes entranceBlink {
+            0%, 100% { opacity: 0.9; }
+            40% { opacity: 0.3; }
+            42% { opacity: 0.8; }
+            44% { opacity: 0.2; }
+            80% { opacity: 0.9; }
+        }
+
+        /* ==================== AMBIENT STAGE LIGHTS (p5.js) ==================== */
+        #ambient-container {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        #ambient-container canvas {
+            display: block;
+        }
+
+        /* ==================== ENTRANCE PARTICLES ==================== */
+        .entrance-particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .entrance-particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: riseAndFade 4s ease-out infinite;
+        }
+
+        @keyframes riseAndFade {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            15% { opacity: 1; }
+            100% { transform: translateY(-105vh) scale(0); opacity: 0; }
+        }
+
+        /* ==================== CUSTOM CURSOR ==================== */
+        #custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 99998;
+            transition: transform 0.15s ease-out;
+        }
+
+        #custom-cursor::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--pink-primary);
+            border-radius: 50%;
+            opacity: 0.6;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        #custom-cursor.clicking::before {
+            transform: scale(1.5);
+            opacity: 0;
+        }
+
+        #cursor-trail {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 99997;
+        }
+
+        /* ==================== HEADER ==================== */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 0 2rem;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: box-shadow 0.3s;
+        }
+
+        header.scrolled {
+            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: var(--text-dark);
+        }
+
+        .logo-text {
+            font-family: var(--font-heading);
+            font-weight: 900;
+            font-size: 1rem;
+            color: var(--text-dark);
+            letter-spacing: 0.05em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            padding: 0.4rem 0;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--pink-primary);
+            transition: width 0.3s var(--transition-smooth);
+        }
+
+        .nav-links a:hover,
+        .nav-links a.nav-active { color: var(--pink-primary); }
+        .nav-links a:hover::after,
+        .nav-links a.nav-active::after { width: 100%; }
+
+        /* ==================== HERO SECTION ==================== */
+        .hero {
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-bg {
             position: absolute;
             inset: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.6; /* Darkened for text readability */
+            filter: brightness(0.65);
             transform: scale(1.05);
-            animation: slowZoom 20s linear infinite alternate;
+            will-change: transform;
         }
 
-        @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.1); } }
-
-        .hero-text-box {
+        .hero-gradient {
             position: absolute;
-            bottom: 15%;
-            left: 10%;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%);
+            z-index: 2;
+        }
+
+        .hero-content {
+            position: relative;
             z-index: 3;
-            color: white;
+            text-align: center;
+            padding: 2rem;
         }
 
-        .hero-text-box h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(3rem, 6vw, 5rem);
-            line-height: 1.1;
-            margin-bottom: 1rem;
-            letter-spacing: 0.05em;
+        .hero-title {
+            font-family: var(--font-heading);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 900;
+            color: var(--white);
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+            letter-spacing: 0.15em;
+            margin-bottom: 0.5rem;
         }
 
-        .hero-text-box p {
-            font-size: 1rem;
-            letter-spacing: 0.2em;
-            font-weight: 300;
+        .hero-subtitle {
+            font-family: var(--font-heading);
+            font-size: clamp(0.85rem, 1.8vw, 1.1rem);
+            color: rgba(255,255,255,0.85);
+            letter-spacing: 0.5em;
+            font-weight: 400;
+            text-shadow: 0 1px 8px rgba(0,0,0,0.2);
         }
 
-        /* --- NEWS SECTION --- */
-        .news-section { background: white; }
+        .hero-tagline {
+            margin-top: 2rem;
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.75);
+            letter-spacing: 0.25em;
+            padding: 0.5rem 1.8rem;
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 30px;
+            display: inline-block;
+            backdrop-filter: blur(6px);
+            background: rgba(255,255,255,0.08);
+        }
 
-        .news-list { border-top: 2px solid var(--text-main); list-style: none; }
+        .hero-scroll-hint {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            text-align: center;
+            animation: scrollHint 2s ease-in-out infinite;
+        }
+
+        .hero-scroll-hint span {
+            display: block;
+            font-family: var(--font-heading);
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.6);
+            letter-spacing: 0.3em;
+            margin-bottom: 0.5rem;
+        }
+
+        .scroll-arrow {
+            width: 16px;
+            height: 16px;
+            border-right: 1.5px solid rgba(255,255,255,0.6);
+            border-bottom: 1.5px solid rgba(255,255,255,0.6);
+            transform: rotate(45deg);
+            margin: 0 auto;
+        }
+
+        @keyframes scrollHint {
+            0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+            50% { transform: translateX(-50%) translateY(8px); opacity: 0.4; }
+        }
+
+        /* ==================== SECTION SHARED ==================== */
+        .section-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .section-label {
+            font-family: var(--font-heading);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.4em;
+            color: var(--pink-primary);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+            font-weight: 900;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-line {
+            width: 40px;
+            height: 2px;
+            background: var(--pink-primary);
+            margin: 1rem auto 0;
+        }
+
+        /* ==================== NEWS SECTION ==================== */
+        .news-section {
+            background: var(--white);
+        }
+
+        .news-list {
+            list-style: none;
+        }
 
         .news-item {
             display: flex;
             align-items: center;
-            padding: 1.5rem 0;
-            border-bottom: 1px solid var(--border-light);
-            text-decoration: none;
-            color: var(--text-main);
-            transition: background 0.3s;
+            gap: 1.5rem;
+            padding: 1.2rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-body);
+            border-radius: 6px;
+            transition: background 0.3s, padding-left 0.3s;
         }
-        .news-item:hover { background: var(--bg-light); }
 
-        .news-date { font-family: 'Playfair Display', serif; font-size: 1.1rem; width: 120px; color: var(--text-muted); }
-        .news-category {
-            background: var(--text-main); color: white;
-            font-size: 0.75rem; padding: 0.3rem 0.8rem; margin-right: 1.5rem;
-            letter-spacing: 0.1em;
+        .news-item:hover {
+            padding-left: 1rem;
+            background: var(--pink-light);
+            border-bottom-color: transparent;
         }
-        .news-category.live { background: var(--brand-color); }
-        .news-title { font-weight: 400; font-size: 1.05rem; flex: 1; }
 
-        .btn-more {
-            display: inline-block;
-            margin-top: 2rem;
-            padding: 1rem 3rem;
-            border: 1px solid var(--text-main);
-            color: var(--text-main);
-            text-decoration: none;
+        .news-date {
+            font-family: var(--font-heading);
             font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            transition: all 0.3s;
+            font-weight: 700;
+            color: var(--text-muted);
+            min-width: 100px;
         }
-        .btn-more:hover { background: var(--text-main); color: white; }
 
-        /* --- MEMBER SECTION --- */
-        .member-section { background: var(--bg-light); }
+        .news-badge {
+            font-family: var(--font-heading);
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+        }
+
+        .news-badge.live {
+            background: var(--pink-primary);
+            color: var(--white);
+        }
+
+        .news-badge.cosplay {
+            background: var(--pink-light);
+            color: var(--pink-primary);
+        }
+
+        .news-title {
+            font-size: 0.9rem;
+            font-weight: 400;
+            flex: 1;
+            line-height: 1.6;
+        }
+
+        /* ==================== MEMBER SECTION ==================== */
+        .member-section {
+            background: var(--white);
+        }
 
         .member-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 4rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2.5rem;
         }
 
         .member-card {
-            background: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
+            background: var(--white);
+            border-radius: 4px;
             overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.4s var(--transition-smooth), box-shadow 0.4s;
+            border-top: 4px solid var(--border);
+            position: relative;
+        }
+
+        .member-card.accent-gold { border-top-color: #FFD700; }
+        .member-card.accent-blue { border-top-color: #5BC0DE; }
+
+        .member-card.accent-gold .member-role { background: #FFF8DC; color: #B8860B; }
+        .member-card.accent-blue .member-role { background: #E8F6FB; color: #31849B; }
+
+        .member-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
         }
 
         .member-photo {
             width: 100%;
-            aspect-ratio: 3/4;
+            aspect-ratio: 3 / 4;
             overflow: hidden;
             position: relative;
         }
-        .member-photo img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.7s cubic-bezier(0.165, 0.84, 0.44, 1);
+
+        .member-photo-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 3rem 1.2rem 0.7rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 50%, transparent 100%);
+            color: var(--white);
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            z-index: 2;
+            pointer-events: none;
+            text-shadow: 0 1px 6px rgba(0,0,0,0.4);
         }
-        .member-card:hover .member-photo img { transform: scale(1.05); }
 
-        .member-info { padding: 2rem; }
+        .member-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s var(--transition-smooth);
+        }
 
-        .member-name-jp { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem; }
-        .member-name-en { font-family: 'Playfair Display', serif; color: var(--brand-color); font-size: 1rem; margin-bottom: 1.5rem; letter-spacing: 0.1em; }
+        .member-card:hover .member-photo img {
+            transform: scale(1.03);
+        }
+
+        .member-info {
+            padding: 1.5rem 1.8rem 2rem;
+        }
+
+        .member-name-main {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            margin-bottom: 0.2rem;
+        }
+
+        .member-name-en {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3em;
+            margin-bottom: 1rem;
+        }
+
+        .member-role {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 3px;
+            font-family: var(--font-heading);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            background: var(--pink-light);
+            color: var(--pink-primary);
+        }
 
         .member-desc {
-            font-size: 0.95rem;
-            line-height: 1.8;
+            font-size: 0.88rem;
+            line-height: 1.9;
             color: var(--text-muted);
-            border-top: 1px solid var(--border-light);
-            padding-top: 1.5rem;
         }
 
-        /* --- ABOUT / CONCEPT --- */
-        .about-section {
-            background: var(--text-main);
-            color: white;
-            text-align: center;
+        .member-traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 1rem;
         }
-        .about-section .en-title { color: white; }
-        .about-section .jp-title { color: #999; }
+
+        .trait-tag {
+            font-family: var(--font-heading);
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            background: var(--gray-bg);
+            color: var(--text-muted);
+        }
+
+        /* ==================== CONCEPT SECTION ==================== */
+        .concept-section {
+            background: var(--dark-bg);
+            color: var(--white);
+        }
+
+        .concept-section .section-label { color: var(--pink-group); }
+        .concept-section .section-title { color: var(--white); }
+        .concept-section .section-line { background: var(--pink-group); }
 
         .concept-text {
-            font-size: 1.2rem;
-            line-height: 2.2;
+            font-family: var(--font-heading);
+            font-size: 1.05rem;
+            line-height: 2.4;
             font-weight: 300;
-            max-width: 800px;
+            text-align: center;
+            max-width: 680px;
             margin: 0 auto 3rem;
+            color: rgba(255,255,255,0.8);
         }
 
-        .concept-highlight { color: var(--brand-color); font-weight: 700; }
+        .concept-highlight {
+            color: var(--pink-group);
+            font-weight: 700;
+        }
 
-        .producer-msg {
-            border: 1px solid rgba(255,255,255,0.2);
+        .concept-motto {
+            text-align: center;
             padding: 2rem;
-            display: inline-block;
-            font-size: 0.9rem;
-            color: #ccc;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 4px;
+            max-width: 580px;
+            margin: 0 auto;
         }
 
-        /* --- GALLERY --- */
-        .gallery-section { background: white; }
+        .concept-motto p {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.65);
+            line-height: 2;
+            font-weight: 300;
+        }
 
-        .gallery-masonry {
+        .concept-motto .motto-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.4em;
+            color: var(--pink-group);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        /* ==================== GALLERY SECTION ==================== */
+        .gallery-section {
+            background: var(--gray-bg);
+            padding: 5rem 2rem;
+        }
+
+        .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
+            max-width: 1000px;
+            margin: 0 auto;
         }
 
-        .gallery-item { position: relative; overflow: hidden; }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: 0.5s; filter: grayscale(0.2); }
-        .gallery-item:hover img { filter: grayscale(0); transform: scale(1.05); }
+        .gallery-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.4s var(--transition-smooth), box-shadow 0.4s var(--transition-smooth);
+        }
 
-        /* --- FOOTER --- */
-        footer {
-            background: var(--bg-light);
-            border-top: 1px solid var(--border-light);
-            padding: 4rem 2rem;
+        .gallery-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            aspect-ratio: 4 / 3;
+            display: block;
+            transition: transform 0.6s var(--transition-smooth);
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .gallery-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2rem 0.75rem 0.75rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+            color: white;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .gallery-item:hover .gallery-caption {
+            opacity: 1;
+        }
+
+        /* ==================== RESPONSIVE: GALLERY ==================== */
+        @media (max-width: 768px) {
+            .gallery-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+            .gallery-section { padding: 3rem 1rem; }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ==================== SETLIST SECTION ==================== */
+        .setlist-section {
+            background: var(--gray-bg);
+        }
+
+        .setlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 0.8rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .setlist-card {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            padding: 1rem 1.2rem;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            transition: border-color 0.3s, transform 0.3s var(--transition-smooth), box-shadow 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .setlist-card:hover {
+            border-color: var(--pink-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(232, 130, 155, 0.15);
+        }
+
+        .setlist-card .setlist-play {
+            margin-left: auto;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--pink-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.3s, transform 0.3s;
+        }
+
+        .setlist-card .setlist-play::after {
+            content: '';
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 5px 0 5px 9px;
+            border-color: transparent transparent transparent var(--pink-primary);
+            margin-left: 2px;
+            transition: border-color 0.3s;
+        }
+
+        .setlist-card:hover .setlist-play {
+            background: #FF0000;
+            transform: scale(1.1);
+        }
+
+        .setlist-card:hover .setlist-play::after {
+            border-color: transparent transparent transparent var(--white);
+        }
+
+        .setlist-number {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--pink-primary);
+            line-height: 1;
+            min-width: 40px;
+        }
+
+        .setlist-song {
+            font-family: var(--font-heading);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.15rem;
+        }
+
+        .setlist-artist {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .setlist-tag {
+            display: inline-block;
+            padding: 0.1rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-top: 0.2rem;
+            background: var(--pink-light);
+            color: var(--pink-primary);
+        }
+
+        .setlist-tag.signature {
+            background: var(--pink-primary);
+            color: var(--white);
+        }
+
+        .setlist-video-divider {
+            text-align: center;
+            margin: 3.5rem 0 2rem;
+            padding-top: 2.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .setlist-video-heading {
+            font-family: var(--font-heading);
+            font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+            font-weight: 900;
+            color: var(--text-dark);
+            letter-spacing: 0.08em;
+            margin: 0.5rem 0;
+        }
+
+        /* ==================== VIDEO PLAYLIST ==================== */
+        .video-playlist {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .video-playlist .video-card {
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .video-playlist .video-card iframe {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            display: block;
+            border: none;
+        }
+
+        /* ==================== SOCIAL SECTION ==================== */
+        .social-section {
+            background: var(--pink-light);
             text-align: center;
         }
 
-        .footer-logo {
-            font-family: 'Playfair Display', serif;
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
+        .social-grid {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
         }
 
-        .footer-social { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
-        .footer-social a { color: var(--text-main); text-decoration: none; font-size: 0.9rem; letter-spacing: 0.1em; transition: 0.3s; border-bottom: 1px solid transparent; }
-        .footer-social a:hover { color: var(--brand-color); border-color: var(--brand-color); }
+        .social-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 1.8rem 2rem;
+            background: var(--white);
+            border-radius: 4px;
+            min-width: 170px;
+            text-decoration: none;
+            color: var(--text-dark);
+            box-shadow: var(--shadow-card);
+            transition: transform 0.3s var(--transition-smooth), box-shadow 0.3s;
+        }
 
-        .copyright { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em; }
+        .social-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
 
-        /* --- GSAP --- */
-        .fade-up { opacity: 0; transform: translateY(40px); }
+        .social-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
+        .social-icon.ig { background: linear-gradient(135deg, #F58529, #DD2A7B, #8134AF); }
+        .social-icon.threads { background: #000; }
+        .social-icon.yt { background: #FF0000; }
+
+        .social-name {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+        }
+
+        .social-handle {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }
+
+        /* ==================== FOOTER ==================== */
+        footer {
+            background: var(--dark-bg);
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--pink-group), transparent);
+        }
+
+        .footer-credit {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.45);
+        }
+
+        .footer-credit .heart {
+            color: var(--pink-primary);
+            font-size: 1em;
+            vertical-align: middle;
+        }
+
+        .footer-credit a {
+            color: var(--pink-group);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-credit a:hover {
+            color: var(--white);
+        }
+
+
+        /* ==================== SCROLL ANIMATIONS ==================== */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .slide-in {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        [data-animate] {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 768px) {
+            header {
+                padding: 0 0.75rem;
+                flex-direction: column;
+                height: auto;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+                gap: 0.25rem;
+            }
+            .logo-text { font-size: 0.85rem; }
+            .nav-links { gap: 0.5rem; }
+            .nav-links a { font-size: 0.6rem; letter-spacing: 0.1em; }
+            .hero { margin-top: 0; }
+            .member-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .section-inner { padding: 4rem 1.5rem; }
+            .social-grid { gap: 1rem; }
+            .social-card { min-width: 140px; padding: 1.3rem; }
+            body { cursor: auto; }
+            #custom-cursor, #cursor-trail { display: none; }
+            .news-item {
+                flex-wrap: wrap;
+                gap: 0.5rem 1rem;
+            }
+            .news-date { min-width: auto; }
+            .news-title { flex-basis: 100%; }
+            .setlist-grid {
+                grid-template-columns: 1fr;
+            }
+            .setlist-card {
+                padding: 0.8rem 1rem;
+                gap: 0.8rem;
+            }
+            .setlist-song { font-size: 0.9rem; }
+            .setlist-number { font-size: 1.2rem; min-width: 30px; }
+        }
+
+        @media (max-width: 480px) {
+            .entrance-logo { width: 150px; height: 150px; }
+            header { padding: 0.4rem 0.5rem; }
+            .logo-text { font-size: 0.75rem; }
+            .nav-links { gap: 0.35rem; }
+            .nav-links a { font-size: 0.55rem; letter-spacing: 0.05em; }
+            .section-inner { padding: 3rem 1rem; }
+            .news-item { padding: 1rem 0.3rem; }
+            .setlist-card { padding: 0.7rem 0.8rem; gap: 0.6rem; }
+            .setlist-number { font-size: 1rem; min-width: 24px; }
+            .setlist-song { font-size: 0.85rem; }
+            .setlist-artist { font-size: 0.7rem; }
+        }
     </style>
 </head>
 <body>
 
+    <!-- ==================== AMBIENT STAGE LIGHTS ==================== -->
+    <div id="ambient-container"></div>
+
+    <!-- ==================== ENTRANCE OVERLAY ==================== -->
+    <div id="entrance-overlay">
+        <div class="entrance-particles" id="entrance-particles"></div>
+        <div class="entrance-ring"></div>
+        <div class="entrance-ring-inner"></div>
+        <div class="entrance-logo">
+            <img src="/assets/img/guild/cmy_fantasy/gallery_4.webp" alt="原色⭐︎ふぁんたじー">
+        </div>
+        <div class="entrance-group-name">原色⭐︎ふぁんたじー</div>
+        <div class="entrance-subtitle">KAOHSIUNG IDOL UNIT</div>
+        <div class="entrance-text">ENTER</div>
+        <div class="entrance-deco entrance-deco-top">✦ OFFICIAL WEBSITE ✦</div>
+        <div class="entrance-deco entrance-deco-bottom">EST. 2024 KAOHSIUNG</div>
+    </div>
+
+    <!-- ==================== CUSTOM CURSOR ==================== -->
+    <div id="custom-cursor"></div>
+    <canvas id="cursor-trail"></canvas>
+
+    <!-- ==================== HEADER ==================== -->
     <header>
-        <a href="/guild/" class="logo">CMY <span>FANTASY</span></a>
+        <a href="/guild/" class="logo-link">
+            <span class="logo-text">原色⭐︎ふぁんたじー</span>
+        </a>
         <nav class="nav-links">
-            <a href="#news">NEWS</a>
+            <a href="#news">HISTORY</a>
             <a href="#member">MEMBER</a>
             <a href="#about">ABOUT</a>
+            <a href="#setlist">STAGE</a>
+            <a href="#gallery">GALLERY</a>
         </nav>
     </header>
 
     <main>
+        <!-- ==================== HERO SECTION ==================== -->
         <section class="hero">
-            <img src="/assets/img/guild/cmy_fantasy/gallery_3.webp" class="hero-image" alt="CMY Fantasy Live">
-            <div id="hero-canvas"></div>
-            <div class="hero-text-box">
-                <h1>CMY FANTASY<br>OFFICIAL SITE</h1>
-                <p>KAOHSIUNG IDOL UNIT</p>
+            <img src="/assets/img/guild/cmy_fantasy/gallery_3.webp" class="hero-bg" alt="CMY Fantasy">
+            <div class="hero-gradient"></div>
+            <div class="hero-content">
+                <h1 class="hero-title">CMY FANTASY</h1>
+                <p class="hero-subtitle">KAOHSIUNG IDOL UNIT</p>
+                <span class="hero-tagline">南部日系偶像 Cosplay 表演團體</span>
+            </div>
+            <div class="hero-scroll-hint">
+                <span>SCROLL</span>
+                <div class="scroll-arrow"></div>
             </div>
         </section>
 
+        <!-- ==================== NEWS SECTION ==================== -->
         <section id="news" class="news-section">
             <div class="section-inner">
-                <h2 class="en-title">NEWS</h2>
-                <div class="jp-title">最新消息</div>
+                <div class="section-header fade-up">
+                    <div class="section-label">HISTORY</div>
+                    <h2 class="section-title">活動履歷</h2>
+                    <div class="section-line"></div>
+                </div>
 
                 <ul class="news-list">
                     <li>
-                        <a href="#" class="news-item fade-up">
-                            <div class="news-date">2024.10.20</div>
-                            <div class="news-category">INFO</div>
-                            <div class="news-title">團體成立滿一週年！感謝大家的支持！</div>
-                        </a>
+                        <div class="news-item slide-in">
+                            <div class="news-date">2026.02</div>
+                            <div class="news-badge live">LIVE</div>
+                            <div class="news-title">一周年生誕祭 — Happy Chocolate 舞台演出</div>
+                        </div>
                     </li>
                     <li>
-                        <a href="#" class="news-item fade-up">
-                            <div class="news-date">2024.09.15</div>
-                            <div class="news-category live">LIVE</div>
-                            <div class="news-title">參與「高雄動漫祭」舞台演出決定！</div>
-                        </a>
+                        <div class="news-item">
+                            <div class="news-date">2025.11</div>
+                            <div class="news-badge live">LIVE</div>
+                            <div class="news-title">奇幻動漫祭 PS-02 — キスキツネ HIMEHINA Cover</div>
+                        </div>
                     </li>
                     <li>
-                        <a href="#" class="news-item fade-up">
-                            <div class="news-date">2024.08.01</div>
-                            <div class="news-category">MEDIA</div>
-                            <div class="news-title">YouTube 頻道新影片上架：活動花絮</div>
-                        </a>
+                        <div class="news-item">
+                            <div class="news-date">2025.07</div>
+                            <div class="news-badge live">LIVE</div>
+                            <div class="news-title">存在革命25 — もったいないとらんど・Lamb・めぐめぐ 串燒演出</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="news-item">
+                            <div class="news-date">2025.04</div>
+                            <div class="news-badge live">LIVE</div>
+                            <div class="news-title">Coser幻日祭 — パジャマパーティーズのうた・III 舞台演出</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="news-item">
+                            <div class="news-date">2025.03</div>
+                            <div class="news-badge cosplay">DEBUT</div>
+                            <div class="news-title">Coser幻日祭 初次登台 — もったいないとらんど・えれくとりっく・えんじぇう</div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="news-item">
+                            <div class="news-date">2024.12</div>
+                            <div class="news-badge live">LIVE</div>
+                            <div class="news-title">嘉義彩繪村蔬食市集 — 極樂淨土・寄明月 演出</div>
+                        </div>
                     </li>
                 </ul>
-                <div style="text-align: center;">
-                    <a href="#" class="btn-more fade-up">VIEW ALL NEWS</a>
-                </div>
             </div>
         </section>
 
-        <section id="member" class="member-section">
+        <!-- ==================== MEMBER SECTION ==================== -->
+        <section id="member" class="member-section" data-section="member">
             <div class="section-inner">
-                <h2 class="en-title">MEMBER</h2>
-                <div class="jp-title">成員介紹</div>
+                <div class="section-header fade-up">
+                    <div class="section-label">MEMBER</div>
+                    <h2 class="section-title">成員介紹</h2>
+                    <div class="section-line"></div>
+                </div>
 
                 <div class="member-grid">
-                    <!-- Xiao Miao -->
-                    <div class="member-card fade-up">
+                    <div class="member-card accent-gold fade-up">
                         <div class="member-photo">
-                            <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" alt="筱喵 Xiao Miao">
+                            <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" alt="筱喵 Siaomiao">
+                            <div class="member-photo-name">筱喵 Siaomiao</div>
                         </div>
                         <div class="member-info">
-                            <div class="member-name-jp">筱喵</div>
-                            <div class="member-name-en">XIAO MIAO</div>
+                            <div class="member-name-main">筱喵</div>
+                            <div class="member-name-en">SIAOMIAO</div>
+                            <div class="member-role">可愛擔當 / Cute Center</div>
                             <div class="member-desc">
-                                可愛吃貨妹子。對 Cosplay 與舞台表演充滿熱忱。希望能用笑容感染每一個觀眾，展現出最棒的日系偶像魅力。
+                                可愛吃貨妹子，個性活潑開朗。對 Cosplay 與舞台表演充滿無限熱忱，擅長以天然系的萌感和燦爛笑容感染每一位觀眾。代表色為金黃色，象徵著如陽光般溫暖燦爛的偶像魅力。也是「小姐姐舞團」的一員，私下是個十足的動漫宅與 Cosplay 愛好者。
+                            </div>
+                            <div class="member-traits">
+                                <span class="trait-tag">吃貨</span>
+                                <span class="trait-tag">Cosplay</span>
+                                <span class="trait-tag">Dancer</span>
+                                <span class="trait-tag">動漫宅</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Ting Ting -->
-                    <div class="member-card fade-up" style="transition-delay: 0.2s;">
+                    <div class="member-card accent-blue fade-up" data-animate>
                         <div class="member-photo">
                             <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" alt="婷婷 Ting Ting">
+                            <div class="member-photo-name">婷婷 Ting Ting</div>
                         </div>
                         <div class="member-info">
-                            <div class="member-name-jp">婷婷</div>
+                            <div class="member-name-main">婷婷</div>
                             <div class="member-name-en">TING TING</div>
+                            <div class="member-role">表演擔當 / Performance Lead</div>
                             <div class="member-desc">
-                                舞台表演擔當。擁有豐富之演出經驗與舞台實績。致力於呈現創意與實力之表演內容，傳遞給觀眾驚喜與感動。
+                                舞台表演擔當，擁有豐富的翻跳與演出經驗。代表色為青藍色，象徵著如晴空般清透的舞台光芒。致力於呈現融合日系宅舞與 K-Pop 元素的創意演出，將每一次登場化為帶給觀眾驚喜與感動的魔法時刻。也是個 K-Pop 愛好者，喜歡 TXT 和 Ateez。
+                            </div>
+                            <div class="member-traits">
+                                <span class="trait-tag">翻跳</span>
+                                <span class="trait-tag">編舞</span>
+                                <span class="trait-tag">K-Pop</span>
+                                <span class="trait-tag">Reel Creator</span>
                             </div>
                         </div>
                     </div>
@@ -374,173 +1237,613 @@
             </div>
         </section>
 
-        <section id="about" class="about-section">
+        <!-- ==================== CONCEPT SECTION ==================== -->
+        <section id="about" class="concept-section">
             <div class="section-inner">
-                <h2 class="en-title">CONCEPT</h2>
-                <div class="jp-title">關於我們</div>
+                <div class="section-header fade-up">
+                    <div class="section-label">ABOUT</div>
+                    <h2 class="section-title">關於我們</h2>
+                    <div class="section-line"></div>
+                </div>
 
-                <div class="concept-text fade-up">
+                <div class="concept-text fade-up" data-animate>
                     您好，我們是南部日系偶像團體<br>
                     <span class="concept-highlight">「原色⭐︎ふぁんたじー」</span><br><br>
-                    來自高雄之雙人偶像系 Cosplay 表演團體。<br>
-                    團體成立之初，便以「每次站上舞台，<br>皆是為觀眾帶來歡樂並實現夢想的重要時刻」作為核心理念。<br><br>
-                    未來將持續拓展多元表演形式，<br>
-                    為活動現場注入獨具風格之偶像系舞台魅力。
+                    來自高雄的雙人偶像系 Cosplay 表演團體。<br>
+                    以「每次站上舞台，皆是為觀眾帶來歡樂<br>
+                    並實現夢想的重要時刻」作為核心理念。<br><br>
+                    從蘿莉塔洋裝到動漫角色 Cosplay，<br>
+                    從學院風制服到貓耳女僕裝扮，<br>
+                    我們用豐富多變的造型和充滿活力的舞蹈，<br>
+                    為每一場活動注入獨具風格的偶像系舞台魅力。
                 </div>
 
-                <div class="producer-msg fade-up">
-                    <strong>PRODUCER WANTED</strong><br><br>
-                    希望有機會被製作到！<br>
-                    我們的作品為影像居多，若可以放影片的話，可再提供給您。
+                <div class="concept-motto fade-up" data-animate>
+                    <div class="motto-label">OUR PROMISE</div>
+                    <p>
+                        未來將持續拓展多元表演形式<br>
+                        用最閃耀的笑容和最用心的演出<br>
+                        回應每一位 Producer 的期待與應援
+                    </p>
                 </div>
             </div>
         </section>
 
-        <section class="gallery-section">
-            <div class="gallery-masonry">
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_5.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_6.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_7.webp"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/cmy_fantasy/gallery_8.webp"></div>
+        <!-- ==================== SETLIST SECTION ==================== -->
+        <section id="setlist" class="setlist-section video-section">
+            <div class="section-inner">
+                <div class="section-header fade-up">
+                    <div class="section-label">SETLIST</div>
+                    <h2 class="section-title">表演曲目</h2>
+                    <div class="section-line"></div>
+                </div>
+
+                <div class="setlist-grid">
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=tXXmTtHPeao" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">01</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">もったいないとらんど</div>
+                            <div class="setlist-artist">きゃりーぱみゅぱみゅ</div>
+                            <div class="setlist-tag signature">SIGNATURE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=Y9U07kQD5qs" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">02</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">Happy Chocolate</div>
+                            <div class="setlist-artist">Idol Cover</div>
+                            <div class="setlist-tag">DANCE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=NIspoVYtq1c" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">03</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">キスキツネ</div>
+                            <div class="setlist-artist">HIMEHINA</div>
+                            <div class="setlist-tag">DANCE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=_e6tR5PxXRc" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">04</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">響喜亂舞</div>
+                            <div class="setlist-artist">花譜 / 婷婷 Solo Cover</div>
+                            <div class="setlist-tag">DANCE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=khlXCJ8LQvc" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">05</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">えれくとりっく・えんじぇう</div>
+                            <div class="setlist-artist">ヤスオ / Yasuo P</div>
+                            <div class="setlist-tag">DANCE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=s5E_imRHkNM" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">06</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">パジャマパーティーズのうた</div>
+                            <div class="setlist-artist">すとぷり</div>
+                            <div class="setlist-tag">DANCE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=db38RNl7bog" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">07</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">Lamb.</div>
+                            <div class="setlist-artist">GARNiDELiA</div>
+                            <div class="setlist-tag">DANCE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                    <a class="setlist-card" href="https://www.youtube.com/watch?v=QmYSZj7VOus" target="_blank" rel="noopener noreferrer">
+                        <div class="setlist-number">08</div>
+                        <div class="setlist-info">
+                            <div class="setlist-song">ドレミファミックス</div>
+                            <div class="setlist-artist">Vocaloid Cover</div>
+                            <div class="setlist-tag">DANCE</div>
+                        </div>
+                        <span class="setlist-play"></span>
+                    </a>
+                </div>
+
+                <div class="setlist-video-divider fade-up">
+                    <div class="section-label">MOVIE</div>
+                    <h3 class="setlist-video-heading">舞台映像</h3>
+                    <div class="section-line"></div>
+                </div>
+
+                <div class="video-playlist" data-animate>
+                    <div class="video-card">
+                        <iframe src="https://www.youtube.com/embed/videoseries?list=UURQain0w9dEQTBnmPte3-Xw" title="原色⭐︎ふぁんたじー YouTube 播放清單" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <footer>
-            <div class="footer-logo">CMY FANTASY</div>
-            <div class="footer-social">
-                <a href="https://www.threads.com/@cmy_fantasy" target="_blank">THREADS</a>
-                <a href="https://www.instagram.com/cmy_fantasy/" target="_blank">INSTAGRAM</a>
-                <a href="https://www.youtube.com/@cmy_fantasy" target="_blank">YOUTUBE</a>
+        <!-- ==================== GALLERY SECTION ==================== -->
+        <section id="gallery" class="gallery-section">
+            <div class="section-inner">
+                <div class="section-header fade-up">
+                    <div class="section-label">GALLERY</div>
+                    <h2 class="section-title">寫真集</h2>
+                    <div class="section-line"></div>
+                </div>
+                <div class="gallery-grid">
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/gallery_8.webp" alt="2025 高捷冬漫祭舞台" loading="lazy">
+                        <div class="gallery-caption">2025 高捷冬漫祭舞台</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/gallery_7.webp" alt="貓耳學院風" loading="lazy">
+                        <div class="gallery-caption">貓耳學院風</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/gallery_3.webp" alt="初音ミク & 桜ミク Cosplay" loading="lazy">
+                        <div class="gallery-caption">初音ミク & 桜ミク Cosplay</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/gallery_5.webp" alt="後台花絮" loading="lazy">
+                        <div class="gallery-caption">後台花絮</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/gallery_6.webp" alt="動漫祭舞台" loading="lazy">
+                        <div class="gallery-caption">動漫祭舞台</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/avatar.webp" alt="生誕祭蘿莉塔洋裝" loading="lazy">
+                        <div class="gallery-caption">生誕祭蘿莉塔洋裝</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/gallery_1.webp" alt="高捷夏漫季舞台演出" loading="lazy">
+                        <div class="gallery-caption">高捷夏漫季舞台演出</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/cmy_fantasy/gallery_2.webp" alt="雙人條紋穿搭" loading="lazy">
+                        <div class="gallery-caption">雙人條紋穿搭</div>
+                    </div>
+                </div>
             </div>
-            <div class="copyright">© 2024 CMY FANTASY OFFICIAL. ALL RIGHTS RESERVED.</div>
-        </footer>
+        </section>
+
+        <!-- ==================== SOCIAL SECTION ==================== -->
+        <section class="social-section">
+            <div class="section-inner">
+                <div class="section-header fade-up">
+                    <div class="section-label">SNS</div>
+                    <h2 class="section-title">追蹤我們</h2>
+                    <div class="section-line"></div>
+                </div>
+
+                <div class="social-grid fade-up">
+                    <a href="https://www.instagram.com/cmy_fantasy/" target="_blank" class="social-card">
+                        <div class="social-icon ig"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></div>
+                        <div class="social-name">INSTAGRAM</div>
+                        <div class="social-handle">@cmy_fantasy</div>
+                    </a>
+                    <a href="https://www.threads.com/@cmy_fantasy" target="_blank" class="social-card">
+                        <div class="social-icon threads"><svg width="20" height="20" viewBox="0 0 192 192" fill="white"><path d="M141.537 88.988c-.826-.397-1.666-.778-2.518-1.143-1.482-27.307-16.403-42.94-41.457-43.1h-.142c-14.986 0-27.449 6.396-35.12 17.999l13.779 9.75c5.73-8.94 14.724-10.836 21.391-10.836h.071c6.76.043 11.984 2.07 15.484 6.022 2.488 2.779 4.184 6.538 5.058 11.238-5.438-.94-11.351-1.328-17.679-1.158-19.77.584-32.537 11.444-31.672 26.789.434 7.754 4.469 14.509 11.21 18.808 5.717 3.636 13.167 5.464 20.903 5.039 10.24-.576 18.106-4.753 23.282-12.34 3.891-5.716 6.265-12.978 7.188-21.993 4.643 2.852 8.036 6.613 9.973 11.198 3.311 8.033 3.515 22.147-6.771 32.435-9.068 9.07-19.941 13.266-37.239 13.405-19.149-.153-33.463-6.265-42.714-18.024-8.471-10.808-12.873-26.147-13.05-45.076.177-18.929 4.579-34.268 13.05-45.076 9.251-11.76 23.565-17.872 42.714-18.024 19.282.152 33.726 6.264 43.095 18.055 4.563 5.738 8.034 12.748 10.387 20.886l16.171-4.341c-3.084-10.547-7.737-19.692-13.972-27.236-12.04-15.332-29.588-23.337-52.186-23.81h-.114c-22.544.474-39.775 8.54-51.235 23.998C31.147 52.59 26.07 70.18 25.9 92v.136c.17 21.82 5.247 39.41 15.676 51.604 11.46 15.458 28.691 23.524 51.235 23.998h.114c20.113-.163 33.826-5.705 45.29-17.17 15.063-15.065 14.428-33.704 9.64-45.353-3.5-8.34-10.104-15.3-18.976-19.756l.658.53zM99.148 119.838c-7.657.44-15.688-3.341-16.165-11.483-.354-6.181 4.262-12.338 16.701-12.752 1.52-.049 3.013-.072 4.48-.072 4.458 0 8.653.39 12.513 1.143-2.036 18.235-9.683 22.692-17.529 23.164z"/></svg></div>
+                        <div class="social-name">THREADS</div>
+                        <div class="social-handle">@cmy_fantasy</div>
+                    </a>
+                    <a href="https://www.youtube.com/@cmy_fantasy" target="_blank" class="social-card">
+                        <div class="social-icon yt"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></div>
+                        <div class="social-name">YOUTUBE</div>
+                        <div class="social-handle">@cmy_fantasy</div>
+                    </a>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    <!-- ==================== FOOTER ==================== -->
+    <footer>
+        <p class="footer-credit">Made with <span class="heart">&#9829;</span> by <a href="/guild/">SuperGalen's Guild</a></p>
+    </footer>
+
+    <!-- ==================== SCRIPTS ==================== -->
+    <script>
+    (function() {
+        'use strict';
+
+        var globalMouseX = window.innerWidth / 2;
+        var globalMouseY = window.innerHeight / 2;
+
+        /* ===== ENTRANCE PARTICLES ===== */
+        var particlesContainer = document.getElementById('entrance-particles');
+        var particleColors = ['#E8829B', '#FFB7C5', '#FFD700', '#FF6B8A', '#FFA0B4'];
+        for (var i = 0; i < 25; i++) {
+            var dot = document.createElement('div');
+            dot.className = 'entrance-particle';
+            var size = 3 + Math.random() * 8;
+            dot.style.width = size + 'px';
+            dot.style.height = size + 'px';
+            dot.style.left = Math.random() * 100 + '%';
+            dot.style.bottom = -(Math.random() * 20) + '%';
+            dot.style.background = particleColors[Math.floor(Math.random() * particleColors.length)];
+            dot.style.animationDelay = Math.random() * 4 + 's';
+            dot.style.animationDuration = (3 + Math.random() * 4) + 's';
+            dot.style.filter = 'blur(' + (Math.random() * 2) + 'px)';
+            dot.style.opacity = (0.4 + Math.random() * 0.6).toString();
+            particlesContainer.appendChild(dot);
+        }
+
+        /* ===== ENTRANCE OVERLAY ===== */
+        var entranceOverlay = document.getElementById('entrance-overlay');
+        var entranceDismissed = false;
+
+        function dismissEntrance() {
+            if (entranceDismissed) return;
+            entranceDismissed = true;
+            entranceOverlay.classList.add('hidden');
+            document.body.style.overflow = '';
+            initAmbientLights();
+            runHeroAnimation();
+            // Clean up entrance DOM after transition
+            setTimeout(function() {
+                entranceOverlay.remove();
+            }, 1500);
+        }
+
+        entranceOverlay.addEventListener('click', dismissEntrance);
+        setTimeout(dismissEntrance, 5000);
+
+        /* ===== CUSTOM CURSOR WITH STAR TRAIL ===== */
+        var cursor = document.getElementById('custom-cursor');
+        var trailCanvas = document.getElementById('cursor-trail');
+        var trailCtx = trailCanvas.getContext('2d');
+        var trailPoints = [];
+
+        function resizeTrailCanvas() {
+            trailCanvas.width = window.innerWidth;
+            trailCanvas.height = window.innerHeight;
+        }
+        resizeTrailCanvas();
+        window.addEventListener('resize', resizeTrailCanvas);
+
+        document.addEventListener('mousemove', function(e) {
+            globalMouseX = e.clientX;
+            globalMouseY = e.clientY;
+            cursor.style.transform = 'translate(' + (e.clientX - 10) + 'px, ' + (e.clientY - 10) + 'px)';
+            trailPoints.push({
+                x: e.clientX,
+                y: e.clientY,
+                alpha: 0.7,
+                size: 2 + Math.random() * 4,
+                rotation: Math.random() * Math.PI * 2,
+                color: Math.random() > 0.6 ? '#FFD700' : '#FFB7C5'
+            });
+            if (trailPoints.length > 30) trailPoints.shift();
+        });
+
+        document.addEventListener('click', function() {
+            cursor.classList.add('clicking');
+            setTimeout(function() { cursor.classList.remove('clicking'); }, 250);
+        });
+
+        function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+            var rot = -Math.PI / 2;
+            var step = Math.PI / spikes;
+            ctx.beginPath();
+            for (var i = 0; i < spikes; i++) {
+                ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+                rot += step;
+                ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+                rot += step;
             }
-        }
-    </script>
-
-    <script type="module">
-        import * as THREE from 'three';
-
-        // --- Three.js Stage Particles (Hero Only) ---
-        const container = document.getElementById('hero-canvas');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-        camera.position.z = 50;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // Create elegant glowing particles (like stage dust / subtle sakura)
-        const particleCount = 400;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const sizes = new Float32Array(particleCount);
-
-        for(let i=0; i<particleCount; i++) {
-            positions[i*3] = (Math.random() - 0.5) * 150;
-            positions[i*3+1] = (Math.random() - 0.5) * 150;
-            positions[i*3+2] = (Math.random() - 0.5) * 50;
-            sizes[i] = Math.random() * 2;
+            ctx.closePath();
         }
 
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-        // Custom shader for soft glowing dots
-        const material = new THREE.ShaderMaterial({
-            uniforms: {
-                color: { value: new THREE.Color(0xffffff) },
-                time: { value: 0 }
-            },
-            vertexShader: `
-                attribute float size;
-                uniform float time;
-                varying float vAlpha;
-                void main() {
-                    vec3 pos = position;
-                    // Slow drift upwards
-                    pos.y += time * 2.0;
-                    // Wrap around
-                    if(pos.y > 75.0) pos.y -= 150.0;
-
-                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                    gl_PointSize = size * (100.0 / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-
-                    // Twinkle
-                    vAlpha = 0.5 + 0.5 * sin(time * 3.0 + position.x);
+        function drawTrail() {
+            if (trailPoints.length > 0) {
+                trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+                for (var i = trailPoints.length - 1; i >= 0; i--) {
+                    var p = trailPoints[i];
+                    p.alpha -= 0.022;
+                    if (p.alpha <= 0) { trailPoints.splice(i, 1); continue; }
+                    trailCtx.save();
+                    trailCtx.globalAlpha = p.alpha;
+                    trailCtx.fillStyle = p.color;
+                    trailCtx.translate(p.x, p.y);
+                    trailCtx.rotate(p.rotation + (1 - p.alpha) * 1.5);
+                    var s = p.size * (0.3 + p.alpha * 0.7);
+                    drawStar(trailCtx, 0, 0, 4, s * 1.8, s * 0.5);
+                    trailCtx.fill();
+                    trailCtx.restore();
                 }
-            `,
-            fragmentShader: `
-                uniform vec3 color;
-                varying float vAlpha;
-                void main() {
-                    // Soft circle
-                    vec2 xy = gl_PointCoord.xy - vec2(0.5);
-                    float ll = length(xy);
-                    if(ll > 0.5) discard;
+            }
+            requestAnimationFrame(drawTrail);
+        }
+        drawTrail();
 
-                    // Soft glow edge
-                    float a = (0.5 - ll) * 2.0 * vAlpha;
-                    gl_FragColor = vec4(color, a * 0.6); // Subtle opacity
+        /* ===== P5.JS AMBIENT STAGE LIGHTS ===== */
+        function initAmbientLights() {
+            if (typeof p5 === 'undefined') { setTimeout(initAmbientLights, 100); return; }
+            var container = document.getElementById('ambient-container');
+            if (!container) return;
+
+            new p5(function(sk) {
+                var orbs = [];
+                var ORB_COUNT = 18;
+
+                // Section background detection for adaptive orb colors
+                var sectionZones = [];
+                function buildSectionZones() {
+                    sectionZones = [];
+                    var sections = [
+                        { sel: '.hero', type: 'dark-image' },
+                        { sel: '.news-section', type: 'white' },
+                        { sel: '.member-section', type: 'white' },
+                        { sel: '.concept-section', type: 'dark' },
+                        { sel: '.setlist-section', type: 'gray' },
+                        { sel: '.gallery-section', type: 'gray' },
+                        { sel: '.social-section', type: 'pink' }
+                    ];
+                    sections.forEach(function(s) {
+                        var el = document.querySelector(s.sel);
+                        if (el) {
+                            var rect = el.getBoundingClientRect();
+                            sectionZones.push({
+                                top: rect.top + window.scrollY,
+                                bottom: rect.bottom + window.scrollY,
+                                type: s.type
+                            });
+                        }
+                    });
                 }
-            `,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+                // Rebuild zones on resize only (sections don't move on scroll)
+                window.addEventListener('resize', function() {
+                    buildSectionZones();
+                }, { passive: true });
+
+                function getSectionTypeAtScreenY(screenY) {
+                    var pageY = screenY + window.scrollY;
+                    for (var i = 0; i < sectionZones.length; i++) {
+                        if (pageY >= sectionZones[i].top && pageY <= sectionZones[i].bottom) {
+                            return sectionZones[i].type;
+                        }
+                    }
+                    return 'white';
+                }
+
+                sk.setup = function() {
+                    var cnv = sk.createCanvas(sk.windowWidth, sk.windowHeight);
+                    cnv.parent('ambient-container');
+                    sk.frameRate(30);
+                    buildSectionZones();
+                    var penlightHues = ['pink', 'yellow', 'blue'];
+                    for (var i = 0; i < ORB_COUNT; i++) {
+                        orbs.push({
+                            x: sk.random(sk.width),
+                            y: sk.random(sk.height),
+                            baseX: sk.random(sk.width),
+                            baseY: sk.random(sk.height),
+                            radius: sk.random(30, 180),
+                            driftSpeed: sk.random(0.0003, 0.001),
+                            driftRange: sk.random(40, 160),
+                            phase: sk.random(sk.TWO_PI),
+                            phaseY: sk.random(sk.TWO_PI),
+                            pulseSpeed: sk.random(0.008, 0.025),
+                            pulsePhase: sk.random(sk.TWO_PI),
+                            hue: penlightHues[i % 3],
+                            alpha: sk.random(0.04, 0.12)
+                        });
+                    }
+                };
+
+                sk.draw = function() {
+                    sk.clear();
+                    var t = sk.millis();
+
+                    // Mouse parallax influence
+                    var mx = (globalMouseX / sk.width - 0.5) * 30;
+                    var my = (globalMouseY / sk.height - 0.5) * 20;
+
+                    orbs.forEach(function(orb) {
+                        // Gentle Lissajous drift
+                        orb.x = orb.baseX + Math.sin(t * orb.driftSpeed + orb.phase) * orb.driftRange + mx;
+                        orb.y = orb.baseY + Math.cos(t * orb.driftSpeed * 0.7 + orb.phaseY) * orb.driftRange * 0.6 + my;
+
+                        // Pulse
+                        var pulse = 1 + 0.3 * Math.sin(t * orb.pulseSpeed + orb.pulsePhase);
+                        var r = orb.radius * pulse;
+                        var baseAlpha = orb.alpha * (0.7 + 0.3 * pulse);
+
+                        // Section-aware color and alpha
+                        var sectionType = getSectionTypeAtScreenY(orb.y);
+                        var alphaMultiplier = 1.0;
+                        var rr, gg, bb;
+
+                        // Penlight colors: pink / yellow / blue
+                        if (sectionType === 'dark' || sectionType === 'dark-image') {
+                            alphaMultiplier = 0.25;
+                            if (orb.hue === 'pink') { rr = 255; gg = 180; bb = 200; }
+                            else if (orb.hue === 'yellow') { rr = 255; gg = 240; bb = 150; }
+                            else { rr = 140; gg = 190; bb = 255; }
+                        } else if (sectionType === 'pink') {
+                            alphaMultiplier = 0.3;
+                            if (orb.hue === 'pink') { rr = 255; gg = 120; bb = 160; }
+                            else if (orb.hue === 'yellow') { rr = 255; gg = 220; bb = 80; }
+                            else { rr = 100; gg = 160; bb = 255; }
+                        } else if (sectionType === 'gray') {
+                            alphaMultiplier = 0.6;
+                            if (orb.hue === 'pink') { rr = 220; gg = 80; bb = 120; }
+                            else if (orb.hue === 'yellow') { rr = 220; gg = 180; bb = 30; }
+                            else { rr = 60; gg = 120; bb = 220; }
+                        } else {
+                            alphaMultiplier = 0.7;
+                            if (orb.hue === 'pink') { rr = 210; gg = 60; bb = 100; }
+                            else if (orb.hue === 'yellow') { rr = 210; gg = 170; bb = 0; }
+                            else { rr = 40; gg = 100; bb = 210; }
+                        }
+
+                        var a = baseAlpha * alphaMultiplier;
+
+                        // Radial gradient via concentric circles
+                        sk.noStroke();
+                        var steps = 6;
+                        for (var s = steps; s >= 1; s--) {
+                            var frac = s / steps;
+                            var cr = r * frac;
+                            var ca = a * (1 - frac * 0.8);
+                            sk.fill(rr, gg, bb, ca * 255);
+                            sk.ellipse(orb.x, orb.y, cr * 2, cr * 2);
+                        }
+                    });
+                };
+
+                sk.windowResized = function() {
+                    sk.resizeCanvas(sk.windowWidth, sk.windowHeight);
+                    buildSectionZones();
+                    orbs.forEach(function(orb) {
+                        orb.baseX = sk.random(sk.width);
+                        orb.baseY = sk.random(sk.height);
+                    });
+                };
+            });
+        }
+
+        /* ===== HERO ANIMATION ===== */
+        function runHeroAnimation() {
+            if (typeof gsap === 'undefined') { setTimeout(runHeroAnimation, 100); return; }
+            var tl = gsap.timeline({ delay: 0.2 });
+            tl.from('.hero-title', { y: 30, opacity: 0, duration: 0.8, ease: 'power3.out' })
+              .from('.hero-subtitle', { y: 20, opacity: 0, duration: 0.6, ease: 'power2.out' }, '-=0.2')
+              .from('.hero-tagline', { y: 20, opacity: 0, duration: 0.5, ease: 'power2.out' }, '-=0.2')
+              .from('.hero-scroll-hint', { y: 10, opacity: 0, duration: 0.4, ease: 'power2.out' }, '-=0.1');
+        }
+
+        /* ===== HEADER SCROLL ===== */
+        var headerEl = document.querySelector('header');
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 80) {
+                headerEl.classList.add('scrolled');
+            } else {
+                headerEl.classList.remove('scrolled');
+            }
+        }, { passive: true });
+
+        /* ===== SCROLL SPY NAV HIGHLIGHT ===== */
+        var navLinksAll = document.querySelectorAll('.nav-links a[href^="#"]');
+        var sectionIds = [];
+        navLinksAll.forEach(function(link) {
+            var id = link.getAttribute('href').slice(1);
+            if (id) sectionIds.push(id);
         });
 
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
+        var scrollSpyObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                var id = entry.target.id;
+                var link = document.querySelector('.nav-links a[href="#' + id + '"]');
+                if (!link) return;
+                if (entry.isIntersecting) {
+                    navLinksAll.forEach(function(l) { l.classList.remove('nav-active'); });
+                    link.classList.add('nav-active');
+                }
+            });
+        }, { rootMargin: '-20% 0px -60% 0px' });
 
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            material.uniforms.time.value = clock.getElapsedTime();
-
-            // Subtle camera pan
-            camera.position.x = Math.sin(clock.getElapsedTime() * 0.1) * 5;
-            camera.lookAt(0,0,0);
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        window.addEventListener('resize', () => {
-            const width = window.innerWidth;
-            const height = window.innerHeight; // Hero is 100vh
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
+        sectionIds.forEach(function(id) {
+            var section = document.getElementById(id);
+            if (section) scrollSpyObserver.observe(section);
         });
 
-        // --- GSAP Animations ---
-        gsap.registerPlugin(ScrollTrigger);
+        /* ===== HERO PARALLAX ===== */
+        var heroBg = document.querySelector('.hero-bg');
+        var heroRafPending = false;
+        window.addEventListener('scroll', function() {
+            if (!heroRafPending && window.scrollY < window.innerHeight) {
+                heroRafPending = true;
+                requestAnimationFrame(function() {
+                    if (heroBg) {
+                        heroBg.style.transform = 'scale(1.05) translateY(' + (window.scrollY * 0.3) + 'px)';
+                    }
+                    heroRafPending = false;
+                });
+            }
+        }, { passive: true });
 
-        const fadeEls = document.querySelectorAll('.fade-up');
-        fadeEls.forEach(el => {
+        /* ===== GSAP SCROLL ANIMATIONS ===== */
+        function initScrollAnimations() {
+            if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+                setTimeout(initScrollAnimations, 100);
+                return;
+            }
+            gsap.registerPlugin(ScrollTrigger);
+
+            gsap.utils.toArray('.fade-up').forEach(function(el) {
             gsap.to(el, {
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 85%",
-                },
-                y: 0,
-                opacity: 1,
-                duration: 1,
-                ease: "power3.out"
+                scrollTrigger: { trigger: el, start: 'top 88%' },
+                y: 0, opacity: 1, duration: 0.8, ease: 'power3.out'
             });
         });
 
+        gsap.utils.toArray('.slide-in').forEach(function(el) {
+            gsap.to(el, {
+                scrollTrigger: { trigger: el, start: 'top 88%' },
+                x: 0, opacity: 1, duration: 0.7, ease: 'power2.out'
+            });
+        });
+
+        gsap.utils.toArray('[data-animate]').forEach(function(el) {
+            gsap.to(el, {
+                scrollTrigger: { trigger: el, start: 'top 88%' },
+                y: 0, opacity: 1, duration: 0.8, ease: 'power2.out'
+            });
+        });
+
+        gsap.utils.toArray('.section-line').forEach(function(line) {
+            gsap.from(line, {
+                scrollTrigger: { trigger: line, start: 'top 90%' },
+                scaleX: 0, duration: 0.6, ease: 'power2.out'
+            });
+        });
+
+        gsap.utils.toArray('.news-item').forEach(function(item, i) {
+            gsap.from(item, {
+                scrollTrigger: { trigger: item, start: 'top 92%' },
+                x: -20, opacity: 0, duration: 0.5, delay: i * 0.06, ease: 'power2.out'
+            });
+        });
+
+        gsap.utils.toArray('.gallery-item').forEach(function(item, i) {
+            gsap.from(item, {
+                scrollTrigger: { trigger: item, start: 'top 95%' },
+                opacity: 0, scale: 0.92, y: 30, duration: 0.7, ease: 'power3.out',
+                delay: i * 0.08
+            });
+        });
+
+        gsap.utils.toArray('.video-playlist').forEach(function(el) {
+            gsap.from(el, {
+                scrollTrigger: { trigger: el, start: 'top 92%' },
+                y: 30, opacity: 0, duration: 0.6, ease: 'power2.out'
+            });
+        });
+
+        gsap.utils.toArray('.setlist-card').forEach(function(card, i) {
+            gsap.from(card, {
+                scrollTrigger: { trigger: card, start: 'top 92%' },
+                x: -20, opacity: 0, duration: 0.5, delay: i * 0.06, ease: 'power2.out'
+            });
+        });
+
+        gsap.utils.toArray('.social-card').forEach(function(card, i) {
+            gsap.from(card, {
+                scrollTrigger: { trigger: card, start: 'top 92%' },
+                y: 20, opacity: 0, duration: 0.5, delay: i * 0.1, ease: 'power2.out'
+            });
+        });
+        }
+        initScrollAnimations();
+
+    })();
     </script>
 </body>
 </html>
