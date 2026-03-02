@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joanna | Uncharted Dimensions</title>
+    <meta name="description" content="Joanna — 天馬行空的未知維度。在混沌中創造，在未知中綻放。">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700;900&family=Noto+Sans+TC:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Three.js / GSAP / p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <style>
+        /* ═══════════════════════════════════════════
+           CSS VARIABLES & RESET
+           ═══════════════════════════════════════════ */
+        :root {
+            --void: #080810;
+            --cosmos: #0f0a1f;
+            --nebula: #7c3aed;
+            --nebula-dim: #5b21b6;
+            --aurora: #ec4899;
+            --portal: #06b6d4;
+            --starlight: #f1f5f9;
+            --stardust: #a78bfa;
+            --comet: #fbbf24;
+            --anomaly: #34d399;
+            --mist: #94a3b8;
+            --glass-bg: rgba(15, 10, 31, 0.55);
+            --glass-border: rgba(167, 139, 250, 0.12);
+
+            --font-display: 'Unbounded', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+        body {
+            background: var(--void);
+            color: var(--starlight);
+            font-family: var(--font-body);
+            font-weight: 300;
+            overflow-x: hidden;
+            cursor: none;
+            line-height: 1.75;
+        }
+
+        ::selection { background: var(--nebula); color: #fff; }
+        img { display: block; max-width: 100%; height: auto; }
+        a { color: inherit; text-decoration: none; }
+
+        /* ═══ CUSTOM CURSOR ═══ */
+        .cursor-dot {
+            width: 6px; height: 6px;
+            background: var(--stardust);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9999;
+            will-change: transform;
+            transition: width .15s, height .15s, background .15s;
+            box-shadow: 0 0 8px var(--stardust), 0 0 20px rgba(167,139,250,.25);
+        }
+        .cursor-dot.burst {
+            width: 18px; height: 18px;
+            background: var(--comet);
+            box-shadow: 0 0 20px var(--comet);
+        }
+        .cursor-outline {
+            width: 34px; height: 34px;
+            border: 1px solid rgba(167,139,250,.35);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9998;
+            will-change: transform;
+            transition: width .25s, height .25s, border-color .25s, border-radius .25s;
+        }
+        .cursor-outline.hovering {
+            width: 54px; height: 54px;
+            border-color: var(--aurora);
+            border-radius: 10px;
+        }
+
+        /* ═══ CLICK EFFECTS ═══ */
+        .click-ripple {
+            position: fixed; pointer-events: none; z-index: 9997;
+            border: 1px solid var(--stardust);
+            border-radius: 50%;
+            animation: ripple .7s ease-out forwards;
+        }
+        @keyframes ripple {
+            0% { width: 0; height: 0; opacity: .7; }
+            100% { width: 80px; height: 80px; opacity: 0; }
+        }
+        .click-particle {
+            position: fixed; pointer-events: none; z-index: 9996;
+            width: 3px; height: 3px;
+            border-radius: 50%; background: var(--comet);
+        }
+
+        /* ═══ LOADER ═══ */
+        #loader {
+            position: fixed; inset: 0;
+            background: var(--void);
+            z-index: 10000;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            gap: 24px;
+            transition: opacity .7s ease;
+        }
+        #loader.hidden { opacity: 0; pointer-events: none; }
+        .loader-portal {
+            width: 80px; height: 80px;
+            border: 2px solid var(--stardust);
+            border-radius: 50%;
+            position: relative;
+            animation: portal-pulse 1.8s ease-in-out infinite;
+        }
+        .loader-portal::before {
+            content: ''; position: absolute; inset: 10px;
+            border: 1px solid var(--aurora);
+            border-radius: 50%;
+            animation: portal-spin 2.5s linear infinite;
+        }
+        .loader-portal::after {
+            content: ''; position: absolute; inset: 22px;
+            border: 1px solid var(--portal);
+            border-radius: 50%;
+            animation: portal-spin 4s linear infinite reverse;
+        }
+        @keyframes portal-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.12); opacity: .6; }
+        }
+        @keyframes portal-spin { to { transform: rotate(360deg); } }
+        .loader-core {
+            position: absolute; top: 50%; left: 50%;
+            width: 8px; height: 8px;
+            transform: translate(-50%, -50%);
+            background: var(--comet);
+            border-radius: 50%;
+            box-shadow: 0 0 16px var(--comet), 0 0 32px rgba(251,191,36,.3);
+        }
+        #loader-text {
+            font-family: var(--font-mono); font-size: .7rem;
+            letter-spacing: .3em; color: var(--mist);
+        }
+        #loader-bar {
+            width: 140px; height: 2px;
+            background: rgba(148,163,184,.12);
+            border-radius: 1px; overflow: hidden;
+        }
+        #loader-bar-fill {
+            width: 0; height: 100%;
+            background: linear-gradient(90deg, var(--nebula), var(--aurora), var(--portal));
+            background-size: 200% 100%;
+            animation: bar-shimmer 1.5s linear infinite;
+            transition: width .2s;
+        }
+        @keyframes bar-shimmer {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+
+        /* ═══ THREE.JS CONTAINER ═══ */
+        #three-container {
+            position: fixed; inset: 0;
+            z-index: 0; pointer-events: none;
+        }
+
+        /* ═══ P5.JS CONTAINER ═══ */
+        #p5-container {
+            position: fixed; inset: 0;
+            z-index: 0; pointer-events: none;
+        }
+        #p5-container canvas {
+            display: block;
+        }
+
+        /* ═══ NAV ═══ */
+        .nav-bar {
+            position: fixed; top: 0; left: 0; width: 100%;
+            z-index: 100; padding: 20px 28px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(180deg, rgba(8,8,16,.9) 0%, transparent 100%);
+        }
+        .nav-back {
+            display: flex; align-items: center; gap: 8px;
+            font-family: var(--font-mono); font-size: .75rem;
+            letter-spacing: .12em; color: var(--mist);
+            transition: color .3s;
+        }
+        .nav-back:hover { color: var(--stardust); }
+        .nav-back svg { width: 18px; height: 18px; }
+        .social-links { display: flex; gap: 12px; }
+        .social-links a {
+            display: flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px;
+            border: 1px solid rgba(167,139,250,.15);
+            border-radius: 50%; color: var(--mist);
+            font-size: .9rem;
+            transition: all .3s;
+        }
+        .social-links a:hover {
+            border-color: var(--aurora); color: var(--aurora);
+            box-shadow: 0 0 14px rgba(236,72,153,.2);
+            transform: translateY(-2px);
+        }
+
+        /* ═══ GENERAL ═══ */
+        .content-wrapper { position: relative; z-index: 1; }
+        section {
+            padding: 90px 24px;
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+        .section-tag {
+            font-family: var(--font-mono); font-size: .65rem;
+            letter-spacing: .25em; text-transform: uppercase;
+            color: var(--nebula); margin-bottom: 10px;
+            display: inline-block;
+        }
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4.5vw, 3rem);
+            font-weight: 700; line-height: 1.25;
+            margin-bottom: 28px;
+        }
+        .accent-line {
+            width: 48px; height: 2px;
+            background: linear-gradient(90deg, var(--nebula), var(--aurora));
+            margin-bottom: 24px;
+        }
+
+        /* ═══ HERO ═══ */
+        #hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+            padding: 100px 24px 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-tag {
+            font-family: var(--font-mono); font-size: .65rem;
+            letter-spacing: .4em; color: var(--stardust);
+            margin-bottom: 14px;
+        }
+        .hero-name {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 11vw, 7.5rem);
+            font-weight: 900; letter-spacing: .04em;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--starlight) 0%, var(--stardust) 50%, var(--aurora) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-quote {
+            font-family: var(--font-body); font-weight: 300;
+            font-size: clamp(.9rem, 2vw, 1.1rem);
+            color: var(--mist); margin-top: 18px;
+            max-width: 440px; font-style: italic;
+        }
+        .hero-avatar-wrap {
+            position: relative; margin-top: 44px;
+        }
+        .hero-avatar {
+            width: 160px; height: 160px;
+            border-radius: 50%; object-fit: cover;
+            border: 2px solid rgba(167,139,250,.25);
+            box-shadow: 0 0 50px rgba(124,58,237,.15), 0 0 100px rgba(8,8,16,.5);
+            transition: all .5s;
+        }
+        .hero-avatar:hover {
+            border-color: var(--aurora);
+            box-shadow: 0 0 60px rgba(236,72,153,.2);
+            transform: scale(1.06);
+        }
+        .hero-ring {
+            position: absolute; inset: -10px;
+            border: 1px solid rgba(167,139,250,.1);
+            border-radius: 50%;
+            animation: ring-spin 25s linear infinite;
+        }
+        .hero-ring::before {
+            content: ''; position: absolute; top: -3px; left: 50%;
+            width: 5px; height: 5px;
+            background: var(--aurora); border-radius: 50%;
+            box-shadow: 0 0 8px var(--aurora);
+        }
+        @keyframes ring-spin { to { transform: rotate(360deg); } }
+        .hero-scroll {
+            position: absolute; bottom: 36px;
+            font-family: var(--font-mono); font-size: .6rem;
+            letter-spacing: .3em; color: var(--mist); opacity: .4;
+        }
+        .hero-scroll svg { display: block; margin: 6px auto 0; width: 14px; height: 14px; stroke: var(--mist); }
+
+        /* ═══ MARQUEE ═══ */
+        .marquee-strip {
+            overflow: hidden;
+            border-top: 1px solid rgba(167,139,250,.08);
+            border-bottom: 1px solid rgba(167,139,250,.08);
+            padding: 12px 0;
+            background: rgba(15,10,31,.5);
+        }
+        .marquee-inner {
+            display: flex; gap: 40px; white-space: nowrap;
+            animation: marquee 35s linear infinite;
+            font-family: var(--font-display); font-size: .8rem;
+            font-weight: 500; letter-spacing: .18em;
+            text-transform: uppercase; color: var(--mist); opacity: .35;
+        }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        .marquee-inner span::before {
+            content: '✦'; margin-right: 10px;
+            color: var(--nebula); opacity: .6;
+        }
+
+        /* ═══ GLASS CARD ═══ */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 28px; position: relative;
+            transition: border-color .4s, transform .4s, box-shadow .4s;
+        }
+        .glass-card:hover {
+            border-color: rgba(167,139,250,.3);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(124,58,237,.08);
+        }
+
+        /* ═══ IDENTITY ═══ */
+        #identity .identity-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+        .id-chip {
+            background: rgba(124,58,237,.08);
+            border: 1px solid rgba(167,139,250,.1);
+            border-radius: 8px; padding: 16px 18px;
+            transition: all .3s;
+        }
+        .id-chip:hover {
+            background: rgba(124,58,237,.15);
+            border-color: rgba(167,139,250,.25);
+            transform: translateY(-2px);
+        }
+        .id-chip-label {
+            font-family: var(--font-mono); font-size: .6rem;
+            letter-spacing: .2em; color: var(--nebula);
+            margin-bottom: 6px; text-transform: uppercase;
+        }
+        .id-chip-value { font-size: .85rem; color: var(--starlight); }
+
+        /* ═══ DIMENSIONS ═══ */
+        #dimensions .dim-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .dimension-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px; padding: 28px;
+            position: relative; overflow: hidden;
+            transition: all .4s;
+        }
+        .dimension-card::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+        .dimension-card:hover { transform: translateY(-5px); border-color: rgba(167,139,250,.3); }
+        .dimension-card:nth-child(1)::before { background: var(--aurora); }
+        .dimension-card:nth-child(1) .dim-icon { color: var(--aurora); }
+        .dimension-card:nth-child(2)::before { background: var(--portal); }
+        .dimension-card:nth-child(2) .dim-icon { color: var(--portal); }
+        .dimension-card:nth-child(3)::before { background: var(--comet); }
+        .dimension-card:nth-child(3) .dim-icon { color: var(--comet); }
+        .dimension-card:nth-child(4)::before { background: var(--anomaly); }
+        .dimension-card:nth-child(4) .dim-icon { color: var(--anomaly); }
+        .dimension-card:nth-child(5)::before { background: var(--stardust); }
+        .dimension-card:nth-child(5) .dim-icon { color: var(--stardust); }
+        .dim-icon { font-size: 1.3rem; margin-bottom: 12px; display: inline-block; color: var(--stardust); }
+        .dim-title {
+            font-family: var(--font-display); font-weight: 700;
+            font-size: 1.1rem; margin-bottom: 8px;
+        }
+        .dim-text { font-size: .8rem; color: var(--mist); line-height: 1.8; }
+        .dim-tag {
+            display: inline-block; margin-top: 12px;
+            font-family: var(--font-mono); font-size: .58rem;
+            letter-spacing: .15em; padding: 3px 10px;
+            border: 1px solid rgba(167,139,250,.15);
+            border-radius: 4px; color: var(--stardust);
+        }
+
+        /* ═══ CONSTELLATION ═══ */
+        .constellation {
+            display: flex; justify-content: center; gap: 14px;
+            margin-top: 14px; flex-wrap: wrap;
+        }
+        .star-point {
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            background: rgba(124,58,237,.12);
+            border: 1px solid rgba(167,139,250,.2);
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-mono); font-size: .45rem;
+            color: var(--stardust); letter-spacing: 0;
+            transition: all .3s; position: relative;
+        }
+        .star-point:hover {
+            background: var(--aurora); border-color: var(--aurora);
+            color: #fff; box-shadow: 0 0 14px rgba(236,72,153,.35);
+            transform: scale(1.25);
+        }
+        .star-point::after {
+            content: attr(data-name);
+            position: absolute; bottom: -16px;
+            font-size: .45rem; white-space: nowrap;
+            opacity: 0; transition: opacity .2s; color: var(--mist);
+        }
+        .star-point:hover::after { opacity: 1; }
+
+        /* ═══ CONTENT CARDS ═══ */
+        .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .content-card {
+            position: relative; border-radius: 14px; overflow: hidden;
+            min-height: 360px; display: flex; flex-direction: column;
+            justify-content: flex-end; transition: transform .5s;
+        }
+        .content-card:hover { transform: translateY(-5px); }
+        .content-card-img {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            object-fit: cover; filter: brightness(.4) saturate(.6);
+            transition: all .6s;
+        }
+        .content-card:hover .content-card-img {
+            filter: brightness(.6) saturate(.85); transform: scale(1.05);
+        }
+        .content-card-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(8,8,16,.92) 0%, rgba(8,8,16,.3) 55%, transparent 100%);
+        }
+        .content-card-body { position: relative; z-index: 2; padding: 24px; }
+        .content-card-num {
+            font-family: var(--font-mono); font-size: .6rem;
+            letter-spacing: .2em; color: var(--nebula); margin-bottom: 8px;
+        }
+        .content-card-title {
+            font-family: var(--font-display); font-size: 1.3rem;
+            font-weight: 700; margin-bottom: 8px;
+        }
+        .content-card-text { font-size: .78rem; color: var(--mist); line-height: 1.8; }
+
+        /* ═══ TIMELINE ═══ */
+        .timeline { position: relative; padding-left: 28px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 5px; top: 0;
+            width: 1px; height: 100%;
+            background: linear-gradient(180deg, var(--nebula), var(--aurora), transparent);
+        }
+        .timeline-item { position: relative; margin-bottom: 28px; padding-left: 18px; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -25px; top: 7px;
+            width: 8px; height: 8px;
+            border: 2px solid var(--stardust); border-radius: 50%;
+            background: var(--void);
+        }
+        .timeline-tag {
+            font-family: var(--font-mono); font-size: .6rem;
+            letter-spacing: .2em; color: var(--nebula);
+        }
+        .timeline-title {
+            font-family: var(--font-display); font-size: 1rem;
+            font-weight: 700; margin: 2px 0 4px;
+        }
+        .timeline-desc { font-size: .78rem; color: var(--mist); }
+
+        /* ═══ STORY BOX ═══ */
+        .story-box {
+            max-width: 680px; margin: 0 auto;
+            background: var(--glass-bg);
+            border-left: 3px solid var(--aurora);
+            padding: 32px; border-radius: 0 14px 14px 0;
+            position: relative;
+        }
+        .story-box::before {
+            content: '✦'; position: absolute; top: 12px; right: 16px;
+            font-size: 1.2rem; color: var(--aurora); opacity: .15;
+        }
+        .story-box p { font-size: .88rem; line-height: 2; color: var(--mist); }
+        .story-highlight {
+            display: block; margin-top: 16px;
+            font-family: var(--font-mono); font-size: .72rem;
+            color: var(--comet); letter-spacing: .08em;
+        }
+
+        /* ═══ SKILLS ═══ */
+        .skill-group { display: flex; flex-direction: column; gap: 16px; max-width: 560px; }
+        .skill-item { display: flex; flex-direction: column; gap: 5px; }
+        .skill-label {
+            display: flex; justify-content: space-between;
+            font-family: var(--font-mono); font-size: .65rem;
+            letter-spacing: .12em; color: var(--mist);
+        }
+        .skill-track { width: 100%; height: 3px; background: rgba(148,163,184,.1); border-radius: 2px; overflow: hidden; }
+        .skill-fill {
+            height: 100%; width: 0;
+            background: linear-gradient(90deg, var(--nebula), var(--aurora));
+            border-radius: 2px; transition: width 1.4s cubic-bezier(.25,.46,.45,.94);
+        }
+
+        /* ═══ PHILOSOPHY ═══ */
+        #philosophy { text-align: center; }
+        .philosophy-quote {
+            font-family: var(--font-display);
+            font-size: clamp(1.3rem, 3.5vw, 2.2rem);
+            font-weight: 700; line-height: 1.5;
+            max-width: 640px; margin: 0 auto 36px;
+        }
+        .philosophy-quote em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--aurora), var(--stardust));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .trait-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 16px; max-width: 580px; margin: 0 auto; text-align: left;
+        }
+        .trait-item {
+            border-left: 2px solid rgba(148,163,184,.1);
+            padding-left: 14px; transition: border-color .3s;
+        }
+        .trait-item:hover { border-color: var(--nebula); }
+        .trait-item h4 {
+            font-family: var(--font-mono); font-size: .6rem;
+            letter-spacing: .18em; text-transform: uppercase;
+            color: var(--nebula); margin-bottom: 4px;
+        }
+        .trait-item p { font-size: .78rem; color: var(--mist); line-height: 1.7; }
+
+        /* ═══ FOOTER ═══ */
+        footer {
+            position: relative; z-index: 20;
+            text-align: center; padding: 4rem 2rem;
+            border-top: 1px solid rgba(167,139,250,.08);
+        }
+        .footer-social {
+            display: flex; justify-content: center; gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .footer-social a {
+            font-size: 1.8rem; color: var(--mist);
+            transition: all .3s;
+        }
+        .footer-social a:hover {
+            color: var(--aurora);
+            transform: scale(1.1);
+        }
+        .footer-text {
+            font-size: .85rem; color: var(--mist); opacity: .5;
+        }
+        .footer-text .heart {
+            color: var(--aurora);
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); display: inline-block; }
+            50% { transform: scale(1.2); }
+        }
+        .footer-text a {
+            color: var(--stardust); text-decoration: none;
+            transition: color .3s;
+        }
+        .footer-text a:hover { color: var(--aurora); }
+
+        /* ═══ NEBULA BLOBS ═══ */
+        .nebula-blob {
+            position: fixed; border-radius: 50%;
+            pointer-events: none; z-index: 0;
+            filter: blur(100px); opacity: .05;
+        }
+
+        /* ═══ RESPONSIVE ═══ */
+        @media (max-width: 768px) {
+            section { padding: 56px 18px; }
+            .nav-bar { padding: 14px 18px; }
+            .hero-avatar { width: 130px; height: 130px; }
+            .content-grid, #identity .identity-grid, .trait-grid { grid-template-columns: 1fr; }
+            .content-card { min-height: 300px; }
+            .story-box { padding: 22px; }
+        }
+        @media (max-width: 480px) {
+            .hero-name { letter-spacing: 0; }
+            .nav-back span { display: none; }
+            #dimensions .dim-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-portal">
+            <div class="loader-core"></div>
+        </div>
+        <div id="loader-text">ENTERING THE UNKNOWN</div>
+        <div id="loader-bar"><div id="loader-bar-fill"></div></div>
+    </div>
+
+    <!-- Three.js Container -->
+    <div id="three-container"></div>
+
+    <!-- p5.js Container -->
+    <div id="p5-container"></div>
+
+    <!-- Nebula Blobs -->
+    <div class="nebula-blob" style="width:500px;height:500px;background:var(--nebula);top:-10%;left:-10%;"></div>
+    <div class="nebula-blob" style="width:400px;height:400px;background:var(--aurora);bottom:10%;right:-8%;"></div>
+    <div class="nebula-blob" style="width:300px;height:300px;background:var(--portal);top:50%;left:30%;"></div>
+
+    <!-- Nav -->
+    <nav class="nav-bar">
+        <a href="/guild" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            <span>GUILD</span>
+        </a>
+        <div class="social-links">
+            <a href="https://www.instagram.com/joanna._.army/" target="_blank" rel="noopener" aria-label="Instagram">
+                <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="https://www.threads.net/@joanna._.army" target="_blank" rel="noopener" aria-label="Threads">
+                <i class="fa-brands fa-threads"></i>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+
+        <!-- HERO -->
+        <section id="hero">
+            <div class="hero-tag">UNCHARTED DIMENSIONS</div>
+            <h1 class="hero-name">JOANNA</h1>
+            <p class="hero-quote">"在混沌中創造，在未知中綻放。"</p>
+            <div class="hero-avatar-wrap">
+                <div class="hero-ring"></div>
+                <img src="../assets/img/guild/joanna_army/avatar.webp" alt="Joanna" class="hero-avatar" width="160" height="160" loading="eager">
+            </div>
+            <div class="hero-scroll">
+                <span>SCROLL TO EXPLORE</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </div>
+        </section>
+
+        <!-- MARQUEE -->
+        <div class="marquee-strip">
+            <div class="marquee-inner">
+                <span>CHAOS CREATOR</span><span>BTS ARMY</span><span>DIY SOUL</span>
+                <span>PIERCING CULTURE</span><span>VISUAL DESIGN</span><span>天馬行空</span>
+                <span>RICK AND MORTY</span><span>原相機</span><span>UNCHARTED</span>
+                <span>CHAOS CREATOR</span><span>BTS ARMY</span><span>DIY SOUL</span>
+                <span>PIERCING CULTURE</span><span>VISUAL DESIGN</span><span>天馬行空</span>
+                <span>RICK AND MORTY</span><span>原相機</span><span>UNCHARTED</span>
+            </div>
+        </div>
+
+        <!-- IDENTITY -->
+        <section id="identity">
+            <div class="section-tag">DIMENSION 00</div>
+            <h2 class="section-title">我是誰</h2>
+            <div class="accent-line"></div>
+            <p style="color:var(--mist);font-size:.88rem;max-width:560px;margin-bottom:28px;line-height:2;">
+                視覺傳達設計系的混沌生物。腦袋裡的想法永遠比時間多，所以不是在創作就是在醞釀下一次爆發。不追求被歸類，對未知的一切充滿好奇心。風格在詭異與可愛之間反覆橫跳，用雙手把腦中畫面變成現實。
+            </p>
+            <div class="identity-grid">
+                <div class="id-chip">
+                    <div class="id-chip-label">CLASS</div>
+                    <div class="id-chip-value">視覺傳達設計系</div>
+                </div>
+                <div class="id-chip">
+                    <div class="id-chip-label">ALIGNMENT</div>
+                    <div class="id-chip-value">混沌中立 Chaotic Neutral</div>
+                </div>
+                <div class="id-chip">
+                    <div class="id-chip-label">WEAPON</div>
+                    <div class="id-chip-value">想像力 × 行動力 × 一雙閒不住的手</div>
+                </div>
+                <div class="id-chip">
+                    <div class="id-chip-label">MOTTO</div>
+                    <div class="id-chip-value">先做了再說</div>
+                </div>
+                <div class="id-chip">
+                    <div class="id-chip-label">TRAIT</div>
+                    <div class="id-chip-value">直覺型創作者 × 真誠派</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIMENSIONS -->
+        <section id="dimensions">
+            <div class="section-tag">DIMENSION 01 — 04</div>
+            <h2 class="section-title">維度列表</h2>
+            <div class="accent-line"></div>
+            <div class="dim-grid">
+                <div class="dimension-card">
+                    <div class="dim-icon"><i class="fa-solid fa-heart"></i></div>
+                    <h3 class="dim-title">BTS ARMY</h3>
+                    <p class="dim-text">ARMY 不只是粉絲名，是一種存在方式。七個人的音樂是混亂日常裡的定錨點，創作低潮時的充電站。追星不是逃避現實，是找到在這個世界繼續衝的燃料。</p>
+                    <div class="constellation">
+                        <div class="star-point" data-name="RM">RM</div>
+                        <div class="star-point" data-name="Jin">JN</div>
+                        <div class="star-point" data-name="SUGA">SG</div>
+                        <div class="star-point" data-name="j-hope">JH</div>
+                        <div class="star-point" data-name="Jimin">JM</div>
+                        <div class="star-point" data-name="V">V</div>
+                        <div class="star-point" data-name="JK">JK</div>
+                    </div>
+                    <div class="dim-tag">방탄소년단</div>
+                </div>
+                <div class="dimension-card">
+                    <div class="dim-icon"><i class="fa-solid fa-palette"></i></div>
+                    <h3 class="dim-title">混沌創作者</h3>
+                    <p class="dim-text">設計課是白天的事，真正的創作往往在深夜降臨。風格不被單一標籤困住——可以暗黑也可以甜美，端看當下的直覺把自己帶去哪裡。</p>
+                    <div class="dim-tag">VISUAL COMM</div>
+                </div>
+                <div class="dimension-card">
+                    <div class="dim-icon"><i class="fa-solid fa-headphones"></i></div>
+                    <h3 class="dim-title">無國界音樂</h3>
+                    <p class="dim-text">耳機裡的播放清單跨越語言——韓文、日文、英文都有。好聽的旋律不需要翻譯，能帶動情緒的節拍就是最好的語言。</p>
+                    <div class="dim-tag">K-POP × J-POP</div>
+                </div>
+                <div class="dimension-card">
+                    <div class="dim-icon"><i class="fa-solid fa-flask"></i></div>
+                    <h3 class="dim-title">荒謬宇宙</h3>
+                    <p class="dim-text">喜歡用幽默包裹真實的作品。不管是動畫、迷因還是黑色幽默，能讓人笑著思考的東西最有價值。認真活著，但不必正經八百。</p>
+                    <div class="dim-tag">ABSURDIST</div>
+                </div>
+                <div class="dimension-card">
+                    <div class="dim-icon"><i class="fa-solid fa-camera"></i></div>
+                    <h3 class="dim-title">原相機主義</h3>
+                    <p class="dim-text">拒絕濾鏡，擁抱真實。拍照用原相機是一種態度——不需要修飾才能呈現的樣子，才是最有力量的。每張照片都是當下那一刻的真實切片。</p>
+                    <div class="dim-tag">NO FILTER</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CREATOR -->
+        <section id="creator">
+            <div class="section-tag">DIMENSION 05</div>
+            <h2 class="section-title">創作空間</h2>
+            <div class="accent-line"></div>
+            <div class="content-grid">
+                <div class="content-card">
+                    <img src="../assets/img/guild/joanna_army/selfie_raw.webp" alt="Joanna 原相機自拍 — 藍色美甲、捕夢網耳環" class="content-card-img" width="295" height="430" loading="lazy">
+                    <div class="content-card-overlay"></div>
+                    <div class="content-card-body">
+                        <div class="content-card-num">001</div>
+                        <h3 class="content-card-title">The Creator</h3>
+                        <p class="content-card-text">腦袋裡的畫面太多，不動手就會溢出來。創作不分時間地點，靈感來了就是現在。</p>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <img src="../assets/img/guild/joanna_army/lucky_charm.webp" alt="Joanna 皮帽街拍 — 夜市刮刮樂" class="content-card-img" width="295" height="440" loading="lazy">
+                    <div class="content-card-overlay"></div>
+                    <div class="content-card-body">
+                        <div class="content-card-num">002</div>
+                        <h3 class="content-card-title">手作鍊金術</h3>
+                        <p class="content-card-text">想要的東西買不到？那就自己做。手作是把想像力從腦袋裡拉出來的最短路徑。</p>
+                    </div>
+                </div>
+                <div class="content-card">
+                    <img src="../assets/img/guild/joanna_army/skull_makeup.webp" alt="Joanna 骷髏妝特效 — 萬聖節妝容創作" class="content-card-img" width="155" height="195" loading="lazy">
+                    <div class="content-card-overlay"></div>
+                    <div class="content-card-body">
+                        <div class="content-card-num">003</div>
+                        <h3 class="content-card-title">骷髏妝實驗</h3>
+                        <p class="content-card-text">臉是另一張畫布。從日常到骷髏妝都敢挑戰，妝容是當天心情的視覺翻譯。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIY -->
+        <section id="diy">
+            <div class="section-tag">DIMENSION 06</div>
+            <h2 class="section-title">DIY Soul</h2>
+            <div class="accent-line"></div>
+            <p style="color:var(--mist);font-size:.88rem;max-width:560px;margin-bottom:28px;line-height:2;">
+                什麼都想自己來的體質。與其等別人幫忙，不如自己研究、自己動手。每一項新技能都是好奇心驅動的產物。
+            </p>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-tag">SKILL 01</div>
+                    <div class="timeline-title">自助染髮</div>
+                    <div class="timeline-desc">自己調色、自己染，每次換色都是一場小型實驗。</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-tag">SKILL 02</div>
+                    <div class="timeline-title">美甲藝術</div>
+                    <div class="timeline-desc">自學凝膠美甲，指尖是我最小的畫布。</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-tag">SKILL 03</div>
+                    <div class="timeline-title">衣物改造</div>
+                    <div class="timeline-desc">舊衣服不丟，加工改造成獨一無二的作品。</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-tag">SKILL 04</div>
+                    <div class="timeline-title">妝容實驗</div>
+                    <div class="timeline-desc">嘗試各種風格的妝容，把臉當作每天的創作練習。</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PIERCING -->
+        <section id="piercing">
+            <div class="section-tag">DIMENSION 07</div>
+            <h2 class="section-title">穿孔文化</h2>
+            <div class="accent-line"></div>
+            <div class="content-grid">
+                <div class="content-card" style="min-height:400px;">
+                    <img src="../assets/img/guild/joanna_army/piercing_ear.webp" alt="Joanna 耳朵穿孔特寫 — 老頭子穿洞完成的夢想" class="content-card-img" width="225" height="400" loading="lazy">
+                    <div class="content-card-overlay"></div>
+                    <div class="content-card-body">
+                        <div class="content-card-num">003</div>
+                        <h3 class="content-card-title">身體的星圖</h3>
+                        <p class="content-card-text">每一個穿孔都是一個決定。身體是自己的，裝飾它的方式也由自己選擇。</p>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    <div class="glass-card">
+                        <h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:700;margin-bottom:8px;">堅持的意義</h3>
+                        <p style="font-size:.8rem;color:var(--mist);line-height:1.8;">想做的事情被拒絕不代表要放棄。過程中的波折反而讓最終成果更有意義。穿孔是一種對自己身體主權的宣示。</p>
+                    </div>
+                    <div class="glass-card">
+                        <h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:700;margin-bottom:8px;">穿搭即態度</h3>
+                        <p style="font-size:.8rem;color:var(--mist);line-height:1.8;">穿搭是性格的延伸，不是為了迎合任何人的審美。暗色系為底、個性配件點綴，每天出門都是一次無聲的自我表達。走在路上就是自己的展覽。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STORY -->
+        <section id="story">
+            <div class="section-tag" style="display:block;text-align:center;">ANOMALY LOG</div>
+            <h2 class="section-title" style="text-align:center;">那場意外</h2>
+            <div class="accent-line" style="margin:0 auto 28px;"></div>
+            <div class="story-box">
+                <p>用漂白水在深色褲子上畫圖，忘了開窗通風，結果直接中毒嘔吐昏過去。</p>
+                <p style="margin-top:12px;">醒來第一件事不是反省，是先看成品效果如何。</p>
+                <p style="margin-top:12px;">大概就是這種人吧——對創作的執念永遠大於對後果的擔憂。吃一塹不一定長一智，但作品一定要完成。</p>
+                <span class="story-highlight">> 創作本能 — 先完成，後果再說</span>
+            </div>
+        </section>
+
+        <!-- SKILLS -->
+        <section id="skills">
+            <div class="section-tag">STATS</div>
+            <h2 class="section-title">能力值</h2>
+            <div class="accent-line"></div>
+            <div class="skill-group">
+                <div class="skill-item"><div class="skill-label"><span>IMAGINATION 想像力</span><span>97</span></div><div class="skill-track"><div class="skill-fill" data-width="97"></div></div></div>
+                <div class="skill-item"><div class="skill-label"><span>CHAOS TOLERANCE 混沌耐受</span><span>95</span></div><div class="skill-track"><div class="skill-fill" data-width="95"></div></div></div>
+                <div class="skill-item"><div class="skill-label"><span>DIY MASTERY 手作精通</span><span>90</span></div><div class="skill-track"><div class="skill-fill" data-width="90"></div></div></div>
+                <div class="skill-item"><div class="skill-label"><span>BLUNT HONESTY 直話直說</span><span>92</span></div><div class="skill-track"><div class="skill-fill" data-width="92"></div></div></div>
+                <div class="skill-item"><div class="skill-label"><span>VISUAL DESIGN 視覺設計</span><span>85</span></div><div class="skill-track"><div class="skill-fill" data-width="85"></div></div></div>
+                <div class="skill-item"><div class="skill-label"><span>SELF-DEPRECATION 自嘲能力</span><span>99</span></div><div class="skill-track"><div class="skill-fill" data-width="99"></div></div></div>
+                <div class="skill-item"><div class="skill-label"><span>FANDOM DEVOTION 追星能力</span><span>100</span></div><div class="skill-track"><div class="skill-fill" data-width="100"></div></div></div>
+            </div>
+        </section>
+
+        <!-- PHILOSOPHY -->
+        <section id="philosophy">
+            <div class="section-tag">TRANSMISSION</div>
+            <h2 class="section-title">未知宣言</h2>
+            <div class="accent-line" style="margin:0 auto 36px;"></div>
+            <div class="philosophy-quote">"風格就是 <em>做自己</em>"</div>
+            <div class="trait-grid">
+                <div class="trait-item">
+                    <h4>PERSONALITY</h4>
+                    <p>說話直接，不擅長拐彎抹角。真誠有時候刺耳，但至少不會讓人猜。</p>
+                </div>
+                <div class="trait-item">
+                    <h4>AESTHETIC</h4>
+                    <p>暗黑和可愛不衝突。風格是流動的，不需要固定在某個框架裡。今天哥德明天少女，看心情。</p>
+                </div>
+                <div class="trait-item">
+                    <h4>COMPASSION</h4>
+                    <p>外表再混沌，看到需要幫助的生命還是會毫不猶豫地衝上去。柔軟不是弱點。</p>
+                </div>
+                <div class="trait-item">
+                    <h4>PHILOSOPHY</h4>
+                    <p>想太多不是病，是天賦。腦袋停不下來就讓它跑，總會跑出有趣的東西。</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-social">
+            <a href="https://www.instagram.com/joanna._.army/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.threads.net/@joanna._.army" target="_blank" rel="noopener" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+        </div>
+        <p class="footer-text">Made with <span class="heart">♥</span> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+    </footer>
+
+    <!-- ═══════════════════════════════════════════
+         SCRIPTS — Three.js / GSAP / p5.js
+         ═══════════════════════════════════════════ -->
+    <script>
+    (function() {
+        'use strict';
+
+        // ─── LOADER ───
+        var loader = document.getElementById('loader');
+        var barFill = document.getElementById('loader-bar-fill');
+        var prog = 0;
+        var iv = setInterval(function() {
+            prog += Math.random() * 15 + 5;
+            if (prog >= 100) { prog = 100; clearInterval(iv); }
+            barFill.style.width = prog + '%';
+        }, 180);
+        window.addEventListener('load', function() {
+            prog = 100; barFill.style.width = '100%'; clearInterval(iv);
+            setTimeout(function() { loader.classList.add('hidden'); startAnimations(); }, 600);
+        });
+
+        // ─── CURSOR ───
+        var dot = document.querySelector('.cursor-dot');
+        var outline = document.querySelector('.cursor-outline');
+        var mx = 0, my = 0, ox = 0, oy = 0;
+        var isTouch = 'ontouchstart' in window;
+
+        if (isTouch) {
+            document.body.style.cursor = 'auto';
+            dot.style.display = 'none';
+            outline.style.display = 'none';
+        } else {
+            document.addEventListener('mousemove', function(e) {
+                mx = e.clientX; my = e.clientY;
+                dot.style.transform = 'translate(' + (mx - 3) + 'px,' + (my - 3) + 'px)';
+            });
+            document.querySelectorAll('a,.glass-card,.dimension-card,.content-card,.id-chip,.trait-item,.star-point').forEach(function(el) {
+                el.addEventListener('mouseenter', function() { outline.classList.add('hovering'); });
+                el.addEventListener('mouseleave', function() { outline.classList.remove('hovering'); });
+            });
+        }
+
+        // ─── CLICK EFFECTS ───
+        document.addEventListener('click', function(e) {
+            if (isTouch) return;
+            dot.classList.add('burst');
+            setTimeout(function() { dot.classList.remove('burst'); }, 180);
+            for (var i = 0; i < 2; i++) {
+                var r = document.createElement('div');
+                r.className = 'click-ripple';
+                r.style.left = e.clientX + 'px'; r.style.top = e.clientY + 'px';
+                r.style.transform = 'translate(-50%,-50%)';
+                r.style.animationDelay = (i * .12) + 's';
+                document.body.appendChild(r);
+                setTimeout(function(el) { return function() { el.remove(); }; }(r), 800);
+            }
+            for (var j = 0; j < 6; j++) {
+                var p = document.createElement('div');
+                p.className = 'click-particle';
+                p.style.left = e.clientX + 'px'; p.style.top = e.clientY + 'px';
+                var angle = (Math.PI * 2 / 6) * j;
+                var dist = 25 + Math.random() * 20;
+                var ddx = Math.cos(angle) * dist, ddy = Math.sin(angle) * dist;
+                p.style.transition = 'all .4s ease-out'; p.style.opacity = '1';
+                document.body.appendChild(p);
+                (function(el, dx, dy) {
+                    requestAnimationFrame(function() {
+                        el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+                        el.style.opacity = '0';
+                    });
+                    setTimeout(function() { el.remove(); }, 500);
+                })(p, ddx, ddy);
+            }
+
+            // Three.js shockwave
+            clickShock.active = true;
+            clickShock.x = (e.clientX / window.innerWidth) * 2 - 1;
+            clickShock.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            clickShock.time = performance.now();
+            clickShock.strength = 0.6;
+
+            // Web flash
+            webFlash.amount = 0.4;
+
+            // p5 click burst
+            var burstCount = 8 + Math.floor(Math.random() * 5);
+            window._p5ClickBursts.push({
+                x: e.clientX,
+                y: e.clientY,
+                count: burstCount,
+                time: performance.now(),
+            });
+        });
+
+        // ─── MOUSE DRAG LISTENERS ───
+        document.addEventListener('mousedown', function(e) {
+            if (isTouch) return;
+            dragState.active = true;
+            dragState.startX = e.clientX;
+            dragState.startY = e.clientY;
+            dragState.currentX = e.clientX;
+            dragState.currentY = e.clientY;
+            dragState.dirX = 0;
+            dragState.dirY = 0;
+            dragState.path = [{ x: e.clientX, y: e.clientY }];
+        });
+        document.addEventListener('mousemove', function(e) {
+            if (!dragState.active) return;
+            dragState.dirX = e.clientX - dragState.currentX;
+            dragState.dirY = e.clientY - dragState.currentY;
+            dragState.currentX = e.clientX;
+            dragState.currentY = e.clientY;
+            dragState.path.push({ x: e.clientX, y: e.clientY });
+            if (dragState.path.length > dragState.maxPathLen) {
+                dragState.path.shift();
+            }
+        });
+        document.addEventListener('mouseup', function() {
+            if (!dragState.active) return;
+            dragState.active = false;
+            // Push drag stroke to p5 for persistent fade rendering
+            if (dragState.path.length > 2) {
+                window._p5DragStrokes.push({
+                    path: dragState.path.slice(),
+                    time: performance.now(),
+                    fadeDuration: 2500,
+                });
+            }
+            dragState.path = [];
+        });
+
+        // ─── Shared Scroll State (GSAP-driven, read by Three.js + p5.js) ───
+        var scrollState = { chaos: 0.2, energy: 0.3, shape: 0 };
+
+        // ─── Clustered Constellation Layout ───
+        var clusters = [
+            { cx: 0,     cy: -1.2, cz: 0 },
+            { cx: 1.04,  cy: 0.6,  cz: 0 },
+            { cx: -1.04, cy: 0.6,  cz: 0 },
+        ];
+        var clusterScreenPos = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }];
+
+        // ─── Click Shockwave + Drag State ───
+        var clickShock = { active: false, x: 0, y: 0, time: 0, strength: 0 };
+        var webFlash = { amount: 0 };
+        window._p5ClickBursts = [];
+        window._p5DragStrokes = [];
+        var dragState = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, dirX: 0, dirY: 0, path: [], maxPathLen: 40 };
+
+        // ─── THREE.JS — Nerve Tendrils (思緒觸手) ───
+        var threeContainer = document.getElementById('three-container');
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 4;
+
+        var renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        threeContainer.appendChild(renderer.domElement);
+        renderer.domElement.style.filter = 'contrast(1.15) brightness(1.1)';
+
+        // Simple 3D noise
+        function cosNoise(x, y, z) {
+            return Math.sin(x * 1.1) * Math.cos(y * 1.3) * Math.sin(z * 0.9)
+                + Math.sin(x * 2.1 + y * 1.7) * 0.3
+                + Math.cos(y * 2.3 + z * 1.5) * 0.2;
+        }
+
+        // Per-shape color palettes (moved before tendril build so initial color uses shapeColors[0])
+        var shapeColors = [
+            // Eye (cool): cyan, blue, purple, lavender, teal
+            [new THREE.Color(0.0, 0.9, 1.0), new THREE.Color(0.2, 0.3, 1.0), new THREE.Color(0.55, 0.15, 0.95), new THREE.Color(0.7, 0.6, 1.0), new THREE.Color(0.0, 0.7, 0.7)],
+            // Star (warm): gold, pink, orange, rose, amber
+            [new THREE.Color(1.0, 0.85, 0.1), new THREE.Color(1.0, 0.4, 0.6), new THREE.Color(1.0, 0.5, 0.1), new THREE.Color(0.9, 0.3, 0.5), new THREE.Color(1.0, 0.7, 0.2)],
+            // Heart (warm-cool): hot pink, magenta, violet, rose, peach
+            [new THREE.Color(1.0, 0.1, 0.5), new THREE.Color(0.85, 0.0, 0.7), new THREE.Color(0.5, 0.1, 0.9), new THREE.Color(1.0, 0.3, 0.5), new THREE.Color(1.0, 0.6, 0.5)],
+        ];
+
+        // Build tendrils — 12 tendrils all tracing the same shape outline
+        var NUM_TENDRILS = 12;
+        var VERTS_PER = 60;
+        var tendrils = [];
+
+        // ── Shape generator: returns {x, y, z} for each (shapeId, tendrilIndex, frac) ──
+        function getShapePos(shapeId, ti, frac) {
+            // Thickness offset — 12 tendrils spread around path centerline
+            var thickAngle = (ti / 12) * Math.PI * 2;
+            var thickR = 0.08 + (ti % 4) * 0.03; // 0.08 ~ 0.17
+            var offX = Math.cos(thickAngle) * thickR;
+            var offY = Math.sin(thickAngle) * thickR;
+
+            var x, y, z;
+            if (shapeId === 0) {
+                // ── Eye ── closed contour: upper lid → lower lid
+                var eyeW = 2.5;
+                var halfW = eyeW / 2;
+                if (frac < 0.4) {
+                    // Upper eyelid: left → right
+                    var t = frac / 0.4;
+                    x = -halfW + t * eyeW;
+                    y = 0.55 * Math.sin(t * Math.PI);
+                    z = Math.sin(t * Math.PI) * 0.1;
+                } else if (frac < 0.5) {
+                    // Upper to lower transition at right corner
+                    var t = (frac - 0.4) / 0.1;
+                    x = halfW;
+                    y = 0.55 * Math.sin(Math.PI) * (1 - t) + (-0.45 * Math.sin(Math.PI)) * t;
+                    z = 0.05;
+                } else if (frac < 0.9) {
+                    // Lower eyelid: right → left
+                    var t = (frac - 0.5) / 0.4;
+                    x = halfW - t * eyeW;
+                    y = -0.45 * Math.sin(t * Math.PI);
+                    z = Math.sin(t * Math.PI) * 0.08;
+                } else {
+                    // Close back to left corner
+                    var t = (frac - 0.9) / 0.1;
+                    x = -halfW;
+                    y = -0.45 * Math.sin(Math.PI) * (1 - t);
+                    z = 0.05;
+                }
+                // Add iris wobble as z-depth variation per tendril
+                var irisPhase = ti * 0.52;
+                z += Math.sin(frac * Math.PI * 4 + irisPhase) * 0.04;
+            } else if (shapeId === 1) {
+                // ── Star (5-pointed) ── sharp polygon with tips and valleys
+                var outerR = 1.15;
+                var innerR = 0.45;
+                var starPts = 5;
+                var totalV = starPts * 2;
+                var idx = frac * totalV;
+                var vi = Math.floor(idx) % totalV;
+                var nextVi = (vi + 1) % totalV;
+                var lt = idx - Math.floor(idx);
+                var angA = (vi / totalV) * Math.PI * 2 - Math.PI / 2;
+                var rA = (vi % 2 === 0) ? outerR : innerR;
+                var angB = (nextVi / totalV) * Math.PI * 2 - Math.PI / 2;
+                var rB = (nextVi % 2 === 0) ? outerR : innerR;
+                x = Math.cos(angA) * rA + (Math.cos(angB) * rB - Math.cos(angA) * rA) * lt;
+                y = Math.sin(angA) * rA + (Math.sin(angB) * rB - Math.sin(angA) * rA) * lt;
+                z = ((rA * (1 - lt) + rB * lt) - innerR) / (outerR - innerR) * 0.12;
+            } else {
+                // ── Heart ── parametric heart curve
+                var ht = frac * Math.PI * 2;
+                var hs = 0.075;
+                x = 16 * Math.pow(Math.sin(ht), 3) * hs;
+                y = (13 * Math.cos(ht) - 5 * Math.cos(2 * ht) - 2 * Math.cos(3 * ht) - Math.cos(4 * ht) + 2) * hs;
+                z = Math.sin(ht * 2) * 0.08;
+            }
+
+            return { x: x + offX, y: y + offY, z: z };
+        }
+
+        // Pre-compute rest positions: shapeRests[shapeId][tendrilIdx] = Float32Array(VERTS*3)
+        var shapeRests = [[], [], []];
+        for (var si = 0; si < 3; si++) {
+            for (var ti = 0; ti < NUM_TENDRILS; ti++) {
+                var arr = new Float32Array(VERTS_PER * 3);
+                for (var v = 0; v < VERTS_PER; v++) {
+                    var frac = v / (VERTS_PER - 1);
+                    var p = getShapePos(si, ti, frac);
+                    arr[v * 3] = p.x;
+                    arr[v * 3 + 1] = p.y;
+                    arr[v * 3 + 2] = p.z;
+                }
+                shapeRests[si].push(arr);
+            }
+        }
+
+        // Build 12 tendrils, initial rest = Eye (shape 0)
+        for (var ti = 0; ti < NUM_TENDRILS; ti++) {
+            var positions = new Float32Array(VERTS_PER * 3);
+            var initRest = shapeRests[0][ti];
+            for (var v = 0; v < VERTS_PER * 3; v++) {
+                positions[v] = initRest[v];
+            }
+
+            var geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            var col = shapeColors[0][ti % shapeColors[0].length];
+            var opacity = 0.55 + Math.random() * 0.30;
+            var mat = new THREE.LineBasicMaterial({
+                color: col,
+                transparent: true,
+                opacity: opacity,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+
+            var line = new THREE.Line(geo, mat);
+            scene.add(line);
+
+            tendrils.push({
+                line: line,
+                geo: geo,
+                mat: mat,
+                rest: initRest,
+                noiseOff: {
+                    x: ti * 8 + 10,
+                    y: ti * 8 + 15,
+                    z: ti * 8 + 20,
+                },
+                speed: 0.4 + (ti % 5) * 0.06,
+                baseOpacity: opacity,
+            });
+        }
+
+        // Glow pass — 3-layer neon halo per tendril
+        var glowLayers = [
+            { scale: 1.06, opacityMul: 0.40, whiteLerp: 0.3 },
+            { scale: 1.14, opacityMul: 0.22, whiteLerp: 0.5 },
+            { scale: 1.25, opacityMul: 0.10, whiteLerp: 0.7 },
+        ];
+        for (var gi = 0; gi < NUM_TENDRILS; gi++) {
+            var td = tendrils[gi];
+            td.glowMats = [];
+            for (var gli = 0; gli < glowLayers.length; gli++) {
+                var gl = glowLayers[gli];
+                var glowCol = td.mat.color.clone().lerp(new THREE.Color(1, 1, 1), gl.whiteLerp);
+                var glowMat = new THREE.LineBasicMaterial({
+                    color: glowCol,
+                    transparent: true,
+                    opacity: td.baseOpacity * gl.opacityMul,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                });
+                var glowLine = new THREE.Line(td.geo, glowMat);
+                glowLine.scale.set(gl.scale, gl.scale, gl.scale);
+                scene.add(glowLine);
+                td.glowMats.push(glowMat);
+            }
+        }
+
+        // Connection web — LineSegments connecting nearby tendril points
+        var MAX_CONNECTIONS = 250;
+        var webPositions = new Float32Array(MAX_CONNECTIONS * 6);
+        var webGeo = new THREE.BufferGeometry();
+        webGeo.setAttribute('position', new THREE.BufferAttribute(webPositions, 3));
+        var webMat = new THREE.LineBasicMaterial({
+            color: new THREE.Color(0.65, 0.55, 0.98),
+            transparent: true,
+            opacity: 0.12,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        var webLines = new THREE.LineSegments(webGeo, webMat);
+        scene.add(webLines);
+
+        var transitionPulse = { amount: 0, lastShapeA: 0 };
+
+        var clock = new THREE.Clock();
+        var projVec = new THREE.Vector3();
+        var _white = new THREE.Color(1, 1, 1);
+        var _tmpColor = new THREE.Color();
+        var prevConnIdx = 0;
+        var tMouse = { x: 0, y: 0 };
+        document.addEventListener('mousemove', function(e) {
+            tMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            tMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+
+            // Cursor outline chase (merged from standalone RAF loop)
+            if (!isTouch) {
+                ox += (mx - ox) * 0.1;
+                oy += (my - oy) * 0.1;
+                outline.style.transform = 'translate(' + (ox - 17) + 'px,' + (oy - 17) + 'px)';
+            }
+
+            var t = clock.getElapsedTime();
+            var chaos = scrollState.chaos;
+            var energy = scrollState.energy;
+
+            // Amplitude: quadratic curve — low chaos keeps shape clear
+            var amp = 0.04 + chaos * chaos * 0.8;
+            var spd = 0.4 + energy * 0.8;
+
+            // Wave source — orbits scene center, drives breath propagation
+            var waveSourceX = Math.cos(t * 0.3) * 1.5;
+            var waveSourceY = Math.sin(t * 0.3) * 1.5;
+
+            // Mouse position in world-ish coords
+            var mx3d = tMouse.x * 3;
+            var my3d = tMouse.y * 2;
+
+            // Click shockwave decay
+            var shockProgress = 0;
+            var shockActive = false;
+            if (clickShock.active) {
+                var elapsed = (performance.now() - clickShock.time) / 1000;
+                if (elapsed < 0.8) {
+                    shockProgress = 1 - (elapsed / 0.8);
+                    shockProgress = shockProgress * shockProgress; // quadratic decay
+                    shockActive = true;
+                } else {
+                    clickShock.active = false;
+                }
+            }
+            var shockX3d = clickShock.x * 3;
+            var shockY3d = clickShock.y * 2;
+
+            // Drag state in 3D coords
+            var dragActive = dragState.active;
+            var dragX3d = ((dragState.currentX / window.innerWidth) * 2 - 1) * 3;
+            var dragY3d = (-(dragState.currentY / window.innerHeight) * 2 + 1) * 2;
+            var dragDirLen = Math.sqrt(dragState.dirX * dragState.dirX + dragState.dirY * dragState.dirY);
+            var dragDirNX = dragDirLen > 0.1 ? (dragState.dirX / dragDirLen) : 0;
+            var dragDirNY = dragDirLen > 0.1 ? (-dragState.dirY / dragDirLen) : 0;
+
+            // Shape interpolation
+            var sVal = scrollState.shape;
+            var sA = Math.floor(Math.min(sVal, 1.999));
+            var sB = Math.min(sA + 1, 2);
+            var sT = sVal - sA;
+            var noiseScales = [0.25, 0.40, 0.45]; // Eye most stable, Heart most playful
+            var curNoiseScale = noiseScales[sA] * (1 - sT) + noiseScales[sB] * sT;
+
+            // Transition pulse — detect shape change
+            if (sA !== transitionPulse.lastShapeA) {
+                transitionPulse.amount = 0.5;
+                transitionPulse.lastShapeA = sA;
+            }
+            transitionPulse.amount *= 0.97;
+
+            // Breathe wave — all tendrils share the same origin (0,0), compute once
+            var wDist = Math.sqrt(waveSourceX * waveSourceX + waveSourceY * waveSourceY);
+            var wavePhase = wDist * 2.5 - t * 1.2;
+            var breathe = 1 + Math.sin(wavePhase) * 0.25;
+
+            // Animate each tendril
+            for (var ti = 0; ti < NUM_TENDRILS; ti++) {
+                var td = tendrils[ti];
+                var pos = td.geo.attributes.position;
+                var no = td.noiseOff;
+                var s = td.speed * spd;
+                var restA = shapeRests[sA][ti];
+                var restB = shapeRests[sB][ti];
+
+                for (var v = 0; v < VERTS_PER; v++) {
+                    var frac = v / (VERTS_PER - 1);
+                    var vi3 = v * 3;
+
+                    // Lerp rest position between two shapes
+                    var rx = restA[vi3] * (1 - sT) + restB[vi3] * sT;
+                    var ry = restA[vi3 + 1] * (1 - sT) + restB[vi3 + 1] * sT;
+                    var rz = restA[vi3 + 2] * (1 - sT) + restB[vi3 + 2] * sT;
+
+                    // Distance-driven tipFactor: center stable, edges fluid
+                    var distFromCenter = Math.sqrt(rx * rx + ry * ry);
+                    var tipFactor = 0.2 + Math.min(distFromCenter / 1.2, 1.0) * 0.8;
+
+                    // Layered noise displacement scaled by current shape
+                    var nAmp = amp * curNoiseScale;
+                    var nx = cosNoise(no.x + v * 0.15 + t * s * 0.12, no.y + t * s * 0.08, no.z) * nAmp * tipFactor;
+                    var ny = cosNoise(no.x, no.y + v * 0.15 + t * s * 0.12, no.z + t * s * 0.06) * nAmp * tipFactor;
+                    var nz = cosNoise(no.x + t * s * 0.05, no.y, no.z + v * 0.15 + t * s * 0.1) * nAmp * tipFactor * 0.5;
+
+                    var px = rx + nx;
+                    var py = ry + ny;
+                    var pz = rz + nz;
+
+                    // Mouse pinch — attract nearby points
+                    var dx = px - mx3d;
+                    var dy = py - my3d;
+                    var mDist = Math.sqrt(dx * dx + dy * dy);
+                    if (mDist < 1.5 && mDist > 0.01) {
+                        var pull = (1.5 - mDist) / 1.5 * 0.3;
+                        px -= dx * pull;
+                        py -= dy * pull;
+                    }
+
+                    // Click shockwave — push outward radially
+                    if (shockActive) {
+                        var sdx = px - shockX3d;
+                        var sdy = py - shockY3d;
+                        var sDist = Math.sqrt(sdx * sdx + sdy * sdy);
+                        if (sDist < 2.5 && sDist > 0.01) {
+                            var pushStr = clickShock.strength * shockProgress * (2.5 - sDist) / 2.5;
+                            px += (sdx / sDist) * pushStr;
+                            py += (sdy / sDist) * pushStr;
+                        }
+                    }
+
+                    // Drag pull — attract + bias along drag direction
+                    if (dragActive) {
+                        var ddx = px - dragX3d;
+                        var ddy = py - dragY3d;
+                        var dDist = Math.sqrt(ddx * ddx + ddy * ddy);
+                        if (dDist < 2.0 && dDist > 0.01) {
+                            var dPull = (2.0 - dDist) / 2.0 * 0.4;
+                            px -= ddx * dPull;
+                            py -= ddy * dPull;
+                            // Bias along drag direction
+                            px += dragDirNX * 0.3 * ((2.0 - dDist) / 2.0);
+                            py += dragDirNY * 0.3 * ((2.0 - dDist) / 2.0);
+                        }
+                    }
+
+                    pos.setXYZ(v, px, py, pz);
+                }
+
+                pos.needsUpdate = true;
+
+                // Per-shape color interpolation (cached _tmpColor avoids per-frame alloc)
+                var colPaletteA = shapeColors[sA];
+                var colPaletteB = shapeColors[sB];
+                var colA = colPaletteA[ti % colPaletteA.length];
+                var colB = colPaletteB[ti % colPaletteB.length];
+                _tmpColor.copy(colA).lerp(colB, sT);
+                td.mat.color.lerp(_tmpColor, 0.05);
+
+                // Wave-propagated breathing (uses pre-computed breathe from outside loop)
+                td.mat.opacity = td.baseOpacity * (0.75 + energy * 0.25) * breathe;
+
+                // Mouse proximity glow boost — sample every 4th vertex
+                var minMouseDist = 999;
+                for (var mv = 0; mv < VERTS_PER; mv += 4) {
+                    var mvx = pos.getX(mv) - mx3d;
+                    var mvy = pos.getY(mv) - my3d;
+                    var md = Math.sqrt(mvx * mvx + mvy * mvy);
+                    if (md < minMouseDist) minMouseDist = md;
+                }
+                if (minMouseDist < 1.2) {
+                    td.mat.opacity += (1.2 - minMouseDist) / 1.2 * 0.4;
+                }
+
+                // Transition flash pulse
+                td.mat.opacity += transitionPulse.amount;
+
+                // Clamp opacity
+                if (td.mat.opacity > 1) td.mat.opacity = 1;
+
+                // Update 3-layer glow
+                for (var glIdx = 0; glIdx < td.glowMats.length; glIdx++) {
+                    td.glowMats[glIdx].opacity = td.mat.opacity * glowLayers[glIdx].opacityMul;
+                    td.glowMats[glIdx].color.copy(td.mat.color).lerp(_white, glowLayers[glIdx].whiteLerp);
+                }
+            }
+
+            // Project cluster centers to screen coords for p5
+            for (var pci = 0; pci < clusters.length; pci++) {
+                projVec.set(clusters[pci].cx, clusters[pci].cy, clusters[pci].cz);
+                projVec.project(camera);
+                clusterScreenPos[pci].x = (projVec.x * 0.5 + 0.5) * window.innerWidth;
+                clusterScreenPos[pci].y = (-projVec.y * 0.5 + 0.5) * window.innerHeight;
+            }
+
+            // Update connection web — single threshold, all tendrils equal
+            var connIdx = 0;
+            var wp = webGeo.attributes.position;
+            var connThreshold = 0.35 + (1 - chaos) * 0.15;
+            var connStep = 8;
+
+            for (var a = 0; a < NUM_TENDRILS && connIdx < MAX_CONNECTIONS; a++) {
+                var posA = tendrils[a].geo.attributes.position;
+                for (var b = a + 1; b < NUM_TENDRILS && connIdx < MAX_CONNECTIONS; b++) {
+                    var posB = tendrils[b].geo.attributes.position;
+                    for (var vi = 0; vi < VERTS_PER && connIdx < MAX_CONNECTIONS; vi += connStep) {
+                        var ax = posA.getX(vi), ay = posA.getY(vi), az = posA.getZ(vi);
+                        var bx = posB.getX(vi), by = posB.getY(vi), bz = posB.getZ(vi);
+                        var dd = Math.sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by) + (az - bz) * (az - bz));
+                        if (dd < connThreshold) {
+                            var wci = connIdx * 6;
+                            wp.array[wci] = ax; wp.array[wci + 1] = ay; wp.array[wci + 2] = az;
+                            wp.array[wci + 3] = bx; wp.array[wci + 4] = by; wp.array[wci + 5] = bz;
+                            connIdx++;
+                        }
+                    }
+                }
+            }
+            // Zero out only the delta between this frame and last frame
+            for (var z = connIdx * 6; z < prevConnIdx * 6; z++) {
+                wp.array[z] = 0;
+            }
+            prevConnIdx = connIdx;
+            wp.needsUpdate = true;
+            webGeo.setDrawRange(0, connIdx * 2);
+            webMat.opacity = 0.08 + chaos * 0.12 + Math.sin(t * 0.7) * 0.02 + webFlash.amount;
+            // Decay web flash
+            if (webFlash.amount > 0) {
+                webFlash.amount = Math.max(0, webFlash.amount - 0.013); // fades over ~0.3s at 60fps
+            }
+
+            renderer.render(scene, camera);
+        }
+        animateThree();
+
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ─── P5.JS — Margin Scribbles (邊欄塗鴉) ───
+        var p5Container = document.getElementById('p5-container');
+
+        new p5(function(sk) {
+            var scribbles = [];
+            var hatches = [];
+            var annotations = [];
+            var inkTrail = [];
+            var MAX_MARKS = 80;
+            var palette = [
+                [124, 58, 237],
+                [236, 72, 153],
+                [6, 182, 212],
+                [167, 139, 250],
+                [251, 191, 36],
+            ];
+            var annotTexts = ['?!', '\u6DF7\u6C8C', '\u2726', '\u2192', '...', '\u00d7', '~', '\u25CB', '+', '\u2605'];
+
+            sk.setup = function() {
+                sk.pixelDensity(1);
+                var cnv = sk.createCanvas(sk.windowWidth, sk.windowHeight);
+                cnv.parent(p5Container);
+            };
+
+            function totalMarks() {
+                return scribbles.length + hatches.length + annotations.length;
+            }
+
+            // Pick position: 70% near cluster screen projections, 30% edge margins
+            function marginPos() {
+                if (sk.random() < 0.7) {
+                    // Scatter near a random cluster's screen position (60-140px radius)
+                    var ci = Math.floor(sk.random(clusterScreenPos.length));
+                    var cp = clusterScreenPos[ci];
+                    var angle = sk.random(sk.TWO_PI);
+                    var radius = sk.random(60, 140);
+                    return {
+                        x: sk.constrain(cp.x + Math.cos(angle) * radius, 0, sk.width),
+                        y: sk.constrain(cp.y + Math.sin(angle) * radius, 0, sk.height),
+                    };
+                }
+                // 30% — classic edge margin scatter
+                var edge = Math.floor(sk.random(4));
+                var margin = 80;
+                if (edge === 0) return { x: sk.random(margin), y: sk.random(sk.height) }; // left
+                if (edge === 1) return { x: sk.width - sk.random(margin), y: sk.random(sk.height) }; // right
+                if (edge === 2) return { x: sk.random(sk.width), y: sk.random(margin) }; // top
+                return { x: sk.random(sk.width), y: sk.height - sk.random(margin) }; // bottom
+            }
+
+            sk.draw = function() {
+                sk.clear();
+                var chaos = scrollState.chaos;
+                var energy = scrollState.energy;
+                var spawnRate = 0.005 + chaos * 0.04;
+
+                // Spawn scribble lines
+                if (sk.random() < spawnRate && totalMarks() < MAX_MARKS) {
+                    var pos = marginPos();
+                    var col = palette[Math.floor(sk.random(palette.length))];
+                    var numSegs = Math.floor(sk.random(3, 8));
+                    var points = [{ x: pos.x, y: pos.y }];
+                    for (var s = 0; s < numSegs; s++) {
+                        var prev = points[points.length - 1];
+                        var segLen = sk.random(8, 30) * (0.5 + chaos);
+                        var ang = sk.random(sk.TWO_PI);
+                        points.push({ x: prev.x + Math.cos(ang) * segLen, y: prev.y + Math.sin(ang) * segLen });
+                    }
+                    scribbles.push({
+                        points: points,
+                        color: col,
+                        alpha: sk.random(30, 65),
+                        weight: sk.random(0.5, 1.8),
+                        life: sk.random(80, 200),
+                        maxLife: 200,
+                        drawProgress: 0,
+                        drawSpeed: 0.02 + energy * 0.04,
+                    });
+                }
+
+                // Spawn cross-hatching patches
+                if (sk.random() < spawnRate * 0.4 && totalMarks() < MAX_MARKS) {
+                    var hPos = marginPos();
+                    var hCol = palette[Math.floor(sk.random(palette.length))];
+                    var numLines = Math.floor(sk.random(4, 10));
+                    var hAngle = sk.random(sk.TWO_PI);
+                    var hLines = [];
+                    for (var h = 0; h < numLines; h++) {
+                        var offset = (h - numLines / 2) * sk.random(2, 5);
+                        var hLen = sk.random(10, 25);
+                        hLines.push({
+                            x1: hPos.x + Math.cos(hAngle + 1.57) * offset,
+                            y1: hPos.y + Math.sin(hAngle + 1.57) * offset,
+                            x2: hPos.x + Math.cos(hAngle + 1.57) * offset + Math.cos(hAngle) * hLen,
+                            y2: hPos.y + Math.sin(hAngle + 1.57) * offset + Math.sin(hAngle) * hLen,
+                        });
+                    }
+                    hatches.push({
+                        lines: hLines,
+                        color: hCol,
+                        alpha: sk.random(20, 50),
+                        weight: sk.random(0.5, 1.2),
+                        life: sk.random(100, 250),
+                        maxLife: 250,
+                    });
+                }
+
+                // Spawn margin annotations
+                if (sk.random() < spawnRate * 0.3 && totalMarks() < MAX_MARKS) {
+                    var aPos = marginPos();
+                    var aCol = palette[Math.floor(sk.random(palette.length))];
+                    annotations.push({
+                        x: aPos.x, y: aPos.y,
+                        text: annotTexts[Math.floor(sk.random(annotTexts.length))],
+                        color: aCol,
+                        alpha: sk.random(30, 55),
+                        size: sk.random(8, 14),
+                        life: sk.random(60, 180),
+                        maxLife: 180,
+                    });
+                }
+
+                // Mouse ink ribbon
+                if (sk.mouseX > 0 && sk.mouseY > 0) {
+                    inkTrail.push({
+                        x: sk.mouseX + sk.random(-2, 2),
+                        y: sk.mouseY + sk.random(-2, 2),
+                        life: 80,
+                    });
+                }
+                while (inkTrail.length > 60) { inkTrail.shift(); }
+
+                // Draw scribble lines (progressive draw)
+                for (var si = scribbles.length - 1; si >= 0; si--) {
+                    var sc = scribbles[si];
+                    sc.life--;
+                    sc.drawProgress = Math.min(sc.drawProgress + sc.drawSpeed, 1);
+                    if (sc.life <= 0) { scribbles.splice(si, 1); continue; }
+                    var fadeA = sc.alpha * (sc.life / sc.maxLife);
+                    sk.stroke(sc.color[0], sc.color[1], sc.color[2], fadeA);
+                    sk.strokeWeight(sc.weight);
+                    sk.noFill();
+                    var drawPts = Math.floor(sc.points.length * sc.drawProgress);
+                    for (var pi = 0; pi < drawPts - 1; pi++) {
+                        var p1 = sc.points[pi];
+                        var p2 = sc.points[pi + 1];
+                        // Wobbly bezier for hand-drawn feel
+                        var cpx = (p1.x + p2.x) / 2 + sk.random(-3, 3);
+                        var cpy = (p1.y + p2.y) / 2 + sk.random(-3, 3);
+                        sk.bezier(p1.x, p1.y, cpx, cpy, cpx, cpy, p2.x, p2.y);
+                    }
+                }
+
+                // Draw cross-hatching
+                for (var hi = hatches.length - 1; hi >= 0; hi--) {
+                    var ht = hatches[hi];
+                    ht.life--;
+                    if (ht.life <= 0) { hatches.splice(hi, 1); continue; }
+                    var hFade = ht.alpha * (ht.life / ht.maxLife);
+                    sk.stroke(ht.color[0], ht.color[1], ht.color[2], hFade);
+                    sk.strokeWeight(ht.weight);
+                    for (var li = 0; li < ht.lines.length; li++) {
+                        var ln = ht.lines[li];
+                        sk.line(ln.x1, ln.y1, ln.x2, ln.y2);
+                    }
+                }
+
+                // Draw annotations
+                for (var ai = annotations.length - 1; ai >= 0; ai--) {
+                    var an = annotations[ai];
+                    an.life--;
+                    if (an.life <= 0) { annotations.splice(ai, 1); continue; }
+                    var aFade = an.alpha * (an.life / an.maxLife);
+                    sk.push();
+                    sk.fill(an.color[0], an.color[1], an.color[2], aFade);
+                    sk.noStroke();
+                    sk.textFont('monospace');
+                    sk.textSize(an.size);
+                    sk.textAlign(sk.CENTER, sk.CENTER);
+                    sk.text(an.text, an.x, an.y);
+                    sk.pop();
+                }
+
+                // Draw mouse ink ribbon
+                if (inkTrail.length > 1) {
+                    sk.noFill();
+                    for (var ii = 1; ii < inkTrail.length; ii++) {
+                        var it = inkTrail[ii];
+                        var prev = inkTrail[ii - 1];
+                        it.life--;
+                        if (it.life <= 0) { inkTrail.splice(ii, 1); ii--; continue; }
+                        var iFade = 45 * (it.life / 80);
+                        var iWeight = 1.0 + (it.life / 80) * 2.0;
+                        sk.stroke(167, 139, 250, iFade);
+                        sk.strokeWeight(iWeight);
+                        sk.line(prev.x, prev.y, it.x, it.y);
+                    }
+                }
+
+                // ─── Click Burst Scribbles ───
+                var bursts = window._p5ClickBursts;
+                for (var bi = bursts.length - 1; bi >= 0; bi--) {
+                    var b = bursts[bi];
+                    if (!b.spawned) {
+                        b.spawned = true;
+                        b.marks = [];
+                        for (var bm = 0; bm < b.count; bm++) {
+                            var bAngle = (sk.TWO_PI / b.count) * bm + sk.random(-0.3, 0.3);
+                            var bLen = sk.random(20, 60);
+                            var bCol = palette[Math.floor(sk.random(palette.length))];
+                            var pts = [{ x: b.x, y: b.y }];
+                            var numSeg = Math.floor(sk.random(2, 5));
+                            for (var bs = 0; bs < numSeg; bs++) {
+                                var pv = pts[pts.length - 1];
+                                var sAngle = bAngle + sk.random(-0.5, 0.5);
+                                var sLen = bLen / numSeg;
+                                pts.push({ x: pv.x + Math.cos(sAngle) * sLen, y: pv.y + Math.sin(sAngle) * sLen });
+                            }
+                            b.marks.push({
+                                points: pts,
+                                color: bCol,
+                                alpha: sk.random(40, 70),
+                                weight: sk.random(0.8, 2.0),
+                                drawProgress: 0,
+                                drawSpeed: 0.08,
+                                life: 90,
+                                maxLife: 90,
+                            });
+                        }
+                    }
+                    var allDead = true;
+                    for (var mi = 0; mi < b.marks.length; mi++) {
+                        var mk = b.marks[mi];
+                        mk.life--;
+                        mk.drawProgress = Math.min(mk.drawProgress + mk.drawSpeed, 1);
+                        if (mk.life <= 0) continue;
+                        allDead = false;
+                        var mkFade = mk.alpha * (mk.life / mk.maxLife);
+                        sk.stroke(mk.color[0], mk.color[1], mk.color[2], mkFade);
+                        sk.strokeWeight(mk.weight);
+                        sk.noFill();
+                        var dPts = Math.floor(mk.points.length * mk.drawProgress);
+                        for (var pi = 0; pi < dPts - 1; pi++) {
+                            var p1 = mk.points[pi];
+                            var p2 = mk.points[pi + 1];
+                            sk.line(p1.x, p1.y, p2.x, p2.y);
+                        }
+                    }
+                    if (allDead) bursts.splice(bi, 1);
+                }
+
+                // ─── Active Drag Stroke ───
+                if (dragState.active && dragState.path.length > 1) {
+                    sk.noFill();
+                    var dPath = dragState.path;
+                    for (var di = 1; di < dPath.length; di++) {
+                        var dFrac = di / dPath.length;
+                        var dColIdx = Math.floor(dFrac * palette.length) % palette.length;
+                        var dCol = palette[dColIdx];
+                        var dAlpha = 50 + dFrac * 30;
+                        var dWeight = 1.5 + dFrac * 2.5;
+                        sk.stroke(dCol[0], dCol[1], dCol[2], dAlpha);
+                        sk.strokeWeight(dWeight);
+                        sk.line(dPath[di - 1].x, dPath[di - 1].y, dPath[di].x, dPath[di].y);
+                    }
+                }
+
+                // ─── Persistent Drag Strokes (fade after mouseup) ───
+                var dStrokes = window._p5DragStrokes;
+                for (var dsi = dStrokes.length - 1; dsi >= 0; dsi--) {
+                    var ds = dStrokes[dsi];
+                    var dsElapsed = performance.now() - ds.time;
+                    if (dsElapsed > ds.fadeDuration) { dStrokes.splice(dsi, 1); continue; }
+                    var dsFade = 1 - dsElapsed / ds.fadeDuration;
+                    sk.noFill();
+                    for (var dpi = 1; dpi < ds.path.length; dpi++) {
+                        var dpFrac = dpi / ds.path.length;
+                        var dpColIdx = Math.floor(dpFrac * palette.length) % palette.length;
+                        var dpCol = palette[dpColIdx];
+                        sk.stroke(dpCol[0], dpCol[1], dpCol[2], (50 + dpFrac * 30) * dsFade);
+                        sk.strokeWeight((1.5 + dpFrac * 2.5) * dsFade);
+                        sk.line(ds.path[dpi - 1].x, ds.path[dpi - 1].y, ds.path[dpi].x, ds.path[dpi].y);
+                    }
+                }
+            };
+
+            sk.windowResized = function() {
+                sk.resizeCanvas(sk.windowWidth, sk.windowHeight);
+            };
+        });
+
+        // ─── GSAP + ScrollTrigger ───
+        function startAnimations() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // ─── scrollState watchers (drives Three.js + p5.js per section) ───
+            // Hero: Eye shape=0, gentle — chaos 0.2, energy 0.3 (default)
+            ScrollTrigger.create({
+                trigger: '#identity', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() { gsap.to(scrollState, { chaos: 0.4, energy: 0.5, shape: 0.5, duration: 1 }); },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 0.2, energy: 0.3, shape: 0, duration: 1 }); }
+            });
+            ScrollTrigger.create({
+                trigger: '#dimensions', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() { gsap.to(scrollState, { chaos: 1.0, energy: 0.9, shape: 1, duration: 1.5 }); },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 0.4, energy: 0.5, shape: 0.5, duration: 1 }); }
+            });
+            ScrollTrigger.create({
+                trigger: '#creator', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() { gsap.to(scrollState, { chaos: 0.6, energy: 0.6, shape: 1.5, duration: 1.2 }); },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 1.0, energy: 0.9, shape: 1, duration: 1 }); }
+            });
+            ScrollTrigger.create({
+                trigger: '#diy', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() { gsap.to(scrollState, { chaos: 0.5, energy: 0.5, shape: 2, duration: 1 }); },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 0.6, energy: 0.6, shape: 1.5, duration: 1 }); }
+            });
+            ScrollTrigger.create({
+                trigger: '#piercing', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() { gsap.to(scrollState, { chaos: 0.7, energy: 0.8, shape: 2, duration: 1 }); },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 0.5, energy: 0.5, shape: 2, duration: 1 }); }
+            });
+            ScrollTrigger.create({
+                trigger: '#story', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() {
+                    gsap.to(scrollState, { chaos: 0.8, energy: 1.0, shape: 2, duration: 0.8 });
+                    gsap.to(scrollState, { chaos: 0.2, energy: 0.3, duration: 2, delay: 1.5 });
+                },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 0.7, energy: 0.8, shape: 2, duration: 1 }); }
+            });
+            ScrollTrigger.create({
+                trigger: '#skills', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() { gsap.to(scrollState, { chaos: 0.3, energy: 0.4, shape: 1, duration: 1 }); },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 0.2, energy: 0.3, shape: 2, duration: 1 }); }
+            });
+            ScrollTrigger.create({
+                trigger: '#philosophy', start: 'top 80%', end: 'bottom 20%',
+                onEnter: function() { gsap.to(scrollState, { chaos: 0.1, energy: 0.2, shape: 0, duration: 1.5 }); },
+                onLeaveBack: function() { gsap.to(scrollState, { chaos: 0.3, energy: 0.4, shape: 1, duration: 1 }); }
+            });
+
+            // Hero entrance
+            gsap.from('.hero-tag', { opacity: 0, y: 30, duration: 0.8, delay: 0.2 });
+            gsap.from('.hero-name', { opacity: 0, y: 50, scale: 0.9, duration: 1, delay: 0.4, ease: 'back.out(1.4)' });
+            gsap.from('.hero-quote', { opacity: 0, y: 30, duration: 0.8, delay: 0.7 });
+            gsap.from('.hero-avatar-wrap', { opacity: 0, scale: 0.7, duration: 1, delay: 0.9, ease: 'elastic.out(1, 0.5)' });
+            gsap.from('.hero-scroll', { opacity: 0, y: 20, duration: 0.6, delay: 1.3 });
+
+            // Hero parallax — gentle depth shift, no abrupt opacity fade
+            gsap.to('.hero-name', {
+                scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: 1 },
+                y: -60, scale: 0.92
+            });
+            gsap.to('.hero-avatar-wrap', {
+                scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: 1 },
+                y: -30
+            });
+            gsap.to('.hero-scroll', {
+                scrollTrigger: { trigger: '#hero', start: 'top top', end: '30% top', scrub: 1 },
+                opacity: 0
+            });
+
+            // Section reveals — using gsap.set() + gsap.to() for reliable ScrollTrigger
+            document.querySelectorAll('section:not(#hero)').forEach(function(sec) {
+                // Section tag + title + accent line
+                var headers = sec.querySelectorAll('.section-tag, .section-title, .accent-line');
+                gsap.set(headers, { opacity: 0, y: 40 });
+                gsap.to(headers, {
+                    scrollTrigger: { trigger: sec, start: 'top 80%' },
+                    opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: 'power3.out'
+                });
+
+                // Paragraphs
+                sec.querySelectorAll('p').forEach(function(p) {
+                    if (!p.closest('.content-card-body') && !p.closest('.glass-card') && !p.closest('.story-box') && !p.closest('.trait-item') && !p.closest('.dimension-card')) {
+                        gsap.set(p, { opacity: 0, y: 30 });
+                        gsap.to(p, {
+                            scrollTrigger: { trigger: p, start: 'top 85%' },
+                            opacity: 1, y: 0, duration: 0.6
+                        });
+                    }
+                });
+            });
+
+            // Identity grid chips
+            gsap.set('#identity .id-chip', { opacity: 0, y: 30, scale: 0.9 });
+            gsap.to('#identity .id-chip', {
+                scrollTrigger: { trigger: '#identity .identity-grid', start: 'top 80%' },
+                opacity: 1, y: 0, scale: 1, duration: 0.5, stagger: 0.1, ease: 'back.out(1.2)'
+            });
+
+            // Dimension cards
+            gsap.set('.dimension-card', { opacity: 0, y: 50 });
+            gsap.to('.dimension-card', {
+                scrollTrigger: { trigger: '#dimensions .dim-grid', start: 'top 80%' },
+                opacity: 1, y: 0, duration: 0.7, stagger: 0.15, ease: 'power3.out'
+            });
+
+            // Content cards — scoped per section
+            gsap.set('#creator .content-card', { opacity: 0, y: 60, scale: 0.95 });
+            gsap.to('#creator .content-card', {
+                scrollTrigger: { trigger: '#creator .content-grid', start: 'top 80%' },
+                opacity: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.2, ease: 'power3.out'
+            });
+
+            // Piercing content card
+            gsap.set('#piercing .content-card', { opacity: 0, y: 60, scale: 0.95 });
+            gsap.to('#piercing .content-card', {
+                scrollTrigger: { trigger: '#piercing .content-grid', start: 'top 80%' },
+                opacity: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.2, ease: 'power3.out'
+            });
+
+            // Timeline items
+            gsap.set('.timeline-item', { opacity: 0, x: -30 });
+            gsap.to('.timeline-item', {
+                scrollTrigger: { trigger: '.timeline', start: 'top 80%' },
+                opacity: 1, x: 0, duration: 0.6, stagger: 0.12, ease: 'power2.out'
+            });
+
+            // Piercing section glass cards
+            gsap.set('#piercing .glass-card', { opacity: 0, y: 40 });
+            gsap.to('#piercing .glass-card', {
+                scrollTrigger: { trigger: '#piercing', start: 'top 70%' },
+                opacity: 1, y: 0, duration: 0.7, stagger: 0.15
+            });
+
+            // Story box
+            gsap.set('.story-box', { opacity: 0, x: -60 });
+            gsap.to('.story-box', {
+                scrollTrigger: { trigger: '#story', start: 'top 75%' },
+                opacity: 1, x: 0, duration: 1, ease: 'power3.out'
+            });
+
+            // Skill bars
+            document.querySelectorAll('.skill-fill').forEach(function(bar) {
+                var w = bar.getAttribute('data-width');
+                gsap.to(bar, {
+                    scrollTrigger: { trigger: bar, start: 'top 85%' },
+                    width: w + '%', duration: 1.2, ease: 'power2.out'
+                });
+            });
+
+            // Skill items stagger
+            gsap.set('.skill-item', { opacity: 0, x: -20 });
+            gsap.to('.skill-item', {
+                scrollTrigger: { trigger: '.skill-group', start: 'top 80%' },
+                opacity: 1, x: 0, duration: 0.5, stagger: 0.08
+            });
+
+            // Philosophy
+            gsap.set('.philosophy-quote', { opacity: 0, scale: 0.85 });
+            gsap.to('.philosophy-quote', {
+                scrollTrigger: { trigger: '#philosophy', start: 'top 75%' },
+                opacity: 1, scale: 1, duration: 1, ease: 'back.out(1.3)'
+            });
+            gsap.set('.trait-item', { opacity: 0, y: 30 });
+            gsap.to('.trait-item', {
+                scrollTrigger: { trigger: '.trait-grid', start: 'top 80%' },
+                opacity: 1, y: 0, duration: 0.6, stagger: 0.1
+            });
+
+            // Marquee reveal
+            gsap.set('.marquee-strip', { opacity: 0 });
+            gsap.to('.marquee-strip', {
+                scrollTrigger: { trigger: '.marquee-strip', start: 'top 95%' },
+                opacity: 1, duration: 0.8
+            });
+
+            // Footer
+            gsap.set('footer', { opacity: 0, y: 30 });
+            gsap.to('footer', {
+                scrollTrigger: { trigger: 'footer', start: 'top 90%' },
+                opacity: 1, y: 0, duration: 0.8
+            });
+
+            // 3D tilt on dimension cards
+            document.querySelectorAll('.dimension-card, .content-card').forEach(function(card) {
+                card.addEventListener('mousemove', function(e) {
+                    var rect = card.getBoundingClientRect();
+                    var x = (e.clientX - rect.left) / rect.width - 0.5;
+                    var y = (e.clientY - rect.top) / rect.height - 0.5;
+                    gsap.to(card, {
+                        rotateY: x * 8,
+                        rotateX: -y * 8,
+                        duration: 0.4,
+                        ease: 'power2.out',
+                        transformPerspective: 600
+                    });
+                });
+                card.addEventListener('mouseleave', function() {
+                    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.6, ease: 'elastic.out(1, 0.4)' });
+                });
+            });
+
+            // Recalculate all trigger positions
+            ScrollTrigger.refresh();
+        }
+
+        // Touch: skip animations, just show
+        if (isTouch) {
+            setTimeout(function() { startAnimations(); }, 100);
+        }
+
+    })();
+    </script>
+</body>
+</html>
