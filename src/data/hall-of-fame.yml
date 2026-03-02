@@ -10,7 +10,7 @@
 members:
   - id: "loyu"
     name: "羅玉 Lo Yu"
-    avatar: "/assets/img/guild/loyu/gallery_02.webp"
+    avatar: "/assets/img/guild/loyu/avatar.webp"
     page: "/guild/loyu.html"
     tags:
       - id: "relationship_expert"
