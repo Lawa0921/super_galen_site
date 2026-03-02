@@ -3,578 +3,1115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIC NAIL | THE LOGIC ALCHEMIST</title>
+    <title>VIC NAIL | 東東Vic 楊東霖 — PRESTO品牌講師・板橋凝膠教學</title>
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800;900&family=Syne:wght@600;700&family=Noto+Sans+TC:wght@400&display=swap" rel="stylesheet">
 
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Three.js -->
+    <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+    <!-- GSAP + ScrollTrigger -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <!-- p5.js -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
-            --c-bg: #000000;
-            --c-text: #ffffff;
-            --c-accent: #ff0055; /* Gel Magenta */
-            --c-sec: #00e5ff;    /* UV Cyan */
-            --c-dim: rgba(255, 255, 255, 0.4);
+            --bg: #06060a;
+            --bg-card: rgba(16, 16, 26, 0.75);
+            --text: #f0eef5;
+            --text-dim: rgba(240,238,245,0.45);
+            --magenta: #ff2d7b;
+            --cyan: #00e5ff;
+            --violet: #9b59ff;
+            --gold: #ffd700;
+            --emerald: #00ff88;
+            --hot-pink: #ff6ec7;
+            --gel-gradient: linear-gradient(135deg, var(--magenta), var(--violet), var(--cyan));
+            --holo-gradient: linear-gradient(135deg, #ff2d7b, #ff6ec7, #ffd700, #00ff88, #00e5ff, #9b59ff, #ff2d7b);
+            --font-display: 'Unbounded', sans-serif;
+            --font-accent: 'Syne', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{
+            background:var(--bg);color:var(--text);
+            font-family:var(--font-body);
+            overflow-x:hidden;min-height:100vh;cursor:none;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background-color: var(--c-bg);
-            color: var(--c-text);
-            font-family: 'Noto Sans TC', sans-serif;
-            overflow-x: hidden;
-            width: 100vw;
+        /* ===== CURSOR ===== */
+        #custom-cursor{
+            position:fixed;width:28px;height:28px;border:2px solid var(--magenta);border-radius:50%;
+            pointer-events:none;z-index:10000;transform:translate(-50%,-50%);
+            transition:width .2s,height .2s,border-color .3s,background .3s;
+            mix-blend-mode:difference;
+        }
+        #custom-cursor.hovering{width:56px;height:56px;background:rgba(255,45,123,.12);border-color:var(--cyan)}
+        #cursor-dot{
+            position:fixed;width:6px;height:6px;background:var(--magenta);border-radius:50%;
+            pointer-events:none;z-index:10001;transform:translate(-50%,-50%);
+            box-shadow:0 0 12px var(--magenta),0 0 24px rgba(255,45,123,.3);
         }
 
-        /* --- 3D Background --- */
-        #gl-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none;
+        /* ===== CLICK SPARKLE ===== */
+        .click-sparkle{position:fixed;pointer-events:none;z-index:9999}
+        .click-sparkle-particle{
+            position:absolute;width:4px;height:4px;border-radius:50%;
+            animation:sparkleExplode .7s ease-out forwards;
+        }
+        @keyframes sparkleExplode{
+            0%{opacity:1;transform:translate(0,0) scale(1)}
+            100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}
         }
 
-        /* --- UI Overlay --- */
-        .ui-layer {
-            position: relative; z-index: 10;
+        /* ===== GEL LOADER ===== */
+        #gel-loader{
+            position:fixed;inset:0;background:var(--bg);z-index:9998;
+            display:flex;flex-direction:column;justify-content:center;align-items:center;
+            cursor:pointer;transition:opacity .8s ease,visibility .8s ease;
+        }
+        #gel-loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+        .loader-nail{
+            width:50px;height:80px;border-radius:25px 25px 15px 15px;
+            background:var(--holo-gradient);background-size:400% 400%;
+            animation:holoShift 3s ease infinite;margin-bottom:2.5rem;position:relative;
+            box-shadow:0 0 30px rgba(255,45,123,.3),0 0 60px rgba(155,89,255,.2),0 0 90px rgba(0,229,255,.15);
+        }
+        .loader-nail::after{
+            content:'';position:absolute;top:8px;left:8px;right:8px;height:30%;
+            background:rgba(255,255,255,.25);border-radius:20px 20px 50% 50%;filter:blur(2px);
+        }
+        @keyframes holoShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        .loader-text{
+            font-family:var(--font-display);font-size:1rem;letter-spacing:8px;text-transform:uppercase;
+            background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            animation:pulse 2s ease-in-out infinite;
+        }
+        .loader-hint{
+            font-family:var(--font-body);font-size:.75rem;color:var(--text-dim);
+            margin-top:1rem;letter-spacing:3px;animation:pulse 2s ease-in-out infinite .3s;
+        }
+        @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+        /* ===== THREE.JS CONTAINER ===== */
+        #three-container{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+        /* ===== P5 CANVAS ===== */
+        #p5-container{position:fixed;inset:0;z-index:1;pointer-events:none}
+        #p5-container canvas{display:block}
+
+        /* ===== NAV ===== */
+        nav{
+            position:fixed;top:0;left:0;width:100%;padding:1.5rem 3rem;
+            display:flex;justify-content:space-between;align-items:center;z-index:100;
+            background:linear-gradient(to bottom,rgba(6,6,10,.95),transparent);
+        }
+        .nav-back{
+            font-family:var(--font-accent);font-size:.85rem;font-weight:600;
+            letter-spacing:3px;text-transform:uppercase;text-decoration:none;
+            color:var(--text);opacity:.6;transition:opacity .3s,color .3s;
+            display:flex;align-items:center;gap:.5rem;
+        }
+        .nav-back:hover{opacity:1;color:var(--magenta)}
+        .nav-back svg{width:16px;height:16px;fill:currentColor}
+        .nav-brand{
+            font-family:var(--font-display);font-size:1.2rem;font-weight:800;letter-spacing:3px;
+            text-transform:uppercase;background:var(--gel-gradient);
+            background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
         }
 
-        /* --- Navigation --- */
-        nav {
-            position: fixed; top: 0; left: 0; width: 100%;
-            padding: 2rem 4rem;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100;
-            mix-blend-mode: difference;
+        /* ===== CONTENT ===== */
+        .content-layer{position:relative;z-index:10}
+        section{position:relative;min-height:100vh;padding:8rem 6vw;display:flex;flex-direction:column;justify-content:center}
+        #quote{background:rgba(6,6,10,.45);backdrop-filter:blur(4px)}
+        .section-label{
+            font-family:var(--font-accent);font-size:.75rem;font-weight:700;letter-spacing:6px;
+            text-transform:uppercase;background:var(--gel-gradient);
+            background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            margin-bottom:1.5rem;
         }
-        .brand {
-            font-family: 'Anton', sans-serif;
-            font-size: 2rem; letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-        .brand span { color: var(--c-accent); }
+        .section-title{font-family:var(--font-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:900;line-height:1.1;margin-bottom:1rem}
+        .section-title .gradient{background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .section-subtitle{font-size:1.05rem;color:rgba(240,238,245,.65);line-height:1.8;max-width:600px}
+        .section-header{background:rgba(6,6,10,.55);backdrop-filter:blur(6px);padding:2rem 2.5rem;border-radius:16px;display:inline-block;margin-bottom:2rem}
 
-        .menu-btn {
-            font-family: 'Anton', sans-serif;
-            font-size: 1rem; letter-spacing: 2px;
-            text-transform: uppercase;
-            text-decoration: none; color: #fff;
-            position: relative;
+        /* ===== HERO ===== */
+        #hero{display:grid;grid-template-columns:1.2fr 1fr;gap:4rem;align-items:center;padding-top:12rem}
+        .hero-text{max-width:700px;background:rgba(6,6,10,.55);backdrop-filter:blur(6px);padding:2.5rem;border-radius:20px}
+        .hero-title{
+            font-family:var(--font-display);font-size:clamp(3rem,7vw,6rem);font-weight:900;
+            line-height:.95;margin-bottom:2rem;text-shadow:0 2px 20px rgba(0,0,0,.6);
         }
-        .menu-btn::after {
-            content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 2px;
-            background: var(--c-sec); transform: scaleX(0); transition: 0.3s; transform-origin: right;
+        .hero-title .holo{
+            background:var(--holo-gradient);background-size:300% 300%;
+            background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            animation:holoShift 5s ease infinite;
         }
-        .menu-btn:hover::after { transform: scaleX(1); transform-origin: left; }
+        .hero-subtitle{
+            font-size:1.15rem;line-height:1.9;color:rgba(240,238,245,.7);
+            border-left:3px solid var(--magenta);padding-left:1.5rem;margin-bottom:2rem;
+            text-shadow:0 1px 10px rgba(0,0,0,.5);
+        }
+        .hero-tags{display:flex;gap:.6rem;flex-wrap:wrap}
+        .hero-tag{
+            font-family:var(--font-accent);font-size:.75rem;font-weight:600;letter-spacing:2px;
+            text-transform:uppercase;padding:.4rem 1rem;border:1px solid rgba(255,45,123,.3);
+            border-radius:100px;color:var(--magenta);background:rgba(255,45,123,.06);
+            transition:all .3s ease;
+        }
+        .hero-tag:hover{background:rgba(255,45,123,.15);border-color:var(--magenta);box-shadow:0 0 20px rgba(255,45,123,.2)}
 
-        /* --- Sections --- */
-        section {
-            position: relative;
-            min-height: 100vh;
-            padding: 10vw;
-            display: flex; flex-direction: column; justify-content: center;
+        .hero-avatar{display:flex;justify-content:center;align-items:center}
+        .hero-avatar-frame{
+            position:relative;width:340px;height:340px;
+            border-radius:30% 70% 70% 30%/30% 30% 70% 70%;
+            overflow:hidden;animation:blobMorph 8s ease-in-out infinite;
         }
-
-        /* --- S1: Hero --- */
-        .hero-title {
-            font-family: 'Anton', sans-serif;
-            font-size: clamp(5rem, 15vw, 15rem);
-            line-height: 0.85;
-            text-transform: uppercase;
-            margin-bottom: 2rem;
-            position: relative;
-            z-index: 2;
+        .hero-avatar-frame::before{
+            content:'';position:absolute;inset:-3px;border-radius:inherit;
+            background:var(--holo-gradient);background-size:300% 300%;
+            animation:holoShift 4s ease infinite;z-index:-1;
         }
-        .hero-subtitle {
-            font-size: 1.5rem; font-weight: 300;
-            max-width: 600px; line-height: 1.6;
-            color: var(--c-dim);
-            border-left: 2px solid var(--c-sec);
-            padding-left: 2rem;
-        }
-
-        /* --- S2: Philosophy (Logic) --- */
-        .split-layout {
-            display: flex; gap: 4rem; align-items: center;
-            max-width: 1400px; margin: 0 auto;
-        }
-        .split-text { flex: 1; }
-        .split-title {
-            font-family: 'Anton', sans-serif;
-            font-size: 5rem; line-height: 1; margin-bottom: 2rem;
-            text-transform: uppercase;
-        }
-        .split-title span { color: var(--c-accent); }
-        .split-desc { font-size: 1.2rem; line-height: 1.8; color: var(--c-dim); margin-bottom: 2rem; }
-
-        .logic-list { list-style: none; }
-        .logic-list li {
-            font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;
-            display: flex; align-items: center;
-        }
-        .logic-list li::before {
-            content: '0' counter(list-item) '.';
-            counter-increment: list-item;
-            font-family: 'Anton', sans-serif; color: var(--c-sec);
-            margin-right: 1rem; font-size: 1rem;
+        .hero-avatar-frame img{width:100%;height:100%;object-fit:cover;border-radius:inherit;filter:contrast(1.05) saturate(1.1);transition:transform .6s ease}
+        .hero-avatar-frame:hover img{transform:scale(1.08)}
+        @keyframes blobMorph{
+            0%{border-radius:30% 70% 70% 30%/30% 30% 70% 70%}
+            25%{border-radius:58% 42% 32% 68%/63% 68% 32% 37%}
+            50%{border-radius:42% 58% 68% 32%/42% 32% 68% 58%}
+            75%{border-radius:68% 32% 42% 58%/58% 68% 32% 42%}
+            100%{border-radius:30% 70% 70% 30%/30% 30% 70% 70%}
         }
 
-        /* --- S3: Horizontal Gallery --- */
-        #s3 {
-            padding: 0; overflow: hidden; height: 100vh;
-            display: flex; align-items: center;
-        }
-        .gallery-container {
-            display: flex; gap: 4vw; padding: 0 10vw;
-            width: fit-content;
-        }
-        .gallery-item {
-            width: 30vw; min-width: 300px; max-width: 500px;
-            aspect-ratio: 3/4;
-            position: relative;
-            background: #111;
-            overflow: hidden;
-            border-radius: 10px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .gallery-item img {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: grayscale(20%); transition: 0.5s;
-        }
-        .gallery-item:hover img { filter: grayscale(0%); transform: scale(1.05); }
+        /* ===== CHROMATIC DIVIDER ===== */
+        .chrome-divider{height:2px;margin:2rem 0;background:var(--holo-gradient);background-size:300% 100%;animation:holoShift 4s ease infinite;opacity:.4}
 
-        /* --- S4: Node Workflow (Life/Skills) --- */
-        #s4 { background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); }
-        .workflow-container {
-            max-width: 1200px; margin: 0 auto; width: 100%;
-            position: relative;
+        /* ===== PHILOSOPHY ===== */
+        .philosophy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:3rem;max-width:1200px}
+        .philosophy-step{
+            background:var(--bg-card);border:1px solid rgba(255,45,123,.1);border-radius:16px;
+            padding:2.5rem 2rem;position:relative;overflow:hidden;backdrop-filter:blur(10px);
+            transition:transform .4s ease,border-color .4s ease,box-shadow .4s ease;
         }
-        .node {
-            background: #111; border: 1px solid #333;
-            padding: 2rem; border-radius: 8px;
-            margin-bottom: 2rem; position: relative;
-            width: 45%;
+        .philosophy-step:hover{transform:translateY(-8px);border-color:var(--magenta);box-shadow:0 20px 60px rgba(255,45,123,.12)}
+        .philosophy-step::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gel-gradient);opacity:0;transition:opacity .4s}
+        .philosophy-step:hover::before{opacity:1}
+        .step-num{
+            font-family:var(--font-display);font-size:3.5rem;font-weight:900;
+            background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            line-height:1;margin-bottom:1rem;opacity:.3;
         }
-        .node:nth-child(even) { margin-left: auto; border-color: var(--c-sec); }
-        .node:nth-child(odd) { border-color: var(--c-accent); }
+        .step-title{font-family:var(--font-display);font-size:1.1rem;font-weight:800;margin-bottom:.8rem;color:var(--text)}
+        .step-desc{font-size:.9rem;line-height:1.8;color:var(--text-dim)}
 
-        .node-header {
-            font-family: 'Anton', sans-serif; font-size: 1.5rem; text-transform: uppercase;
-            margin-bottom: 1rem; letter-spacing: 2px;
+        /* ===== GALLERY ===== */
+        #gallery{padding:6rem 0;min-height:auto;overflow:hidden}
+        .gallery-header.section-header{margin:0 0 3rem 6vw}
+        .gallery-track{display:flex;gap:2rem;padding:0 6vw;width:max-content}
+        .gallery-item{
+            width:300px;height:400px;border-radius:12px;overflow:hidden;position:relative;flex-shrink:0;
+            border:1px solid rgba(255,255,255,.05);transition:transform .5s ease,box-shadow .5s ease;
         }
-        .node:nth-child(even) .node-header { color: var(--c-sec); }
-        .node:nth-child(odd) .node-header { color: var(--c-accent); }
-        .node-body { font-size: 1rem; color: var(--c-dim); line-height: 1.6; }
-
-        /* Connecting lines for nodes */
-        .node:not(:last-child)::after {
-            content: ''; position: absolute; bottom: -2rem; left: 50%;
-            width: 2px; height: 2rem; background: #333;
+        .gallery-item:hover{transform:translateY(-12px) scale(1.03);box-shadow:0 20px 60px rgba(255,45,123,.15),0 0 30px rgba(155,89,255,.1)}
+        .gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease,filter .4s ease;filter:brightness(.85) saturate(.9)}
+        .gallery-item:hover img{transform:scale(1.1);filter:brightness(1) saturate(1.1)}
+        .gallery-item-overlay{
+            position:absolute;inset:0;background:linear-gradient(to top,rgba(6,6,10,.85) 0%,transparent 50%);
+            display:flex;flex-direction:column;justify-content:flex-end;padding:1.5rem;opacity:0;transition:opacity .4s ease;
+        }
+        .gallery-item:hover .gallery-item-overlay{opacity:1}
+        .gallery-item-overlay .tag{
+            font-family:var(--font-accent);font-size:.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+            background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
         }
 
-        /* --- S5: Status --- */
-        .status-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
-            max-width: 1000px; margin: 4rem auto 0;
-            border-top: 1px solid #333; padding-top: 4rem;
+        /* ===== JOURNEY ===== */
+        .journey-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin-top:3rem;max-width:1100px}
+        .journey-node{
+            background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:16px;
+            padding:2rem;backdrop-filter:blur(10px);position:relative;overflow:hidden;
+            transition:transform .4s ease,border-color .4s ease;
         }
-        .status-item { text-align: center; }
-        .status-val { font-family: 'Anton', sans-serif; font-size: 4rem; color: #fff; line-height: 1; }
-        .status-lbl { font-size: 1rem; color: var(--c-sec); text-transform: uppercase; letter-spacing: 2px; margin-top: 1rem; }
+        .journey-node:hover{transform:translateY(-4px);border-color:var(--cyan)}
+        .journey-node::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:2px;background:var(--gel-gradient);opacity:0;transition:opacity .4s}
+        .journey-node:hover::after{opacity:.6}
+        .journey-label{font-family:var(--font-accent);font-size:.7rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--cyan);margin-bottom:.5rem}
+        .journey-title{font-family:var(--font-display);font-size:1.2rem;font-weight:800;margin-bottom:.6rem}
+        .journey-desc{font-size:.85rem;line-height:1.7;color:var(--text-dim)}
 
-        /* --- Loader --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
+        /* ===== CATS ===== */
+        #cats{text-align:center}
+        #cats .section-header{margin:0 auto}
+        #cats .section-subtitle{margin:0 auto}
+        .cats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;max-width:1000px;margin:3rem auto 0}
+        .cat-card{
+            background:var(--bg-card);border:1px solid rgba(0,229,255,.1);border-radius:16px;
+            overflow:hidden;backdrop-filter:blur(10px);
+            transition:transform .4s ease,border-color .4s ease,box-shadow .4s ease;
         }
-        .loader-text {
-            font-family: 'Anton', sans-serif; font-size: 3rem; color: #fff;
-            text-transform: uppercase; letter-spacing: 5px;
-            animation: pulse 1.5s infinite;
+        .cat-card:hover{transform:translateY(-8px) rotate(-1deg);border-color:var(--hot-pink);box-shadow:0 20px 50px rgba(255,110,199,.12)}
+        .cat-card img{width:100%;height:260px;object-fit:cover;transition:transform .5s ease}
+        .cat-card:hover img{transform:scale(1.06)}
+        .cat-card-info{padding:1.2rem}
+        .cat-card-name{
+            font-family:var(--font-display);font-size:1rem;font-weight:800;
+            background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.2rem;
         }
-        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+        .cat-card-role{font-family:var(--font-accent);font-size:.7rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim)}
 
+        /* ===== SERVICES ===== */
+        .services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem;max-width:1100px}
+        .service-card{
+            background:var(--bg-card);border:1px solid rgba(0,229,255,.08);border-radius:16px;
+            padding:2rem;backdrop-filter:blur(10px);position:relative;overflow:hidden;
+            transition:transform .4s ease,border-color .4s ease,box-shadow .4s ease;
+        }
+        .service-card:hover{transform:translateY(-6px);border-color:var(--cyan);box-shadow:0 16px 50px rgba(0,229,255,.1)}
+        .service-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--gel-gradient);opacity:0;transition:opacity .4s}
+        .service-card:hover::before{opacity:1}
+        .service-icon{font-size:1.8rem;margin-bottom:1rem;display:block}
+        .service-icon svg{width:1em;height:1em;fill:currentColor}
+        .service-title{font-family:var(--font-display);font-size:1rem;font-weight:800;margin-bottom:.6rem}
+        .service-desc{font-size:.85rem;line-height:1.7;color:var(--text-dim)}
+        .service-tag{display:inline-block;font-family:var(--font-accent);font-size:.65rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:.2rem .6rem;border:1px solid rgba(0,229,255,.2);border-radius:100px;color:var(--cyan);margin-top:.8rem}
+
+        /* ===== SKILLS ===== */
+        .skills-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;max-width:900px;margin:3rem auto 0}
+        .skill-gauge{
+            background:var(--bg-card);border:1px solid rgba(255,255,255,.05);border-radius:12px;
+            padding:1.5rem;backdrop-filter:blur(10px);transition:border-color .3s;
+        }
+        .skill-gauge:hover{border-color:rgba(255,45,123,.2)}
+        .skill-gauge-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem}
+        .skill-gauge-name{font-family:var(--font-accent);font-size:.85rem;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+        .skill-gauge-value{
+            font-family:var(--font-display);font-size:1rem;font-weight:800;
+            background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        }
+        .skill-gauge-bar{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+        .skill-gauge-fill{height:100%;border-radius:2px;background:var(--gel-gradient);width:0;transition:width 1.5s cubic-bezier(.4,0,.2,1)}
+        .skill-gauge-desc{font-size:.75rem;color:var(--text-dim);margin-top:.5rem}
+
+        /* ===== QUOTE ===== */
+        #quote{text-align:center;min-height:60vh}
+        .quote-text{
+            font-family:var(--font-display);font-size:clamp(1.6rem,3.5vw,2.6rem);font-weight:600;
+            line-height:1.7;max-width:800px;margin:0 auto 2rem;
+            opacity:0;transform:translateY(30px);
+        }
+        .quote-text .holo{
+            background:var(--holo-gradient);background-size:300% 300%;
+            background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            animation:holoShift 5s ease infinite;
+        }
+        .quote-author{font-family:var(--font-accent);font-size:.85rem;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:var(--text-dim)}
+
+        /* ===== FOOTER ===== */
+        .site-footer{text-align:center;padding:4rem 2rem;border-top:1px solid rgba(255,255,255,.05);background:rgba(6,6,10,.7);backdrop-filter:blur(6px)}
+        .footer-title{font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin-bottom:.5rem;background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .footer-subtitle{font-size:.85rem;color:var(--text-dim);margin-bottom:2rem;letter-spacing:1px}
+        .footer-links{display:flex;justify-content:center;gap:2rem;margin-bottom:2rem}
+        .footer-links a{
+            width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+            border:1px solid rgba(255,255,255,.1);border-radius:50%;color:var(--text);
+            text-decoration:none;transition:all .3s ease;
+        }
+        .footer-links a:hover{border-color:var(--magenta);background:rgba(255,45,123,.1);color:var(--magenta);transform:translateY(-3px);box-shadow:0 8px 20px rgba(255,45,123,.2)}
+        .footer-links a svg{width:18px;height:18px;fill:currentColor}
+        .footer-text{font-size:.8rem;color:var(--text-dim);letter-spacing:1px}
+        .footer-text a{color:var(--magenta);text-decoration:none}
+
+        /* ===== SCROLL CTA ===== */
+        .scroll-cta{
+            position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);z-index:50;
+            display:flex;flex-direction:column;align-items:center;gap:.3rem;opacity:.4;transition:opacity .5s;
+        }
+        .scroll-cta.hidden{opacity:0;pointer-events:none}
+        .scroll-cta-text{font-family:var(--font-accent);font-size:.65rem;font-weight:600;letter-spacing:4px;text-transform:uppercase}
+        .scroll-cta-bar{width:1px;height:36px;background:linear-gradient(to bottom,var(--magenta),transparent);animation:scrollPulse 2s ease-in-out infinite}
+        @keyframes scrollPulse{0%,100%{transform:scaleY(.5);opacity:.3}50%{transform:scaleY(1);opacity:1}}
+
+        /* ===== SCROLL PROGRESS ===== */
+        .scroll-progress{position:fixed;top:0;left:0;width:0%;height:3px;background:var(--gel-gradient);z-index:9999;transition:none}
+
+        /* ===== HERO LETTER SPLIT ===== */
+        .hero-title .char{display:inline-block;opacity:0;transform:translateY(60px) rotateX(-40deg);transition:none}
+
+        /* ===== CURRICULUM ===== */
+        .curriculum-list{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:2.5rem;max-width:1100px;counter-reset:curr}
+        .curriculum-item{
+            counter-increment:curr;background:var(--bg-card);border:1px solid rgba(255,255,255,.05);
+            border-radius:12px;padding:1.5rem 1.5rem 1.5rem 4rem;backdrop-filter:blur(10px);
+            position:relative;overflow:hidden;transition:transform .4s ease,border-color .4s ease;
+        }
+        .curriculum-item:hover{transform:translateX(6px);border-color:var(--magenta)}
+        .curriculum-item::before{
+            content:counter(curr,decimal-leading-zero);position:absolute;left:1rem;top:50%;transform:translateY(-50%);
+            font-family:var(--font-display);font-size:1.5rem;font-weight:900;
+            background:var(--gel-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            opacity:.3;
+        }
+        .curriculum-item::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gel-gradient);opacity:0;transition:opacity .4s}
+        .curriculum-item:hover::after{opacity:1}
+        .curriculum-item-title{font-family:var(--font-display);font-size:.9rem;font-weight:800;margin-bottom:.3rem}
+        .curriculum-item-desc{font-size:.8rem;line-height:1.6;color:var(--text-dim)}
+        .curriculum-meta{margin-top:2rem;display:flex;gap:1.5rem;flex-wrap:wrap}
+        .curriculum-badge{
+            display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1.2rem;
+            background:rgba(255,45,123,.08);border:1px solid rgba(255,45,123,.2);border-radius:100px;
+            font-family:var(--font-accent);font-size:.75rem;font-weight:600;letter-spacing:1px;color:var(--magenta);
+        }
+
+        /* ===== 3D GALLERY TILT ===== */
+        .gallery-item{transform-style:preserve-3d;perspective:800px}
+
+        /* ===== WORD REVEAL ===== */
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:1024px){
+            #hero{grid-template-columns:1fr;text-align:center;padding-top:10rem}
+            .hero-text{padding:2rem 1.5rem}
+            .hero-subtitle{border-left:none;padding-left:0;border-bottom:3px solid var(--magenta);padding-bottom:1.5rem}
+            .hero-tags{justify-content:center}
+            .hero-avatar-frame{width:260px;height:260px}
+            .philosophy-grid{grid-template-columns:1fr}
+            .journey-grid{grid-template-columns:1fr}
+            .skills-grid{grid-template-columns:1fr}
+            .services-grid{grid-template-columns:1fr}
+            .curriculum-list{grid-template-columns:1fr}
+            .cats-grid{grid-template-columns:1fr;max-width:340px}
+            .section-header{display:block;padding:1.5rem 2rem}
+            .gallery-header.section-header{margin-left:4vw}
+            nav{padding:1rem 1.5rem}
+            section{padding:5rem 4vw}
+        }
+        @media(max-width:768px){
+            .hero-title{font-size:clamp(2.5rem,10vw,4rem)}
+            .hero-text{padding:1.5rem 1.2rem;border-radius:14px}
+            .hero-avatar-frame{width:200px;height:200px}
+            .section-header{padding:1.2rem 1rem;border-radius:12px}
+            .gallery-item{width:240px;height:320px}
+            .gallery-header.section-header{margin-left:4vw}
+            .footer-links{gap:1rem;flex-wrap:wrap}
+            .footer-links a{width:40px;height:40px}
+            .footer-links a svg{width:16px;height:16px}
+            #custom-cursor,#cursor-dot{display:none}
+            body{cursor:auto}
+        }
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="loader-text">ALCHEMIZING...</div></div>
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress" id="scroll-progress"></div>
 
-    <div id="gl-container"></div>
+    <!-- Custom Cursor -->
+    <div id="custom-cursor"></div>
+    <div id="cursor-dot"></div>
 
-    <div class="ui-layer">
-        <nav>
-            <div class="brand">VIC <span>NAIL</span></div>
-            <a href="/guild/" class="menu-btn">RETURN</a>
-        </nav>
-
-        <!-- S1: HERO -->
-        <section id="s1">
-            <h1 class="hero-title">FLUID<br>TO LOGIC</h1>
-            <div class="hero-subtitle">
-                我是東東老師。<br>
-                將感性的美學凝膠，淬鍊為理性的完美結構。<br>
-                18 年極致工藝，拒絕死記硬背。
-            </div>
-        </section>
-
-        <!-- S2: PHILOSOPHY -->
-        <section id="s2">
-            <div class="split-layout">
-                <div class="split-text">
-                    <h2 class="split-title">THE<br><span>ALGORITHM</span></h2>
-                    <p class="split-desc">美甲不只是塗抹，而是精密的微型工程。我擅長將複雜的技術拆解成邏輯完善的系統化課程，帶領學生理解每一個步驟背後的原理。</p>
-                    <ul class="logic-list">
-                        <li>INPUT: 結構分析與材質張力</li>
-                        <li>PROCESS: 物理支撐與化學固化</li>
-                        <li>OUTPUT: 持久與健康的絕對平衡</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <!-- S3: HORIZONTAL GALLERY -->
-        <section id="s3">
-            <div class="gallery-container">
-                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_01.webp" alt="Nail Art 1"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_02.webp" alt="Nail Art 2"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_03.webp" alt="Nail Art 3"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_04.webp" alt="Nail Art 4"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_05.webp" alt="Nail Art 5"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_06.webp" alt="Nail Art 6"></div>
-                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_07.webp" alt="Nail Art 7"></div>
-            </div>
-        </section>
-
-        <!-- S4: NODE WORKFLOW (Life) -->
-        <section id="s4">
-            <div class="split-layout" style="margin-bottom: 4rem;">
-                <div class="split-text" style="text-align: center;">
-                    <h2 class="split-title">LIFE <span>WORKFLOW</span></h2>
-                    <p class="split-desc">脫下講師袍，我是一個技能點滿的雜學家。這些看似無關的經歷，最終都串聯成我獨特的邏輯網路。</p>
-                </div>
-            </div>
-
-            <div class="workflow-container">
-                <div class="node">
-                    <div class="node-header">Node 1: Service.exe</div>
-                    <div class="node-body">火鍋店 / Uber：練就極致的服務效率與動線規劃邏輯，理解使用者體驗的核心。</div>
-                </div>
-                <div class="node">
-                    <div class="node-header">Node 2: Structure.dll</div>
-                    <div class="node-body">工地 / 水電 DIY：從建築結構到居家修繕，培養對「穩固性」的工科執著，直接應用於美甲建構。</div>
-                </div>
-                <div class="node">
-                    <div class="node-header">Node 3: Transfer.bat</div>
-                    <div class="node-body">學校老師 / 人力派遣：精準的資源配置，以及將艱澀知識轉化為易懂語言的傳授能力。</div>
-                </div>
-                <div class="node">
-                    <div class="node-header">Node 4: Creative.app</div>
-                    <div class="node-body">平面設計 / 影音剪輯 / 烹飪：視覺美感的數位化呈現與生活細節的熱愛，是所有創作的靈感泉源。</div>
-                </div>
-            </div>
-
-            <div class="status-grid">
-                <div class="status-item">
-                    <div class="status-val">N8N</div>
-                    <div class="status-lbl">Current Automation Tool</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-val">2</div>
-                    <div class="status-lbl">Feline Supervisors 🐈</div>
-                </div>
-            </div>
-        </section>
+    <!-- Gel Loader -->
+    <div id="gel-loader">
+        <div class="loader-nail"></div>
+        <div class="loader-text">Curing...</div>
+        <div class="loader-hint">CLICK TO ENTER</div>
     </div>
 
-    <!-- Shaders -->
-    <script type="x-shader/x-vertex" id="vertexShader">
-        uniform float uTime;
-        uniform float uLogic; // 0.0 = Fluid Chaos, 1.0 = Rigid Logic Grid
+    <!-- Three.js BG -->
+    <div id="three-container"></div>
+    <!-- p5.js Particle Layer -->
+    <div id="p5-container"></div>
 
-        varying vec2 vUv;
-        varying float vElevation;
+    <!-- Content -->
+    <div class="content-layer">
+        <nav>
+            <a href="/guild/" class="nav-back">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                Return
+            </a>
+            <div class="nav-brand">VIC NAIL</div>
+        </nav>
 
-        // Classic Perlin 3D Noise by Stefan Gustavson
-        vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-        vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-        vec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
-        float cnoise(vec3 P){
-            vec3 Pi0 = floor(P); // Integer part for indexing
-            vec3 Pi1 = Pi0 + vec3(1.0); // Integer part + 1
-            Pi0 = mod(Pi0, 289.0);
-            Pi1 = mod(Pi1, 289.0);
-            vec3 Pf0 = fract(P); // Fractional part for interpolation
-            vec3 Pf1 = Pf0 - vec3(1.0); // Fractional part - 1.0
-            vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
-            vec4 iy = vec4(Pi0.yy, Pi1.yy);
-            vec4 iz0 = Pi0.zzzz;
-            vec4 iz1 = Pi1.zzzz;
-            vec4 ixy = permute(permute(ix) + iy);
-            vec4 ixy0 = permute(ixy + iz0);
-            vec4 ixy1 = permute(ixy + iz1);
-            vec4 gx0 = ixy0 / 7.0;
-            vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;
-            gx0 = fract(gx0);
-            vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
-            vec4 sz0 = step(gz0, vec4(0.0));
-            gx0 -= sz0 * (step(0.0, gx0) - 0.5);
-            gy0 -= sz0 * (step(0.0, gy0) - 0.5);
-            vec4 gx1 = ixy1 / 7.0;
-            vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;
-            gx1 = fract(gx1);
-            vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
-            vec4 sz1 = step(gz1, vec4(0.0));
-            gx1 -= sz1 * (step(0.0, gx1) - 0.5);
-            gy1 -= sz1 * (step(0.0, gy1) - 0.5);
-            vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
-            vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
-            vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
-            vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
-            vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
-            vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
-            vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
-            vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
-            vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g010, g010), dot(g100, g100), dot(g110, g110)));
-            g000 *= norm0.x;
-            g010 *= norm0.y;
-            g100 *= norm0.z;
-            g110 *= norm0.w;
-            vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g011, g011), dot(g101, g101), dot(g111, g111)));
-            g001 *= norm1.x;
-            g011 *= norm1.y;
-            g101 *= norm1.z;
-            g111 *= norm1.w;
-            float n000 = dot(g000, Pf0);
-            float n100 = dot(g100, vec3(Pf1.x, Pf0.yz));
-            float n010 = dot(g010, vec3(Pf0.x, Pf1.y, Pf0.z));
-            float n110 = dot(g110, vec3(Pf1.xy, Pf0.z));
-            float n001 = dot(g001, vec3(Pf0.xy, Pf1.z));
-            float n101 = dot(g101, vec3(Pf1.x, Pf0.y, Pf1.z));
-            float n011 = dot(g011, vec3(Pf0.x, Pf1.yz));
-            float n111 = dot(g111, Pf1);
-            vec3 fade_xyz = fade(Pf0);
-            vec4 n_z = mix(vec4(n000, n100, n010, n110), vec4(n001, n101, n011, n111), fade_xyz.z);
-            vec2 n_yz = mix(n_z.xy, n_z.zw, fade_xyz.y);
-            float n_xyz = mix(n_yz.x, n_yz.y, fade_xyz.x);
-            return 2.2 * n_xyz;
-        }
+        <!-- HERO -->
+        <section id="hero">
+            <div class="hero-text">
+                <div class="section-label" data-parallax="0.02">PRESTO Brand Instructor</div>
+                <h1 class="hero-title"><span class="holo">Fluid</span><br>to Logic</h1>
+                <p class="hero-subtitle">
+                    我是東東Vic — 楊東霖，VicNail 創辦人。<br>
+                    PRESTO 品牌講師・第三屆講師甄選競賽第四名。<br>
+                    JNEC 3級 / JNA 衛生士。<br>
+                    專注日系凝膠，專業教學・理論實踐・邏輯建立。<br>
+                    講師人生就是不斷的在各個地方自言自語。
+                </p>
+                <div class="hero-tags">
+                    <span class="hero-tag">PRESTO 講師</span>
+                    <span class="hero-tag">JNEC 3級</span>
+                    <span class="hero-tag">凝膠教學</span>
+                    <span class="hero-tag">板橋</span>
+                    <span class="hero-tag">N8N 自動化</span>
+                </div>
+            </div>
+            <div class="hero-avatar">
+                <div class="hero-avatar-frame">
+                    <img src="/assets/img/guild/vic/avatar.webp" alt="VIC NAIL 東東老師" width="340" height="340">
+                </div>
+            </div>
+        </section>
 
-        void main() {
-            vUv = uv;
-            vec3 pos = position;
+        <div class="chrome-divider"></div>
 
-            // Fluid motion using Noise
-            float noiseFreq = 0.5;
-            float noiseAmp = 4.0;
-            vec3 noisePos = vec3(pos.x * noiseFreq + uTime, pos.y * noiseFreq, pos.z * noiseFreq);
-            float noise = cnoise(noisePos) * noiseAmp;
+        <!-- PHILOSOPHY -->
+        <section id="philosophy">
+            <div class="section-header">
+                <div class="section-label" data-parallax="0.03">The Algorithm</div>
+                <h2 class="section-title">Precision <span class="gradient">Engineering</span></h2>
+                <p class="section-subtitle">我不教你記住步驟，我教你理解原理。凝膠教學不該是死記硬背，而是拆解邏輯後的精密重組。</p>
+            </div>
+            <div class="philosophy-grid">
+                <div class="philosophy-step"><div class="step-num">01</div><h3 class="step-title">INPUT: 快速建構</h3><p class="step-desc">掌握凝膠的物理特性與結構力學，從基礎班到全科班，一步步建立完整的技術底層邏輯。</p></div>
+                <div class="philosophy-step"><div class="step-num">02</div><h3 class="step-title">PROCESS: 素材應用</h3><p class="step-desc">暈染、大理石紋、光療美甲、足部凝膠 — 將多元素材融入實戰，每一堂課都是即學即用。</p></div>
+                <div class="philosophy-step"><div class="step-num">03</div><h3 class="step-title">OUTPUT: 快速沙龍</h3><p class="step-desc">從理解原理到獨立操作，培養快速沙龍的實戰能力。理解了為什麼，你就能自己找到怎麼做。</p></div>
+            </div>
+        </section>
 
-            // Mix between Fluid (noise) and Logic (original flat grid)
-            // uLogic goes from 0.0 (Fluid) to 1.0 (Flat Logic Grid)
-            pos.z += mix(noise, 0.0, uLogic);
+        <!-- GALLERY (Horizontal GSAP Scroll) -->
+        <section id="gallery">
+            <div class="gallery-header section-header">
+                <div class="section-label" data-parallax="0.02">Portfolio</div>
+                <h2 class="section-title">The <span class="gradient">Spectrum</span></h2>
+                <p class="section-subtitle">每一件作品都是一次材質與美學的實驗。</p>
+            </div>
+            <div class="gallery-track">
+                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_03.webp" alt="暈染凝膠美甲作品" width="300" height="400" loading="lazy"><div class="gallery-item-overlay"><span class="tag">暈染</span></div></div>
+                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_04.webp" alt="透明凝膠延甲建構" width="300" height="400" loading="lazy"><div class="gallery-item-overlay"><span class="tag">快速建構</span></div></div>
+                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_05.webp" alt="星空暈染凝膠指甲彩繪" width="300" height="400" loading="lazy"><div class="gallery-item-overlay"><span class="tag">凝膠彩繪</span></div></div>
+                <div class="gallery-item"><img src="/assets/img/guild/vic/gallery_07.webp" alt="東東Vic凝膠教學中" width="300" height="400" loading="lazy"><div class="gallery-item-overlay"><span class="tag">課程日常</span></div></div>
+            </div>
+        </section>
 
-            vElevation = pos.z;
+        <div class="chrome-divider"></div>
 
-            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+        <!-- SERVICES -->
+        <section id="services">
+            <div class="section-header">
+                <div class="section-label" data-parallax="0.03">What I Offer</div>
+                <h2 class="section-title">Course <span class="gradient">Menu</span></h2>
+                <p class="section-subtitle">所有課程內容皆以 PRESTO 凝膠系統為基礎，強調理解原理而非死記步驟。課程諮詢請洽 LINE: @259aijgv</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card"><span class="service-icon"><svg viewBox="0 0 640 512"><path d="M320 32c-8.1 0-16.1 1.4-23.7 4.1L15.8 137.4C6.3 140.9 0 149.9 0 160s6.3 19.1 15.8 22.6l57.9 20.9C57.3 229.3 48 259.8 48 291.9V320c0 28.4 10.8 57.8 22.3 80.8c6.5 13 13.9 25.8 22.5 37.6c0 0 .2 .3 .2 .3c3.2 4.3 4.9 9.5 4.9 14.9c0 5-1.5 9.8-4.3 13.9c-7.4 10.8-12.6 23-12.6 36.5c0 0 0 0 0 0c0 .7 0 1.3 0 2c.2 8.2 7 14.7 15.2 14.7c49.3 0 99.6 4.6 148.6 13.7c1 .2 2.1 .3 3.1 .3c8.8 0 16-7.2 16-16c0-6.3-3.6-11.7-8.9-14.3c-42.4-21.4-72-65.2-72-115.7c0-14.8 2.5-29 7-42.3l218.9-79c6.5-2.4 10.8-8.6 10.8-15.5s-4.3-13.2-10.8-15.5L271.1 137.1c13.4 10.6 22 27 22 45.4c0 8.8-7.2 16-16 16s-16-7.2-16-16c0-17.7-14.3-32-32-32s-32 14.3-32 32c0 8.8-7.2 16-16 16s-16-7.2-16-16c0-33.1 23.8-60.7 55.2-66.6L15.8 197.4C6.3 193.9 0 184.9 0 174.9V160c0-10.9 6.3-19.9 15.8-23.4L296.3 36.1c7.6-2.7 15.6-4.1 23.7-4.1s16.1 1.4 23.7 4.1l280.5 101.2C633.7 140.1 640 149.1 640 160s-6.3 19.1-15.8 22.6l-57.9 20.9c16.4 25.8 25.7 56.3 25.7 88.4V320c0 28.4-10.8 57.8-22.3 80.8c-6.5 13-13.9 25.8-22.5 37.6l-.2 .3c-3.2 4.3-4.9 9.5-4.9 14.9c0 5 1.5 9.8 4.3 13.9c7.4 10.8 12.6 23 12.6 36.5v2c-.2 8.2-7 14.7-15.2 14.7c-49.3 0-99.6 4.6-148.6 13.7c-1 .2-2.1 .3-3.1 .3c-8.8 0-16-7.2-16-16c0-6.3 3.6-11.7 8.9-14.3c42.4-21.4 72-65.2 72-115.7c0-14.8-2.5-29-7-42.3L343.7 137.1c7.6-2.7 15.6-4.1 23.7-4.1z"/></svg></span><h3 class="service-title">全科班</h3><p class="service-desc">從零基礎到獨立開業的完整課程。涵蓋凝膠建構、暈染技法、凝膠指甲彩繪、足部凝膠等全方位技術。</p><span class="service-tag">完整培訓</span></div>
+                <div class="service-card"><span class="service-icon"><svg viewBox="0 0 512 512"><path d="M352 96c0 14.3-3.1 27.9-8.8 40.2L487 261.4c9.5 6.3 15 16.8 15 28.1c0 5.5-1.4 11-4.1 15.9L444.6 406.2c-6.5 12.2-19.3 19.8-33.2 19.8H392c-8.8 0-16-7.2-16-16s7.2-16 16-16h19.4l49.6-93H340.2l-22.6 50.5c-3.6 8.1-13 11.7-21 8.1s-11.7-13-8.1-21l24.4-54.5c4.3-9.5 13.7-15.6 24.1-15.6H474.7l-41.5-27.7c-5-3.3-7.5-6.8-8.2-11.4c-9.3 4.2-19.5 6.6-30.4 6.6H281.5l-5.4 12.1c-3.6 8.1-13 11.7-21 8.1s-11.7-13-8.1-21l7.2-16.1C238.6 258.2 228 241.8 228 223.1V207c-7.3 3.7-15.3 6.5-23.7 8.2l-70.5 15.7c-7.1 1.6-14.3-1.6-17.8-7.9L84.2 167.6c-1.2-2.1-1.8-4.5-1.8-6.8c0-7.7 6.3-14.1 14.1-14.1H154l8.3-18.5C148.6 117 140 100.8 131.4 83.8l-26.9-53.9c-3.6-7.2-1-15.9 5.9-20L146 .1C148.2-.7 150.6-1 153.1 .9L195.5 20c7.3 3.7 11.4 11.6 9.9 19.8L196 93.8l29.8-6.6C244.3 83.1 258.3 74 268 61.5c3.7-4.7 6.7-10 8.8-15.5C280.1 18.9 305.2 0 334.3 0H352c17.7 0 32 14.3 32 32V64c0 17.7-14.3 32-32 32z"/></svg></span><h3 class="service-title">基礎班</h3><p class="service-desc">凝膠指甲的入門基礎。掌握快速建構技法、光療美甲原理、不用倒手的建構方式。</p><span class="service-tag">入門推薦</span></div>
+                <div class="service-card"><span class="service-icon"><svg viewBox="0 0 512 512"><path d="M192 104.9c0-3.1 .2-6.2 .5-9.3L21.2 1.3C16.1-1.4 10 .6 7.4 5.7l-6 12c-2.7 5.1-.6 11.4 4.5 14L164.5 109c3.4-2.7 7.3-4.1 11.5-4.1h16zm0 302.2c0 4.2 1.4 8.1 4.1 11.5L118.8 577.2c-2.7 5.1-.6 11.4 4.5 14l12 6c5.1 2.7 11.4 .6 14-4.5l94.2-158.6c-3.1-4.6-4.7-10.2-4.7-16.1 0-.2 0-.3 0-.5L192 407.1zm128 0l-46.8 10.4c0 .2 0 .3 0 .5 0 5.9-1.6 11.5-4.7 16.1l94.2 158.6c2.7 5.1 8.9 7.2 14 4.5l12-6c5.1-2.7 7.2-8.9 4.5-14L315.9 418.6c2.7-3.4 4.1-7.3 4.1-11.5v-16zm128-302.2h-16c4.2 0 8.1 1.4 11.5 4.1L602.1 31.7c5.1-2.7 7.2-8.9 4.5-14l-6-12c-2.7-5.1-8.9-7.2-14-4.5L415.3 95.5c.3 3.1 .5 6.2 .5 9.3v16zM448 208c0 97.2-78.8 176-176 176H240c-97.2 0-176-78.8-176-176V176C64 78.8 142.8 0 240 0h32c97.2 0 176 78.8 176 176v32zM320 176c0-35.3-28.7-64-64-64s-64 28.7-64 64c0 23.7 12.9 44.3 32 55.4v56.6c0 17.7 14.3 32 32 32s32-14.3 32-32V231.4c19.1-11.1 32-31.7 32-55.4z"/></svg></span><h3 class="service-title">單元課</h3><p class="service-desc">針對特定技術的單一主題課程。暈染、素材應用、凝膠彩繪等，依需求選擇想精進的項目。</p><span class="service-tag">客製學習</span></div>
+                <div class="service-card"><span class="service-icon"><svg viewBox="0 0 512 512"><path d="M512 256c0 .9 0 1.8 0 2.7c-.4 36.5-33.6 61.3-70.1 61.3H344c-26.5 0-48 21.5-48 48c0 3.4 .4 6.7 1 9.9c2.1 10.2 6.5 20 10.8 29.9c6.1 13.8 12.1 27.5 12.1 42c0 31.8-21.6 60.7-53.4 62c-3.5 .1-7 .2-10.6 .2C114.6 512 0 397.4 0 256S114.6 0 256 0S512 114.6 512 256zM128 288a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-96a32 32 0 1 0 0-64 32 32 0 1 0 0 64zM288 96a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm96 96a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></svg></span><h3 class="service-title">素材應用課</h3><p class="service-desc">學習各種素材的實戰應用技法，將多元材料融入凝膠創作，打造獨特的沙龍風格。</p><span class="service-tag">進階技法</span></div>
+                <div class="service-card"><span class="service-icon"><svg viewBox="0 0 448 512"><path d="M349.4 44.6c5.9-13.7 1.5-29.7-10.6-38.5s-28.6-8-39.9 1.8l-256 224c-10 8.8-13.6 22.9-8.9 35.3S50.7 288 64 288H175.5L98.6 467.4c-5.9 13.7-1.5 29.7 10.6 38.5s28.6 8 39.9-1.8l256-224c10-8.8 13.6-22.9 8.9-35.3s-16.6-20.7-30-20.7H272.5L349.4 44.6z"/></svg></span><h3 class="service-title">一日美甲師加強班</h3><p class="service-desc">一天密集訓練，快速提升沙龍實戰能力。適合已有基礎、想提高效率的美甲師。</p><span class="service-tag">招生中</span></div>
+                <div class="service-card"><span class="service-icon"><svg viewBox="0 0 512 512"><path d="M352 320c88.4 0 160-71.6 160-160c0-15.3-2.2-30.1-6.2-44.2c-3.1-10.8-16.4-13.2-24.3-5.3l-76.8 76.8c-3 3-7.1 4.7-11.3 4.7H336c-8.8 0-16-7.2-16-16V117.3c0-4.2 1.7-8.3 4.7-11.3l76.8-76.8c7.9-7.9 5.4-21.2-5.3-24.3C382.1 2.2 367.3 0 352 0C263.6 0 192 71.6 192 160c0 19.1 3.4 37.5 9.5 54.5L19.9 396.1C7.2 408.8 0 426.1 0 444.1C0 481.6 30.4 512 67.9 512c18 0 35.3-7.2 48-19.9L297.5 310.5c17 6.2 35.4 9.5 54.5 9.5zM80 408a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"/></svg></span><h3 class="service-title">調整班</h3><p class="service-desc">10堂課30小時，專為執業美甲師設計。重新拆解每個環節，從材料科學到結構修型。</p><span class="service-tag">進階調整</span></div>
+                <div class="service-card"><span class="service-icon"><svg viewBox="0 0 640 512"><path d="M88.2 309.1c9.8-18.3 6.8-40.8-7.5-55.8C59.4 230.9 48 204 48 176c0-63.5 63.8-128 160-128s160 64.5 160 128s-63.8 128-160 128c-13.1 0-25.8-1.3-37.8-3.6c-10.4-2-21.2-.6-30.7 4.2c-4.1 2.1-8.3 4-12.6 5.6c-17 6.2-35.6 10.9-52.4 13.2c6.4-8.3 12.4-17.2 17.6-26.3l5.2-9.7zm-60.5 74.4C12.7 370.2 0 349.7 0 326.6c0-8.3 2.1-16.1 5.8-23L11 294c16.2-30.3 9.8-67.4-11-93.9C-7.9 189.8-12 178.1-12 165.4c0-3.5 .3-7 1-10.4C0 69.6 79.7 0 176 0c96.3 0 176 69.6 187 155c.6 3.4 1 6.9 1 10.4c0 12.7-4.1 24.4-11 34.7c-20.8 26.5-27.2 63.6-11 93.9l5.2 9.7c3.7 6.9 5.8 14.7 5.8 23c0 23.1-12.7 43.6-27.7 56.9c-14.7 13-33.8 22.8-55.1 29.3c-21.9 6.7-46.6 10.7-72.3 12.4c-3 .2-6 .3-9 .3c-18 0-35-1.7-50.8-4.7c-31.1-5.9-57.7-17.4-76.6-34.5zM208 208c0-17.7-14.3-32-32-32s-32 14.3-32 32s14.3 32 32 32s32-14.3 32-32zm128 0c0-17.7-14.3-32-32-32s-32 14.3-32 32s14.3 32 32 32s32-14.3 32-32zM416 176c0 33.8-11.4 60.7-32.7 83.3c-14.3 15-17.3 37.5-7.5 55.8l5.2 9.7c5.2 9.7 11.2 18.7 17.6 26.3c-16.8-2.3-35.4-7-52.4-13.2c-4.3-1.6-8.5-3.5-12.6-5.6c-9.5-4.8-20.3-6.2-30.7-4.2c-12 2.3-24.7 3.6-37.8 3.6c-3 0-6-.1-9-.2c26.5 23.6 61.7 38.2 101 38.2c13.3 0 26.2-1.4 38.6-4c14.2-2.9 29.3 .7 40.4 9.7c7.1 5.8 14.7 10.9 22.9 15.2c19.9 10.5 42.9 17.3 64.8 21.2c-7.1-9.3-13.6-19.3-19.2-29.8l-5.2-9.7c-9.8-18.3-6.8-40.8 7.5-55.8C571.4 292.7 592 252.8 592 208c0-55.7-30.6-104.5-76.3-130.7C524.5 97.9 528 117 528 136.5v.5c0 76.7-63.3 140-140 140c-24 0-46.5-6.2-66.1-17c1.4 5.5 2.1 11.1 2.1 16.9c0 1.2 0 2.4-.1 3.6c18.4 9.4 39 14.7 61.1 14.7C463.8 295.3 528 239.5 528 176z"/></svg></span><h3 class="service-title">課程說明會</h3><p class="service-desc">NT$1,000 體驗課程氛圍。前置保養與單色凝膠示範，含 PRESTO Q&A 互動時間。</p><span class="service-tag">先體驗</span></div>
+            </div>
+        </section>
 
-            // Point size based on depth and logic state
-            gl_PointSize = mix(6.0, 3.0, uLogic) * (100.0 / -mvPosition.z);
-            gl_Position = projectionMatrix * mvPosition;
-        }
-    </script>
-    <script type="x-shader/x-fragment" id="fragmentShader">
-        uniform float uLogic;
-        varying float vElevation;
+        <div class="chrome-divider"></div>
 
-        void main() {
-            // Circle shape for points
-            vec2 cxy = 2.0 * gl_PointCoord - 1.0;
-            float r = dot(cxy, cxy);
-            if (r > 1.0) {
-                discard;
-            }
+        <!-- CURRICULUM -->
+        <section id="curriculum">
+            <div class="section-header">
+                <div class="section-label" data-parallax="0.03">Deep Dive</div>
+                <h2 class="section-title">Adjustment <span class="gradient">Course</span></h2>
+                <p class="section-subtitle">美甲師調整課 — 10堂課共30小時，專為已有基礎的美甲師設計，重新拆解每一個環節，從材料科學到結構修型，建立完整的技術邏輯。</p>
+            </div>
+            <div class="curriculum-list">
+                <div class="curriculum-item"><h4 class="curriculum-item-title">凝膠材料學</h4><p class="curriculum-item-desc">從照光原理到成分結構，建立正確的材料判斷與搭配邏輯。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">指甲學</h4><p class="curriculum-item-desc">釐清指甲結構與常見問題甲的辨識與處理方向。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">快速前置技巧</h4><p class="curriculum-item-desc">拆解整套前置流程，從工具選擇到操作目的全面解析。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">完美單色操作</h4><p class="curriculum-item-desc">膠量控制與刷色節奏，避開刷痕、積膠、毛邊等常見問題。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">凝膠卸甲流程</h4><p class="curriculum-item-desc">卸甲液卸除、一層殘、全拋卸除三種方式與鑽飾卸除技巧。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">法式指甲設計</h4><p class="curriculum-item-desc">標準法式與沙龍法式，對稱線條控制與穩定筆法邏輯。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">璀璨漸層與單色漸層</h4><p class="curriculum-item-desc">只使用平筆與膠性控制，刷出自然過渡層次。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">暈染設計實作</h4><p class="curriculum-item-desc">乾拍、濕暈等基本筆法，掌握膠性搭配與筆觸控制。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">鑽飾黏貼技巧</h4><p class="curriculum-item-desc">不同鑽飾的結構與固定方式，避免常見掉鑽問題。</p></div>
+                <div class="curriculum-item"><h4 class="curriculum-item-title">延甲操作技巧</h4><p class="curriculum-item-desc">可卸式短延甲，紙模修剪貼合與結構修型邏輯。</p></div>
+            </div>
+            <div class="curriculum-meta">
+                <span class="curriculum-badge">10 堂課</span>
+                <span class="curriculum-badge">30 小時</span>
+                <span class="curriculum-badge">小班制教學</span>
+                <span class="curriculum-badge">PRESTO + Nail Labo</span>
+            </div>
+        </section>
 
-            // Colors
-            vec3 colorGel = vec3(1.0, 0.0, 0.33); // Magenta
-            vec3 colorUV = vec3(0.0, 0.9, 1.0);   // Cyan
-            vec3 colorLogic = vec3(0.5, 0.5, 0.5); // Grey/White for Logic
+        <div class="chrome-divider"></div>
 
-            // Mix based on elevation (fluid mode)
-            float mixStrength = (vElevation + 2.0) * 0.25;
-            vec3 fluidColor = mix(colorUV, colorGel, clamp(mixStrength, 0.0, 1.0));
+        <!-- JOURNEY -->
+        <section id="journey">
+            <div class="section-header">
+                <div class="section-label" data-parallax="0.03">Life.exe</div>
+                <h2 class="section-title">Diverse <span class="gradient">Nodes</span></h2>
+                <p class="section-subtitle">從板橋到各地巡迴，講師人生就是不斷的在各個地方自言自語。這些看似無關的經歷，最終都串聯成獨特的邏輯網路。</p>
+            </div>
+            <div class="journey-grid">
+                <div class="journey-node"><div class="journey-label">Node 01 — Certification</div><h3 class="journey-title">PRESTO 品牌講師</h3><p class="journey-desc">第三屆講師甄選競賽第四名。PRESTO 品牌認證講師，將日本頂級凝膠技術帶入教學系統。</p></div>
+                <div class="journey-node"><div class="journey-label">Node 02 — Qualification</div><h3 class="journey-title">JNEC 3級 / JNA 衛生士</h3><p class="journey-desc">日本甲級認證，從技術到衛生管理的全面專業認可，確保每一步都符合國際標準。</p></div>
+                <div class="journey-node"><div class="journey-label">Node 03 — Teaching</div><h3 class="journey-title">全科班 / 基礎班 / 單元課</h3><p class="journey-desc">從零基礎到進階沙龍技法，涵蓋凝膠教學、暈染技法、足部凝膠、素材應用等完整課程體系。</p></div>
+                <div class="journey-node"><div class="journey-label">Node 04 — Community</div><h3 class="journey-title">一步一甲印 美甲社群</h3><p class="journey-desc">創辦「一步一甲印」美甲交流社群，打造美甲圈裡最友善、最包容、最知識豐富的角落。沒有美甲孤兒，一步一步走出屬於自己的指尖印記。</p></div>
+                <div class="journey-node"><div class="journey-label">Node 05 — Creative</div><h3 class="journey-title">平面設計 / 影音剪輯 / 烹飪</h3><p class="journey-desc">視覺美感的數位化呈現與生活細節的熱愛，是所有創作的靈感泉源。線上課程同步經營中。</p></div>
+                <div class="journey-node"><div class="journey-label">Node 06 — Automation</div><h3 class="journey-title">N8N 自動化系統</h3><p class="journey-desc">將重複性的行政工作交給機器，讓人類專注於創造。自動化不是取代，是解放。</p></div>
+            </div>
+        </section>
 
-            // Final color: mix fluid color with logic color based on scroll state
-            vec3 finalColor = mix(fluidColor, colorLogic, uLogic);
+        <!-- CATS -->
+        <section id="cats">
+            <div class="section-header">
+                <div class="section-label" data-parallax="0.02">Feline Supervisors</div>
+                <h2 class="section-title">The <span class="gradient">Crew</span></h2>
+                <p class="section-subtitle">工作室裡的兩位俄羅斯藍貓，是品質控管的最高主管。</p>
+            </div>
+            <div class="cats-grid">
+                <div class="cat-card"><img src="/assets/img/guild/vic/gallery_01.webp" alt="穿連帽衫的俄羅斯藍貓" width="340" height="260" loading="lazy"><div class="cat-card-info"><div class="cat-card-name">Captain Hoodie</div><div class="cat-card-role">Chief Purring Officer</div></div></div>
+                <div class="cat-card"><img src="/assets/img/guild/vic/gallery_02.webp" alt="並排坐的俄羅斯藍貓雙胞胎" width="340" height="260" loading="lazy"><div class="cat-card-info"><div class="cat-card-name">The Duo</div><div class="cat-card-role">Quality Inspectors</div></div></div>
+                <div class="cat-card"><img src="/assets/img/guild/vic/gallery_06.webp" alt="仰望天空的俄羅斯藍貓" width="340" height="260" loading="lazy"><div class="cat-card-info"><div class="cat-card-name">First Mate Grey</div><div class="cat-card-role">Starboard Lookout</div></div></div>
+            </div>
+        </section>
 
-            // Add some glow
-            float alpha = mix(0.8, 0.4, uLogic);
+        <div class="chrome-divider"></div>
 
-            gl_FragColor = vec4(finalColor, alpha);
-        }
-    </script>
+        <!-- SKILLS -->
+        <section id="skills">
+            <div class="section-header">
+                <div class="section-label" data-parallax="0.03">Instrument Panel</div>
+                <h2 class="section-title">Skill <span class="gradient">Matrix</span></h2>
+                <p class="section-subtitle">PRESTO 品牌講師的完整技能矩陣，從凝膠建構到數位自動化。</p>
+            </div>
+            <div class="skills-grid">
+                <div class="skill-gauge"><div class="skill-gauge-header"><span class="skill-gauge-name">凝膠指甲建構</span><span class="skill-gauge-value">98%</span></div><div class="skill-gauge-bar"><div class="skill-gauge-fill" data-width="98"></div></div><div class="skill-gauge-desc">快速建構 / 凝膠指甲 / 光療美甲 / PRESTO 技術</div></div>
+                <div class="skill-gauge"><div class="skill-gauge-header"><span class="skill-gauge-name">系統化教學</span><span class="skill-gauge-value">95%</span></div><div class="skill-gauge-bar"><div class="skill-gauge-fill" data-width="95"></div></div><div class="skill-gauge-desc">全科班 / 基礎班 / 單元課 / 線上課程</div></div>
+                <div class="skill-gauge"><div class="skill-gauge-header"><span class="skill-gauge-name">暈染與彩繪</span><span class="skill-gauge-value">92%</span></div><div class="skill-gauge-bar"><div class="skill-gauge-fill" data-width="92"></div></div><div class="skill-gauge-desc">暈染技法 / 凝膠彩繪 / 素材應用 / 大理石紋</div></div>
+                <div class="skill-gauge"><div class="skill-gauge-header"><span class="skill-gauge-name">足部凝膠</span><span class="skill-gauge-value">88%</span></div><div class="skill-gauge-bar"><div class="skill-gauge-fill" data-width="88"></div></div><div class="skill-gauge-desc">足部護理 / 足部凝膠施作 / 快速沙龍</div></div>
+                <div class="skill-gauge"><div class="skill-gauge-header"><span class="skill-gauge-name">N8N 自動化</span><span class="skill-gauge-value">85%</span></div><div class="skill-gauge-bar"><div class="skill-gauge-fill" data-width="85"></div></div><div class="skill-gauge-desc">工作流設計 / API 串接 / 排程自動化</div></div>
+                <div class="skill-gauge"><div class="skill-gauge-header"><span class="skill-gauge-name">品牌經營</span><span class="skill-gauge-value">80%</span></div><div class="skill-gauge-bar"><div class="skill-gauge-fill" data-width="80"></div></div><div class="skill-gauge-desc">社群經營 / 好物分享 / 影音剪輯 / 品牌視覺</div></div>
+            </div>
+        </section>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+        <!-- QUOTE -->
+        <section id="quote">
+            <p class="quote-text">&ldquo;沒有美甲孤兒 — 因為你一定能找到<span class="holo">懂你的人</span>。知識不再是孤單的摸索，而是大家的<span class="holo">交流與陪伴</span>。&rdquo;</p>
+            <div class="quote-author">&mdash; 東東Vic 楊東霖</div>
+        </section>
 
+        <!-- FOOTER -->
+        <footer class="site-footer">
+            <h3 class="footer-title">Connect</h3>
+            <p class="footer-subtitle">板橋・新北市 — 預約與課程洽詢</p>
+            <div class="footer-links">
+                <a href="https://www.instagram.com/dwng1274/" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+                <a href="https://www.facebook.com/VicNailArt" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+                <a href="https://www.threads.com/@dwng1274" target="_blank" rel="noopener" aria-label="Threads"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.321 6.016c-.27-.18-1.166-.802-1.166-.802.756-1.081 1.753-1.502 3.132-1.502.975 0 1.803.327 2.394.948s.928 1.509 1.005 2.644q.492.207.905.484c1.109.745 1.719 1.86 1.719 3.137 0 2.716-2.226 5.075-6.256 5.075C4.594 16 1 13.987 1 7.994 1 2.034 4.482 0 8.044 0 9.69 0 13.55.243 15 5.036l-1.36.353C12.516 1.974 10.163 1.43 8.006 1.43c-3.565 0-5.582 2.171-5.582 6.79 0 4.143 2.254 6.343 5.63 6.343 2.777 0 4.847-1.443 4.847-3.556 0-1.438-1.208-2.127-1.27-2.127-.236 1.234-.868 3.31-3.644 3.31-1.618 0-3.013-1.118-3.013-2.582 0-2.09 1.984-2.847 3.55-2.847.586 0 1.294.04 1.663.114 0-.637-.54-1.728-1.9-1.728-1.25 0-1.566.405-1.967.868ZM8.716 8.19c-2.04 0-2.304.87-2.304 1.416 0 .878 1.043 1.168 1.6 1.168 1.02 0 2.067-.282 2.232-2.423a6.2 6.2 0 0 0-1.528-.161"/></svg></a>
+                <a href="https://line.me/R/ti/p/@259aijgv" target="_blank" rel="noopener" aria-label="LINE"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0c4.411 0 8 2.912 8 6.492 0 1.433-.555 2.723-1.715 3.994-1.678 1.932-5.431 4.285-6.285 4.645-.83.35-.734-.197-.696-.413l.003-.018.114-.685c.027-.204.055-.521-.026-.723-.09-.223-.444-.339-.704-.395C2.846 12.39 0 9.701 0 6.492 0 2.912 3.59 0 8 0M5.022 7.686H3.497V4.918a.156.156 0 0 0-.155-.156H2.78a.156.156 0 0 0-.156.156v3.486c0 .041.017.08.044.107v.001l.002.002.002.001a.15.15 0 0 0 .108.044h2.242a.156.156 0 0 0 .155-.156v-.56a.156.156 0 0 0-.155-.156m.964-2.925a.156.156 0 0 0-.155.156v3.486c0 .086.07.155.155.155h.563c.086 0 .155-.07.155-.155V4.918a.156.156 0 0 0-.155-.156zM11.428 4.761h-.563a.156.156 0 0 0-.155.156v2.073L9.108 4.837a.17.17 0 0 0-.013-.015v-.001l-.012-.012-.001-.002-.01-.01-.002-.001-.01-.008h-.002l-.01-.007-.002-.001-.01-.006-.003-.001-.01-.005h-.003l-.01-.003h-.004l-.01-.002h-.003l-.011-.001h-.57a.156.156 0 0 0-.156.155v3.486c0 .086.07.155.156.155h.563c.086 0 .155-.07.155-.155V6.844l1.604 2.08a.16.16 0 0 0 .039.038l.004.003.01.006.004.002.008.004.003.001.01.004.003.002h.01l.003.001.01.001h.004l.007.001h.567a.156.156 0 0 0 .155-.155V4.918a.156.156 0 0 0-.155-.156zm3.065.787h-2.242a.156.156 0 0 0-.156.155v3.486c0 .041.017.08.044.107l.003.003.002.001a.15.15 0 0 0 .108.044h2.242a.156.156 0 0 0 .155-.155v-.561a.156.156 0 0 0-.155-.156h-1.526v-.664h1.526a.156.156 0 0 0 .155-.155V7.29a.156.156 0 0 0-.155-.156h-1.526v-.664h1.526a.156.156 0 0 0 .155-.156v-.56a.156.156 0 0 0-.156-.156z"/></svg></a>
+            </div>
+            <p class="footer-text">Crafted with precision by <a href="/guild/">SuperGalen Guild</a></p>
+        </footer>
+    </div>
+
+    <!-- Scroll CTA -->
+    <div class="scroll-cta"><span class="scroll-cta-text">Scroll</span><div class="scroll-cta-bar"></div></div>
+
+    <!-- ===== THREE.JS: Iridescent Sphere ===== -->
     <script type="module">
-        import * as THREE from 'three';
+    import * as THREE from 'three';
 
-        // --- Scene Setup ---
-        const container = document.getElementById('gl-container');
-        const scene = new THREE.Scene();
+    const container = document.getElementById('three-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 4);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, -5, 20);
-        camera.lookAt(0, 0, 0);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
+    // Iridescent Sphere with custom shader
+    const vertexShader = `
+        uniform float uTime;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        varying vec2 vUv;
 
-        // --- Grid/Wave Material ---
-        const material = new THREE.ShaderMaterial({
-            vertexShader: document.getElementById('vertexShader').textContent,
-            fragmentShader: document.getElementById('fragmentShader').textContent,
-            uniforms: {
-                uTime: { value: 0 },
-                uLogic: { value: 0.0 } // 0 = Fluid, 1 = Logic Grid
-            },
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending
-        });
-
-        // --- Grid Geometry ---
-        // A large plane of points
-        const width = 60;
-        const height = 40;
-        const segmentsX = 120;
-        const segmentsY = 80;
-        const geometry = new THREE.PlaneGeometry(width, height, segmentsX, segmentsY);
-
-        const points = new THREE.Points(geometry, material);
-        points.rotation.x = -Math.PI * 0.4; // Tilt it back to look like a ground plane / wave
-        points.position.y = -10;
-        scene.add(points);
-
-
-        // --- GSAP Scroll Logic ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Horizontal Gallery Logic
-        const galleryContainer = document.querySelector('.gallery-container');
-        function getScrollAmount() {
-            let galleryWidth = galleryContainer.scrollWidth;
-            return -(galleryWidth - window.innerWidth + window.innerWidth*0.2); // Leave some padding
+        // Simplex noise
+        vec3 mod289(vec3 x){return x-floor(x*(1./289.))*289.;}
+        vec4 mod289(vec4 x){return x-floor(x*(1./289.))*289.;}
+        vec4 perm(vec4 x){return mod289(((x*34.)+1.)*x);}
+        float noise(vec3 p){
+            vec3 a=floor(p);vec3 d=p-a;d=d*d*(3.-2.*d);
+            vec4 b=a.xxyy+vec4(0,1,0,1);
+            vec4 k1=perm(b.xyxy);vec4 k2=perm(k1.xyxy+b.zzww);
+            vec4 c=k2+a.zzzz;vec4 k3=perm(c);vec4 k4=perm(c+1.);
+            vec4 o1=fract(k3*(1./41.));vec4 o2=fract(k4*(1./41.));
+            vec4 o3=o2*d.z+o1*(1.-d.z);
+            vec2 o4=o3.yw*d.x+o3.xz*(1.-d.x);
+            return o4.y*d.y+o4.x*(1.-d.y);
         }
 
-        const tween = gsap.to(galleryContainer, {
-            x: getScrollAmount,
-            ease: "none"
+        void main(){
+            vUv = uv;
+            vNormal = normalize(normalMatrix * normal);
+            vec3 pos = position;
+            float n = noise(pos * 2.0 + uTime * 0.3) * 0.15;
+            pos += normal * n;
+            vPosition = pos;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+    `;
+
+    const fragmentShader = `
+        uniform float uTime;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        varying vec2 vUv;
+
+        void main(){
+            vec3 viewDir = normalize(cameraPosition - vPosition);
+            float fresnel = pow(1.0 - max(dot(viewDir, vNormal), 0.0), 3.0);
+
+            // Iridescent color shift
+            float hueShift = vNormal.x * 0.5 + vNormal.y * 0.3 + uTime * 0.1;
+            vec3 col1 = vec3(1.0, 0.18, 0.48);  // magenta
+            vec3 col2 = vec3(0.0, 0.9, 1.0);     // cyan
+            vec3 col3 = vec3(0.61, 0.35, 1.0);    // violet
+            vec3 col4 = vec3(0.0, 1.0, 0.53);     // emerald
+
+            vec3 color = mix(col1, col2, sin(hueShift * 3.14) * 0.5 + 0.5);
+            color = mix(color, col3, sin(hueShift * 2.0 + 1.0) * 0.5 + 0.5);
+            color = mix(color, col4, sin(hueShift * 4.0 + 2.0) * 0.3);
+
+            color = mix(color * 0.3, color, fresnel);
+            float alpha = fresnel * 0.35 + 0.02;
+
+            gl_FragColor = vec4(color, alpha);
+        }
+    `;
+
+    const sphereGeo = new THREE.IcosahedronGeometry(1.8, 64);
+    const sphereMat = new THREE.ShaderMaterial({
+        vertexShader, fragmentShader,
+        uniforms: { uTime: { value: 0 } },
+        transparent: true, side: THREE.DoubleSide, depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere.position.set(2, 0, 0);
+    scene.add(sphere);
+
+    // Floating particles around sphere
+    const particleCount = 300;
+    const pGeo = new THREE.BufferGeometry();
+    const pPositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = 2.0 + Math.random() * 1.5;
+        pPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta) + 2;
+        pPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        pPositions[i * 3 + 2] = r * Math.cos(phi);
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+    const pMat = new THREE.PointsMaterial({ size: 1.5, color: 0xff2d7b, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, sizeAttenuation: true });
+    const particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    let scrollY = 0;
+    window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+
+    const clock = new THREE.Clock();
+    function animate() {
+        requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+        sphereMat.uniforms.uTime.value = t;
+
+        // Scroll-based sphere movement
+        const progress = scrollY / (document.body.scrollHeight - window.innerHeight);
+        sphere.position.x = 2 - progress * 4;
+        sphere.position.y = progress * 2 - 1;
+        sphere.rotation.y = t * 0.15 + progress * Math.PI;
+        sphere.rotation.x = Math.sin(t * 0.1) * 0.2;
+
+        // Scale based on scroll
+        const s = 1 + progress * 0.5;
+        sphere.scale.setScalar(s);
+
+        // Particle rotation
+        particles.rotation.y = t * 0.05;
+        particles.rotation.x = t * 0.03;
+
+        // Color shift particles
+        const hue = (t * 0.05) % 1;
+        pMat.color.setHSL(hue, 1, 0.6);
+
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    </script>
+
+    <!-- ===== P5.JS: Interactive Particle System ===== -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const p5Container = document.getElementById('p5-container');
+        let mouseXGlobal = 0, mouseYGlobal = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseXGlobal = e.clientX;
+            mouseYGlobal = e.clientY;
         });
 
-        ScrollTrigger.create({
-            trigger: "#s3",
-            start: "top top",
-            end: () => `+=${getScrollAmount() * -1}`,
-            pin: true,
-            animation: tween,
-            scrub: 1,
-            invalidateOnRefresh: true
-        });
+        new p5(function(p) {
+            let particles = [];
+            const maxParticles = 60;
+            const colors = ['#ff2d7b', '#9b59ff', '#00e5ff', '#ffd700', '#00ff88', '#ff6ec7'];
 
-        // 3D Background Logic
-        // Transition from Fluid to Logic based on scroll
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                const p = self.progress;
+            p.setup = function() {
+                const c = p.createCanvas(window.innerWidth, window.innerHeight);
+                c.parent(p5Container);
+                c.style('pointer-events', 'none');
+                p.noStroke();
+            };
 
-                // uLogic mapping:
-                // S1 (0-0.2): Fluid (0)
-                // S2 (0.2-0.4): Transition to Logic (1)
-                // S3+ (0.4+): Logic Grid (1)
-                let logicVal = 0;
-                if (p > 0.1 && p < 0.3) {
-                    logicVal = (p - 0.1) * 5;
-                } else if (p >= 0.3) {
-                    logicVal = 1.0;
+            p.draw = function() {
+                p.clear();
+
+                // Spawn particles near cursor
+                if (p.frameCount % 3 === 0 && particles.length < maxParticles) {
+                    particles.push({
+                        x: mouseXGlobal + p.random(-20, 20),
+                        y: mouseYGlobal + p.random(-20, 20),
+                        vx: p.random(-1.5, 1.5),
+                        vy: p.random(-2, -0.5),
+                        size: p.random(2, 5),
+                        alpha: 160,
+                        color: p.color(colors[Math.floor(p.random(colors.length))]),
+                        decay: p.random(3, 6)
+                    });
                 }
 
-                gsap.to(material.uniforms.uLogic, { value: logicVal, duration: 0.5 });
+                // Update and draw particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const pt = particles[i];
+                    pt.x += pt.vx;
+                    pt.y += pt.vy;
+                    pt.vy += 0.02; // slight gravity
+                    pt.alpha -= pt.decay;
+                    pt.size *= 0.98;
 
-                // Camera movement to keep the grid dynamic
-                // Pan up over the grid
-                gsap.to(camera.position, {
-                    y: -5 + (p * 15),
-                    z: 20 - (p * 10),
-                    duration: 0.5
-                });
-                camera.lookAt(0, 0, 0);
-            }
+                    if (pt.alpha <= 0) {
+                        particles.splice(i, 1);
+                        continue;
+                    }
+
+                    const c = pt.color;
+                    p.fill(p.red(c), p.green(c), p.blue(c), pt.alpha);
+                    p.ellipse(pt.x, pt.y, pt.size, pt.size);
+                }
+            };
+
+            p.windowResized = function() {
+                p.resizeCanvas(window.innerWidth, window.innerHeight);
+            };
+        });
+    });
+    </script>
+
+    <!-- ===== GSAP + Cursor + Sparkle Logic ===== -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        'use strict';
+        gsap.registerPlugin(ScrollTrigger);
+
+        // ===== SCROLL PROGRESS BAR =====
+        const progressBar = document.getElementById('scroll-progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+        }, { passive: true });
+
+        // ===== CURSOR =====
+        const cursor = document.getElementById('custom-cursor');
+        const dot = document.getElementById('cursor-dot');
+        let mx = 0, my = 0, cx = 0, cy = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mx = e.clientX; my = e.clientY;
+            dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+        });
+        function animCursor() {
+            cx += (mx - cx) * 0.12; cy += (my - cy) * 0.12;
+            cursor.style.left = cx + 'px'; cursor.style.top = cy + 'px';
+            requestAnimationFrame(animCursor);
+        }
+        animCursor();
+
+        document.querySelectorAll('a,button,.gallery-item,.cat-card,.philosophy-step,.skill-gauge,.journey-node,.hero-tag,.service-card,.curriculum-item').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
         });
 
-        // Basic Elements Fade
-        gsap.utils.toArray('.split-text, .node, .status-item').forEach(el => {
-            gsap.from(el, {
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 85%"
-                },
-                y: 50,
-                opacity: 0,
-                duration: 1,
-                ease: "power3.out"
+        // ===== MAGNETIC HOVER =====
+        document.querySelectorAll('.philosophy-step,.service-card,.curriculum-item,.journey-node,.cat-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                gsap.to(card, { x: x * 0.08, y: y * 0.08, duration: 0.3, ease: 'power2.out' });
+            });
+            card.addEventListener('mouseleave', () => {
+                gsap.to(card, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1,0.5)' });
             });
         });
 
+        // ===== GALLERY 3D TILT =====
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            item.addEventListener('mousemove', (e) => {
+                const rect = item.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+                gsap.to(item, {
+                    rotationY: x * 15, rotationX: -y * 15,
+                    transformPerspective: 800, duration: 0.3, ease: 'power2.out'
+                });
+            });
+            item.addEventListener('mouseleave', () => {
+                gsap.to(item, { rotationY: 0, rotationX: 0, duration: 0.5, ease: 'power3.out' });
+            });
+        });
 
-        // --- Render Loop ---
-        const clock = new THREE.Clock();
+        // ===== CLICK SPARKLE =====
+        const sparkleColors = ['#ff2d7b', '#9b59ff', '#00e5ff', '#ffd700', '#00ff88', '#ff6ec7'];
+        document.addEventListener('click', (e) => {
+            const container = document.createElement('div');
+            container.className = 'click-sparkle';
+            container.style.left = e.clientX + 'px'; container.style.top = e.clientY + 'px';
+            for (let i = 0; i < 14; i++) {
+                const pt = document.createElement('div');
+                pt.className = 'click-sparkle-particle';
+                const angle = (Math.PI * 2 / 14) * i;
+                const dist = 30 + Math.random() * 50;
+                pt.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                pt.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+                pt.style.background = sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
+                container.appendChild(pt);
+            }
+            document.body.appendChild(container);
+            setTimeout(() => container.remove(), 700);
+        });
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const elapsedTime = clock.getElapsedTime();
+        // ===== LOADER =====
+        const loader = document.getElementById('gel-loader');
+        function dismissLoader() {
+            if (loader.classList.contains('hidden')) return;
+            loader.classList.add('hidden');
+            setTimeout(animateHero, 500);
+        }
+        loader.addEventListener('click', dismissLoader);
+        setTimeout(dismissLoader, 5000);
 
-            // Update shader time for fluid motion
-            material.uniforms.uTime.value = elapsedTime * 0.5;
+        function animateHero() {
+            // Split hero title into individual characters
+            const titleEl = document.querySelector('.hero-title');
+            if (titleEl) {
+                const children = Array.from(titleEl.childNodes);
+                titleEl.innerHTML = '';
+                children.forEach(node => {
+                    if (node.nodeType === 3) {
+                        // text node
+                        for (const ch of node.textContent) {
+                            if (ch === '\n') {
+                                titleEl.appendChild(document.createElement('br'));
+                            } else {
+                                const span = document.createElement('span');
+                                span.className = 'char';
+                                span.textContent = ch === ' ' ? '\u00A0' : ch;
+                                titleEl.appendChild(span);
+                            }
+                        }
+                    } else if (node.tagName === 'BR') {
+                        titleEl.appendChild(document.createElement('br'));
+                    } else {
+                        // preserve elements like <span class="holo">
+                        const text = node.textContent;
+                        for (const ch of text) {
+                            const span = document.createElement('span');
+                            span.className = 'char';
+                            // Copy the original element's classes
+                            if (node.classList) node.classList.forEach(c => { if (c !== 'char') span.classList.add(c); });
+                            span.textContent = ch === ' ' ? '\u00A0' : ch;
+                            titleEl.appendChild(span);
+                        }
+                    }
+                });
+            }
 
-            renderer.render(scene, camera);
+            const tl = gsap.timeline();
+            // Stagger each character
+            tl.to('.hero-title .char', {
+                opacity: 1, y: 0, rotateX: 0,
+                duration: 0.6, stagger: 0.03, ease: 'back.out(1.7)'
+            })
+            .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.4')
+            .to('.hero-tags', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.5')
+            .to('.hero-avatar', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.8');
         }
 
-        animate();
+        // ===== GSAP SCROLL ANIMATIONS =====
 
-        // --- Resize ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // Section headers clip-path reveal
+        document.querySelectorAll('.section-header').forEach(header => {
+            gsap.from(header, {
+                scrollTrigger: { trigger: header, start: 'top 85%' },
+                clipPath: 'inset(0 100% 0 0)', opacity: 0, duration: 1, ease: 'power4.out'
+            });
         });
 
-        // --- Init ---
-        window.addEventListener('load', () => {
-            const tl = gsap.timeline();
-            tl.to('#loader', { opacity: 0, duration: 1, delay: 0.5, onComplete: () => document.getElementById('loader').remove() })
-              .to('.hero-title', { opacity: 1, y: 0, duration: 1.5, ease: 'power4.out' }, "-=0.5");
+        // Chrome dividers expand from center
+        document.querySelectorAll('.chrome-divider').forEach(divider => {
+            gsap.from(divider, {
+                scrollTrigger: { trigger: divider, start: 'top 90%' },
+                scaleX: 0, transformOrigin: '50% 50%', duration: 1.2, ease: 'power3.out'
+            });
         });
 
+        // Philosophy cards stagger
+        gsap.from('.philosophy-step', {
+            scrollTrigger: { trigger: '#philosophy', start: 'top 80%' },
+            y: 60, opacity: 0, scale: 0.9, duration: 0.8, stagger: 0.2, ease: 'power3.out'
+        });
+
+        // Gallery horizontal scroll (pinned)
+        const galleryTrack = document.querySelector('.gallery-track');
+        if (galleryTrack) {
+            const getScrollAmount = () => -(galleryTrack.scrollWidth - window.innerWidth + window.innerWidth * 0.12);
+            const tween = gsap.to(galleryTrack, { x: getScrollAmount, ease: 'none' });
+            ScrollTrigger.create({
+                trigger: '#gallery',
+                start: 'top top',
+                end: () => '+=' + (-getScrollAmount()),
+                pin: true,
+                animation: tween,
+                scrub: 1,
+                invalidateOnRefresh: true
+            });
+        }
+
+        // Service cards stagger with scale
+        gsap.from('.service-card', {
+            scrollTrigger: { trigger: '#services', start: 'top 80%' },
+            y: 50, opacity: 0, scale: 0.85, duration: 0.7, stagger: 0.12, ease: 'back.out(1.4)'
+        });
+
+        // Curriculum items stagger from alternating sides
+        gsap.from('.curriculum-item', {
+            scrollTrigger: { trigger: '#curriculum', start: 'top 80%' },
+            x: (i) => i % 2 === 0 ? -60 : 60,
+            opacity: 0, duration: 0.6, stagger: 0.08, ease: 'power3.out'
+        });
+
+        // Curriculum badges pop in
+        gsap.from('.curriculum-badge', {
+            scrollTrigger: { trigger: '.curriculum-meta', start: 'top 90%' },
+            scale: 0, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'back.out(2)'
+        });
+
+        // Journey nodes stagger with slide
+        gsap.from('.journey-node', {
+            scrollTrigger: { trigger: '#journey', start: 'top 80%' },
+            y: 50, opacity: 0, scale: 0.9, duration: 0.7, stagger: 0.15, ease: 'power3.out'
+        });
+
+        // Cat cards stagger with rotation
+        gsap.from('.cat-card', {
+            scrollTrigger: { trigger: '#cats', start: 'top 80%' },
+            y: 60, opacity: 0, rotation: 5, scale: 0.9, duration: 0.8, stagger: 0.2, ease: 'back.out(1.4)'
+        });
+
+        // Skills bars with counter animation
+        ScrollTrigger.create({
+            trigger: '#skills',
+            start: 'top 80%',
+            onEnter: () => {
+                document.querySelectorAll('.skill-gauge-fill').forEach((fill, i) => {
+                    const w = fill.dataset.width;
+                    if (w) gsap.to(fill, { width: w + '%', duration: 1.5, delay: i * 0.1, ease: 'power2.out' });
+                });
+                // Counter animation for skill values
+                document.querySelectorAll('.skill-gauge-value').forEach((val, i) => {
+                    const target = parseInt(val.textContent);
+                    const obj = { v: 0 };
+                    gsap.to(obj, {
+                        v: target, duration: 1.5, delay: i * 0.1, ease: 'power2.out',
+                        onUpdate: () => { val.textContent = Math.round(obj.v) + '%'; }
+                    });
+                });
+            },
+            once: true
+        });
+
+        // Skill gauges stagger
+        gsap.from('.skill-gauge', {
+            scrollTrigger: { trigger: '#skills', start: 'top 80%' },
+            y: 40, opacity: 0, duration: 0.6, stagger: 0.1, ease: 'power3.out'
+        });
+
+        // Quote fade-in reveal
+        gsap.to('.quote-text', {
+            scrollTrigger: { trigger: '#quote', start: 'top 75%' },
+            opacity: 1, y: 0, duration: 1, ease: 'power3.out'
+        });
+        gsap.from('.quote-author', {
+            scrollTrigger: { trigger: '#quote', start: 'top 70%' },
+            y: 20, opacity: 0, duration: 0.8, delay: 0.8, ease: 'power3.out'
+        });
+
+        // Footer fade-in (no stagger to avoid incomplete animation)
+        gsap.from('.site-footer', {
+            scrollTrigger: { trigger: '.site-footer', start: 'top 90%' },
+            opacity: 0, y: 30, duration: 0.8, ease: 'power3.out'
+        });
+
+        // Section labels parallax via GSAP
+        document.querySelectorAll('[data-parallax]').forEach(el => {
+            gsap.to(el, {
+                y: -50,
+                ease: 'none',
+                scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 }
+            });
+        });
+
+        // Hero avatar continuous float
+        gsap.to('.hero-avatar-frame', {
+            y: -15,
+            duration: 3,
+            ease: 'sine.inOut',
+            yoyo: true,
+            repeat: -1
+        });
+
+        // Scroll CTA hide
+        const scrollCta = document.querySelector('.scroll-cta');
+        ScrollTrigger.create({
+            trigger: 'body',
+            start: '200px top',
+            onEnter: () => scrollCta.classList.add('hidden'),
+            onLeaveBack: () => scrollCta.classList.remove('hidden')
+        });
+    });
     </script>
 </body>
 </html>
