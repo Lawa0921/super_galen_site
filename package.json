@@ -54,6 +54,7 @@
     "dotenv": "^17.2.2",
     "ethers": "^6.15.0",
     "sass": "^1.97.3",
+    "sharp": "^0.34.5",
     "three": "^0.182.0"
   },
   "devDependencies": {
@@ -67,6 +68,7 @@
     "happy-dom": "^20.4.0",
     "hardhat": "^2.26.3",
     "js-yaml": "^4.1.1",
+    "playwright": "^1.58.2",
     "solhint": "^6.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

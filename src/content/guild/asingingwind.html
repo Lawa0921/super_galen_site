@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Singing Wind | 許漪 - 吟遊詩人</title>
+    <meta name="description" content="他是地質學的聲音祭司，也是天空學的呼吸詩人。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        wind: '#a0c4ff',
+                        thunder: '#9d4edd',
+                        star: '#fff3b0',
+                        abyss: '#03040b',
+                        mana: '#00f5d4'
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif TC"', 'serif'],
+                        cinzel: ['"Cinzel"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --wind: #a0c4ff;
+            --thunder: #9d4edd;
+            --star: #fff3b0;
+            --abyss: #03040b;
+            --mana: #00f5d4;
+        }
+
+        body {
+            background-color: var(--abyss);
+            color: var(--wind);
+            font-family: 'Noto Serif TC', serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        #p5-container canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .glass-panel {
+            background: rgba(3, 4, 11, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(160, 196, 255, 0.2);
+            border-radius: 12px;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px var(--mana), 0 0 20px var(--mana);
+        }
+
+        .cinzel-font {
+            font-family: 'Cinzel', serif;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-thunder selection:text-white">
+
+    <canvas id="three-canvas"></canvas>
+    <div id="p5-container"></div>
+
+    <!-- Loading Screen -->
+    <div id="loader" class="fixed inset-0 z-50 flex items-center justify-center bg-abyss text-wind transition-opacity duration-1000">
+        <div class="text-center">
+            <h1 class="cinzel-font text-4xl mb-4 tracking-widest glow-text">A Singing Wind</h1>
+            <p class="text-sm tracking-widest animate-pulse">喚醒氣息與記憶...</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="content" class="relative z-10 opacity-0 min-h-screen">
+
+        <!-- Hero Section -->
+        <section class="min-h-screen flex flex-col md:flex-row items-center justify-center p-8 lg:p-24 relative overflow-hidden">
+            <div class="w-full md:w-1/2 flex justify-center items-center z-10 mb-12 md:mb-0 relative">
+                <!-- Image Wrapper with Particle/Magic Circle Effect Container -->
+                <div class="relative group">
+                    <div class="absolute inset-0 bg-mana rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
+                    <img src="/assets/asingingwind/hero.webp" alt="A Singing Wind" class="relative z-10 w-64 h-64 md:w-96 md:h-96 object-cover rounded-full border-2 border-mana/50 shadow-[0_0_30px_rgba(0,245,212,0.3)] transition-transform duration-700 hover:scale-105" />
+                    <div class="absolute inset-0 rounded-full border border-thunder/50 scale-110 animate-[spin_10s_linear_infinite]"></div>
+                    <div class="absolute inset-0 rounded-full border border-wind/30 scale-125 animate-[spin_15s_linear_infinite_reverse]"></div>
+                </div>
+            </div>
+            <div class="w-full md:w-1/2 text-center md:text-left z-10">
+                <h2 class="text-mana text-sm tracking-[0.3em] mb-4">吟遊詩人 / 聲音祭司</h2>
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg cinzel-font">許漪</h1>
+                <p class="text-xl md:text-2xl text-wind/80 leading-relaxed font-light gs-reveal">
+                    他是地質學的聲音祭司<br>
+                    也是天空學的呼吸詩人
+                </p>
+                <div class="mt-12 flex flex-wrap justify-center md:justify-start gap-4">
+                    <span class="px-4 py-1 rounded-full border border-thunder/40 text-thunder text-sm tracking-wider">#自然系妖精</span>
+                    <span class="px-4 py-1 rounded-full border border-wind/40 text-wind text-sm tracking-wider">#星象工坊</span>
+                    <span class="px-4 py-1 rounded-full border border-star/40 text-star text-sm tracking-wider">#鍊金術</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lore Section -->
+        <section class="min-h-screen flex items-center justify-center p-8 lg:p-24 relative">
+            <div class="max-w-4xl glass-panel p-8 md:p-16 relative">
+                <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-mana -translate-x-2 -translate-y-2 opacity-50"></div>
+                <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-mana translate-x-2 translate-y-2 opacity-50"></div>
+
+                <h3 class="text-3xl text-thunder mb-12 text-center cinzel-font tracking-widest gs-title">The Breath</h3>
+
+                <div class="space-y-8 text-lg text-wind/90 leading-loose gs-text">
+                    <p>他所吹出的，不是旋律，而是氣——來自時間深處的祖靈氣息，是語言尚未誕生前的聲波種子。</p>
+                    <p>那些聲音，像幽靈，像地脈的耳語，在他身體中甦醒，如同祖先骨骸間的回音。那些尚未被語言命名的氣息與記憶，於他之間，於骨與息之間，被重新蒸餾。</p>
+                    <p>他不背樂譜，而是將旋律串接為元素符文。他將五行與星體的軌跡熔成七拍十二聲的魔法陣，吹出之瞬，即喚起內輪、聲場與星之律曆——音變為意，氣成為光，聲即為咒。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Journey Section -->
+        <section class="min-h-[80vh] flex flex-col items-center justify-center p-8 lg:p-24 relative">
+            <h3 class="text-4xl text-star mb-16 text-center cinzel-font tracking-widest gs-title">The Journey</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl w-full">
+                <!-- Card 1 -->
+                <div class="glass-panel p-8 group hover:bg-white/5 transition-colors duration-500 gs-card">
+                    <div class="text-mana text-4xl mb-4">∞</div>
+                    <h4 class="text-2xl text-white mb-4">一萬本書，一萬公里</h4>
+                    <p class="text-wind/80 leading-relaxed text-sm">開始旅行，是為了完成一個看似簡單卻深刻的目標。這段旅程不只是對外在世界的探索，它更是對內在真實的尋找。八年前，我決定放下過去的一切，走進世界。</p>
+                </div>
+                <!-- Card 2 -->
+                <div class="glass-panel p-8 group hover:bg-white/5 transition-colors duration-500 gs-card md:translate-y-12">
+                    <div class="text-thunder text-4xl mb-4">✧</div>
+                    <h4 class="text-2xl text-white mb-4">心靈門牌</h4>
+                    <p class="text-wind/80 leading-relaxed text-sm">花了四年半的時間開發的牌卡。這不僅是一套工具，它是關於深度聆聽和真誠交流的實踐。幫助我們更清楚地聽見內心的聲音，並在溝通中建立更真實的連結。</p>
+                </div>
+                <!-- Card 3 -->
+                <div class="glass-panel p-8 group hover:bg-white/5 transition-colors duration-500 gs-card">
+                    <div class="text-star text-4xl mb-4">✦</div>
+                    <h4 class="text-2xl text-white mb-4">深度連結工作坊</h4>
+                    <p class="text-wind/80 leading-relaxed text-sm">舉辦各種工作坊，包括「積極傾聽」、「12項提問技巧」、「自我祈禱儀式設計」。能夠精準地提問、清楚地表達、以及開放自己接受他人聲音，都是深度連結的關鍵。</p>
+                </div>
+                <!-- Card 4 -->
+                <div class="glass-panel p-8 group hover:bg-white/5 transition-colors duration-500 gs-card md:translate-y-12">
+                    <div class="text-mana text-4xl mb-4">⚝</div>
+                    <h4 class="text-2xl text-white mb-4">生命引導</h4>
+                    <p class="text-wind/80 leading-relaxed text-sm">透過一對一的塔羅與易經引導，幫助人們釐清生命中的課題，尋找新方向。不是告訴未來會如何，而是與他們一起，探索內心的力量與可能性。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quote/Outro Section -->
+        <section class="min-h-[60vh] flex items-center justify-center p-8 text-center relative z-10">
+            <div class="max-w-3xl">
+                <p class="text-2xl md:text-4xl text-white/90 leading-loose italic cinzel-font gs-quote">
+                    "每一場演出，都是一場轉化。 <br>
+                    每支笛子吹奏一次，就會老去一歲，<br>
+                    而那老去，正是煉金的起點——"
+                </p>
+                <div class="w-16 h-[1px] bg-mana mx-auto mt-12 mb-8 gs-quote"></div>
+                <p class="text-wind/60 tracking-[0.2em] gs-quote">時間從氣中再誕生。</p>
+            </div>
+        </section>
+
+        <!-- Social Links Footer -->
+        <footer class="py-12 border-t border-white/10 relative z-10">
+            <div class="flex flex-col items-center justify-center space-y-6">
+                <p class="text-mana tracking-widest cinzel-font text-sm uppercase">Connect with the Wind</p>
+                <div class="flex space-x-8">
+                    <a href="https://www.instagram.com/asingingwind/" target="_blank" class="text-wind/60 hover:text-white transition-colors duration-300">Instagram</a>
+                    <a href="https://www.threads.net/@asingingwind" target="_blank" class="text-wind/60 hover:text-white transition-colors duration-300">Threads</a>
+                    <a href="https://linktr.ee/asingingwind" target="_blank" class="text-wind/60 hover:text-white transition-colors duration-300">Linktree</a>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+        // --- 1. Three.js: 3D Particle Wind/Breath System ---
+        const initThreeJS = () => {
+            const canvas = document.getElementById('three-canvas');
+            const scene = new THREE.Scene();
+            // Deep fog for mysterious depth
+            scene.fog = new THREE.FogExp2(0x03040b, 0.001);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Create particles (Wind/Stars/Dust)
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 3000;
+            const posArray = new Float32Array(particlesCount * 3);
+            const sizesArray = new Float32Array(particlesCount);
+
+            for(let i = 0; i < particlesCount * 3; i+=3) {
+                // Spread particles widely
+                posArray[i] = (Math.random() - 0.5) * 150;
+                posArray[i+1] = (Math.random() - 0.5) * 150;
+                posArray[i+2] = (Math.random() - 0.5) * 150;
+                sizesArray[i/3] = Math.random();
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            particlesGeometry.setAttribute('aScale', new THREE.BufferAttribute(sizesArray, 1));
+
+            // Custom shader material for soft glowing particles
+            const particleMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uColor1: { value: new THREE.Color('#a0c4ff') }, // wind
+                    uColor2: { value: new THREE.Color('#00f5d4') }, // mana
+                    uColor3: { value: new THREE.Color('#9d4edd') }, // thunder
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    attribute float aScale;
+                    varying vec3 vColor;
+                    void main() {
+                        vec4 modelPosition = modelMatrix * vec4(position, 1.0);
+
+                        // Wave movement
+                        modelPosition.y += sin(uTime * 0.5 + modelPosition.x * 0.1) * aScale * 2.0;
+                        modelPosition.x += cos(uTime * 0.3 + modelPosition.y * 0.1) * aScale * 2.0;
+
+                        vec4 viewPosition = viewMatrix * modelPosition;
+                        vec4 projectedPosition = projectionMatrix * viewPosition;
+                        gl_Position = projectedPosition;
+
+                        // Size attenuation
+                        gl_PointSize = aScale * 40.0 * (1.0 / -viewPosition.z);
+
+                        // Color blending based on position
+                        float mix1 = sin(modelPosition.x * 0.05 + uTime) * 0.5 + 0.5;
+                        float mix2 = cos(modelPosition.y * 0.05 + uTime) * 0.5 + 0.5;
+
+                        vec3 finalColor = mix(uColor1, uColor2, mix1);
+                        finalColor = mix(finalColor, uColor3, mix2);
+                        vColor = finalColor;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    void main() {
+                        // Soft circle
+                        float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
+                        float strength = 0.05 / distanceToCenter - 0.1;
+
+                        gl_FragColor = vec4(vColor, strength);
+                    }
+                `,
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particleMesh = new THREE.Points(particlesGeometry, particleMaterial);
+            scene.add(particleMesh);
+
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+            });
+
+            // Scroll interaction
+            let scrollY = window.scrollY;
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            const clock = new THREE.Clock();
+
+            const tick = () => {
+                const elapsedTime = clock.getElapsedTime();
+
+                // Update material
+                particleMaterial.uniforms.uTime.value = elapsedTime;
+
+                // Mouse ease
+                targetX = mouseX * 0.001;
+                targetY = mouseY * 0.001;
+
+                // Rotate entire system slowly, affected by mouse and scroll
+                particleMesh.rotation.y += 0.001 + (targetX - particleMesh.rotation.y) * 0.05;
+                particleMesh.rotation.x += 0.001 + (targetY - particleMesh.rotation.x) * 0.05;
+
+                // Move system down based on scroll
+                particleMesh.position.y = -scrollY * 0.01;
+
+                renderer.render(scene, camera);
+                window.requestAnimationFrame(tick);
+            };
+
+            tick();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            });
+        };
+
+        // --- 2. p5.js: Generative Magic Circle / Rune Background ---
+        const sketch = (p) => {
+            let angle = 0;
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noFill();
+                p.strokeWeight(1);
+            };
+
+            p.draw = () => {
+                p.clear();
+                p.translate(p.width / 2, p.height / 2);
+
+                // Slow rotation
+                p.rotate(angle);
+                angle += 0.002;
+
+                // Draw magical geometric shapes
+                let rings = 5;
+                for(let i = 0; i < rings; i++) {
+                    p.stroke(0, 245, 212, 20 + i * 10); // mana color
+                    p.beginShape();
+                    let points = 5 + i * 2;
+                    for(let j = 0; j < points; j++) {
+                        let a = p.TWO_PI * j / points;
+                        // radius breathes based on time and noise
+                        let r = 100 + i * 80 + p.noise(i, p.frameCount * 0.01) * 50;
+                        let x = p.cos(a) * r;
+                        let y = p.sin(a) * r;
+                        p.vertex(x, y);
+                    }
+                    p.endShape(p.CLOSE);
+
+                    // connecting lines
+                    if (i > 0) {
+                         p.stroke(157, 78, 221, 10); // thunder color
+                         p.circle(0, 0, 200 + i * 160);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+
+        // --- 3. GSAP Animations & Initialization ---
+        window.addEventListener('load', () => {
+            // Initialize 3D & 2D backgrounds
+            initThreeJS();
+            new p5(sketch);
+
+            const tl = gsap.timeline();
+
+            // Hide Loader
+            tl.to('#loader', {
+                opacity: 0,
+                duration: 1.5,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    document.getElementById('loader').style.display = 'none';
+                }
+            })
+            // Reveal Main Content
+            .to('#content', {
+                opacity: 1,
+                duration: 1.5,
+                ease: "power2.inOut"
+            }, "-=0.5")
+            // Hero text animation
+            .fromTo('.gs-reveal', {
+                y: 30,
+                opacity: 0
+            }, {
+                y: 0,
+                opacity: 1,
+                duration: 1.5,
+                stagger: 0.2,
+                ease: "power3.out"
+            }, "-=1.0");
+
+            // Lore Section Scroll Animations
+            gsap.from('.gs-title', {
+                scrollTrigger: {
+                    trigger: '.gs-title',
+                    start: 'top 80%',
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+
+            gsap.from('.gs-text p', {
+                scrollTrigger: {
+                    trigger: '.gs-text',
+                    start: 'top 75%',
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.3,
+                ease: "power2.out"
+            });
+
+            // Journey Cards Scroll Animations
+            gsap.from('.gs-card', {
+                scrollTrigger: {
+                    trigger: '.gs-card',
+                    start: 'top 85%',
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.2,
+                ease: "back.out(1.2)"
+            });
+
+            // Quote Section Scroll Animations
+            gsap.from('.gs-quote', {
+                scrollTrigger: {
+                    trigger: '.gs-quote',
+                    start: 'top 80%',
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1.5,
+                stagger: 0.4,
+                ease: "power2.out"
+            });
+        });
+    </script>
+</body>
+</html>
