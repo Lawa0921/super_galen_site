@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沒川狼雨 River Howler | 龍狼混血德魯伊</title>
+    <meta name="description" content="沒川狼雨 River Howler - 龍狼混血德魯伊。群獸守護者（特寵繁殖）、死靈法師（標本製作）、煉金術師（模型製作）。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#050806',
+                        bone: '#E3DAC9',
+                        blood: '#8A0303',
+                        necro: '#2D0A31',
+                        poison: '#1B4D3E'
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif TC"', 'serif'],
+                        cinzel: ['"Cinzel Decorative"', 'cursive']
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'gradient-necro': 'linear-gradient(to bottom, #050806, #1a0b1c, #050806)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ===== BASE STYLES ===== */
+        :root {
+            --glow-color: #8A0303;
+        }
+
+        body {
+            background-color: #050806;
+            color: #E3DAC9;
+            font-family: 'Noto Serif TC', serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            cursor: crosshair;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050806;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2D0A31;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8A0303;
+        }
+
+        /* ===== CANVAS CONTAINERS ===== */
+        #bg-canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        #three-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ===== UTILITIES ===== */
+        .glass-panel {
+            background: rgba(10, 5, 12, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 3, 3, 0.3);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(45, 10, 49, 0.5);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 10px var(--glow-color), 0 0 20px var(--glow-color);
+        }
+
+        .cinzel-font {
+            font-family: 'Cinzel Decorative', cursive;
+        }
+
+        .role-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .role-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(138, 3, 3, 0.4);
+            border-color: rgba(138, 3, 3, 0.8);
+        }
+
+        .magic-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 2px dashed rgba(138, 3, 3, 0.4);
+            animation: spin 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border-radius: 50%;
+            border: 1px solid rgba(227, 218, 201, 0.1);
+            animation: spin-reverse 15s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+        .gallery-img {
+            transition: transform 0.5s ease, filter 0.5s ease;
+            filter: grayscale(80%) sepia(20%) hue-rotate(280deg);
+        }
+
+        .gallery-img:hover {
+            transform: scale(1.05);
+            filter: grayscale(0%) sepia(0%);
+            z-index: 10;
+        }
+
+        /* Glitch effect on hover */
+        .glitch-hover:hover {
+            animation: glitch-anim 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: #8A0303;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background-color: #050806;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 1s ease-out;
+        }
+
+        .sigil-loader {
+            font-size: 4rem;
+            color: #8A0303;
+            animation: pulse-glow 2s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 10px #8A0303, 0 0 20px #8A0303; transform: scale(0.95); }
+            100% { text-shadow: 0 0 20px #8A0303, 0 0 40px #ff0000; transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-blood selection:text-bone">
+
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="sigil-loader cinzel-font">R<i class="fa-solid fa-skull mx-2 text-2xl"></i>H</div>
+        <p class="mt-4 tracking-[0.3em] text-bone/50 text-sm">SUMMONING...</p>
+    </div>
+
+    <!-- Background Canvas Layers -->
+    <div id="bg-canvas-container"></div>
+    <div id="three-container"></div>
+
+    <!-- Main Content -->
+    <main class="relative z-10 w-full min-h-screen pb-20">
+
+        <!-- Hero Section -->
+        <section class="min-h-screen flex flex-col justify-center items-center relative px-4 overflow-hidden" id="hero">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-necro/20 to-darkbg pointer-events-none"></div>
+
+            <div class="magic-circle opacity-30"></div>
+
+            <div class="relative z-10 text-center flex flex-col items-center">
+                <div class="mb-8 relative group">
+                    <div class="absolute inset-0 rounded-full bg-blood blur-xl opacity-50 group-hover:opacity-100 transition duration-500"></div>
+                    <img src="/assets/img/guild/river_howler/avatar.webp" alt="River Howler" class="w-40 h-40 md:w-48 md:h-48 rounded-full object-cover border-4 border-necro relative z-10 grayscale-[30%]">
+                </div>
+
+                <h1 class="text-5xl md:text-7xl font-bold tracking-widest mb-2 text-glow cinzel-font">RIVER HOWLER</h1>
+                <h2 class="text-2xl md:text-4xl font-bold mb-6 tracking-widest text-bone">沒川狼雨</h2>
+
+                <div class="glass-panel px-6 py-3 rounded-full mb-8 inline-flex items-center gap-3">
+                    <i class="fa-solid fa-dragon text-blood"></i>
+                    <span class="tracking-widest text-lg font-bold">龍狼混血德魯伊</span>
+                    <i class="fa-solid fa-moon text-necro"></i>
+                </div>
+
+                <p class="max-w-2xl text-center text-bone/80 text-lg leading-relaxed mb-10 tracking-wide font-light">
+                    「自然死亡的歸宿，不是消亡，而是另一種形式的永存。」<br>
+                    喜歡做怪標本的死靈法師，同時兼任群獸守護者與煉金術師。
+                </p>
+
+                <div class="flex gap-6">
+                    <a href="https://www.threads.net/@river_howler" target="_blank" class="w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:bg-blood hover:text-white transition-colors duration-300">
+                        <i class="fa-brands fa-threads text-xl"></i>
+                    </a>
+                    <a href="https://www.instagram.com/river_howler/" target="_blank" class="w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:bg-blood hover:text-white transition-colors duration-300">
+                        <i class="fa-brands fa-instagram text-xl"></i>
+                    </a>
+                    <a href="https://linktr.ee/River_Howler" target="_blank" class="w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:bg-blood hover:text-white transition-colors duration-300">
+                        <i class="fa-solid fa-link text-xl"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="absolute bottom-10 animate-bounce text-blood opacity-50">
+                <i class="fa-solid fa-chevron-down text-2xl"></i>
+            </div>
+        </section>
+
+        <!-- Trinity Roles Section -->
+        <section class="py-20 px-4 md:px-10 max-w-7xl mx-auto relative" id="roles">
+            <h2 class="text-3xl md:text-5xl text-center mb-16 tracking-widest text-glow font-bold cinzel-font">THE TRINITY</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+                <!-- Role 1: Necromancer -->
+                <div class="role-card glass-panel rounded-lg p-8 relative overflow-hidden group">
+                    <div class="absolute -right-10 -top-10 text-9xl text-white/5 group-hover:text-blood/10 transition-colors duration-500">
+                        <i class="fa-solid fa-skull"></i>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-necro/50 flex items-center justify-center mb-6 border border-blood/30 text-blood">
+                        <i class="fa-solid fa-bone text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 tracking-widest">死靈法師</h3>
+                    <p class="text-sm text-blood font-bold tracking-widest mb-4 cinzel-font">NECROMANCER</p>
+                    <p class="text-bone/70 leading-relaxed mb-6 font-light">
+                        提供死靈復甦服務（標本製作）。<br>
+                        使用自然死亡或夭折的個體，無殺生。剝製標本、骨骼標本、翅膀與爪子標本。
+                    </p>
+                    <ul class="text-sm text-bone/60 space-y-2">
+                        <li><i class="fa-solid fa-cross text-xs text-blood mr-2"></i> 小型鳥類剝製</li>
+                        <li><i class="fa-solid fa-cross text-xs text-blood mr-2"></i> 骨骼/翅膀/爪/蛋標本</li>
+                        <li><i class="fa-solid fa-cross text-xs text-blood mr-2"></i> 磁吸與模型混合標本</li>
+                    </ul>
+                </div>
+
+                <!-- Role 2: Beast Guardian -->
+                <div class="role-card glass-panel rounded-lg p-8 relative overflow-hidden group">
+                    <div class="absolute -right-10 -top-10 text-9xl text-white/5 group-hover:text-poison/10 transition-colors duration-500">
+                        <i class="fa-solid fa-paw"></i>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-poison/30 flex items-center justify-center mb-6 border border-poison/50 text-green-500">
+                        <i class="fa-solid fa-crow text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 tracking-widest">群獸守護者</h3>
+                    <p class="text-sm text-green-500 font-bold tracking-widest mb-4 cinzel-font">BEAST GUARDIAN</p>
+                    <p class="text-bone/70 leading-relaxed mb-6 font-light">
+                        特殊寵物繁殖與照護。<br>
+                        培育多種罕見鳥類與小型哺乳類，守護生命循環的起點。
+                    </p>
+                    <ul class="text-sm text-bone/60 space-y-2">
+                        <li><i class="fa-solid fa-leaf text-xs text-green-500 mr-2"></i> 各種花色的蘆丁雞</li>
+                        <li><i class="fa-solid fa-leaf text-xs text-green-500 mr-2"></i> 加州冠鵪鶉</li>
+                        <li><i class="fa-solid fa-leaf text-xs text-green-500 mr-2"></i> 摩登那鴿 / 花枝鼠</li>
+                    </ul>
+                </div>
+
+                <!-- Role 3: Alchemist -->
+                <div class="role-card glass-panel rounded-lg p-8 relative overflow-hidden group">
+                    <div class="absolute -right-10 -top-10 text-9xl text-white/5 group-hover:text-purple-500/10 transition-colors duration-500">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div class="w-16 h-16 rounded-full bg-purple-900/30 flex items-center justify-center mb-6 border border-purple-500/50 text-purple-400">
+                        <i class="fa-solid fa-eye text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2 tracking-widest">煉金術師</h3>
+                    <p class="text-sm text-purple-400 font-bold tracking-widest mb-4 cinzel-font">ALCHEMIST</p>
+                    <p class="text-bone/70 leading-relaxed mb-6 font-light">
+                        原型模型與樹脂工藝製作。<br>
+                        擅長製作獵奇、恐怖、內臟模型，以及精緻的樹脂眼球與娃頭。
+                    </p>
+                    <ul class="text-sm text-bone/60 space-y-2">
+                        <li><i class="fa-solid fa-vial text-xs text-purple-400 mr-2"></i> 寵物/怪物模型</li>
+                        <li><i class="fa-solid fa-vial text-xs text-purple-400 mr-2"></i> 內臟/獵奇恐怖模型</li>
+                        <li><i class="fa-solid fa-vial text-xs text-purple-400 mr-2"></i> 樹脂眼球與娃頭</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section class="py-20 px-4 max-w-7xl mx-auto relative" id="gallery">
+            <h2 class="text-3xl md:text-5xl text-center mb-16 tracking-widest text-glow font-bold cinzel-font">ARTIFACTS</h2>
+
+            <div class="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4" id="gallery-grid">
+                <!-- Gallery items will be populated here -->
+                <div class="break-inside-avoid relative group overflow-hidden rounded-lg border border-white/10 gallery-item">
+                    <img src="/assets/img/guild/river_howler/img_12.webp" class="w-full h-auto gallery-img" alt="Artifact">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <i class="fa-solid fa-eye text-blood text-3xl"></i>
+                    </div>
+                </div>
+                <div class="break-inside-avoid relative group overflow-hidden rounded-lg border border-white/10 gallery-item">
+                    <img src="/assets/img/guild/river_howler/img_8.webp" class="w-full h-auto gallery-img" alt="Artifact">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <i class="fa-solid fa-skull text-blood text-3xl"></i>
+                    </div>
+                </div>
+                <div class="break-inside-avoid relative group overflow-hidden rounded-lg border border-white/10 gallery-item">
+                    <img src="/assets/img/guild/river_howler/img_11.webp" class="w-full h-auto gallery-img" alt="Artifact">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <i class="fa-solid fa-flask text-purple-500 text-3xl"></i>
+                    </div>
+                </div>
+                <div class="break-inside-avoid relative group overflow-hidden rounded-lg border border-white/10 gallery-item">
+                    <img src="/assets/img/guild/river_howler/img_5.webp" class="w-full h-auto gallery-img" alt="Artifact">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <i class="fa-solid fa-crow text-green-500 text-3xl"></i>
+                    </div>
+                </div>
+                 <div class="break-inside-avoid relative group overflow-hidden rounded-lg border border-white/10 gallery-item">
+                    <img src="/assets/img/guild/river_howler/img_7.webp" class="w-full h-auto gallery-img" alt="Artifact">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <i class="fa-solid fa-bone text-bone text-3xl"></i>
+                    </div>
+                </div>
+                <div class="break-inside-avoid relative group overflow-hidden rounded-lg border border-white/10 gallery-item">
+                    <img src="/assets/img/guild/river_howler/img_6.webp" class="w-full h-auto gallery-img" alt="Artifact">
+                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <i class="fa-solid fa-moon text-necro text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-10 text-center border-t border-blood/20 mt-20 relative">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-darkbg px-4">
+                <i class="fa-solid fa-skull-crossbones text-blood"></i>
+            </div>
+            <p class="text-bone/40 text-sm tracking-widest cinzel-font glitch-hover cursor-pointer">
+                Memento Mori • Respect The Fallen
+            </p>
+        </footer>
+
+    </main>
+
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- PRELOADER ---
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            gsap.to(preloader, {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => {
+                    preloader.style.display = 'none';
+                    initGSAP();
+                }
+            });
+        });
+
+        // --- GSAP ANIMATIONS ---
+        function initGSAP() {
+            // Hero
+            gsap.from("#hero h1", { y: 50, opacity: 0, duration: 1.5, ease: "power4.out" });
+            gsap.from("#hero h2", { y: 30, opacity: 0, duration: 1, delay: 0.5, ease: "power3.out" });
+            gsap.from("#hero img", { scale: 0.8, opacity: 0, duration: 2, ease: "elastic.out(1, 0.5)", delay: 0.2 });
+            gsap.from(".glass-panel", { y: 20, opacity: 0, duration: 1, stagger: 0.2, delay: 0.8 });
+
+            // Roles
+            gsap.from(".role-card", {
+                scrollTrigger: {
+                    trigger: "#roles",
+                    start: "top 80%",
+                },
+                y: 100,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.2,
+                ease: "back.out(1.7)"
+            });
+
+            // Gallery
+            gsap.from(".gallery-item", {
+                scrollTrigger: {
+                    trigger: "#gallery",
+                    start: "top 70%",
+                },
+                scale: 0.8,
+                opacity: 0,
+                rotation: () => Math.random() * 10 - 5,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: "power2.out"
+            });
+        }
+
+        // --- P5.JS (Blood Magic Trails) ---
+        const sketch = (p) => {
+            let particles = [];
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('bg-canvas-container');
+                p.noStroke();
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Add particle on mouse move
+                if (p.mouseX !== 0 && p.mouseY !== 0 && p.frameCount % 2 === 0) {
+                    particles.push(new Particle(p.mouseX, p.mouseY));
+                }
+
+                // Update and display particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].display();
+
+                    // Draw web connections
+                    for (let j = particles.length - 1; j > i; j--) {
+                        let d = p.dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y);
+                        if (d < 100) {
+                            p.stroke(138, 3, 3, p.map(d, 0, 100, 100, 0) * particles[i].life);
+                            p.strokeWeight(0.5);
+                            p.line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y);
+                            p.noStroke();
+                        }
+                    }
+
+                    if (particles[i].isDead()) {
+                        particles.splice(i, 1);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class Particle {
+                constructor(x, y) {
+                    this.pos = p.createVector(x, y);
+                    this.vel = p.createVector(p.random(-1, 1), p.random(-1, 1));
+                    this.life = 1.0;
+                    this.decay = p.random(0.01, 0.03);
+                    this.size = p.random(2, 6);
+                }
+
+                update() {
+                    this.pos.add(this.vel);
+                    this.pos.y -= 0.5; // Float up like embers/magic
+                    this.life -= this.decay;
+                }
+
+                display() {
+                    p.fill(138, 3, 3, this.life * 255);
+                    p.ellipse(this.pos.x, this.pos.y, this.size);
+                }
+
+                isDead() {
+                    return this.life < 0;
+                }
+            }
+        };
+        new p5(sketch);
+
+        // --- THREE.JS (Dark Altar/Floating Crystal) ---
+        const initThreeJS = () => {
+            const container = document.getElementById('three-container');
+            const scene = new THREE.Scene();
+
+            // Camera
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Objects
+            const group = new THREE.Group();
+            scene.add(group);
+
+            // Icosahedron (Crystal)
+            const geometry = new THREE.IcosahedronGeometry(2, 0);
+
+            // Wireframe outer
+            const wireMaterial = new THREE.MeshBasicMaterial({
+                color: 0x8A0303,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.15
+            });
+            const wireMesh = new THREE.Mesh(geometry, wireMaterial);
+            group.add(wireMesh);
+
+            // Inner solid
+            const solidMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2D0A31,
+                roughness: 0.2,
+                metalness: 0.8,
+                flatShading: true
+            });
+            const solidMesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1.8, 0), solidMaterial);
+            group.add(solidMesh);
+
+            // Particles (Dust/Bones)
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 700;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 15;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.02,
+                color: 0xE3DAC9,
+                transparent: true,
+                opacity: 0.4,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x8A0303, 2, 10);
+            pointLight.position.set(2, 2, 2);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0xbd00ff, 1, 10);
+            pointLight2.position.set(-2, -2, 2);
+            scene.add(pointLight2);
+
+            // Animation variables
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+            });
+
+            // Scroll interaction
+            let scrollY = window.scrollY;
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            // Animation Loop
+            const clock = new THREE.Clock();
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                const elapsedTime = clock.getElapsedTime();
+
+                // Rotate Crystal
+                group.rotation.y += 0.005;
+                group.rotation.x += 0.002;
+
+                // Bobbing effect
+                group.position.y = Math.sin(elapsedTime) * 0.2;
+
+                // Rotate Particles
+                particlesMesh.rotation.y = -elapsedTime * 0.05;
+                if (scrollY > 0) {
+                    particlesMesh.position.y = scrollY * 0.005;
+                }
+
+                // Mouse interaction for Crystal
+                targetX = mouseX * 0.001;
+                targetY = mouseY * 0.001;
+
+                group.rotation.y += 0.05 * (targetX - group.rotation.y);
+                group.rotation.x += 0.05 * (targetY - group.rotation.x);
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Resize handler
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        initThreeJS();
+
+    </script>
+</body>
+</html>
