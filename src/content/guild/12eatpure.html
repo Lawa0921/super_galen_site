@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拾貳拾粹 Twelve Eat Pure | 永續餐盒</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --color-bg: #050f0c; /* Deep dark green/black */
+            --color-primary: #1aff8c; /* Vibrant neon green */
+            --color-secondary: #00cc99; /* Calm cyber green */
+            --color-text: #e6f9f2; /* Off-white with a hint of green */
+            --color-accent: #ffd700; /* Gold for awards */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            /* Hide scrollbar natively if pinned by GSAP, or let GSAP handle it */
+            scrollbar-width: none; /* Firefox */
+        }
+
+        body::-webkit-scrollbar {
+            display: none; /* Safari and Chrome */
+        }
+
+        .font-syne {
+            font-family: 'Syne', sans-serif;
+        }
+
+        /* 3D Canvas Background */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* p5 Canvas Overlay */
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        /* Main Scrollable Content Container */
+        #main-scroll-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .glass-panel {
+            background: rgba(5, 15, 12, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(26, 255, 140, 0.2);
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .neon-text {
+            color: var(--color-primary);
+            text-shadow: 0 0 10px rgba(26, 255, 140, 0.5), 0 0 20px rgba(26, 255, 140, 0.3);
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-bg);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--color-primary);
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+        }
+
+        .loader-ring {
+            width: 100px;
+            height: 100px;
+            border: 3px solid rgba(26, 255, 140, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--color-primary);
+            animation: spin 1s ease-in-out infinite;
+            position: absolute;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader-ring"></div>
+        <span class="z-10 relative">INITIALIZING...</span>
+    </div>
+
+    <!-- Background Canvases -->
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <!-- Content -->
+    <main id="main-scroll-container" class="opacity-0">
+
+        <!-- Hero Section -->
+        <section class="section hero-section items-center text-center">
+            <div class="z-10 flex flex-col items-center">
+                <img src="/assets/img/guild/12eatpure/avatar.webp" alt="拾貳拾粹" class="w-32 h-32 rounded-full border-2 border-[var(--color-primary)] mb-6 shadow-[0_0_20px_rgba(26,255,140,0.4)] hero-element">
+                <h1 class="text-6xl md:text-8xl font-black mb-4 tracking-tighter hero-element">
+                    <span class="font-syne text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]">12EATPURE</span>
+                </h1>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6 hero-element neon-text">拾貳拾粹</h2>
+                <p class="text-xl md:text-2xl font-light tracking-widest text-gray-400 hero-element">讓餐盒成爲永續的起點</p>
+                <div class="mt-12 flex space-x-6 hero-element">
+                    <a href="https://www.threads.net/@12eatpure" target="_blank" class="w-12 h-12 rounded-full border border-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black transition-all duration-300">
+                        <i class="fa-brands fa-threads text-xl"></i>
+                    </a>
+                    <a href="https://www.instagram.com/12eatpure/" target="_blank" class="w-12 h-12 rounded-full border border-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black transition-all duration-300">
+                        <i class="fa-brands fa-instagram text-xl"></i>
+                    </a>
+                    <a href="https://page.line.me/871pbbhl" target="_blank" class="w-12 h-12 rounded-full border border-[var(--color-primary)] flex items-center justify-center text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black transition-all duration-300">
+                        <i class="fa-brands fa-line text-xl"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Core Philosophy Section -->
+        <section class="section items-start md:items-end text-left md:text-right">
+            <div class="glass-panel max-w-2xl w-full scroll-reveal">
+                <h3 class="font-syne text-2xl mb-2 text-[var(--color-secondary)] tracking-widest uppercase">Philosophy</h3>
+                <h2 class="text-4xl font-bold mb-6 text-white">健康與純粹的極致平衡</h2>
+                <p class="text-lg leading-relaxed text-gray-300 mb-4">
+                    我們相信，每一餐都是對身體與環境的投票。
+                    <br><br>
+                    拒絕妥協的健康主張：<span class="text-[var(--color-primary)] font-bold">無水煮、朔源食材、營養均衡、低 GI</span>。
+                    無論是減脂或增重，我們為您的身體提供最純淨的燃料。
+                </p>
+                <ul class="space-y-2 mt-6">
+                    <li class="flex items-center md:justify-end"><i class="fa-solid fa-leaf text-[var(--color-primary)] mr-3 md:hidden"></i><span class="md:mr-3">衛生局 七級 質地示範店家</span><i class="fa-solid fa-leaf text-[var(--color-primary)] hidden md:inline"></i></li>
+                    <li class="flex items-center md:justify-end"><i class="fa-solid fa-seedling text-[var(--color-primary)] mr-3 md:hidden"></i><span class="md:mr-3">綠食飯桌 / 綠色友善餐盒</span><i class="fa-solid fa-seedling text-[var(--color-primary)] hidden md:inline"></i></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Awards & Milestones Section -->
+        <section class="section items-start">
+            <div class="glass-panel max-w-3xl w-full scroll-reveal">
+                <h3 class="font-syne text-2xl mb-2 text-[var(--color-accent)] tracking-widest uppercase">Milestones</h3>
+                <h2 class="text-4xl font-bold mb-8 text-white">永續的見證</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="border-l-2 border-[var(--color-accent)] pl-4 py-2 hover:bg-[rgba(255,215,0,0.05)] transition-colors">
+                        <div class="text-[var(--color-accent)] font-syne font-bold text-xl mb-1">2023</div>
+                        <div class="font-bold text-lg text-white">經濟部 優選餐盒獎</div>
+                        <div class="text-sm text-gray-400 mt-1">官方肯定，品質保證</div>
+                    </div>
+
+                    <div class="border-l-2 border-[var(--color-primary)] pl-4 py-2 hover:bg-[rgba(26,255,140,0.05)] transition-colors">
+                        <div class="text-[var(--color-primary)] font-syne font-bold text-xl mb-1">2025</div>
+                        <div class="font-bold text-lg text-white">綠色餐飲評鑑入圍</div>
+                        <div class="text-sm text-gray-400 mt-1">資源循環再利用及均衡飲食獎</div>
+                    </div>
+
+                    <div class="border-l-2 border-[var(--color-primary)] pl-4 py-2 hover:bg-[rgba(26,255,140,0.05)] transition-colors">
+                        <div class="text-[var(--color-primary)] font-syne font-bold text-xl mb-1">2026</div>
+                        <div class="font-bold text-lg text-white">綠色餐飲評鑑指南推薦餐廳</div>
+                        <div class="text-sm text-gray-400 mt-1">持續推進綠色飲食文化</div>
+                    </div>
+
+                    <div class="border-l-2 border-[var(--color-accent)] pl-4 py-2 hover:bg-[rgba(255,215,0,0.05)] transition-colors">
+                        <div class="text-[var(--color-accent)] font-syne font-bold text-xl mb-1">AMOT</div>
+                        <div class="font-bold text-lg text-white">三星朔源餐廳</div>
+                        <div class="text-sm text-gray-400 mt-1">最高級別的食材溯源認證</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-12 text-center text-gray-500 font-syne text-sm relative z-10">
+            <p>十二食粹 / Twelve Eat Pure &copy; 2026</p>
+            <p class="mt-2 text-xs">A Vibe Coding Production</p>
+        </footer>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- PRELOADER & INITIAL ANIMATION ---
+        window.addEventListener('load', () => {
+            const tl = gsap.timeline();
+            tl.to('#preloader', {
+                opacity: 0,
+                duration: 1,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    document.getElementById('preloader').style.display = 'none';
+                }
+            })
+            .to('#main-scroll-container', {
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out"
+            }, "-=0.5")
+            .from('.hero-element', {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.15,
+                ease: "back.out(1.7)"
+            }, "-=0.5");
+
+            // Scroll Animations for panels
+            gsap.utils.toArray('.scroll-reveal').forEach(panel => {
+                gsap.from(panel, {
+                    scrollTrigger: {
+                        trigger: panel,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 100,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power3.out"
+                });
+            });
+        });
+    </script>
+
+    <!-- THREE.JS SCENE: The Energy Seed -->
+    <script>
+        // Setup Scene
+        const scene = new THREE.Scene();
+        // Fog for depth
+        scene.fog = new THREE.FogExp2(0x050f0c, 0.05);
+
+        // Camera Setup
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        document.getElementById('webgl-container').appendChild(renderer.domElement);
+
+        // The "Seed" Group
+        const seedGroup = new THREE.Group();
+        scene.add(seedGroup);
+
+        // Core Geometry (Icosahedron for organic/crystal feel)
+        const coreGeo = new THREE.IcosahedronGeometry(1.2, 1);
+        const coreMat = new THREE.MeshStandardMaterial({
+            color: 0x1aff8c,
+            emissive: 0x00cc99,
+            emissiveIntensity: 0.5,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.8
+        });
+        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        seedGroup.add(coreMesh);
+
+        // Outer Shell (TorusKnot for continuous energy flow)
+        const shellGeo = new THREE.TorusKnotGeometry(1.8, 0.1, 100, 16);
+        const shellMat = new THREE.MeshStandardMaterial({
+            color: 0xe6f9f2,
+            roughness: 0.2,
+            metalness: 0.8,
+            transparent: true,
+            opacity: 0.3
+        });
+        const shellMesh = new THREE.Mesh(shellGeo, shellMat);
+        seedGroup.add(shellMesh);
+
+        // Particle Orbiters
+        const particlesCount = 200;
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlesPos = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            particlesPos[i] = (Math.random() - 0.5) * 10;
+        }
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlesPos, 3));
+        const particleMat = new THREE.PointsMaterial({
+            size: 0.05,
+            color: 0x1aff8c,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+        const particles = new THREE.Points(particlesGeo, particleMat);
+        scene.add(particles);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0x1aff8c, 2, 10);
+        pointLight.position.set(0, 0, 0);
+        seedGroup.add(pointLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+
+        // Interactive Mouse Movement for 3D
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX);
+            mouseY = (event.clientY - windowHalfY);
+        });
+
+        // Scroll to Rotate
+        let scrollY = 0;
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Rotate core
+            coreMesh.rotation.x = time * 0.2;
+            coreMesh.rotation.y = time * 0.3;
+
+            // Rotate shell in opposite direction
+            shellMesh.rotation.x = -time * 0.1;
+            shellMesh.rotation.y = -time * 0.2;
+
+            // Float effect
+            seedGroup.position.y = Math.sin(time) * 0.3;
+
+            // Particles rotation
+            particles.rotation.y = time * 0.05;
+
+            // Mouse parallax (smooth)
+            targetX = mouseX * 0.001;
+            targetY = mouseY * 0.001;
+
+            seedGroup.rotation.x += 0.05 * (targetY - seedGroup.rotation.x);
+            seedGroup.rotation.y += 0.05 * (targetX - seedGroup.rotation.y);
+
+            // Scroll influence (moves seed backward/forward slightly and rotates)
+            seedGroup.position.z = Math.sin(scrollY * 0.002) * 2;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize Handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+
+    <!-- P5.JS SCENE: Organic Energy Flow -->
+    <script>
+        const sketch = (p) => {
+            let particles = [];
+            let noiseZ = 0;
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noStroke();
+
+                // Initialize particles
+                for (let i = 0; i < 150; i++) {
+                    particles.push({
+                        x: p.random(p.width),
+                        y: p.random(p.height),
+                        size: p.random(1, 4),
+                        speed: p.random(0.5, 2),
+                        alpha: p.random(100, 200)
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.clear(); // Keep background transparent
+
+                // Draw Flowing Particles (Energy/Wind)
+                noiseZ += 0.005;
+
+                for (let i = 0; i < particles.length; i++) {
+                    let pt = particles[i];
+
+                    // Use Perlin noise for organic movement
+                    let angle = p.noise(pt.x * 0.002, pt.y * 0.002, noiseZ) * p.TWO_PI * 4;
+
+                    pt.x += p.cos(angle) * pt.speed;
+                    pt.y += p.sin(angle) * pt.speed;
+
+                    // Mouse interaction - slightly attract to mouse if moving
+                    if (p.mouseX !== 0 && p.mouseY !== 0) {
+                        let d = p.dist(pt.x, pt.y, p.mouseX, p.mouseY);
+                        if (d < 200) {
+                            let force = p.map(d, 0, 200, 0.05, 0);
+                            pt.x += (p.mouseX - pt.x) * force;
+                            pt.y += (p.mouseY - pt.y) * force;
+                        }
+                    }
+
+                    // Wrap around edges
+                    if (pt.x < 0) pt.x = p.width;
+                    if (pt.x > p.width) pt.x = 0;
+                    if (pt.y < 0) pt.y = p.height;
+                    if (pt.y > p.height) pt.y = 0;
+
+                    // Draw particle
+                    p.fill(26, 255, 140, pt.alpha);
+                    p.ellipse(pt.x, pt.y, pt.size);
+                }
+
+                // Draw smooth connecting lines between close particles (neural/root-like)
+                p.stroke(0, 204, 153, 20); // faint green stroke
+                p.strokeWeight(0.5);
+                for(let i = 0; i < particles.length; i+=3) { // skip some for performance
+                    for(let j = i + 1; j < particles.length; j+=3) {
+                        let d = p.dist(particles[i].x, particles[i].y, particles[j].x, particles[j].y);
+                        if(d < 80) {
+                            p.line(particles[i].x, particles[i].y, particles[j].x, particles[j].y);
+                        }
+                    }
+                }
+                p.noStroke();
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+
+        new p5(sketch);
+    </script>
+</body>
+</html>

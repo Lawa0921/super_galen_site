@@ -60,7 +60,6 @@
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
-    "@playwright/test": "^1.58.0",
     "@types/js-yaml": "^4.0.9",
     "@vitest/ui": "^4.0.18",
     "chai": "^4.5.0",

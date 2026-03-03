@@ -1,1063 +1,979 @@
-# 公會成員資料庫
-# 每個成員需要：id, name, avatar, page, tags（最多 3 個）
-#
-# 使用方式：
-# - 新增成員時，確保 id 唯一
-# - 頭像統一放在 /assets/img/guild/{人物名稱}/ 目錄
-# - 個人頁面放在 /guild/ 目錄
-# - 每個 tag 包含 id 和 label（中文顯示名稱）
-
 members:
-  - id: "loyu"
-    name: "羅玉 Lo Yu"
-    avatar: "/assets/img/guild/loyu/avatar.webp"
-    page: "/guild/loyu.html"
-    tags:
-      - id: "relationship_expert"
-        label: "人際關係專家"
-      - id: "recruiter"
-        label: "招募官/溝通師"
-      - id: "weaver"
-        label: "編織/手作"
-      - id: "analyst"
-        label: "牛津能力分析師"
-
-  - id: "pineapple"
-    name: "鳳梨老師"
-    avatar: "/assets/img/guild/pineapple/avatar.webp"
-    page: "/guild/pineapple.html"
-    tags:
-      - id: "math_teacher"
-        label: "數學/奧數老師"
-      - id: "board_game"
-        label: "桌遊教學"
-      - id: "cleft_lip_advocate"
-        label: "唇顎裂倡議"
-
-  - id: "mintae"
-    name: "統包大師 Mintae"
-    avatar: "/assets/img/guild/mintae/avatar.webp"
-    page: "/guild/mintae.html"
-    tags:
-      - id: "master_generalist"
-        label: "統包大師"
-      - id: "metaphysics_tech"
-        label: "理工玄學"
-      - id: "cat_slave"
-        label: "雙貓奴才"
-
-  - id: "purple_star"
-    name: "ㄚ滿"
-    avatar: "/assets/img/guild/purple_star/avatar.webp"
-    page: "/guild/aman.html"
-    tags:
-      - id: "video_editor"
-        label: "專業剪輯師"
-      - id: "star_chaser"
-        label: "專業追星"
-      - id: "cat_slave"
-        label: "雙貓奴隸"
-
-  - id: "supergalen"
-    name: "皮糙肉厚の工程師"
-    avatar: "/assets/img/guild/supergalen/avatar.webp"
-    page: "/guild/supergalen.html"
-    tags:
-      - id: "fullstack"
-        label: "全端工程師"
-      - id: "blockchain"
-        label: "區塊鏈開發"
-      - id: "japanese"
-        label: "日語 N1"
-
-  - id: "amy"
-    name: "高效慢活職涯諮詢師"
-    avatar: "/assets/img/guild/amy/avatar.webp"
-    page: "/guild/amy.html"
-    tags:
-      - id: "career_consultant"
-        label: "職涯諮詢師"
-      - id: "slow_living"
-        label: "高效慢活"
-      - id: "au_pair"
-        label: "Au Pair"
-
-  - id: "galens_wife"
-    name: "露營區女王"
-    avatar: "/assets/img/guild/xiang_yun/avatar.webp"
-    page: "/guild/xiang_yun.html"
-    tags:
-      - id: "leader"
-        label: "最高指揮者"
-      - id: "athlete"
-        label: "游泳健將"
-      - id: "investor"
-        label: "股市投資者"
-
-  - id: "eldest_daughter"
-    name: "鬼點子小公主"
-    avatar: "/assets/img/guild/eldest_daughter/avatar.webp"
-    page: "/guild/eldest_daughter.html"
-    tags:
-      - id: "mastermind"
-        label: "鬼點子製造機"
-      - id: "clingy"
-        label: "黏人精"
-      - id: "troublemaker"
-        label: "老師頭痛人物"
-
-  - id: "second_daughter"
-    name: "話癆二小姐"
-    avatar: "/assets/img/guild/second_daughter/avatar.webp"
-    page: "/guild/second_daughter.html"
-    tags:
-      - id: "chatterbox"
-        label: "超級話癆"
-      - id: "stubborn"
-        label: "脾氣超硬"
-      - id: "sweet_tooth"
-        label: "要用哄的"
-
-  - id: "bajicard"
-    name: "BajiCard 預算卡片"
-    avatar: "/assets/img/guild/bajicard/avatar.webp"
-    page: "/guild/bajicard.html"
-    tags:
-      - id: "budget_master"
-        label: "預算大師"
-      - id: "envelope_method"
-        label: "信封理財法"
-      - id: "mobile_app"
-        label: "行動應用"
-
-  - id: "goyoutati"
-    name: "Goyoutati"
-    avatar: "/assets/img/guild/goyoutati/avatar.webp"
-    page: "/guild/goyoutati.html"
-    tags:
-      - id: "ceo"
-        label: "CEO"
-      - id: "ecommerce"
-        label: "跨境電商"
-      - id: "saas_builder"
-        label: "SaaS 開發者"
-
-  - id: "christine"
-    name: "Christine"
-    avatar: "/assets/img/guild/christine/avatar.webp"
-    page: "/guild/christine.html"
-    tags:
-      - id: "illustrator"
-        label: "插畫創作者"
-      - id: "penguin_lover"
-        label: "企鵝控"
-      - id: "picture_book"
-        label: "繪本創作"
-
-  - id: "intryvel"
-    name: "Intryvel"
-    avatar: "/assets/img/guild/intryvel/avatar.webp"
-    page: "/guild/intryvel.html"
-    tags:
-      - id: "content_creator"
-        label: "內容創作者"
-      - id: "traveler"
-        label: "旅行愛好者"
-      - id: "video_editor"
-        label: "影片剪輯"
-
-  - id: "mohuenxi"
-    name: "陌魂兮"
-    avatar: "/assets/img/guild/mohuenxi/avatar.webp"
-    page: "/guild/mohuenxi.html"
-    tags:
-      - id: "game_developer"
-        label: "獨立遊戲開發"
-      - id: "opera_performer"
-        label: "歌仔戲演員"
-      - id: "seediq_language"
-        label: "賽德克族語"
-
-  - id: "ev01"
-    name: "燃燒肝臟的研發工程師"
-    avatar: "/assets/img/guild/ev01/avatar.webp"
-    page: "/guild/ev01.html"
-    tags:
-      - id: "research_engineer"
-        label: "研發工程師"
-      - id: "board_game_geek"
-        label: "桌遊玩家"
-      - id: "liver_burner"
-        label: "極端修仙者"
-
-  - id: "mirai"
-    name: "Mirai"
-    avatar: "/assets/img/guild/mirai/avatar.webp"
-    page: "/guild/mirai.html"
-    tags:
-      - id: "japan_resource_integrator"
-        label: "日本資源整合"
-      - id: "enfp"
-        label: "ENFP"
-      - id: "future_connector"
-        label: "未來連結者"
-
-  - id: "grey"
-    name: "小灰 Grey"
-    avatar: "/assets/img/guild/grey/avatar.webp"
-    page: "/guild/grey.html"
-    tags:
-      - id: "logistics_master"
-        label: "倉管大師"
-      - id: "board_game_host"
-        label: "桌遊團主"
-      - id: "foodie_explorer"
-        label: "吃貨探險家"
-
-  - id: "e_nian"
-    name: "E 人 I 碎念"
-    avatar: "/assets/img/guild/e_nian/avatar.webp"
-    page: "/guild/e_nian.html"
-    tags:
-      - id: "podcaster"
-        label: "Podcast 主持人"
-      - id: "christian_faith"
-        label: "信仰分享者"
-      - id: "humorous_geek"
-        label: "詼諧宅宅"
-
-  - id: "jiuliyue"
-    name: "九黎月"
-    avatar: "/assets/img/guild/jiuliyue/avatar.webp"
-    page: "/guild/jiuliyue.html"
-    tags:
-      - id: "ai_music"
-        label: "AI 音樂煉金術"
-      - id: "tool_dev"
-        label: "工具開發者"
-      - id: "guofeng"
-        label: "國風藝術家"
-
-  - id: "zorio"
-    name: "Zorio 佐璃"
-    avatar: "/assets/img/guild/zorio/avatar.webp"
-    page: "/guild/zorio.html"
-    tags:
-      - id: "vtuber"
-        label: "Vtuber"
-      - id: "piano"
-        label: "鋼琴"
-      - id: "sunshine"
-        label: "陽光滿點"
-
-  - id: "dongjusu"
-    name: "Dongjusu"
-    avatar: "/assets/img/guild/dongjusu/avatar.webp"
-    page: "/guild/dongjusu.html"
-    tags:
-      - id: "frogman"
-        label: "海龍蛙兵"
-      - id: "automation"
-        label: "自動化"
-      - id: "hardcore"
-        label: "硬漢風格"
-
-  - id: "yunifer"
-    name: "Yunifer"
-    avatar: "/assets/img/guild/yunifer/avatar.webp"
-    page: "/guild/yunifer.html"
-    tags:
-      - id: "seo_oracle"
-        label: "SEO 專案架構師"
-      - id: "rational_mystic"
-        label: "理性玄學家"
-      - id: "growth_hacker"
-        label: "數據流量操盤"
-
-  - id: "jing"
-    name: "Jing"
-    avatar: "/assets/img/guild/jing/avatar.webp"
-    page: "/guild/jing.html"
-    tags:
-      - id: "alchemist"
-        label: "職涯鍊金術師"
-      - id: "pm"
-        label: "PM"
-      - id: "consultant"
-        label: "職涯諮詢"
-
-  - id: "spanishzzz"
-    name: "Spanishzzz"
-    avatar: "/assets/img/guild/spanishzzz/avatar.webp"
-    page: "/guild/spanishzzz.html"
-    tags:
-      - id: "tribal_teacher"
-        label: "部落教師"
-      - id: "spanish"
-        label: "西班牙文"
-      - id: "amis_language"
-        label: "阿美語學習"
-
-  - id: "joyceonkeys"
-    name: "JoyceOnKeys"
-    avatar: "/assets/img/guild/joyceonkeys/avatar.webp"
-    page: "/guild/joyceonkeys.html"
-    tags:
-      - id: "piano_teacher"
-        label: "鋼琴老師"
-      - id: "java_finch"
-        label: "黑文鳥"
-      - id: "music_education"
-        label: "音樂教育"
-
-  - id: "cryptohot"
-    name: "幣勝客 🍕"
-    avatar: "/assets/img/guild/cryptohot/avatar.webp"
-    page: "/guild/cryptohot.html"
-    tags:
-      - id: "crypto_expert"
-        label: "加密貨幣理財"
-      - id: "whisky_lover"
-        label: "威士忌愛好者"
-      - id: "mentor"
-        label: "新手陪伴者"
-
-  - id: "elaine"
-    name: "Elaine ✨"
-    avatar: "/assets/img/guild/elaine/avatar.webp"
-    page: "/guild/elaine.html"
-    tags:
-      - id: "project_manager"
-        label: "專案管理"
-      - id: "ai_automation"
-        label: "AI 自動化"
-      - id: "data_storyteller"
-        label: "數據說書人"
-
-  - id: "letshavefun"
-    name: "童樂語言治療所"
-    avatar: "/assets/img/guild/letshavefun/avatar.webp"
-    page: "/guild/letshavefun.html"
-    tags:
-      - id: "speech_therapy"
-        label: "語言治療"
-      - id: "picture_book"
-        label: "繪本推廣"
-      - id: "child_development"
-        label: "兒童發展"
-
-  - id: "thumb2086"
-    name: "Thumb2086"
-    avatar: "/assets/img/guild/thumb2086/avatar.webp"
-    page: "/guild/thumb2086.html"
-    tags:
-      - id: "vibe_coder"
-        label: "Vibe Coder"
-      - id: "indie_game_dev"
-        label: "獨立遊戲開發"
-      - id: "student"
-        label: "高職統測生"
-
-  - id: "jiayi"
-    name: "出水芙蓉"
-    avatar: "/assets/img/guild/jiayi/avatar.webp"
-    page: "/guild/jiayi.html"
-    tags:
-      - id: "crystal_sea"
-        label: "水晶與海"
-      - id: "theater_director"
-        label: "劇場導演"
-      - id: "life_creator"
-        label: "生活創作者"
-
-  - id: "alice"
-    name: "愛麗絲音樂工作室"
-    avatar: "/assets/img/guild/alice/avatar.webp"
-    page: "/guild/alice.html"
-    tags:
-      - id: "music_teacher"
-        label: "音樂老師"
-      - id: "music_producer"
-        label: "音樂製作人"
-      - id: "custom_song"
-        label: "專屬歌曲訂製"
-
-  - id: "daniang"
-    name: "大娘"
-    avatar: "/assets/img/guild/daniang/avatar.webp"
-    page: "/guild/daniang.html"
-    tags:
-      - id: "metaphysics_engineer"
-        label: "理工玄學"
-      - id: "taoism"
-        label: "道教靈感"
-      - id: "destiny_architect"
-        label: "命運架構師"
-
-  - id: "zhu_zhu"
-    name: "朱朱"
-    avatar: "/assets/img/guild/zhu_zhu/avatar.webp"
-    page: "/guild/zhu_zhu.html"
-    tags:
-      - id: "arts"
-        label: "藝文"
-      - id: "reading"
-        label: "閱讀"
-      - id: "coffee"
-        label: "咖啡"
-
-  - id: "yiqi_feng"
-    name: "奕淇 Yiqi"
-    avatar: "/assets/img/guild/yiqi_feng/avatar.webp"
-    page: "/guild/yiqi_feng.html"
-    tags:
-      - id: "printing_pro"
-        label: "數位印刷"
-      - id: "sticker_master"
-        label: "貼紙專家"
-      - id: "production"
-        label: "現場實務"
-
-  - id: "yuna"
-    name: "Yuna"
-    avatar: "/assets/img/guild/yuna/avatar.webp"
-    page: "/guild/yuna.html"
-    tags:
-      - id: "industrial_design"
-        label: "工業設計"
-      - id: "fashion_design"
-        label: "服裝設計"
-      - id: "spark_joy"
-        label: "怦然心動"
-
-  - id: "ru"
-    name: "阿儒 RU"
-    avatar: "/assets/img/guild/ru/avatar.webp"
-    page: "/guild/ru.html"
-    tags:
-      - id: "athletic_trainer"
-        label: "運動防護師"
-      - id: "body_engineer"
-        label: "身體工程師"
-      - id: "risk_management"
-        label: "風險管理"
-
-  - id: "rabbit"
-    name: "Rabbit 🐰"
-    avatar: "/assets/img/guild/rabbit/avatar.webp"
-    page: "/guild/rabbit.html"
-    tags:
-      - id: "travel_planner"
-        label: "旅遊規劃師"
-      - id: "intl_volunteer"
-        label: "國際志工體質"
-      - id: "story_collector"
-        label: "故事蒐集員"
-
-  - id: "sui"
-    name: "8穗正韓"
-    avatar: "/assets/img/guild/sui/avatar.webp"
-    page: "/guild/sui.html"
-    tags:
-      - id: "swqa"
-        label: "SWQA"
-      - id: "korean_fashion"
-        label: "正韓選品"
-      - id: "rational_aesthetic"
-        label: "理性美學"
-
-  - id: "kevin"
-    name: "凱文 Kevin"
-    avatar: "/assets/img/guild/kevin/avatar.webp"
-    page: "/guild/kevin.html"
-    tags:
-      - id: "backend_engineer"
-        label: "後端工程師"
-      - id: "career_consultant"
-        label: "職涯諮詢"
-      - id: "board_game_master"
-        label: "桌遊店長"
-
-  - id: "kelly"
-    name: "Kelly Chen"
-    avatar: "/assets/img/guild/kelly/avatar.webp"
-    page: "/guild/kelly.html"
-    tags:
-      - id: "career_counselor"
-        label: "職涯諮詢師"
-      - id: "spiritual_guide"
-        label: "靈性引導"
-      - id: "life_coach"
-        label: "人生陪跑員"
-
-  - id: "eternalc"
-    name: "EternalC"
-    avatar: "/assets/img/guild/eternalc/avatar.webp"
-    page: "/guild/eternalc.html"
-    tags:
-      - id: "disability_care"
-        label: "教保員"
-      - id: "street_dance"
-        label: "街舞"
-      - id: "tattoo"
-        label: "刺青"
-
-  - id: "red_maple"
-    name: "Red Maple"
-    avatar: "/assets/img/guild/red_maple/avatar.webp"
-    page: "/guild/red_maple.html"
-    tags:
-      - id: "soul_chef"
-        label: "靈魂主廚"
-      - id: "digital_ascetic"
-        label: "數位苦行僧"
-      - id: "godot_dev"
-        label: "Godot 遊戲開發"
-
-  - id: "julia"
-    name: "Julia"
-    avatar: "/assets/img/guild/julia/avatar.webp"
-    page: "/guild/julia.html"
-    tags:
-      - id: "knowledge_mgmt"
-        label: "知識管理"
-      - id: "system_thinker"
-        label: "系統思考"
-      - id: "library_admin"
-        label: "圖書館行政"
-
-  - id: "damao"
-    name: "大毛"
-    avatar: "/assets/img/guild/damao/avatar.webp"
-    page: "/guild/damao.html"
-    tags:
-      - id: "digital_painting"
-        label: "板繪創作"
-      - id: "mother_of_two"
-        label: "全職二寶媽"
-      - id: "novel_illustrator"
-        label: "小說繪師"
-
-  - id: "leya"
-    name: "Leya"
-    avatar: "/assets/img/guild/leya/avatar.webp"
-    page: "/guild/leya.html"
-    tags:
-      - id: "traveler"
-        label: "宇宙旅人"
-      - id: "crystal"
-        label: "水晶收藏"
-      - id: "brave_heart"
-        label: "勇敢的心"
-
-  - id: "he_ying"
-    name: "何穎"
-    avatar: "/assets/img/guild/he_ying/avatar.webp"
-    page: "/guild/he_ying.html"
-    tags:
-      - id: "queen_training"
-        label: "女王調教"
-      - id: "healing"
-        label: "療傷"
-      - id: "freedom"
-        label: "天體活動"
-
-  - id: "fuxintang"
-    name: "福馨堂"
-    avatar: "/assets/img/guild/fuxintang/avatar.webp"
-    page: "/guild/fuxintang.html"
-    tags:
-      - id: "egg_cake_researcher"
-        label: "雞蛋糕研究家"
-      - id: "magic_herbal"
-        label: "魔法草本系"
-      - id: "art_teacher"
-        label: "兒童美術老師"
-
-  - id: "darkstar"
-    name: "闇星 Dark Star"
-    avatar: "/assets/img/guild/darkstar/avatar.webp"
-    page: "/guild/darkstar.html"
-    tags:
-      - id: "fullstack_ai"
-        label: "Fullstack / AI"
-      - id: "crypto_trading"
-        label: "Crypto Trading"
-      - id: "skiing"
-        label: "Skiing"
-
-  - id: "liloyee"
-    name: "Liloyee"
-    avatar: "/assets/img/guild/liloyee/avatar.webp"
-    page: "/guild/liloyee.html"
-    tags:
-      - id: "math_teacher"
-        label: "奧數老師"
-      - id: "writer"
-        label: "作家"
-      - id: "cosplay"
-        label: "Cosplay"
-
-  - id: "corbeau_z"
-    name: "Corbeau.Z"
-    avatar: "/assets/img/guild/corbeau_z/avatar.jpg"
-    page: "/guild/corbeau_z.html"
-    tags:
-      - id: "magic_engineer"
-        label: "魔法工程師"
-      - id: "prop_design"
-        label: "道具設計"
-      - id: "structural_magic"
-        label: "結構魔術"
-
-  - id: "uli"
-    name: "鄔莉 Uli"
-    avatar: "/assets/img/guild/uli/avatar.webp"
-    page: "/guild/uli.html"
-    tags:
-      - id: "animal_communicator"
-        label: "動物溝通"
-      - id: "rational_intuition"
-        label: "理性直覺"
-      - id: "ocean_diver"
-        label: "海洋潛水"
-
-  - id: "naka"
-    name: "Naka"
-    avatar: "/assets/img/guild/naka/avatar.jpg"
-    page: "/guild/naka.html"
-    tags:
-      - id: "architect"
-        label: "建築設計"
-      - id: "structural_eng"
-        label: "結構工程"
-      - id: "thermodynamics"
-        label: "熱力學"
-
-  - id: "ah_shui"
-    name: "阿水 Ah Shui"
-    avatar: "/assets/img/guild/ah_shui/avatar.webp"
-    page: "/guild/ah_shui.html"
-    tags:
-      - id: "event_host"
-        label: "活動主持人"
-      - id: "pipa_musician"
-        label: "琵琶演奏家"
-      - id: "culture_promoter"
-        label: "歌仔戲推廣"
-
-  - id: "xiaoshi"
-    name: "樂天a小獅"
-    avatar: "/assets/img/guild/xiaoshi/avatar.webp"
-    page: "/guild/xiaoshi.html"
-    tags:
-      - id: "manpower"
-        label: "人力調度"
-      - id: "butler"
-        label: "專業管家"
-      - id: "food_hunter"
-        label: "美食獵人"
-
-  - id: "yuzi"
-    name: "柚子 Yuzi"
-    avatar: "/assets/img/guild/yuzi/avatar.webp"
-    page: "/guild/yuzi.html"
-    tags:
-      - id: "landscape_design"
-        label: "景觀設計"
-      - id: "community_builder"
-        label: "社群連結"
-      - id: "explorer"
-        label: "身心探索"
-
-  - id: "joying"
-    name: "Joying"
-    avatar: "/assets/img/guild/joying/avatar.webp"
-    page: "/guild/joying.html"
-    tags:
-      - id: "tactical_guide"
-        label: "戰術嚮導"
-      - id: "atmosphere_specialist"
-        label: "氛圍專家"
-      - id: "crisis_control"
-        label: "危機控管"
-
-  - id: "gheart"
-    name: "G-Heart"
-    avatar: "/assets/images/guild/gheart/profile.webp"
-    page: "/guild/gheart.html"
-    tags:
-      - id: "handmade_artisan"
-        label: "手作職人"
-      - id: "weaver"
-        label: "編織者"
-      - id: "wood_craft"
-        label: "木工魂"
-
-  - id: "xmasfun689"
-    name: "XmasFun"
-    avatar: "/assets/img/guild/xmasfun689/avatar.webp"
-    page: "/guild/xmasfun689.html"
-    tags:
-      - id: "construction_mage"
-        label: "營造法師"
-      - id: "heavy_machinery"
-        label: "重機械操作"
-      - id: "warrior_physique"
-        label: "戰士體質"
-
-  - id: "flora"
-    name: "Flora 芙老師"
-    avatar: "/assets/img/guild/flora/profile.webp"
-    page: "/guild/flora.html"
-    tags:
-      - id: "dessert_architect"
-        label: "甜點架構師"
-      - id: "culture_bridge"
-        label: "文化橋樑"
-      - id: "sweet_strategist"
-        label: "甜蜜策略"
-
-  - id: "miglo"
-    name: "蜜光Q凍的闆闆"
-    avatar: "/assets/img/guild/miglo/avatar.webp"
-    page: "/guild/miglo.html"
-    tags:
-      - id: "flower_tea"
-        label: "花果茶"
-      - id: "jelly_artisan"
-        label: "果凍職人"
-      - id: "enfp"
-        label: "ENFP"
-
-  - id: "ariel"
-    name: "Ariel"
-    avatar: "/assets/img/guild/ariel/avatar_main.webp"
-    page: "/guild/ariel.html"
-    tags:
-      - id: "ra_manager"
-        label: "RA Manager"
-      - id: "alchemist"
-        label: "Alchemist"
-      - id: "weaver"
-        label: "Weaver"
-      - id: "infp"
-        label: "INFP"
-
-  - id: "sean"
-    name: "湘 Sean"
-    avatar: "/assets/img/guild/sean/avatar.webp"
-    page: "/guild/sean.html"
-    tags:
-      - id: "astrologer"
-        label: "占星師"
-      - id: "occultist"
-        label: "神秘學"
-      - id: "slashie"
-        label: "斜槓中年"
-
-  - id: "yufel"
-    name: "怪奇瘋子 Yufel"
-    avatar: "/assets/img/guild/yufel/avatar.webp"
-    page: "/guild/yufel.html"
-    tags:
-      - id: "self_taught"
-        label: "自學狂魔"
-      - id: "weaver"
-        label: "鉤織/手作"
-      - id: "poet"
-        label: "詩意瘋子"
-
-  - id: "bro_mao"
-    name: "毛哥 Bro Mao"
-    avatar: "/assets/img/guild/bro_mao/avatar.webp"
-    page: "/guild/bro_mao.html"
-    tags:
-      - id: "community_ops"
-        label: "社群經營"
-      - id: "shopee_affiliate"
-        label: "蝦皮分潤"
-      - id: "student"
-        label: "高中生"
-
-  - id: "liuan"
-    name: "健身自由教練 Liuan"
-    avatar: "/assets/img/guild/liuan/avatar.webp"
-    page: "/guild/liuan.html"
-    tags:
-      - id: "fitness_coach"
-        label: "健身教練"
-      - id: "meme_master"
-        label: "謎因大師"
-      - id: "exercise_physiology"
-        label: "運動生理學"
-
-  - id: "elora"
-    name: "Elora"
-    avatar: "/assets/img/guild/elora/avatar.webp"
-    page: "/guild/elora.html"
-    tags:
-      - id: "graphic_designer"
-        label: "Graphic Designer"
-      - id: "izakaya_owner"
-        label: "Izakaya Owner"
-      - id: "vibe_coder"
-        label: "Vibe Coder"
-
-  - id: "lyanna"
-    name: "允曦 Lyanna"
-    avatar: "/assets/img/guild/lyanna/avatar.webp"
-    page: "/guild/lyanna.html"
-    tags:
-      - id: "chinese_teacher"
-        label: "華語師資培訓"
-      - id: "mmt_consultant"
-        label: "MMT 諮詢師"
-      - id: "career_guide"
-        label: "職涯引導"
-
-  - id: "mochang"
-    name: "墨唱"
-    avatar: "/assets/img/guild/mochang/avatar.webp"
-    page: "/guild/mochang.html"
-    tags:
-      - id: "game_dev"
-        label: "遊戲開發"
-      - id: "pipa_musician"
-        label: "琵琶演奏"
-      - id: "composer"
-        label: "詞曲創作"
-
-  - id: "spj"
-    name: "塞趴卷 SPJ"
-    avatar: "/assets/img/guild/spj/avatar.webp"
-    page: "/guild/spj.html"
-    tags:
-      - id: "materialization_alchemist"
-        label: "具現化系鍊金術師"
-      - id: "text_town_architect"
-        label: "文字小鎮架構師"
-      - id: "guild_master"
-        label: "冒險公會會長"
-
-  - id: "tyou"
-    name: "秋桑 Tyou"
-    avatar: "/assets/img/guild/tyou/pot.webp"
-    page: "/guild/tyou.html"
-    tags:
-      - id: "coffee_physicist"
-        label: "物理系咖啡師"
-      - id: "cafe_explorer"
-        label: "跑咖筆記"
-      - id: "intp"
-        label: "INTP"
-
-  - id: "chueh"
-    name: "闕 Chueh"
-    avatar: "/assets/img/guild/chueh/avatar.webp"
-    page: "/guild/chueh.html"
-    tags:
-      - id: "handpan"
-        label: "手碟"
-      - id: "drummer"
-        label: "爵士鼓"
-      - id: "musician"
-        label: "音樂人"
-
-  - id: "meizhuan"
-    name: "石專豆頁"
-    avatar: "/assets/img/guild/meizhuan/avatar.webp"
-    page: "/guild/meizhuan.html"
-    tags:
-      - id: "engineer"
-        label: "工程師"
-      - id: "biker"
-        label: "重機騎士"
-      - id: "otaku"
-        label: "宅宅"
-
-  - id: "ava"
-    name: "房產小蜜 Ava"
-    avatar: "/assets/img/guild/ava/avatar.webp"
-    page: "/guild/ava.html"
-    tags:
-      - id: "real_estate_secretary"
-        label: "房產小秘書"
-      - id: "biker_mom"
-        label: "重機媽咪"
-      - id: "mobile_photographer"
-        label: "手機攝影"
-
-  - id: "michael"
-    name: "Michael Lai"
-    avatar: "/assets/img/guild/michael/avatar.webp"
-    page: "/guild/michael.html"
-    tags:
-      - id: "kinetic_architect"
-        label: "動能架構師"
-      - id: "automation_ai"
-        label: "自動化煉金術"
-      - id: "feline_logic"
-        label: "貓系邏輯"
-
-  - id: "allen"
-    name: "少帥 Allen"
-    avatar: "/assets/img/guild/allen/avatar.webp"
-    page: "/guild/allen.html"
-    tags:
-      - id: "printing"
-        label: "桌遊印刷"
-      - id: "resilience"
-        label: "浴火重生"
-      - id: "board_game"
-        label: "桌遊顧問"
-
-  - id: "mis"
-    name: "小米絲 Mis"
-    avatar: "/assets/img/guild/mis/avatar.webp"
-    page: "/guild/mis.html"
-    tags:
-      - id: "angel_reaper"
-        label: "天使死神"
-      - id: "glitch_entity"
-        label: "錯誤代碼"
-      - id: "black_lily"
-        label: "黑百合"
-
-  - id: "yumebi_emu"
-    name: "愛姆 Yumebi Emu"
-    avatar: "/assets/img/guild/yumebi_emu/avatar.webp"
-    page: "/guild/yumebi_emu.html"
-    tags:
-      - id: "asmr"
-        label: "ASMR 魔法"
-      - id: "dream_witch"
-        label: "夢境魔女"
-      - id: "forever_20"
-        label: "永遠 20 歲"
-
-  - id: "zaira"
-    name: "Zaira"
-    avatar: "/assets/img/guild/zaira/avatar.webp"
-    page: "/guild/zaira.html"
-    tags:
-      - id: "language_explorer"
-        label: "語言探索"
-      - id: "climber"
-        label: "攀登者"
-      - id: "podcast"
-        label: "Podcast"
-
-  - id: "lubu"
-    name: "呂布"
-    avatar: "/assets/img/guild/lubu/avatar.webp"
-    page: "/guild/lubu.html"
-    tags:
-      - id: "vtuber"
-        label: "個人勢 VTuber"
-      - id: "warlord"
-        label: "最強武將"
-      - id: "indie_games"
-        label: "獨立遊戲"
-
-  - id: "bebe_liu"
-    name: "Bèbè Liu"
-    avatar: "/assets/img/guild/bebe_liu/avatar.webp"
-    page: "/guild/bebe_liu.html"
-    tags:
-      - id: "illustrator"
-        label: "插畫/設計"
-      - id: "explorer"
-        label: "山海探險"
-      - id: "life_gamer"
-        label: "遊戲人生"
-
-  - id: "mian"
-    name: "Mian"
-    avatar: "/assets/img/guild/mian/avatar.webp"
-    page: "/guild/mian.html"
-    tags:
-      - id: "student"
-        label: "大二生"
-      - id: "model_car"
-        label: "模型車改裝"
-      - id: "rider"
-        label: "摩旅愛好者"
-
-  - id: "cmy_fantasy"
-    name: "原色⭐︎ふぁんたじー"
-    avatar: "/assets/img/guild/cmy_fantasy/avatar.webp"
-    page: "/guild/cmy_fantasy.html"
-    tags:
-      - id: "idol"
-        label: "日系偶像"
-      - id: "cosplay"
-        label: "Cosplay"
-      - id: "stage"
-        label: "舞台表演"
-
-  - id: "nick"
-    name: "自動化架構師 Nick"
-    avatar: "/assets/img/guild/nick/avatar.webp"
-    page: "/guild/nick.html"
-    tags:
-      - id: "automation_architect"
-        label: "自動化架構師"
-      - id: "n8n_expert"
-        label: "N8N 專家"
-      - id: "vibe_coder"
-        label: "Vibe Coder"
-
-  - id: "mitsu_jing"
-    name: "Mitsu Jing"
-    avatar: "/assets/img/guild/mitsu_jing/avatar.webp"
-    page: "/guild/mitsu_jing.html"
-    tags:
-      - id: "insurance_specialist"
-        label: "保險業務"
-      - id: "travel_explorer"
-        label: "旅遊住宿"
-      - id: "otaku_collector"
-        label: "公仔收藏"
-
-  - id: "nekopapaya"
-    name: "御用太醫-望聞問切瓜"
-    avatar: "/assets/img/guild/nekopapaya/avatar.webp"
-    page: "/guild/nekopapaya.html"
-    tags:
-      - id: "tcm_analyst"
-        label: "人體狀態觀察分析師"
-      - id: "activity_organizer"
-        label: "魔人揪揪"
-      - id: "safe_haven"
-        label: "避風港守望者"
-
-  - id: "vic"
-    name: "VIC NAIL 東東老師"
-    avatar: "/assets/img/guild/vic/avatar.webp"
-    page: "/guild/vic.html"
-    title: "The Logic Alchemist"
-    description: "18年極致工藝，將感性美學淬鍊為理性完美結構。拒絕死記硬背的邏輯派美甲講師。"
-    tags:
-      - id: "logic_nail_art"
-        label: "邏輯美甲"
-      - id: "nail_instructor"
-        label: "美甲講師"
-      - id: "n8n_automation"
-        label: "N8N 自動化"
-      - id: "slashie"
-        label: "全能斜槓"
-      - id: "cat_parent"
-        label: "貓奴"
-
-  - id: "joanna_army"
-    name: "Joanna"
-    avatar: "/assets/img/guild/joanna_army/avatar.webp"
-    page: "/guild/joanna_army.html"
-    tags:
-      - id: "visual_kei"
-        label: "視覺系"
-      - id: "chaos_artist"
-        label: "混沌藝術"
-      - id: "imaginative"
-        label: "天馬行空"
+  - id: 12eatpure
+    name: 拾貳拾粹
+    avatar: /assets/img/guild/12eatpure/avatar.webp
+    page: /guild/12eatpure.html
+    tags:
+      - id: sustainable
+        label: 永續餐盒
+      - id: green_dining
+        label: 綠色友善
+      - id: traceable
+        label: 朔源餐廳
+  - id: loyu
+    name: 羅玉 Lo Yu
+    avatar: /assets/img/guild/loyu/avatar.webp
+    page: /guild/loyu.html
+    tags:
+      - id: relationship_expert
+        label: 人際關係專家
+      - id: recruiter
+        label: 招募官/溝通師
+      - id: weaver
+        label: 編織/手作
+      - id: analyst
+        label: 牛津能力分析師
+  - id: pineapple
+    name: 鳳梨老師
+    avatar: /assets/img/guild/pineapple/avatar.webp
+    page: /guild/pineapple.html
+    tags:
+      - id: math_teacher
+        label: 數學/奧數老師
+      - id: board_game
+        label: 桌遊教學
+      - id: cleft_lip_advocate
+        label: 唇顎裂倡議
+  - id: mintae
+    name: 統包大師 Mintae
+    avatar: /assets/img/guild/mintae/avatar.webp
+    page: /guild/mintae.html
+    tags:
+      - id: master_generalist
+        label: 統包大師
+      - id: metaphysics_tech
+        label: 理工玄學
+      - id: cat_slave
+        label: 雙貓奴才
+  - id: purple_star
+    name: ㄚ滿
+    avatar: /assets/img/guild/purple_star/avatar.webp
+    page: /guild/aman.html
+    tags:
+      - id: video_editor
+        label: 專業剪輯師
+      - id: star_chaser
+        label: 專業追星
+      - id: cat_slave
+        label: 雙貓奴隸
+  - id: supergalen
+    name: 皮糙肉厚の工程師
+    avatar: /assets/img/guild/supergalen/avatar.webp
+    page: /guild/supergalen.html
+    tags:
+      - id: fullstack
+        label: 全端工程師
+      - id: blockchain
+        label: 區塊鏈開發
+      - id: japanese
+        label: 日語 N1
+  - id: amy
+    name: 高效慢活職涯諮詢師
+    avatar: /assets/img/guild/amy/avatar.webp
+    page: /guild/amy.html
+    tags:
+      - id: career_consultant
+        label: 職涯諮詢師
+      - id: slow_living
+        label: 高效慢活
+      - id: au_pair
+        label: Au Pair
+  - id: galens_wife
+    name: 露營區女王
+    avatar: /assets/img/guild/xiang_yun/avatar.webp
+    page: /guild/xiang_yun.html
+    tags:
+      - id: leader
+        label: 最高指揮者
+      - id: athlete
+        label: 游泳健將
+      - id: investor
+        label: 股市投資者
+  - id: eldest_daughter
+    name: 鬼點子小公主
+    avatar: /assets/img/guild/eldest_daughter/avatar.webp
+    page: /guild/eldest_daughter.html
+    tags:
+      - id: mastermind
+        label: 鬼點子製造機
+      - id: clingy
+        label: 黏人精
+      - id: troublemaker
+        label: 老師頭痛人物
+  - id: second_daughter
+    name: 話癆二小姐
+    avatar: /assets/img/guild/second_daughter/avatar.webp
+    page: /guild/second_daughter.html
+    tags:
+      - id: chatterbox
+        label: 超級話癆
+      - id: stubborn
+        label: 脾氣超硬
+      - id: sweet_tooth
+        label: 要用哄的
+  - id: bajicard
+    name: BajiCard 預算卡片
+    avatar: /assets/img/guild/bajicard/avatar.webp
+    page: /guild/bajicard.html
+    tags:
+      - id: budget_master
+        label: 預算大師
+      - id: envelope_method
+        label: 信封理財法
+      - id: mobile_app
+        label: 行動應用
+  - id: goyoutati
+    name: Goyoutati
+    avatar: /assets/img/guild/goyoutati/avatar.webp
+    page: /guild/goyoutati.html
+    tags:
+      - id: ceo
+        label: CEO
+      - id: ecommerce
+        label: 跨境電商
+      - id: saas_builder
+        label: SaaS 開發者
+  - id: christine
+    name: Christine
+    avatar: /assets/img/guild/christine/avatar.webp
+    page: /guild/christine.html
+    tags:
+      - id: illustrator
+        label: 插畫創作者
+      - id: penguin_lover
+        label: 企鵝控
+      - id: picture_book
+        label: 繪本創作
+  - id: intryvel
+    name: Intryvel
+    avatar: /assets/img/guild/intryvel/avatar.webp
+    page: /guild/intryvel.html
+    tags:
+      - id: content_creator
+        label: 內容創作者
+      - id: traveler
+        label: 旅行愛好者
+      - id: video_editor
+        label: 影片剪輯
+  - id: mohuenxi
+    name: 陌魂兮
+    avatar: /assets/img/guild/mohuenxi/avatar.webp
+    page: /guild/mohuenxi.html
+    tags:
+      - id: game_developer
+        label: 獨立遊戲開發
+      - id: opera_performer
+        label: 歌仔戲演員
+      - id: seediq_language
+        label: 賽德克族語
+  - id: ev01
+    name: 燃燒肝臟的研發工程師
+    avatar: /assets/img/guild/ev01/avatar.webp
+    page: /guild/ev01.html
+    tags:
+      - id: research_engineer
+        label: 研發工程師
+      - id: board_game_geek
+        label: 桌遊玩家
+      - id: liver_burner
+        label: 極端修仙者
+  - id: mirai
+    name: Mirai
+    avatar: /assets/img/guild/mirai/avatar.webp
+    page: /guild/mirai.html
+    tags:
+      - id: japan_resource_integrator
+        label: 日本資源整合
+      - id: enfp
+        label: ENFP
+      - id: future_connector
+        label: 未來連結者
+  - id: grey
+    name: 小灰 Grey
+    avatar: /assets/img/guild/grey/avatar.webp
+    page: /guild/grey.html
+    tags:
+      - id: logistics_master
+        label: 倉管大師
+      - id: board_game_host
+        label: 桌遊團主
+      - id: foodie_explorer
+        label: 吃貨探險家
+  - id: e_nian
+    name: E 人 I 碎念
+    avatar: /assets/img/guild/e_nian/avatar.webp
+    page: /guild/e_nian.html
+    tags:
+      - id: podcaster
+        label: Podcast 主持人
+      - id: christian_faith
+        label: 信仰分享者
+      - id: humorous_geek
+        label: 詼諧宅宅
+  - id: jiuliyue
+    name: 九黎月
+    avatar: /assets/img/guild/jiuliyue/avatar.webp
+    page: /guild/jiuliyue.html
+    tags:
+      - id: ai_music
+        label: AI 音樂煉金術
+      - id: tool_dev
+        label: 工具開發者
+      - id: guofeng
+        label: 國風藝術家
+  - id: zorio
+    name: Zorio 佐璃
+    avatar: /assets/img/guild/zorio/avatar.webp
+    page: /guild/zorio.html
+    tags:
+      - id: vtuber
+        label: Vtuber
+      - id: piano
+        label: 鋼琴
+      - id: sunshine
+        label: 陽光滿點
+  - id: dongjusu
+    name: Dongjusu
+    avatar: /assets/img/guild/dongjusu/avatar.webp
+    page: /guild/dongjusu.html
+    tags:
+      - id: frogman
+        label: 海龍蛙兵
+      - id: automation
+        label: 自動化
+      - id: hardcore
+        label: 硬漢風格
+  - id: yunifer
+    name: Yunifer
+    avatar: /assets/img/guild/yunifer/avatar.webp
+    page: /guild/yunifer.html
+    tags:
+      - id: seo_oracle
+        label: SEO 專案架構師
+      - id: rational_mystic
+        label: 理性玄學家
+      - id: growth_hacker
+        label: 數據流量操盤
+  - id: jing
+    name: Jing
+    avatar: /assets/img/guild/jing/avatar.webp
+    page: /guild/jing.html
+    tags:
+      - id: alchemist
+        label: 職涯鍊金術師
+      - id: pm
+        label: PM
+      - id: consultant
+        label: 職涯諮詢
+  - id: spanishzzz
+    name: Spanishzzz
+    avatar: /assets/img/guild/spanishzzz/avatar.webp
+    page: /guild/spanishzzz.html
+    tags:
+      - id: tribal_teacher
+        label: 部落教師
+      - id: spanish
+        label: 西班牙文
+      - id: amis_language
+        label: 阿美語學習
+  - id: joyceonkeys
+    name: JoyceOnKeys
+    avatar: /assets/img/guild/joyceonkeys/avatar.webp
+    page: /guild/joyceonkeys.html
+    tags:
+      - id: piano_teacher
+        label: 鋼琴老師
+      - id: java_finch
+        label: 黑文鳥
+      - id: music_education
+        label: 音樂教育
+  - id: cryptohot
+    name: 幣勝客 🍕
+    avatar: /assets/img/guild/cryptohot/avatar.webp
+    page: /guild/cryptohot.html
+    tags:
+      - id: crypto_expert
+        label: 加密貨幣理財
+      - id: whisky_lover
+        label: 威士忌愛好者
+      - id: mentor
+        label: 新手陪伴者
+  - id: elaine
+    name: Elaine ✨
+    avatar: /assets/img/guild/elaine/avatar.webp
+    page: /guild/elaine.html
+    tags:
+      - id: project_manager
+        label: 專案管理
+      - id: ai_automation
+        label: AI 自動化
+      - id: data_storyteller
+        label: 數據說書人
+  - id: letshavefun
+    name: 童樂語言治療所
+    avatar: /assets/img/guild/letshavefun/avatar.webp
+    page: /guild/letshavefun.html
+    tags:
+      - id: speech_therapy
+        label: 語言治療
+      - id: picture_book
+        label: 繪本推廣
+      - id: child_development
+        label: 兒童發展
+  - id: thumb2086
+    name: Thumb2086
+    avatar: /assets/img/guild/thumb2086/avatar.webp
+    page: /guild/thumb2086.html
+    tags:
+      - id: vibe_coder
+        label: Vibe Coder
+      - id: indie_game_dev
+        label: 獨立遊戲開發
+      - id: student
+        label: 高職統測生
+  - id: jiayi
+    name: 出水芙蓉
+    avatar: /assets/img/guild/jiayi/avatar.webp
+    page: /guild/jiayi.html
+    tags:
+      - id: crystal_sea
+        label: 水晶與海
+      - id: theater_director
+        label: 劇場導演
+      - id: life_creator
+        label: 生活創作者
+  - id: alice
+    name: 愛麗絲音樂工作室
+    avatar: /assets/img/guild/alice/avatar.webp
+    page: /guild/alice.html
+    tags:
+      - id: music_teacher
+        label: 音樂老師
+      - id: music_producer
+        label: 音樂製作人
+      - id: custom_song
+        label: 專屬歌曲訂製
+  - id: daniang
+    name: 大娘
+    avatar: /assets/img/guild/daniang/avatar.webp
+    page: /guild/daniang.html
+    tags:
+      - id: metaphysics_engineer
+        label: 理工玄學
+      - id: taoism
+        label: 道教靈感
+      - id: destiny_architect
+        label: 命運架構師
+  - id: zhu_zhu
+    name: 朱朱
+    avatar: /assets/img/guild/zhu_zhu/avatar.webp
+    page: /guild/zhu_zhu.html
+    tags:
+      - id: arts
+        label: 藝文
+      - id: reading
+        label: 閱讀
+      - id: coffee
+        label: 咖啡
+  - id: yiqi_feng
+    name: 奕淇 Yiqi
+    avatar: /assets/img/guild/yiqi_feng/avatar.webp
+    page: /guild/yiqi_feng.html
+    tags:
+      - id: printing_pro
+        label: 數位印刷
+      - id: sticker_master
+        label: 貼紙專家
+      - id: production
+        label: 現場實務
+  - id: yuna
+    name: Yuna
+    avatar: /assets/img/guild/yuna/avatar.webp
+    page: /guild/yuna.html
+    tags:
+      - id: industrial_design
+        label: 工業設計
+      - id: fashion_design
+        label: 服裝設計
+      - id: spark_joy
+        label: 怦然心動
+  - id: ru
+    name: 阿儒 RU
+    avatar: /assets/img/guild/ru/avatar.webp
+    page: /guild/ru.html
+    tags:
+      - id: athletic_trainer
+        label: 運動防護師
+      - id: body_engineer
+        label: 身體工程師
+      - id: risk_management
+        label: 風險管理
+  - id: rabbit
+    name: Rabbit 🐰
+    avatar: /assets/img/guild/rabbit/avatar.webp
+    page: /guild/rabbit.html
+    tags:
+      - id: travel_planner
+        label: 旅遊規劃師
+      - id: intl_volunteer
+        label: 國際志工體質
+      - id: story_collector
+        label: 故事蒐集員
+  - id: sui
+    name: 8穗正韓
+    avatar: /assets/img/guild/sui/avatar.webp
+    page: /guild/sui.html
+    tags:
+      - id: swqa
+        label: SWQA
+      - id: korean_fashion
+        label: 正韓選品
+      - id: rational_aesthetic
+        label: 理性美學
+  - id: kevin
+    name: 凱文 Kevin
+    avatar: /assets/img/guild/kevin/avatar.webp
+    page: /guild/kevin.html
+    tags:
+      - id: backend_engineer
+        label: 後端工程師
+      - id: career_consultant
+        label: 職涯諮詢
+      - id: board_game_master
+        label: 桌遊店長
+  - id: kelly
+    name: Kelly Chen
+    avatar: /assets/img/guild/kelly/avatar.webp
+    page: /guild/kelly.html
+    tags:
+      - id: career_counselor
+        label: 職涯諮詢師
+      - id: spiritual_guide
+        label: 靈性引導
+      - id: life_coach
+        label: 人生陪跑員
+  - id: eternalc
+    name: EternalC
+    avatar: /assets/img/guild/eternalc/avatar.webp
+    page: /guild/eternalc.html
+    tags:
+      - id: disability_care
+        label: 教保員
+      - id: street_dance
+        label: 街舞
+      - id: tattoo
+        label: 刺青
+  - id: red_maple
+    name: Red Maple
+    avatar: /assets/img/guild/red_maple/avatar.webp
+    page: /guild/red_maple.html
+    tags:
+      - id: soul_chef
+        label: 靈魂主廚
+      - id: digital_ascetic
+        label: 數位苦行僧
+      - id: godot_dev
+        label: Godot 遊戲開發
+  - id: julia
+    name: Julia
+    avatar: /assets/img/guild/julia/avatar.webp
+    page: /guild/julia.html
+    tags:
+      - id: knowledge_mgmt
+        label: 知識管理
+      - id: system_thinker
+        label: 系統思考
+      - id: library_admin
+        label: 圖書館行政
+  - id: damao
+    name: 大毛
+    avatar: /assets/img/guild/damao/avatar.webp
+    page: /guild/damao.html
+    tags:
+      - id: digital_painting
+        label: 板繪創作
+      - id: mother_of_two
+        label: 全職二寶媽
+      - id: novel_illustrator
+        label: 小說繪師
+  - id: leya
+    name: Leya
+    avatar: /assets/img/guild/leya/avatar.webp
+    page: /guild/leya.html
+    tags:
+      - id: traveler
+        label: 宇宙旅人
+      - id: crystal
+        label: 水晶收藏
+      - id: brave_heart
+        label: 勇敢的心
+  - id: he_ying
+    name: 何穎
+    avatar: /assets/img/guild/he_ying/avatar.webp
+    page: /guild/he_ying.html
+    tags:
+      - id: queen_training
+        label: 女王調教
+      - id: healing
+        label: 療傷
+      - id: freedom
+        label: 天體活動
+  - id: fuxintang
+    name: 福馨堂
+    avatar: /assets/img/guild/fuxintang/avatar.webp
+    page: /guild/fuxintang.html
+    tags:
+      - id: egg_cake_researcher
+        label: 雞蛋糕研究家
+      - id: magic_herbal
+        label: 魔法草本系
+      - id: art_teacher
+        label: 兒童美術老師
+  - id: darkstar
+    name: 闇星 Dark Star
+    avatar: /assets/img/guild/darkstar/avatar.webp
+    page: /guild/darkstar.html
+    tags:
+      - id: fullstack_ai
+        label: Fullstack / AI
+      - id: crypto_trading
+        label: Crypto Trading
+      - id: skiing
+        label: Skiing
+  - id: liloyee
+    name: Liloyee
+    avatar: /assets/img/guild/liloyee/avatar.webp
+    page: /guild/liloyee.html
+    tags:
+      - id: math_teacher
+        label: 奧數老師
+      - id: writer
+        label: 作家
+      - id: cosplay
+        label: Cosplay
+  - id: corbeau_z
+    name: Corbeau.Z
+    avatar: /assets/img/guild/corbeau_z/avatar.jpg
+    page: /guild/corbeau_z.html
+    tags:
+      - id: magic_engineer
+        label: 魔法工程師
+      - id: prop_design
+        label: 道具設計
+      - id: structural_magic
+        label: 結構魔術
+  - id: uli
+    name: 鄔莉 Uli
+    avatar: /assets/img/guild/uli/avatar.webp
+    page: /guild/uli.html
+    tags:
+      - id: animal_communicator
+        label: 動物溝通
+      - id: rational_intuition
+        label: 理性直覺
+      - id: ocean_diver
+        label: 海洋潛水
+  - id: naka
+    name: Naka
+    avatar: /assets/img/guild/naka/avatar.jpg
+    page: /guild/naka.html
+    tags:
+      - id: architect
+        label: 建築設計
+      - id: structural_eng
+        label: 結構工程
+      - id: thermodynamics
+        label: 熱力學
+  - id: ah_shui
+    name: 阿水 Ah Shui
+    avatar: /assets/img/guild/ah_shui/avatar.webp
+    page: /guild/ah_shui.html
+    tags:
+      - id: event_host
+        label: 活動主持人
+      - id: pipa_musician
+        label: 琵琶演奏家
+      - id: culture_promoter
+        label: 歌仔戲推廣
+  - id: xiaoshi
+    name: 樂天a小獅
+    avatar: /assets/img/guild/xiaoshi/avatar.webp
+    page: /guild/xiaoshi.html
+    tags:
+      - id: manpower
+        label: 人力調度
+      - id: butler
+        label: 專業管家
+      - id: food_hunter
+        label: 美食獵人
+  - id: yuzi
+    name: 柚子 Yuzi
+    avatar: /assets/img/guild/yuzi/avatar.webp
+    page: /guild/yuzi.html
+    tags:
+      - id: landscape_design
+        label: 景觀設計
+      - id: community_builder
+        label: 社群連結
+      - id: explorer
+        label: 身心探索
+  - id: joying
+    name: Joying
+    avatar: /assets/img/guild/joying/avatar.webp
+    page: /guild/joying.html
+    tags:
+      - id: tactical_guide
+        label: 戰術嚮導
+      - id: atmosphere_specialist
+        label: 氛圍專家
+      - id: crisis_control
+        label: 危機控管
+  - id: gheart
+    name: G-Heart
+    avatar: /assets/images/guild/gheart/profile.webp
+    page: /guild/gheart.html
+    tags:
+      - id: handmade_artisan
+        label: 手作職人
+      - id: weaver
+        label: 編織者
+      - id: wood_craft
+        label: 木工魂
+  - id: xmasfun689
+    name: XmasFun
+    avatar: /assets/img/guild/xmasfun689/avatar.webp
+    page: /guild/xmasfun689.html
+    tags:
+      - id: construction_mage
+        label: 營造法師
+      - id: heavy_machinery
+        label: 重機械操作
+      - id: warrior_physique
+        label: 戰士體質
+  - id: flora
+    name: Flora 芙老師
+    avatar: /assets/img/guild/flora/profile.webp
+    page: /guild/flora.html
+    tags:
+      - id: dessert_architect
+        label: 甜點架構師
+      - id: culture_bridge
+        label: 文化橋樑
+      - id: sweet_strategist
+        label: 甜蜜策略
+  - id: miglo
+    name: 蜜光Q凍的闆闆
+    avatar: /assets/img/guild/miglo/avatar.webp
+    page: /guild/miglo.html
+    tags:
+      - id: flower_tea
+        label: 花果茶
+      - id: jelly_artisan
+        label: 果凍職人
+      - id: enfp
+        label: ENFP
+  - id: ariel
+    name: Ariel
+    avatar: /assets/img/guild/ariel/avatar_main.webp
+    page: /guild/ariel.html
+    tags:
+      - id: ra_manager
+        label: RA Manager
+      - id: alchemist
+        label: Alchemist
+      - id: weaver
+        label: Weaver
+      - id: infp
+        label: INFP
+  - id: sean
+    name: 湘 Sean
+    avatar: /assets/img/guild/sean/avatar.webp
+    page: /guild/sean.html
+    tags:
+      - id: astrologer
+        label: 占星師
+      - id: occultist
+        label: 神秘學
+      - id: slashie
+        label: 斜槓中年
+  - id: yufel
+    name: 怪奇瘋子 Yufel
+    avatar: /assets/img/guild/yufel/avatar.webp
+    page: /guild/yufel.html
+    tags:
+      - id: self_taught
+        label: 自學狂魔
+      - id: weaver
+        label: 鉤織/手作
+      - id: poet
+        label: 詩意瘋子
+  - id: bro_mao
+    name: 毛哥 Bro Mao
+    avatar: /assets/img/guild/bro_mao/avatar.webp
+    page: /guild/bro_mao.html
+    tags:
+      - id: community_ops
+        label: 社群經營
+      - id: shopee_affiliate
+        label: 蝦皮分潤
+      - id: student
+        label: 高中生
+  - id: liuan
+    name: 健身自由教練 Liuan
+    avatar: /assets/img/guild/liuan/avatar.webp
+    page: /guild/liuan.html
+    tags:
+      - id: fitness_coach
+        label: 健身教練
+      - id: meme_master
+        label: 謎因大師
+      - id: exercise_physiology
+        label: 運動生理學
+  - id: elora
+    name: Elora
+    avatar: /assets/img/guild/elora/avatar.webp
+    page: /guild/elora.html
+    tags:
+      - id: graphic_designer
+        label: Graphic Designer
+      - id: izakaya_owner
+        label: Izakaya Owner
+      - id: vibe_coder
+        label: Vibe Coder
+  - id: lyanna
+    name: 允曦 Lyanna
+    avatar: /assets/img/guild/lyanna/avatar.webp
+    page: /guild/lyanna.html
+    tags:
+      - id: chinese_teacher
+        label: 華語師資培訓
+      - id: mmt_consultant
+        label: MMT 諮詢師
+      - id: career_guide
+        label: 職涯引導
+  - id: mochang
+    name: 墨唱
+    avatar: /assets/img/guild/mochang/avatar.webp
+    page: /guild/mochang.html
+    tags:
+      - id: game_dev
+        label: 遊戲開發
+      - id: pipa_musician
+        label: 琵琶演奏
+      - id: composer
+        label: 詞曲創作
+  - id: spj
+    name: 塞趴卷 SPJ
+    avatar: /assets/img/guild/spj/avatar.webp
+    page: /guild/spj.html
+    tags:
+      - id: materialization_alchemist
+        label: 具現化系鍊金術師
+      - id: text_town_architect
+        label: 文字小鎮架構師
+      - id: guild_master
+        label: 冒險公會會長
+  - id: tyou
+    name: 秋桑 Tyou
+    avatar: /assets/img/guild/tyou/pot.webp
+    page: /guild/tyou.html
+    tags:
+      - id: coffee_physicist
+        label: 物理系咖啡師
+      - id: cafe_explorer
+        label: 跑咖筆記
+      - id: intp
+        label: INTP
+  - id: chueh
+    name: 闕 Chueh
+    avatar: /assets/img/guild/chueh/avatar.webp
+    page: /guild/chueh.html
+    tags:
+      - id: handpan
+        label: 手碟
+      - id: drummer
+        label: 爵士鼓
+      - id: musician
+        label: 音樂人
+  - id: meizhuan
+    name: 石專豆頁
+    avatar: /assets/img/guild/meizhuan/avatar.webp
+    page: /guild/meizhuan.html
+    tags:
+      - id: engineer
+        label: 工程師
+      - id: biker
+        label: 重機騎士
+      - id: otaku
+        label: 宅宅
+  - id: ava
+    name: 房產小蜜 Ava
+    avatar: /assets/img/guild/ava/avatar.webp
+    page: /guild/ava.html
+    tags:
+      - id: real_estate_secretary
+        label: 房產小秘書
+      - id: biker_mom
+        label: 重機媽咪
+      - id: mobile_photographer
+        label: 手機攝影
+  - id: michael
+    name: Michael Lai
+    avatar: /assets/img/guild/michael/avatar.webp
+    page: /guild/michael.html
+    tags:
+      - id: kinetic_architect
+        label: 動能架構師
+      - id: automation_ai
+        label: 自動化煉金術
+      - id: feline_logic
+        label: 貓系邏輯
+  - id: allen
+    name: 少帥 Allen
+    avatar: /assets/img/guild/allen/avatar.webp
+    page: /guild/allen.html
+    tags:
+      - id: printing
+        label: 桌遊印刷
+      - id: resilience
+        label: 浴火重生
+      - id: board_game
+        label: 桌遊顧問
+  - id: mis
+    name: 小米絲 Mis
+    avatar: /assets/img/guild/mis/avatar.webp
+    page: /guild/mis.html
+    tags:
+      - id: angel_reaper
+        label: 天使死神
+      - id: glitch_entity
+        label: 錯誤代碼
+      - id: black_lily
+        label: 黑百合
+  - id: yumebi_emu
+    name: 愛姆 Yumebi Emu
+    avatar: /assets/img/guild/yumebi_emu/avatar.webp
+    page: /guild/yumebi_emu.html
+    tags:
+      - id: asmr
+        label: ASMR 魔法
+      - id: dream_witch
+        label: 夢境魔女
+      - id: forever_20
+        label: 永遠 20 歲
+  - id: zaira
+    name: Zaira
+    avatar: /assets/img/guild/zaira/avatar.webp
+    page: /guild/zaira.html
+    tags:
+      - id: language_explorer
+        label: 語言探索
+      - id: climber
+        label: 攀登者
+      - id: podcast
+        label: Podcast
+  - id: lubu
+    name: 呂布
+    avatar: /assets/img/guild/lubu/avatar.webp
+    page: /guild/lubu.html
+    tags:
+      - id: vtuber
+        label: 個人勢 VTuber
+      - id: warlord
+        label: 最強武將
+      - id: indie_games
+        label: 獨立遊戲
+  - id: bebe_liu
+    name: Bèbè Liu
+    avatar: /assets/img/guild/bebe_liu/avatar.webp
+    page: /guild/bebe_liu.html
+    tags:
+      - id: illustrator
+        label: 插畫/設計
+      - id: explorer
+        label: 山海探險
+      - id: life_gamer
+        label: 遊戲人生
+  - id: mian
+    name: Mian
+    avatar: /assets/img/guild/mian/avatar.webp
+    page: /guild/mian.html
+    tags:
+      - id: student
+        label: 大二生
+      - id: model_car
+        label: 模型車改裝
+      - id: rider
+        label: 摩旅愛好者
+  - id: cmy_fantasy
+    name: 原色⭐︎ふぁんたじー
+    avatar: /assets/img/guild/cmy_fantasy/avatar.webp
+    page: /guild/cmy_fantasy.html
+    tags:
+      - id: idol
+        label: 日系偶像
+      - id: cosplay
+        label: Cosplay
+      - id: stage
+        label: 舞台表演
+  - id: nick
+    name: 自動化架構師 Nick
+    avatar: /assets/img/guild/nick/avatar.webp
+    page: /guild/nick.html
+    tags:
+      - id: automation_architect
+        label: 自動化架構師
+      - id: n8n_expert
+        label: N8N 專家
+      - id: vibe_coder
+        label: Vibe Coder
+  - id: mitsu_jing
+    name: Mitsu Jing
+    avatar: /assets/img/guild/mitsu_jing/avatar.webp
+    page: /guild/mitsu_jing.html
+    tags:
+      - id: insurance_specialist
+        label: 保險業務
+      - id: travel_explorer
+        label: 旅遊住宿
+      - id: otaku_collector
+        label: 公仔收藏
+  - id: nekopapaya
+    name: 御用太醫-望聞問切瓜
+    avatar: /assets/img/guild/nekopapaya/avatar.webp
+    page: /guild/nekopapaya.html
+    tags:
+      - id: tcm_analyst
+        label: 人體狀態觀察分析師
+      - id: activity_organizer
+        label: 魔人揪揪
+      - id: safe_haven
+        label: 避風港守望者
+  - id: vic
+    name: VIC NAIL 東東老師
+    avatar: /assets/img/guild/vic/avatar.webp
+    page: /guild/vic.html
+    title: The Logic Alchemist
+    description: 18年極致工藝，將感性美學淬鍊為理性完美結構。拒絕死記硬背的邏輯派美甲講師。
+    tags:
+      - id: logic_nail_art
+        label: 邏輯美甲
+      - id: nail_instructor
+        label: 美甲講師
+      - id: n8n_automation
+        label: N8N 自動化
+      - id: slashie
+        label: 全能斜槓
+      - id: cat_parent
+        label: 貓奴
+  - id: joanna_army
+    name: Joanna
+    avatar: /assets/img/guild/joanna_army/avatar.webp
+    page: /guild/joanna_army.html
+    tags:
+      - id: visual_kei
+        label: 視覺系
+      - id: chaos_artist
+        label: 混沌藝術
+      - id: imaginative
+        label: 天馬行空
