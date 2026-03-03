@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>貓青 Naomiao77 | 溫柔魔法使</title>
+    <title>貓青 Naomiao77 | 魔法藝術爆發</title>
     <meta name="description" content="替你留下一小塊，剛剛好的溫柔。畫貓、畫花、畫天馬行空的瞬間。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Noto+Serif+TC:wght@400;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Tailwind CSS (via CDN for standalone page) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -22,37 +22,18 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Noto Sans TC"', 'sans-serif'],
-                        serif: ['"Shippori Mincho"', 'serif'],
-                        display: ['"Playfair Display"', 'serif'],
+                        sans: ['"Space Grotesk"', 'sans-serif'],
+                        serif: ['"Noto Serif TC"', 'serif'],
+                        display: ['"Cinzel"', 'serif'],
                     },
                     colors: {
                         magic: {
-                            50: '#fcfcfc',
-                            100: '#f4f1ec',
-                            200: '#e8e2d9',
-                            300: '#d5cab8',
-                            400: '#bcae96',
-                            500: '#a38f71',
-                            600: '#8e775a',
-                            700: '#76614b',
-                            800: '#625141',
-                            900: '#504337',
-                        },
-                        sage: {
-                            DEFAULT: '#9caf88',
-                            light: '#b5c5a4',
-                            dark: '#7a8c68'
-                        },
-                        blush: {
-                            DEFAULT: '#e3b8b8',
-                            light: '#f2d8d8',
-                            dark: '#c49595'
+                            glow: '#ff00aa',
+                            neon: '#00fff0',
+                            dark: '#050014',
+                            cat: '#ffd700',
+                            sprout: '#39ff14'
                         }
-                    },
-                    cursor: {
-                        auto: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23a38f71\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><circle cx=\'12\' cy=\'12\' r=\'4\'/><path d=\'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41\'/></svg>") 12 12, auto',
-                        pointer: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'%23e3b8b8\' stroke=\'%23a38f71\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><circle cx=\'12\' cy=\'12\' r=\'6\'/><path d=\'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41\'/></svg>") 12 12, pointer',
                     }
                 }
             }
@@ -60,521 +41,498 @@
     </script>
 
     <style>
-        /* ===== BASE STYLES ===== */
         :root {
-            --bg-color: #1a1818;
-            --text-main: #f4f1ec;
-            --text-muted: #bcae96;
-            --accent: #e3b8b8;
+            --bg: #050014;
+            --text: #ffffff;
+            --primary: #ff00aa;
+            --secondary: #00fff0;
         }
 
-        html, body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
+        body, html {
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
             overflow-x: hidden;
             scroll-behavior: smooth;
+            cursor: none; /* Custom cursor */
         }
 
-        body {
-            cursor: auto;
+        /* Custom Cursor */
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
+        }
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--secondary);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
+            mix-blend-mode: difference;
         }
 
-        a, button, .interactive {
-            cursor: pointer;
+        a:hover ~ .cursor-outline, button:hover ~ .cursor-outline {
+            width: 80px;
+            height: 80px;
+            border-color: var(--primary);
+            background: rgba(255, 0, 170, 0.1);
         }
 
-        /* ===== SCROLLBAR ===== */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-        ::selection { background: rgba(227, 184, 184, 0.3); color: #fff; }
-
-        /* ===== CANVAS LAYERS ===== */
-        #webgl-canvas {
+        /* Canvas Layers */
+        #gl-canvas {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
             z-index: 0;
             pointer-events: none;
+            mix-blend-mode: screen;
         }
 
-        #p5-canvas {
+        #p5-overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
             z-index: 1;
             pointer-events: none;
+            mix-blend-mode: plus-lighter;
         }
 
-        /* ===== LAYOUT & COMPONENTS ===== */
+        /* Content Layering */
         .content-layer {
             position: relative;
             z-index: 10;
         }
 
-        .glass-panel {
-            background: rgba(26, 24, 24, 0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(244, 241, 236, 0.1);
-        }
-
-        /* Hero Avatar Image Treatment */
-        .avatar-glow {
+        /* Glitch Text Effect */
+        .glitch-wrapper {
             position: relative;
         }
-        .avatar-glow::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            background: linear-gradient(45deg, var(--accent), var(--text-muted), var(--bg-color));
-            border-radius: 50%;
-            z-index: -1;
-            filter: blur(15px);
-            opacity: 0.6;
-            animation: pulseGlow 4s ease-in-out infinite alternate;
-        }
-
-        @keyframes pulseGlow {
-            0% { opacity: 0.4; transform: scale(1); }
-            100% { opacity: 0.8; transform: scale(1.05); }
-        }
-
-        /* Text Gradients */
-        .text-gradient {
-            background: linear-gradient(120deg, var(--text-main), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Nav Mix-blend */
-        .mix-nav {
+        .glitch-text {
+            position: relative;
+            color: white;
+            font-size: clamp(4rem, 15vw, 12rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.05em;
+            line-height: 0.8;
+            text-shadow: 0 0 20px rgba(255,0,170,0.5);
             mix-blend-mode: difference;
         }
-
-        /* Gallery Pinning Container */
-        .gallery-container {
-            width: 300vw;
-            height: 100vh;
-            display: flex;
-            flex-wrap: nowrap;
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.8;
+        }
+        .glitch-text::before {
+            color: var(--primary);
+            z-index: -1;
+            animation: glitch-anim 3s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            color: var(--secondary);
+            z-index: -2;
+            animation: glitch-anim-2 2s infinite linear alternate-reverse;
         }
 
-        .gallery-panel {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem;
+        @keyframes glitch-anim {
+            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 2px); }
+            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -2px); }
+            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
+            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+            80% { clip-path: inset(10% 0 70% 0); transform: translate(-2px, 2px); }
+            100% { clip-path: inset(30% 0 50% 0); transform: translate(2px, -2px); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(10% 0 60% 0); transform: translate(2px, -2px); }
+            20% { clip-path: inset(30% 0 20% 0); transform: translate(-2px, 2px); }
+            40% { clip-path: inset(70% 0 10% 0); transform: translate(2px, -2px); }
+            60% { clip-path: inset(20% 0 50% 0); transform: translate(-2px, 2px); }
+            80% { clip-path: inset(50% 0 30% 0); transform: translate(2px, -2px); }
+            100% { clip-path: inset(5% 0 80% 0); transform: translate(-2px, 2px); }
         }
 
-        .image-frame {
+        /* Glass Cards for Images */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2rem;
+            overflow: hidden;
             position: relative;
-            padding: 1rem;
-            background: #fff;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .image-frame img {
-            max-height: 70vh;
-            max-width: 100%;
-            object-fit: contain;
-            filter: brightness(0.95) contrast(1.05);
-        }
-        .image-frame::after {
+        .glass-card::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to bottom, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%);
+            background: linear-gradient(135deg, rgba(255,0,170,0.2), rgba(0,255,240,0.2));
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .glass-card:hover {
+            transform: scale(1.05) translateY(-10px);
+            z-index: 20;
+            box-shadow: 0 30px 60px rgba(255,0,170,0.3);
+        }
+        .glass-card:hover::before {
+            opacity: 1;
+        }
+        .glass-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(80%) contrast(1.2);
+            transition: filter 0.5s ease, transform 0.8s ease;
+        }
+        .glass-card:hover img {
+            filter: grayscale(0%) contrast(1);
+            transform: scale(1.1);
+        }
+
+        /* Explosive Text Mask */
+        .text-mask {
+            background: url('/assets/img/guild/naomiao77/img_1.webp') no-repeat center center;
+            background-size: cover;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 15vw;
+            font-weight: 900;
+            white-space: nowrap;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+        }
+
+        /* Marquee */
+        .marquee-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 2rem 0;
+            background: var(--primary);
+            color: black;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 2rem;
+            transform: rotate(-2deg) scale(1.05);
+            box-shadow: 0 0 50px var(--primary);
+            position: relative;
+            z-index: 30;
+        }
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 10s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Portal Nav */
+        .portal-nav {
+            position: fixed;
+            top: 2rem; left: 2rem; right: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: difference;
             pointer-events: none;
         }
-        .image-frame:hover {
-            transform: scale(1.02) translateY(-10px);
+        .portal-nav a {
+            pointer-events: auto;
+            color: white;
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .portal-nav a:hover {
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary);
         }
 
-        /* Editorial Grid Layout for smaller images */
-        .editorial-grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 2rem;
-            align-items: center;
-        }
-
-        /* Floating animations for elements */
-        .float-slow { animation: floating 6s ease-in-out infinite; }
-        .float-medium { animation: floating 4s ease-in-out infinite 1s; }
-
-        @keyframes floating {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-        }
-
-        /* Loading Screen */
-        #preloader {
-            position: fixed;
-            inset: 0;
-            background: var(--bg-color);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 1s ease-in-out;
-        }
-        .loader-flower {
-            font-size: 2rem;
-            color: var(--accent);
-            animation: spin 3s linear infinite;
-        }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(var(--primary), var(--secondary)); border-radius: 5px; }
 
     </style>
 </head>
-<body class="antialiased">
+<body>
 
-    <!-- Preloader -->
-    <div id="preloader">
-        <i class="fa-solid fa-seedling loader-flower"></i>
-    </div>
+    <!-- Custom Cursor -->
+    <div class="cursor-dot" id="cursor-dot"></div>
+    <div class="cursor-outline" id="cursor-outline"></div>
 
-    <!-- WebGL Background (Three.js) -->
-    <canvas id="webgl-canvas"></canvas>
-
-    <!-- Interactive Overlay (p5.js) -->
-    <div id="p5-canvas"></div>
+    <!-- Background Canvases -->
+    <canvas id="gl-canvas"></canvas>
+    <div id="p5-overlay"></div>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full p-6 z-50 mix-nav flex justify-between items-center pointer-events-none">
-        <a href="/guild" class="text-white hover:text-accent transition-colors duration-300 font-display italic text-lg pointer-events-auto flex items-center gap-2">
-            <i class="fa-solid fa-arrow-left text-sm"></i> Back to Guild
-        </a>
-        <div class="flex gap-6 pointer-events-auto">
-            <a href="https://portaly.cc/naomiao77" target="_blank" class="text-white hover:text-accent transition-colors duration-300 text-xl"><i class="fa-solid fa-link"></i></a>
-            <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-white hover:text-accent transition-colors duration-300 text-xl"><i class="fa-brands fa-instagram"></i></a>
-            <a href="https://www.threads.net/@naomiao77" target="_blank" class="text-white hover:text-accent transition-colors duration-300 text-xl"><i class="fa-brands fa-threads"></i></a>
+    <nav class="portal-nav">
+        <a href="/guild" class="flex items-center gap-2"><i class="fa-solid fa-bolt"></i> GUILD</a>
+        <div class="flex gap-6">
+            <a href="https://portaly.cc/naomiao77" target="_blank"><i class="fa-solid fa-link"></i></a>
+            <a href="https://www.instagram.com/naomiao77/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.threads.net/@naomiao77" target="_blank"><i class="fa-brands fa-threads"></i></a>
         </div>
     </nav>
 
-    <div class="content-layer">
+    <!-- Main Content -->
+    <main class="content-layer">
 
-        <!-- ===== HERO SECTION ===== -->
-        <section class="min-h-screen flex flex-col justify-center items-center text-center px-6 relative" id="hero">
-            <div class="gsap-hero opacity-0 translate-y-8 flex flex-col items-center">
-                <div class="avatar-glow mb-8 w-40 h-40 md:w-56 md:h-56 rounded-full p-2 glass-panel float-slow">
-                    <img src="/assets/img/guild/naomiao77/img_0.webp" alt="貓青 Naomiao77" class="w-full h-full object-cover rounded-full border border-white/20">
+        <!-- HERO: Explosive Typography -->
+        <section class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden" id="hero">
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-magic-dark/80 z-10"></div>
+
+            <div class="z-20 text-center flex flex-col items-center">
+                <div class="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-magic-glow shadow-[0_0_50px_#ff00aa] mb-8 animate-[spin_10s_linear_infinite] group">
+                    <img src="/assets/img/guild/naomiao77/img_0.webp" alt="Avatar" class="w-full h-full object-cover animate-[spin_10s_linear_infinite_reverse] group-hover:scale-125 transition-transform duration-700">
                 </div>
 
-                <h1 class="font-serif text-5xl md:text-7xl lg:text-8xl font-bold mb-4 tracking-wider text-gradient">貓青</h1>
-                <p class="font-display italic text-magic-400 text-xl md:text-2xl tracking-widest mb-10">Naomiao77</p>
-
-                <div class="h-px w-24 bg-gradient-to-r from-transparent via-accent to-transparent mb-10"></div>
-
-                <p class="font-serif text-xl md:text-3xl text-magic-100 font-light tracking-widest leading-loose">
-                    替你留下一小塊，<br class="md:hidden">剛剛好的溫柔。
-                </p>
-
-                <div class="mt-20 text-magic-500 animate-bounce">
-                    <i class="fa-solid fa-seedling text-2xl"></i>
+                <div class="glitch-wrapper">
+                    <h1 class="glitch-text font-display" data-text="NAOMIAO">NAOMIAO</h1>
                 </div>
+                <div class="glitch-wrapper -mt-8 md:-mt-16">
+                    <h1 class="glitch-text font-serif text-transparent bg-clip-text bg-gradient-to-r from-magic-neon to-magic-glow" data-text="貓青">貓青</h1>
+                </div>
+
+                <p class="mt-8 font-sans text-xl md:text-3xl font-bold tracking-[0.5em] text-white/80 uppercase">Gentle Magic / Sprouting</p>
+                <div class="mt-4 flex gap-4 text-magic-neon text-2xl">
+                    <i class="fa-solid fa-cat animate-bounce"></i>
+                    <i class="fa-solid fa-leaf animate-pulse"></i>
+                    <i class="fa-solid fa-wand-magic-sparkles animate-spin"></i>
+                </div>
+            </div>
+
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 text-white/50 text-sm tracking-widest animate-pulse">
+                SCROLL TO IGNITE <i class="fa-solid fa-chevron-down ml-2"></i>
             </div>
         </section>
 
-        <!-- ===== ABOUT SECTION ===== -->
-        <section class="py-32 px-6 md:px-12 max-w-5xl mx-auto" id="about">
-            <div class="editorial-grid">
-
-                <div class="col-span-12 md:col-span-5 gsap-about opacity-0 -translate-x-8">
-                    <div class="image-frame -rotate-2 float-medium w-64 md:w-full mx-auto">
-                        <img src="/assets/img/guild/naomiao77/img_2.webp" alt="Profile Detail" class="w-full grayscale hover:grayscale-0 transition-all duration-700">
-                    </div>
-                </div>
-
-                <div class="col-span-12 md:col-span-7 md:pl-12 mt-12 md:mt-0 gsap-about opacity-0 translate-x-8">
-                    <h2 class="font-display italic text-4xl text-accent mb-8">About the Magic</h2>
-                    <div class="font-serif text-lg md:text-xl text-magic-200 leading-loose space-y-6 font-light">
-                        <p>畫貓、畫花、畫天馬行空的瞬間。</p>
-                        <p>不是一路順著走來的創作者，<br>而是慢慢把喜歡的事撿起來，<br>一筆一筆，畫成現在的樣子。</p>
-                        <p>喜歡柔軟的線條、溫和的顏色，<br>也喜歡作品被放進生活裡——<br>變成一張明信片、一幅畫，<br>或某天剛好被需要的陪伴。</p>
-                        <p>腦袋裡住著很多奇特東西，<br>有些在發芽，有些正在曬太陽。</p>
-                    </div>
-
-                    <div class="mt-12 flex flex-wrap gap-4">
-                        <span class="px-4 py-2 glass-panel rounded-full text-sm text-magic-300 font-serif tracking-wider"><i class="fa-solid fa-cat mr-2"></i>貓奴</span>
-                        <span class="px-4 py-2 glass-panel rounded-full text-sm text-magic-300 font-serif tracking-wider"><i class="fa-solid fa-leaf mr-2"></i>發芽的想像力</span>
-                        <span class="px-4 py-2 glass-panel rounded-full text-sm text-magic-300 font-serif tracking-wider"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>日常魔法</span>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- ===== HORIZONTAL GALLERY ===== -->
-        <div id="gallery-trigger" class="overflow-hidden bg-[#121111]">
-            <div class="gallery-container" id="gallery-container">
-
-                <!-- Panel 1 -->
-                <section class="gallery-panel">
-                    <div class="flex flex-col md:flex-row items-center justify-center gap-12 w-full max-w-7xl">
-                        <div class="w-full md:w-1/2">
-                            <h2 class="font-serif text-4xl md:text-6xl text-magic-100 mb-6 leading-tight">柔軟的線條，<br><span class="text-accent italic font-display">Gentle Colors.</span></h2>
-                            <p class="font-sans text-magic-400 text-lg leading-relaxed max-w-md">
-                                在世界有點吵的時候，這裡有一片安靜的角落。每一筆都是為了在日常裡注入一點微小的魔法。
-                            </p>
-                        </div>
-                        <div class="w-full md:w-1/2 relative">
-                            <div class="image-frame rotate-1 z-10 mx-auto w-4/5">
-                                <img src="/assets/img/guild/naomiao77/img_4.webp" alt="Artwork">
-                            </div>
-                            <div class="image-frame -rotate-3 absolute -bottom-10 -left-10 w-2/3 z-20 hidden md:block opacity-90 hover:opacity-100 hover:z-30">
-                                <img src="/assets/img/guild/naomiao77/img_11.webp" alt="Artwork detail">
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Panel 2 -->
-                <section class="gallery-panel">
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-8 w-full max-w-7xl items-center">
-                        <div class="col-span-1 md:col-span-1 transform translate-y-12">
-                            <div class="image-frame -rotate-2">
-                                <img src="/assets/img/guild/naomiao77/img_5.webp" alt="Artwork">
-                            </div>
-                        </div>
-                        <div class="col-span-1 md:col-span-1">
-                            <div class="image-frame rotate-2">
-                                <img src="/assets/img/guild/naomiao77/img_6.webp" alt="Artwork">
-                            </div>
-                        </div>
-                        <div class="col-span-2 md:col-span-1 transform md:-translate-y-8 mt-12 md:mt-0">
-                            <h3 class="font-display italic text-3xl text-sage-light mb-4">Sprouting</h3>
-                            <p class="font-serif text-magic-300">那些在腦海中發芽的奇特事物，漸漸長成了溫暖的模樣。</p>
-                            <div class="image-frame rotate-1 mt-8">
-                                <img src="/assets/img/guild/naomiao77/img_7.webp" alt="Artwork">
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Panel 3 -->
-                <section class="gallery-panel">
-                    <div class="flex flex-col items-center text-center w-full max-w-5xl">
-                        <div class="image-frame z-10 max-w-3xl w-full mb-12 float-slow">
-                            <img src="/assets/img/guild/naomiao77/img_1.webp" alt="Artwork Main" class="w-full">
-                        </div>
-                        <h2 class="font-serif text-3xl md:text-5xl text-magic-100 tracking-widest">成為生活裡的陪伴。</h2>
-                    </div>
-                </section>
-
+        <!-- EXPLOSIVE MARQUEE -->
+        <div class="marquee-container my-20">
+            <div class="marquee-content">
+                CREATIVE EXPLOSION <i class="fa-solid fa-star mx-4"></i>
+                ARTWORK BEYOND IMAGINATION <i class="fa-solid fa-cat mx-4"></i>
+                GENTLE BUT POWERFUL <i class="fa-solid fa-leaf mx-4"></i>
+                CREATIVE EXPLOSION <i class="fa-solid fa-star mx-4"></i>
+                ARTWORK BEYOND IMAGINATION <i class="fa-solid fa-cat mx-4"></i>
+                GENTLE BUT POWERFUL <i class="fa-solid fa-leaf mx-4"></i>
+                CREATIVE EXPLOSION <i class="fa-solid fa-star mx-4"></i>
+                ARTWORK BEYOND IMAGINATION <i class="fa-solid fa-cat mx-4"></i>
+                GENTLE BUT POWERFUL <i class="fa-solid fa-leaf mx-4"></i>
             </div>
         </div>
 
-        <!-- ===== MASONRY / MORE ARTWORKS ===== -->
-        <section class="py-32 px-6 bg-gradient-to-b from-[#121111] to-transparent">
-            <div class="max-w-7xl mx-auto columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
-                <div class="break-inside-avoid image-frame gsap-fade-up opacity-0">
-                    <img src="/assets/img/guild/naomiao77/img_8.webp" alt="Artwork">
+        <!-- MASONRY GRID - CHAOTIC BEAUTY -->
+        <section class="py-20 px-4 md:px-12 max-w-screen-2xl mx-auto" id="gallery">
+            <h2 class="font-serif text-5xl md:text-8xl font-black mb-20 text-center text-magic-sprout opacity-80" style="text-shadow: 0 0 30px #39ff14;">
+                日常魔法<br>發芽中
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
+                <!-- Large Feature -->
+                <div class="lg:col-span-2 row-span-2 glass-card h-[600px] gsap-card">
+                    <img src="/assets/img/guild/naomiao77/img_2.webp" alt="Profile Detail">
+                    <div class="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black to-transparent">
+                        <h3 class="font-display text-4xl text-magic-glow font-bold">The Creator</h3>
+                        <p class="font-serif mt-2 text-xl">把喜歡的事撿起來，一筆一筆畫成現在的樣子。</p>
+                    </div>
                 </div>
-                <div class="break-inside-avoid image-frame gsap-fade-up opacity-0">
-                    <img src="/assets/img/guild/naomiao77/img_3.webp" alt="Artwork">
+
+                <div class="glass-card h-[300px] gsap-card">
+                    <img src="/assets/img/guild/naomiao77/img_4.webp" alt="Art">
                 </div>
-                <div class="break-inside-avoid image-frame gsap-fade-up opacity-0">
-                    <img src="/assets/img/guild/naomiao77/img_9.webp" alt="Artwork">
+
+                <div class="glass-card h-[300px] gsap-card translate-y-12">
+                    <img src="/assets/img/guild/naomiao77/img_5.webp" alt="Art">
                 </div>
-                <div class="break-inside-avoid image-frame gsap-fade-up opacity-0">
-                    <img src="/assets/img/guild/naomiao77/img_10.webp" alt="Artwork">
+
+                <!-- Text Mask Feature -->
+                <div class="lg:col-span-3 py-32 text-center gsap-fade">
+                    <h2 class="text-mask font-serif">溫柔而炸裂</h2>
+                    <p class="font-sans text-2xl text-magic-neon mt-8 tracking-widest">GENTLE FORCE OF NATURE</p>
+                </div>
+
+                <!-- More Grid Items -->
+                <div class="glass-card h-[400px] lg:col-span-2 gsap-card -translate-y-20">
+                    <img src="/assets/img/guild/naomiao77/img_1.webp" alt="Art">
+                </div>
+
+                <div class="glass-card h-[400px] gsap-card">
+                    <img src="/assets/img/guild/naomiao77/img_7.webp" alt="Art">
+                </div>
+
+                <div class="glass-card h-[300px] gsap-card">
+                    <img src="/assets/img/guild/naomiao77/img_8.webp" alt="Art">
+                </div>
+                <div class="glass-card h-[300px] gsap-card translate-y-16">
+                    <img src="/assets/img/guild/naomiao77/img_11.webp" alt="Art">
+                </div>
+                <div class="glass-card h-[300px] gsap-card">
+                    <img src="/assets/img/guild/naomiao77/img_10.webp" alt="Art">
                 </div>
             </div>
         </section>
 
-        <!-- ===== FOOTER ===== -->
-        <footer class="py-24 text-center border-t border-white/5 relative overflow-hidden">
-            <div class="relative z-10 flex flex-col items-center">
-                <div class="w-20 h-20 rounded-full overflow-hidden border-2 border-accent/50 mb-8 grayscale hover:grayscale-0 transition-all duration-500">
-                    <img src="/assets/img/guild/naomiao77/img_0.webp" alt="Avatar Small">
-                </div>
-                <h2 class="font-display italic text-4xl text-magic-200 mb-8">Naomiao77</h2>
+        <!-- FOOTER: BLACK HOLE -->
+        <footer class="min-h-screen flex flex-col justify-center items-center relative mt-32 border-t border-white/10" id="contact">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,170,0.1)_0%,rgba(5,0,20,1)_70%)]"></div>
 
-                <div class="flex gap-8 mb-12">
-                    <a href="https://portaly.cc/naomiao77" target="_blank" class="w-14 h-14 rounded-full glass-panel flex items-center justify-center text-xl text-magic-300 hover:text-white hover:border-white transition-all duration-300 hover:scale-110">
-                        <i class="fa-solid fa-link"></i>
-                    </a>
-                    <a href="https://www.instagram.com/naomiao77/" target="_blank" class="w-14 h-14 rounded-full glass-panel flex items-center justify-center text-xl text-magic-300 hover:text-accent hover:border-accent transition-all duration-300 hover:scale-110">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                    <a href="https://www.threads.net/@naomiao77" target="_blank" class="w-14 h-14 rounded-full glass-panel flex items-center justify-center text-xl text-magic-300 hover:text-white hover:border-white transition-all duration-300 hover:scale-110">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                </div>
+            <h2 class="font-display text-7xl md:text-[10rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-black/0 mb-12 relative z-10 text-center">
+                ENTER<br>THE MAGIC
+            </h2>
 
-                <p class="font-sans text-sm text-magic-700 tracking-widest uppercase">© 2026 Naomiao77. Crafted in Supergalen's Dungeon.</p>
+            <div class="flex gap-8 z-10 mb-20">
+                <a href="https://portaly.cc/naomiao77" target="_blank" class="w-24 h-24 rounded-full border border-magic-neon flex items-center justify-center text-4xl text-magic-neon hover:bg-magic-neon hover:text-black transition-all duration-300 hover:scale-125 hover:shadow-[0_0_30px_#00fff0]">
+                    <i class="fa-solid fa-link"></i>
+                </a>
+                <a href="https://www.instagram.com/naomiao77/" target="_blank" class="w-24 h-24 rounded-full border border-magic-glow flex items-center justify-center text-4xl text-magic-glow hover:bg-magic-glow hover:text-black transition-all duration-300 hover:scale-125 hover:shadow-[0_0_30px_#ff00aa]">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
             </div>
+
+            <p class="font-sans tracking-[0.3em] text-white/30 z-10 text-center uppercase text-sm">
+                Crafted for explosion. © 2026 Naomiao77
+            </p>
         </footer>
+    </main>
 
-    </div>
-
-    <!-- ===== SCRIPTS ===== -->
-    <!-- Libraries -->
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
     <script>
-        // Preloader
-        window.addEventListener('load', () => {
-            const preloader = document.getElementById('preloader');
-            preloader.style.opacity = '0';
-            setTimeout(() => {
-                preloader.style.display = 'none';
-                initGSAP(); // Initialize animations after load
-            }, 1000);
+        // ==========================================
+        // Custom Cursor Logic
+        // ==========================================
+        const dot = document.getElementById('cursor-dot');
+        const outline = document.getElementById('cursor-outline');
+
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
+
+            dot.style.left = `${posX}px`;
+            dot.style.top = `${posY}px`;
+
+            // Delay for outline
+            outline.animate({
+                left: `${posX}px`,
+                top: `${posY}px`
+            }, { duration: 100, fill: "forwards" });
         });
 
-        // ===================================================
-        // THREE.JS: Soft Particle Background (Spores/Dust)
-        // ===================================================
-        const initThreeJS = () => {
-            const canvas = document.getElementById('webgl-canvas');
+        // ==========================================
+        // THREE.JS: Aggressive 3D Particle Swirl / Hyperdrive
+        // ==========================================
+        const initThree = () => {
+            const canvas = document.getElementById('gl-canvas');
             const scene = new THREE.Scene();
-            // Fog for depth
-            scene.fog = new THREE.FogExp2(0x1a1818, 0.0015);
+            scene.fog = new THREE.FogExp2(0x050014, 0.002);
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 30;
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
+            camera.position.z = 500;
 
             const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-            // Soft Ambient Light
-            const ambientLight = new THREE.AmbientLight(0xffeedd, 0.4);
-            scene.add(ambientLight);
-
-            // Particles Geometry
-            const particleCount = 600;
+            // Particles
+            const particleCount = 10000;
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
-            const sizes = new Float32Array(particleCount);
-            const phases = new Float32Array(particleCount); // For gentle glowing
+            const colors = new Float32Array(particleCount * 3);
+
+            const colorGlow = new THREE.Color(0xff00aa);
+            const colorNeon = new THREE.Color(0x00fff0);
+            const colorSprout = new THREE.Color(0x39ff14);
 
             for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 100; // x
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 100; // y
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 50 - 10; // z
-                sizes[i] = Math.random() * 2 + 0.5;
-                phases[i] = Math.random() * Math.PI * 2;
+                // Sphere distribution
+                const r = 800 * Math.pow(Math.random(), 1/3); // spread
+                const theta = Math.random() * 2 * Math.PI;
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                positions[i*3+2] = r * Math.cos(phi);
+
+                // Mix colors
+                const randCol = Math.random();
+                let mixedColor = new THREE.Color();
+                if (randCol < 0.33) mixedColor.copy(colorGlow);
+                else if (randCol < 0.66) mixedColor.copy(colorNeon);
+                else mixedColor.copy(colorSprout);
+
+                colors[i*3] = mixedColor.r;
+                colors[i*3+1] = mixedColor.g;
+                colors[i*3+2] = mixedColor.b;
             }
 
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-            geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-            // Custom Shader Material for glowing soft particles
-            const vertexShader = `
-                attribute float size;
-                attribute float phase;
-                varying float vPhase;
-                void main() {
-                    vPhase = phase;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_PointSize = size * (30.0 / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `;
-
-            const fragmentShader = `
-                uniform float time;
-                uniform vec3 color;
-                varying float vPhase;
-                void main() {
-                    float dist = length(gl_PointCoord - vec2(0.5));
-                    if (dist > 0.5) discard;
-
-                    // Soft edge
-                    float alpha = (0.5 - dist) * 2.0;
-
-                    // Gentle pulse based on time and phase
-                    float pulse = sin(time * 0.5 + vPhase) * 0.5 + 0.5;
-                    alpha *= (0.2 + pulse * 0.6); // Base opacity + pulse
-
-                    gl_FragColor = vec4(color, alpha * 0.4);
-                }
-            `;
-
-            const material = new THREE.ShaderMaterial({
-                uniforms: {
-                    time: { value: 0 },
-                    color: { value: new THREE.Color(0xe3b8b8) } // Blush accent color
-                },
-                vertexShader,
-                fragmentShader,
+            const material = new THREE.PointsMaterial({
+                size: 3,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
                 transparent: true,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending
+                opacity: 0.8,
+                sizeAttenuation: true
             });
 
             const particles = new THREE.Points(geometry, material);
             scene.add(particles);
 
-            // Subtle mouse parallax
+            // Interaction
             let mouseX = 0;
             let mouseY = 0;
-            let targetX = 0;
-            let targetY = 0;
-            const windowHalfX = window.innerWidth / 2;
-            const windowHalfY = window.innerHeight / 2;
+            let scrollY = 0;
 
             document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX - windowHalfX) * 0.05;
-                mouseY = (e.clientY - windowHalfY) * 0.05;
+                mouseX = (e.clientX - window.innerWidth / 2) * 2;
+                mouseY = (e.clientY - window.innerHeight / 2) * 2;
             });
 
-            // Scroll interaction: move camera down gently
-            let scrollY = window.scrollY;
             window.addEventListener('scroll', () => {
                 scrollY = window.scrollY;
             });
 
-            const clock = new THREE.Clock();
-
             const animate = () => {
                 requestAnimationFrame(animate);
-                const time = clock.getElapsedTime();
 
-                // Update shader time
-                material.uniforms.time.value = time;
+                // Hyperdrive effect on scroll
+                particles.rotation.y += 0.002 + (Math.abs(scrollY) * 0.00001);
+                particles.rotation.x += 0.001 + (mouseY * 0.00005);
 
-                // Drift particles slowly upwards and sway
-                const positions = particles.geometry.attributes.position.array;
-                for (let i = 0; i < particleCount; i++) {
-                    positions[i * 3 + 1] += 0.02; // Move up
-                    positions[i * 3] += Math.sin(time * 0.5 + positions[i * 3 + 1] * 0.1) * 0.01; // Sway x
-
-                    // Reset if too high
-                    if (positions[i * 3 + 1] > 50) {
-                        positions[i * 3 + 1] = -50;
-                        positions[i * 3] = (Math.random() - 0.5) * 100;
-                    }
-                }
-                particles.geometry.attributes.position.needsUpdate = true;
-
-                // Parallax easing
-                targetX = mouseX * 0.5;
-                targetY = mouseY * 0.5;
-
-                // Add scroll to camera Y
-                const targetCameraY = -scrollY * 0.01 + targetY;
-
-                camera.position.x += (targetX - camera.position.x) * 0.02;
-                camera.position.y += (targetCameraY - camera.position.y) * 0.02;
-
+                // Camera pull based on mouse and scroll
+                camera.position.x += (mouseX * 0.1 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 0.1 - scrollY * 0.5 - camera.position.y) * 0.05;
                 camera.lookAt(scene.position);
 
                 renderer.render(scene, camera);
             };
-
             animate();
 
             window.addEventListener('resize', () => {
@@ -583,155 +541,132 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
         };
+        initThree();
 
-        initThreeJS();
-
-        // ===================================================
-        // P5.JS: Interactive Soft Ripples / Trail
-        // ===================================================
-        let ripples = [];
-        const sketch = (p) => {
+        // ==========================================
+        // P5.JS: Generative Explosive Vines / Trails
+        // ==========================================
+        let paths = [];
+        const p5sketch = (p) => {
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-canvas');
-                p.noStroke();
+                canvas.parent('p5-overlay');
+                p.noFill();
             };
 
             p.draw = () => {
                 p.clear();
 
-                for (let i = ripples.length - 1; i >= 0; i--) {
-                    let r = ripples[i];
-                    r.update();
-                    r.display(p);
-                    if (r.isDead()) {
-                        ripples.splice(i, 1);
+                // Random organic explosions
+                if (p.random(1) < 0.05) {
+                    paths.push(new Path(p.random(p.width), p.random(p.height)));
+                }
+
+                // Mouse trails
+                if (p.mouseX !== p.pmouseX || p.mouseY !== p.pmouseY) {
+                    if (p.frameCount % 3 === 0) {
+                        paths.push(new Path(p.mouseX, p.mouseY));
+                    }
+                }
+
+                for (let i = paths.length - 1; i >= 0; i--) {
+                    paths[i].update();
+                    paths[i].display(p);
+                    if (paths[i].isDead()) {
+                        paths.splice(i, 1);
                     }
                 }
             };
 
-            p.mouseMoved = () => {
-                // Throttle ripple creation
-                if (p.frameCount % 5 === 0) {
-                    ripples.push(new Ripple(p.mouseX, p.mouseY));
+            class Path {
+                constructor(x, y) {
+                    this.pos = p.createVector(x, y);
+                    this.vel = p5.Vector.random2D().mult(p.random(2, 8)); // Explosive speed
+                    this.history = [];
+                    this.life = 255;
+                    this.color = p.random() > 0.5 ? p.color(255, 0, 170) : p.color(57, 255, 20); // Pink or Green
                 }
-            };
+
+                update() {
+                    this.pos.add(this.vel);
+                    // Add slight chaotic steering
+                    this.vel.add(p5.Vector.random2D().mult(0.5));
+
+                    this.history.push(this.pos.copy());
+                    if (this.history.length > 20) {
+                        this.history.shift();
+                    }
+                    this.life -= 5;
+                }
+
+                display(p) {
+                    p.strokeWeight(p.map(this.life, 0, 255, 1, 8));
+                    this.color.setAlpha(this.life);
+                    p.stroke(this.color);
+
+                    p.beginShape();
+                    for (let v of this.history) {
+                        p.vertex(v.x, v.y);
+                    }
+                    p.endShape();
+                }
+
+                isDead() {
+                    return this.life <= 0;
+                }
+            }
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
-
-            class Ripple {
-                constructor(x, y) {
-                    this.x = x;
-                    this.y = y;
-                    this.r = 0;
-                    this.alpha = 150;
-                    // Colors: gentle blush/sage mix
-                    this.c = p.random() > 0.5 ? p.color(227, 184, 184, this.alpha) : p.color(181, 197, 164, this.alpha);
-                    this.speed = p.random(1, 2);
-                }
-
-                update() {
-                    this.r += this.speed;
-                    this.alpha -= 2.5; // Fade out speed
-                    this.c.setAlpha(this.alpha);
-                }
-
-                display(p) {
-                    p.fill(this.c);
-                    p.circle(this.x, this.y, this.r);
-                }
-
-                isDead() {
-                    return this.alpha <= 0;
-                }
-            }
         };
-        new p5(sketch);
+        new p5(p5sketch);
 
-        // ===================================================
-        // GSAP: Scroll Animations
-        // ===================================================
+        // ==========================================
+        // GSAP: Explosive Scroll Animations
+        // ==========================================
         gsap.registerPlugin(ScrollTrigger);
 
-        const initGSAP = () => {
-            // Hero Intro
-            gsap.to(".gsap-hero", {
-                y: 0,
-                opacity: 1,
-                duration: 1.5,
-                ease: "power3.out",
-                delay: 0.2
-            });
-
-            // About Section
-            gsap.to(".gsap-about", {
-                scrollTrigger: {
-                    trigger: "#about",
-                    start: "top 70%",
+        // Grid cards explosion
+        gsap.utils.toArray('.gsap-card').forEach((card, i) => {
+            gsap.fromTo(card,
+                {
+                    y: 100,
+                    scale: 0.8,
+                    rotationY: 15,
+                    opacity: 0
                 },
-                x: 0,
-                opacity: 1,
-                duration: 1.2,
-                stagger: 0.2,
-                ease: "power2.out"
-            });
-
-            // Horizontal Gallery Pinning
-            const galleryTrigger = document.getElementById("gallery-trigger");
-            const galleryContainer = document.getElementById("gallery-container");
-
-            // Calculate how far to translate (container width - viewport width)
-            const getScrollAmount = () => -(galleryContainer.scrollWidth - window.innerWidth);
-
-            const tween = gsap.to(galleryContainer, {
-                x: getScrollAmount,
-                ease: "none"
-            });
-
-            ScrollTrigger.create({
-                trigger: galleryTrigger,
-                start: "top top",
-                end: () => `+=${galleryContainer.scrollWidth - window.innerWidth}`,
-                pin: true,
-                animation: tween,
-                scrub: 1,
-                invalidateOnRefresh: true
-            });
-
-            // Parallax inside horizontal scroll
-            gsap.utils.toArray('.gallery-panel img').forEach((img, i) => {
-                gsap.fromTo(img,
-                    { x: 50 },
-                    {
-                        x: -50,
-                        ease: "none",
-                        scrollTrigger: {
-                            trigger: galleryTrigger, // Use main trigger
-                            start: "top top",
-                            end: () => `+=${galleryContainer.scrollWidth - window.innerWidth}`,
-                            scrub: true,
-                            invalidateOnRefresh: true
-                        }
-                    }
-                );
-            });
-
-            // Masonry fade up
-            gsap.utils.toArray(".gsap-fade-up").forEach(el => {
-                gsap.to(el, {
+                {
                     scrollTrigger: {
-                        trigger: el,
-                        start: "top 85%",
+                        trigger: card,
+                        start: "top 90%",
+                        end: "top 60%",
+                        scrub: 1,
                     },
-                    y: -20,
+                    y: 0,
+                    scale: 1,
+                    rotationY: 0,
                     opacity: 1,
-                    duration: 1,
-                    ease: "power2.out"
-                });
+                    ease: "power4.out"
+                }
+            );
+        });
+
+        // Text fades
+        gsap.utils.toArray('.gsap-fade').forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 80%"
+                },
+                opacity: 0,
+                y: 50,
+                scale: 0.9,
+                duration: 1.5,
+                ease: "elastic.out(1, 0.5)"
             });
-        };
+        });
+
     </script>
 </body>
 </html>
