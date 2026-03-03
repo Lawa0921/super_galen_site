@@ -1061,3 +1061,15 @@ members:
         label: "混沌藝術"
       - id: "imaginative"
         label: "天馬行空"
+
+  - id: "naomiao77"
+    name: "貓青 Naomiao77"
+    avatar: "/assets/img/guild/naomiao77/img_0.webp"
+    page: "/guild/naomiao77.html"
+    tags:
+      - id: "gentle_magic"
+        label: "日常魔法"
+      - id: "illustrator"
+        label: "插畫家"
+      - id: "cat_lover"
+        label: "貓奴"
