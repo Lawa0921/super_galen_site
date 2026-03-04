@@ -268,7 +268,7 @@
     <div id="p5-container"></div>
 
     <!-- Main Content Wrapper -->
-    <main class="relative z-10 w-full min-h-screen overflow-hidden pb-32">
+    <main class="relative z-10 w-full min-h-screen pb-32 book-container">
 
         <!-- Navigation / Top bar -->
         <nav class="fixed top-0 w-full p-6 z-50 flex justify-between items-center pointer-events-none">
@@ -434,15 +434,15 @@
     </main>
 
     <script>
-        // 1. Initialize Lenis for Smooth Scrolling
+        // 1. Initialize Lenis for Smooth Scrolling (Tuned for better feel)
         const lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            duration: 0.8, /* Faster, more responsive */
+            easing: (t) => 1 - Math.pow(1 - t, 4), /* Snappier ease out */
             direction: 'vertical',
             gestureDirection: 'vertical',
             smooth: true,
             smoothTouch: false,
-            touchMultiplier: 2,
+            touchMultiplier: 1.5,
         });
 
         function raf(time) {
@@ -467,45 +467,98 @@
             }
         });
 
-        // Reveal animations for polaroids in Chapter 2 & 3
+        // Reveal animations for polaroids in Chapter 2 & 3 (Pop-up Book Effect)
         const revealElements = document.querySelectorAll('.gs-reveal');
         revealElements.forEach((el, i) => {
+            // Apply a 3D perspective to the parent to make the fold-out look good
+            gsap.set(el.parentElement, { perspective: 1000 });
+            gsap.set(el, { transformOrigin: "bottom center" });
+
             gsap.fromTo(el,
-                { autoAlpha: 0, y: 100, rotationZ: () => Math.random() * 20 - 10 },
                 {
-                    duration: 1.5,
+                    autoAlpha: 0,
+                    rotationX: -80, // Folded down flat
+                    rotationZ: () => Math.random() * 30 - 15,
+                    scale: 0.8,
+                    y: 100
+                },
+                {
+                    duration: 1.8,
                     autoAlpha: 1,
+                    rotationX: 0, // Stand up
+                    scale: 1,
                     y: 0,
-                    rotationZ: el.style.transform.match(/rotate\((.*?)deg\)/) ? el.style.transform.match(/rotate\((.*?)deg\)/)[1] : 0, // Restore original inline rotation
-                    ease: "back.out(1.2)",
+                    rotationZ: el.style.transform.match(/rotate\((.*?)deg\)/) ? el.style.transform.match(/rotate\((.*?)deg\)/)[1] : 0,
+                    ease: "elastic.out(1, 0.6)", // Bouncy pop-up
                     scrollTrigger: {
                         trigger: el,
-                        start: "top 85%",
+                        start: "top 90%",
+                        end: "top 40%",
+                        scrub: 1, // Tie it to scroll for a true interactive book feel
                         toggleActions: "play none none reverse"
                     }
                 }
             );
         });
 
+        // Add a "page turn" or floating effect to chapter titles
+        const sectionTitles = document.querySelectorAll('h2');
+        sectionTitles.forEach((title) => {
+            gsap.from(title, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: title,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
 
-        // 3. SVG Hand-Drawn Cloud Generator (Replaces WebGL for Pop-up Book feel)
+
+        // 3. SVG Hand-Drawn Cloud Generator (Pop-up Book feel)
         const createClouds = () => {
             const backLayer = document.getElementById('cloud-layer-back');
             const frontLayer = document.getElementById('cloud-layer-front');
 
-            // Cloud SVG Path - simple, fluffy, hand-drawn look
-            const cloudSVG = `
-            <svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50 80 C20 80 10 50 30 30 C30 10 70 0 90 20 C110 -10 160 -10 180 20 C200 40 190 80 160 80 Z" fill="#ffffff" />
-            </svg>
+            // Multiple Cloud SVG Paths for variety - more fluffy, hand-drawn look with subtle strokes
+            const cloudSVGs = [
+                // Cloud 1
+                `<svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 85 C20 85 10 55 30 35 C30 15 70 5 90 25 C110 -5 160 -5 180 25 C200 45 190 85 160 85 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`,
+                // Cloud 2
+                `<svg viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M40 90 C10 90 5 60 25 40 C35 20 65 10 85 30 C105 0 155 0 175 30 C195 10 230 40 210 70 C225 90 190 90 170 90 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`
+            ];
+
+            // Character SVG to jump on clouds (Cute Cat / Little Girl representation)
+            const characterSVG = `
+                <svg class="cloud-character" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- A simple cute white cat with minimal lines -->
+                    <path d="M20 50 L30 20 L50 40 L70 20 L80 50 C90 70 80 90 50 90 C20 90 10 70 20 50 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
+                    <!-- Eyes -->
+                    <circle cx="35" cy="60" r="4" fill="#506055"/>
+                    <circle cx="65" cy="60" r="4" fill="#506055"/>
+                    <!-- Blush -->
+                    <circle cx="25" cy="65" r="5" fill="#FFC0CB" opacity="0.6"/>
+                    <circle cx="75" cy="65" r="5" fill="#FFC0CB" opacity="0.6"/>
+                    <!-- Nose/Mouth -->
+                    <path d="M45 65 Q50 70 55 65" stroke="#506055" stroke-width="3" stroke-linecap="round"/>
+                </svg>
             `;
 
             // Function to spawn clouds
-            const spawnClouds = (layer, count, scaleRange, opacity, speedRange, parallaxY) => {
+            const spawnClouds = (layer, count, scaleRange, opacity, speedRange, parallaxY, withCharacters = false) => {
                 for (let i = 0; i < count; i++) {
-                    const cloud = document.createElement('div');
-                    cloud.className = 'svg-cloud';
-                    cloud.innerHTML = cloudSVG;
+                    const cloudWrapper = document.createElement('div');
+                    cloudWrapper.className = 'svg-cloud';
+
+                    // Random cloud type
+                    const cloudType = Math.floor(Math.random() * cloudSVGs.length);
+                    cloudWrapper.innerHTML = cloudSVGs[cloudType];
 
                     // Randomize properties
                     const scale = scaleRange[0] + Math.random() * (scaleRange[1] - scaleRange[0]);
@@ -513,20 +566,33 @@
                     const startY = Math.random() * 100; // 0vh to 100vh
                     const speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
 
-                    cloud.style.width = `${200 * scale}px`;
-                    cloud.style.left = `${startX}vw`;
-                    cloud.style.top = `${startY}vh`;
-                    cloud.style.opacity = opacity;
+                    cloudWrapper.style.width = `${200 * scale}px`;
+                    cloudWrapper.style.left = `${startX}vw`;
+                    cloudWrapper.style.top = `${startY}vh`;
+                    cloudWrapper.style.opacity = opacity;
 
                     // Subtle tint for depth
                     if (layer === backLayer) {
-                        cloud.style.filter = 'drop-shadow(0 10px 15px rgba(0,0,0,0.05)) brightness(0.95)';
+                        cloudWrapper.style.filter = 'drop-shadow(0 15px 25px rgba(0,0,0,0.08)) brightness(0.92)';
+                    } else {
+                        cloudWrapper.style.filter = 'drop-shadow(0 20px 30px rgba(0,0,0,0.1))';
                     }
 
-                    layer.appendChild(cloud);
+                    // Occasionally add a jumping character on front clouds
+                    if (withCharacters && Math.random() > 0.6) {
+                        const charWrapper = document.createElement('div');
+                        charWrapper.innerHTML = characterSVG;
+                        // Randomize character position on the cloud slightly
+                        const charEl = charWrapper.firstElementChild;
+                        charEl.style.left = `${30 + Math.random() * 20}%`;
+                        charEl.style.animationDelay = `${Math.random() * 2}s`;
+                        cloudWrapper.appendChild(charEl);
+                    }
+
+                    layer.appendChild(cloudWrapper);
 
                     // GSAP Animation for drifting
-                    gsap.to(cloud, {
+                    gsap.to(cloudWrapper, {
                         x: `+=${window.innerWidth * speed}`,
                         duration: 100 / speed, // Slower speed = longer duration
                         ease: "none",
@@ -537,7 +603,7 @@
                     });
 
                     // GSAP ScrollTrigger for Parallax Y
-                    gsap.to(cloud, {
+                    gsap.to(cloudWrapper, {
                         yPercent: parallaxY,
                         ease: "none",
                         scrollTrigger: {
@@ -551,10 +617,10 @@
             };
 
             // Back layer (slower, smaller, moving up slightly on scroll)
-            spawnClouds(backLayer, 15, [1.0, 2.0], 0.6, [0.05, 0.1], -20);
+            spawnClouds(backLayer, 18, [1.0, 2.5], 0.7, [0.03, 0.08], -30, false);
 
-            // Front layer (faster, larger, moving up more on scroll)
-            spawnClouds(frontLayer, 10, [2.0, 4.0], 0.9, [0.1, 0.2], -50);
+            // Front layer (faster, larger, moving up more on scroll, some have jumping cats)
+            spawnClouds(frontLayer, 12, [2.0, 4.5], 1.0, [0.08, 0.15], -80, true);
         };
         createClouds();
 
