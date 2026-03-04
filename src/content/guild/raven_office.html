@@ -11,37 +11,33 @@
 
         :root {
             --witch-purple: #9d4edd;
-            --witch-dark: #10002b;
+            --witch-dark: #0a0015;
+            --water-glow: #4cc9f0;
             --alchemy-gold: #ffb703;
-            --magic-cyan: #00f5d4;
-            --crystal-blue: #4cc9f0;
-            --blood-red: #e63946;
         }
 
         body {
             font-family: 'Noto Serif TC', serif;
             background-color: var(--witch-dark);
             color: #f8f9fa;
-            overflow-x: hidden;
             margin: 0;
-            cursor: none;
-            scrollbar-width: none; /* Firefox */
+            overflow-x: hidden;
+            /* The scroll container is large to allow scrolling through states */
+            height: 400vh;
         }
-
-        body::-webkit-scrollbar { display: none; } /* Safari and Chrome */
 
         h1, h2, h3, .magic-font {
             font-family: 'Cinzel Decorative', serif;
         }
 
         /* ------------------
-           CANVAS LAYERS
+           FIXED CANVAS LIBRARIES
            ------------------ */
         #webgl-canvas {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            z-index: -1;
+            z-index: 1; /* Behind UI, but holds the 3D bowl */
             pointer-events: none;
         }
 
@@ -55,362 +51,171 @@
         }
 
         /* ------------------
-           WITCH (MAIN THEME)
+           FIXED UI OVERLAYS
            ------------------ */
+        #ui-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to 3D if needed, but we rely on scroll */
+        }
+
+        /* Common class for the 4 narrative sections that fade in/out */
+        .story-panel {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; /* Hidden by default, GSAP controls this */
+            pointer-events: none;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .story-panel.active {
+            pointer-events: auto; /* Allow clicking links when visible */
+        }
+
+        /* Text Styling */
         .witch-glow {
             text-shadow: 0 0 20px var(--witch-purple), 0 0 40px var(--witch-purple), 0 0 80px #c77dff;
         }
 
-        .witch-card {
-            background: rgba(16, 0, 43, 0.7);
-            border: 2px solid var(--witch-purple);
-            box-shadow: 0 0 30px rgba(157, 78, 221, 0.3), inset 0 0 20px rgba(157, 78, 221, 0.2);
-            backdrop-filter: blur(12px);
-            position: relative;
+        .water-glow {
+            text-shadow: 0 0 15px var(--water-glow);
         }
 
-        .witch-card::before, .witch-card::after {
-            content: '';
-            position: absolute;
-            width: 30px; height: 30px;
-            border: 2px solid var(--alchemy-gold);
-            opacity: 0.8;
-            transition: all 0.5s ease;
-        }
-        .witch-card::before { top: -10px; left: -10px; border-right: none; border-bottom: none; }
-        .witch-card::after { bottom: -10px; right: -10px; border-left: none; border-top: none; }
-        .witch-card:hover::before { top: -15px; left: -15px; width: 40px; height: 40px; box-shadow: -5px -5px 15px var(--alchemy-gold); }
-        .witch-card:hover::after { bottom: -15px; right: -15px; width: 40px; height: 40px; box-shadow: 5px 5px 15px var(--alchemy-gold); }
+        /* Panel specific positioning to avoid the central bowl */
+        #panel-1 { justify-content: flex-start; padding-top: 10vh; }
+        #panel-2 { align-items: flex-start; padding-left: 10vw; justify-content: center; text-align: left; }
+        #panel-3 { align-items: flex-end; padding-right: 10vw; justify-content: center; text-align: right; }
+        #panel-4 { justify-content: flex-end; padding-bottom: 10vh; }
 
-        /* ------------------
-           ALCHEMY (SUB THEME)
-           ------------------ */
-        .alchemy-circle-svg {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 150vw; height: 150vw;
-            max-width: 1200px; max-height: 1200px;
-            pointer-events: none;
-            opacity: 0.15;
-            z-index: 0;
-            animation: rotateAlchemy 60s linear infinite;
-        }
-        @keyframes rotateAlchemy { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-
-        .alchemy-text {
-            color: var(--alchemy-gold);
-            text-shadow: 0 0 10px var(--alchemy-gold);
-            letter-spacing: 0.2em;
+        .glass-card {
+            background: rgba(10, 0, 21, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(157, 78, 221, 0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 600px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(157, 78, 221, 0.1);
         }
 
-        /* ------------------
-           CRYSTALS (SUB THEME)
-           ------------------ */
-        .crystal-border {
-            border-image: linear-gradient(to right, var(--crystal-blue), var(--witch-purple)) 1;
-            box-shadow: 0 0 50px rgba(76, 201, 240, 0.3);
-        }
-        .crystal-frame {
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            transition: clip-path 0.5s ease, filter 0.5s ease;
-        }
-        .crystal-frame:hover {
-            clip-path: polygon(50% -10%, 110% 25%, 110% 75%, 50% 110%, -10% 75%, -10% 25%);
-            filter: drop-shadow(0 0 30px var(--crystal-blue)) brightness(1.2);
+        .scroll-indicator {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.7;
+            animation: pulse 2s infinite;
         }
 
-        /* ------------------
-           GUARDIAN BEASTS (SUB THEME)
-           ------------------ */
-        .guardian-container {
-            perspective: 2000px;
-        }
-        .guardian-card {
-            transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: linear-gradient(135deg, rgba(20, 20, 30, 0.9), rgba(5, 5, 10, 0.95));
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        /* Uriel Light */
-        .uriel-glow { box-shadow: 0 0 60px rgba(255, 183, 3, 0.4), inset 0 0 40px rgba(255, 183, 3, 0.2); border-color: var(--alchemy-gold); }
-        .uriel-text { color: var(--alchemy-gold); text-shadow: 0 0 15px var(--alchemy-gold); }
-
-        /* Mishipeshu Water/Cat */
-        .mishi-glow { box-shadow: 0 0 60px rgba(76, 201, 240, 0.4), inset 0 0 40px rgba(76, 201, 240, 0.2); border-color: var(--crystal-blue); }
-        .mishi-text { color: var(--crystal-blue); text-shadow: 0 0 15px var(--crystal-blue); }
-
-        /* General Utilities */
-        .section-padding { padding: 120px 20px; }
-        .z-content { position: relative; z-index: 10; }
-        .glitch-hover:hover { animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite; }
-
-        @keyframes glitch {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 2px) }
-            40% { transform: translate(-2px, -2px) }
-            60% { transform: translate(2px, 2px) }
-            80% { transform: translate(2px, -2px) }
-            100% { transform: translate(0) }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: translate(-50%, 0); }
+            50% { opacity: 1; transform: translate(-50%, 10px); }
         }
     </style>
 </head>
 <body>
 
-    <!-- WEBGL: Interactive 3D Crystal Formations & Deep Space -->
+    <!-- 3D Environment: The Scrying Bowl -->
     <canvas id="webgl-canvas"></canvas>
 
-    <!-- P5.JS: Intense Magic Spells on Cursor -->
+    <!-- 2D Magic Interactions -->
     <div id="p5-container"></div>
 
-    <!-- MASSIVE SVG ALCHEMY BACKGROUND -->
-    <div class="alchemy-circle-container absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center overflow-hidden z-0">
-    <svg class="alchemy-circle-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="250" cy="250" r="240" fill="none" stroke="var(--alchemy-gold)" stroke-width="2" stroke-dasharray="10 5"/>
-        <circle cx="250" cy="250" r="220" fill="none" stroke="var(--witch-purple)" stroke-width="4"/>
-        <polygon points="250,30 440.5,360 59.5,360" fill="none" stroke="var(--alchemy-gold)" stroke-width="3"/>
-        <polygon points="250,470 59.5,140 440.5,140" fill="none" stroke="var(--alchemy-gold)" stroke-width="3"/>
-        <circle cx="250" cy="250" r="110" fill="none" stroke="var(--magic-cyan)" stroke-width="1"/>
-        <rect x="150" y="150" width="200" height="200" fill="none" stroke="var(--witch-purple)" stroke-width="2" transform="rotate(45 250 250)"/>
-        <!-- Inner Runes -->
-        <text x="250" y="80" fill="var(--alchemy-gold)" font-size="24" text-anchor="middle" font-family="'Cinzel Decorative', serif">🜂</text>
-        <text x="400" y="340" fill="var(--alchemy-gold)" font-size="24" text-anchor="middle" font-family="'Cinzel Decorative', serif">🜄</text>
-        <text x="100" y="340" fill="var(--alchemy-gold)" font-size="24" text-anchor="middle" font-family="'Cinzel Decorative', serif">🜃</text>
-        <text x="250" y="440" fill="var(--alchemy-gold)" font-size="24" text-anchor="middle" font-family="'Cinzel Decorative', serif">🜁</text>
-    </svg>
-    </div>
+    <!-- UI Overlay linked to Scroll Progress -->
+    <div id="ui-container">
 
-    <main class="z-content">
+        <!-- STATE 1: Intro (0% - 25%) -->
+        <div id="panel-1" class="story-panel">
+            <h2 class="text-xl md:text-2xl font-bold mb-2 uppercase tracking-[0.3em] text-purple-400 magic-font">Mystic Witch</h2>
+            <h1 class="text-6xl md:text-8xl font-black mb-4 witch-glow text-white uppercase tracking-wider">Raven</h1>
+            <p class="text-xl md:text-2xl text-purple-200 font-bold tracking-widest mb-8">密契主義的自學女巫師</p>
 
-        <!-- ==========================================
-             HERO: WITCH & ALCHEMY
-             ========================================== -->
-        <section id="hero" class="min-h-screen flex flex-col items-center justify-center relative px-4">
-
-            <div class="avatar-container relative w-64 h-64 md:w-80 md:h-80 mb-12 flex justify-center items-center group">
-                <!-- Massive Glowing Magic Ring Behind Avatar -->
-                <div class="absolute inset-0 rounded-full border-4 border-purple-500 shadow-[0_0_100px_var(--witch-purple)] animate-pulse"></div>
-                <div class="absolute -inset-4 rounded-full border-2 border-dashed border-yellow-500 animate-[spin_10s_linear_infinite]"></div>
-
-                <img src="/assets/raven_office/profile.webp" alt="Raven" class="relative z-10 w-full h-full object-cover rounded-full border-4 border-black group-hover:scale-105 transition-transform duration-500 saturate-150 contrast-125">
+            <div class="flex gap-6 pointer-events-auto">
+                <a href="https://www.threads.com/@raven.office" target="_blank" class="text-3xl text-purple-500 hover:text-white hover:scale-125 transition-all drop-shadow-[0_0_15px_var(--witch-purple)]"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/raven.office/" target="_blank" class="text-3xl text-purple-500 hover:text-white hover:scale-125 transition-all drop-shadow-[0_0_15px_var(--witch-purple)]"><i class="fa-brands fa-instagram"></i></a>
             </div>
+        </div>
 
-            <div class="text-center max-w-4xl">
-                <h2 class="alchemy-text invisible text-xl md:text-3xl font-bold mb-4 uppercase tracking-[0.3em]"><i class="fa-solid fa-moon mr-2"></i> Mystic Witch <i class="fa-solid fa-star ml-2"></i></h2>
-                <h1 class="text-7xl invisible md:text-9xl font-black mb-6 witch-glow text-white uppercase tracking-wider">Raven</h1>
-                <p class="text-2xl invisible md:text-3xl text-purple-300 mb-12 font-bold tracking-widest text-shadow-sm">密契主義的自學女巫師</p>
-
-                <div class="flex justify-center gap-10">
-                    <a href="https://www.threads.com/@raven.office" target="_blank" class="w-16 h-16 rounded-full bg-black border-2 border-purple-500 flex items-center justify-center text-3xl text-purple-400 hover:bg-purple-900 hover:text-white hover:scale-125 hover:shadow-[0_0_30px_var(--witch-purple)] transition-all glitch-hover">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                    <a href="https://www.instagram.com/raven.office/" target="_blank" class="w-16 h-16 rounded-full bg-black border-2 border-purple-500 flex items-center justify-center text-3xl text-purple-400 hover:bg-purple-900 hover:text-white hover:scale-125 hover:shadow-[0_0_30px_var(--witch-purple)] transition-all glitch-hover">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
+        <!-- STATE 2: The Awakening (25% - 50%) -->
+        <div id="panel-2" class="story-panel">
+            <div class="glass-card">
+                <h3 class="text-3xl font-bold mb-6 text-purple-300 magic-font"><i class="fa-solid fa-moon mr-3"></i>The Awakening</h3>
+                <div class="text-gray-300 text-lg leading-loose space-y-4">
+                    <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。</p>
+                    <p>那些難以解釋的相遇，讓我帶著不安長大。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。</p>
+                    <p class="text-purple-400 italic mt-4">"你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。"</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Scroll Indicator -->
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce">
-                <span class="text-xs tracking-widest text-purple-400 mb-2 font-bold">DESCEND</span>
-                <i class="fa-solid fa-chevron-down text-2xl text-purple-500"></i>
-            </div>
-        </section>
-
-        <!-- ==========================================
-             STORY: THE WITCH'S AWAKENING
-             ========================================== -->
-        <section id="story" class="section-padding max-w-7xl mx-auto">
-            <div class="flex flex-col lg:flex-row gap-16 items-center">
-
-                <!-- Heavy Text Grimoire -->
-                <div class="w-full lg:w-1/2 witch-card p-8 md:p-12 z-20">
-                    <h2 class="text-4xl md:text-5xl mb-8 witch-glow font-bold text-white"><i class="fa-solid fa-book-journal-whills mr-4 text-purple-400"></i>The Awakening</h2>
-                    <div class="text-gray-200 text-lg leading-loose space-y-6 font-medium">
-                        <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。那些難以解釋的相遇，讓我帶著不安長大，也讓我開始尋求答案。</p>
-                        <p>我閱讀、查找、試圖理解，卻始終與這身分無法產生共鳴。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。在我幾乎撐不下去的日子裡，祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。</p>
-                        <p>於是我明白，人生只能從有限的選擇去做出決定，也是等待既定的時間軌道到來而啟動。</p>
+        <!-- STATE 3: Guardians (50% - 75%) -->
+        <div id="panel-3" class="story-panel">
+            <div class="glass-card">
+                <h3 class="text-3xl font-bold mb-6 text-[#4cc9f0] magic-font">Spiritual Guardians<i class="fa-solid fa-star ml-3"></i></h3>
+                <div class="space-y-6">
+                    <div class="border-b border-purple-900/50 pb-4">
+                        <div class="text-2xl font-bold text-[#ffb703] mb-2">𝟙 . 大天使 烏列爾</div>
+                        <p class="text-gray-300">合作的天使。帶來神聖的啟示與照亮黑暗的光芒。</p>
                     </div>
-
-                    <div class="mt-8 p-6 bg-black/60 border-l-4 border-purple-500 rounded-r-lg">
-                        <p class="text-purple-300 text-xl font-bold italic leading-relaxed">
-                            "現在，我會用輕鬆甚至有點幽默的方式，分享靈界的日常趣事。不是為了神秘，而是為了讓那些曾經孤單的人知道：你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。"
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Massive Visual Focus -->
-                <div class="w-full lg:w-1/2 relative group perspective-1000">
-                    <div class="absolute inset-0 bg-purple-600 blur-[100px] opacity-30 group-hover:opacity-60 transition-opacity duration-1000"></div>
-                    <img src="/assets/raven_office/altar.webp" alt="Witch Altar" class="w-full h-[600px] object-cover rounded-3xl border-4 border-purple-900 shadow-[0_20px_50px_rgba(0,0,0,0.8)] transform rotate-y-[-10deg] group-hover:rotate-y-[0deg] transition-transform duration-1000 z-10 relative saturate-150">
-                    <!-- Floating Magical Sigils over image -->
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20 mix-blend-screen opacity-50">
-                        <i class="fa-solid fa-star-of-david text-9xl text-yellow-400 animate-[spin_20s_linear_infinite]"></i>
+                    <div>
+                        <div class="text-2xl font-bold text-[#4cc9f0] mb-2">🟚 . Mishipeshu</div>
+                        <p class="text-gray-300">美洲虎守護獸（水下豹）。代表狂野且強大的守護力量。</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- ==========================================
-             GUARDIAN BEASTS: MASSIVE CARDS
-             ========================================== -->
-        <section id="guardians" class="section-padding bg-black/80 border-y-4 border-purple-900 relative overflow-hidden">
-            <!-- Background Magic Runes -->
-            <div class="absolute inset-0 flex flex-wrap justify-between items-center opacity-10 pointer-events-none overflow-hidden text-6xl text-purple-500 font-bold break-all p-10 select-none">
-                ⍋ 🜂 🜄 🜁 🜃 ✧ ☽ ☉ ☿ ♀ ♁ ♂ ♃ ♄ ⍋ 🜂 🜄 🜁 🜃 ✧ ☽ ☉ ☿ ♀ ♁ ♂ ♃ ♄
-            </div>
+        <!-- STATE 4: Services (75% - 100%) -->
+        <div id="panel-4" class="story-panel">
+            <div class="glass-card max-w-4xl w-full text-center">
+                <h3 class="text-4xl font-bold mb-8 text-white magic-font witch-glow">Mystical Services</h3>
 
-            <div class="max-w-7xl mx-auto relative z-10">
-                <div class="text-center mb-20">
-                    <h2 class="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-widest" style="text-shadow: 0 0 40px rgba(255,255,255,0.5);">Spiritual Guardians</h2>
-                    <p class="text-2xl invisible text-gray-400 italic">"有兩位超愛我的守護者，平常他們都會打打鬧鬧。"</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-sm">
+                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
+                        <i class="fa-solid fa-gem text-2xl text-[#4cc9f0] mb-2"></i>
+                        <div class="font-bold text-white mb-1">礦靈媒合</div>
+                        <div class="text-gray-400 text-xs">鑑定與溝通</div>
+                    </div>
+                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
+                        <i class="fa-solid fa-eye text-2xl text-purple-400 mb-2"></i>
+                        <div class="font-bold text-white mb-1">高我連結</div>
+                        <div class="text-gray-400 text-xs">知曉人生方向</div>
+                    </div>
+                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
+                        <i class="fa-solid fa-hourglass-half text-2xl text-yellow-500 mb-2"></i>
+                        <div class="font-bold text-white mb-1">前世解讀</div>
+                        <div class="text-gray-400 text-xs">了解累世經驗</div>
+                    </div>
+                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
+                        <i class="fa-solid fa-fire text-2xl text-red-500 mb-2"></i>
+                        <div class="font-bold text-white mb-1">詛咒移除</div>
+                        <div class="text-gray-400 text-xs">專業能量淨化</div>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 guardian-container">
-
-                    <!-- Guardian 1: Uriel (Gold/Angel) -->
-                    <div class="guardian-card uriel-glow p-12 rounded-3xl group h-full flex flex-col justify-center items-center text-center">
-                        <div class="absolute -top-16 w-32 h-32 bg-black rounded-full border-4 border-[#ffb703] flex items-center justify-center shadow-[0_0_50px_#ffb703] z-20 group-hover:scale-125 transition-transform duration-500">
-                            <i class="fa-solid fa-dove text-5xl text-[#ffb703]"></i>
-                        </div>
-                        <h3 class="uriel-text text-4xl font-black mb-2 mt-8">𝟙 . 號小夥伴</h3>
-                        <div class="text-3xl font-bold text-white mb-8">大天使 烏列爾 (Uriel)</div>
-                        <p class="text-gray-300 text-xl leading-loose font-medium z-10 relative">
-                            合作的天使。<br>帶來神聖的啟示、智慧與照亮黑暗的光芒。
-                        </p>
-                        <!-- Massive Background Icon -->
-                        <i class="fa-solid fa-feather absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] text-[#ffb703] opacity-10 group-hover:opacity-20 transition-opacity"></i>
-                    </div>
-
-                    <!-- Guardian 2: Mishipeshu (Blue/Cat/Water) -->
-                    <div class="guardian-card mishi-glow p-12 rounded-3xl group h-full flex flex-col justify-center items-center text-center mt-16 lg:mt-0">
-                        <div class="absolute -top-16 w-32 h-32 bg-black rounded-full border-4 border-[#4cc9f0] flex items-center justify-center shadow-[0_0_50px_#4cc9f0] z-20 group-hover:scale-125 transition-transform duration-500">
-                            <i class="fa-solid fa-cat text-5xl text-[#4cc9f0]"></i>
-                        </div>
-                        <h3 class="mishi-text text-4xl font-black mb-2 mt-8">🟚 . 號小夥伴</h3>
-                        <div class="text-3xl font-bold text-white mb-8">Mishipeshu</div>
-                        <p class="text-gray-300 text-xl leading-loose font-medium z-10 relative">
-                            美洲虎守護獸。意為「偉大的猞猁」或「水下豹」。<br>代表狂野且強大的守護力量。
-                        </p>
-                        <!-- Massive Background Icon -->
-                        <i class="fa-solid fa-water absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] text-[#4cc9f0] opacity-10 group-hover:opacity-20 transition-opacity"></i>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-
-        <!-- ==========================================
-             SERVICES & CRYSTALS
-             ========================================== -->
-        <section id="services" class="section-padding max-w-7xl mx-auto">
-
-            <div class="text-center mb-20">
-                <h2 class="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-widest alchemy-text">Mystical Services</h2>
-                <div class="text-2xl text-purple-300 font-bold bg-purple-900/30 inline-block px-8 py-4 rounded-full border border-purple-500/50">
+                <div class="text-[#ffb703] text-sm bg-yellow-900/20 py-2 rounded border border-yellow-700/50 inline-block px-4">
                     | ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |
                 </div>
             </div>
+        </div>
 
-            <!-- Massive Crystal Focal Point Service -->
-            <div class="witch-card p-0 flex flex-col lg:flex-row overflow-hidden rounded-3xl mb-12 shadow-[0_0_80px_rgba(76,201,240,0.3)] border-[#4cc9f0]">
-                <div class="w-full lg:w-1/2 relative min-h-[400px] lg:min-h-full">
-                    <img src="/assets/raven_office/crystals.webp" alt="Crystals" class="absolute inset-0 w-full h-full object-cover saturate-200 contrast-125">
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent to-[#10002b] hidden lg:block"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-[#10002b] to-transparent lg:hidden block"></div>
-                    <!-- Overlay Glowing Crystal Icon -->
-                    <i class="fa-solid fa-gem absolute top-8 left-8 text-6xl text-[#4cc9f0] drop-shadow-[0_0_20px_#4cc9f0] animate-pulse"></i>
-                </div>
+    </div>
 
-                <div class="w-full lg:w-1/2 p-10 md:p-16 flex flex-col justify-center relative z-10">
-                    <h3 class="text-4xl font-bold text-white mb-6 text-shadow-sm"><span class="text-[#4cc9f0]">礦靈媒合</span> & 靈界溝通</h3>
-                    <p class="text-gray-300 text-xl leading-relaxed mb-8">
-                        連結離世親人、解讀宿緣對象協調、守護或指導靈溝通。<br>
-                        <strong>專精礦石靈體鑑定與媒合買賣。</strong>
-                    </p>
-                    <div class="bg-black/50 p-6 rounded-xl border border-blue-900 mb-8">
-                        <ul class="text-blue-200 text-lg space-y-3 font-medium">
-                            <li><i class="fa-brands fa-discord mr-3 text-2xl text-blue-400"></i>遠端語音 (Discord / Google Meet)</li>
-                            <li><i class="fa-solid fa-clock mr-3 text-2xl text-blue-400"></i>歷時約一到兩小時內</li>
-                            <li><i class="fa-solid fa-ban mr-3 text-2xl text-red-500"></i>不包含敏感爭議議題</li>
-                        </ul>
-                    </div>
-                    <div class="text-[#ffb703] font-bold text-lg p-4 bg-yellow-900/30 rounded-lg border border-yellow-700">
-                        <i class="fa-solid fa-circle-exclamation mr-2"></i> 預約需先付1000元定金，棄單視同放棄。請提前準備問題。
-                    </div>
-                </div>
-            </div>
-
-            <!-- Other Services Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-
-                <div class="witch-card p-8 rounded-2xl flex flex-col group hover:-translate-y-4 transition-transform duration-300">
-                    <i class="fa-solid fa-eye text-5xl text-purple-400 mb-6 group-hover:text-purple-300 group-hover:scale-125 transition-all drop-shadow-[0_0_15px_var(--witch-purple)]"></i>
-                    <h4 class="text-2xl font-bold text-white mb-4">高我連結溝通</h4>
-                    <p class="text-gray-400 font-medium">遠端語音。與高我溝通，了解自身困境，知曉此生人生大方向。</p>
-                </div>
-
-                <div class="witch-card p-8 rounded-2xl flex flex-col group hover:-translate-y-4 transition-transform duration-300">
-                    <i class="fa-solid fa-hourglass-half text-5xl text-purple-400 mb-6 group-hover:text-purple-300 group-hover:scale-125 transition-all drop-shadow-[0_0_15px_var(--witch-purple)]"></i>
-                    <h4 class="text-2xl font-bold text-white mb-4">前世解讀</h4>
-                    <p class="text-gray-400 font-medium">遠端語音。隨機抓取訊號，解讀最多三世的過去篇章，不指定時間軸。</p>
-                </div>
-
-                <div class="witch-card p-8 rounded-2xl flex flex-col group hover:-translate-y-4 transition-transform duration-300 border-red-900 shadow-[0_0_30px_rgba(230,57,70,0.2)]">
-                    <i class="fa-solid fa-fire text-5xl text-red-500 mb-6 group-hover:text-red-400 group-hover:scale-125 transition-all drop-shadow-[0_0_15px_var(--blood-red)]"></i>
-                    <h4 class="text-2xl font-bold text-white mb-4">詛咒移除</h4>
-                    <p class="text-gray-400 font-medium">需評估詛咒的複雜程度來決定處理方式。專業能量淨化。</p>
-                </div>
-
-                <!-- Alchemy Cards Image Focus -->
-                <div class="relative rounded-2xl overflow-hidden group border-2 border-[#ffb703] hover:-translate-y-4 transition-transform duration-300 shadow-[0_0_30px_rgba(255,183,3,0.2)]">
-                    <img src="/assets/raven_office/cards.webp" alt="Magic Stones" class="absolute inset-0 w-full h-full object-cover saturate-150 contrast-125 group-hover:scale-110 transition-transform duration-700">
-                    <div class="absolute inset-0 bg-black/70 group-hover:bg-black/50 transition-colors"></div>
-                    <div class="relative z-10 p-8 h-full flex flex-col">
-                        <i class="fa-solid fa-wand-magic-sparkles text-5xl text-[#ffb703] mb-6 drop-shadow-[0_0_15px_#ffb703]"></i>
-                        <h4 class="text-2xl font-bold text-white mb-4">物品加持</h4>
-                        <p class="text-gray-300 font-medium mb-4">需接觸實體物品。</p>
-                        <div class="flex flex-wrap gap-2 mt-auto">
-                            <span class="px-2 py-1 bg-yellow-900/50 text-yellow-300 text-xs rounded border border-yellow-500/50">智慧</span>
-                            <span class="px-2 py-1 bg-green-900/50 text-green-300 text-xs rounded border border-green-500/50">健康</span>
-                            <span class="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs rounded border border-blue-500/50">運氣</span>
-                            <span class="px-2 py-1 bg-pink-900/50 text-pink-300 text-xs rounded border border-pink-500/50">魅力</span>
-                            <span class="px-2 py-1 bg-orange-900/50 text-orange-300 text-xs rounded border border-orange-500/50">財富</span>
-                            <span class="px-2 py-1 bg-purple-900/50 text-purple-300 text-xs rounded border border-purple-500/50">防護</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <p class="text-center mt-12 text-xl text-purple-400 font-bold tracking-widest">
-                ... 其他業務請私訊詢問 (∗ ˊωˋ ∗)
-            </p>
-        </section>
-
-        <!-- ==========================================
-             FOOTER
-             ========================================== -->
-        <footer class="py-16 text-center border-t-4 border-purple-900 bg-black relative overflow-hidden">
-            <!-- Background Magic -->
-            <i class="fa-solid fa-moon absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[20rem] text-purple-900/20"></i>
-
-            <div class="relative z-10">
-                <h2 class="text-6xl font-black text-white witch-glow mb-6 uppercase tracking-[0.2em]">Raven Office</h2>
-                <p class="text-xl text-gray-400 tracking-widest mb-10 font-bold">WITCHCRAFT • ALCHEMY • SPIRITUALITY</p>
-                <div class="flex justify-center gap-10">
-                    <a href="https://www.threads.com/@raven.office" target="_blank" class="text-4xl text-purple-600 hover:text-purple-300 hover:scale-150 transition-all hover:drop-shadow-[0_0_20px_var(--witch-purple)]">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                    <a href="https://www.instagram.com/raven.office/" target="_blank" class="text-4xl text-purple-600 hover:text-purple-300 hover:scale-150 transition-all hover:drop-shadow-[0_0_20px_var(--witch-purple)]">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                </div>
-            </div>
-        </footer>
-
-    </main>
+    <div class="scroll-indicator text-purple-400 pointer-events-none">
+        <span class="text-xs tracking-widest font-bold mb-2">GAZE INTO THE WATER</span>
+        <i class="fa-solid fa-chevron-down text-xl"></i>
+    </div>
 
     <!-- Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -418,101 +223,163 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
-    <!-- ==========================================
-         JAVASCRIPT LOGIC
-         ========================================== -->
     <script>
-        // --- THREE.JS: MASSIVE CRYSTALS & DARK VOID ---
+        // ==========================================
+        // THREE.JS: THE SCRYING BOWL
+        // ==========================================
         const canvas = document.getElementById('webgl-canvas');
         const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
 
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x10002b, 0.002);
+        scene.fog = new THREE.FogExp2(0x0a0015, 0.005);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 50;
+        // Camera looks slightly down at the bowl
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 15, 20);
+        camera.lookAt(0, 0, 0);
 
-        // Intense Lights
-        scene.add(new THREE.AmbientLight(0x240046, 2));
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x2a1040, 1);
+        scene.add(ambientLight);
 
-        const purpleLight = new THREE.PointLight(0x9d4edd, 10, 200);
-        purpleLight.position.set(-20, 20, 10);
-        scene.add(purpleLight);
+        const spotLight = new THREE.SpotLight(0x9d4edd, 8);
+        spotLight.position.set(0, 20, 0);
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.5;
+        scene.add(spotLight);
 
-        const goldLight = new THREE.PointLight(0xffb703, 5, 200);
-        goldLight.position.set(20, -20, 20);
-        scene.add(goldLight);
+        // 1. The Cauldron/Bowl
+        const bowlGroup = new THREE.Group();
 
-        const cyanLight = new THREE.PointLight(0x4cc9f0, 8, 200);
-        cyanLight.position.set(0, -30, -10);
-        scene.add(cyanLight);
+        const bowlGeo = new THREE.SphereGeometry(8, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2.2);
+        const bowlMat = new THREE.MeshStandardMaterial({
+            color: 0x111111,
+            metalness: 0.9,
+            roughness: 0.4,
+            side: THREE.DoubleSide
+        });
+        const bowl = new THREE.Mesh(bowlGeo, bowlMat);
+        bowl.rotation.x = Math.PI; // Flip it open-side up
+        bowlGroup.add(bowl);
 
-        // Giant Crystal Formation
-        const crystalGroup = new THREE.Group();
-        const crystalMat = new THREE.MeshPhysicalMaterial({
-            color: 0x3c096c,
-            emissive: 0x10002b,
-            roughness: 0.1,
+        // Bowl Rim
+        const rimGeo = new THREE.TorusGeometry(7.8, 0.4, 16, 64);
+        const rimMat = new THREE.MeshStandardMaterial({
+            color: 0x222222,
             metalness: 0.8,
-            transmission: 0.9,
+            roughness: 0.2
+        });
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.position.y = 3.6;
+        bowl.add(rim);
+
+        scene.add(bowlGroup);
+
+        // 2. The Water Surface (Refractive/Transparent)
+        const waterGeo = new THREE.CylinderGeometry(7.6, 7.6, 0.1, 64, 32);
+        // Perturb water vertices
+        const posAttribute = waterGeo.attributes.position;
+        const vertexData = [];
+        for (let i = 0; i < posAttribute.count; i++) {
+            vertexData.push({
+                x: posAttribute.getX(i),
+                y: posAttribute.getY(i),
+                z: posAttribute.getZ(i),
+                ang: Math.random() * Math.PI * 2,
+                amp: Math.random() * 0.15 + 0.05,
+                speed: Math.random() * 0.02 + 0.01
+            });
+        }
+
+        const waterMat = new THREE.MeshPhysicalMaterial({
+            color: 0x000000,
+            transmission: 0.95, // Glass/Water effect
+            opacity: 1,
+            metalness: 0,
+            roughness: 0.1,
+            ior: 1.33,
             thickness: 2.0,
-            clearcoat: 1.0
+            side: THREE.DoubleSide
+        });
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.position.y = 3.2; // Just below rim
+        bowlGroup.add(water);
+
+        // 3. Image Planes (Visions in the Water)
+        const textureLoader = new THREE.TextureLoader();
+        const visions = [];
+        const imagePaths = [
+            '/assets/raven_office/profile.webp', // State 1
+            '/assets/raven_office/altar.webp',   // State 2
+            '/assets/raven_office/cards.webp',   // State 3
+            '/assets/raven_office/crystals.webp' // State 4
+        ];
+
+        // Group to hold planes so we can rotate them together beneath water
+        const planesGroup = new THREE.Group();
+        planesGroup.position.y = 2.0; // Deep inside the bowl
+        planesGroup.rotation.x = -Math.PI / 2; // Lay flat
+        bowlGroup.add(planesGroup);
+
+        imagePaths.forEach((path, index) => {
+            const tex = textureLoader.load(path);
+            // Circle mask material
+            const planeMat = new THREE.MeshBasicMaterial({
+                map: tex,
+                transparent: true,
+                opacity: index === 0 ? 0.8 : 0, // Only show first initially
+                depthWrite: false
+            });
+            const planeGeo = new THREE.CircleGeometry(6.5, 64);
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            // Push each plane slightly down so they don't z-fight
+            plane.position.z = -index * 0.1;
+            planesGroup.add(plane);
+            visions.push(plane);
         });
 
-        // Add large central crystals
-        for(let i=0; i<15; i++) {
-            const geo = new THREE.ConeGeometry(Math.random()*4 + 2, Math.random()*20 + 10, 6);
-            const mesh = new THREE.Mesh(geo, crystalMat);
-            mesh.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 20 - 20 // Push back slightly
-            );
-            mesh.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
-            );
-            crystalGroup.add(mesh);
-        }
-        scene.add(crystalGroup);
-
-        // Particle Void
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 2000;
+        // Background Particles (Dust/Magic)
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlesCount = 1000;
         const posArray = new Float32Array(particlesCount * 3);
-
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 200;
+        for(let i=0; i<particlesCount*3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 50;
         }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.3,
-            color: 0xc77dff,
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            size: 0.15,
+            color: 0x9d4edd,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.4,
             blending: THREE.AdditiveBlending
         });
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
+        const particles = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particles);
 
-        // Animation Loop
+        // Render Loop
         const clock = new THREE.Clock();
         function animateThree() {
             requestAnimationFrame(animateThree);
-            const elapsedTime = clock.getElapsedTime();
+            const time = clock.getElapsedTime();
 
-            crystalGroup.rotation.y = elapsedTime * 0.05;
-            crystalGroup.rotation.x = Math.sin(elapsedTime * 0.1) * 0.1;
+            // Ripple Water Surface
+            for (let i = 0; i < posAttribute.count; i++) {
+                const data = vertexData[i];
+                // Only ripple Y axis
+                if (Math.abs(data.y) > 0.01) { // Skip center exact point if needed, or just ripple all
+                    const newY = data.y + Math.sin(time * 2 + data.ang) * data.amp;
+                    posAttribute.setY(i, newY);
+                }
+            }
+            posAttribute.needsUpdate = true;
 
-            particlesMesh.rotation.y = elapsedTime * -0.02;
-            particlesMesh.position.y = Math.sin(elapsedTime * 0.2) * 5;
+            // Slow rotation of the bowl contents
+            planesGroup.rotation.z = time * 0.05;
 
-            // Reactive Camera Scroll
-            camera.position.y = -(window.scrollY * 0.05);
+            // Particles drift
+            particles.rotation.y = time * 0.02;
 
             renderer.render(scene, camera);
         }
@@ -524,291 +391,122 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-
-        // --- P5.JS: EXTREME MAGIC CURSOR ---
+        // ==========================================
+        // P5.JS: MAGIC CURSOR
+        // ==========================================
         let sketch = function(p) {
-            let particles = [];
-            let magicCircles = [];
-            let symbols = ['🜂', '🜄', '🜁', '🜃', '✧'];
-
+            let p_particles = [];
             p.setup = function() {
                 let p5canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 p5canvas.parent('p5-container');
                 p.colorMode(p.HSB, 360, 100, 100, 1);
                 p.noStroke();
             };
-
             p.draw = function() {
                 p.clear();
 
-                // Custom Cursor: Massive glowing targeting reticle
-                p.push();
-                p.translate(p.mouseX, p.mouseY);
-                p.rotate(p.frameCount * 0.05);
+                // Cursor ring
                 p.noFill();
+                p.stroke(280, 80, 100, 0.5);
                 p.strokeWeight(2);
-                p.stroke(280, 80, 100, 0.8); // Purple
-                p.circle(0, 0, 40);
-                p.stroke(50, 80, 100, 0.8); // Gold
-                p.circle(0, 0, 20);
-                p.strokeWeight(4);
-                p.point(0, 0);
+                p.circle(p.mouseX, p.mouseY, 30);
+                p.stroke(50, 80, 100, 0.8);
+                p.circle(p.mouseX, p.mouseY, 10);
 
-                // Outer rotating ring
-                p.rotate(-p.frameCount * 0.1);
-                p.stroke(180, 80, 100, 0.6); // Cyan
-                p.strokeWeight(1);
-                p.line(-30, 0, 30, 0);
-                p.line(0, -30, 0, 30);
-                p.pop();
-
-                // Spawn Magic Particles on movement
-                if (p.mouseX !== 0 && p.pmouseX !== 0 && (p.abs(p.mouseX - p.pmouseX) > 2 || p.abs(p.mouseY - p.pmouseY) > 2)) {
-                    for(let i=0; i<3; i++) {
-                        particles.push({
-                            x: p.mouseX + p.random(-10, 10),
-                            y: p.mouseY + p.random(-10, 10),
-                            vx: p.random(-2, 2),
-                            vy: p.random(-2, 2),
-                            life: 255,
-                            size: p.random(10, 30),
-                            hue: p.random([270, 45, 180]), // Purple, Gold, Cyan
-                            isSymbol: p.random() > 0.8,
-                            symbol: p.random(symbols)
-                        });
-                    }
-                }
-
-                // Update and draw particles
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    let pt = particles[i];
-                    pt.x += pt.vx;
-                    pt.y += pt.vy;
-                    pt.life -= 8;
-
-                    if (pt.life <= 0) {
-                        particles.splice(i, 1);
-                    } else {
-                        let alpha = pt.life / 255;
-                        if (pt.isSymbol) {
-                            p.fill(pt.hue, 80, 100, alpha);
-                            p.textSize(pt.size);
-                            p.textAlign(p.CENTER, p.CENTER);
-                            p.text(pt.symbol, pt.x, pt.y);
-                        } else {
-                            p.fill(pt.hue, 80, 100, alpha * 0.6);
-                            p.circle(pt.x, pt.y, pt.size * alpha);
-                            p.fill(pt.hue, 20, 100, alpha); // Bright core
-                            p.circle(pt.x, pt.y, pt.size * 0.3 * alpha);
-                        }
-                    }
-                }
-
-                // Update and draw magic circles (Click effects)
-                for (let i = magicCircles.length - 1; i >= 0; i--) {
-                    let mc = magicCircles[i];
-                    mc.radius += 5;
-                    mc.life -= 10;
-
-                    if (mc.life <= 0) {
-                        magicCircles.splice(i, 1);
-                    } else {
-                        p.noFill();
-                        p.stroke(mc.hue, 80, 100, mc.life / 255);
-                        p.strokeWeight(2);
-                        p.circle(mc.x, mc.y, mc.radius);
-
-                        p.push();
-                        p.translate(mc.x, mc.y);
-                        p.rotate(mc.radius * 0.02);
-                        p.strokeWeight(1);
-                        p.rectMode(p.CENTER);
-                        p.rect(0, 0, mc.radius * 0.7, mc.radius * 0.7);
-                        p.pop();
-                    }
-                }
-            };
-
-            p.mousePressed = function() {
-                // Explosive burst on click
-                magicCircles.push({
-                    x: p.mouseX,
-                    y: p.mouseY,
-                    radius: 10,
-                    life: 255,
-                    hue: p.random([270, 45, 180])
-                });
-
-                for(let i=0; i<20; i++) {
-                    particles.push({
+                if (p.mouseX !== 0 && p.pmouseX !== 0) {
+                    p_particles.push({
                         x: p.mouseX,
                         y: p.mouseY,
-                        vx: p.random(-8, 8),
-                        vy: p.random(-8, 8),
+                        vx: p.random(-1, 1),
+                        vy: p.random(-1, 1),
                         life: 255,
-                        size: p.random(15, 40),
-                        hue: p.random([270, 45, 180]),
-                        isSymbol: p.random() > 0.5,
-                        symbol: p.random(symbols)
+                        size: p.random(5, 15),
+                        hue: p.random([270, 180, 45])
                     });
                 }
-            };
 
+                for (let i = p_particles.length - 1; i >= 0; i--) {
+                    let pt = p_particles[i];
+                    pt.x += pt.vx;
+                    pt.y += pt.vy;
+                    pt.life -= 10;
+                    if (pt.life <= 0) {
+                        p_particles.splice(i, 1);
+                    } else {
+                        let alpha = pt.life / 255;
+                        p.noStroke();
+                        p.fill(pt.hue, 80, 100, alpha * 0.5);
+                        p.circle(pt.x, pt.y, pt.size);
+                    }
+                }
+            };
             p.windowResized = function() {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
         };
         new p5(sketch);
 
-        // --- GSAP: AGGRESSIVE SCROLL ANIMATIONS ---
+        // ==========================================
+        // GSAP: SCROLL SYNC
+        // ==========================================
         gsap.registerPlugin(ScrollTrigger);
 
-        // INITIAL ENTRANCE ANIMATION (Explosive Entrance)
-        gsap.set(["h1.witch-glow", ".alchemy-text", "p.text-purple-300", ".alchemy-circle-container svg", ".avatar-container"], { visibility: "visible" });
+        const panels = document.querySelectorAll('.story-panel');
+        const numStates = 4;
 
-        const tlEntrance = gsap.timeline();
-        tlEntrance.from("h1.witch-glow", {
-            duration: 2,
-            scale: 0.1,
-            rotation: 180,
-            opacity: 0,
-            ease: "elastic.out(1, 0.3)",
-            delay: 0.5
-        })
-        .from(".alchemy-text", {
-            duration: 1,
-            y: -50,
-            opacity: 0,
-            ease: "power3.out"
-        }, "-=1.5")
-        .from("p.text-purple-300", {
-            duration: 1,
-            y: 50,
-            opacity: 0,
-            ease: "power3.out"
-        }, "-=1.5")
-        .from(".alchemy-circle-container svg", {
-            duration: 3,
-            scale: 0,
-            rotation: -360,
-            opacity: 0,
-            ease: "expo.out"
-        }, "-=1.8")
-        .from(".avatar-container", {
-            duration: 1.5,
-            scale: 0,
-            opacity: 0,
-            rotation: 360,
-            ease: "back.out(1.7)"
-        }, "-=2");
+        // Define exact scroll positions where states hit their peak (0, 0.33, 0.66, 1.0)
+        // Since height is 400vh, scroll range is 0 to 300vh.
 
-        // HERO HOVER/MOVE PARALLAX
-        const heroSection = document.getElementById('hero');
-        const alchemyCircle = document.querySelector('.alchemy-circle-container');
-        const avatarImg = document.querySelector('.avatar-container');
+        window.addEventListener('scroll', () => {
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const scrollProgress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
 
-        heroSection.addEventListener('mousemove', (e) => {
-            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
-            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+            // 1. Update HTML UI Visibility
+            panels.forEach((panel, i) => {
+                const stateProgress = i / (numStates - 1); // 0, 0.33, 0.66, 1
+                const distance = Math.abs(scrollProgress - stateProgress);
 
-            gsap.to(alchemyCircle, {
-                rotationY: xAxis,
-                rotationX: yAxis,
-                duration: 0.5,
-                ease: "power1.out"
+                // Visibility window
+                if (distance < 0.2) {
+                    const opacity = 1 - (distance / 0.2); // Fade out at edges
+                    panel.style.opacity = opacity;
+                    panel.classList.add('active');
+                } else {
+                    panel.style.opacity = 0;
+                    panel.classList.remove('active');
+                }
             });
 
-            gsap.to(avatarImg, {
-                x: -xAxis * 2,
-                y: -yAxis * 2,
-                duration: 0.5,
-                ease: "power1.out"
+            // 2. Update 3D Water Visions
+            visions.forEach((visionPlane, i) => {
+                const stateProgress = i / (numStates - 1);
+                const distance = Math.abs(scrollProgress - stateProgress);
+
+                if (distance < 0.2) {
+                    const opacity = 1 - (distance / 0.2);
+                    visionPlane.material.opacity = opacity * 0.8; // Max 0.8 opacity
+                } else {
+                    visionPlane.material.opacity = 0;
+                }
             });
+
+            // 3. Camera Parallax based on scroll (move slightly down and rotate)
+            camera.position.z = 20 - (scrollProgress * 5); // Zoom in slightly
+            camera.position.y = 15 - (scrollProgress * 3); // Lower angle
+            camera.lookAt(0, 0, 0);
+
+            // Hide scroll indicator if scrolled past 10%
+            const indicator = document.querySelector('.scroll-indicator');
+            if (scrollProgress > 0.1) {
+                indicator.style.display = 'none';
+            } else {
+                indicator.style.display = 'flex';
+                indicator.style.opacity = 1 - (scrollProgress * 10);
+            }
         });
 
-        heroSection.addEventListener('mouseleave', () => {
-            gsap.to([alchemyCircle, avatarImg], {
-                rotationY: 0,
-                rotationX: 0,
-                x: 0,
-                y: 0,
-                duration: 1,
-                ease: "power3.out"
-            });
-        });
-
-
-        // Hero Parallax Elements (Scroll)
-        gsap.to("#hero img", {
-            scrollTrigger: {
-                trigger: "#hero",
-                start: "top top",
-                end: "bottom top",
-                scrub: 1
-            },
-            y: 100,
-            scale: 1.2,
-            ease: "none"
-        });
-
-        // 3D Card Flips for Guardians
-        gsap.utils.toArray(".guardian-card").forEach((card, i) => {
-            // Card tilt effect on hover
-            card.addEventListener("mousemove", (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = ((y - centerY) / centerY) * -15;
-                const rotateY = ((x - centerX) / centerX) * 15;
-
-                gsap.to(card, {
-                    rotationX: rotateX,
-                    rotationY: rotateY,
-                    transformPerspective: 1000,
-                    ease: "power1.out",
-                    duration: 0.4
-                });
-            });
-
-            card.addEventListener("mouseleave", () => {
-                gsap.to(card, {
-                    rotationX: 0,
-                    rotationY: 0,
-                    ease: "power3.out",
-                    duration: 0.6
-                });
-            });
-
-            // Scroll trigger
-            gsap.from(card, {
-                scrollTrigger: {
-                    trigger: "#guardians",
-                    start: "top 70%",
-                },
-                rotationY: i % 2 === 0 ? -90 : 90,
-                opacity: 0,
-                duration: 1.5,
-                ease: "back.out(1.5)",
-                delay: i * 0.3
-            });
-        });
-
-        // Massive slide-up for Story & Services
-        gsap.utils.toArray(".witch-card").forEach(el => {
-            gsap.from(el, {
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 85%",
-                },
-                y: 150,
-                opacity: 0,
-                scale: 0.9,
-                duration: 1.2,
-                ease: "power4.out"
-            });
-        });
+        // Trigger initial state
+        window.dispatchEvent(new Event('scroll'));
 
     </script>
 </body>
