@@ -429,6 +429,54 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
   <script>
+    // Create a circular texture for particles programmatically
+    function createCircleTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(32, 32, 30, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    // Create a softer smoke texture
+    function createSmokeTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(0.4, 'rgba(255,255,255,0.8)');
+        gradient.addColorStop(0.8, 'rgba(255,255,255,0.2)');
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 128, 128);
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    // Global objects to modify via ScrollTrigger
+    const ThreeSceneState = {
+      progress: 0,
+      fogColor: new THREE.Color(0xE8D3A2), // Sand light
+      nightFogColor: new THREE.Color(0x1C2331), // Desert night
+      dirLightColor: new THREE.Color(0xE2725B), // Sunset orange
+      nightDirLightColor: new THREE.Color(0x2E472D), // Oasis moonlight/greenish
+      ambientColor: new THREE.Color(0xffffff),
+      nightAmbientColor: new THREE.Color(0x222233),
+      sandColor: new THREE.Color(0xD4B872),
+      nightSandColor: new THREE.Color(0x1C2331)
+    };
+
+    let dirLight, ambientLight, terrain, sandstorm, smokeParticles, sceneFog;
+
     // ==========================================
     // Three.js: Desert Dunes & Sandstorm
     // ==========================================
@@ -437,7 +485,9 @@
       const scene = new THREE.Scene();
 
       // Warm desert fog
-      scene.fog = new THREE.FogExp2(0xE8D3A2, 0.015);
+      sceneFog = new THREE.FogExp2(ThreeSceneState.fogColor.getHex(), 0.015);
+      scene.fog = sceneFog;
+      scene.background = sceneFog.color;
 
       const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
       camera.position.set(0, 10, 40);
@@ -449,15 +499,15 @@
       container.appendChild(renderer.domElement);
 
       // Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      ambientLight = new THREE.AmbientLight(ThreeSceneState.ambientColor.getHex(), 0.6);
       scene.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0xE2725B, 1.2); // Sunset orange
+      dirLight = new THREE.DirectionalLight(ThreeSceneState.dirLightColor.getHex(), 1.2);
       dirLight.position.set(100, 50, -50);
       scene.add(dirLight);
 
       // Desert Terrain (Dunes)
-      const planeGeo = new THREE.PlaneGeometry(200, 200, 64, 64);
+      const planeGeo = new THREE.PlaneGeometry(200, 200, 128, 128);
       planeGeo.rotateX(-Math.PI / 2);
 
       // Modify vertices to create dunes
@@ -465,46 +515,81 @@
       for (let i = 0; i < positions.count; i++) {
         const x = positions.getX(i);
         const z = positions.getZ(i);
-        // Simple procedural noise for dunes
+        // More complex procedural noise for better dunes
         const y = Math.sin(x * 0.1) * Math.cos(z * 0.1) * 3 +
-                  Math.sin(x * 0.03 + z * 0.05) * 5;
+                  Math.sin(x * 0.03 + z * 0.05) * 5 +
+                  Math.sin(x * 0.2 + z * 0.1) * 1.5;
         positions.setY(i, y);
       }
       planeGeo.computeVertexNormals();
 
       const sandMat = new THREE.MeshStandardMaterial({
-        color: 0xD4B872,
+        color: ThreeSceneState.sandColor.getHex(),
         roughness: 0.9,
         metalness: 0.1,
         flatShading: true
       });
 
-      const terrain = new THREE.Mesh(planeGeo, sandMat);
+      terrain = new THREE.Mesh(planeGeo, sandMat);
       terrain.position.y = -10;
       scene.add(terrain);
 
-      // Sandstorm Particles
+      // Fine Sandstorm Particles (Circular)
+      const circleTex = createCircleTexture();
       const particleGeo = new THREE.BufferGeometry();
-      const particleCount = 2000;
+      const particleCount = 6000; // More particles for finer look
       const posArray = new Float32Array(particleCount * 3);
 
       for(let i = 0; i < particleCount * 3; i+=3) {
         posArray[i] = (Math.random() - 0.5) * 200; // x
-        posArray[i+1] = Math.random() * 40 - 10;   // y
+        posArray[i+1] = Math.random() * 50 - 5;   // y
         posArray[i+2] = (Math.random() - 0.5) * 200; // z
       }
 
       particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
       const particleMat = new THREE.PointsMaterial({
-        size: 0.4,
+        size: 0.15, // Smaller particles
         color: 0xE8D3A2,
+        map: circleTex,
+        alphaTest: 0.1,
         transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending
+        opacity: 0.7,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
       });
 
-      const sandstorm = new THREE.Points(particleGeo, particleMat);
+      sandstorm = new THREE.Points(particleGeo, particleMat);
       scene.add(sandstorm);
+
+      // Smoke / Dust Fog Particles
+      const smokeGeo = new THREE.BufferGeometry();
+      const smokeCount = 100;
+      const smokePosArray = new Float32Array(smokeCount * 3);
+      const smokeSizeArray = new Float32Array(smokeCount);
+
+      for(let i = 0; i < smokeCount; i++) {
+        smokePosArray[i*3] = (Math.random() - 0.5) * 200;
+        smokePosArray[i*3+1] = Math.random() * 20;
+        smokePosArray[i*3+2] = (Math.random() - 0.5) * 100;
+        smokeSizeArray[i] = Math.random() * 20 + 10;
+      }
+      smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePosArray, 3));
+      smokeGeo.setAttribute('size', new THREE.BufferAttribute(smokeSizeArray, 1));
+
+      // Use a basic points material with size attenuation for smoke
+      const smokeMat = new THREE.PointsMaterial({
+        size: 25,
+        map: createSmokeTexture(),
+        transparent: true,
+        opacity: 0.15,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        color: 0xE8D3A2
+      });
+
+      smokeParticles = new THREE.Points(smokeGeo, smokeMat);
+      scene.add(smokeParticles);
+
 
       // Distant Oasis Light
       const oasisLight = new THREE.PointLight(0x4A5D23, 2, 100);
@@ -525,23 +610,60 @@
         requestAnimationFrame(animate);
         time += 0.005;
 
+        // Apply Scroll Progression (Transition to Night Oasis)
+        const p = ThreeSceneState.progress;
+
+        // Interpolate colors
+        sceneFog.color.lerpColors(ThreeSceneState.fogColor, ThreeSceneState.nightFogColor, p);
+        scene.background = sceneFog.color;
+
+        dirLight.color.lerpColors(ThreeSceneState.dirLightColor, ThreeSceneState.nightDirLightColor, p);
+        ambientLight.color.lerpColors(ThreeSceneState.ambientColor, ThreeSceneState.nightAmbientColor, p);
+
+        terrain.material.color.lerpColors(ThreeSceneState.sandColor, ThreeSceneState.nightSandColor, p);
+
+        // Slow down wind at night
+        const windSpeed = (1 - p * 0.8) * 0.5 + 0.1;
+
         // Move terrain slightly to simulate walking/flying
-        terrain.position.z = (time * 10) % 20;
+        terrain.position.z = (time * 15) % 20;
 
         // Sandstorm wind effect
         const pPositions = sandstorm.geometry.attributes.position.array;
         for(let i = 0; i < particleCount * 3; i+=3) {
-          pPositions[i] -= 0.5; // Wind blowing left
+          pPositions[i] -= windSpeed; // Wind blowing left
           if(pPositions[i] < -100) {
             pPositions[i] = 100;
-            pPositions[i+1] = Math.random() * 40 - 10;
+            pPositions[i+1] = Math.random() * 50 - 5;
           }
         }
         sandstorm.geometry.attributes.position.needsUpdate = true;
+        // Fade out sandstorm at night
+        sandstorm.material.opacity = (1 - p * 0.8) * 0.7;
 
-        // Camera Parallax
+
+        // Smoke effect
+        const sPositions = smokeParticles.geometry.attributes.position.array;
+        for(let i = 0; i < smokeCount * 3; i+=3) {
+            sPositions[i] -= windSpeed * 0.5;
+            sPositions[i+1] += Math.sin(time * 2 + i) * 0.02; // drifting up/down
+            if(sPositions[i] < -100) {
+                sPositions[i] = 100;
+            }
+        }
+        smokeParticles.geometry.attributes.position.needsUpdate = true;
+        smokeParticles.material.opacity = (1 - p * 0.5) * 0.15;
+
+
+        // Camera Parallax & Movement based on scroll
+        // Move camera deeper into the scene as we scroll
+        const baseZ = 40 - p * 20;
+        const baseY = 10 - p * 5;
+
         camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
-        camera.position.y += (10 + mouseY * 2 - camera.position.y) * 0.05;
+        camera.position.y += (baseY + mouseY * 2 - camera.position.y) * 0.05;
+        camera.position.z += (baseZ - camera.position.z) * 0.05;
+
         camera.lookAt(0, 0, 0);
 
         renderer.render(scene, camera);
@@ -561,6 +683,7 @@
     // ==========================================
     const sketch = (p) => {
       let particles = [];
+      let clickBursts = [];
 
       p.setup = () => {
         let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -571,51 +694,110 @@
       p.draw = () => {
         p.clear();
 
-        // Add wind particles based on mouse movement
-        if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
-          if (p.frameCount % 2 === 0) {
-            particles.push({
-              x: p.mouseX,
-              y: p.mouseY,
-              vx: p.random(1, 4), // Blow right
-              vy: p.random(-1, 1),
-              life: 255,
-              size: p.random(2, 6)
-            });
+        // Add wind particles based on mouse movement (More dynamic)
+        const mouseSpeed = p.dist(p.pmouseX, p.pmouseY, p.mouseX, p.mouseY);
+
+        if (mouseSpeed > 1) {
+          let count = p.floor(p.map(mouseSpeed, 1, 50, 1, 5));
+          for(let i=0; i<count; i++) {
+              particles.push({
+                x: p.mouseX + p.random(-10, 10),
+                y: p.mouseY + p.random(-10, 10),
+                vx: (p.mouseX - p.pmouseX) * p.random(0.1, 0.3) + p.random(1, 4), // Follow mouse dir + base wind
+                vy: (p.mouseY - p.pmouseY) * p.random(0.1, 0.3) + p.random(-1, 1),
+                life: 255,
+                maxLife: p.random(100, 255),
+                size: p.random(2, 8),
+                color: p.random([
+                  [255, 255, 255],
+                  [232, 211, 162], // Sand light
+                  [226, 114, 91]   // Sunset glow
+                ])
+              });
           }
         }
 
         // Add random ambient wind particles
-        if(p.random(1) < 0.1) {
+        if(p.random(1) < 0.2) {
           particles.push({
-            x: -10,
+            x: -20,
             y: p.random(p.height),
-            vx: p.random(2, 6),
-            vy: p.random(-0.5, 0.5),
+            vx: p.random(3, 8),
+            vy: p.random(-1, 1),
             life: 255,
-            size: p.random(1, 3)
+            maxLife: 255,
+            size: p.random(1, 4),
+            color: [255, 255, 255]
           });
         }
 
-        // Update and draw
+        // Update and draw trails
         for (let i = particles.length - 1; i >= 0; i--) {
           let pt = particles[i];
 
-          // Noise turbulence
-          let n = p.noise(pt.x * 0.01, pt.y * 0.01, p.frameCount * 0.01);
-          pt.vy += p.map(n, 0, 1, -0.1, 0.1);
+          // Noise turbulence for organic movement
+          let n = p.noise(pt.x * 0.005, pt.y * 0.005, p.frameCount * 0.01);
+          let angle = p.map(n, 0, 1, -p.PI, p.PI);
+
+          pt.vx += p.cos(angle) * 0.1;
+          pt.vy += p.sin(angle) * 0.1;
 
           pt.x += pt.vx;
           pt.y += pt.vy;
-          pt.life -= 1.5;
+          pt.life -= 2;
 
-          p.fill(255, 255, 255, pt.life * 0.5); // Soft white wind
+          let alpha = p.map(pt.life, 0, pt.maxLife, 0, 1);
+          p.fill(pt.color[0], pt.color[1], pt.color[2], alpha * 150);
           p.ellipse(pt.x, pt.y, pt.size);
 
-          if (pt.life <= 0 || pt.x > p.width) {
+          if (pt.life <= 0 || pt.x > p.width || pt.y < 0 || pt.y > p.height) {
             particles.splice(i, 1);
           }
         }
+
+        // Update and draw click bursts (Sound waves)
+        for (let i = clickBursts.length - 1; i >= 0; i--) {
+            let b = clickBursts[i];
+            b.radius += b.speed;
+            b.life -= 5;
+
+            p.noFill();
+            p.stroke(226, 114, 91, b.life); // Sunset color
+            p.strokeWeight(b.life / 50);
+            p.ellipse(b.x, b.y, b.radius * 2);
+            p.noStroke();
+
+            if (b.life <= 0) {
+                clickBursts.splice(i, 1);
+            }
+        }
+      };
+
+      p.mousePressed = () => {
+          // Create sound wave burst
+          clickBursts.push({
+              x: p.mouseX,
+              y: p.mouseY,
+              radius: 10,
+              speed: 4,
+              life: 255
+          });
+
+          // Explode particles
+          for(let i=0; i<20; i++) {
+              let angle = p.random(p.TWO_PI);
+              let speed = p.random(2, 8);
+              particles.push({
+                x: p.mouseX,
+                y: p.mouseY,
+                vx: p.cos(angle) * speed,
+                vy: p.sin(angle) * speed,
+                life: 255,
+                maxLife: 255,
+                size: p.random(3, 10),
+                color: [255, 255, 255]
+              });
+          }
       };
 
       p.windowResized = () => {
@@ -654,11 +836,12 @@
         "-=1.5"
       );
 
-      // Horizontal Scroll Section Pinning
+      // Horizontal Scroll Section Pinning & Scene Transition
       const scrollContainer = document.querySelector('.horizontal-scroll-container');
       const panels = gsap.utils.toArray('.panel');
+      const overlay = document.querySelector('.desert-overlay');
 
-      gsap.to(panels, {
+      const horizontalTween = gsap.to(panels, {
         xPercent: -100 * (panels.length - 1),
         ease: "none",
         scrollTrigger: {
@@ -671,7 +854,21 @@
             delay: 0.1,
             ease: "power1.inOut"
           },
-          end: () => "+=" + scrollContainer.offsetWidth
+          end: () => "+=" + (scrollContainer.offsetWidth * 1.5), // Make the scroll longer/more noticeable
+          onUpdate: (self) => {
+            // Update global state for Three.js render loop
+            ThreeSceneState.progress = self.progress;
+
+            // Also fade the HTML overlay gradient to match the night theme
+            if(self.progress > 0.5) {
+                const darkProgress = (self.progress - 0.5) * 2; // 0 to 1 in second half
+                overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(28, 35, 49, ${0.6 + darkProgress * 0.3}) 100%)`;
+                document.body.style.backgroundColor = `rgba(232, 211, 162, ${1 - darkProgress})`;
+            } else {
+                overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(232, 211, 162, 0.6) 100%)`;
+                document.body.style.backgroundColor = `var(--sand-light)`;
+            }
+          }
         }
       });
 
@@ -684,8 +881,8 @@
             opacity: 0,
             scrollTrigger: {
               trigger: panel,
-              containerAnimation: gsap.getById("horizontal-scroll"),
-              start: "left center",
+              containerAnimation: horizontalTween,
+              start: "left 70%",
               toggleActions: "play none none reverse"
             }
           });
