@@ -591,10 +591,65 @@
       scene.add(smokeParticles);
 
 
+
       // Distant Oasis Light
       const oasisLight = new THREE.PointLight(0x4A5D23, 2, 100);
       oasisLight.position.set(-40, 5, -80);
       scene.add(oasisLight);
+
+      // --- NEW: Oasis Visuals (Glowing Crystals / Plant representations) ---
+      const oasisGroup = new THREE.Group();
+      oasisGroup.position.set(0, -10, -150); // Positioned deep in the scene
+      scene.add(oasisGroup);
+
+      // Water Surface
+      const waterGeo = new THREE.PlaneGeometry(80, 80);
+      waterGeo.rotateX(-Math.PI / 2);
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0, // Starts invisible
+        roughness: 0.1,
+        metalness: 0.8
+      });
+      const water = new THREE.Mesh(waterGeo, waterMat);
+      water.position.y = 1;
+      oasisGroup.add(water);
+
+      // Glowing Oasis Crystals/Trees
+      const crystalMats = new THREE.MeshStandardMaterial({
+        color: 0x2E472D,
+        emissive: 0x4A5D23,
+        emissiveIntensity: 0, // Starts dark
+        transparent: true,
+        opacity: 0.9,
+        roughness: 0.2
+      });
+
+      const crystals = [];
+      for(let i=0; i<15; i++) {
+        const h = Math.random() * 15 + 5;
+        const geo = new THREE.CylinderGeometry(0, Math.random() * 2 + 1, h, 6);
+        const mesh = new THREE.Mesh(geo, crystalMats);
+        mesh.position.x = (Math.random() - 0.5) * 60;
+        mesh.position.z = (Math.random() - 0.5) * 60;
+        mesh.position.y = h/2;
+
+        // Tilt slightly
+        mesh.rotation.x = (Math.random() - 0.5) * 0.2;
+        mesh.rotation.z = (Math.random() - 0.5) * 0.2;
+
+        oasisGroup.add(mesh);
+        crystals.push(mesh);
+      }
+
+      const oasisParticles = new THREE.Points(smokeGeo, new THREE.PointsMaterial({
+         size: 10, color: 0x86efac, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      oasisParticles.position.copy(oasisGroup.position);
+      scene.add(oasisParticles);
+      // --- END Oasis Visuals ---
+
 
       // Mouse Parallax
       let mouseX = 0;
@@ -620,13 +675,32 @@
         dirLight.color.lerpColors(ThreeSceneState.dirLightColor, ThreeSceneState.nightDirLightColor, p);
         ambientLight.color.lerpColors(ThreeSceneState.ambientColor, ThreeSceneState.nightAmbientColor, p);
 
+
         terrain.material.color.lerpColors(ThreeSceneState.sandColor, ThreeSceneState.nightSandColor, p);
 
+        // --- NEW: Fade in Oasis ---
+        // As scroll progress increases, make water and crystals visible
+        const oasisVisibility = Math.max(0, (p - 0.5) * 2); // 0 to 1 in second half of scroll
+        water.material.opacity = oasisVisibility * 0.8;
+        crystalMats.emissiveIntensity = oasisVisibility * 1.5;
+        oasisParticles.material.opacity = oasisVisibility * 0.6;
+
+        // Animate water
+        water.position.y = 1 + Math.sin(time * 3) * 0.5;
+
+        // Move oasis group towards camera based on scroll, instead of static position
+        // This gives the feeling of arriving at the oasis
+        oasisGroup.position.z = -150 + (p * 130);
+        oasisParticles.position.z = oasisGroup.position.z;
+        oasisParticles.rotation.y = time * 0.2;
+        // --- END Oasis Animation ---
+
         // Slow down wind at night
+
         const windSpeed = (1 - p * 0.8) * 0.5 + 0.1;
 
         // Move terrain slightly to simulate walking/flying
-        terrain.position.z = (time * 15) % 20;
+        terrain.position.z = (time * 5); // Smooth continuous scroll instead of jumping
 
         // Sandstorm wind effect
         const pPositions = sandstorm.geometry.attributes.position.array;
@@ -848,14 +922,13 @@
           trigger: ".horizontal-scroll-wrapper",
           pin: true,
           scrub: 1,
-          snap: {
-            snapTo: 1 / (panels.length - 1),
-            duration: {min: 0.2, max: 0.5},
+          // snap removed for smoother scrolling
+
             delay: 0.1,
             ease: "power1.inOut"
           },
           end: () => "+=" + (scrollContainer.offsetWidth * 1.5), // Make the scroll longer/more noticeable
-          onUpdate: (self) => {
+                    onUpdate: (self) => {
             // Update global state for Three.js render loop
             ThreeSceneState.progress = self.progress;
 
@@ -863,7 +936,11 @@
             if(self.progress > 0.5) {
                 const darkProgress = (self.progress - 0.5) * 2; // 0 to 1 in second half
                 overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(28, 35, 49, ${0.6 + darkProgress * 0.3}) 100%)`;
-                document.body.style.backgroundColor = `rgba(232, 211, 162, ${1 - darkProgress})`;
+                // Linearly interpolate the background color manually to avoid strings
+                const r = Math.round(232 - (232-28)*darkProgress);
+                const g = Math.round(211 - (211-35)*darkProgress);
+                const b = Math.round(162 - (162-49)*darkProgress);
+                document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
             } else {
                 overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(232, 211, 162, 0.6) 100%)`;
                 document.body.style.backgroundColor = `var(--sand-light)`;
