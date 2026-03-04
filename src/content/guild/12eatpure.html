@@ -1,490 +1,518 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>綠食飯桌 12eatpure | 綠色友善餐盒</title>
-    <meta name="description" content="讓餐盒成爲永續的起點。衛生局七級質地示範店家，2023經濟部優選餐盒獎，AMOT三星朔源餐廳。高雄最健康的健康餐盒。">
-
-    <!-- Tailwind CSS -->
+    <title>綠食飯桌 - 12eatpure | 永續的起點</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            green: '#2ecc71',
-                            dark: '#0a1910',
-                            leaf: '#1e3d28',
-                            earth: '#8b5a2b',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['"Noto Sans TC"', 'sans-serif'],
-                        display: ['"Noto Serif TC"', 'serif'],
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
         :root {
-            --neon-green: #39ff14;
-            --dark-bg: #030a06;
+            --neon-green: #00ff88;
+            --neon-cyan: #00e5ff;
+            --earth-blue: #0a192f;
+            --forest-dark: #05140b;
+            --bento-bg: rgba(5, 20, 11, 0.6);
+            --bento-border: rgba(0, 255, 136, 0.3);
         }
 
-        body {
-            background-color: var(--dark-bg);
-            color: #ffffff;
-            overflow-x: hidden;
-            font-family: 'Noto Sans TC', sans-serif;
+        body, html {
             margin: 0;
             padding: 0;
-            cursor: crosshair;
+            width: 100%;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--forest-dark);
+            color: #e2e8f0;
+            overflow-x: hidden;
         }
 
-        /* Hide scrollbar for seamless effect */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--dark-bg); }
-        ::-webkit-scrollbar-thumb { background: #1e3d28; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #2ecc71; }
-
-        /* Unified Canvas Container */
-        #canvas-container {
+        /* 3D Canvas Context */
+        #webgl-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: -1;
+            z-index: 0;
             pointer-events: none; /* Let clicks pass through to content */
         }
 
-        #webgl-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
         #p5-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: auto; /* Allow p5 to capture mouse for interactive trails */
-            mix-blend-mode: screen; /* Blend p5 explosive effects over Three.js */
-        }
-
-        #p5-container canvas {
-            display: block;
-            outline: none;
-        }
-
-        /* Overlay to darken background for readability */
-        .bg-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: radial-gradient(circle at center, transparent 0%, rgba(3, 10, 6, 0.8) 100%);
-            z-index: -1;
+            z-index: 1;
+            pointer-events: none;
+            mix-blend-mode: screen;
         }
 
-        /* Content Wrapper */
-        .content-wrapper {
+        .content-layer {
             position: relative;
             z-index: 10;
-            pointer-events: none; /* Let mouse through to p5 where no content exists */
-        }
-
-        /* Make actual content block pointer events */
-        .interactive-content {
-            pointer-events: auto;
-        }
-
-        /* Navigation Back Button */
-        .nav-back {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
-            pointer-events: auto;
-            color: white;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(0,0,0,0.5);
-            padding: 8px 16px;
-            border-radius: 30px;
-            border: 1px solid rgba(46, 204, 113, 0.3);
-            backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .nav-back:hover {
-            background: rgba(46, 204, 113, 0.2);
-            border-color: #2ecc71;
-            box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
-        }
-
-        /* Glassmorphism Cards */
-        .glass-card {
-            background: rgba(10, 25, 16, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(46, 204, 113, 0.2);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(46, 204, 113, 0.05);
-            overflow: hidden;
-            position: relative;
-        }
-
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(46, 204, 113, 0.5), transparent);
         }
 
         /* Typography */
-        h1, h2, h3, .font-display {
-            font-family: 'Noto Serif TC', serif;
+        h1, h2, h3, .cyber-font {
+            font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        /* Glitch Text Effect */
-        .glitch-text {
+        .text-glow {
+            text-shadow: 0 0 10px var(--neon-green), 0 0 20px rgba(0,255,136,0.5);
+        }
+
+        /* Bento Grid Layout */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .bento-item {
+            background: var(--bento-bg);
+            border: 1px solid var(--bento-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             position: relative;
-            display: inline-block;
-            color: #fff;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
 
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
+        .bento-item::before {
+            content: '';
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+            opacity: 0.5;
+        }
+
+        .bento-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.2);
+            border-color: var(--neon-green);
+        }
+
+        /* Grid Placements */
+        .hero-bento { grid-column: span 12; display: flex; align-items: center; justify-content: center; min-height: 80vh; background: transparent; border: none; box-shadow: none; backdrop-filter: none;}
+        .profile-bento { grid-column: span 12; display: flex; flex-direction: column; align-items: center; text-align: center; }
+
+        @media (min-width: 768px) {
+            .profile-bento { grid-column: span 4; grid-row: span 2; }
+            .bio-bento { grid-column: span 8; }
+            .awards-bento { grid-column: span 4; }
+            .food-img-1 { grid-column: span 4; }
+            .stats-bento { grid-column: span 8; }
+            .menu-bento { grid-column: span 12; }
+            .gallery-bento { grid-column: span 12; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1rem; background: transparent; border: none; box-shadow: none;}
+        }
+
+        /* Image Styling */
+        .cyber-img {
             width: 100%;
             height: 100%;
-            opacity: 0.8;
-        }
-
-        .glitch-text::before {
-            left: 2px;
-            text-shadow: -2px 0 #2ecc71;
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim 5s infinite linear alternate-reverse;
-        }
-
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -2px 0 var(--neon-green);
-            clip: rect(44px, 450px, 56px, 0);
-            animation: glitch-anim2 5s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim {
-            0% { clip: rect(78px, 9999px, 86px, 0); }
-            5% { clip: rect(23px, 9999px, 80px, 0); }
-            10% { clip: rect(62px, 9999px, 12px, 0); }
-            15% { clip: rect(10px, 9999px, 22px, 0); }
-            20% { clip: rect(98px, 9999px, 85px, 0); }
-            25% { clip: rect(42px, 9999px, 15px, 0); }
-            30% { clip: rect(7px, 9999px, 44px, 0); }
-            35% { clip: rect(32px, 9999px, 96px, 0); }
-            40% { clip: rect(65px, 9999px, 34px, 0); }
-            45% { clip: rect(93px, 9999px, 5px, 0); }
-            50% { clip: rect(15px, 9999px, 63px, 0); }
-            55% { clip: rect(51px, 9999px, 82px, 0); }
-            60% { clip: rect(89px, 9999px, 25px, 0); }
-            65% { clip: rect(3px, 9999px, 11px, 0); }
-            70% { clip: rect(47px, 9999px, 78px, 0); }
-            75% { clip: rect(21px, 9999px, 93px, 0); }
-            80% { clip: rect(84px, 9999px, 40px, 0); }
-            85% { clip: rect(56px, 9999px, 55px, 0); }
-            90% { clip: rect(19px, 9999px, 89px, 0); }
-            95% { clip: rect(72px, 9999px, 38px, 0); }
-            100% { clip: rect(38px, 9999px, 6px, 0); }
-        }
-        @keyframes glitch-anim2 {
-            0% { clip: rect(12px, 9999px, 99px, 0); }
-            5% { clip: rect(85px, 9999px, 42px, 0); }
-            10% { clip: rect(34px, 9999px, 7px, 0); }
-            15% { clip: rect(67px, 9999px, 88px, 0); }
-            20% { clip: rect(21px, 9999px, 53px, 0); }
-            25% { clip: rect(93px, 9999px, 19px, 0); }
-            30% { clip: rect(45px, 9999px, 71px, 0); }
-            35% { clip: rect(8px, 9999px, 36px, 0); }
-            40% { clip: rect(59px, 9999px, 95px, 0); }
-            45% { clip: rect(27px, 9999px, 14px, 0); }
-            50% { clip: rect(74px, 9999px, 80px, 0); }
-            55% { clip: rect(16px, 9999px, 49px, 0); }
-            60% { clip: rect(81px, 9999px, 62px, 0); }
-            65% { clip: rect(39px, 9999px, 2px, 0); }
-            70% { clip: rect(96px, 9999px, 33px, 0); }
-            75% { clip: rect(5px, 9999px, 86px, 0); }
-            80% { clip: rect(63px, 9999px, 17px, 0); }
-            85% { clip: rect(22px, 9999px, 75px, 0); }
-            90% { clip: rect(88px, 9999px, 43px, 0); }
-            95% { clip: rect(41px, 9999px, 91px, 0); }
-            100% { clip: rect(10px, 9999px, 58px, 0); }
-        }
-
-        /* Image Masking */
-        .leaf-mask {
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            object-fit: cover;
+            border-radius: 12px;
+            filter: grayscale(20%) contrast(1.2);
             transition: all 0.5s ease;
         }
 
-        .leaf-mask:hover {
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-            transform: scale(1.05);
+        .cyber-img:hover {
+            filter: grayscale(0%) contrast(1.1) drop-shadow(0 0 15px rgba(0,255,136,0.6));
+            transform: scale(1.02);
         }
+
+        .avatar-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--neon-green), var(--neon-cyan));
+            animation: rotate-gradient 5s linear infinite;
+        }
+
+        @keyframes rotate-gradient {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--forest-dark);
+            animation: rotate-back 5s linear infinite; /* Counter-rotate to keep image upright */
+        }
+
+        @keyframes rotate-back {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+
+        /* Badges & Tags */
+        .cyber-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            font-size: 0.85rem;
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .cyber-badge:hover {
+            background: var(--neon-green);
+            color: var(--forest-dark);
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+
+        /* Scroll Progress */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--neon-green);
+            z-index: 100;
+            width: 0%;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* Decorative UI Elements */
+        .corner-bracket {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+        }
+        .cb-tl { top: 10px; left: 10px; border-top-color: var(--neon-green); border-left-color: var(--neon-green); }
+        .cb-tr { top: 10px; right: 10px; border-top-color: var(--neon-cyan); border-right-color: var(--neon-cyan); }
+        .cb-bl { bottom: 10px; left: 10px; border-bottom-color: var(--neon-cyan); border-left-color: var(--neon-cyan); }
+        .cb-br { bottom: 10px; right: 10px; border-bottom-color: var(--neon-green); border-right-color: var(--neon-green); }
 
     </style>
 </head>
 <body>
 
-    <!-- Nav -->
-    <a href="/guild" class="nav-back">
-        <i class="fa-solid fa-arrow-left"></i> 返回公會
-    </a>
+    <div class="progress-bar" id="progressBar"></div>
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
 
-    <!-- Background Layers -->
-    <div class="bg-overlay"></div>
-    <div id="canvas-container">
-        <canvas id="webgl-canvas"></canvas>
-        <div id="p5-container"></div>
-    </div>
+    <main class="content-layer">
+        <div class="bento-grid">
 
-    <!-- Main Content -->
-    <main class="content-wrapper">
-
-        <!-- Hero Section -->
-        <section class="h-screen flex flex-col justify-center items-center text-center px-4 relative">
-            <div class="interactive-content text-center max-w-4xl hero-content">
-                <div class="mb-8 relative inline-block">
-                    <div class="w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-brand-green shadow-[0_0_30px_rgba(46,204,113,0.6)]">
-                        <img src="/assets/img/guild/12eatpure/avatar.webp" alt="綠食飯桌" class="w-full h-full object-cover">
-                    </div>
-                </div>
-                <h1 class="text-6xl md:text-8xl font-black mb-4 tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-brand-green to-teal-400 font-display">
-                    <span class="glitch-text" data-text="綠食飯桌">綠食飯桌</span>
-                </h1>
-                <h2 class="text-2xl md:text-3xl font-light text-gray-300 mb-8 tracking-widest">
-                    讓餐盒成爲永續的起點
-                </h2>
-
-                <div class="flex flex-wrap justify-center gap-4 mt-8">
-                    <div class="glass-card px-6 py-3 text-brand-green font-bold"><i class="fa-solid fa-award mr-2"></i>衛生局 七級 質地示範店家</div>
-                    <div class="glass-card px-6 py-3 text-brand-green font-bold"><i class="fa-solid fa-leaf mr-2"></i>2026 綠色餐飲評鑑指南推薦餐廳</div>
-                    <div class="glass-card px-6 py-3 text-brand-green font-bold"><i class="fa-solid fa-star mr-2"></i>AMOT 三星朔源餐廳</div>
-                </div>
-            </div>
-
-            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce text-brand-green opacity-70">
-                <i class="fa-solid fa-chevron-down text-3xl"></i>
-            </div>
-        </section>
-
-        <!-- Manifesto / Concept Section -->
-        <section class="py-24 px-4 min-h-screen flex items-center">
-            <div class="container mx-auto max-w-6xl interactive-content">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-                    <div class="concept-text space-y-8">
-                        <h2 class="text-4xl md:text-5xl font-bold text-white mb-6 border-l-4 border-brand-green pl-4">
-                            循環永續 <span class="text-brand-green block text-xl mt-2 font-normal tracking-widest">ECO-FRIENDLY CIRCULATION</span>
-                        </h2>
-                        <div class="glass-card p-8 text-lg leading-relaxed text-gray-200">
-                            <p class="mb-4">無論是常態性使用的 <span class="text-brand-green font-bold">PP餐盒</span>，還是 <span class="text-brand-green font-bold">不鏽鋼316餐盒</span>，我們都會告知訂購的業者，讓他們去選擇。</p>
-                            <p class="mb-4"><i class="fa-solid fa-box-open text-brand-green mr-2"></i><strong class="text-white">想要帶走：</strong> 可以選擇重複使用的PP餐盒。</p>
-                            <p><i class="fa-solid fa-recycle text-brand-green mr-2"></i><strong class="text-white">想要更美觀精緻：</strong> 由我們回收清洗，可以選擇我們的不鏽鋼餐盒哦。</p>
-                        </div>
-                        <div class="flex gap-4 pt-4">
-                            <img src="/assets/img/guild/12eatpure/img1.webp" alt="餐盒展示1" class="w-1/2 rounded-xl object-cover h-48 shadow-lg hover:scale-105 transition duration-300">
-                            <img src="/assets/img/guild/12eatpure/img2.webp" alt="餐盒展示2" class="w-1/2 rounded-xl object-cover h-48 shadow-lg hover:scale-105 transition duration-300">
-                        </div>
-                    </div>
-                    <div class="concept-image relative h-[600px]">
-                        <!-- Large decorative image -->
-                        <div class="absolute inset-0 leaf-mask">
-                            <img src="/assets/img/guild/12eatpure/img6.webp" alt="健康食材" class="w-full h-full object-cover">
-                        </div>
-                        <div class="absolute -bottom-10 -left-10 glass-card p-6 w-64 rotate-[-5deg]">
-                            <h3 class="text-xl font-bold text-brand-green mb-2">客製化服務</h3>
-                            <p class="text-sm text-gray-300">無論您想要清淡的健康餐，或者需要點醬汁的健康餐，我們都可以量身訂做屬於你們行號的餐盒。</p>
-                        </div>
+            <!-- Hero Title -->
+            <div class="hero-bento g-elem">
+                <div class="text-center">
+                    <h1 class="text-6xl md:text-8xl font-black mb-4 text-glow">綠食飯桌</h1>
+                    <p class="text-xl md:text-2xl cyber-font tracking-widest text-emerald-300">Sustainable Eco Bento</p>
+                    <div class="mt-8 flex justify-center gap-4">
+                        <span class="cyber-badge"><i class="fa-solid fa-earth-americas mr-2"></i>地球循環</span>
+                        <span class="cyber-badge"><i class="fa-solid fa-leaf mr-2"></i>自然環保</span>
+                        <span class="cyber-badge"><i class="fa-solid fa-box mr-2"></i>友善餐盒</span>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Menu Highlights Section -->
-        <section class="py-24 px-4 bg-gradient-to-b from-transparent to-[#051109]">
-            <div class="container mx-auto max-w-7xl interactive-content">
-                <div class="text-center mb-16 menu-title">
-                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-4">高雄最健康的健康餐盒</h2>
-                    <p class="text-xl text-brand-green tracking-widest">衛生局營養師認證標準 • 吃的安心</p>
+            <!-- Profile Info -->
+            <div class="bento-item profile-bento g-elem">
+                <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/12eatpure/avatar.webp" alt="12eatpure" class="avatar-img" onerror="this.src='https://ui-avatars.com/api/?name=12eatpure&background=00ff88&color=05140b'">
                 </div>
+                <h2 class="text-2xl font-bold mb-2 text-emerald-400">12eatpure</h2>
+                <p class="text-sm text-gray-400 mb-6">衛生局 七級 質地示範店家</p>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- Menu Item 1 -->
-                    <div class="glass-card menu-card group cursor-pointer hover:-translate-y-2 transition duration-300">
-                        <div class="h-48 overflow-hidden">
-                            <img src="/assets/img/guild/12eatpure/img3.webp" alt="舒肥香草雞胸" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-2xl font-bold text-white mb-2 group-hover:text-brand-green transition">舒肥香草雞胸</h3>
-                            <p class="text-gray-300 text-sm">軟嫩不乾柴，份量超大滿足感。+$15可換黑米，內用外帶都方便。</p>
-                        </div>
-                    </div>
-
-                    <!-- Menu Item 2 -->
-                    <div class="glass-card menu-card group cursor-pointer hover:-translate-y-2 transition duration-300">
-                        <div class="h-48 overflow-hidden">
-                            <img src="/assets/img/guild/12eatpure/img4.webp" alt="爐烤梅花豬" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-2xl font-bold text-white mb-2 group-hover:text-brand-green transition">爐烤梅花豬</h3>
-                            <p class="text-gray-300 text-sm">肉質嫩滑多汁，香氣十足！完全不油膩，簡單調味就很好吃。</p>
-                        </div>
-                    </div>
-
-                    <!-- Menu Item 3 -->
-                    <div class="glass-card menu-card group cursor-pointer hover:-translate-y-2 transition duration-300">
-                        <div class="h-48 overflow-hidden">
-                            <img src="/assets/img/guild/12eatpure/img5.webp" alt="舒肥鮭魚" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-2xl font-bold text-white mb-2 group-hover:text-brand-green transition">舒肥鮭魚 & 海陸雙拼</h3>
-                            <p class="text-gray-300 text-sm">舒肥過後肉質更嫩，入口即化。海陸雙拼一次雙重滿足，配菜種類豐富。</p>
-                        </div>
-                    </div>
+                <div class="flex flex-wrap justify-center gap-2 mb-6">
+                    <a href="https://www.instagram.com/12eatpure/" target="_blank" class="cyber-badge"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.net/@12eatpure" target="_blank" class="cyber-badge"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://page.line.me/871pbbhl" target="_blank" class="cyber-badge"><i class="fa-brands fa-line"></i></a>
                 </div>
+                <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+            </div>
 
-                <div class="mt-16 text-center quality-tags">
-                    <div class="inline-flex flex-wrap justify-center gap-4">
-                        <span class="px-4 py-2 border border-brand-green text-brand-green rounded-full text-sm"><i class="fa-solid fa-check mr-2"></i>使用西班牙添德瑞橄欖油</span>
-                        <span class="px-4 py-2 border border-brand-green text-brand-green rounded-full text-sm"><i class="fa-solid fa-ban mr-2"></i>無味精 / 無調味粉</span>
-                        <span class="px-4 py-2 border border-brand-green text-brand-green rounded-full text-sm"><i class="fa-solid fa-droplet mr-2"></i>低溫烘烤時蔬</span>
+            <!-- Intro / Bio -->
+            <div class="bento-item bio-bento g-elem">
+                <div class="corner-bracket cb-tl"></div>
+                <h3 class="text-xl text-emerald-400 mb-4 border-b border-emerald-800 pb-2"><i class="fa-solid fa-seedling mr-2"></i>讓餐盒成爲永續的起點</h3>
+                <p class="text-gray-300 leading-relaxed mb-4 text-lg">
+                    常態性使用的PP餐盒，還是不鏽鋼316餐盒，都會告知訂購的業者讓他們去選擇。<br>
+                    想要帶走，可以選擇重複使用的PP餐盒；<br>
+                    想要由我們回收清洗跟更美觀、精緻，可以選擇我們的不鏽鋼餐盒哦。
+                </p>
+                <div class="p-4 bg-emerald-900/30 rounded-lg border border-emerald-500/30">
+                    <p class="text-emerald-200 font-bold"><i class="fa-solid fa-recycle mr-2"></i> 循環再利用及均衡飲食</p>
+                    <p class="text-sm text-gray-400 mt-2">無論您想要清淡的健康餐，或者是想不用到這麼健康、需要點醬汁的健康餐，我們都可以量身訂做屬於你們行號的餐盒。</p>
+                </div>
+                <div class="corner-bracket cb-br"></div>
+            </div>
+
+            <!-- Awards / Certification -->
+            <div class="bento-item awards-bento g-elem">
+                <h3 class="text-xl text-emerald-400 mb-4 border-b border-emerald-800 pb-2"><i class="fa-solid fa-award mr-2"></i>榮譽與認證</h3>
+                <ul class="space-y-3 text-gray-300">
+                    <li class="flex items-start"><i class="fa-solid fa-check text-neon-green mt-1 mr-3"></i><span>2023 經濟部 優選餐盒獎</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-check text-neon-green mt-1 mr-3"></i><span>2026 綠色餐飲評鑑指南推薦餐廳</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-check text-neon-green mt-1 mr-3"></i><span>2025 綠色餐飲評鑑入圍資源循環再利用及均衡飲食獎</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-check text-neon-green mt-1 mr-3"></i><span>AMOT 三星朔源餐廳</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-user-md text-neon-green mt-1 mr-3"></i><span class="text-neon-cyan font-bold">衛生局營養師認證標準</span></li>
+                </ul>
+            </div>
+
+            <!-- Feature Highlight -->
+            <div class="bento-item stats-bento g-elem">
+                <h3 class="text-xl text-emerald-400 mb-4 border-b border-emerald-800 pb-2"><i class="fa-solid fa-utensils mr-2"></i>高雄最健康的健康餐盒</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-gray-300 leading-relaxed">
+                            餐點現點現做，建議先打電話/LINE訂購喔。到現場購買都要稍後10-15分。<br><br>
+                            歡迎團體訂購客製化餐點：月訂購 / 周訂購 / 異業合作 / 循環餐盒。<br>餐點口味及內容皆可商量調整。
+                        </p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-black/40 p-3 rounded border border-emerald-500/20 flex items-center">
+                            <i class="fa-solid fa-droplet text-yellow-500 text-2xl mr-4"></i>
+                            <div>
+                                <h4 class="text-emerald-300 font-bold">使用西班牙添德瑞橄欖油</h4>
+                                <p class="text-xs text-gray-400">高級健康油脂吃的安心，無味精、調味粉、水煮</p>
+                            </div>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded border border-emerald-500/20 flex items-center">
+                            <i class="fa-solid fa-box-open text-emerald-500 text-2xl mr-4"></i>
+                            <div>
+                                <h4 class="text-emerald-300 font-bold">環保循環餐盒</h4>
+                                <p class="text-xs text-gray-400">使用可重複利用塑膠餐盒，也有不鏽鋼循環餐盒</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Footer / Contact Section -->
-        <footer class="py-20 px-4 relative border-t border-[rgba(46,204,113,0.2)]">
-            <div class="container mx-auto max-w-4xl text-center interactive-content footer-content">
-                <h2 class="text-3xl font-bold text-white mb-6">歡迎團體訂購客製化餐點</h2>
-                <p class="text-gray-300 mb-8">月訂購 / 周訂購 / 異業合作 / 循環餐盒<br>餐點現點現做，建議先打電話或 LINE 訂購喔！</p>
-
-                <div class="flex justify-center gap-6 mb-12">
-                    <a href="https://www.threads.net/@12eatpure" target="_blank" class="w-14 h-14 rounded-full bg-[rgba(10,25,16,0.8)] border border-brand-green flex items-center justify-center text-2xl text-white hover:bg-brand-green hover:text-black transition duration-300 shadow-[0_0_15px_rgba(46,204,113,0.3)]">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                    <a href="https://www.instagram.com/12eatpure/" target="_blank" class="w-14 h-14 rounded-full bg-[rgba(10,25,16,0.8)] border border-brand-green flex items-center justify-center text-2xl text-white hover:bg-brand-green hover:text-black transition duration-300 shadow-[0_0_15px_rgba(46,204,113,0.3)]">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                    <a href="https://page.line.me/871pbbhl" target="_blank" class="w-14 h-14 rounded-full bg-[rgba(10,25,16,0.8)] border border-brand-green flex items-center justify-center text-2xl text-white hover:bg-[#00B900] hover:border-[#00B900] hover:text-white transition duration-300 shadow-[0_0_15px_rgba(46,204,113,0.3)]">
-                        <i class="fa-brands fa-line"></i>
-                    </a>
-                </div>
-
-                <p class="text-sm text-gray-500">© 2024 綠食飯桌 12eatpure. All Rights Reserved.</p>
+            <!-- Food Image Slot -->
+            <div class="bento-item p-0 overflow-hidden food-img-1 g-elem" style="min-height: 300px;">
+                <img src="/assets/img/guild/12eatpure/img1.webp" alt="Food" class="cyber-img">
             </div>
+
+            <!-- Menu Signatures -->
+            <div class="bento-item menu-bento g-elem">
+                <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+                <h3 class="text-2xl text-center text-emerald-400 mb-8 cyber-font">Signature Menu</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-emerald-950/40 p-6 rounded-xl border border-emerald-800/50 hover:border-emerald-400 transition-colors">
+                        <h4 class="text-xl font-bold text-white mb-2">舒肥香草雞胸 / 雞腿</h4>
+                        <p class="text-sm text-gray-400">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米，內用外帶都方便。</p>
+                    </div>
+                    <div class="bg-emerald-950/40 p-6 rounded-xl border border-emerald-800/50 hover:border-emerald-400 transition-colors">
+                        <h4 class="text-xl font-bold text-white mb-2">爐烤梅花豬</h4>
+                        <p class="text-sm text-gray-400">肉質嫩滑多汁，香氣十足！完全不油膩，簡單調味就很好吃。</p>
+                    </div>
+                    <div class="bg-emerald-950/40 p-6 rounded-xl border border-emerald-800/50 hover:border-emerald-400 transition-colors">
+                        <h4 class="text-xl font-bold text-white mb-2">舒肥鮭魚 / 烤鱸魚</h4>
+                        <p class="text-sm text-gray-400">舒肥過後肉質更嫩，入口即化。蒔蘿烤鱸魚外酥內嫩多汁，輕微煙燻香。</p>
+                    </div>
+                </div>
+                <div class="mt-6 text-center text-emerald-200">
+                    <p><i class="fa-solid fa-mug-hot mr-2"></i> 飲品推：特調鮮奶茶 / 蜂蜜檸檬，濃郁口感不會過甜，真材實料</p>
+                </div>
+                <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+            </div>
+
+            <!-- Image Gallery Grid -->
+            <div class="gallery-bento">
+                <div class="bento-item p-0 overflow-hidden g-elem" style="height: 250px;">
+                    <img src="/assets/img/guild/12eatpure/img2.webp" alt="Gallery" class="cyber-img">
+                </div>
+                <div class="bento-item p-0 overflow-hidden g-elem" style="height: 250px;">
+                    <img src="/assets/img/guild/12eatpure/img3.webp" alt="Gallery" class="cyber-img">
+                </div>
+                <div class="bento-item p-0 overflow-hidden g-elem" style="height: 250px;">
+                    <img src="/assets/img/guild/12eatpure/img4.webp" alt="Gallery" class="cyber-img">
+                </div>
+                <div class="bento-item p-0 overflow-hidden g-elem" style="height: 250px;">
+                    <img src="/assets/img/guild/12eatpure/img5.webp" alt="Gallery" class="cyber-img">
+                </div>
+                <div class="bento-item p-0 overflow-hidden g-elem md:col-span-2 md:col-start-2" style="height: 300px;">
+                    <img src="/assets/img/guild/12eatpure/img6.webp" alt="Gallery" class="cyber-img">
+                </div>
+            </div>
+
+        </div>
+
+        <footer class="text-center py-10 text-emerald-700 border-t border-emerald-900/50 mt-10">
+            <p>12eatpure &copy; 2024 - 綠食飯桌. Earth Circulation & Eco Bento.</p>
         </footer>
-
     </main>
 
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
     <script>
-        // ==========================================
-        // Three.js Logic: 3D Earth / Circulation Seed
-        // ==========================================
+        // --- 1. GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Progress bar
+        gsap.to("#progressBar", {
+            width: "100%",
+            ease: "none",
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.3
+            }
+        });
+
+        // Bento item reveals
+        gsap.utils.toArray('.g-elem').forEach((elem, i) => {
+            gsap.fromTo(elem,
+                { y: 50, opacity: 0, scale: 0.95 },
+                {
+                    y: 0,
+                    opacity: 1,
+                    scale: 1,
+                    duration: 0.8,
+                    ease: "back.out(1.2)",
+                    scrollTrigger: {
+                        trigger: elem,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        // --- 2. Three.js: Earth Circulation & Nature ---
         const initThreeJS = () => {
-            const canvas = document.querySelector('#webgl-canvas');
+            const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
+            // Fog to blend into background
+            scene.fog = new THREE.FogExp2(0x05140b, 0.002);
 
-            // Camera Setup
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 15;
-
-            // Renderer Setup
-            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
 
-            // Core Object: The Earth/Seed
-            const coreGeometry = new THREE.IcosahedronGeometry(5, 2);
-            const coreMaterial = new THREE.MeshBasicMaterial({
-                color: 0x0a1910,
+            // Group for all rotating elements
+            const earthGroup = new THREE.Group();
+            scene.add(earthGroup);
+
+            // 1. The Earth (Holographic Wireframe Sphere)
+            const earthGeo = new THREE.IcosahedronGeometry(4, 4);
+            const earthMat = new THREE.MeshBasicMaterial({
+                color: 0x002211,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.2
+                opacity: 0.15
             });
-            const coreMesh = new THREE.Mesh(coreGeometry, coreMaterial);
-            scene.add(coreMesh);
+            const earth = new THREE.Mesh(earthGeo, earthMat);
+            earthGroup.add(earth);
 
-            // Circulation Particles (Lines around the core)
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 3000;
-            const posArray = new Float32Array(particlesCount * 3);
-            const colorArray = new Float32Array(particlesCount * 3);
+            // Inner solid earth for depth
+            const innerGeo = new THREE.SphereGeometry(3.9, 32, 32);
+            const innerMat = new THREE.MeshPhongMaterial({
+                color: 0x020a05,
+                emissive: 0x001105,
+                shininess: 10
+            });
+            const innerEarth = new THREE.Mesh(innerGeo, innerMat);
+            earthGroup.add(innerEarth);
 
-            for(let i = 0; i < particlesCount * 3; i+=3) {
-                // Spherical distribution
-                const r = 5.2 + Math.random() * 2;
-                const theta = Math.random() * 2 * Math.PI;
-                const phi = Math.acos(2 * Math.random() - 1);
+            // 2. Circulation Rings (Eco orbits)
+            const createRing = (radius, tube, color, speedX, speedY) => {
+                const geo = new THREE.TorusGeometry(radius, tube, 16, 100);
+                const mat = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.4,
+                    blending: THREE.AdditiveBlending
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.userData = { speedX, speedY };
+                return mesh;
+            };
 
-                posArray[i] = r * Math.sin(phi) * Math.cos(theta);
-                posArray[i+1] = r * Math.sin(phi) * Math.sin(theta);
-                posArray[i+2] = r * Math.cos(phi);
+            const ring1 = createRing(5.5, 0.02, 0x00ff88, 0.005, 0.002);
+            const ring2 = createRing(6.5, 0.01, 0x00e5ff, -0.003, 0.004);
+            const ring3 = createRing(7.5, 0.05, 0x228b22, 0.002, -0.001); // Thicker, darker green
 
-                // Colors: Shades of green and earth
-                colorArray[i] = 0.18 + Math.random() * 0.2; // R
-                colorArray[i+1] = 0.8 + Math.random() * 0.2; // G (Dominant Green)
-                colorArray[i+2] = 0.44 + Math.random() * 0.2; // B
+            earthGroup.add(ring1);
+            earthGroup.add(ring2);
+            earthGroup.add(ring3);
+
+            // 3. Floating Digital Leaves (Nature element)
+            const leafGeo = new THREE.BufferGeometry();
+            const leafCount = 300;
+            const posArray = new Float32Array(leafCount * 3);
+            for(let i=0; i<leafCount*3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 30; // Spread wide
             }
+            leafGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-
-            const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.05,
-                vertexColors: true,
+            // Custom texture for leaf (simple circle/diamond)
+            const leafMat = new THREE.PointsMaterial({
+                size: 0.15,
+                color: 0x00ff88,
                 transparent: true,
-                opacity: 0.8,
+                opacity: 0.6,
                 blending: THREE.AdditiveBlending
             });
+            const leaves = new THREE.Points(leafGeo, leafMat);
+            scene.add(leaves);
 
-            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-            scene.add(particlesMesh);
+            // 4. Abstract "Tree" Structure (Lines growing upwards)
+            const treeGroup = new THREE.Group();
+            treeGroup.position.set(-8, -10, -5); // Position off to the side/back
+            const treeMat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.2 });
 
-            // Mouse Interaction Variables
+            const branches = [];
+            for(let i=0; i<20; i++) {
+                const points = [];
+                let x = 0, y = 0, z = 0;
+                points.push(new THREE.Vector3(x, y, z));
+                for(let j=0; j<5; j++) {
+                    x += (Math.random() - 0.5) * 2;
+                    y += Math.random() * 3 + 1; // Grow up
+                    z += (Math.random() - 0.5) * 2;
+                    points.push(new THREE.Vector3(x, y, z));
+                }
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, treeMat);
+                treeGroup.add(line);
+            }
+            scene.add(treeGroup);
+
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0x222222);
+            scene.add(ambient);
+            const spotLight = new THREE.SpotLight(0x00ff88, 2);
+            spotLight.position.set(10, 10, 10);
+            scene.add(spotLight);
+
+            camera.position.z = 12;
+
+            // Mouse interaction setup
             let mouseX = 0;
             let mouseY = 0;
             let targetX = 0;
@@ -497,43 +525,69 @@
                 mouseY = (event.clientY - windowHalfY);
             });
 
-            // Scroll Interaction Variable
-            let scrollY = window.scrollY;
-            window.addEventListener('scroll', () => {
-                scrollY = window.scrollY;
+            // GSAP ScrollTrigger for Camera / Earth movement
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    gsap.to(camera.position, {
+                        y: -self.progress * 5, // Camera moves down
+                        z: 12 - (self.progress * 3), // Dolly in slightly
+                        duration: 0.5,
+                        overwrite: "auto"
+                    });
+                    gsap.to(earthGroup.position, {
+                        x: self.progress * 4, // Earth drifts right
+                        duration: 0.5,
+                        overwrite: "auto"
+                    });
+                }
             });
 
-            // Animation Loop
-            const clock = new THREE.Clock();
+            const animate = () => {
+                requestAnimationFrame(animate);
 
-            const tick = () => {
-                const elapsedTime = clock.getElapsedTime();
-
-                // Mouse ease
                 targetX = mouseX * .001;
                 targetY = mouseY * .001;
 
-                // Rotate Core
-                coreMesh.rotation.y += 0.5 * (targetX - coreMesh.rotation.y);
-                coreMesh.rotation.x += 0.5 * (targetY - coreMesh.rotation.x);
-                coreMesh.rotation.z += 0.002;
+                // Rotate Earth group slightly based on mouse
+                earthGroup.rotation.y += 0.05 * (targetX - earthGroup.rotation.y);
+                earthGroup.rotation.x += 0.05 * (targetY - earthGroup.rotation.x);
 
-                // Rotate Particles
-                particlesMesh.rotation.y = elapsedTime * 0.05 + scrollY * 0.001;
-                particlesMesh.rotation.x = targetY;
+                // Constant slow rotation
+                earth.rotation.y += 0.001;
+                innerEarth.rotation.y += 0.002;
 
-                // Pulse Effect
-                const scale = 1 + Math.sin(elapsedTime * 2) * 0.02;
-                particlesMesh.scale.set(scale, scale, scale);
+                // Animate Rings
+                ring1.rotation.x += ring1.userData.speedX;
+                ring1.rotation.y += ring1.userData.speedY;
+                ring2.rotation.x += ring2.userData.speedX;
+                ring2.rotation.y += ring2.userData.speedY;
+                ring3.rotation.x += ring3.userData.speedX;
+                ring3.rotation.y += ring3.userData.speedY;
 
-                // Render
+                // Animate Leaves (falling/swirling)
+                const positions = leaves.geometry.attributes.position.array;
+                for(let i=1; i<leafCount*3; i+=3) { // Y values
+                    positions[i] -= 0.02; // Fall down
+                    positions[i-1] += Math.sin(Date.now()*0.001 + i)*0.01; // Sway X
+
+                    if(positions[i] < -10) {
+                        positions[i] = 10; // Reset to top
+                    }
+                }
+                leaves.geometry.attributes.position.needsUpdate = true;
+                leaves.rotation.y += 0.0005;
+
+                // Tree gently sways
+                treeGroup.rotation.y = Math.sin(Date.now() * 0.0005) * 0.1;
+
                 renderer.render(scene, camera);
-                window.requestAnimationFrame(tick);
             };
 
-            tick();
+            animate();
 
-            // Resize Handler
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -541,12 +595,9 @@
             });
         };
 
-        // ==========================================
-        // p5.js Logic: Explosive Organic Energy Trails
-        // ==========================================
+        // --- 3. p5.js: Interactive Cursor "Growing Vines" ---
         const sketch = (p) => {
-            let particles = [];
-            let isExploding = false;
+            let vines = [];
 
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -557,158 +608,61 @@
             p.draw = () => {
                 p.clear(); // Transparent background
 
-                // Add new particle on mouse move if moving fast enough
-                if (p.pmouseX !== 0 && p.pmouseY !== 0) {
-                    let d = p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY);
-                    if (d > 5 || isExploding) {
-                        for(let i=0; i < (isExploding ? 10 : 1); i++){
-                            particles.push(new Particle(p.mouseX, p.mouseY, isExploding));
+                // Add new vine segment at mouse pos
+                if (p.mouseX !== 0 && p.mouseY !== 0) {
+                    // Only add occasionally to look like nodes
+                    if(p.frameCount % 3 === 0) {
+                        vines.push({
+                            x: p.mouseX,
+                            y: p.mouseY,
+                            life: 255,
+                            size: p.random(2, 6),
+                            color: p.random() > 0.5 ? p.color(0, 255, 136) : p.color(0, 229, 255)
+                        });
+                    }
+                }
+
+                // Update and draw vines
+                for (let i = vines.length - 1; i >= 0; i--) {
+                    let v = vines[i];
+                    v.life -= 2; // Fade out speed
+
+                    // Slight upward drift
+                    v.y -= 0.5;
+                    v.x += p.sin(p.frameCount * 0.1 + i) * 0.5;
+
+                    p.fill(p.red(v.color), p.green(v.color), p.blue(v.color), v.life);
+                    p.circle(v.x, v.y, v.size * (v.life/255)); // Shrink as it fades
+
+                    // Draw connecting lines to nearby older nodes to form "vine" look
+                    if (i > 0 && v.life > 100) {
+                        let prev = vines[i-1];
+                        let d = p.dist(v.x, v.y, prev.x, prev.y);
+                        if (d < 30) {
+                            p.stroke(p.red(v.color), p.green(v.color), p.blue(v.color), v.life * 0.5);
+                            p.strokeWeight(1);
+                            p.line(v.x, v.y, prev.x, prev.y);
+                            p.noStroke();
                         }
                     }
-                }
 
-                // Update and display particles
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    let pt = particles[i];
-                    pt.update();
-                    pt.display();
-                    if (pt.isDead()) {
-                        particles.splice(i, 1);
+                    if (v.life <= 0) {
+                        vines.splice(i, 1);
                     }
-                }
-            };
-
-            p.mouseClicked = () => {
-                isExploding = true;
-                setTimeout(() => { isExploding = false; }, 300);
-
-                // Create an immediate burst
-                for(let i=0; i<30; i++){
-                    particles.push(new Particle(p.mouseX, p.mouseY, true));
                 }
             };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
-
-            class Particle {
-                constructor(x, y, explosive) {
-                    this.pos = p.createVector(x, y);
-
-                    let angle = p.random(p.TWO_PI);
-                    let speed = explosive ? p.random(2, 15) : p.random(0.5, 2);
-                    this.vel = p.createVector(p.cos(angle)*speed, p.sin(angle)*speed);
-
-                    this.acc = p.createVector(0, 0);
-                    this.life = 255;
-                    this.lifeRate = explosive ? p.random(5, 15) : p.random(2, 5);
-                    this.size = p.random(2, 8);
-
-                    // Colors: Green to Yellowish-Green
-                    this.c = p.color(p.random(30, 80), p.random(180, 255), p.random(50, 100));
-                }
-
-                update() {
-                    // Organic drag and slight upward float (nature feel)
-                    this.vel.mult(0.95);
-                    this.vel.y -= 0.05;
-                    this.pos.add(this.vel);
-                    this.life -= this.lifeRate;
-                }
-
-                display() {
-                    p.fill(p.red(this.c), p.green(this.c), p.blue(this.c), this.life);
-                    p.circle(this.pos.x, this.pos.y, this.size * (this.life/255));
-                }
-
-                isDead() {
-                    return this.life <= 0;
-                }
-            }
         };
 
-        // Initialize libraries
-        window.addEventListener('DOMContentLoaded', () => {
+        // Initialize both
+        window.addEventListener('load', () => {
             initThreeJS();
             new p5(sketch);
-
-            // Register GSAP ScrollTrigger
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Set Initial States
-            gsap.set('.hero-content', { opacity: 0, y: 50 });
-            gsap.set('.concept-text', { opacity: 0, x: -50 });
-            gsap.set('.concept-image', { opacity: 0, x: 50 });
-            gsap.set('.menu-title', { opacity: 0, y: 30 });
-            gsap.set('.menu-card', { opacity: 0, y: 50, scale: 0.9 });
-            gsap.set('.quality-tags span', { opacity: 0, scale: 0.5 });
-            gsap.set('.footer-content', { opacity: 0, y: 50 });
-
-            // Hero Animation
-            gsap.to('.hero-content', {
-                opacity: 1,
-                y: 0,
-                duration: 1.5,
-                ease: 'power4.out',
-                delay: 0.2
-            });
-
-            // Concept Animation
-            ScrollTrigger.create({
-                trigger: '.concept-text',
-                start: 'top 80%',
-                onEnter: () => {
-                    gsap.to('.concept-text', { opacity: 1, x: 0, duration: 1, ease: 'power3.out' });
-                    gsap.to('.concept-image', { opacity: 1, x: 0, duration: 1, ease: 'power3.out', delay: 0.2 });
-                }
-            });
-
-            // Menu Cards Animation
-            ScrollTrigger.create({
-                trigger: '.menu-title',
-                start: 'top 85%',
-                onEnter: () => {
-                    gsap.to('.menu-title', { opacity: 1, y: 0, duration: 0.8 });
-                    gsap.to('.menu-card', {
-                        opacity: 1,
-                        y: 0,
-                        scale: 1,
-                        duration: 0.8,
-                        stagger: 0.2,
-                        ease: 'back.out(1.2)',
-                        delay: 0.2
-                    });
-                    gsap.to('.quality-tags span', {
-                        opacity: 1,
-                        scale: 1,
-                        duration: 0.6,
-                        stagger: 0.1,
-                        ease: 'back.out(2)',
-                        delay: 0.8
-                    });
-                }
-            });
-
-            // Footer Animation
-            ScrollTrigger.create({
-                trigger: '.footer-content',
-                start: 'top 90%',
-                onEnter: () => gsap.to('.footer-content', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' })
-            });
-
-            // Parallax effect for the large decorative image
-            gsap.to('.leaf-mask', {
-                yPercent: 20,
-                ease: 'none',
-                scrollTrigger: {
-                    trigger: '.concept-image',
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: true
-                }
-            });
         });
+
     </script>
 </body>
 </html>
