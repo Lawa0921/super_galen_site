@@ -63,9 +63,26 @@
             color: #4A5568;
             overflow-x: hidden;
             cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234A5568" d="M12 2L9 9H2L7 14L5 22L12 17L19 22L17 14L22 9H15L12 2Z"/></svg>') 12 12, auto;
+            /* Global paper noise texture to enhance illustration feel */
+            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            background-attachment: fixed;
+            background-blend-mode: multiply;
         }
 
+        /* Replaced WebGL with SVG layers for Pop-up book feel, but keep container for gradient background */
         #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -3; /* Move further back */
+            pointer-events: none;
+            background: linear-gradient(180deg, #7dd3fc 0%, #bae6fd 40%, #e0f2fe 80%, #f0f9ff 100%);
+        }
+
+        /* SVG Cloud Layers */
+        .cloud-layer {
             position: fixed;
             top: 0;
             left: 0;
@@ -73,7 +90,16 @@
             height: 100vh;
             z-index: -2;
             pointer-events: none;
-            background: linear-gradient(180deg, #7dd3fc 0%, #bae6fd 40%, #e0f2fe 80%, #f0f9ff 100%);
+            overflow: hidden;
+        }
+
+        .svg-cloud {
+            position: absolute;
+            opacity: 0.9;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05));
+            /* Paper texture on clouds */
+            mask-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
         }
 
         #p5-container {
@@ -96,13 +122,29 @@
         }
 
         .polaroid {
-            background: white;
+            background: #fffcf5; /* Creamy paper color */
             padding: 12px 12px 40px 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05), 0 4px 10px rgba(0,0,0,0.03);
-            border-radius: 8px;
+            box-shadow: 2px 8px 25px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 4px; /* Less round, more like cut paper */
             position: relative;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             transform-style: preserve-3d;
+            border: 1px solid rgba(0,0,0,0.03);
+            z-index: 2; /* Ensure above clouds */
+        }
+
+        .polaroid::after {
+            /* Tape effect */
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-3deg);
+            width: 40px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            z-index: 3;
         }
 
         .polaroid:hover {
@@ -219,8 +261,10 @@
 </head>
 <body class="font-rounded antialiased selection:bg-sky-200 selection:text-sky-900">
 
-    <!-- WebGL Backgrounds -->
+    <!-- Background Layers -->
     <div id="webgl-container"></div>
+    <div class="cloud-layer" id="cloud-layer-back"></div>
+    <div class="cloud-layer" id="cloud-layer-front"></div>
     <div id="p5-container"></div>
 
     <!-- Main Content Wrapper -->
@@ -444,126 +488,75 @@
         });
 
 
-        // 3. Three.js Fluffy Clouds Background
-        const initThreeJS = () => {
-            const container = document.getElementById('webgl-container');
-            const scene = new THREE.Scene();
-            // Optional: Fog to blend clouds into sky
-            scene.fog = new THREE.FogExp2(0xe0f2fe, 0.002);
+        // 3. SVG Hand-Drawn Cloud Generator (Replaces WebGL for Pop-up Book feel)
+        const createClouds = () => {
+            const backLayer = document.getElementById('cloud-layer-back');
+            const frontLayer = document.getElementById('cloud-layer-front');
 
-            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 200;
-            camera.position.y = -50;
+            // Cloud SVG Path - simple, fluffy, hand-drawn look
+            const cloudSVG = `
+            <svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 80 C20 80 10 50 30 30 C30 10 70 0 90 20 C110 -10 160 -10 180 20 C200 40 190 80 160 80 Z" fill="#ffffff" />
+            </svg>
+            `;
 
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
+            // Function to spawn clouds
+            const spawnClouds = (layer, count, scaleRange, opacity, speedRange, parallaxY) => {
+                for (let i = 0; i < count; i++) {
+                    const cloud = document.createElement('div');
+                    cloud.className = 'svg-cloud';
+                    cloud.innerHTML = cloudSVG;
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
+                    // Randomize properties
+                    const scale = scaleRange[0] + Math.random() * (scaleRange[1] - scaleRange[0]);
+                    const startX = Math.random() * 120 - 10; // -10vw to 110vw
+                    const startY = Math.random() * 100; // 0vh to 100vh
+                    const speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
 
-            const dirLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
-            dirLight.position.set(100, 100, 50);
-            scene.add(dirLight);
+                    cloud.style.width = `${200 * scale}px`;
+                    cloud.style.left = `${startX}vw`;
+                    cloud.style.top = `${startY}vh`;
+                    cloud.style.opacity = opacity;
 
-            // Cloud Geometry & Material
-            const cloudGeo = new THREE.SphereGeometry(10, 32, 32); // Base sphere
-            const cloudMat = new THREE.MeshLambertMaterial({
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.8,
-                flatShading: true // Gives a slightly stylized/paper look
-            });
-
-            const clouds = [];
-
-            // Function to create a composite "Fluffy Cloud"
-            function createCloud() {
-                const cloudGroup = new THREE.Group();
-                const numPuffs = 5 + Math.random() * 5;
-
-                for(let i=0; i<numPuffs; i++) {
-                    const puff = new THREE.Mesh(cloudGeo, cloudMat);
-
-                    // Randomize size and position relative to group center
-                    const scale = 0.5 + Math.random() * 1.5;
-                    puff.scale.set(scale, scale, scale);
-
-                    puff.position.set(
-                        (Math.random() - 0.5) * 30,
-                        (Math.random() - 0.5) * 10,
-                        (Math.random() - 0.5) * 20
-                    );
-
-                    cloudGroup.add(puff);
-                }
-
-                // Position the whole cloud randomly in a wide cylinder
-                cloudGroup.position.set(
-                    (Math.random() - 0.5) * 600,
-                    (Math.random() - 0.5) * 400 + 100,
-                    (Math.random() - 0.5) * 200 - 100
-                );
-
-                // Add custom properties for animation
-                cloudGroup.userData = {
-                    speedX: (Math.random() * 0.1) + 0.05,
-                    floatOffset: Math.random() * Math.PI * 2,
-                    baseY: cloudGroup.position.y
-                };
-
-                scene.add(cloudGroup);
-                clouds.push(cloudGroup);
-            }
-
-            // Generate clouds
-            for(let i=0; i<25; i++) {
-                createCloud();
-            }
-
-            // Link camera Y to scroll (Parallax effect)
-            let scrollY = 0;
-            lenis.on('scroll', (e) => {
-                scrollY = e.scroll;
-            });
-
-            // Animation Loop
-            const clock = new THREE.Clock();
-            const animate = () => {
-                const time = clock.getElapsedTime();
-
-                // Move clouds
-                clouds.forEach(cloud => {
-                    cloud.position.x += cloud.userData.speedX;
-                    // Gentle bobbing
-                    cloud.position.y = cloud.userData.baseY + Math.sin(time + cloud.userData.floatOffset) * 5;
-
-                    // Wrap around
-                    if (cloud.position.x > 400) {
-                        cloud.position.x = -400;
+                    // Subtle tint for depth
+                    if (layer === backLayer) {
+                        cloud.style.filter = 'drop-shadow(0 10px 15px rgba(0,0,0,0.05)) brightness(0.95)';
                     }
-                });
 
-                // Move camera based on scroll to create depth
-                // Smooth interpolation
-                const targetCameraY = -50 - (scrollY * 0.05);
-                camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+                    layer.appendChild(cloud);
 
-                renderer.render(scene, camera);
-                requestAnimationFrame(animate);
+                    // GSAP Animation for drifting
+                    gsap.to(cloud, {
+                        x: `+=${window.innerWidth * speed}`,
+                        duration: 100 / speed, // Slower speed = longer duration
+                        ease: "none",
+                        repeat: -1,
+                        modifiers: {
+                            x: gsap.utils.unitize(x => parseFloat(x) % (window.innerWidth + 400) - 200) // Wrap around
+                        }
+                    });
+
+                    // GSAP ScrollTrigger for Parallax Y
+                    gsap.to(cloud, {
+                        yPercent: parallaxY,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: "body",
+                            start: "top top",
+                            end: "bottom bottom",
+                            scrub: true
+                        }
+                    });
+                }
             };
-            animate();
 
-            // Resize Handler
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+            // Back layer (slower, smaller, moving up slightly on scroll)
+            spawnClouds(backLayer, 15, [1.0, 2.0], 0.6, [0.05, 0.1], -20);
+
+            // Front layer (faster, larger, moving up more on scroll)
+            spawnClouds(frontLayer, 10, [2.0, 4.0], 0.9, [0.1, 0.2], -50);
         };
-        initThreeJS();
+        createClouds();
 
         // 4. p5.js Magic Drawing / Star Trails
         const sketch = (p) => {
