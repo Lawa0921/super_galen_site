@@ -165,6 +165,7 @@
     <div id="p5-container"></div>
 
     <!-- MASSIVE SVG ALCHEMY BACKGROUND -->
+    <div class="alchemy-circle-container absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center overflow-hidden z-0">
     <svg class="alchemy-circle-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
         <circle cx="250" cy="250" r="240" fill="none" stroke="var(--alchemy-gold)" stroke-width="2" stroke-dasharray="10 5"/>
         <circle cx="250" cy="250" r="220" fill="none" stroke="var(--witch-purple)" stroke-width="4"/>
@@ -178,6 +179,7 @@
         <text x="100" y="340" fill="var(--alchemy-gold)" font-size="24" text-anchor="middle" font-family="'Cinzel Decorative', serif">🜃</text>
         <text x="250" y="440" fill="var(--alchemy-gold)" font-size="24" text-anchor="middle" font-family="'Cinzel Decorative', serif">🜁</text>
     </svg>
+    </div>
 
     <main class="z-content">
 
@@ -186,7 +188,7 @@
              ========================================== -->
         <section id="hero" class="min-h-screen flex flex-col items-center justify-center relative px-4">
 
-            <div class="relative w-64 h-64 md:w-80 md:h-80 mb-12 flex justify-center items-center group">
+            <div class="avatar-container relative w-64 h-64 md:w-80 md:h-80 mb-12 flex justify-center items-center group">
                 <!-- Massive Glowing Magic Ring Behind Avatar -->
                 <div class="absolute inset-0 rounded-full border-4 border-purple-500 shadow-[0_0_100px_var(--witch-purple)] animate-pulse"></div>
                 <div class="absolute -inset-4 rounded-full border-2 border-dashed border-yellow-500 animate-[spin_10s_linear_infinite]"></div>
@@ -195,9 +197,9 @@
             </div>
 
             <div class="text-center max-w-4xl">
-                <h2 class="alchemy-text text-xl md:text-3xl font-bold mb-4 uppercase tracking-[0.3em]"><i class="fa-solid fa-moon mr-2"></i> Mystic Witch <i class="fa-solid fa-star ml-2"></i></h2>
-                <h1 class="text-7xl md:text-9xl font-black mb-6 witch-glow text-white uppercase tracking-wider">Raven</h1>
-                <p class="text-2xl md:text-3xl text-purple-300 mb-12 font-bold tracking-widest text-shadow-sm">密契主義的自學女巫師</p>
+                <h2 class="alchemy-text invisible text-xl md:text-3xl font-bold mb-4 uppercase tracking-[0.3em]"><i class="fa-solid fa-moon mr-2"></i> Mystic Witch <i class="fa-solid fa-star ml-2"></i></h2>
+                <h1 class="text-7xl invisible md:text-9xl font-black mb-6 witch-glow text-white uppercase tracking-wider">Raven</h1>
+                <p class="text-2xl invisible md:text-3xl text-purple-300 mb-12 font-bold tracking-widest text-shadow-sm">密契主義的自學女巫師</p>
 
                 <div class="flex justify-center gap-10">
                     <a href="https://www.threads.com/@raven.office" target="_blank" class="w-16 h-16 rounded-full bg-black border-2 border-purple-500 flex items-center justify-center text-3xl text-purple-400 hover:bg-purple-900 hover:text-white hover:scale-125 hover:shadow-[0_0_30px_var(--witch-purple)] transition-all glitch-hover">
@@ -262,7 +264,7 @@
             <div class="max-w-7xl mx-auto relative z-10">
                 <div class="text-center mb-20">
                     <h2 class="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-widest" style="text-shadow: 0 0 40px rgba(255,255,255,0.5);">Spiritual Guardians</h2>
-                    <p class="text-2xl text-gray-400 italic">"有兩位超愛我的守護者，平常他們都會打打鬧鬧。"</p>
+                    <p class="text-2xl invisible text-gray-400 italic">"有兩位超愛我的守護者，平常他們都會打打鬧鬧。"</p>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 guardian-container">
@@ -363,7 +365,7 @@
 
                 <!-- Alchemy Cards Image Focus -->
                 <div class="relative rounded-2xl overflow-hidden group border-2 border-[#ffb703] hover:-translate-y-4 transition-transform duration-300 shadow-[0_0_30px_rgba(255,183,3,0.2)]">
-                    <img src="/assets/raven_office/cards.webp" alt="Magic Cards" class="absolute inset-0 w-full h-full object-cover saturate-150 contrast-125 group-hover:scale-110 transition-transform duration-700">
+                    <img src="/assets/raven_office/cards.webp" alt="Magic Stones" class="absolute inset-0 w-full h-full object-cover saturate-150 contrast-125 group-hover:scale-110 transition-transform duration-700">
                     <div class="absolute inset-0 bg-black/70 group-hover:bg-black/50 transition-colors"></div>
                     <div class="relative z-10 p-8 h-full flex flex-col">
                         <i class="fa-solid fa-wand-magic-sparkles text-5xl text-[#ffb703] mb-6 drop-shadow-[0_0_15px_#ffb703]"></i>
@@ -661,7 +663,82 @@
         // --- GSAP: AGGRESSIVE SCROLL ANIMATIONS ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Hero Parallax Elements
+        // INITIAL ENTRANCE ANIMATION (Explosive Entrance)
+        gsap.set(["h1.witch-glow", ".alchemy-text", "p.text-purple-300", ".alchemy-circle-container svg", ".avatar-container"], { visibility: "visible" });
+
+        const tlEntrance = gsap.timeline();
+        tlEntrance.from("h1.witch-glow", {
+            duration: 2,
+            scale: 0.1,
+            rotation: 180,
+            opacity: 0,
+            ease: "elastic.out(1, 0.3)",
+            delay: 0.5
+        })
+        .from(".alchemy-text", {
+            duration: 1,
+            y: -50,
+            opacity: 0,
+            ease: "power3.out"
+        }, "-=1.5")
+        .from("p.text-purple-300", {
+            duration: 1,
+            y: 50,
+            opacity: 0,
+            ease: "power3.out"
+        }, "-=1.5")
+        .from(".alchemy-circle-container svg", {
+            duration: 3,
+            scale: 0,
+            rotation: -360,
+            opacity: 0,
+            ease: "expo.out"
+        }, "-=1.8")
+        .from(".avatar-container", {
+            duration: 1.5,
+            scale: 0,
+            opacity: 0,
+            rotation: 360,
+            ease: "back.out(1.7)"
+        }, "-=2");
+
+        // HERO HOVER/MOVE PARALLAX
+        const heroSection = document.getElementById('hero');
+        const alchemyCircle = document.querySelector('.alchemy-circle-container');
+        const avatarImg = document.querySelector('.avatar-container');
+
+        heroSection.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+
+            gsap.to(alchemyCircle, {
+                rotationY: xAxis,
+                rotationX: yAxis,
+                duration: 0.5,
+                ease: "power1.out"
+            });
+
+            gsap.to(avatarImg, {
+                x: -xAxis * 2,
+                y: -yAxis * 2,
+                duration: 0.5,
+                ease: "power1.out"
+            });
+        });
+
+        heroSection.addEventListener('mouseleave', () => {
+            gsap.to([alchemyCircle, avatarImg], {
+                rotationY: 0,
+                rotationX: 0,
+                x: 0,
+                y: 0,
+                duration: 1,
+                ease: "power3.out"
+            });
+        });
+
+
+        // Hero Parallax Elements (Scroll)
         gsap.to("#hero img", {
             scrollTrigger: {
                 trigger: "#hero",
@@ -676,6 +753,35 @@
 
         // 3D Card Flips for Guardians
         gsap.utils.toArray(".guardian-card").forEach((card, i) => {
+            // Card tilt effect on hover
+            card.addEventListener("mousemove", (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = ((y - centerY) / centerY) * -15;
+                const rotateY = ((x - centerX) / centerX) * 15;
+
+                gsap.to(card, {
+                    rotationX: rotateX,
+                    rotationY: rotateY,
+                    transformPerspective: 1000,
+                    ease: "power1.out",
+                    duration: 0.4
+                });
+            });
+
+            card.addEventListener("mouseleave", () => {
+                gsap.to(card, {
+                    rotationX: 0,
+                    rotationY: 0,
+                    ease: "power3.out",
+                    duration: 0.6
+                });
+            });
+
+            // Scroll trigger
             gsap.from(card, {
                 scrollTrigger: {
                     trigger: "#guardians",
