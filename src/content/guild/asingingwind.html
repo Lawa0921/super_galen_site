@@ -1,135 +1,102 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💧 許漪 🦋 | Asingingwind</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>許漪 - 吟遊詩人 | A Singing Wind</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Noto+Serif+TC:wght@300;400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Serif+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg-void: #050505;
-      --gold-alchemy: #D4AF37;
-      --gold-dark: #8B7322;
-      --blue-thunder: #1B2A47;
-      --red-ember: #8B0000;
-      --glass-bg: rgba(10, 10, 10, 0.6);
-      --glass-border: rgba(212, 175, 55, 0.2);
+      --sand-light: #E8D3A2;
+      --sand-mid: #D4B872;
+      --sand-dark: #A67C41;
+      --oasis-green: #2E472D;
+      --sunset-glow: #E2725B;
+      --desert-night: #1C2331;
     }
 
-    body, html {
+    body {
       margin: 0;
       padding: 0;
-      background-color: var(--bg-void);
-      color: #E0E0E0;
+      background-color: var(--sand-light);
+      color: var(--desert-night);
       font-family: 'Noto Serif TC', serif;
       overflow-x: hidden;
-      cursor: crosshair;
     }
 
-    /* Fixed Background Containers */
-    #three-canvas-container, #p5-container {
+    .cinzel { font-family: 'Cinzel', serif; }
+
+    /* Background Canvases */
+    #three-canvas-container {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      pointer-events: none;
       z-index: 0;
+      pointer-events: none;
     }
 
-    #p5-container { z-index: 1; }
+    #p5-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
 
-    /* Content Overlay */
-    #content-wrapper {
+    /* Overlay Gradient for depth */
+    .desert-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(to bottom, transparent 40%, rgba(232, 211, 162, 0.6) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    main {
       position: relative;
       z-index: 10;
-      width: 100%;
     }
 
-    /* Typography */
-    h1, h2, h3, .cinzel { font-family: 'Cinzel', serif; }
-    .cormorant { font-family: 'Cormorant Garamond', serif; }
-
-    .text-alchemy {
-      background: linear-gradient(135deg, #FFDF00, #D4AF37, #8B7322);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .text-thunder { color: var(--blue-thunder); }
-    .text-ember { color: var(--red-ember); }
-
-    /* Glassmorphism Panels */
+    /* Glass Panels */
     .glass-panel {
-      background: var(--glass-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(212, 175, 55, 0.05);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 10px 40px rgba(166, 124, 65, 0.15);
+      border-radius: 24px;
     }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg-void); }
-    ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--gold-alchemy); }
-
-    /* Layout Elements */
-    .hero-section {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      position: relative;
+    .glass-panel-dark {
+      background: rgba(28, 35, 49, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(212, 184, 114, 0.3);
+      color: var(--sand-light);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      border-radius: 24px;
     }
 
-    .avatar-frame {
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      padding: 10px;
-      background: linear-gradient(45deg, var(--gold-dark), var(--bg-void), var(--gold-alchemy));
-      animation: rotateGradient 10s linear infinite;
-      position: relative;
+    .glass-panel-oasis {
+      background: rgba(46, 71, 45, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(166, 124, 65, 0.4);
+      color: var(--sand-light);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      border-radius: 24px;
     }
 
-    .avatar-frame img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      filter: grayscale(80%) contrast(1.2);
-      transition: filter 0.5s ease;
-    }
-
-    .avatar-frame:hover img {
-      filter: grayscale(0%) contrast(1.1);
-    }
-
-    @keyframes rotateGradient {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .avatar-inner {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      overflow: hidden;
-      background: var(--bg-void);
-      animation: counterRotateGradient 10s linear infinite;
-    }
-
-    @keyframes counterRotateGradient {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(-360deg); }
-    }
-
-    /* Horizontal Scroll Section */
+    /* Horizontal Scroll Sections */
     .horizontal-scroll-wrapper {
       width: 100%;
       height: 100vh;
@@ -139,196 +106,319 @@
 
     .horizontal-scroll-container {
       display: flex;
-      width: 300vw; /* 3 sections */
+      width: 500vw; /* 5 panels */
       height: 100%;
     }
 
     .panel {
       width: 100vw;
-      height: 100vh;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 4rem;
+      padding: 2rem;
+      position: relative;
     }
 
-    .rune-marker {
-      font-size: 4rem;
-      opacity: 0.1;
+    /* Hero Section */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+    }
+
+    .avatar-frame {
+      position: relative;
+      width: 380px;
+      height: 570px;
+      border-radius: 12px 12px 120px 12px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(166, 124, 65, 0.5);
+    }
+
+    .avatar-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: sepia(0.2) contrast(1.1);
+    }
+
+    .avatar-frame::after {
+      content: '';
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 12px 12px 120px 12px;
       pointer-events: none;
-      color: var(--gold-alchemy);
+    }
+
+    .text-highlight {
+      color: var(--sunset-glow);
+    }
+
+    .text-gold {
+      color: var(--sand-mid);
     }
 
     .nav-btn {
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .nav-btn::before {
-      content: '';
+    .nav-btn:hover {
+      transform: translateY(-5px);
+      background-color: var(--sand-mid);
+      color: var(--desert-night);
+      box-shadow: 0 10px 20px rgba(212, 184, 114, 0.4);
+    }
+
+    /* Typography specifics */
+    .writing-vertical {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    .title-stroke {
+      -webkit-text-stroke: 1px var(--desert-night);
+      color: transparent;
+    }
+
+    .dark .title-stroke {
+      -webkit-text-stroke: 1px var(--sand-light);
+    }
+
+    .quote-mark {
+      font-size: 4rem;
+      line-height: 0;
+      opacity: 0.2;
+      font-family: serif;
       position: absolute;
-      top: 0; left: -100%; width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
-      transition: all 0.5s ease;
     }
 
-    .nav-btn:hover::before {
-      left: 100%;
+    /* Scroll Indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0.6;
+      animation: pulse 2s infinite;
     }
 
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: translate(-50%, 0); }
+      50% { opacity: 1; transform: translate(-50%, 10px); }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Background Canvases -->
+  <!-- Backgrounds -->
   <div id="three-canvas-container"></div>
+  <div class="desert-overlay"></div>
   <div id="p5-container"></div>
 
-  <!-- Main Content -->
-  <main id="content-wrapper">
+  <main>
+    <!-- Entry Hero Section -->
+    <section class="hero-section gs-hero">
+      <div class="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
 
-    <!-- Header -->
-    <header class="fixed top-0 left-0 w-full p-6 z-50 flex justify-between items-center mix-blend-difference">
-      <a href="/" class="text-sm tracking-[0.3em] uppercase cinzel hover:text-[var(--gold-alchemy)] transition-colors">
-        <i class="fa-solid fa-arrow-left mr-2"></i> Return to Guild
-      </a>
-      <div class="text-xs tracking-widest cinzel text-gray-500">
-        Record No. 10000 <span class="text-[var(--gold-alchemy)]">☉</span>
-      </div>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="relative z-10 flex flex-col items-center text-center gs-hero">
-
-        <div class="avatar-frame mb-12 relative">
-          <div class="avatar-inner">
-            <img src="/assets/guild/asingingwind/avatar.webp" alt="許漪 Avatar" />
-          </div>
-          <!-- Orbiting Runes -->
-          <div class="absolute w-full h-full top-0 left-0 animate-[spin_20s_linear_infinite] pointer-events-none" style="border: 1px dashed rgba(212, 175, 55, 0.3); border-radius: 50%; transform: scale(1.2);">
-            <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-[var(--gold-alchemy)] text-xs">☿</div>
-            <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[var(--gold-alchemy)] text-xs">♄</div>
-            <div class="absolute top-1/2 -left-3 -translate-y-1/2 text-[var(--gold-alchemy)] text-xs">♀</div>
-            <div class="absolute top-1/2 -right-3 -translate-y-1/2 text-[var(--gold-alchemy)] text-xs">♂</div>
+        <div class="lg:col-span-5 flex justify-center lg:justify-end relative z-10">
+          <div class="avatar-frame gs-reveal">
+            <img src="/assets/guild/asingingwind/image1.webp" alt="許漪 a singing wind">
           </div>
         </div>
 
-        <h1 class="text-6xl md:text-8xl font-bold mb-4 tracking-widest">
-          <span class="text-alchemy">許漪</span>
-        </h1>
-        <h2 class="text-xl md:text-2xl tracking-[0.5em] mb-8 cinzel font-light">
-          SOUND PRIEST & BARD
-        </h2>
+        <div class="lg:col-span-7 glass-panel p-10 md:p-14 gs-reveal">
+          <div class="flex items-center gap-4 mb-4">
+            <span class="cinzel text-sm tracking-widest text-[var(--sand-dark)]">BARD OF THE DESERT</span>
+            <div class="h-px bg-[var(--sand-dark)] w-12 opacity-50"></div>
+          </div>
 
-        <div class="glass-panel p-6 max-w-2xl mx-auto rounded-sm border-l-4 border-[var(--gold-alchemy)]">
-          <p class="text-lg leading-relaxed font-light text-justify cormorant italic mb-4">
-            "他是地質學的聲音祭司，也是天空學的呼吸詩人。他所吹出的，不是旋律，而是氣——來自時間深處的祖靈氣息，是語言尚未誕生前的聲波種子。"
-          </p>
+          <h1 class="text-5xl md:text-6xl font-bold mb-4 tracking-wider">
+            💧 許漪 🦋
+          </h1>
+          <h2 class="text-2xl md:text-3xl font-light mb-8 text-[var(--sunset-glow)] tracking-widest">
+            吟遊詩人 <span class="mx-2 opacity-30">|</span> 呼吸詩人
+          </h2>
+
+          <div class="space-y-6 text-lg leading-relaxed text-gray-800">
+            <p class="font-medium">
+              「我是風神雷神的自燃系妖精」
+            </p>
+            <p>
+              開始旅行，是為了完成一個看似簡單卻深刻的目標——<br>
+              <span class="text-2xl font-bold title-stroke">讀一萬本書、走一萬公里。</span>
+            </p>
+            <p class="text-base opacity-80">
+              這段旅程不只是對外在世界的探索，它更是對內在真實的尋找。八年前，我決定放下過去的一切，走進世界，帶著對知識的渴望，帶著對心靈深處未解謎題的好奇。
+            </p>
+          </div>
+
+          <div class="mt-10 flex items-center gap-4">
+            <div class="text-sm cinzel tracking-widest opacity-50">SCROLL TO JOURNEY</div>
+            <i class="fa-solid fa-arrow-down opacity-50"></i>
+          </div>
         </div>
 
       </div>
-
-      <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce opacity-70">
-        <span class="text-[10px] tracking-widest uppercase mb-2 cinzel">Descend</span>
-        <i class="fa-solid fa-chevron-down text-[var(--gold-alchemy)]"></i>
+      <div class="scroll-indicator">
+        <div class="w-px h-16 bg-current mb-2"></div>
       </div>
     </section>
 
-    <!-- Horizontal Scroll Narrative Journey -->
-    <section class="horizontal-scroll-wrapper relative z-10">
+    <!-- Horizontal Journey Section -->
+    <section class="horizontal-scroll-wrapper">
       <div class="horizontal-scroll-container">
 
         <!-- Panel 1: The Journey -->
-        <div class="panel relative">
-          <div class="rune-marker">☩</div>
-          <div class="glass-panel p-10 md:p-16 max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 class="text-4xl text-alchemy mb-6">一萬本書，一萬公里</h3>
-              <p class="text-lg leading-loose font-light opacity-90 text-justify">
-                開始旅行，是為了完成一個看似簡單卻深刻的目標。這段旅程不只是對外在世界的探索，它更是對內在真實的尋找。八年前，我決定放下過去的一切，走進世界，帶著對知識的渴望，帶著對心靈深處未解謎題的好奇。
-              </p>
-              <div class="mt-8 border-t border-[var(--glass-border)] pt-6">
-                <p class="text-sm opacity-60 tracking-widest uppercase cinzel">Chapter I : Departure</p>
+        <div class="panel">
+          <div class="max-w-4xl w-full glass-panel p-12 relative overflow-hidden">
+            <span class="quote-mark text-[var(--sand-dark)] top-4 left-4">"</span>
+            <div class="flex flex-col md:flex-row gap-12 items-center">
+              <div class="flex-1 space-y-6">
+                <div class="cinzel text-[var(--sand-dark)] tracking-widest text-sm mb-2">CHAPTER I : THE PATH</div>
+                <h2 class="text-4xl font-bold mb-6">風沙中的行者</h2>
+                <p class="text-lg leading-relaxed">
+                  在這些年的旅途中，我收集了各種不同的技能與智慧。
+                </p>
+                <p class="text-lg leading-relaxed">
+                  我學會了<span class="text-highlight font-bold">自然建築</span>，學會了與大地對話；我深入各地，研究世界各族的音樂與文化，聆聽著不同語言背後的故事。
+                </p>
+                <p class="text-lg leading-relaxed">
+                  我也學會了如何更精準地與自己、與他人溝通。在無垠的沙漠與風沙中，尋找那些被遺忘的聲波種子。
+                </p>
               </div>
-            </div>
-            <div class="relative group overflow-hidden rounded-sm h-[400px]">
-              <img src="/assets/guild/asingingwind/image1.webp" alt="Journey" class="w-full h-full object-cover filter grayscale sepia-[0.3] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" />
-              <div class="absolute inset-0 border border-[var(--gold-alchemy)] opacity-50 m-4 pointer-events-none"></div>
+              <div class="w-1/3 flex justify-center items-center">
+                <div class="w-48 h-48 rounded-full border border-[var(--sand-dark)] p-4 relative animate-[spin_30s_linear_infinite]">
+                  <div class="w-full h-full rounded-full border border-dashed border-[var(--sunset-glow)] flex items-center justify-center">
+                    <i class="fa-solid fa-compass text-4xl text-[var(--sand-dark)]"></i>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Panel 2: Alchemy of Sound & Tarot -->
-        <div class="panel relative">
-          <div class="rune-marker">☽</div>
-          <div class="glass-panel p-10 md:p-16 max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
-            <div class="md:col-span-5 relative group overflow-hidden rounded-sm h-[500px] order-2 md:order-1">
-              <img src="/assets/guild/asingingwind/image2.webp" alt="Alchemy" class="w-full h-full object-cover filter grayscale sepia-[0.3] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" />
-              <!-- Tarot Grid Overlay -->
-              <div class="absolute inset-0 grid grid-cols-3 grid-rows-4 gap-1 p-2 pointer-events-none opacity-20">
-                <div class="border border-[var(--gold-alchemy)]"></div>
-                <div class="border border-[var(--gold-alchemy)]"></div>
-                <div class="border border-[var(--gold-alchemy)]"></div>
+        <!-- Panel 2: The Oasis / Workshops -->
+        <div class="panel">
+          <div class="max-w-5xl w-full glass-panel-oasis p-12 relative">
+            <div class="absolute right-0 top-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+
+            <div class="cinzel text-white/50 tracking-widest text-sm mb-8 text-center">CHAPTER II : THE OASIS</div>
+            <h2 class="text-4xl font-bold mb-10 text-center text-white">心靈門牌與綠洲</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div class="space-y-6">
+                <p class="text-lg leading-relaxed">
+                  我花了四年半的時間，開發出一套名為<span class="text-[var(--sand-mid)] font-bold">《心靈門牌》</span>的牌卡。
+                </p>
+                <p class="text-base leading-relaxed opacity-90">
+                  這不僅是一套工具，它是關於深度聆聽和真誠交流的實踐。它幫助我們更清楚地聽見內心的聲音，並在溝通中建立更真實的連結。
+                </p>
+                <div class="h-px w-full bg-white/20 my-6"></div>
+                <p class="text-sm leading-relaxed opacity-80">
+                  除了工作坊，我也透過一對一的塔羅與易經引導，幫助人們釐清生命中的課題。我不是在告訴別人未來會如何，而是在與他們一起，探索內心的力量。
+                </p>
               </div>
-            </div>
-            <div class="md:col-span-7 order-1 md:order-2">
-              <h3 class="text-4xl text-alchemy mb-6">星象工坊與心靈門牌</h3>
-              <p class="text-lg leading-loose font-light opacity-90 text-justify mb-6">
-                我不背樂譜，而是將旋律串接為元素符文。將五行與星體的軌跡熔成七拍十二聲的魔法陣。每一場演出，都是一場轉化。時間從氣中再誕生。
-              </p>
-              <p class="text-lg leading-loose font-light opacity-90 text-justify">
-                花了四年半開發的《心靈門牌》，是關於深度聆聽和真誠交流的實踐。透過一對一的塔羅與易經引導，我不是在告訴別人未來，而是與他們一起探索內心的力量與可能性。
-              </p>
-              <ul class="mt-8 grid grid-cols-2 gap-4 text-sm font-bold tracking-widest text-[var(--gold-alchemy)]">
-                <li><i class="fa-solid fa-diamond mr-2"></i> 積極傾聽</li>
-                <li><i class="fa-solid fa-diamond mr-2"></i> 12項提問技巧</li>
-                <li><i class="fa-solid fa-diamond mr-2"></i> 儀式設計</li>
-                <li><i class="fa-solid fa-diamond mr-2"></i> 自然建築</li>
-              </ul>
+
+              <div class="flex flex-col justify-center gap-4">
+                <div class="p-4 border border-white/20 rounded-xl bg-black/20 hover:bg-black/40 transition">
+                  <h3 class="font-bold text-[var(--sand-mid)] mb-1">積極傾聽</h3>
+                  <p class="text-sm opacity-80">深度連結的關鍵，開放自己接受他人聲音。</p>
+                </div>
+                <div class="p-4 border border-white/20 rounded-xl bg-black/20 hover:bg-black/40 transition">
+                  <h3 class="font-bold text-[var(--sand-mid)] mb-1">12項提問技巧</h3>
+                  <p class="text-sm opacity-80">精準提問，清楚表達的藝術。</p>
+                </div>
+                <div class="p-4 border border-white/20 rounded-xl bg-black/20 hover:bg-black/40 transition">
+                  <h3 class="font-bold text-[var(--sand-mid)] mb-1">自我祈禱儀式設計</h3>
+                  <p class="text-sm opacity-80">建立屬於自己的神聖空間與內在對話。</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Panel 3: The Call -->
-        <div class="panel relative">
-          <div class="rune-marker">♆</div>
-          <div class="glass-panel p-10 md:p-16 max-w-4xl text-center">
-             <div class="w-32 h-32 mx-auto mb-8 rounded-full overflow-hidden border-2 border-[var(--gold-alchemy)]">
-                <img src="/assets/guild/asingingwind/image3.webp" alt="Portrait" class="w-full h-full object-cover filter grayscale" />
-             </div>
-             <h3 class="text-4xl text-alchemy mb-8">風神雷神的自燃系妖精</h3>
-             <p class="text-xl leading-loose font-light opacity-90 italic max-w-2xl mx-auto mb-10">
-               "我不會告訴你怎麼做，也不會要求你成為某個理想中的自己。我存在的價值，是希望能陪伴你走進自己的真實，並且活出內在最深的呼喚。"
-             </p>
+        <!-- Panel 3: The Breath Poet -->
+        <div class="panel">
+          <div class="max-w-5xl w-full glass-panel-dark dark p-12 flex flex-col md:flex-row gap-12 items-center">
 
-             <!-- Social Links -->
-             <div class="flex justify-center gap-6 mt-12">
-               <a href="https://www.threads.com/@asingingwind" target="_blank" class="nav-btn w-12 h-12 rounded-full border border-[var(--gold-alchemy)] flex items-center justify-center text-xl hover:text-black hover:bg-[var(--gold-alchemy)]">
-                 <i class="fa-brands fa-threads"></i>
-               </a>
-               <a href="https://www.instagram.com/asingingwind/" target="_blank" class="nav-btn w-12 h-12 rounded-full border border-[var(--gold-alchemy)] flex items-center justify-center text-xl hover:text-black hover:bg-[var(--gold-alchemy)]">
-                 <i class="fa-brands fa-instagram"></i>
-               </a>
-               <a href="https://linktr.ee/asingingwind" target="_blank" class="nav-btn w-12 h-12 rounded-full border border-[var(--gold-alchemy)] flex items-center justify-center text-xl hover:text-black hover:bg-[var(--gold-alchemy)]">
-                 <i class="fa-solid fa-link"></i>
-               </a>
-             </div>
+            <div class="md:w-1/3 flex justify-center relative">
+              <div class="writing-vertical text-5xl md:text-7xl font-bold opacity-10 absolute left-0 top-0 -translate-x-full cinzel whitespace-nowrap">
+                ALCHEMY OF SOUND
+              </div>
+              <h2 class="writing-vertical text-4xl leading-loose tracking-widest font-light text-[var(--sand-mid)]">
+                地質學的聲音祭司<br>天空學的呼吸詩人
+              </h2>
+            </div>
+
+            <div class="md:w-2/3 space-y-6">
+              <p class="text-xl leading-relaxed font-light">
+                他所吹出的，不是旋律，而是氣——<br>
+                來自時間深處的祖靈氣息，是語言尚未誕生前的聲波種子。
+              </p>
+              <div class="pl-6 border-l-2 border-[var(--sand-dark)] space-y-4 py-2">
+                <p class="text-base leading-relaxed opacity-80">
+                  那些聲音，像幽靈，像地脈的耳語，在他身體中甦醒，如同祖先骨骸間的回音。他的身體，是一座星象工坊。他不背樂譜，而是將旋律串接為元素符文。
+                </p>
+                <p class="text-base leading-relaxed opacity-80">
+                  他將五行與星體的軌跡熔成七拍十二聲的魔法陣，吹出之瞬，即喚起內輪、聲場與星之律曆——音變為意，氣成為光，聲即為咒。
+                </p>
+              </div>
+              <p class="text-lg leading-relaxed text-[var(--sand-mid)] italic mt-6">
+                「每一場演出，都是一場轉化。每支笛子吹奏一次，就會老去一歲，而那老去，正是煉金的起點——記憶沉澱、聲音結晶，時間從氣中再誕生。」
+              </p>
+            </div>
+
           </div>
+        </div>
+
+        <!-- Panel 4: Connection -->
+        <div class="panel">
+          <div class="max-w-4xl w-full text-center space-y-10 relative z-10">
+            <i class="fa-solid fa-wind text-5xl text-[var(--sunset-glow)] opacity-50 mb-4"></i>
+            <h2 class="text-4xl font-bold">與呼吸緊密相連</h2>
+
+            <div class="max-w-2xl mx-auto space-y-6 text-lg leading-relaxed">
+              <p>我的生命，與每一個當下的呼吸、每一個微小的步伐緊密相連。</p>
+              <p>我不會告訴你怎麼做，也不會要求你成為某個理想中的自己。我存在的價值，是希望能陪伴你走進自己的真實，並且活出內在最深的呼喚。</p>
+              <p class="font-bold text-[var(--sand-dark)] text-xl mt-8">
+                如果你準備好了，無論是探索心靈的深度，還是學會真誠的溝通，我在這裡，隨時準備與你一起走這段路。
+              </p>
+            </div>
+
+            <div class="pt-8">
+              <p class="text-sm cinzel tracking-widest mb-6 opacity-60">CONNECT WITH @ASINGINGWIND</p>
+              <div class="flex justify-center gap-6">
+                <a href="https://www.threads.com/@asingingwind" target="_blank" class="nav-btn w-14 h-14 rounded-full border border-[var(--sand-dark)] flex items-center justify-center text-2xl text-[var(--desert-night)]">
+                  <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/asingingwind/" target="_blank" class="nav-btn w-14 h-14 rounded-full border border-[var(--sand-dark)] flex items-center justify-center text-2xl text-[var(--desert-night)]">
+                  <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://linktr.ee/asingingwind" target="_blank" class="nav-btn w-14 h-14 rounded-full border border-[var(--sand-dark)] flex items-center justify-center text-xl text-[var(--desert-night)]">
+                  <i class="fa-solid fa-link"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 5: Empty Buffer for smooth end -->
+        <div class="panel">
+           <div class="text-center opacity-30 cinzel tracking-widest">
+              END OF THE JOURNEY
+           </div>
         </div>
 
       </div>
     </section>
-
-    <!-- Footer Spacer -->
-    <div class="h-32 flex items-center justify-center text-xs tracking-widest cinzel opacity-30">
-      END OF RECORD <span class="mx-2 text-[var(--gold-alchemy)]">✦</span> ASINGINGWIND
-    </div>
 
   </main>
 
@@ -340,88 +430,88 @@
 
   <script>
     // ==========================================
-    // Three.js: Massive Astrolabe / Magic Core
+    // Three.js: Desert Dunes & Sandstorm
     // ==========================================
     const initThreeJS = () => {
       const container = document.getElementById('three-canvas-container');
       const scene = new THREE.Scene();
 
+      // Warm desert fog
+      scene.fog = new THREE.FogExp2(0xE8D3A2, 0.015);
+
       const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 30;
+      camera.position.set(0, 10, 40);
+      camera.lookAt(0, 0, 0);
 
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(renderer.domElement);
 
-      // Materials
-      const goldMat = new THREE.MeshBasicMaterial({
-        color: 0xD4AF37,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.15
-      });
-      const darkMat = new THREE.MeshBasicMaterial({
-        color: 0x1B2A47,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.1
-      });
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
 
-      // Rings (Astrolabe)
-      const rings = [];
-      const ringGeometries = [
-        new THREE.TorusGeometry(15, 0.1, 16, 100),
-        new THREE.TorusGeometry(20, 0.05, 16, 100),
-        new THREE.TorusGeometry(25, 0.2, 16, 100),
-        new THREE.TorusGeometry(35, 0.1, 16, 150)
-      ];
+      const dirLight = new THREE.DirectionalLight(0xE2725B, 1.2); // Sunset orange
+      dirLight.position.set(100, 50, -50);
+      scene.add(dirLight);
 
-      ringGeometries.forEach((geo, i) => {
-        const ring = new THREE.Mesh(geo, i % 2 === 0 ? goldMat : darkMat);
-        ring.rotation.x = Math.random() * Math.PI;
-        ring.rotation.y = Math.random() * Math.PI;
-        scene.add(ring);
-        rings.push({
-          mesh: ring,
-          speedX: (Math.random() - 0.5) * 0.002,
-          speedY: (Math.random() - 0.5) * 0.002
-        });
+      // Desert Terrain (Dunes)
+      const planeGeo = new THREE.PlaneGeometry(200, 200, 64, 64);
+      planeGeo.rotateX(-Math.PI / 2);
+
+      // Modify vertices to create dunes
+      const positions = planeGeo.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i);
+        const z = positions.getZ(i);
+        // Simple procedural noise for dunes
+        const y = Math.sin(x * 0.1) * Math.cos(z * 0.1) * 3 +
+                  Math.sin(x * 0.03 + z * 0.05) * 5;
+        positions.setY(i, y);
+      }
+      planeGeo.computeVertexNormals();
+
+      const sandMat = new THREE.MeshStandardMaterial({
+        color: 0xD4B872,
+        roughness: 0.9,
+        metalness: 0.1,
+        flatShading: true
       });
 
-      // Core Sphere
-      const coreGeo = new THREE.IcosahedronGeometry(8, 2);
-      const coreMat = new THREE.MeshBasicMaterial({
-        color: 0x8B0000,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.2
-      });
-      const core = new THREE.Mesh(coreGeo, coreMat);
-      scene.add(core);
+      const terrain = new THREE.Mesh(planeGeo, sandMat);
+      terrain.position.y = -10;
+      scene.add(terrain);
 
-      // Dust Particles
-      const particlesGeo = new THREE.BufferGeometry();
-      const particlesCount = 1500;
-      const posArray = new Float32Array(particlesCount * 3);
+      // Sandstorm Particles
+      const particleGeo = new THREE.BufferGeometry();
+      const particleCount = 2000;
+      const posArray = new Float32Array(particleCount * 3);
 
-      for(let i = 0; i < particlesCount * 3; i++) {
-        posArray[i] = (Math.random() - 0.5) * 100;
+      for(let i = 0; i < particleCount * 3; i+=3) {
+        posArray[i] = (Math.random() - 0.5) * 200; // x
+        posArray[i+1] = Math.random() * 40 - 10;   // y
+        posArray[i+2] = (Math.random() - 0.5) * 200; // z
       }
 
-      particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-      const particlesMat = new THREE.PointsMaterial({
-        size: 0.1,
-        color: 0xD4AF37,
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      const particleMat = new THREE.PointsMaterial({
+        size: 0.4,
+        color: 0xE8D3A2,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.6,
         blending: THREE.AdditiveBlending
       });
 
-      const particlesMesh = new THREE.Points(particlesGeo, particlesMat);
-      scene.add(particlesMesh);
+      const sandstorm = new THREE.Points(particleGeo, particleMat);
+      scene.add(sandstorm);
 
-      // Mouse Interaction
+      // Distant Oasis Light
+      const oasisLight = new THREE.PointLight(0x4A5D23, 2, 100);
+      oasisLight.position.set(-40, 5, -80);
+      scene.add(oasisLight);
+
+      // Mouse Parallax
       let mouseX = 0;
       let mouseY = 0;
       document.addEventListener('mousemove', (event) => {
@@ -433,26 +523,26 @@
       let time = 0;
       const animate = () => {
         requestAnimationFrame(animate);
-        time += 0.01;
+        time += 0.005;
 
-        // Rotate rings
-        rings.forEach(r => {
-          r.mesh.rotation.x += r.speedX;
-          r.mesh.rotation.y += r.speedY;
-        });
+        // Move terrain slightly to simulate walking/flying
+        terrain.position.z = (time * 10) % 20;
 
-        // Pulse core
-        const scale = 1 + Math.sin(time * 2) * 0.05;
-        core.scale.set(scale, scale, scale);
-        core.rotation.y += 0.005;
+        // Sandstorm wind effect
+        const pPositions = sandstorm.geometry.attributes.position.array;
+        for(let i = 0; i < particleCount * 3; i+=3) {
+          pPositions[i] -= 0.5; // Wind blowing left
+          if(pPositions[i] < -100) {
+            pPositions[i] = 100;
+            pPositions[i+1] = Math.random() * 40 - 10;
+          }
+        }
+        sandstorm.geometry.attributes.position.needsUpdate = true;
 
-        // Parallax camera
+        // Camera Parallax
         camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
-        camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
-        camera.lookAt(scene.position);
-
-        // Gently rotate particles
-        particlesMesh.rotation.y = time * 0.05;
+        camera.position.y += (10 + mouseY * 2 - camera.position.y) * 0.05;
+        camera.lookAt(0, 0, 0);
 
         renderer.render(scene, camera);
       };
@@ -467,60 +557,63 @@
     };
 
     // ==========================================
-    // p5.js: Breath / Smoke Runes Interactive
+    // p5.js: Interactive Wind / Breath
     // ==========================================
     const sketch = (p) => {
-      let runes = [];
-      const symbols = ['🜁', '🜂', '🜃', '🜄', '☉', '☽', '☿', '♀', '♂', '♃', '♄'];
+      let particles = [];
 
       p.setup = () => {
         let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
         canvas.parent('p5-container');
-        p.textAlign(p.CENTER, p.CENTER);
         p.noStroke();
       };
 
       p.draw = () => {
         p.clear();
 
-        // Emit runes on mouse move
+        // Add wind particles based on mouse movement
         if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
-          if (p.frameCount % 4 === 0) {
-            runes.push({
+          if (p.frameCount % 2 === 0) {
+            particles.push({
               x: p.mouseX,
               y: p.mouseY,
-              vx: p.random(-1, 1),
-              vy: p.random(-2, -0.5), // Drift up like smoke/breath
+              vx: p.random(1, 4), // Blow right
+              vy: p.random(-1, 1),
               life: 255,
-              symbol: p.random(symbols),
-              size: p.random(10, 24),
-              rot: p.random(p.TWO_PI),
-              rotSpeed: p.random(-0.05, 0.05)
+              size: p.random(2, 6)
             });
           }
         }
 
-        // Update and draw runes
-        for (let i = runes.length - 1; i >= 0; i--) {
-          let r = runes[i];
-          r.x += r.vx;
-          r.y += r.vy;
-          r.life -= 2;
-          r.rot += r.rotSpeed;
-          r.size += 0.1;
+        // Add random ambient wind particles
+        if(p.random(1) < 0.1) {
+          particles.push({
+            x: -10,
+            y: p.random(p.height),
+            vx: p.random(2, 6),
+            vy: p.random(-0.5, 0.5),
+            life: 255,
+            size: p.random(1, 3)
+          });
+        }
 
-          p.push();
-          p.translate(r.x, r.y);
-          p.rotate(r.rot);
-          // Gold to dark red gradient map based on life
-          let c = p.lerpColor(p.color(139, 0, 0, r.life), p.color(212, 175, 55, r.life), r.life/255);
-          p.fill(c);
-          p.textSize(r.size);
-          p.text(r.symbol, 0, 0);
-          p.pop();
+        // Update and draw
+        for (let i = particles.length - 1; i >= 0; i--) {
+          let pt = particles[i];
 
-          if (r.life <= 0) {
-            runes.splice(i, 1);
+          // Noise turbulence
+          let n = p.noise(pt.x * 0.01, pt.y * 0.01, p.frameCount * 0.01);
+          pt.vy += p.map(n, 0, 1, -0.1, 0.1);
+
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.life -= 1.5;
+
+          p.fill(255, 255, 255, pt.life * 0.5); // Soft white wind
+          p.ellipse(pt.x, pt.y, pt.size);
+
+          if (pt.life <= 0 || pt.x > p.width) {
+            particles.splice(i, 1);
           }
         }
       };
@@ -542,22 +635,22 @@
       // Hero Entry Animation
       const heroTl = gsap.timeline();
       heroTl.fromTo('.avatar-frame',
-        { scale: 0.5, opacity: 0, filter: 'blur(10px)' },
-        { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 2, ease: "power3.out" }
+        { scale: 0.8, opacity: 0, rotationY: 15 },
+        { scale: 1, opacity: 1, rotationY: 0, duration: 2, ease: "power3.out" }
       )
-      .fromTo('.gs-hero h1',
-        { y: 50, opacity: 0, letterSpacing: '0px' },
-        { y: 0, opacity: 1, letterSpacing: '0.1em', duration: 1.5, ease: "power2.out" },
+      .fromTo('.gs-reveal h1',
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.5, ease: "power2.out" },
         "-=1.5"
       )
-      .fromTo('.gs-hero h2',
+      .fromTo('.gs-reveal h2',
         { opacity: 0 },
         { opacity: 1, duration: 2 },
         "-=1"
       )
-      .fromTo('.gs-hero .glass-panel',
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1 },
+      .fromTo('.gs-reveal p',
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, stagger: 0.2 },
         "-=1.5"
       );
 
@@ -582,23 +675,21 @@
         }
       });
 
-      // Panel Content Reveals
-      panels.forEach((panel, i) => {
-        const content = panel.querySelectorAll('.glass-panel');
-        const marker = panel.querySelector('.rune-marker');
-
-        gsap.fromTo(marker,
-          { scale: 0.5, opacity: 0, rotation: -45 },
-          {
-            scale: 1, opacity: 0.1, rotation: 0,
+      // Simple parallax inside panels
+      panels.forEach((panel) => {
+        const content = panel.querySelector('.glass-panel, .glass-panel-oasis, .glass-panel-dark');
+        if(content) {
+          gsap.from(content, {
+            y: 50,
+            opacity: 0,
             scrollTrigger: {
               trigger: panel,
-              containerAnimation: gsap.getById("horizontal-scroll"), // Link to horiz scroll
+              containerAnimation: gsap.getById("horizontal-scroll"),
               start: "left center",
               toggleActions: "play none none reverse"
             }
-          }
-        );
+          });
+        }
       });
     });
   </script>
