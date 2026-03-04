@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>貓青 | 溫柔魔法使</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,11 +13,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.19/bundled/lenis.min.js"></script>
 
   <style>
     :root {
       --bg-cream: #fdfbf7;
-      --text-gray: #4a5568;
+      --text-gray: #5a6578;
       --accent-green: #d1dac5;
       --accent-blue: #8aa1a6;
       --accent-warm: #f5e6d3;
@@ -29,25 +31,37 @@
       color: var(--text-gray);
       font-family: 'Noto Sans TC', sans-serif;
       overflow-x: hidden;
-      cursor: none; /* Custom cursor */
+      cursor: none;
+    }
+
+    /* Smooth Scroll Setup */
+    html.lenis {
+      height: auto;
+    }
+    .lenis.lenis-smooth {
+      scroll-behavior: auto;
     }
 
     #custom-cursor {
-      width: 12px;
-      height: 12px;
+      width: 16px;
+      height: 16px;
       background-color: var(--accent-blue);
+      border: 2px solid white;
       border-radius: 50%;
       position: fixed;
       pointer-events: none;
       z-index: 9999;
       transform: translate(-50%, -50%);
-      transition: width 0.2s, height 0.2s, background-color 0.2s;
+      transition: width 0.3s, height 0.3s, background-color 0.3s;
       mix-blend-mode: multiply;
+      box-shadow: 0 0 10px rgba(138, 161, 166, 0.5);
     }
     #custom-cursor.hover {
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       background-color: var(--accent-green);
+      mix-blend-mode: normal;
+      border-color: var(--accent-green);
     }
 
     #three-container, #p5-container {
@@ -58,90 +72,81 @@
       height: 100vh;
       pointer-events: none;
     }
-    #three-container { z-index: 0; opacity: 0.6; } /* Soft clouds / atmosphere */
-    #p5-container { z-index: 10; } /* Soft drawing trails */
+    #three-container { z-index: 0; opacity: 0.8; }
+    #p5-container { z-index: 5; }
 
     main {
       position: relative;
-      z-index: 1;
+      z-index: 10;
+      width: 100%;
     }
 
     /* Hand-drawn / Paper elements */
-    .paper-card {
+    .polaroid {
       background: white;
-      border: 1px solid rgba(0,0,0,0.05);
-      box-shadow: 2px 4px 12px rgba(0,0,0,0.02),
-                  -1px -1px 4px rgba(255,255,255,0.5);
-      border-radius: 4px;
-      position: relative;
-    }
-    .paper-card::before {
-      content: '';
+      padding: 12px 12px 40px 12px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.06), 0 5px 15px rgba(0,0,0,0.03);
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.03"/></svg>');
+      will-change: transform;
+      transform-style: preserve-3d;
+      transition: box-shadow 0.4s ease;
+    }
+    .polaroid:hover {
+      box-shadow: 0 25px 50px rgba(0,0,0,0.1), 0 10px 20px rgba(0,0,0,0.05);
+      z-index: 50 !important;
+    }
+    .polaroid img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       pointer-events: none;
-      opacity: 0.5;
     }
 
     /* Sticky tape effect */
     .tape {
       position: absolute;
-      width: 80px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.4);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      backdrop-filter: blur(2px);
-      transform: rotate(-2deg);
-      top: -10px;
-      left: 50%;
-      margin-left: -40px;
+      width: 90px;
+      height: 25px;
+      background: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      backdrop-filter: blur(4px);
       z-index: 2;
-    }
-
-    /* Line art borders */
-    .drawn-border {
-      border: 1px solid var(--accent-blue);
-      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
-      padding: 1rem;
-    }
-
-    h1, h2, h3 {
-      font-weight: 300;
-      letter-spacing: 0.05em;
     }
 
     .story-text {
       line-height: 2.2;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: 300;
-      color: #5a6578;
+      letter-spacing: 0.05em;
+      color: #6a7588;
     }
 
-    /* Horizontal scroll container */
-    .gallery-container {
-      width: 400vw;
+    .title-text {
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      color: var(--accent-blue);
+    }
+
+    /* SVG Decorations */
+    .svg-decor {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.6;
+      stroke: var(--accent-green);
+      stroke-width: 1.5;
+      fill: none;
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+    }
+
+    /* Section Spacing for Parallax */
+    .parallax-section {
+      position: relative;
+      width: 100vw;
+      min-height: 150vh; /* Extra height for scrolling */
       display: flex;
-      flex-wrap: nowrap;
-      height: 100vh;
       align-items: center;
-      padding-left: 10vw;
-    }
-    .gallery-item {
-      width: 40vw;
-      margin-right: 10vw;
-      flex-shrink: 0;
-    }
-    .polaroid {
-      background: white;
-      padding: 1rem 1rem 3rem 1rem;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-      transform: rotate(-1deg);
-      transition: transform 0.4s ease;
-    }
-    .polaroid:hover {
-      transform: rotate(0deg) scale(1.02);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+      justify-content: center;
     }
 
   </style>
@@ -155,7 +160,7 @@
   <main>
     <!-- Nav / Header -->
     <nav class="fixed top-0 w-full p-8 flex justify-between items-center z-50 pointer-events-none">
-      <a href="/" class="text-sm tracking-widest text-[#8aa1a6] hover:text-[#d1dac5] transition-colors pointer-events-auto interactive">← 畫廊入口 (Back)</a>
+      <a href="/" class="text-sm tracking-widest text-[#8aa1a6] hover:text-[#d1dac5] transition-colors pointer-events-auto interactive">← 畫廊入口</a>
       <div class="flex gap-6 pointer-events-auto">
         <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-xl text-[#8aa1a6] hover:text-[#d1dac5] interactive"><i class="fa-brands fa-instagram"></i></a>
         <a href="https://www.threads.com/@naomiao77" target="_blank" class="text-xl text-[#8aa1a6] hover:text-[#d1dac5] interactive"><i class="fa-brands fa-threads"></i></a>
@@ -164,225 +169,342 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="min-h-screen flex items-center justify-center relative px-4">
-      <div class="max-w-4xl w-full flex flex-col md:flex-row items-center gap-12">
-        <div class="hero-image relative w-64 h-64 md:w-80 md:h-80 flex-shrink-0">
-          <div class="tape" style="transform: rotate(3deg); left: 20%; top: -5px;"></div>
-          <div class="tape" style="transform: rotate(-4deg); left: 80%; top: -5px;"></div>
-          <img src="/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" alt="貓青" class="w-full h-full object-cover rounded-sm paper-card" />
-        </div>
+    <section class="relative w-full h-screen flex flex-col items-center justify-center">
+      <!-- SVG Cloud -->
+      <svg class="svg-decor draw-anim" style="top: 20%; left: 15%; width: 150px;" viewBox="0 0 100 50">
+        <path d="M20,35 Q10,35 10,25 Q10,15 25,15 Q30,5 45,5 Q60,5 65,15 Q80,15 80,25 Q80,35 70,35 Z" />
+      </svg>
+      <svg class="svg-decor draw-anim" style="top: 30%; right: 20%; width: 100px; stroke: var(--accent-blue);" viewBox="0 0 100 50">
+        <path d="M20,35 Q10,35 10,25 Q10,15 25,15 Q30,5 45,5 Q60,5 65,15 Q80,15 80,25 Q80,35 70,35 Z" />
+      </svg>
 
-        <div class="hero-text text-center md:text-left space-y-6">
-          <h1 class="text-4xl md:text-5xl text-[#8aa1a6]">貓青</h1>
-          <h2 class="text-xl text-[#a0b0a2]">畫貓、畫花、畫天馬行空的瞬間。</h2>
-          <div class="h-px w-24 bg-[#d1dac5] mx-auto md:mx-0"></div>
-          <p class="story-text">
-            希望我的插畫，<br>
-            能在世界有點吵的時候，<br>
-            替你留下一小塊，剛剛好的溫柔。
-          </p>
-        </div>
+      <div class="z-10 text-center gs-reveal">
+        <h1 class="text-5xl md:text-6xl title-text mb-4">貓青</h1>
+        <h2 class="text-lg md:text-xl text-[#a0b0a2] tracking-widest font-light">畫貓、畫花、畫天馬行空的瞬間。</h2>
+      </div>
+
+      <div class="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 gs-reveal" style="transition-delay: 0.3s;">
+        <span class="text-sm text-[#8aa1a6] tracking-widest uppercase font-light">Scroll Slowly</span>
+        <div class="w-[1px] h-16 bg-gradient-to-b from-[#8aa1a6] to-transparent"></div>
       </div>
     </section>
 
-    <!-- Story Section -->
-    <section class="min-h-screen py-24 px-4 relative flex items-center justify-center">
-      <div class="max-w-3xl w-full drawn-border relative bg-white/50 backdrop-blur-sm p-12 story-card">
-        <div class="absolute -top-6 -left-6 text-4xl text-[#d1dac5] opacity-50"><i class="fa-solid fa-leaf"></i></div>
-        <div class="absolute -bottom-6 -right-6 text-4xl text-[#8aa1a6] opacity-50"><i class="fa-solid fa-cat"></i></div>
+    <!-- The Scrapbook Journey -->
+    <div class="relative w-full pb-32">
 
-        <p class="story-text text-center mb-8">
-          不是一路順著走來的創作者，<br>
-          而是慢慢把喜歡的事撿起來，<br>
-          一筆一筆，畫成現在的樣子。
-        </p>
-        <p class="story-text text-center mb-8">
-          喜歡柔軟的線條、溫和的顏色，<br>
-          也喜歡作品被放進生活裡——<br>
-          變成一張明信片、一幅畫，<br>
-          或某天剛好被需要的陪伴。
-        </p>
-        <p class="story-text text-center">
-          養貓，畫畫，偶爾旅行，<br>
-          喜歡動漫，也相信日常裡的小小魔法。<br>
-          腦袋裡住著很多奇特東西，有些在發芽，有些正在曬太陽。
-        </p>
+      <!-- Section 1 -->
+      <div class="parallax-section">
+        <div class="absolute w-full h-full max-w-7xl mx-auto left-0 right-0">
+
+          <!-- Text Box -->
+          <div class="absolute top-[20%] left-[10%] md:left-[20%] z-20 gs-reveal" data-speed="0.8">
+            <p class="story-text bg-white/60 backdrop-blur-md p-8 rounded-tr-3xl rounded-bl-3xl border border-white/50 shadow-xl">
+              不是一路順著走來的創作者，<br>
+              而是慢慢把喜歡的事撿起來，<br>
+              一筆一筆，畫成現在的樣子。
+            </p>
+          </div>
+
+          <!-- Avatar (1) -->
+          <div class="polaroid interactive" style="width: 25vw; min-width: 250px; top: 10%; right: 15%; transform: rotate(4deg); z-index: 10;" data-speed="1.2">
+            <div class="tape" style="top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg);"></div>
+            <img src="/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" alt="貓青">
+            <p class="text-center mt-3 text-xs text-[#8aa1a6] italic">貓青</p>
+          </div>
+
+          <!-- Image 2 -->
+          <div class="polaroid interactive" style="width: 20vw; min-width: 200px; top: 40%; left: 5%; transform: rotate(-6deg); z-index: 5;" data-speed="0.9">
+            <div class="tape" style="top: -8px; left: 20%; transform: rotate(5deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" alt="Art">
+          </div>
+
+          <!-- Image 3 -->
+          <div class="polaroid interactive" style="width: 30vw; min-width: 280px; top: 55%; right: 10%; transform: rotate(2deg); z-index: 15;" data-speed="1.1">
+            <div class="tape" style="top: -12px; right: 20%; transform: rotate(-4deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" alt="Art">
+          </div>
+
+          <!-- Image 4 -->
+          <div class="polaroid interactive" style="width: 18vw; min-width: 180px; top: 75%; left: 30%; transform: rotate(-3deg); z-index: 8;" data-speed="1.3">
+            <div class="tape" style="top: -10px; left: 50%; transform: translateX(-50%) rotate(2deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="Art">
+          </div>
+
+        </div>
       </div>
-    </section>
 
-    <!-- Horizontal Gallery Section -->
-    <section class="horizontal-scroll-section overflow-hidden relative bg-[#f5e6d3]/20">
-      <div class="gallery-container">
+      <!-- Section 2 -->
+      <div class="parallax-section">
+        <div class="absolute w-full h-full max-w-7xl mx-auto left-0 right-0">
 
-        <!-- Gallery Item 1 -->
-        <div class="gallery-item flex flex-col items-center">
-          <div class="polaroid">
-            <div class="tape"></div>
-            <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" class="w-full h-[50vh] object-cover" alt="Art 1">
-            <p class="text-center mt-4 text-sm text-[#8aa1a6] font-light italic">日常的小魔法</p>
+          <!-- SVG Cat -->
+          <svg class="svg-decor draw-anim" style="top: 10%; right: 25%; width: 80px;" viewBox="0 0 100 100">
+            <path d="M20,80 L20,40 Q20,20 40,20 Q60,20 60,40 L60,80 M20,40 L10,10 L35,25 M60,40 L70,10 L45,25" />
+            <circle cx="30" cy="45" r="3" fill="var(--accent-green)"/>
+            <circle cx="50" cy="45" r="3" fill="var(--accent-green)"/>
+            <path d="M35,55 Q40,60 45,55" />
+          </svg>
+
+          <!-- Text Box -->
+          <div class="absolute top-[35%] right-[10%] md:right-[15%] z-20 gs-reveal" data-speed="0.8">
+            <p class="story-text bg-[#fdfbf7]/80 backdrop-blur-md p-8 border border-[#d1dac5]/50 shadow-lg text-right">
+              喜歡柔軟的線條、溫和的顏色，<br>
+              也喜歡作品被放進生活裡——<br>
+              變成一張明信片、一幅畫，<br>
+              或某天剛好被需要的陪伴。
+            </p>
+          </div>
+
+          <!-- Image 5 -->
+          <div class="polaroid interactive" style="width: 22vw; min-width: 220px; top: 15%; left: 15%; transform: rotate(-4deg); z-index: 12;" data-speed="1.15">
+            <div class="tape" style="top: -10px; right: 20%; transform: rotate(3deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620420206_17907652968337939_396140348163788067_n.webp" alt="Art">
+          </div>
+
+          <!-- Image 6 -->
+          <div class="polaroid interactive" style="width: 28vw; min-width: 260px; top: 50%; left: 8%; transform: rotate(5deg); z-index: 6;" data-speed="0.95">
+            <div class="tape" style="top: -10px; left: 30%; transform: rotate(-5deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" alt="Art">
+          </div>
+
+          <!-- Image 7 -->
+          <div class="polaroid interactive" style="width: 24vw; min-width: 240px; top: 70%; right: 20%; transform: rotate(-2deg); z-index: 16;" data-speed="1.25">
+            <div class="tape" style="top: -10px; left: 50%; transform: translateX(-50%) rotate(1deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="Art">
           </div>
         </div>
-
-        <!-- Gallery Item 2 -->
-        <div class="gallery-item flex flex-col items-center">
-          <div class="polaroid" style="transform: rotate(2deg); margin-top: 10vh;">
-            <div class="tape" style="transform: rotate(-3deg);"></div>
-            <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" class="w-full h-[40vh] object-cover" alt="Art 2">
-            <p class="text-center mt-4 text-sm text-[#8aa1a6] font-light italic">正在曬太陽的想法</p>
-          </div>
-        </div>
-
-        <!-- Gallery Item 3 -->
-        <div class="gallery-item flex flex-col items-center">
-          <div class="polaroid" style="transform: rotate(-1deg); margin-top: -5vh;">
-            <div class="tape"></div>
-            <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" class="w-full h-[45vh] object-cover" alt="Art 3">
-            <p class="text-center mt-4 text-sm text-[#8aa1a6] font-light italic">一小塊溫柔</p>
-          </div>
-        </div>
-
-        <!-- Gallery Item 4 -->
-        <div class="gallery-item flex flex-col items-center">
-          <div class="polaroid" style="transform: rotate(1deg);">
-            <div class="tape"></div>
-            <img src="/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp" class="w-full h-[50vh] object-cover" alt="Art 4">
-            <p class="text-center mt-4 text-sm text-[#8aa1a6] font-light italic">柔軟的線條</p>
-          </div>
-        </div>
-
       </div>
-    </section>
 
-    <!-- Footer / End -->
-    <section class="min-h-[50vh] flex flex-col items-center justify-center relative">
-      <div class="text-4xl text-[#d1dac5] mb-6 opacity-60"><i class="fa-solid fa-cloud"></i></div>
-      <p class="story-text text-center">
-        慢慢累積故事的地方。<br>
-        隨時歡迎你來停留。
-      </p>
-      <div class="mt-12 h-24 w-px bg-gradient-to-b from-[#8aa1a6] to-transparent"></div>
-    </section>
+      <!-- Section 3 -->
+      <div class="parallax-section" style="min-height: 180vh;">
+        <div class="absolute w-full h-full max-w-7xl mx-auto left-0 right-0">
 
+          <!-- Text Box -->
+          <div class="absolute top-[20%] left-[15%] z-20 gs-reveal" data-speed="0.85">
+            <p class="story-text">
+              養貓，畫畫，偶爾旅行，<br>
+              喜歡動漫，也相信日常裡的小小魔法。<br>
+              腦袋裡住著很多奇特東西，<br>
+              有些在發芽，有些正在曬太陽。
+            </p>
+          </div>
+
+          <!-- Image 8 -->
+          <div class="polaroid interactive" style="width: 26vw; min-width: 250px; top: 10%; right: 8%; transform: rotate(6deg); z-index: 9;" data-speed="1.1">
+            <div class="tape" style="top: -12px; left: 20%; transform: rotate(-3deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620439760_17907653019337939_277965404648345672_n.webp" alt="Art">
+          </div>
+
+          <!-- Image 9 -->
+          <div class="polaroid interactive" style="width: 32vw; min-width: 300px; top: 40%; left: 25%; transform: rotate(-4deg); z-index: 18;" data-speed="1.3">
+            <div class="tape" style="top: -10px; right: 30%; transform: rotate(4deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620458519_17907652980337939_9221614729533321159_n.webp" alt="Art">
+          </div>
+
+          <!-- Image 10 -->
+          <div class="polaroid interactive" style="width: 28vw; min-width: 280px; top: 75%; right: 15%; transform: rotate(3deg); z-index: 14;" data-speed="0.9">
+            <div class="tape" style="top: -10px; left: 50%; transform: translateX(-50%) rotate(-1deg);"></div>
+            <img src="/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp" alt="Art">
+          </div>
+
+          <!-- Final Text -->
+          <div class="absolute top-[90%] left-1/2 -translate-x-1/2 w-full max-w-lg text-center z-20 gs-reveal" data-speed="1.0">
+            <div class="text-4xl text-[#d1dac5] mb-6 opacity-60"><i class="fa-solid fa-cloud"></i></div>
+            <p class="story-text text-xl">
+              希望我的插畫，<br>
+              能在世界有點吵的時候，<br>
+              替你留下一小塊，剛剛好的溫柔。
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </main>
 
   <script>
-    // --- Custom Cursor ---
-    const cursor = document.getElementById('custom-cursor');
-    document.addEventListener('mousemove', (e) => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
+    // --- Smooth Scroll Setup (Lenis) ---
+    const lenis = new Lenis({
+      duration: 1.5,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smooth: true,
+      mouseMultiplier: 1,
     });
-    document.querySelectorAll('.interactive').forEach(el => {
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // --- Custom Cursor & Interactive Physics ---
+    const cursor = document.getElementById('custom-cursor');
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      // Soft cursor follow
+      gsap.to(cursor, { x: mouseX, y: mouseY, duration: 0.1, ease: "power2.out" });
+    });
+
+    // 3D Tilt for polaroids
+    document.querySelectorAll('.polaroid').forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+      el.addEventListener('mouseleave', () => {
+        cursor.classList.remove('hover');
+        gsap.to(el, { rotationY: 0, rotationX: 0, duration: 0.5, ease: 'power2.out' });
+      });
+      el.addEventListener('mousemove', (e) => {
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        gsap.to(el, {
+          rotationY: x * 0.05,
+          rotationX: -y * 0.05,
+          duration: 0.5,
+          ease: 'power2.out'
+        });
+      });
+    });
+
+    document.querySelectorAll('.interactive:not(.polaroid)').forEach(el => {
       el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
       el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
     });
 
-    // --- GSAP Animations ---
+    // --- GSAP ScrollTrigger ---
     gsap.registerPlugin(ScrollTrigger);
 
-    // Hero Fade In
-    gsap.from('.hero-image', {
-      y: 50, opacity: 0, duration: 1.5, ease: 'power3.out'
+    // Connect Lenis to ScrollTrigger
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((time)=>{
+      lenis.raf(time * 1000);
     });
-    gsap.from('.hero-text > *', {
-      y: 30, opacity: 0, duration: 1, stagger: 0.2, ease: 'power2.out', delay: 0.5
-    });
+    gsap.ticker.lagSmoothing(0);
 
-    // Story Card
-    gsap.from('.story-card', {
-      scrollTrigger: {
-        trigger: '.story-card',
-        start: 'top 80%',
-      },
-      y: 50,
-      opacity: 0,
-      duration: 1.5,
-      ease: 'power2.out'
-    });
-
-    // Horizontal Scroll
-    const galleryContainer = document.querySelector('.gallery-container');
-    const sections = gsap.utils.toArray('.gallery-item');
-
-    gsap.to(sections, {
-      xPercent: -100 * (sections.length - 1),
-      ease: "none",
-      scrollTrigger: {
-        trigger: ".horizontal-scroll-section",
-        pin: true,
-        scrub: 1,
-        snap: 1 / (sections.length - 1),
-        end: () => "+=" + document.querySelector(".gallery-container").offsetWidth
-      }
-    });
-
-    // Polaroid Parallax
-    sections.forEach((section, i) => {
-      gsap.to(section.querySelector('.polaroid'), {
-        y: (i % 2 === 0) ? -50 : 50,
-        rotation: (i % 2 === 0) ? 3 : -3,
+    // Parallax elements
+    document.querySelectorAll('[data-speed]').forEach(el => {
+      const speed = parseFloat(el.getAttribute('data-speed'));
+      gsap.to(el, {
+        y: () => (1 - speed) * (window.innerHeight * 1.5),
         ease: "none",
         scrollTrigger: {
-          trigger: ".horizontal-scroll-section",
-          start: "top top",
-          end: () => "+=" + document.querySelector(".gallery-container").offsetWidth,
-          scrub: true
+          trigger: el.parentElement,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5,
+          invalidateOnRefresh: true
         }
       });
     });
 
-    // --- Three.js (Soft Clouds / Atmosphere) ---
+    // Fade up reveals
+    document.querySelectorAll('.gs-reveal').forEach(el => {
+      gsap.from(el, {
+        y: 60,
+        opacity: 0,
+        duration: 1.5,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: el,
+          start: "top 85%",
+        }
+      });
+    });
+
+    // SVG Drawing Animation
+    document.querySelectorAll('.draw-anim').forEach(svg => {
+      gsap.to(svg, {
+        strokeDashoffset: 0,
+        duration: 3,
+        ease: "power2.inOut",
+        scrollTrigger: {
+          trigger: svg,
+          start: "top 80%",
+        }
+      });
+    });
+
+    // --- Three.js (Soft Clouds / Floating Geometry) ---
     const initThree = () => {
       const container = document.getElementById('three-container');
       const scene = new THREE.Scene();
-      scene.fog = new THREE.FogExp2(0xfdfbf7, 0.002);
+      scene.fog = new THREE.FogExp2(0xfdfbf7, 0.003);
 
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.z = 30;
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 50;
 
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       container.appendChild(renderer.domElement);
 
-      // Create soft floating 'dust' or 'spores'
-      const geometry = new THREE.BufferGeometry();
-      const count = 300;
-      const positions = new Float32Array(count * 3);
-      for(let i = 0; i < count * 3; i++) {
-        positions[i] = (Math.random() - 0.5) * 100;
+      const group = new THREE.Group();
+      scene.add(group);
+
+      // Create abstract soft shapes (clouds/leaves)
+      const geometries = [
+        new THREE.TetrahedronGeometry(2, 2),
+        new THREE.OctahedronGeometry(1.5, 2),
+        new THREE.IcosahedronGeometry(2, 1)
+      ];
+
+      const materials = [
+        new THREE.MeshBasicMaterial({ color: 0xd1dac5, transparent: true, opacity: 0.3, wireframe: true }), // green
+        new THREE.MeshBasicMaterial({ color: 0x8aa1a6, transparent: true, opacity: 0.2, wireframe: true }), // blue
+        new THREE.MeshBasicMaterial({ color: 0xf5e6d3, transparent: true, opacity: 0.4 }) // warm
+      ];
+
+      const shapes = [];
+      for(let i = 0; i < 40; i++) {
+        const geo = geometries[Math.floor(Math.random() * geometries.length)];
+        const mat = materials[Math.floor(Math.random() * materials.length)];
+        const mesh = new THREE.Mesh(geo, mat);
+
+        mesh.position.x = (Math.random() - 0.5) * 120;
+        mesh.position.y = (Math.random() - 0.5) * 150;
+        mesh.position.z = (Math.random() - 0.5) * 40 - 10;
+
+        mesh.rotation.x = Math.random() * Math.PI;
+        mesh.rotation.y = Math.random() * Math.PI;
+
+        mesh.userData = {
+          rx: (Math.random() - 0.5) * 0.01,
+          ry: (Math.random() - 0.5) * 0.01,
+          oy: mesh.position.y
+        };
+
+        shapes.push(mesh);
+        group.add(mesh);
       }
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-      // Create a soft circle texture for particles
-      const canvas = document.createElement('canvas');
-      canvas.width = 32; canvas.height = 32;
-      const ctx = canvas.getContext('2d');
-      const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-      gradient.addColorStop(0, 'rgba(138, 161, 166, 1)'); // accent-blue
-      gradient.addColorStop(1, 'rgba(138, 161, 166, 0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 32, 32);
-      const tex = new THREE.CanvasTexture(canvas);
-
-      const material = new THREE.PointsMaterial({
-        size: 1.5,
-        map: tex,
-        transparent: true,
-        opacity: 0.4,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
+      // Parallax on scroll for Three.js
+      let scrollY = window.scrollY;
+      lenis.on('scroll', (e) => {
+        scrollY = e.scroll;
+        group.position.y = scrollY * 0.02; // Very slow camera pan
       });
 
-      const particles = new THREE.Points(geometry, material);
-      scene.add(particles);
-
-      let time = 0;
       const animate = () => {
         requestAnimationFrame(animate);
-        time += 0.001;
-        particles.rotation.y = time * 0.5;
-        particles.position.y = Math.sin(time * 2) * 2;
+
+        // Very subtle drift + mouse interaction
+        const targetX = (mouseX / window.innerWidth - 0.5) * 10;
+        const targetY = (mouseY / window.innerHeight - 0.5) * 10;
+
+        camera.position.x += (targetX - camera.position.x) * 0.02;
+        camera.position.y += (-targetY - camera.position.y) * 0.02;
+        camera.lookAt(scene.position);
+
+        shapes.forEach(mesh => {
+          mesh.rotation.x += mesh.userData.rx;
+          mesh.rotation.y += mesh.userData.ry;
+          // Bobbing
+          mesh.position.y = mesh.userData.oy + Math.sin(Date.now() * 0.001 + mesh.position.x) * 2;
+        });
+
         renderer.render(scene, camera);
       };
       animate();
@@ -395,9 +517,9 @@
     };
     initThree();
 
-    // --- p5.js (Soft Pencil/Watercolor Trail) ---
+    // --- p5.js (Generative Magic Trails / Flowers) ---
     const p5Sketch = (p) => {
-      let trails = [];
+      let particles = [];
 
       p.setup = () => {
         let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -408,32 +530,79 @@
       p.draw = () => {
         p.clear();
 
-        // Add current mouse pos to trail
-        if (p.mouseX !== 0 && p.mouseY !== 0) {
-          trails.push({
-            x: p.mouseX,
-            y: p.mouseY,
-            life: 255,
-            size: p.random(2, 8),
-            color: p.random() > 0.5 ? p.color(209, 218, 197) : p.color(138, 161, 166) // Green or Blue
-          });
+        // Spawn on mouse move
+        if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
+          if (p.frameCount % 3 === 0) { // Limit spawn rate
+            particles.push({
+              x: p.mouseX,
+              y: p.mouseY,
+              vx: p.random(-1, 1),
+              vy: p.random(-1, 0), // Float up
+              life: 255,
+              size: p.random(3, 12),
+              color: p.random() > 0.5 ? p.color(209, 218, 197) : p.color(245, 230, 211), // Green or Warm
+              shape: p.random() > 0.7 ? 'star' : 'circle',
+              angle: p.random(p.TWO_PI),
+              rotSpeed: p.random(-0.05, 0.05)
+            });
+          }
         }
 
-        // Draw and update trails
-        for (let i = trails.length - 1; i >= 0; i--) {
-          let t = trails[i];
-          t.life -= 5;
-          t.y -= 0.5; // Float up slightly
-          t.x += p.sin(p.frameCount * 0.05 + i) * 0.5; // Wiggle
+        // Add some random ambient spawns related to scroll velocity
+        if (lenis.velocity > 10 && p.random() > 0.8) {
+           particles.push({
+              x: p.random(p.width),
+              y: p.height + 20,
+              vx: p.random(-2, 2),
+              vy: -p.random(2, 6),
+              life: 255,
+              size: p.random(5, 15),
+              color: p.color(138, 161, 166), // Blue
+              shape: 'circle',
+              angle: 0,
+              rotSpeed: 0
+            });
+        }
 
-          p.fill(p.red(t.color), p.green(t.color), p.blue(t.color), t.life * 0.5);
-          p.circle(t.x, t.y, t.size);
+        for (let i = particles.length - 1; i >= 0; i--) {
+          let pt = particles[i];
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.life -= 3;
+          pt.angle += pt.rotSpeed;
 
-          if (t.life <= 0) {
-            trails.splice(i, 1);
+          p.push();
+          p.translate(pt.x, pt.y);
+          p.rotate(pt.angle);
+          p.fill(p.red(pt.color), p.green(pt.color), p.blue(pt.color), pt.life * 0.6);
+
+          if (pt.shape === 'star') {
+            drawStar(p, 0, 0, pt.size * 0.4, pt.size, 5);
+          } else {
+            p.circle(0, 0, pt.size);
+          }
+          p.pop();
+
+          if (pt.life <= 0) {
+            particles.splice(i, 1);
           }
         }
       };
+
+      function drawStar(p, x, y, radius1, radius2, npoints) {
+        let angle = p.TWO_PI / npoints;
+        let halfAngle = angle / 2.0;
+        p.beginShape();
+        for (let a = 0; a < p.TWO_PI; a += angle) {
+          let sx = x + p.cos(a) * radius2;
+          let sy = y + p.sin(a) * radius2;
+          p.vertex(sx, sy);
+          sx = x + p.cos(a + halfAngle) * radius1;
+          sy = y + p.sin(a + halfAngle) * radius1;
+          p.vertex(sx, sy);
+        }
+        p.endShape(p.CLOSE);
+      }
 
       p.windowResized = () => {
         p.resizeCanvas(p.windowWidth, p.windowHeight);
