@@ -922,13 +922,8 @@
           trigger: ".horizontal-scroll-wrapper",
           pin: true,
           scrub: 1,
-          // snap removed for smoother scrolling
-
-            delay: 0.1,
-            ease: "power1.inOut"
-          },
           end: () => "+=" + (scrollContainer.offsetWidth * 1.5), // Make the scroll longer/more noticeable
-                    onUpdate: (self) => {
+          onUpdate: (self) => {
             // Update global state for Three.js render loop
             ThreeSceneState.progress = self.progress;
 
