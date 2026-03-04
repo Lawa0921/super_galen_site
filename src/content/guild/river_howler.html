@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沒川狼雨 River Howler | The Hybrid Druid</title>
+    <meta name="description" content="嗨，我是身兼三職的龍狼混血德魯伊-沒川狼雨。同時從事群獸守護者（特寵繁殖）、死靈法師（標本製作）、以及煉金術師（模型製作）三種職業。">
+
+    <!-- CSS / Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@300;400;500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Three.js / GSAP / p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <style>
+        /* CSS Variables */
+        :root {
+            --void: #050305;
+            --blood: #880808;
+            --blood-dim: #4a0404;
+            --bone: #e3dcd3;
+            --bone-dim: #b5ac9d;
+            --magic: #102e1c;
+            --magic-glow: #2ecc71;
+            --necro: #35084a;
+            --necro-glow: #9b59b6;
+            --glass-bg: rgba(10, 5, 10, 0.7);
+            --glass-border: rgba(136, 8, 8, 0.3);
+
+            --font-display: 'Cinzel', serif;
+            --font-body: 'Noto Serif TC', serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--void);
+            color: var(--bone);
+            font-family: var(--font-body);
+            font-weight: 400;
+            overflow-x: hidden;
+            cursor: none;
+            line-height: 1.8;
+            font-size: 16px;
+        }
+
+        ::selection { background: var(--blood); color: #fff; }
+        img { display: block; max-width: 100%; height: auto; }
+        a { color: inherit; text-decoration: none; }
+
+        /* Custom Cursor */
+        #cursor-dot {
+            width: 8px; height: 8px;
+            background: var(--bone);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 10000;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px var(--blood);
+            transition: width 0.2s, height 0.2s, background 0.2s;
+        }
+        #cursor-outline {
+            width: 40px; height: 40px;
+            border: 1px solid rgba(136, 8, 8, 0.6);
+            border-radius: 50%;
+            position: fixed; top: 0; left: 0;
+            pointer-events: none; z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, border-color 0.3s, border-radius 0.3s;
+        }
+        .hovering #cursor-outline {
+            width: 60px; height: 60px;
+            border-color: var(--blood);
+            background: rgba(136, 8, 8, 0.1);
+            border-radius: 4px;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        /* 3D and P5 Containers */
+        #three-container, #p5-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Nav */
+        .nav-bar {
+            position: fixed; top: 0; left: 0; width: 100%;
+            z-index: 100; padding: 20px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(180deg, rgba(5,3,5,0.95) 0%, transparent 100%);
+        }
+        .nav-back {
+            display: flex; align-items: center; gap: 10px;
+            font-family: var(--font-mono); font-size: 0.8rem;
+            letter-spacing: 0.15em; color: var(--bone-dim);
+            transition: color 0.3s;
+            text-transform: uppercase;
+        }
+        .nav-back:hover { color: var(--blood); }
+        .nav-back i { font-size: 1.2rem; }
+
+        /* Layout Structure */
+        .content-wrapper { position: relative; z-index: 10; }
+        section { padding: 120px 5%; max-width: 1200px; margin: 0 auto; position: relative; }
+
+        /* Flash Overlay for Transformation */
+        #transformation-flash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--blood);
+            z-index: 9000;
+            opacity: 0;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        #transformation-vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.9) 100%);
+            z-index: 8999;
+            pointer-events: none;
+        }
+
+        /* Hero Section */
+        #hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            text-align: center;
+            padding-top: 150px;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 280px; height: 280px;
+            margin-bottom: 40px;
+        }
+
+        .avatar-container::before {
+            content: '';
+            position: absolute; inset: -20px;
+            border-radius: 50%;
+            border: 2px dashed rgba(136, 8, 8, 0.4);
+            animation: spin 30s linear infinite;
+        }
+
+        .avatar-container::after {
+            content: '';
+            position: absolute; inset: -40px;
+            border-radius: 50%;
+            border: 1px solid rgba(136, 8, 8, 0.2);
+            animation: spin 45s linear infinite reverse;
+        }
+
+        .beast-mode .avatar-container::before { border-color: rgba(46, 204, 113, 0.4); }
+        .beast-mode .avatar-container::after { border-color: rgba(46, 204, 113, 0.2); }
+
+        #hero-avatar {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid var(--void);
+            box-shadow: 0 0 40px rgba(136, 8, 8, 0.5);
+            transition: box-shadow 0.5s;
+        }
+
+        .beast-mode #hero-avatar {
+            box-shadow: 0 0 60px rgba(46, 204, 113, 0.6);
+            border-color: #0d1a12;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 20px rgba(136, 8, 8, 0.8);
+            background: linear-gradient(180deg, var(--bone) 0%, var(--bone-dim) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .beast-mode .hero-title { text-shadow: 0 0 30px rgba(46, 204, 113, 0.8); }
+
+        .hero-subtitle {
+            font-family: var(--font-mono);
+            color: var(--blood);
+            font-size: 1.1rem;
+            letter-spacing: 0.2em;
+            margin-bottom: 30px;
+        }
+
+        .beast-mode .hero-subtitle { color: var(--magic-glow); }
+
+        .hero-desc {
+            max-width: 600px;
+            margin: 0 auto;
+            color: var(--bone-dim);
+            font-size: 1.05rem;
+            line-height: 2;
+        }
+
+        /* Sections */
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-tag {
+            font-family: var(--font-mono);
+            color: var(--blood);
+            font-size: 0.85rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .beast-mode .section-tag { color: var(--magic-glow); }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: var(--bone);
+            letter-spacing: 0.05em;
+        }
+
+        /* Persona Grid */
+        .persona-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        @media (min-width: 900px) {
+            .persona-grid { grid-template-columns: 1fr 1fr; }
+            .persona-grid.reverse { direction: rtl; }
+            .persona-grid.reverse > * { direction: ltr; }
+        }
+
+        .persona-img-wrap {
+            position: relative;
+            padding: 20px;
+        }
+        .persona-img-wrap::before {
+            content: ''; position: absolute; inset: 0;
+            border: 1px solid var(--blood);
+            transform: rotate(-3deg);
+            z-index: -1;
+            transition: border-color 0.5s;
+        }
+        .beast-mode .persona-img-wrap::before { border-color: var(--magic-glow); }
+
+        .persona-img {
+            width: 100%;
+            height: 450px;
+            object-fit: cover;
+            filter: grayscale(80%) contrast(1.2) brightness(0.8);
+            transition: all 0.5s;
+        }
+        .persona-img-wrap:hover .persona-img {
+            filter: grayscale(0%) contrast(1.1) brightness(1);
+        }
+
+        .persona-content h3 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            color: var(--bone);
+            margin-bottom: 20px;
+        }
+
+        .persona-content p {
+            color: var(--bone-dim);
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .service-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .service-item {
+            position: relative;
+            padding-left: 25px;
+            color: var(--bone);
+            font-size: 0.95rem;
+        }
+        .service-item::before {
+            content: '✦';
+            position: absolute;
+            left: 0; top: 0;
+            color: var(--blood);
+            font-size: 0.8rem;
+        }
+        .beast-mode .service-item::before { color: var(--magic-glow); }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 1;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: brightness(0.7) sepia(0.3) hue-rotate(-30deg);
+            transition: all 0.5s;
+        }
+        .gallery-item:hover img {
+            filter: brightness(1) sepia(0) hue-rotate(0deg);
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(136, 8, 8, 0.2);
+            margin-top: 100px;
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(5,3,5,0.95) 0%, transparent 100%);
+        }
+
+        .beast-mode footer { border-top-color: rgba(46, 204, 113, 0.2); }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="theme-necromancer">
+
+    <!-- Cursor -->
+    <div id="cursor-dot"></div>
+    <div id="cursor-outline"></div>
+
+    <!-- Transformation FX Overlays -->
+    <div id="transformation-flash"></div>
+    <div id="transformation-vignette"></div>
+
+    <!-- WebGL Backgrounds -->
+    <div id="three-container"></div>
+    <div id="p5-container"></div>
+
+    <!-- Nav -->
+    <nav class="nav-bar">
+        <a href="/guild" class="nav-back hover-target">
+            <i class="fa-solid fa-chevron-left"></i>
+            <span>Return to Guild</span>
+        </a>
+        <div class="social-links" style="display:flex; gap:15px;">
+            <a href="https://www.threads.net/@river_howler" target="_blank" rel="noopener" class="hover-target" style="color:var(--bone-dim);font-size:1.2rem;transition:color 0.3s;"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/river_howler/" target="_blank" rel="noopener" class="hover-target" style="color:var(--bone-dim);font-size:1.2rem;transition:color 0.3s;"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.facebook.com/riverhowler" target="_blank" rel="noopener" class="hover-target" style="color:var(--bone-dim);font-size:1.2rem;transition:color 0.3s;"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://linktr.ee/River_Howler" target="_blank" rel="noopener" class="hover-target" style="color:var(--bone-dim);font-size:1.2rem;transition:color 0.3s;"><i class="fa-solid fa-link"></i></a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+
+        <!-- HERO -->
+        <section id="hero">
+            <div class="avatar-container gs-reveal">
+                <img id="hero-avatar" src="/assets/guild/river_howler/10.webp" alt="沒川狼雨 River Howler" loading="eager">
+            </div>
+            <h1 class="hero-title gs-reveal">River Howler</h1>
+            <div class="hero-subtitle gs-reveal">德魯伊 × 死靈法師 × 煉金術師</div>
+            <p class="hero-desc gs-reveal">
+                嗨，我是身兼三職的龍狼混血德魯伊-沒川狼雨。<br>
+                同時從事群獸守護者（特寵繁殖）、死靈法師（標本製作），以及煉金術師（模型製作）。<br>
+                風格奇幻、恐怖、獵奇。
+            </p>
+        </section>
+
+        <!-- PERSONA 1: DRUID -->
+        <section id="druid">
+            <div class="persona-grid gs-reveal-section">
+                <div class="persona-img-wrap">
+                    <img src="/assets/guild/river_howler/6.webp" alt="特寵與群獸守護" class="persona-img" loading="lazy">
+                </div>
+                <div class="persona-content">
+                    <div class="section-tag">PERSONA 01</div>
+                    <h3>群獸守護者 <span style="font-size:1rem;color:var(--bone-dim);font-family:var(--font-mono);">/ DRUID</span></h3>
+                    <p>如果你想飼養特殊的動物，你可以找我購買。從鳥類到特寵，我以德魯伊的身份守護並繁育牠們，確保每一個生命都能健康成長。</p>
+                    <ul class="service-list">
+                        <li class="service-item">各種花色的蘆丁雞</li>
+                        <li class="service-item">加州冠鵪鶉</li>
+                        <li class="service-item">摩登那鴿</li>
+                        <li class="service-item">東方鴿</li>
+                        <li class="service-item">花枝鼠</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- PERSONA 2: NECROMANCER -->
+        <section id="necromancer">
+            <div class="persona-grid reverse gs-reveal-section">
+                <div class="persona-img-wrap">
+                    <img src="/assets/guild/river_howler/7.webp" alt="標本製作與死靈法術" class="persona-img" loading="lazy">
+                </div>
+                <div class="persona-content">
+                    <div class="section-tag">PERSONA 02</div>
+                    <h3>死靈法師 <span style="font-size:1rem;color:var(--bone-dim);font-family:var(--font-mono);">/ NECROMANCER</span></h3>
+                    <p>如果你想訂製標本，我提供死靈復甦服務。將逝去的生命以另一種永恆的姿態保存，融合恐怖、獵奇與黑暗奇幻的美學。</p>
+                    <ul class="service-list">
+                        <li class="service-item">小型鳥類剝製標本</li>
+                        <li class="service-item">小型動物骨胳標本</li>
+                        <li class="service-item">翅膀標本</li>
+                        <li class="service-item">爪標本</li>
+                        <li class="service-item">蛋標本</li>
+                        <li class="service-item">模型混合標本</li>
+                        <li class="service-item">可拆卸磁吸標本</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- PERSONA 3: ALCHEMIST -->
+        <section id="alchemist">
+            <div class="persona-grid gs-reveal-section">
+                <div class="persona-img-wrap">
+                    <img src="/assets/guild/river_howler/5.webp" alt="模型與煉金術" class="persona-img" loading="lazy">
+                </div>
+                <div class="persona-content">
+                    <div class="section-tag">PERSONA 03</div>
+                    <h3>煉金術師 <span style="font-size:1rem;color:var(--bone-dim);font-family:var(--font-mono);">/ ALCHEMIST</span></h3>
+                    <p>如果你想訂製模型，我提供煉金術服務。融合獸骨、龍骨元素，打造極度寫實或極度詭異的獵奇模型與道具。</p>
+                    <ul class="service-list">
+                        <li class="service-item">寵物/動物模型</li>
+                        <li class="service-item">內臟/獵奇模型</li>
+                        <li class="service-item">怪物模型</li>
+                        <li class="service-item">樹脂眼球</li>
+                        <li class="service-item">娃頭製作</li>
+                        <li class="service-item">標本混合模型</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- GALLERY -->
+        <section id="gallery">
+            <div class="section-header gs-reveal-section">
+                <div class="section-tag">DARK ARCHIVES</div>
+                <h2 class="section-title">黑暗圖鑑</h2>
+            </div>
+            <div class="gallery-grid gs-reveal-section">
+                <div class="gallery-item"><img src="/assets/guild/river_howler/2.webp" alt="Archive Image 2" loading="lazy"></div>
+                <div class="gallery-item"><img src="/assets/guild/river_howler/3.webp" alt="Archive Image 3" loading="lazy"></div>
+                <div class="gallery-item"><img src="/assets/guild/river_howler/4.webp" alt="Archive Image 4" loading="lazy"></div>
+                <div class="gallery-item"><img src="/assets/guild/river_howler/8.webp" alt="Archive Image 8" loading="lazy"></div>
+                <div class="gallery-item"><img src="/assets/guild/river_howler/9.webp" alt="Archive Image 9" loading="lazy"></div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        <p style="color:var(--bone-dim);font-family:var(--font-mono);font-size:0.9rem;letter-spacing:0.1em;">
+            "Into the wild, through the bones, crafted by blood."
+        </p>
+        <p style="color:var(--bone-dim);font-size:0.8rem;margin-top:15px;opacity:0.5;">
+            &copy; 沒川狼雨 River Howler. All rights reserved.
+        </p>
+    </footer>
+
+    <script>
+        // Custom Cursor Logic
+        const dot = document.getElementById('cursor-dot');
+        const outline = document.getElementById('cursor-outline');
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let outlineX = mouseX;
+        let outlineY = mouseY;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            dot.style.left = mouseX + 'px';
+            dot.style.top = mouseY + 'px';
+        });
+
+        const loop = () => {
+            outlineX += (mouseX - outlineX) * 0.15;
+            outlineY += (mouseY - outlineY) * 0.15;
+            outline.style.left = outlineX + 'px';
+            outline.style.top = outlineY + 'px';
+            requestAnimationFrame(loop);
+        };
+        loop();
+
+        // Add hover effects for dynamically added elements later
+        document.body.addEventListener('mouseover', (e) => {
+            if(e.target.closest('.hover-target') || e.target.closest('a') || e.target.closest('button')) {
+                document.body.classList.add('hovering');
+            }
+        });
+        document.body.addEventListener('mouseout', (e) => {
+            if(e.target.closest('.hover-target') || e.target.closest('a') || e.target.closest('button')) {
+                document.body.classList.remove('hovering');
+            }
+        });
+
+        // Initialize empty state object
+        window.APP_STATE = {
+            scrollProgress: 0,
+            isBeastMode: false
+        };
+
+        // ═══════════════════════════════════════════
+        // THREE.JS - Dark Fantasy Background (Floating Bones, Red Magic)
+        // ═══════════════════════════════════════════
+        const initThreeJS = () => {
+            const container = document.getElementById('three-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050305, 0.05);
+
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x1a0a1a, 1.5); // Dim purple ambient
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x880808, 4, 100); // Red blood magic
+            pointLight.position.set(0, 0, 10);
+            scene.add(pointLight);
+
+            // Floating Abstract Bones / Crystals
+            const objectGroup = new THREE.Group();
+            scene.add(objectGroup);
+
+            const boneGeometry = new THREE.OctahedronGeometry(1, 0); // Sharp, crystal-like bone
+            const boneMaterial = new THREE.MeshStandardMaterial({
+                color: 0x221122,
+                roughness: 0.3,
+                metalness: 0.8,
+                emissive: 0x4a0404,
+                emissiveIntensity: 0.2,
+                flatShading: true
+            });
+
+            // Keep reference to tweak during Beast Mode
+            window.THREE_MAT = boneMaterial;
+            window.THREE_LIGHT = pointLight;
+
+            const numBones = 60;
+            const bones = [];
+
+            for (let i = 0; i < numBones; i++) {
+                const mesh = new THREE.Mesh(boneGeometry, boneMaterial);
+
+                // Random position within a cylindrical-ish volume
+                const theta = Math.random() * Math.PI * 2;
+                const r = 10 + Math.random() * 25;
+                mesh.position.x = Math.cos(theta) * r;
+                mesh.position.y = (Math.random() - 0.5) * 60;
+                mesh.position.z = Math.sin(theta) * r - 10;
+
+                // Random scale and rotation
+                const s = 0.5 + Math.random() * 2.5;
+                mesh.scale.set(s, s * (2 + Math.random() * 3), s); // Elongated
+                mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+                objectGroup.add(mesh);
+                bones.push({
+                    mesh: mesh,
+                    rotSpeedX: (Math.random() - 0.5) * 0.02,
+                    rotSpeedY: (Math.random() - 0.5) * 0.02,
+                    floatSpeed: 0.01 + Math.random() * 0.03,
+                    yBase: mesh.position.y,
+                    yOffset: Math.random() * Math.PI * 2
+                });
+            }
+
+            // Particles
+            const particleGeo = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            const posArray = new Float32Array(particleCount * 3);
+            for(let i=0; i<particleCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 100;
+            }
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particleMat = new THREE.PointsMaterial({
+                size: 0.15,
+                color: 0x880808,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+            window.THREE_PARTICLES = particleMat;
+            const particleSystem = new THREE.Points(particleGeo, particleMat);
+            scene.add(particleSystem);
+
+            // Animation Loop
+            let time = 0;
+            let targetCameraY = 0;
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                time += 0.01;
+
+                // Rotate Group slowly
+                objectGroup.rotation.y = time * 0.1;
+
+                // Scroll parallax
+                targetCameraY = -APP_STATE.scrollProgress * 40;
+                camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+
+                // Animate Bones
+                const beastMultiplier = APP_STATE.isBeastMode ? 5 : 1;
+                bones.forEach((b) => {
+                    b.mesh.rotation.x += b.rotSpeedX * beastMultiplier;
+                    b.mesh.rotation.y += b.rotSpeedY * beastMultiplier;
+                    b.mesh.position.y = b.yBase + Math.sin(time * b.floatSpeed * 5 + b.yOffset) * 2;
+                });
+
+                // Particles
+                particleSystem.rotation.y = time * 0.05;
+                if(APP_STATE.isBeastMode) {
+                    particleSystem.rotation.x += 0.01;
+                    particleSystem.rotation.z += 0.01;
+                }
+
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // ═══════════════════════════════════════════
+        // P5.JS - Blood Magic Cursor Trails
+        // ═══════════════════════════════════════════
+        const initP5 = () => {
+            new p5((sk) => {
+                const particles = [];
+                let beastChaos = 0;
+
+                sk.setup = () => {
+                    let cnv = sk.createCanvas(window.innerWidth, window.innerHeight);
+                    cnv.parent('p5-container');
+                    sk.pixelDensity(1);
+                    sk.noStroke();
+                };
+
+                sk.draw = () => {
+                    sk.clear();
+
+                    beastChaos = sk.lerp(beastChaos, APP_STATE.isBeastMode ? 1 : 0, 0.1);
+
+                    // Add particle on mouse move if moving
+                    if (sk.dist(sk.mouseX, sk.mouseY, sk.pmouseX, sk.pmouseY) > 2 || APP_STATE.isBeastMode) {
+                        const spawnCount = APP_STATE.isBeastMode ? 3 : 1;
+                        for(let i=0; i<spawnCount; i++) {
+                            particles.push({
+                                x: sk.mouseX + sk.random(-10, 10) * (1 + beastChaos * 5),
+                                y: sk.mouseY + sk.random(-10, 10) * (1 + beastChaos * 5),
+                                vx: sk.random(-1, 1) * (1 + beastChaos * 3),
+                                vy: sk.random(-1, 1) * (1 + beastChaos * 3) - 1, // Float up slightly
+                                life: 255,
+                                size: sk.random(4, 12) * (1 + beastChaos),
+                                color: APP_STATE.isBeastMode ? [46, 204, 113] : [136, 8, 8] // Green if beast, Blood red if normal
+                            });
+                        }
+                    }
+
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        let p = particles[i];
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.life -= (4 + beastChaos * 4);
+
+                        // Perlin noise movement
+                        p.vx += (sk.noise(p.x * 0.01, p.y * 0.01, sk.frameCount * 0.01) - 0.5) * 0.5;
+
+                        if (p.life <= 0) {
+                            particles.splice(i, 1);
+                        } else {
+                            sk.fill(p.color[0], p.color[1], p.color[2], p.life * 0.6);
+                            sk.ellipse(p.x, p.y, p.size * (p.life / 255));
+                        }
+                    }
+                };
+
+                sk.windowResized = () => {
+                    sk.resizeCanvas(window.innerWidth, window.innerHeight);
+                };
+            });
+        };
+
+        // Initialize WebGL
+        initThreeJS();
+        initP5();
+
+        // Track Scroll for Three.js Parallax
+        window.addEventListener('scroll', () => {
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            APP_STATE.scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+        });
+
+        // Initialize GSAP ScrollTriggers
+        setTimeout(() => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            gsap.fromTo('.gs-reveal',
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 1, stagger: 0.2, ease: 'power3.out' }
+            );
+
+            document.querySelectorAll('.gs-reveal-section').forEach((section) => {
+                gsap.fromTo(section,
+                    { opacity: 0, y: 60 },
+                    {
+                        opacity: 1, y: 0,
+                        duration: 1.2,
+                        ease: 'power2.out',
+                        scrollTrigger: {
+                            trigger: section,
+                            start: "top 85%",
+                        }
+                    }
+                );
+            });
+
+            ScrollTrigger.refresh();
+        }, 500);
+
+        // ═══════════════════════════════════════════
+        // GSAP + Interaction - Druid Beast Transformation
+        // ═══════════════════════════════════════════
+        const triggerTransformation = () => {
+            if (APP_STATE.isBeastMode) return; // Prevent spamming
+            APP_STATE.isBeastMode = true;
+
+            // UI elements to mutate
+            const body = document.body;
+            const flash = document.getElementById('transformation-flash');
+            const mainAvatar = document.getElementById('hero-avatar'); // Will be added in layout step
+
+            // 1. Initial Flash & Camera Shake
+            gsap.to(flash, {
+                opacity: 0.8,
+                duration: 0.1,
+                yoyo: true,
+                repeat: 3,
+                onComplete: () => {
+                    gsap.to(flash, { opacity: 0, duration: 2 });
+                }
+            });
+
+            gsap.to(body, {
+                x: () => Math.random() * 20 - 10,
+                y: () => Math.random() * 20 - 10,
+                duration: 0.05,
+                repeat: 20,
+                yoyo: true,
+                onComplete: () => {
+                    gsap.set(body, { x: 0, y: 0 });
+                }
+            });
+
+            // 2. Mutate Three.js lighting & materials to "Druid Beast" theme (Green/Dark)
+            if (window.THREE_LIGHT) {
+                gsap.to(window.THREE_LIGHT.color, { r: 0.18, g: 0.8, b: 0.44, duration: 1.5 }); // To #2ecc71
+            }
+            if (window.THREE_MAT) {
+                gsap.to(window.THREE_MAT.emissive, { r: 0.06, g: 0.18, b: 0.11, duration: 1.5 }); // Dark green emissive
+            }
+            if (window.THREE_PARTICLES) {
+                gsap.to(window.THREE_PARTICLES.color, { r: 0.18, g: 0.8, b: 0.44, duration: 1.5 });
+            }
+
+            // 3. Swap main avatar to Beast Form (1.webp)
+            if (mainAvatar) {
+                gsap.to(mainAvatar, {
+                    scale: 0.5,
+                    opacity: 0,
+                    rotation: 180,
+                    duration: 0.5,
+                    onComplete: () => {
+                        mainAvatar.src = "/assets/guild/river_howler/1.webp";
+                        gsap.to(mainAvatar, {
+                            scale: 1.2,
+                            opacity: 1,
+                            rotation: 360,
+                            duration: 1,
+                            ease: "elastic.out(1, 0.3)"
+                        });
+                    }
+                });
+            }
+
+            // Add CSS class for specific styling overrides
+            body.classList.add('beast-mode');
+        };
+
+        const revertTransformation = () => {
+            if (!APP_STATE.isBeastMode) return;
+            APP_STATE.isBeastMode = false;
+
+            const body = document.body;
+            const mainAvatar = document.getElementById('hero-avatar');
+
+            // Revert Three.js lighting to Necromancer Blood Magic (Red)
+            if (window.THREE_LIGHT) {
+                gsap.to(window.THREE_LIGHT.color, { r: 0.53, g: 0.03, b: 0.03, duration: 1.5 }); // 0x880808
+            }
+            if (window.THREE_MAT) {
+                gsap.to(window.THREE_MAT.emissive, { r: 0.29, g: 0.01, b: 0.01, duration: 1.5 }); // 0x4a0404
+            }
+            if (window.THREE_PARTICLES) {
+                gsap.to(window.THREE_PARTICLES.color, { r: 0.53, g: 0.03, b: 0.03, duration: 1.5 });
+            }
+
+            // Revert avatar to Human Form (10.webp)
+            if (mainAvatar) {
+                gsap.to(mainAvatar, {
+                    scale: 0.5,
+                    opacity: 0,
+                    rotation: 180,
+                    duration: 0.5,
+                    onComplete: () => {
+                        mainAvatar.src = "/assets/guild/river_howler/10.webp";
+                        gsap.to(mainAvatar, {
+                            scale: 1,
+                            opacity: 1,
+                            rotation: 360,
+                            duration: 1,
+                            ease: "elastic.out(1, 0.3)"
+                        });
+                    }
+                });
+            }
+
+            body.classList.remove('beast-mode');
+        };
+
+        // Keyboard listener for Transformation (Press 'T' or Space)
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 't' || e.key === 'T' || e.code === 'Space') && !APP_STATE.isBeastMode) {
+                e.preventDefault(); // Prevent scrolling on space
+                triggerTransformation();
+            }
+        });
+
+        // Add visual prompt for the transformation
+        setTimeout(() => {
+            const hint = document.createElement('div');
+            hint.innerHTML = "PRESS <b>SPACE</b> TO UNLEASH THE BEAST";
+            hint.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-family: var(--font-mono);
+                color: var(--bone-dim);
+                font-size: 0.8rem;
+                letter-spacing: 2px;
+                animation: pulse 2s infinite;
+                z-index: 999;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 1s;
+            `;
+            document.body.appendChild(hint);
+            setTimeout(() => { hint.style.opacity = '0.7'; }, 2000);
+
+            // Hide hint on transform
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 't' || e.key === 'T' || e.code === 'Space') {
+                    hint.style.opacity = '0';
+                }
+            });
+
+            // Add pulse animation keyframes if not exists
+            if (!document.getElementById('pulse-anim')) {
+                const style = document.createElement('style');
+                style.id = 'pulse-anim';
+                style.innerHTML = `@keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; text-shadow: 0 0 10px var(--blood); } 100% { opacity: 0.3; } }`;
+                document.head.appendChild(style);
+            }
+        }, 1000);
+
+    </script>
+</body>
+</html>
