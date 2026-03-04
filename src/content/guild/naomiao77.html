@@ -257,7 +257,19 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #38bdf8;
         }
-    </style>
+
+        @keyframes jump {
+            0%, 100% { transform: translateY(0) scale(1, 1); }
+            40% { transform: translateY(-30px) scale(0.9, 1.1); }
+            50% { transform: translateY(-35px) scale(1, 1); }
+            60% { transform: translateY(-30px) scale(1.1, 0.9); }
+        }
+        .svg-cloud {
+            position: absolute;
+            pointer-events: none;
+            /* Remove heavy filters if they exist to improve performance */
+        }
+        </style>
 </head>
 <body class="font-rounded antialiased selection:bg-sky-200 selection:text-sky-900">
 
@@ -494,7 +506,7 @@
                         trigger: el,
                         start: "top 90%",
                         end: "top 40%",
-                        scrub: 1, // Tie it to scroll for a true interactive book feel
+                        scrub: 1.5, // Tie it to scroll for a true interactive book feel
                         toggleActions: "play none none reverse"
                     }
                 }
@@ -522,105 +534,88 @@
             const backLayer = document.getElementById('cloud-layer-back');
             const frontLayer = document.getElementById('cloud-layer-front');
 
-            // Multiple Cloud SVG Paths for variety - more fluffy, hand-drawn look with subtle strokes
             const cloudSVGs = [
-                // Cloud 1
-                `<svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                `<svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                     <path d="M50 85 C20 85 10 55 30 35 C30 15 70 5 90 25 C110 -5 160 -5 180 25 C200 45 190 85 160 85 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>`,
-                // Cloud 2
-                `<svg viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+                `<svg viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                     <path d="M40 90 C10 90 5 60 25 40 C35 20 65 10 85 30 C105 0 155 0 175 30 C195 10 230 40 210 70 C225 90 190 90 170 90 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>`
             ];
 
-            // Character SVG to jump on clouds (Cute Cat / Little Girl representation)
             const characterSVG = `
-                <svg class="cloud-character" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- A simple cute white cat with minimal lines -->
-                    <path d="M20 50 L30 20 L50 40 L70 20 L80 50 C90 70 80 90 50 90 C20 90 10 70 20 50 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
-                    <!-- Eyes -->
-                    <circle cx="35" cy="60" r="4" fill="#506055"/>
-                    <circle cx="65" cy="60" r="4" fill="#506055"/>
-                    <!-- Blush -->
-                    <circle cx="25" cy="65" r="5" fill="#FFC0CB" opacity="0.6"/>
-                    <circle cx="75" cy="65" r="5" fill="#FFC0CB" opacity="0.6"/>
-                    <!-- Nose/Mouth -->
-                    <path d="M45 65 Q50 70 55 65" stroke="#506055" stroke-width="3" stroke-linecap="round"/>
-                </svg>
+                <div class="cloud-character" style="position: absolute; bottom: 80%; width: 60px; height: 60px;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: jump 2s ease-in-out infinite;">
+                        <path d="M20 50 L30 20 L50 40 L70 20 L80 50 C90 70 80 90 50 90 C20 90 10 70 20 50 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
+                        <circle cx="35" cy="60" r="4" fill="#506055"/>
+                        <circle cx="65" cy="60" r="4" fill="#506055"/>
+                        <circle cx="25" cy="65" r="5" fill="#FFC0CB" opacity="0.6"/>
+                        <circle cx="75" cy="65" r="5" fill="#FFC0CB" opacity="0.6"/>
+                        <path d="M45 65 Q50 70 55 65" stroke="#506055" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
             `;
 
-            // Function to spawn clouds
-            const spawnClouds = (layer, count, scaleRange, opacity, speedRange, parallaxY, withCharacters = false) => {
+            const spawnClouds = (layer, count, scaleRange, opacity, durationRange, parallaxSpeed, withCharacters = false) => {
                 for (let i = 0; i < count; i++) {
                     const cloudWrapper = document.createElement('div');
                     cloudWrapper.className = 'svg-cloud';
 
-                    // Random cloud type
                     const cloudType = Math.floor(Math.random() * cloudSVGs.length);
                     cloudWrapper.innerHTML = cloudSVGs[cloudType];
 
-                    // Randomize properties
                     const scale = scaleRange[0] + Math.random() * (scaleRange[1] - scaleRange[0]);
-                    const startX = Math.random() * 120 - 10; // -10vw to 110vw
-                    const startY = Math.random() * 100; // 0vh to 100vh
-                    const speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
+                    const startX = Math.random() * 120 - 10;
+                    const startY = Math.random() * 90;
+                    const duration = durationRange[0] + Math.random() * (durationRange[1] - durationRange[0]);
 
-                    cloudWrapper.style.width = `${200 * scale}px`;
+                    cloudWrapper.style.width = `${150 * scale}px`;
                     cloudWrapper.style.left = `${startX}vw`;
                     cloudWrapper.style.top = `${startY}vh`;
                     cloudWrapper.style.opacity = opacity;
+                    cloudWrapper.style.willChange = 'transform';
 
-                    // Subtle tint for depth
-                    if (layer === backLayer) {
-                        cloudWrapper.style.filter = 'drop-shadow(0 15px 25px rgba(0,0,0,0.08)) brightness(0.92)';
-                    } else {
-                        cloudWrapper.style.filter = 'drop-shadow(0 20px 30px rgba(0,0,0,0.1))';
-                    }
-
-                    // Occasionally add a jumping character on front clouds
-                    if (withCharacters && Math.random() > 0.6) {
-                        const charWrapper = document.createElement('div');
-                        charWrapper.innerHTML = characterSVG;
-                        // Randomize character position on the cloud slightly
-                        const charEl = charWrapper.firstElementChild;
-                        charEl.style.left = `${30 + Math.random() * 20}%`;
-                        charEl.style.animationDelay = `${Math.random() * 2}s`;
-                        cloudWrapper.appendChild(charEl);
+                    if (withCharacters && Math.random() > 0.5) {
+                        cloudWrapper.insertAdjacentHTML('beforeend', characterSVG);
+                        const charDiv = cloudWrapper.lastElementChild;
+                        charDiv.style.left = `${30 + Math.random() * 20}%`;
+                        charDiv.firstElementChild.style.animationDelay = `${Math.random() * 2}s`;
                     }
 
                     layer.appendChild(cloudWrapper);
 
-                    // GSAP Animation for drifting
+                    // Simplified drifting animation (much better for performance)
                     gsap.to(cloudWrapper, {
-                        x: `+=${window.innerWidth * speed}`,
-                        duration: 100 / speed, // Slower speed = longer duration
+                        x: `+=${window.innerWidth * 1.5}`, // Move 1.5 screen widths
+                        duration: duration,
                         ease: "none",
                         repeat: -1,
                         modifiers: {
-                            x: gsap.utils.unitize(x => parseFloat(x) % (window.innerWidth + 400) - 200) // Wrap around
+                            x: gsap.utils.unitize(x => {
+                                const val = parseFloat(x);
+                                const max = window.innerWidth + 300;
+                                return val % max;
+                            })
                         }
                     });
 
-                    // GSAP ScrollTrigger for Parallax Y
+                    // Scroll parallax
                     gsap.to(cloudWrapper, {
-                        yPercent: parallaxY,
+                        y: `-${parallaxSpeed}vh`,
                         ease: "none",
                         scrollTrigger: {
                             trigger: "body",
                             start: "top top",
-                            end: "bottom bottom",
+                            end: "bottom top",
                             scrub: true
                         }
                     });
                 }
             };
 
-            // Back layer (slower, smaller, moving up slightly on scroll)
-            spawnClouds(backLayer, 18, [1.0, 2.5], 0.7, [0.03, 0.08], -30, false);
-
-            // Front layer (faster, larger, moving up more on scroll, some have jumping cats)
-            spawnClouds(frontLayer, 12, [2.0, 4.5], 1.0, [0.08, 0.15], -80, true);
+            // Fewer clouds, smoother movement
+            spawnClouds(backLayer, 10, [1.0, 2.0], 0.7, [60, 100], 15, false);
+            spawnClouds(frontLayer, 8, [1.5, 3.0], 1.0, [40, 70], 30, true);
         };
         createClouds();
 
