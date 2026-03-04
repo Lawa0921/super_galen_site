@@ -16,16 +16,15 @@
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
         :root {
-            --eco-green: #2ecc71;
-            --eco-dark-green: #27ae60;
-            --leaf-light: #a8e6cf;
-            --earth-blue: #3498db;
-            --wood-brown: #d4a373;
-            --bg-light: #f4f9f4;
-            --bento-bg: rgba(255, 255, 255, 0.85);
-            --bento-border: rgba(46, 204, 113, 0.4);
-            --text-dark: #2c3e50;
-            --text-gray: #556b2f;
+            --bio-green: #00ff66;
+            --bio-teal: #00ffcc;
+            --bio-gold: #ffcc00;
+            --void-black: #050505;
+            --void-gray: #111;
+            --bento-bg: rgba(10, 10, 10, 0.8);
+            --bento-border: rgba(0, 255, 102, 0.3);
+            --text-light: #e0e0e0;
+            --text-muted: #888;
         }
 
         body, html {
@@ -33,8 +32,8 @@
             padding: 0;
             width: 100%;
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: var(--bg-light);
-            color: var(--text-dark);
+            background-color: var(--void-black);
+            color: var(--text-light);
             overflow-x: hidden;
         }
 
@@ -67,19 +66,20 @@
 
         /* Typography */
         h1, h2, h3, .eco-font {
-            font-family: 'Noto Sans TC', sans-serif;
+            font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
             font-weight: 900;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .text-glow {
-            text-shadow: 0 0 10px rgba(46, 204, 113, 0.4), 0 0 20px rgba(168, 230, 207, 0.6);
-            color: var(--eco-dark-green);
+            color: #fff;
+            text-shadow: 0 0 10px var(--bio-green), 0 0 30px var(--bio-green), 0 0 50px var(--bio-teal);
         }
 
-        /* Explicit Wood Bento Box Base */
+        /* Cinematic Dark Matte Box Base */
         .bento-container-wrapper {
-            background: linear-gradient(to bottom, transparent, rgba(212, 163, 115, 0.2) 20%, rgba(212, 163, 115, 0.4) 100%);
+            background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8) 20%, rgba(5, 5, 5, 1) 100%);
             padding: 4rem 0;
             position: relative;
         }
@@ -89,13 +89,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 80vh;
+            min-height: 85vh;
             position: relative;
             z-index: 20;
-            pointer-events: none; /* Let clicks pass to canvas */
+            pointer-events: none;
         }
 
-        /* Literal Bento Grid Layout */
+        /* High-End Matte Black Bento Grid */
         .bento-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
@@ -104,30 +104,31 @@
             max-width: 1400px;
             margin: 0 auto;
 
-            /* Bento Box Outer Edge (Wood effect) */
-            background-color: #f3e5ab;
-            background-image: repeating-linear-gradient(45deg, rgba(212, 163, 115, 0.1) 0px, rgba(212, 163, 115, 0.1) 2px, transparent 2px, transparent 4px);
-            border: 15px solid #8b5a2b; /* Thick wood border */
+            /* Premium Matte Black Finish */
+            background-color: #111;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, #050505 100%);
+            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 30px;
             box-shadow:
-                inset 0 10px 20px rgba(0,0,0,0.3), /* Inner deep shadow */
-                0 20px 50px rgba(0,0,0,0.2), /* Outer drop shadow */
-                0 0 0 5px rgba(212, 163, 115, 0.5); /* Outer lip highlight */
+                0 30px 60px rgba(0,0,0,0.8), /* Massive drop shadow */
+                0 0 0 2px #000, /* Strict black outline */
+                0 0 0 4px rgba(0, 255, 102, 0.2), /* Neon Green Lip Glow */
+                inset 0 10px 30px rgba(0,0,0,0.9); /* Deep inner depth */
             position: relative;
             pointer-events: auto;
         }
 
-        /* Decorative Chopsticks laying across the side */
+        /* Decorative Futuristic Chopsticks (Laser lines) */
         .bento-grid::after {
             content: '';
             position: absolute;
-            top: -30px;
-            right: 50px;
-            width: 15px;
-            height: 400px;
-            background: linear-gradient(90deg, #d4a373, #8b5a2b);
+            top: -40px;
+            right: 40px;
+            width: 4px;
+            height: 450px;
+            background: var(--bio-green);
             border-radius: 10px;
-            box-shadow: 20px 5px 15px rgba(0,0,0,0.4), inset -2px -2px 5px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px var(--bio-green);
             transform: rotate(15deg);
             z-index: 50;
             pointer-events: none;
@@ -135,35 +136,37 @@
         .bento-grid::before {
             content: '';
             position: absolute;
-            top: -20px;
-            right: 35px;
-            width: 15px;
-            height: 400px;
-            background: linear-gradient(90deg, #d4a373, #8b5a2b);
+            top: -30px;
+            right: 20px;
+            width: 4px;
+            height: 450px;
+            background: var(--bio-teal);
             border-radius: 10px;
-            box-shadow: 20px 5px 15px rgba(0,0,0,0.4), inset -2px -2px 5px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px var(--bio-teal);
             transform: rotate(12deg);
             z-index: 50;
             pointer-events: none;
         }
 
-        /* Individual Compartments */
+        /* Individual Compartments (Abyss Pits) */
         .bento-item {
-            background: rgba(255, 255, 255, 0.9);
-            border: 4px solid #d4a373; /* Inner wood divider */
-            border-radius: 15px;
-            padding: 2rem;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            /* Deep inner shadow to look like a sunk compartment */
-            box-shadow: inset 0 8px 15px rgba(0, 0, 0, 0.15), 0 2px 5px rgba(255,255,255,0.8);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 102, 0.1);
+            border-radius: 20px;
+            padding: 2.5rem;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            /* Abyss inner shadow - looking DOWN into a compartment */
+            box-shadow: inset 0 15px 30px rgba(0, 0, 0, 0.9), inset 0 -2px 5px rgba(0,255,102,0.1);
             position: relative;
             overflow: hidden;
-            transition: transform 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .bento-item:hover {
-            transform: scale(1.02);
+            transform: translateY(-5px);
+            border-color: var(--bio-green);
+            box-shadow: inset 0 15px 30px rgba(0, 0, 0, 0.9), 0 10px 30px rgba(0, 255, 102, 0.2);
             z-index: 10;
         }
 
@@ -185,30 +188,30 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 16px;
+            border-radius: 12px;
             transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            filter: brightness(0.9) contrast(1.1);
         }
 
         .eco-img:hover {
             transform: scale(1.05);
-            box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3);
+            filter: brightness(1.1) contrast(1.1) drop-shadow(0 0 20px rgba(0,255,102,0.4));
         }
 
         .avatar-container {
             position: relative;
-            width: 200px;
-            height: 200px;
+            width: 220px;
+            height: 220px;
             margin: 0 auto 2rem;
             border-radius: 50%;
-            padding: 8px;
-            background: linear-gradient(135deg, var(--eco-green), var(--leaf-light), var(--earth-blue));
-            animation: breathe-glow 4s ease-in-out infinite alternate;
+            padding: 4px;
+            background: conic-gradient(from 0deg, var(--bio-green), var(--bio-teal), var(--void-black), var(--bio-green));
+            animation: spin-glow 4s linear infinite;
         }
 
-        @keyframes breathe-glow {
-            0% { box-shadow: 0 0 20px rgba(46, 204, 113, 0.4); }
-            100% { box-shadow: 0 0 40px rgba(168, 230, 207, 0.8), inset 0 0 10px rgba(255,255,255,0.8); }
+        @keyframes spin-glow {
+            0% { transform: rotate(0deg); box-shadow: 0 0 20px rgba(0,255,102,0.4); }
+            100% { transform: rotate(360deg); box-shadow: 0 0 20px rgba(0,255,204,0.4); }
         }
 
         .avatar-img {
@@ -216,30 +219,34 @@
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid white;
+            border: 4px solid #000;
+            animation: spin-back 4s linear infinite;
         }
+        @keyframes spin-back { 100% { transform: rotate(-360deg); } }
 
         /* Badges & Tags */
         .eco-badge {
             display: inline-flex;
             align-items: center;
             padding: 0.6rem 1.2rem;
-            border-radius: 50px;
-            background: white;
-            border: 1px solid var(--eco-green);
-            color: var(--eco-dark-green);
+            border-radius: 4px; /* Sci-fi square cut */
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--bio-green);
+            color: var(--bio-green);
             font-weight: bold;
             font-size: 0.9rem;
             margin: 0.25rem;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 0 10px rgba(0,255,102,0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .eco-badge:hover {
-            background: var(--eco-green);
-            color: white;
+            background: var(--bio-green);
+            color: #000;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+            box-shadow: 0 0 25px rgba(0,255,102,0.6);
         }
 
         /* Scroll Progress */
@@ -247,18 +254,17 @@
             position: fixed;
             top: 0;
             left: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--leaf-light), var(--eco-green), var(--earth-blue));
+            height: 4px;
+            background: linear-gradient(90deg, var(--bio-teal), var(--bio-green));
             z-index: 100;
             width: 0%;
-            border-radius: 0 3px 3px 0;
-            box-shadow: 0 0 15px var(--eco-green);
+            box-shadow: 0 0 20px var(--bio-green), 0 0 40px var(--bio-green);
         }
 
         /* Decorative UI Elements */
         .leaf-icon {
-            color: var(--eco-green);
-            filter: drop-shadow(0 0 5px rgba(46,204,113,0.5));
+            color: var(--bio-green);
+            filter: drop-shadow(0 0 8px rgba(0,255,102,0.8));
         }
 
     </style>
@@ -274,19 +280,19 @@
         <!-- Hero Title (Outside the box) -->
         <div class="hero-section g-elem">
             <div class="text-center pointer-events-auto">
-                <h1 class="text-6xl md:text-9xl eco-font mb-4 text-glow" style="text-shadow: 0 10px 30px rgba(46, 204, 113, 0.8), 0 0 50px rgba(255,255,255,0.9);">綠食飯桌</h1>
-                <p class="text-2xl md:text-3xl font-bold tracking-widest text-emerald-800 bg-white/50 px-6 py-2 rounded-full backdrop-blur-sm inline-block shadow-lg">Sustainable Eco Bento</p>
+                <h1 class="text-6xl md:text-9xl eco-font mb-4 text-glow">綠食飯桌</h1>
+                <p class="text-2xl md:text-3xl font-bold tracking-widest text-emerald-400 border border-emerald-400/30 bg-black/50 px-6 py-2 rounded backdrop-blur-md inline-block shadow-[0_0_20px_rgba(0,255,102,0.2)] uppercase">Sustainable Eco Bento</p>
                 <div class="mt-8 flex justify-center gap-4 flex-wrap">
-                    <span class="eco-badge text-lg px-6 py-3"><i class="fa-solid fa-earth-americas leaf-icon mr-2"></i>地球循環</span>
-                    <span class="eco-badge text-lg px-6 py-3"><i class="fa-solid fa-tree leaf-icon mr-2"></i>自然環保</span>
-                    <span class="eco-badge text-lg px-6 py-3"><i class="fa-solid fa-box leaf-icon mr-2"></i>便當美學</span>
+                    <span class="eco-badge text-lg px-6 py-3"><i class="fa-solid fa-earth-americas leaf-icon mr-2"></i>無限循環</span>
+                    <span class="eco-badge text-lg px-6 py-3"><i class="fa-solid fa-tree leaf-icon mr-2"></i>生命之樹</span>
+                    <span class="eco-badge text-lg px-6 py-3"><i class="fa-solid fa-box leaf-icon mr-2"></i>星環便當</span>
                 </div>
             </div>
         </div>
 
         <div class="bento-container-wrapper">
             <div class="text-center mb-8 pointer-events-none relative z-10">
-                <h2 class="text-4xl eco-font text-emerald-900 drop-shadow-md bg-white/80 inline-block px-8 py-3 rounded-full border-4 border-emerald-600 shadow-xl"><i class="fa-solid fa-box-open mr-3"></i> 綠色友善便當盒</h2>
+                <h2 class="text-4xl eco-font text-white drop-shadow-md bg-black/80 inline-block px-10 py-4 rounded border border-emerald-500/50 shadow-[0_0_30px_rgba(0,255,102,0.3)] tracking-widest"><i class="fa-solid fa-box-open mr-3 text-emerald-400"></i> 極致黑 · 綠食便當</h2>
             </div>
 
             <!-- Literal Bento Box -->
@@ -295,67 +301,67 @@
                 <!-- Profile Info Compartment -->
                 <div class="bento-item profile-bento g-elem">
                 <div class="avatar-container">
-                    <img src="/assets/img/guild/12eatpure/avatar.webp" alt="12eatpure" class="avatar-img" onerror="this.src='https://ui-avatars.com/api/?name=12eatpure&background=2ecc71&color=ffffff'">
+                    <img src="/assets/img/guild/12eatpure/avatar.webp" alt="12eatpure" class="avatar-img" onerror="this.src='https://ui-avatars.com/api/?name=12eatpure&background=00ff66&color=000000'">
                 </div>
-                <h2 class="text-2xl eco-font mb-2 text-emerald-800">12eatpure</h2>
-                <p class="text-sm font-bold text-gray-500 mb-6">衛生局 七級 質地示範店家</p>
+                <h2 class="text-2xl eco-font mb-2 text-white drop-shadow-[0_0_10px_rgba(0,255,102,0.8)]">12eatpure</h2>
+                <p class="text-sm font-bold text-emerald-500 mb-6">衛生局 七級 質地示範店家</p>
 
                 <div class="flex flex-wrap justify-center gap-2 mb-6">
-                    <a href="https://www.instagram.com/12eatpure/" target="_blank" class="eco-badge"><i class="fa-brands fa-instagram text-emerald-600"></i></a>
-                    <a href="https://www.threads.net/@12eatpure" target="_blank" class="eco-badge"><i class="fa-brands fa-threads text-emerald-600"></i></a>
-                    <a href="https://page.line.me/871pbbhl" target="_blank" class="eco-badge"><i class="fa-brands fa-line text-emerald-600"></i></a>
+                    <a href="https://www.instagram.com/12eatpure/" target="_blank" class="eco-badge"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.net/@12eatpure" target="_blank" class="eco-badge"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://page.line.me/871pbbhl" target="_blank" class="eco-badge"><i class="fa-brands fa-line"></i></a>
                 </div>
             </div>
 
             <!-- Intro / Bio -->
             <div class="bento-item bio-bento g-elem">
-                <h3 class="text-xl eco-font text-emerald-700 mb-4 border-b-2 border-emerald-200 pb-2"><i class="fa-solid fa-seedling leaf-icon mr-2"></i>讓餐盒成爲永續的起點</h3>
-                <p class="text-gray-700 leading-relaxed mb-4 text-lg font-medium">
+                <h3 class="text-2xl eco-font text-white mb-4 border-b border-emerald-500/30 pb-4"><i class="fa-solid fa-seedling leaf-icon mr-2"></i>讓餐盒成爲永續的起點</h3>
+                <p class="text-gray-300 leading-relaxed mb-6 text-lg font-medium">
                     常態性使用的PP餐盒，還是不鏽鋼316餐盒，都會告知訂購的業者讓他們去選擇。<br>
                     想要帶走，可以選擇重複使用的PP餐盒；<br>
                     想要由我們回收清洗跟更美觀、精緻，可以選擇我們的不鏽鋼餐盒哦。
                 </p>
-                <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                    <p class="text-emerald-800 font-bold"><i class="fa-solid fa-recycle leaf-icon mr-2"></i> 循環再利用及均衡飲食</p>
-                    <p class="text-sm text-gray-600 mt-2 font-medium">無論您想要清淡的健康餐，或者是想不用到這麼健康、需要點醬汁的健康餐，我們都可以量身訂做屬於你們行號的餐盒。</p>
+                <div class="p-6 bg-black/60 rounded border border-emerald-500/20 shadow-[inset_0_0_20px_rgba(0,255,102,0.1)]">
+                    <p class="text-emerald-400 font-bold text-lg tracking-wide"><i class="fa-solid fa-recycle leaf-icon mr-2"></i> 循環再利用及均衡飲食</p>
+                    <p class="text-sm text-gray-400 mt-2 font-medium">無論您想要清淡的健康餐，或者是想不用到這麼健康、需要點醬汁的健康餐，我們都可以量身訂做屬於你們行號的餐盒。</p>
                 </div>
             </div>
 
             <!-- Awards / Certification -->
             <div class="bento-item awards-bento g-elem">
-                <h3 class="text-xl eco-font text-emerald-700 mb-4 border-b-2 border-emerald-200 pb-2"><i class="fa-solid fa-award leaf-icon mr-2"></i>榮譽與認證</h3>
-                <ul class="space-y-3 text-gray-700 font-medium">
+                <h3 class="text-xl eco-font text-white mb-4 border-b border-emerald-500/30 pb-4"><i class="fa-solid fa-award leaf-icon mr-2"></i>榮譽與認證</h3>
+                <ul class="space-y-4 text-gray-300 font-medium">
                     <li class="flex items-start"><i class="fa-solid fa-check leaf-icon mt-1 mr-3"></i><span>2023 經濟部 優選餐盒獎</span></li>
                     <li class="flex items-start"><i class="fa-solid fa-check leaf-icon mt-1 mr-3"></i><span>2026 綠色餐飲評鑑指南推薦餐廳</span></li>
                     <li class="flex items-start"><i class="fa-solid fa-check leaf-icon mt-1 mr-3"></i><span>2025 綠色餐飲評鑑入圍資源循環再利用及均衡飲食獎</span></li>
                     <li class="flex items-start"><i class="fa-solid fa-check leaf-icon mt-1 mr-3"></i><span>AMOT 三星朔源餐廳</span></li>
-                    <li class="flex items-start"><i class="fa-solid fa-user-md leaf-icon mt-1 mr-3"></i><span class="text-emerald-800 font-bold">衛生局營養師認證標準</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-user-md leaf-icon mt-1 mr-3"></i><span class="text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(0,255,102,0.5)]">衛生局營養師認證標準</span></li>
                 </ul>
             </div>
 
             <!-- Feature Highlight -->
             <div class="bento-item stats-bento g-elem">
-                <h3 class="text-xl eco-font text-emerald-700 mb-4 border-b-2 border-emerald-200 pb-2"><i class="fa-solid fa-utensils leaf-icon mr-2"></i>高雄最健康的健康餐盒</h3>
+                <h3 class="text-xl eco-font text-white mb-4 border-b border-emerald-500/30 pb-4"><i class="fa-solid fa-utensils leaf-icon mr-2"></i>高雄最健康的健康餐盒</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <p class="text-gray-700 leading-relaxed font-medium">
+                        <p class="text-gray-300 leading-relaxed font-medium">
                             餐點現點現做，建議先打電話/LINE訂購喔。到現場購買都要稍後10-15分。<br><br>
                             歡迎團體訂購客製化餐點：月訂購 / 周訂購 / 異業合作 / 循環餐盒。<br>餐點口味及內容皆可商量調整。
                         </p>
                     </div>
                     <div class="space-y-4">
-                        <div class="bg-emerald-50 p-4 rounded-xl shadow-inner border border-emerald-200 flex items-center">
-                            <i class="fa-solid fa-droplet text-yellow-500 text-3xl mr-4 drop-shadow-sm"></i>
+                        <div class="bg-black/80 p-5 rounded border border-emerald-500/20 shadow-[inset_0_0_15px_rgba(0,0,0,0.8)] flex items-center">
+                            <i class="fa-solid fa-droplet text-yellow-500 text-3xl mr-4 drop-shadow-[0_0_10px_rgba(255,204,0,0.6)]"></i>
                             <div>
-                                <h4 class="text-emerald-800 font-bold">使用西班牙添德瑞橄欖油</h4>
-                                <p class="text-sm text-gray-500 font-medium">高級健康油脂吃的安心，無味精、調味粉、水煮</p>
+                                <h4 class="text-emerald-400 font-bold">使用西班牙添德瑞橄欖油</h4>
+                                <p class="text-sm text-gray-500 font-medium mt-1">高級健康油脂吃的安心，無味精、調味粉、水煮</p>
                             </div>
                         </div>
-                        <div class="bg-emerald-50 p-4 rounded-xl shadow-inner border border-emerald-200 flex items-center">
-                            <i class="fa-solid fa-recycle text-emerald-500 text-3xl mr-4 drop-shadow-sm"></i>
+                        <div class="bg-black/80 p-5 rounded border border-emerald-500/20 shadow-[inset_0_0_15px_rgba(0,0,0,0.8)] flex items-center">
+                            <i class="fa-solid fa-box-open text-emerald-500 text-3xl mr-4 drop-shadow-[0_0_10px_rgba(0,255,102,0.6)]"></i>
                             <div>
-                                <h4 class="text-emerald-800 font-bold">環保循環餐盒</h4>
-                                <p class="text-sm text-gray-500 font-medium">使用可重複利用塑膠餐盒，也有不鏽鋼循環餐盒</p>
+                                <h4 class="text-emerald-400 font-bold">環保循環餐盒</h4>
+                                <p class="text-sm text-gray-500 font-medium mt-1">使用可重複利用塑膠餐盒，也有不鏽鋼循環餐盒</p>
                             </div>
                         </div>
                     </div>
@@ -363,60 +369,60 @@
             </div>
 
             <!-- Food Image Slot -->
-            <div class="bento-item p-2 overflow-hidden food-img-1 g-elem" style="min-height: 300px;">
-                <img src="/assets/img/guild/12eatpure/img1.webp" alt="Food" class="eco-img">
+            <div class="bento-item p-1 overflow-hidden food-img-1 g-elem" style="min-height: 300px;">
+                <img src="/assets/img/guild/12eatpure/img1.webp" alt="Food" class="eco-img" style="border-radius: 18px;">
             </div>
 
             <!-- Menu Signatures -->
             <div class="bento-item menu-bento g-elem">
-                <h3 class="text-3xl text-center text-emerald-800 mb-8 eco-font border-b-4 border-emerald-600 inline-block pb-2 px-8">Signature Menu</h3>
+                <h3 class="text-3xl text-center text-white mb-8 eco-font border-b border-emerald-500/30 inline-block pb-4 px-12">Signature Menu</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-amber-50 p-6 rounded-2xl border-4 border-amber-200 hover:border-emerald-400 transition-colors shadow-inner">
-                        <h4 class="text-xl font-black text-amber-900 mb-2"><i class="fa-solid fa-drumstick-bite text-amber-600 mr-2"></i>舒肥香草雞胸 / 雞腿</h4>
-                        <p class="text-sm text-gray-700 font-medium">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米，內用外帶都方便。</p>
+                    <div class="bg-black/60 p-6 rounded-lg border border-emerald-500/20 hover:border-emerald-400 transition-colors shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
+                        <h4 class="text-xl font-black text-white mb-3 tracking-wide"><i class="fa-solid fa-drumstick-bite text-emerald-400 mr-2"></i>舒肥香草雞胸 / 雞腿</h4>
+                        <p class="text-sm text-gray-400 font-medium leading-relaxed">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米，內用外帶都方便。</p>
                     </div>
-                    <div class="bg-red-50 p-6 rounded-2xl border-4 border-red-200 hover:border-emerald-400 transition-colors shadow-inner">
-                        <h4 class="text-xl font-black text-red-900 mb-2"><i class="fa-solid fa-fire-burner text-red-500 mr-2"></i>爐烤梅花豬</h4>
-                        <p class="text-sm text-gray-700 font-medium">肉質嫩滑多汁，香氣十足！完全不油膩，簡單調味就很好吃。</p>
+                    <div class="bg-black/60 p-6 rounded-lg border border-emerald-500/20 hover:border-emerald-400 transition-colors shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
+                        <h4 class="text-xl font-black text-white mb-3 tracking-wide"><i class="fa-solid fa-fire-burner text-emerald-400 mr-2"></i>爐烤梅花豬</h4>
+                        <p class="text-sm text-gray-400 font-medium leading-relaxed">肉質嫩滑多汁，香氣十足！完全不油膩，簡單調味就很好吃。</p>
                     </div>
-                    <div class="bg-blue-50 p-6 rounded-2xl border-4 border-blue-200 hover:border-emerald-400 transition-colors shadow-inner">
-                        <h4 class="text-xl font-black text-blue-900 mb-2"><i class="fa-solid fa-fish text-blue-500 mr-2"></i>舒肥鮭魚 / 烤鱸魚</h4>
-                        <p class="text-sm text-gray-700 font-medium">舒肥過後肉質更嫩，入口即化。蒔蘿烤鱸魚外酥內嫩多汁，輕微煙燻香。</p>
+                    <div class="bg-black/60 p-6 rounded-lg border border-emerald-500/20 hover:border-emerald-400 transition-colors shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
+                        <h4 class="text-xl font-black text-white mb-3 tracking-wide"><i class="fa-solid fa-fish text-emerald-400 mr-2"></i>舒肥鮭魚 / 烤鱸魚</h4>
+                        <p class="text-sm text-gray-400 font-medium leading-relaxed">舒肥過後肉質更嫩，入口即化。蒔蘿烤鱸魚外酥內嫩多汁，輕微煙燻香。</p>
                     </div>
                 </div>
-                <div class="mt-8 p-4 bg-white rounded-xl shadow-sm text-center text-emerald-800 font-bold max-w-2xl mx-auto border-2 border-emerald-300">
-                    <p><i class="fa-solid fa-mug-hot text-amber-600 mr-2"></i> 飲品推：特調鮮奶茶 / 蜂蜜檸檬，濃郁口感不會過甜，真材實料</p>
+                <div class="mt-8 p-5 bg-black/80 rounded shadow-[inset_0_0_15px_rgba(0,0,0,0.8)] text-center text-emerald-400 font-bold max-w-2xl mx-auto border border-emerald-500/30">
+                    <p><i class="fa-solid fa-mug-hot text-emerald-500 mr-2"></i> 飲品推：特調鮮奶茶 / 蜂蜜檸檬，濃郁口感不會過甜，真材實料</p>
                 </div>
             </div>
 
             <!-- Image Gallery Grid (The 'Bento Box' Visual Core) -->
-            <div class="gallery-bento g-elem relative">
-                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-emerald-600 text-white px-8 py-2 rounded-full border-4 border-white shadow-lg z-10">
-                    <h3 class="eco-font m-0 text-xl"><i class="fa-solid fa-camera mr-2"></i> 餐盒實拍格</h3>
+            <div class="gallery-bento g-elem relative" style="background: rgba(0,0,0,0.8); border: 1px solid rgba(0,255,102,0.2); box-shadow: inset 0 20px 50px rgba(0,0,0,0.9);">
+                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-black text-emerald-400 px-10 py-3 rounded border border-emerald-500 shadow-[0_0_20px_rgba(0,255,102,0.4)] z-10">
+                    <h3 class="eco-font m-0 text-xl tracking-widest"><i class="fa-solid fa-camera mr-2"></i> 餐盒實拍格</h3>
                 </div>
 
-                <div class="bento-item p-0 overflow-hidden col-span-6 md:col-span-3 lg:col-span-2 border-4 border-emerald-500 rounded-2xl" style="height: 300px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
-                    <img src="/assets/img/guild/12eatpure/img2.webp" alt="Gallery" class="eco-img" style="border-radius: 0;">
+                <div class="bento-item p-1 overflow-hidden col-span-6 md:col-span-3 lg:col-span-2 border border-emerald-500/30 rounded-lg" style="height: 300px; box-shadow: none;">
+                    <img src="/assets/img/guild/12eatpure/img2.webp" alt="Gallery" class="eco-img" style="border-radius: 6px;">
                 </div>
-                <div class="bento-item p-0 overflow-hidden col-span-6 md:col-span-3 lg:col-span-2 border-4 border-emerald-500 rounded-2xl" style="height: 300px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
-                    <img src="/assets/img/guild/12eatpure/img3.webp" alt="Gallery" class="eco-img" style="border-radius: 0;">
+                <div class="bento-item p-1 overflow-hidden col-span-6 md:col-span-3 lg:col-span-2 border border-emerald-500/30 rounded-lg" style="height: 300px; box-shadow: none;">
+                    <img src="/assets/img/guild/12eatpure/img3.webp" alt="Gallery" class="eco-img" style="border-radius: 6px;">
                 </div>
-                <div class="bento-item p-0 overflow-hidden col-span-6 md:col-span-6 lg:col-span-2 border-4 border-emerald-500 rounded-2xl" style="height: 300px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
-                    <img src="/assets/img/guild/12eatpure/img4.webp" alt="Gallery" class="eco-img" style="border-radius: 0;">
+                <div class="bento-item p-1 overflow-hidden col-span-6 md:col-span-6 lg:col-span-2 border border-emerald-500/30 rounded-lg" style="height: 300px; box-shadow: none;">
+                    <img src="/assets/img/guild/12eatpure/img4.webp" alt="Gallery" class="eco-img" style="border-radius: 6px;">
                 </div>
-                <div class="bento-item p-0 overflow-hidden col-span-6 md:col-span-3 lg:col-span-3 border-4 border-emerald-500 rounded-2xl" style="height: 350px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
-                    <img src="/assets/img/guild/12eatpure/img5.webp" alt="Gallery" class="eco-img" style="border-radius: 0;">
+                <div class="bento-item p-1 overflow-hidden col-span-6 md:col-span-3 lg:col-span-3 border border-emerald-500/30 rounded-lg" style="height: 350px; box-shadow: none;">
+                    <img src="/assets/img/guild/12eatpure/img5.webp" alt="Gallery" class="eco-img" style="border-radius: 6px;">
                 </div>
-                <div class="bento-item p-0 overflow-hidden col-span-6 md:col-span-3 lg:col-span-3 border-4 border-emerald-500 rounded-2xl" style="height: 350px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
-                    <img src="/assets/img/guild/12eatpure/img6.webp" alt="Gallery" class="eco-img" style="border-radius: 0;">
+                <div class="bento-item p-1 overflow-hidden col-span-6 md:col-span-3 lg:col-span-3 border border-emerald-500/30 rounded-lg" style="height: 350px; box-shadow: none;">
+                    <img src="/assets/img/guild/12eatpure/img6.webp" alt="Gallery" class="eco-img" style="border-radius: 6px;">
                 </div>
             </div>
 
         </div>
         </div> <!-- End bento container wrapper -->
 
-        <footer class="text-center py-10 text-emerald-900 font-bold bg-white/50 backdrop-blur-sm mt-10">
-            <p>12eatpure &copy; 2024 - 綠食飯桌. Earth Circulation & Eco Bento.</p>
+        <footer class="text-center py-10 text-emerald-500/50 font-bold bg-black/80 mt-10 uppercase tracking-widest text-sm">
+            <p>12eatpure &copy; 2024 / Earth Circulation / High-End Eco Bento</p>
         </footer>
     </main>
 
@@ -455,186 +461,165 @@
             );
         });
 
-        // --- 2. Three.js: Massive Earth Circulation (Main Element) & Tree (Secondary Element) ---
+        // --- 2. Three.js: Bioluminescent Cinematic Earth & Infinite Circulation (Torus Knot) ---
         const initThreeJS = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0xf4f9f4, 0.015);
+            scene.fog = new THREE.FogExp2(0x050505, 0.015); // Deep abyss fog
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
 
             const earthGroup = new THREE.Group();
             scene.add(earthGroup);
 
-            // 1. Massive Glowing Earth (Main Element Focus)
+            // 1. Cinematic Dark Earth Core (Abyss black with green glowing cracks/wireframe)
             const earthGeo = new THREE.SphereGeometry(6, 64, 64);
-            const earthMat = new THREE.MeshPhongMaterial({
-                color: 0x27ae60, // Solid Eco Dark Green
-                emissive: 0x052e16,
-                shininess: 90,
-                transparent: true,
-                opacity: 0.95
+            const earthMat = new THREE.MeshStandardMaterial({
+                color: 0x020a05, // Almost black
+                emissive: 0x001105,
+                roughness: 0.2,
+                metalness: 0.8,
             });
             const earth = new THREE.Mesh(earthGeo, earthMat);
             earthGroup.add(earth);
 
-            // Wireframe latitude/longitude lines to look like a globe
-            const wireGeo = new THREE.SphereGeometry(6.05, 32, 32);
+            // Glowing bioluminescent grid
+            const wireGeo = new THREE.IcosahedronGeometry(6.02, 6);
             const wireMat = new THREE.MeshBasicMaterial({
-                color: 0xa8e6cf,
+                color: 0x00ff66,
                 wireframe: true,
                 transparent: true,
-                opacity: 0.3
+                opacity: 0.15,
+                blending: THREE.AdditiveBlending
             });
             const earthWire = new THREE.Mesh(wireGeo, wireMat);
             earthGroup.add(earthWire);
 
-            // 2. Explicit "Circulation" / Recycle Arrows (Main Element)
-            const createArrow = () => {
-                const shape = new THREE.Shape();
-                shape.moveTo(0, 0);
-                shape.lineTo(2, 0);
-                shape.lineTo(2, -0.5);
-                shape.lineTo(3.5, 0.5);
-                shape.lineTo(2, 1.5);
-                shape.lineTo(2, 1);
-                shape.lineTo(0, 1);
-                // Curve for circulation
-                shape.quadraticCurveTo(-1.5, 1, -1.5, 2.5);
-                shape.lineTo(-0.5, 2.5);
-                shape.quadraticCurveTo(-0.5, 0, 0, 0);
-
-                const extrudeSettings = { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.05, bevelThickness: 0.05 };
-                const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-                const material = new THREE.MeshPhongMaterial({
-                    color: 0x2ecc71,
-                    emissive: 0x14532d,
-                    shininess: 100
-                });
-                return new THREE.Mesh(geometry, material);
-            };
-
+            // 2. Explicit "Infinite Circulation" (Main Element) - Massive Particle Torus Knot
+            // Represents eternal recycling and energy flow
             const circulationGroup = new THREE.Group();
             earthGroup.add(circulationGroup);
 
-            for(let i=0; i<3; i++) {
-                const arrow = createArrow();
-                const pivot = new THREE.Group();
+            const knotGeo = new THREE.TorusKnotGeometry(9, 1.5, 300, 32, 3, 5);
+            // Extract vertices to create a flowing particle system instead of a solid mesh
+            const knotPos = knotGeo.attributes.position.array;
+            const particleGeo = new THREE.BufferGeometry();
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(knotPos, 3));
 
-                // Position arrow out from the center
-                arrow.position.set(7.5, 0, 0);
-
-                // Rotate arrow to point along the tangent of the circle
-                arrow.rotation.z = -Math.PI/2;
-                arrow.rotation.y = Math.PI/2;
-
-                pivot.add(arrow);
-
-                // Space the 3 arrows evenly around the circle
-                pivot.rotation.y = (i * Math.PI * 2) / 3;
-                circulationGroup.add(pivot);
-            }
-
-            // Tilt the circulation orbit
-            circulationGroup.rotation.x = 0.5;
-            circulationGroup.rotation.z = 0.2;
-
-
-            // 3. Majestic Growing Tree (Secondary Element: Nature/Tree)
-            const treeGroup = new THREE.Group();
-            // Position tree growing out of the top-left of the earth
-            treeGroup.position.set(-3, 4, 2);
-            treeGroup.rotation.z = -0.5;
-            earthGroup.add(treeGroup);
-
-            // Trunk (Cylinder)
-            const trunkGeo = new THREE.CylinderGeometry(0.3, 0.6, 4, 8);
-            const trunkMat = new THREE.MeshPhongMaterial({ color: 0x8b5a2b }); // Wood brown
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = 2; // Move up so base is at origin
-            treeGroup.add(trunk);
-
-            // Canopy (Overlapping Spheres)
-            const canopyMat = new THREE.MeshPhongMaterial({ color: 0x2ecc71, shininess: 10 });
-            for(let i=0; i<5; i++) {
-                const leafGeo = new THREE.SphereGeometry(1.5 + Math.random(), 16, 16);
-                const leafMesh = new THREE.Mesh(leafGeo, canopyMat);
-                leafMesh.position.set(
-                    (Math.random() - 0.5) * 2,
-                    3 + Math.random() * 2,
-                    (Math.random() - 0.5) * 2
-                );
-                treeGroup.add(leafMesh);
-            }
-
-            // 4. Floating 3D Leaves (Nature element)
-            const leavesGroup = new THREE.Group();
-            scene.add(leavesGroup);
-
-            const leafShape = new THREE.Shape();
-            leafShape.moveTo(0, 0.5);
-            leafShape.lineTo(0.2, 0);
-            leafShape.lineTo(0, -0.5);
-            leafShape.lineTo(-0.2, 0);
-            leafShape.lineTo(0, 0.5);
-
-            const leafExtrudeSettings = { depth: 0.02, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.01, bevelThickness: 0.01 };
-            const floatingLeafGeo = new THREE.ExtrudeGeometry(leafShape, leafExtrudeSettings);
-            const floatingLeafMat = new THREE.MeshPhongMaterial({
-                color: 0x2ecc71,
-                side: THREE.DoubleSide,
-                shininess: 80
+            const particleMat = new THREE.PointsMaterial({
+                color: 0x00ffcc, // Cyan/Teal energy
+                size: 0.15,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
             });
 
-            const leaves = [];
-            for(let i=0; i<80; i++) {
-                const leaf = new THREE.Mesh(floatingLeafGeo, floatingLeafMat);
-                leaf.position.set(
-                    (Math.random() - 0.5) * 40,
-                    (Math.random() - 0.5) * 40,
-                    (Math.random() - 0.5) * 20 - 5
-                );
-                leaf.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            const knotParticles = new THREE.Points(particleGeo, particleMat);
+            circulationGroup.add(knotParticles);
 
-                const s = Math.random() * 0.8 + 0.5;
-                leaf.scale.set(s,s,s);
+            // Add an inner glowing wireframe knot for structure
+            const knotWireMat = new THREE.MeshBasicMaterial({
+                color: 0x00ff66,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.05,
+                blending: THREE.AdditiveBlending
+            });
+            const knotWire = new THREE.Mesh(knotGeo, knotWireMat);
+            circulationGroup.add(knotWire);
 
-                leaf.userData = {
-                    speedY: Math.random() * 0.05 + 0.02,
-                    rotSpeedX: (Math.random() - 0.5) * 0.1,
-                    rotSpeedY: (Math.random() - 0.5) * 0.1,
-                    swayFreq: Math.random() * 0.05,
-                    swayAmp: Math.random() * 0.05
-                };
-                leavesGroup.add(leaf);
-                leaves.push(leaf);
+            // 3. Fractal Fiber-Optic Tree (Secondary Element: Nature/Tree)
+            const treeGroup = new THREE.Group();
+            treeGroup.position.set(-2, 5.5, 2); // Positioned growing out of the top hemisphere
+            treeGroup.rotation.z = -0.3;
+            earthGroup.add(treeGroup);
+
+            // Generate recursive branches using glowing lines
+            const treeMat = new THREE.LineBasicMaterial({
+                color: 0x00ff66,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            const drawBranch = (group, length, thickness, angleX, angleZ, depth) => {
+                if (depth === 0) return;
+
+                const branchGroup = new THREE.Group();
+                branchGroup.rotation.set(angleX, 0, angleZ);
+                branchGroup.position.y = length; // Move to end of parent
+
+                // Draw line for this branch segment
+                const points = [new THREE.Vector3(0, -length, 0), new THREE.Vector3(0, 0, 0)];
+                const geo = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geo, treeMat);
+                branchGroup.add(line);
+
+                // Add glowing "leaves/fruit" at branch ends
+                if (depth === 1) {
+                    const leafGeo = new THREE.SphereGeometry(0.2, 8, 8);
+                    const leafMat = new THREE.MeshBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+                    const leaf = new THREE.Mesh(leafGeo, leafMat);
+                    branchGroup.add(leaf);
+                }
+
+                // Recursively draw child branches
+                drawBranch(branchGroup, length * 0.75, thickness * 0.7, 0.5, 0.5, depth - 1);
+                drawBranch(branchGroup, length * 0.7, thickness * 0.7, -0.4, 0.3, depth - 1);
+                drawBranch(branchGroup, length * 0.8, thickness * 0.7, 0.2, -0.6, depth - 1);
+
+                group.add(branchGroup);
+            };
+
+            // Start tree generation (Base trunk)
+            const rootGroup = new THREE.Group();
+            treeGroup.add(rootGroup);
+            drawBranch(rootGroup, 3, 0.5, 0, 0, 4); // Depth 4 fractal tree
+
+
+            // 4. Floating Bioluminescent Spores (Ambient Nature)
+            const sporesGeo = new THREE.BufferGeometry();
+            const sporeCount = 300;
+            const sporePos = new Float32Array(sporeCount * 3);
+            for(let i=0; i<sporeCount*3; i++) {
+                sporePos[i] = (Math.random() - 0.5) * 40;
             }
+            sporesGeo.setAttribute('position', new THREE.BufferAttribute(sporePos, 3));
 
-            // Lighting setup
-            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            const sporesMat = new THREE.PointsMaterial({
+                size: 0.2,
+                color: 0x00ffcc,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+            const spores = new THREE.Points(sporesGeo, sporesMat);
+            scene.add(spores);
+
+            // Lighting setup for Cinematic dark mode
+            const ambient = new THREE.AmbientLight(0x112211, 1.0); // Dark green ambient
             scene.add(ambient);
 
-            const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.0);
-            dirLight1.position.set(10, 20, 10);
-            scene.add(dirLight1);
+            const pointLight1 = new THREE.PointLight(0x00ff66, 2, 50); // Bright green core light
+            pointLight1.position.set(0, 0, 5);
+            earthGroup.add(pointLight1);
 
-            const dirLight2 = new THREE.DirectionalLight(0xa8e6cf, 0.8);
-            dirLight2.position.set(-10, -10, -10);
-            scene.add(dirLight2);
+            const rimLight = new THREE.DirectionalLight(0x00ffcc, 1.5); // Teal rim light
+            rimLight.position.set(-10, 10, -10);
+            scene.add(rimLight);
 
-            camera.position.z = 18; // Pull back to see massive earth
-            earthGroup.position.x = 4; // Offset to right side of screen
+            camera.position.z = 22; // Pull back to see massive earth and knot
+            earthGroup.position.x = 6; // Offset to right
 
-            // Mouse interaction setup
-            let mouseX = 0;
-            let mouseY = 0;
-            let targetX = 0;
-            let targetY = 0;
+            // Mouse interaction
+            let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
             const windowHalfX = window.innerWidth / 2;
             const windowHalfY = window.innerHeight / 2;
 
@@ -643,20 +628,16 @@
                 mouseY = (event.clientY - windowHalfY);
             });
 
-            // GSAP ScrollTrigger for Camera / Earth movement
+            // GSAP Scroll Parallax
             ScrollTrigger.create({
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
                 onUpdate: (self) => {
-                    gsap.to(camera.position, {
-                        y: -self.progress * 10,
-                        duration: 0.5,
-                        overwrite: "auto"
-                    });
+                    gsap.to(camera.position, { y: -self.progress * 15, duration: 0.5, overwrite: "auto" });
                     gsap.to(earthGroup.position, {
-                        y: self.progress * 6,
-                        x: 4 - (self.progress * 2), // Move slightly center as you scroll down
+                        y: self.progress * 8,
+                        x: 6 - (self.progress * 3),
                         duration: 0.5,
                         overwrite: "auto"
                     });
@@ -669,30 +650,39 @@
                 targetX = mouseX * .001;
                 targetY = mouseY * .001;
 
-                // Gentle interactive rotation
+                // Interactive parallax
                 earthGroup.rotation.y += 0.05 * (targetX - earthGroup.rotation.y);
                 earthGroup.rotation.x += 0.05 * (targetY - earthGroup.rotation.x);
 
-                // Constant slow rotation of Earth
-                earth.rotation.y += 0.001;
-                earthWire.rotation.y += 0.001;
+                // Constant Rotation
+                earth.rotation.y += 0.002;
+                earthWire.rotation.y += 0.003;
+                earthWire.rotation.x += 0.001;
 
-                // Fast rotation of Circulation Arrows (The core concept!)
-                circulationGroup.rotation.y -= 0.01;
+                // Torus Knot Circulation Animation
+                circulationGroup.rotation.x += 0.002;
+                circulationGroup.rotation.y -= 0.005;
+                circulationGroup.rotation.z += 0.001;
 
-                // Animate Leaves (falling, spinning, and swaying)
-                leaves.forEach(leaf => {
-                    leaf.position.y -= leaf.userData.speedY;
-                    leaf.position.x += Math.sin(Date.now() * leaf.userData.swayFreq) * leaf.userData.swayAmp;
+                // Animate Knot Particles (pulsing effect)
+                const time = Date.now() * 0.001;
+                knotParticles.material.size = 0.15 + Math.sin(time * 2) * 0.05;
 
-                    leaf.rotation.x += leaf.userData.rotSpeedX;
-                    leaf.rotation.y += leaf.userData.rotSpeedY;
+                // Gentle Tree Sway
+                rootGroup.rotation.y = Math.sin(time * 0.5) * 0.05;
+                rootGroup.rotation.z = Math.cos(time * 0.3) * 0.02;
 
-                    if(leaf.position.y < -20) {
-                        leaf.position.y = 20;
-                        leaf.position.x = (Math.random() - 0.5) * 40;
+                // Spores floating up
+                const positions = spores.geometry.attributes.position.array;
+                for(let i=1; i<sporeCount*3; i+=3) { // Y values
+                    positions[i] += 0.02; // Float up
+                    positions[i-1] += Math.sin(time + i) * 0.01; // Drift X
+
+                    if(positions[i] > 20) {
+                        positions[i] = -20; // Reset to bottom
                     }
-                });
+                }
+                spores.geometry.attributes.position.needsUpdate = true;
 
                 renderer.render(scene, camera);
             };
@@ -706,156 +696,126 @@
             });
         };
 
-        // --- 3. p5.js: Explosive Nature (Vines, Flowers, Ripples) ---
+        // --- 3. p5.js: Bioluminescent Explosive Nature (Spores & Lotuses) ---
         const sketch = (p) => {
-            let particles = [];
-            let ripples = [];
-            let vines = [];
+            let bursts = [];
+            let trails = [];
 
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
                 p.noStroke();
+                p.blendMode(p.SCREEN); // Creates high-end glowing effect
             };
 
             p.draw = () => {
                 p.clear();
 
-                // 1. Water Ripples
-                for (let i = ripples.length - 1; i >= 0; i--) {
-                    let r = ripples[i];
-                    r.radius += r.speed;
-                    r.life -= 2;
-
-                    p.noFill();
-                    p.strokeWeight(3);
-                    p.stroke(52, 152, 219, r.life); // Water Blue
-                    p.circle(r.x, r.y, r.radius);
-                    p.noStroke();
-
-                    if (r.life <= 0) ripples.splice(i, 1);
-                }
-
-                // 2. Continuous Vine drawing
+                // 1. High-tech energy trail
                 if (p.mouseX !== 0 && p.mouseY !== 0) {
-                    if (p.frameCount % 2 === 0) {
-                        vines.push({
-                            x: p.mouseX,
-                            y: p.mouseY,
-                            life: 255,
-                            size: p.random(4, 12),
-                            color: p.color(p.random(30, 60), p.random(150, 220), p.random(80, 120)) // Range of greens
-                        });
-                    }
+                    trails.push({
+                        x: p.mouseX,
+                        y: p.mouseY,
+                        life: 255,
+                        size: p.random(2, 6)
+                    });
                 }
 
-                for (let i = vines.length - 1; i >= 0; i--) {
-                    let v = vines[i];
-                    v.life -= 1.5; // Slow fade
+                for (let i = trails.length - 1; i >= 0; i--) {
+                    let t = trails[i];
+                    t.life -= 5;
 
-                    p.fill(p.red(v.color), p.green(v.color), p.blue(v.color), v.life);
-                    p.circle(v.x, v.y, v.size * (v.life/255));
+                    p.fill(0, 255, 204, t.life); // Teal glow
+                    p.circle(t.x, t.y, t.size * (t.life/255));
 
-                    // Connect lines to make solid vine
-                    if (i > 0 && v.life > 50) {
-                        let prev = vines[i-1];
-                        let d = p.dist(v.x, v.y, prev.x, prev.y);
-                        if (d < 50) {
-                            p.stroke(p.red(v.color), p.green(v.color), p.blue(v.color), v.life);
-                            p.strokeWeight(v.size * (v.life/255));
-                            p.line(v.x, v.y, prev.x, prev.y);
-                            p.noStroke();
-                        }
-                    }
-
-                    if (v.life <= 0) vines.splice(i, 1);
+                    if (t.life <= 0) trails.splice(i, 1);
                 }
 
-                // 3. Blooming Flowers (Explosive pop-ins)
-                if (p.mouseX !== 0 && p.mouseY !== 0 && (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY)) {
-                    if (p.frameCount % 8 === 0) {
-                        particles.push({
-                            x: p.mouseX + p.random(-30, 30),
-                            y: p.mouseY + p.random(-30, 30),
-                            life: 255,
-                            maxLife: 255,
-                            size: 0,
-                            maxSize: p.random(15, 40), // Large explosive flowers
-                            rotation: p.random(p.TWO_PI),
-                            rotSpeed: p.random(-0.02, 0.02),
-                            type: p.random() > 0.4 ? 'flower1' : 'flower2'
-                        });
-                    }
-                }
+                // 2. Bioluminescent Lotuses / Energy Bursts
+                for (let i = bursts.length - 1; i >= 0; i--) {
+                    let b = bursts[i];
+                    b.life -= b.decay;
+                    b.rotation += b.rotSpeed;
 
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    let pt = particles[i];
-                    pt.life -= 2;
-                    pt.rotation += pt.rotSpeed;
-
-                    // Pop-in size animation (bloom)
-                    if(pt.size < pt.maxSize) {
-                        pt.size += (pt.maxSize - pt.size) * 0.15;
+                    if(b.size < b.maxSize) {
+                        b.size += (b.maxSize - b.size) * 0.2;
                     }
 
                     p.push();
-                    p.translate(pt.x, pt.y);
-                    p.rotate(pt.rotation);
+                    p.translate(b.x, b.y);
+                    p.rotate(b.rotation);
 
-                    let alpha = p.map(pt.life, 0, pt.maxLife, 0, 255);
+                    let alpha = p.map(b.life, 0, 255, 0, 255);
 
-                    if (pt.type === 'flower1') {
-                        // White/Yellow flower
-                        p.fill(241, 196, 15, alpha); // Yellow center
-                        p.circle(0, 0, pt.size * 0.6);
-                        p.fill(255, 255, 255, alpha); // White petals
-                        for(let j=0; j<6; j++) {
-                            p.push();
-                            p.rotate(j * p.TWO_PI/6);
-                            p.ellipse(0, pt.size*0.7, pt.size*0.5, pt.size*0.9);
-                            p.pop();
-                        }
-                    } else {
-                        // Pink/Purple flower
-                        p.fill(233, 30, 99, alpha); // Dark pink center
-                        p.circle(0, 0, pt.size * 0.5);
-                        p.fill(253, 162, 203, alpha); // Light pink petals
+                    if (b.type === 'lotus') {
+                        // Bioluminescent Lotus
+                        p.fill(0, 255, 102, alpha * 0.8); // Bio Green
+                        p.circle(0, 0, b.size * 0.3);
+                        p.fill(0, 255, 204, alpha * 0.5); // Teal petals
                         for(let j=0; j<8; j++) {
                             p.push();
                             p.rotate(j * p.TWO_PI/8);
-                            p.ellipse(0, pt.size*0.6, pt.size*0.3, pt.size*1.1);
+                            // Pointy geometric petals for sci-fi feel
+                            p.triangle(0, -b.size*0.1, b.size*0.1, b.size*0.5, -b.size*0.1, b.size*0.5);
                             p.pop();
                         }
+                    } else {
+                        // Energy Ring Burst
+                        p.noFill();
+                        p.strokeWeight(2);
+                        p.stroke(255, 204, 0, alpha); // Gold energy
+                        p.circle(0, 0, b.size);
+                        p.noStroke();
                     }
                     p.pop();
 
-                    if (pt.life <= 0) particles.splice(i, 1);
+                    if (b.life <= 0) bursts.splice(i, 1);
                 }
             };
 
             p.mouseMoved = () => {
-                if (p.random() > 0.90 && p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY) > 15) {
-                    ripples.push({ x: p.mouseX, y: p.mouseY, radius: 10, speed: 3, life: 200 });
-                }
-            };
-
-            p.mousePressed = () => {
-                ripples.push({ x: p.mouseX, y: p.mouseY, radius: 5, speed: 5, life: 255 });
-                ripples.push({ x: p.mouseX, y: p.mouseY, radius: 20, speed: 4, life: 200 });
-                ripples.push({ x: p.mouseX, y: p.mouseY, radius: 40, speed: 3, life: 150 });
-
-                // Explode flowers on click
-                for(let i=0; i<5; i++) {
-                    particles.push({
-                        x: p.mouseX + p.random(-50, 50),
-                        y: p.mouseY + p.random(-50, 50),
+                if (p.frameCount % 10 === 0 && p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY) > 5) {
+                    bursts.push({
+                        x: p.mouseX + p.random(-20, 20),
+                        y: p.mouseY + p.random(-20, 20),
                         life: 255,
-                        maxLife: 255,
+                        decay: p.random(3, 6),
                         size: 0,
                         maxSize: p.random(20, 50),
                         rotation: p.random(p.TWO_PI),
                         rotSpeed: p.random(-0.05, 0.05),
-                        type: p.random() > 0.5 ? 'flower1' : 'flower2'
+                        type: 'lotus'
+                    });
+                }
+            };
+
+            p.mousePressed = () => {
+                // Explosive click effect
+                for(let i=0; i<3; i++) {
+                    bursts.push({
+                        x: p.mouseX,
+                        y: p.mouseY,
+                        life: 255,
+                        decay: p.random(5, 10),
+                        size: 0,
+                        maxSize: p.random(100, 250), // Massive rings
+                        rotation: 0,
+                        rotSpeed: 0,
+                        type: 'ring'
+                    });
+                }
+
+                for(let i=0; i<8; i++) {
+                    bursts.push({
+                        x: p.mouseX + p.random(-60, 60),
+                        y: p.mouseY + p.random(-60, 60),
+                        life: 255,
+                        decay: p.random(2, 5),
+                        size: 0,
+                        maxSize: p.random(40, 80),
+                        rotation: p.random(p.TWO_PI),
+                        rotSpeed: p.random(-0.1, 0.1),
+                        type: 'lotus'
                     });
                 }
             };
