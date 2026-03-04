@@ -1047,6 +1047,8 @@ members:
         label: "N8N 自動化"
       - id: "slashie"
         label: "全能斜槓"
+#     - id: "cat_parent"
+#       label: "貓奴"
 
   - id: "joanna_army"
     name: "Joanna"
@@ -1070,6 +1072,6 @@ members:
       - id: "illustrator"
         label: "手繪插畫"
       - id: "cat_lover"
-        label: "貓奴"
+        label: "繪本"
       - id: "gentle_magic"
         label: "日常魔法"
