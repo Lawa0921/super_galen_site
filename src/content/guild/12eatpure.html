@@ -145,15 +145,20 @@
             z-index: 50 !important;
         }
 
-        /* Full width elements for the end of the journey */
-        .static-card {
-            position: relative;
-            margin: 0 auto;
-            width: 90%;
-            max-width: 1200px;
-            pointer-events: auto;
-            z-index: 20;
+        .anchored-card.large-card {
+            width: 800px;
+            max-width: 90vw;
+            margin-left: -400px;
+            margin-top: -200px;
+            padding: 3rem;
         }
+
+        /* Ensures gallery images inside floating cards look right */
+        .anchored-card.large-card .eco-img {
+            height: 250px;
+        }
+
+        /* Remove static cards completely, ALL content is now anchored */
 
         @media (min-width: 768px) {
             .profile-bento { grid-column: span 4; grid-row: span 2; }
@@ -239,9 +244,58 @@
             color: var(--eco-leaf);
         }
 
+        /* Loading Screen Overlay */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--eco-bg);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+
+        .loader-icon {
+            font-size: 3rem;
+            color: var(--eco-leaf);
+            animation: pulse-grow 2s infinite ease-in-out;
+            margin-bottom: 1rem;
+        }
+
+        .loader-text {
+            font-family: 'Noto Sans TC', serif;
+            color: var(--eco-forest);
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+        }
+
+        @keyframes pulse-grow {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+        body.loaded {
+            overflow: auto;
+        }
+        body.loading {
+            overflow: hidden;
+        }
+
     </style>
 </head>
-<body>
+<body class="loading">
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <i class="fa-solid fa-seedling loader-icon"></i>
+        <div class="loader-text">載入生態浮島中...</div>
+    </div>
 
     <div class="progress-bar" id="progressBar"></div>
     <div id="webgl-container"></div>
@@ -314,63 +368,61 @@
                 </ul>
             </div>
 
-            <!-- Padding space for the camera journey -->
-            <div style="height: 380vh;"></div>
-
-            <div class="static-card bg-white/90 backdrop-blur rounded-3xl p-10 border border-emerald-100 shadow-xl mb-12" id="end-menu">
-                <h3 class="text-4xl text-center text-emerald-900 mb-10 eco-font">Signature Menu</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
-                        <div class="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-emerald-600 text-2xl"><i class="fa-solid fa-drumstick-bite"></i></div>
-                        <h4 class="text-xl font-bold text-emerald-900 mb-2">舒肥香草雞胸 / 雞腿</h4>
-                        <p class="text-sm text-emerald-800/70 font-medium">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米。</p>
+            <!-- Now Anchored Menu -->
+            <div id="card-menu" class="anchored-card large-card">
+                <h3 class="text-3xl text-center text-emerald-900 mb-8 eco-font">Signature Menu</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center shadow-sm">
+                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 text-emerald-600 text-xl"><i class="fa-solid fa-drumstick-bite"></i></div>
+                        <h4 class="text-lg font-bold text-emerald-900 mb-2">舒肥香草雞胸 / 雞腿</h4>
+                        <p class="text-xs text-emerald-800/70 font-medium">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米。</p>
                     </div>
-                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
-                        <div class="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-rose-500 text-2xl"><i class="fa-solid fa-fire-burner"></i></div>
-                        <h4 class="text-xl font-bold text-emerald-900 mb-2">爐烤梅花豬</h4>
-                        <p class="text-sm text-emerald-800/70 font-medium">肉質嫩滑多汁，香氣十足！完全不油膩。</p>
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center shadow-sm">
+                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 text-rose-500 text-xl"><i class="fa-solid fa-fire-burner"></i></div>
+                        <h4 class="text-lg font-bold text-emerald-900 mb-2">爐烤梅花豬</h4>
+                        <p class="text-xs text-emerald-800/70 font-medium">肉質嫩滑多汁，香氣十足！完全不油膩。</p>
                     </div>
-                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
-                        <div class="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-blue-500 text-2xl"><i class="fa-solid fa-fish"></i></div>
-                        <h4 class="text-xl font-bold text-emerald-900 mb-2">舒肥鮭魚 / 烤鱸魚</h4>
-                        <p class="text-sm text-emerald-800/70 font-medium">舒肥過後肉質更嫩，入口即化。外酥內嫩多汁。</p>
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center shadow-sm">
+                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 text-blue-500 text-xl"><i class="fa-solid fa-fish"></i></div>
+                        <h4 class="text-lg font-bold text-emerald-900 mb-2">舒肥鮭魚 / 烤鱸魚</h4>
+                        <p class="text-xs text-emerald-800/70 font-medium">舒肥過後肉質更嫩，入口即化。外酥內嫩多汁。</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Image Gallery Grid -->
-            <div class="static-card">
-                <div class="text-center mb-8">
-                    <h3 class="eco-font text-3xl text-emerald-900 inline-block px-10 py-4 bg-white/90 backdrop-blur rounded-full border border-emerald-100 shadow-md"><i class="fa-solid fa-camera text-emerald-600 mr-2"></i> 餐盒實拍</h3>
+            <!-- Now Anchored Image Gallery Grid -->
+            <div id="card-gallery" class="anchored-card large-card" style="background: transparent; border: none; box-shadow: none; backdrop-filter: none;">
+                <div class="text-center mb-6">
+                    <h3 class="eco-font text-2xl text-emerald-900 inline-block px-8 py-3 bg-white/90 backdrop-blur rounded-full border border-emerald-100 shadow-md"><i class="fa-solid fa-camera text-emerald-600 mr-2"></i> 餐盒實拍</h3>
                 </div>
 
-                <div class="grid grid-cols-12 gap-6">
-                    <div class="p-2 overflow-hidden col-span-12 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
                         <img src="/assets/img/guild/12eatpure/img1.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
                         <img src="/assets/img/guild/12eatpure/img2.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
                         <img src="/assets/img/guild/12eatpure/img3.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="p-2 overflow-hidden col-span-12 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
                         <img src="/assets/img/guild/12eatpure/img4.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
                         <img src="/assets/img/guild/12eatpure/img5.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
                         <img src="/assets/img/guild/12eatpure/img6.webp" alt="Gallery" class="eco-img">
                     </div>
                 </div>
             </div>
 
-        </div> <!-- End story container -->
+            <div id="card-footer" class="anchored-card text-center bg-white/80" style="padding: 1.5rem; width: auto; min-width: 300px; transform: translate(-50%, -50%); margin: 0;">
+                <p class="text-emerald-800 font-medium text-sm">12eatpure &copy; 2024<br>綠食飯桌 / Sustainable Eco Bento</p>
+            </div>
 
-        <footer class="text-center py-10 text-emerald-800 font-medium bg-white/50 backdrop-blur-sm border-t border-emerald-100 mt-10">
-            <p>12eatpure &copy; 2024 / 綠食飯桌 / Sustainable Eco Bento</p>
-        </footer>
+        </div> <!-- End story container -->
     </main>
 
     <script>
@@ -421,12 +473,39 @@
         window.addEventListener('resize', resizeLineCanvas);
         resizeLineCanvas();
 
+        // Handle initial load logic
+        window.addEventListener('load', () => {
+            // Guarantee at least a minimal showing of the loader and compilation time
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+                document.body.classList.remove('loading');
+                document.body.classList.add('loaded');
+
+                // Fly-in intro animation for the island
+                if (window.islandGroup) {
+                    gsap.fromTo(window.islandGroup.position,
+                        { y: -15, scale: 0.5 },
+                        { y: -2, scale: 1, duration: 2.5, ease: "elastic.out(1, 0.5)" }
+                    );
+                }
+            }, 800);
+        });
+
+        // Expand the story container height massively to support the extended journey
+        document.querySelector('.story-container').style.height = '1000vh';
+
         // Define Anchor logic globally so Three.js can update it
         window.anchors = [
-            { id: 'card-profile', v3: new THREE.Vector3(-4, 2, 0), card: document.getElementById('card-profile'), scrollStart: 0, scrollEnd: 0.25, align: 'left' },
-            { id: 'card-bio', v3: new THREE.Vector3(4, 4, -2), card: document.getElementById('card-bio'), scrollStart: 0.15, scrollEnd: 0.45, align: 'right' },
-            { id: 'card-stats', v3: new THREE.Vector3(-4, -1, 3), card: document.getElementById('card-stats'), scrollStart: 0.35, scrollEnd: 0.65, align: 'left' },
-            { id: 'card-awards', v3: new THREE.Vector3(4, 0, 4), card: document.getElementById('card-awards'), scrollStart: 0.55, scrollEnd: 0.85, align: 'right' }
+            { id: 'card-profile', v3: new THREE.Vector3(-4, 2, 0), card: document.getElementById('card-profile'), scrollStart: 0, scrollEnd: 0.15, align: 'left' },
+            { id: 'card-bio', v3: new THREE.Vector3(4, 4, -2), card: document.getElementById('card-bio'), scrollStart: 0.10, scrollEnd: 0.30, align: 'right' },
+            { id: 'card-stats', v3: new THREE.Vector3(-4, -1, 3), card: document.getElementById('card-stats'), scrollStart: 0.25, scrollEnd: 0.45, align: 'left' },
+            { id: 'card-awards', v3: new THREE.Vector3(4, 0, 4), card: document.getElementById('card-awards'), scrollStart: 0.40, scrollEnd: 0.60, align: 'right' },
+            // New Anchors - Using 'center' alignment logic for large cards (we'll adapt the render loop)
+            { id: 'card-menu', v3: new THREE.Vector3(0, 5, -5), card: document.getElementById('card-menu'), scrollStart: 0.55, scrollEnd: 0.80, align: 'center' },
+            { id: 'card-gallery', v3: new THREE.Vector3(0, -3, 0), card: document.getElementById('card-gallery'), scrollStart: 0.75, scrollEnd: 0.95, align: 'center' },
+            { id: 'card-footer', v3: new THREE.Vector3(0, 10, 0), card: document.getElementById('card-footer'), scrollStart: 0.90, scrollEnd: 1.0, align: 'center' }
         ];
 
         // --- 2. Three.js: Centralized Floating Eco-Island (Core Anchor) ---
@@ -446,6 +525,7 @@
             container.appendChild(renderer.domElement);
 
             const islandGroup = new THREE.Group();
+            window.islandGroup = islandGroup; // Expose globally for intro animation
             scene.add(islandGroup);
 
             // 1. Massive Eco-Island Base (Centralized)
@@ -664,9 +744,12 @@
                 });
 
                 // Apply the smoothed scroll progress to the camera
-                const angle = scrollProxy.progress * Math.PI * 1.5;
-                const radius = 35 - Math.sin(scrollProxy.progress * Math.PI) * 15;
-                const height = 15 - Math.sin(scrollProxy.progress * Math.PI) * 10;
+                // Extend the journey to 3 full rotations (PI * 6) so we can see all sides
+                const angle = scrollProxy.progress * Math.PI * 6;
+                // Complex radius that swoops in and out multiple times during the journey
+                const radius = 40 - Math.sin(scrollProxy.progress * Math.PI * 3) * 15;
+                // Height variations to view island from above and below
+                const height = 15 - Math.sin(scrollProxy.progress * Math.PI * 2) * 20;
 
                 // We directly set the camera here in the RAF loop based on the smoothed proxy
                 camera.position.x = Math.sin(angle) * radius;
@@ -685,10 +768,15 @@
 
                     const screenPt = projectToScreen(localPt, camera, renderer);
 
+                    // Prevent drawing if the 3D point is exactly behind the camera
+                    // (vector projection gives weird results if z < 0 in local space)
+                    const tempV = localPt.clone().project(camera);
+                    const isBehindCamera = tempV.z > 1;
+
                     // Logic to show/hide based on smoothed scroll progress
                     let opacity = 0;
-                    if(scrollProxy.progress >= anchor.scrollStart && scrollProxy.progress <= anchor.scrollEnd) {
-                        // Fade in and out
+                    if(!isBehindCamera && scrollProxy.progress >= anchor.scrollStart && scrollProxy.progress <= anchor.scrollEnd) {
+                        // Fade in and out smoothly
                         const range = anchor.scrollEnd - anchor.scrollStart;
                         const localP = (scrollProxy.progress - anchor.scrollStart) / range;
                         opacity = Math.sin(localP * Math.PI); // 0 -> 1 -> 0 curve
@@ -699,28 +787,48 @@
                         anchor.card.style.opacity = opacity;
 
                         // Use translate3d for GPU acceleration, avoiding layout thrashing
-                        const offset = anchor.align === 'left' ? -250 : 250;
-                        const targetX = screenPt.x + offset;
-                        const targetY = screenPt.y;
+                        let targetX, targetY;
 
-                        anchor.card.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+                        if (anchor.align === 'center') {
+                            // Center alignment for large cards (Menu/Gallery)
+                            // We position them relative to the 3D point but centered
+                            targetX = screenPt.x;
+                            targetY = screenPt.y + 100; // Float slightly below anchor point
+                            anchor.card.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
 
-                        // Draw high-performance connecting line via Canvas 2D
-                        lineCtx.beginPath();
-                        lineCtx.moveTo(screenPt.x, screenPt.y);
+                            // Draw vertical connecting line
+                            lineCtx.beginPath();
+                            lineCtx.moveTo(screenPt.x, screenPt.y);
+                            lineCtx.lineTo(screenPt.x, targetY);
+                            lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity * 0.8})`;
+                            lineCtx.lineWidth = 3;
+                            lineCtx.setLineDash([5, 5]);
+                            lineCtx.stroke();
+                            lineCtx.setLineDash([]);
 
-                        const endX = screenPt.x + (offset > 0 ? offset - 190 : offset + 190);
-                        const cx = (screenPt.x + endX) / 2;
-                        const cy = screenPt.y - 50;
+                        } else {
+                            // Side alignment for smaller cards
+                            const offset = anchor.align === 'left' ? -300 : 300;
+                            targetX = screenPt.x + offset;
+                            targetY = screenPt.y;
+                            anchor.card.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
 
-                        lineCtx.quadraticCurveTo(cx, cy, endX, screenPt.y);
+                            // Draw curved connecting line via Canvas 2D
+                            lineCtx.beginPath();
+                            lineCtx.moveTo(screenPt.x, screenPt.y);
 
-                        lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity * 0.5})`;
-                        lineCtx.lineWidth = 2;
-                        // Manual dashed line simulation for canvas
-                        lineCtx.setLineDash([5, 5]);
-                        lineCtx.stroke();
-                        lineCtx.setLineDash([]); // Reset
+                            const endX = screenPt.x + (offset > 0 ? offset - 190 : offset + 190);
+                            const cx = (screenPt.x + endX) / 2;
+                            const cy = screenPt.y - 50;
+
+                            lineCtx.quadraticCurveTo(cx, cy, endX, screenPt.y);
+
+                            lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity * 0.5})`;
+                            lineCtx.lineWidth = 2;
+                            lineCtx.setLineDash([5, 5]);
+                            lineCtx.stroke();
+                            lineCtx.setLineDash([]);
+                        }
                     } else {
                         anchor.card.style.visibility = 'hidden';
                         anchor.card.style.opacity = 0;
