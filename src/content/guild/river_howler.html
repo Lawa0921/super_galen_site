@@ -285,7 +285,7 @@
 
                 <div class="avatar-container magic-glow mb-12">
                     <div class="avatar-inner">
-                        <img src="/assets/guild/river_howler/10.webp" alt="River Howler" id="hero-avatar" class="avatar-img">
+                        <img src="/assets/guild/river_howler/8.webp" alt="River Howler" id="hero-avatar" class="avatar-img">
                     </div>
                 </div>
 
@@ -457,95 +457,141 @@
         };
 
         // ═══════════════════════════════════════════
-        // THREE.JS - Necromantic Ritual Circle & Floating Skulls
+        // THREE.JS - Intense Necromantic & Druidic Underworld Domain
         // ═══════════════════════════════════════════
         const initThreeJS = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+            scene.fog = new THREE.FogExp2(0x050101, 0.012); // Thick, oppressive bloody fog
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 30;
-            camera.position.y = 5;
+            camera.position.z = 40;
+            camera.position.y = 10;
 
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
 
-            // Magic Ring (Alchemist/Necromancer circle)
-            const ringGeo = new THREE.TorusGeometry(40, 0.2, 16, 100);
-            const ringMat = new THREE.MeshBasicMaterial({
-                color: 0x880808,
+            // 1. Massive Background Void/Cage (Domain Expansion)
+            const voidGeo = new THREE.IcosahedronGeometry(150, 2);
+            const voidMat = new THREE.MeshBasicMaterial({
+                color: 0x220000,
+                wireframe: true,
                 transparent: true,
-                opacity: 0.3,
-                wireframe: true
+                opacity: 0.15
             });
-            const magicRing = new THREE.Mesh(ringGeo, ringMat);
-            magicRing.rotation.x = Math.PI / 2 - 0.2;
-            magicRing.position.y = -20;
-            scene.add(magicRing);
+            const massiveVoid = new THREE.Mesh(voidGeo, voidMat);
+            scene.add(massiveVoid);
 
-            const ringGeo2 = new THREE.TorusGeometry(35, 0.1, 8, 50);
-            const ringMat2 = new THREE.MeshBasicMaterial({
-                color: 0x4a0404,
-                transparent: true,
-                opacity: 0.5,
-                wireframe: true
-            });
-            const magicRing2 = new THREE.Mesh(ringGeo2, ringMat2);
-            magicRing2.rotation.x = Math.PI / 2 - 0.2;
-            magicRing2.position.y = -20;
-            scene.add(magicRing2);
+            // 2. Colossal Alchemy / Necromancy Rings
+            const rings = [];
+            for (let i = 0; i < 4; i++) {
+                const ringGeo = new THREE.TorusGeometry(40 + (i * 15), 0.2 + (i * 0.1), 16, 100);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: i % 2 === 0 ? 0x990000 : 0x003311, // Blood red & sickly druidic green
+                    transparent: true,
+                    opacity: 0.4 - (i * 0.05),
+                    wireframe: true,
+                    blending: THREE.AdditiveBlending
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2 + (Math.random() * 0.4 - 0.2);
+                ring.position.y = -30 - (i * 5);
+                scene.add(ring);
+                rings.push({ mesh: ring, speed: (i % 2 === 0 ? 1 : -1) * (0.002 + i * 0.001) });
+            }
 
-            // Floating Bones/Gems (Icosahedrons as abstract bones/teeth)
+            // 3. Floating Jagged Bones/Claws/Spikes
             const bones = [];
-            const boneGeo = new THREE.IcosahedronGeometry(1, 0);
+            const boneGeo = new THREE.TetrahedronGeometry(1.5, 0);
             const boneMat = new THREE.MeshStandardMaterial({
-                color: 0xe2e2d5,
-                emissive: 0x4a0404,
-                emissiveIntensity: 0.5,
-                roughness: 0.8,
-                metalness: 0.2
+                color: 0x111111,
+                emissive: 0x330000,
+                emissiveIntensity: 0.8,
+                roughness: 0.5,
+                metalness: 0.8
             });
 
-            for(let i=0; i<40; i++) {
+            for(let i=0; i<80; i++) {
                 const mesh = new THREE.Mesh(boneGeo, boneMat);
                 mesh.position.set(
-                    (Math.random() - 0.5) * 100,
-                    (Math.random() - 0.5) * 100,
-                    (Math.random() - 0.5) * 60 - 20
+                    (Math.random() - 0.5) * 120,
+                    (Math.random() - 0.5) * 120,
+                    (Math.random() - 0.5) * 80 - 10
                 );
                 mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
 
-                // Add scale variation
-                const s = Math.random() * 1.5 + 0.5;
-                mesh.scale.set(s, s*2, s); // stretch like a bone
+                const sx = Math.random() * 0.5 + 0.5;
+                const sy = Math.random() * 3 + 1; // Sharp, claw-like stretch
+                const sz = Math.random() * 0.5 + 0.5;
+                mesh.scale.set(sx, sy, sz);
 
                 scene.add(mesh);
                 bones.push({
                     mesh,
-                    rotSpeedX: (Math.random() - 0.5) * 0.02,
-                    rotSpeedY: (Math.random() - 0.5) * 0.02,
-                    floatSpeed: Math.random() * 0.02 + 0.01,
+                    rotSpeedX: (Math.random() - 0.5) * 0.05,
+                    rotSpeedY: (Math.random() - 0.5) * 0.05,
+                    floatSpeed: Math.random() * 0.03 + 0.01,
                     originY: mesh.position.y,
                     offset: Math.random() * Math.PI * 2
                 });
             }
 
+            // 4. Spectral Souls / Swirling Mist Particles
+            const soulGeo = new THREE.BufferGeometry();
+            const soulCount = 2000;
+            const posArray = new Float32Array(soulCount * 3);
+            const colorArray = new Float32Array(soulCount * 3);
+            for(let i=0; i < soulCount * 3; i+=3) {
+                // Sphere distribution
+                const r = 80 * Math.cbrt(Math.random());
+                const theta = Math.random() * 2 * Math.PI;
+                const phi = Math.acos(2 * Math.random() - 1);
+                posArray[i] = r * Math.sin(phi) * Math.cos(theta);
+                posArray[i+1] = r * Math.sin(phi) * Math.sin(theta);
+                posArray[i+2] = r * Math.cos(phi);
+
+                // Blend blood red and toxic druid green
+                const isRed = Math.random() > 0.4;
+                colorArray[i] = isRed ? Math.random() * 0.5 + 0.5 : 0; // R
+                colorArray[i+1] = isRed ? 0 : Math.random() * 0.5 + 0.2; // G
+                colorArray[i+2] = isRed ? 0 : 0; // B
+            }
+            soulGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            soulGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+            const soulMat = new THREE.PointsMaterial({
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const soulSystem = new THREE.Points(soulGeo, soulMat);
+            scene.add(soulSystem);
+
             // Lighting
-            const ambientLight = new THREE.AmbientLight(0x222222);
+            const ambientLight = new THREE.AmbientLight(0x111111);
             scene.add(ambientLight);
 
-            const pointLight = new THREE.PointLight(0x880808, 2, 100);
-            pointLight.position.set(0, 0, 10);
+            const pointLight = new THREE.PointLight(0xff0000, 3, 150); // Massive intense red glow
+            pointLight.position.set(0, 10, 20);
             scene.add(pointLight);
 
+            const greenLight = new THREE.PointLight(0x00ff33, 1.5, 100); // Sickly green under-glow
+            greenLight.position.set(0, -20, -10);
+            scene.add(greenLight);
+
             // Expose for GSAP
-            window.THREE_RING = ringMat;
-            window.THREE_RING2 = ringMat2;
+            window.THREE_RINGS = rings;
             window.THREE_BONE_MAT = boneMat;
             window.THREE_LIGHT = pointLight;
+            window.THREE_GREEN_LIGHT = greenLight;
+            window.THREE_SOULS = soulSystem;
 
             // Animation Loop
             let time = 0;
@@ -553,17 +599,25 @@
                 requestAnimationFrame(animate);
                 time += 0.01;
 
-                magicRing.rotation.z -= 0.002;
-                magicRing2.rotation.z += 0.003;
+                massiveVoid.rotation.y += 0.0005;
+                massiveVoid.rotation.x += 0.0002;
+
+                rings.forEach(r => {
+                    r.mesh.rotation.z += r.speed;
+                });
 
                 bones.forEach(b => {
                     b.mesh.rotation.x += b.rotSpeedX;
                     b.mesh.rotation.y += b.rotSpeedY;
-                    b.mesh.position.y = b.originY + Math.sin(time * 2 + b.offset) * 2;
+                    b.mesh.position.y = b.originY + Math.sin(time * 2 + b.offset) * 4;
                 });
 
+                soulSystem.rotation.y = time * 0.1;
+                soulSystem.rotation.z = Math.sin(time * 0.05) * 0.2;
+
                 // Parallax camera
-                camera.position.y = 5 - (APP_STATE.scrollProgress * 20);
+                camera.position.y = 10 - (APP_STATE.scrollProgress * 30);
+                camera.position.x = Math.sin(time * 0.5) * 2; // Subtle sway
                 camera.lookAt(0, 0, 0);
 
                 renderer.render(scene, camera);
@@ -578,19 +632,21 @@
         };
 
         // ═══════════════════════════════════════════
-        // P5.JS - Bloody/Necro Cursor Trails & Floating Runes
+        // P5.JS - Violent Blood & Spectral Poison Cursor Splatter
         // ═══════════════════════════════════════════
         const initP5 = () => {
             new p5((sk) => {
                 let particles = [];
+                let splatters = [];
                 let beastChaos = 0;
-                let runes = ['☠️', '🩸', '🦴', '🦅', '🐺', '🐉'];
+                let runes = ['☠️', '🩸', '🦴', '🦅', '🐺', '🐉', '🔮', '🕸️'];
 
                 sk.setup = () => {
                     let cnv = sk.createCanvas(window.innerWidth, window.innerHeight);
                     cnv.parent('p5-container');
                     sk.pixelDensity(1);
                     sk.textAlign(sk.CENTER, sk.CENTER);
+                    sk.blendMode(sk.ADD);
                 };
 
                 sk.draw = () => {
@@ -598,26 +654,62 @@
 
                     beastChaos = sk.lerp(beastChaos, APP_STATE.isBeastMode ? 1 : 0, 0.1);
 
-                    // Add particle on mouse move if moving
-                    if (sk.dist(sk.mouseX, sk.mouseY, sk.pmouseX, sk.pmouseY) > 2 || (APP_STATE.isBeastMode && sk.frameCount % 2 === 0)) {
-                        const spawnCount = APP_STATE.isBeastMode ? 2 : 1;
-                        for(let i=0; i<spawnCount; i++) {
+                    const speed = sk.dist(sk.mouseX, sk.mouseY, sk.pmouseX, sk.pmouseY);
+                    const isMoving = speed > 2;
 
-                            let isRune = sk.random() > 0.9;
-                            let r = APP_STATE.isBeastMode ? runes[sk.floor(sk.random(runes.length))] : runes[1];
+                    // Continuous dense bloody/spectral trail
+                    if (isMoving || (APP_STATE.isBeastMode && sk.frameCount % 2 === 0)) {
+                        const spawnCount = APP_STATE.isBeastMode ? 5 : 2;
+
+                        // Draw connecting splatter line between frames
+                        splatters.push({
+                            x1: sk.pmouseX, y1: sk.pmouseY,
+                            x2: sk.mouseX, y2: sk.mouseY,
+                            life: 255,
+                            weight: sk.random(5, 20) * (1 + beastChaos * 2),
+                            isBeast: APP_STATE.isBeastMode
+                        });
+
+                        // Spawn mist/blood particles
+                        for(let i=0; i<spawnCount; i++) {
+                            let isRune = sk.random() > 0.95;
+                            let r = runes[sk.floor(sk.random(runes.length))];
+
+                            // Colors: Blood Red OR Toxic Green
+                            const isGreen = APP_STATE.isBeastMode ? sk.random() > 0.3 : sk.random() > 0.8;
 
                             particles.push({
-                                x: sk.mouseX + sk.random(-15, 15) * (1 + beastChaos * 3),
-                                y: sk.mouseY + sk.random(-15, 15) * (1 + beastChaos * 3),
-                                vx: sk.random(-1.5, 1.5) * (1 + beastChaos * 2),
-                                vy: sk.random(-1, 2) * (1 + beastChaos * 2) - 1,
+                                x: sk.mouseX + sk.random(-10, 10) * (1 + beastChaos * 5),
+                                y: sk.mouseY + sk.random(-10, 10) * (1 + beastChaos * 5),
+                                vx: sk.random(-2, 2) * (1 + beastChaos * 3),
+                                vy: sk.random(-3, 1) * (1 + beastChaos * 3),
                                 life: 255,
-                                size: sk.random(5, 15) * (1 + beastChaos),
-                                color: APP_STATE.isBeastMode ? [46, 204, 113] : [136, 8, 8],
+                                size: sk.random(10, 40) * (1 + beastChaos * 1.5), // Larger mist
+                                color: isGreen ? [0, 255, 100] : [255, 20, 20],
                                 isRune: isRune,
                                 text: r,
-                                rot: sk.random(sk.TWO_PI)
+                                rot: sk.random(sk.TWO_PI),
+                                rotSpeed: sk.random(-0.1, 0.1)
                             });
+                        }
+                    }
+
+                    // Render splatters
+                    for (let i = splatters.length - 1; i >= 0; i--) {
+                        let s = splatters[i];
+                        s.life -= 15;
+
+                        if (s.life <= 0) {
+                            splatters.splice(i, 1);
+                        } else {
+                            sk.strokeWeight(s.weight * (s.life / 255));
+                            if (s.isBeast) {
+                                sk.stroke(0, 255, 100, s.life * 0.8);
+                            } else {
+                                sk.stroke(200, 0, 0, s.life * 0.8);
+                            }
+                            sk.strokeCap(sk.ROUND);
+                            sk.line(s.x1, s.y1, s.x2, s.y2);
                         }
                     }
 
@@ -626,11 +718,12 @@
                         let p = particles[i];
                         p.x += p.vx;
                         p.y += p.vy;
-                        p.life -= (4 + beastChaos * 3);
-                        p.rot += p.vx * 0.1;
+                        p.life -= (3 + beastChaos * 5);
+                        p.rot += p.rotSpeed;
 
-                        // Perlin noise movement
-                        p.vx += (sk.noise(p.x * 0.01, p.y * 0.01, sk.frameCount * 0.01) - 0.5) * 0.5;
+                        // Chaotic Perlin noise drift
+                        p.vx += (sk.noise(p.x * 0.005, p.y * 0.005, sk.frameCount * 0.02) - 0.5) * 1.5;
+                        p.vy += (sk.noise(p.y * 0.005, p.x * 0.005, sk.frameCount * 0.02) - 0.5) * 1.5;
 
                         if (p.life <= 0) {
                             particles.splice(i, 1);
@@ -780,10 +873,14 @@
             });
 
             // 2. Mutate Three.js environment (Blood -> Necro Green)
-            if (window.THREE_LIGHT) gsap.to(window.THREE_LIGHT.color, { r: 0.18, g: 0.8, b: 0.44, duration: 1.5 });
-            if (window.THREE_RING) gsap.to(window.THREE_RING.color, { r: 0.18, g: 0.8, b: 0.44, duration: 1.5 });
-            if (window.THREE_RING2) gsap.to(window.THREE_RING2.color, { r: 0.06, g: 0.24, b: 0.14, duration: 1.5 });
-            if (window.THREE_BONE_MAT) gsap.to(window.THREE_BONE_MAT.emissive, { r: 0.06, g: 0.24, b: 0.14, duration: 1.5 });
+            if (window.THREE_LIGHT) gsap.to(window.THREE_LIGHT.color, { r: 0.0, g: 1.0, b: 0.2, duration: 1.5 });
+            if (window.THREE_GREEN_LIGHT) gsap.to(window.THREE_GREEN_LIGHT, { intensity: 4, duration: 1.5 });
+            if (window.THREE_RINGS) {
+                window.THREE_RINGS.forEach((r, i) => {
+                    gsap.to(r.mesh.material.color, { r: 0.0, g: 0.8, b: 0.2, duration: 1.5 });
+                });
+            }
+            if (window.THREE_BONE_MAT) gsap.to(window.THREE_BONE_MAT.emissive, { r: 0.0, g: 0.4, b: 0.1, duration: 1.5 });
 
             // 3. Mutate DOM styles via CSS classes
             body.classList.add('beast-mode');
@@ -804,12 +901,12 @@
             document.getElementById('footer-border').classList.remove('border-blood-dark');
             document.getElementById('footer-border').classList.add('border-necro-dark');
 
-            // 4. Swap main avatar to Beast Form (1.webp)
+            // 4. Swap main avatar to Beast Form (7.webp)
             if (mainAvatar) {
                 gsap.to(mainAvatar, {
                     scale: 0.1, opacity: 0, rotation: 360, duration: 0.5,
                     onComplete: () => {
-                        mainAvatar.src = "/assets/guild/river_howler/1.webp";
+                        mainAvatar.src = "/assets/guild/river_howler/7.webp";
                         mainAvatar.style.filter = "none"; // Remove grayscale
                         gsap.to(mainAvatar, {
                             scale: 1.2, opacity: 1, rotation: 720, duration: 1.5, ease: "elastic.out(1, 0.3)"
@@ -827,10 +924,14 @@
             const mainAvatar = document.getElementById('hero-avatar');
 
             // Revert Three.js environment
-            if (window.THREE_LIGHT) gsap.to(window.THREE_LIGHT.color, { r: 0.53, g: 0.03, b: 0.03, duration: 1.5 });
-            if (window.THREE_RING) gsap.to(window.THREE_RING.color, { r: 0.53, g: 0.03, b: 0.03, duration: 1.5 });
-            if (window.THREE_RING2) gsap.to(window.THREE_RING2.color, { r: 0.29, g: 0.01, b: 0.01, duration: 1.5 });
-            if (window.THREE_BONE_MAT) gsap.to(window.THREE_BONE_MAT.emissive, { r: 0.29, g: 0.01, b: 0.01, duration: 1.5 });
+            if (window.THREE_LIGHT) gsap.to(window.THREE_LIGHT.color, { r: 1.0, g: 0.0, b: 0.0, duration: 1.5 });
+            if (window.THREE_GREEN_LIGHT) gsap.to(window.THREE_GREEN_LIGHT, { intensity: 1.5, duration: 1.5 });
+            if (window.THREE_RINGS) {
+                window.THREE_RINGS.forEach((r, i) => {
+                    gsap.to(r.mesh.material.color, { r: i % 2 === 0 ? 0.6 : 0.0, g: i % 2 === 0 ? 0.0 : 0.2, b: i % 2 === 0 ? 0.0 : 0.06, duration: 1.5 });
+                });
+            }
+            if (window.THREE_BONE_MAT) gsap.to(window.THREE_BONE_MAT.emissive, { r: 0.2, g: 0.0, b: 0.0, duration: 1.5 });
 
             body.classList.remove('beast-mode');
 
@@ -855,7 +956,7 @@
                 gsap.to(mainAvatar, {
                     scale: 0.1, opacity: 0, rotation: -360, duration: 0.5,
                     onComplete: () => {
-                        mainAvatar.src = "/assets/guild/river_howler/10.webp";
+                        mainAvatar.src = "/assets/guild/river_howler/8.webp";
                         mainAvatar.style.filter = "grayscale(20%) contrast(120%)";
                         gsap.to(mainAvatar, {
                             scale: 1, opacity: 1, rotation: 0, duration: 1, ease: "elastic.out(1, 0.3)"

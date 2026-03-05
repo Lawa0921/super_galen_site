@@ -1064,7 +1064,7 @@ members:
 
   - id: "river_howler"
     name: "沒川狼雨 River Howler"
-    avatar: "/assets/guild/river_howler/10.webp"
+    avatar: "/assets/guild/river_howler/8.webp"
     page: "/guild/river_howler.html"
     tags:
       - id: "necromancer"
