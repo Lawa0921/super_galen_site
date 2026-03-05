@@ -22,6 +22,10 @@
             --font-serif: 'Cinzel', serif;
         }
 
+        .border-blood { border-color: rgba(139, 0, 0, 0.8); }
+        .border-necro-green { border-color: rgba(0, 255, 128, 0.8); }
+        .border-blood-dark { border-color: rgba(139, 0, 0, 0.4); }
+
         body {
             background-color: var(--void);
             color: var(--bone);
@@ -204,15 +208,31 @@
             opacity: 0; pointer-events: none; z-index: 1000;
         }
 
-        /* Floating Motifs */
+        /* Floating Motifs & Relics */
         .floating-motif {
             position: absolute;
-            opacity: 0.1;
-            font-size: 10rem;
             pointer-events: none;
             z-index: 0;
-            color: var(--bone);
-            filter: blur(2px);
+        }
+
+        .relic-img {
+            width: 150px;
+            opacity: 0.15;
+            filter: grayscale(100%) contrast(150%) blur(1px);
+            transition: opacity 1s, filter 1s;
+            mix-blend-mode: screen;
+        }
+
+        @media (min-width: 768px) {
+            .relic-img {
+                width: 300px;
+            }
+        }
+
+        body.beast-mode .relic-img {
+            filter: grayscale(100%) contrast(150%) hue-rotate(90deg) drop-shadow(0 0 10px rgba(46, 204, 113, 0.5));
+            opacity: 0.25;
+            mix-blend-mode: color-dodge;
         }
 
         /* Scroll Progress */
@@ -249,10 +269,19 @@
 
         <!-- HERO SECTION -->
         <section class="min-h-screen flex flex-col justify-center items-center relative py-32 overflow-hidden px-4">
-            <i class="fa-solid fa-dragon floating-motif top-20 left-10 transform -rotate-45" data-speed="-2"></i>
-            <i class="fa-solid fa-skull floating-motif bottom-20 right-10 transform rotate-12" data-speed="2"></i>
 
-            <div class="gs-reveal text-center relative z-10 w-full max-w-4xl">
+            <!-- Secondary Elements: Skulls, Bones, Birds (Using provided assets as relics) -->
+            <div class="floating-motif top-10 left-[-10%]" data-speed="-1">
+                <img src="/assets/guild/river_howler/6.webp" alt="Skull Relic" class="relic-img transform -rotate-12">
+            </div>
+            <div class="floating-motif bottom-20 right-[-5%]" data-speed="1.5">
+                <img src="/assets/guild/river_howler/4.webp" alt="Bone Relic" class="relic-img transform rotate-45">
+            </div>
+            <div class="floating-motif top-1/4 right-10" data-speed="-2.5">
+                <img src="/assets/guild/river_howler/8.webp" alt="Bird Relic" class="relic-img transform rotate-12" style="width: 200px;">
+            </div>
+
+            <div class="gs-reveal text-center relative z-10 w-full max-w-4xl mt-20">
 
                 <div class="avatar-container magic-glow mb-12">
                     <div class="avatar-inner">
@@ -284,7 +313,16 @@
 
         <!-- PERSONAS SECTION -->
         <section class="py-24 px-4 relative">
-            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+
+            <!-- More Floating Secondary Elements -->
+            <div class="floating-motif top-1/2 left-10" data-speed="3">
+                <img src="/assets/guild/river_howler/2.webp" alt="Feather/Claw Relic" class="relic-img transform -rotate-45" style="width: 250px;">
+            </div>
+            <div class="floating-motif bottom-0 right-20" data-speed="-1.5">
+                <img src="/assets/guild/river_howler/9.webp" alt="Wolf/Beast Relic" class="relic-img transform rotate-12" style="width: 350px;">
+            </div>
+
+            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
 
                 <!-- DRUID -->
                 <div class="gs-reveal grimoire-page p-8 flex flex-col items-center text-center group">
@@ -342,7 +380,13 @@
 
         <!-- DARK ARCHIVES (GALLERY) -->
         <section class="py-32 px-4 relative max-w-7xl mx-auto">
-            <h2 class="gs-reveal text-4xl md:text-6xl text-center mb-16 text-bone font-black tracking-widest drop-shadow-lg">
+
+            <!-- Final Floating Element -->
+            <div class="floating-motif top-10 right-[-10%]" data-speed="2">
+                <img src="/assets/guild/river_howler/3.webp" alt="Specimen Relic" class="relic-img transform -rotate-12" style="width: 400px; opacity: 0.1;">
+            </div>
+
+            <h2 class="gs-reveal text-4xl md:text-6xl text-center mb-16 text-bone font-black tracking-widest drop-shadow-lg relative z-10">
                 <i class="fa-solid fa-book-skull mr-4 text-blood transition-colors duration-1000 role-text"></i>
                 THE DARK ARCHIVES
                 <i class="fa-solid fa-book-skull ml-4 text-blood transition-colors duration-1000 role-text"></i>
@@ -351,7 +395,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[250px]">
                 <!-- Item 1: Wide -->
                 <div class="gs-reveal gallery-item col-span-2 row-span-1 rounded-lg">
-                    <img src="/assets/guild/river_howler/13.webp" alt="Work" class="w-full h-full object-cover">
+                    <img src="/assets/guild/river_howler/8.webp" alt="Work" class="w-full h-full object-cover">
                     <i class="fa-solid fa-eye overlay-icon"></i>
                 </div>
                 <!-- Item 2: Square -->
@@ -386,7 +430,7 @@
                 </div>
                 <!-- Item 8: Wide -->
                 <div class="gs-reveal gallery-item col-span-2 row-span-1 rounded-lg">
-                    <img src="/assets/guild/river_howler/11.webp" alt="Work" class="w-full h-full object-cover">
+                    <img src="/assets/guild/river_howler/9.webp" alt="Work" class="w-full h-full object-cover">
                     <i class="fa-solid fa-tooth overlay-icon"></i>
                 </div>
             </div>
