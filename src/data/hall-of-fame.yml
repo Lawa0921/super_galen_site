@@ -1047,6 +1047,8 @@ members:
         label: "N8N 自動化"
       - id: "slashie"
         label: "全能斜槓"
+      - id: "cat_parent"
+        label: "貓奴"
 
   - id: "joanna_army"
     name: "Joanna"
