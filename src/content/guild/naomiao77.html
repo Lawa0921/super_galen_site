@@ -83,20 +83,20 @@
 
         /* Background Illustration Layers */
         .cloud-layer {
-            position: absolute; /* Changed to absolute to scroll with document natively */
+            position: absolute;
             top: 0;
             left: 0;
             width: 100vw;
-            /* Height set dynamically in JS */
             z-index: -2;
             pointer-events: none;
             overflow: hidden;
+            will-change: transform; /* Hint for performance */
         }
 
         .svg-cloud {
             position: absolute;
             opacity: 0.9;
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05));
+            /* Removed heavy drop-shadow for performance */
         }
 
         #p5-container {
@@ -144,10 +144,28 @@
             z-index: 3;
         }
 
-        .polaroid:hover {
-            transform: scale(1.05) rotate(0deg) !important;
+        .polaroid.hover-active {
             z-index: 50;
-            box-shadow: 0 20px 40px rgba(125, 211, 252, 0.3);
+            box-shadow: 0 30px 50px rgba(125, 211, 252, 0.4);
+        }
+
+        /* 3D Glass glare effect on hover */
+        .polaroid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .polaroid.hover-active::before {
+            opacity: 1;
         }
 
         .polaroid img {
@@ -577,6 +595,57 @@
         });
 
 
+        // 3D Tilt interaction for Polaroids
+        const polaroids = document.querySelectorAll('.polaroid');
+        polaroids.forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left; // x position within the element.
+                const y = e.clientY - rect.top;  // y position within the element.
+
+                // Calculate rotation based on mouse position relative to center
+                const xPct = (x / rect.width) - 0.5; // -0.5 to 0.5
+                const yPct = (y / rect.height) - 0.5; // -0.5 to 0.5
+
+                const rotateX = yPct * -30; // Max 15deg rotation
+                const rotateY = xPct * 30; // Max 15deg rotation
+
+                gsap.to(el, {
+                    rotationX: rotateX,
+                    rotationY: rotateY,
+                    scale: 1.1,
+                    duration: 0.4,
+                    ease: "power2.out",
+                    overwrite: "auto"
+                });
+
+                // Move glare
+                const glareX = xPct * 100;
+                const glareY = yPct * 100;
+                gsap.to(el, {
+                    '--glare-x': `${glareX}%`,
+                    '--glare-y': `${glareY}%`,
+                    duration: 0.1
+                });
+            });
+
+            el.addEventListener('mouseenter', () => {
+                el.classList.add('hover-active');
+            });
+
+            el.addEventListener('mouseleave', () => {
+                el.classList.remove('hover-active');
+                gsap.to(el, {
+                    rotationX: 0,
+                    rotationY: 0,
+                    scale: 1,
+                    duration: 0.6,
+                    ease: "elastic.out(1, 0.3)",
+                    overwrite: "auto"
+                });
+            });
+        });
+
         // Add a "page turn" or floating effect to chapter titles
         const sectionTitles = document.querySelectorAll('h2:not(#entrance-title)');
         sectionTitles.forEach((title) => {
@@ -594,21 +663,20 @@
 
 
         // 3. SVG Hand-Drawn Background Elements (Clouds, Cats, Stars, Notes, Flowers)
-        // Explicitly positioned across the full document height so they are always visible without complex wrapping math
         const createBackgroundElements = () => {
             const backLayer = document.getElementById('cloud-layer-back');
             const frontLayer = document.getElementById('cloud-layer-front');
-            const mouseParallaxElements = []; // Store elements for mousemove parallax
 
-            // Adjust to ensure elements stay visible across a long scroll (assuming 3-4 viewport heights)
+            // Reduced document height assumption for elements
             const documentHeight = Math.max(document.body.scrollHeight, window.innerHeight * 4);
             const vh = window.innerHeight;
 
+            // Removed drop-shadows for performance
             const cloudSVGs = [
-                `<svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.06));">
+                `<svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                     <path d="M50 85 C20 85 10 55 30 35 C30 15 70 5 90 25 C110 -5 160 -5 180 25 C200 45 190 85 160 85 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>`,
-                `<svg viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.06));">
+                `<svg viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
                     <path d="M40 90 C10 90 5 60 25 40 C35 20 65 10 85 30 C105 0 155 0 175 30 C195 10 230 40 210 70 C225 90 190 90 170 90 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>`,
                 // Star element
@@ -642,7 +710,7 @@
 
             const characterSVG = `
                 <div class="cloud-character" style="position: absolute; bottom: 70%; left: 30%; width: 70px; height: 70px;">
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: jump 2s ease-in-out infinite; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.1));">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: jump 2s ease-in-out infinite;">
                         <!-- Cute Cat Body -->
                         <path d="M20 50 L30 20 L50 35 L70 20 L80 50 C95 70 85 95 50 95 C15 95 5 70 20 50 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
                         <!-- Eyes -->
@@ -659,7 +727,7 @@
 
             // Note paper decoration
             const noteSVG = `
-                <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.08)); transform: rotate(-5deg);">
+                <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; transform: rotate(-5deg);">
                     <rect x="10" y="20" width="100" height="90" fill="#FEF9C3" stroke="#FDE047" stroke-width="1"/>
                     <!-- Tape -->
                     <rect x="40" y="10" width="40" height="15" fill="#BAE6FD" opacity="0.8" transform="rotate(3 60 17)"/>
@@ -680,30 +748,27 @@
                     const elWrapper = document.createElement('div');
                     elWrapper.style.position = 'absolute';
                     elWrapper.style.pointerEvents = 'none';
+                    elWrapper.classList.add('parallax-bg-el'); // Class for scrolltrigger
 
                     const rand = Math.random();
                     let scale = 1;
 
                     if (rand > 0.85 && isFront) {
-                        // Spawn a Note
                         elWrapper.innerHTML = noteSVG;
                         scale = 0.8 + Math.random() * 0.5;
                         elWrapper.style.width = `${120 * scale}px`;
-                        elWrapper.dataset.depth = 0.2; // Mouse parallax depth
+                        elWrapper.dataset.speed = "1.5"; // Scroll Parallax Speed
                     } else {
-                        // Spawn a Cloud, Star, Flower, or Paw
                         const typeIndex = Math.floor(Math.random() * cloudSVGs.length);
                         elWrapper.innerHTML = cloudSVGs[typeIndex];
 
-                        // Size mapping based on index
                         if (typeIndex === 0 || typeIndex === 1) { // Clouds
                             scale = 1.0 + Math.random() * 2;
                             elWrapper.style.width = `${150 * scale}px`;
                             elWrapper.style.opacity = isFront ? (0.8 + Math.random() * 0.2) : (0.4 + Math.random() * 0.3);
-                            elWrapper.dataset.depth = isFront ? 0.15 : 0.05;
+                            elWrapper.dataset.speed = isFront ? "1.2" : "0.5";
                             elWrapper.style.zIndex = isFront ? 0 : -1;
 
-                            // 30% chance for a front cloud to have a cat character
                             if (isFront && Math.random() > 0.7) {
                                 elWrapper.insertAdjacentHTML('beforeend', characterSVG);
                                 const charDiv = elWrapper.lastElementChild;
@@ -712,69 +777,54 @@
                         } else { // Decorative (Stars, Flowers, Paws)
                             scale = 0.4 + Math.random() * 0.5;
                             elWrapper.style.width = `${80 * scale}px`;
-                            elWrapper.dataset.depth = isFront ? 0.3 : 0.1;
+                            elWrapper.dataset.speed = isFront ? "2.0" : "0.8";
                             elWrapper.style.opacity = isFront ? 0.9 : 0.5;
                         }
                     }
 
-                    // Distribute vertically across the entire scrollable height
-                    // using percentages so it scales with document
                     const startX = Math.random() * 90; // 0-90vw
-                    const startY = Math.random() * 350; // 0-350vh (covers multiple screens)
+                    const startY = Math.random() * 350; // 0-350vh
 
                     elWrapper.style.left = `${startX}vw`;
                     elWrapper.style.top = `${startY}vh`;
 
                     layer.appendChild(elWrapper);
-                    mouseParallaxElements.push(elWrapper);
 
-                    // Add subtle float
-                    if (Math.random() > 0.5) {
+                    // Reduced float animations to save CPU
+                    if (isFront && Math.random() > 0.5) {
                         gsap.to(elWrapper, {
-                            x: `+=${(Math.random() > 0.5 ? 1 : -1) * (30 + Math.random() * 60)}`,
-                            y: `+=${(Math.random() > 0.5 ? 1 : -1) * (15 + Math.random() * 30)}`,
-                            duration: 15 + Math.random() * 20,
+                            y: `-=${10 + Math.random() * 20}`,
+                            duration: 4 + Math.random() * 4,
                             ease: "sine.inOut",
                             yoyo: true,
-                            repeat: -1
+                            repeat: -1,
+                            delay: Math.random() * 2
                         });
                     }
-
-                    // Add slight vertical float
-                    gsap.to(elWrapper, {
-                        y: `-=${20 + Math.random() * 30}`,
-                        duration: 4 + Math.random() * 4,
-                        ease: "sine.inOut",
-                        yoyo: true,
-                        repeat: -1,
-                        delay: Math.random() * 2
-                    });
                 }
             };
 
-            // Remove the CSS 'fixed' position from cloud layers so they scroll naturally with the document
             backLayer.style.position = 'absolute';
-            backLayer.style.height = '400vh'; // Ensure layer covers enough scroll area
+            backLayer.style.height = '400vh';
             frontLayer.style.position = 'absolute';
             frontLayer.style.height = '400vh';
 
-            spawnElements(backLayer, 30, false); // Increased background elements
-            spawnElements(frontLayer, 25, true); // Increased foreground elements
+            // drastically reduced count for performance and decluttering
+            spawnElements(backLayer, 10, false);
+            spawnElements(frontLayer, 8, true);
 
-            // Mouse Move Parallax Logic
-            document.addEventListener('mousemove', (e) => {
-                const mouseX = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
-                const mouseY = (e.clientY / window.innerHeight - 0.5) * 2; // -1 to 1
-
-                mouseParallaxElements.forEach(el => {
-                    const depth = parseFloat(el.dataset.depth) || 0.1;
-                    gsap.to(el, {
-                        x: mouseX * 100 * depth,
-                        y: mouseY * 50 * depth,
-                        duration: 1.5,
-                        ease: "power2.out",
-                        overwrite: "auto"
-                    });
+            // Scroll Parallax Logic (Replaces mousemove parallax for better performance)
+            gsap.utils.toArray('.parallax-bg-el').forEach(el => {
+                const speed = parseFloat(el.dataset.speed) || 1;
+                gsap.to(el, {
+                    yPercent: -50 * speed, // Move up as you scroll down
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: mainContent, // Bind to main container scroll
+                        start: "top top",
+                        end: "bottom bottom",
+                        scrub: true
+                    }
                 });
             });
         };
@@ -782,115 +832,130 @@
         // Ensure body height is mostly calculated before spawning
         setTimeout(createBackgroundElements, 100);
 
-        // 4. p5.js Magic Drawing / Star Trails
+        // 4. p5.js Magic Drawing / Continuous Interactive Trails
         const sketch = (p) => {
-            let trails = [];
-            let scrollVelocity = 0;
-            let lastScroll = 0;
+            let inkLines = [];
+            let isDrawing = false;
+            let currentLine = [];
 
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
-                p.noStroke();
+                p.strokeJoin(p.ROUND);
+                p.strokeCap(p.ROUND);
             };
 
             p.draw = () => {
                 p.clear();
 
-                // Update trails
-                for (let i = trails.length - 1; i >= 0; i--) {
-                    let t = trails[i];
-                    t.life -= 2;
-                    t.y += t.vy;
-                    t.x += t.vx;
+                // Draw trailing glowing ink lines
+                for (let i = inkLines.length - 1; i >= 0; i--) {
+                    let lineObj = inkLines[i];
+                    lineObj.life -= 1.5; // fade rate
 
-                    // Draw star / sparkle
-                    p.push();
-                    p.translate(t.x, t.y);
-                    p.rotate(t.angle);
-
-                    let alpha = p.map(t.life, 0, 255, 0, t.maxAlpha);
-                    p.fill(t.c[0], t.c[1], t.c[2], alpha);
-
-                    // Draw a hand-drawn style star or circle based on type
-                    if (t.type > 0.5) {
-                        // Star
-                        p.beginShape();
-                        for (let j = 0; j < 5; j++) {
-                            let theta = p.TWO_PI * j / 5 - p.HALF_PI;
-                            p.vertex(p.cos(theta) * t.size, p.sin(theta) * t.size);
-                            theta += p.TWO_PI / 10;
-                            p.vertex(p.cos(theta) * (t.size/2), p.sin(theta) * (t.size/2));
-                        }
-                        p.endShape(p.CLOSE);
-                    } else {
-                        // Soft circle / bubble
-                        p.circle(0, 0, t.size);
+                    if (lineObj.life <= 0) {
+                        inkLines.splice(i, 1);
+                        continue;
                     }
 
-                    p.pop();
+                    p.noFill();
+                    // Magic ink colors: Soft white/yellow glow
+                    p.strokeWeight(lineObj.thickness * p.map(lineObj.life, 0, 255, 0.1, 1));
+                    let alpha = p.map(lineObj.life, 0, 255, 0, 150);
+                    p.stroke(255, 245, 200, alpha); // Soft creamy glow
 
-                    t.angle += t.rotSpeed;
+                    p.beginShape();
+                    for (let pt of lineObj.points) {
+                        // Add slight organic noise to points over time to make them feel "alive" or like dispersing ink
+                        let nY = p.noise(pt.x * 0.01, pt.y * 0.01, p.frameCount * 0.05) * 10 - 5;
+                        p.vertex(pt.x, pt.y + nY);
+                        // Gravity/drift
+                        pt.y -= 0.2;
+                    }
+                    p.endShape();
 
-                    if (t.life <= 0) {
-                        trails.splice(i, 1);
+                    // Inner bright core
+                    p.strokeWeight(lineObj.thickness * 0.4 * p.map(lineObj.life, 0, 255, 0.1, 1));
+                    p.stroke(255, 255, 255, alpha * 1.5);
+                    p.beginShape();
+                    for (let pt of lineObj.points) {
+                        p.vertex(pt.x, pt.y);
+                    }
+                    p.endShape();
+                }
+
+                // If mouse is held down/moving fast, create a current line
+                if (currentLine.length > 0) {
+                    p.noFill();
+                    p.stroke(255, 255, 255, 200);
+                    p.strokeWeight(8);
+                    p.beginShape();
+                    for (let pt of currentLine) {
+                        p.vertex(pt.x, pt.y);
+                    }
+                    p.endShape();
+
+                    // Gradually fade current line into inkLines array if too long or mouse stops
+                    if (currentLine.length > 20 || !isDrawing) {
+                        inkLines.push({
+                            points: [...currentLine],
+                            life: 255,
+                            thickness: p.random(6, 12)
+                        });
+                        currentLine = currentLine.slice(currentLine.length - 5); // Keep tail attached
                     }
                 }
             };
 
-            // Calculate scroll velocity in Lenis callback
-            lenis.on('scroll', (e) => {
-                scrollVelocity = Math.abs(e.velocity);
-
-                // Generate particles based on scroll speed
-                if (scrollVelocity > 5 && p.frameCount % 3 === 0) {
-                    // Spawn particles randomly on screen when scrolling fast
-                    addParticle(
-                        p.random(p.width),
-                        p.random(p.height) + e.scroll * 0.1, // Offset slightly based on scroll
-                        scrollVelocity * 0.1
-                    );
-                }
-            });
-
             p.mouseMoved = () => {
-                // Throttle particle creation
-                if (p.frameCount % 2 === 0) {
-                    addParticle(p.mouseX, p.mouseY, p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY), 0); // 0 = standard star/circle
+                if (p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY) > 5) {
+                    isDrawing = true;
+                    currentLine.push({x: p.mouseX, y: p.mouseY});
+                } else {
+                    isDrawing = false;
+                }
+            };
+
+            p.mouseDragged = () => {
+                isDrawing = true;
+                currentLine.push({x: p.mouseX, y: p.mouseY});
+
+                // Burst effect on drag
+                if (p.frameCount % 5 === 0) {
+                   createBurst(p.mouseX, p.mouseY);
+                }
+            };
+
+            p.mouseReleased = () => {
+                isDrawing = false;
+                if (currentLine.length > 0) {
+                    inkLines.push({
+                        points: [...currentLine],
+                        life: 255,
+                        thickness: p.random(6, 12)
+                    });
+                    currentLine = [];
                 }
             };
 
             p.mouseClicked = () => {
-                // Burst of particles on click
-                for (let i = 0; i < 8; i++) {
-                    addParticle(p.mouseX, p.mouseY, p.random(10, 30), 1); // 1 = paw print or flower burst
-                }
+                createBurst(p.mouseX, p.mouseY);
             };
 
-            function addParticle(x, y, speed, typeOverride) {
-                // Colors: Yellow, White, Sky Blue
-                const colors = [
-                    [255, 255, 255], // White
-                    [254, 240, 138], // Yellow
-                    [186, 230, 253]  // Light Blue
-                ];
-
-                let sizeMod = p.constrain(speed * 0.5, 2, 12);
-
-                let isBurst = typeOverride === 1;
-                trails.push({
-                    x: x,
-                    y: y,
-                    vx: isBurst ? p.random(-5, 5) : p.random(-1, 1),
-                    vy: isBurst ? p.random(-5, 5) : p.random(-1, 2), // Drift down slowly
-                    size: isBurst ? p.random(10, 25) : p.random(4, 8) + sizeMod,
-                    life: 255,
-                    maxAlpha: p.random(150, 255),
-                    c: p.random(colors),
-                    type: isBurst ? (p.random(1) > 0.5 ? 2 : 3) : p.random(1), // 2 = Paw, 3 = Flower
-                    angle: p.random(p.TWO_PI),
-                    rotSpeed: p.random(-0.1, 0.1)
-                });
+            function createBurst(x, y) {
+                // Create a small, rapid splash of short lines
+                for(let i=0; i<5; i++) {
+                    let angle = p.random(p.TWO_PI);
+                    let radius = p.random(10, 40);
+                    inkLines.push({
+                        points: [
+                            {x: x, y: y},
+                            {x: x + p.cos(angle)*radius, y: y + p.sin(angle)*radius}
+                        ],
+                        life: 200,
+                        thickness: p.random(2, 6)
+                    });
+                }
             }
 
             p.windowResized = () => {
