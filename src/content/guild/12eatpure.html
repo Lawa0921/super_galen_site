@@ -94,72 +94,63 @@
             pointer-events: none;
         }
 
-        /* Orbital Layout System - Removing standard block grid */
-        .orbital-container {
+        /* 3D Anchored Content Overlay System */
+        .story-container {
             position: relative;
             width: 100%;
-            /* Make room for absolute positioned cards as we scroll */
-            min-height: 400vh;
-            pointer-events: none; /* Let clicks hit canvas where empty */
+            /* Scroll height for the camera journey */
+            height: 500vh;
+            pointer-events: none;
         }
 
-        .bento-item {
-            background: rgba(255, 255, 255, 0.85); /* Slightly transparent to see island behind */
+        /* Connection Lines from 3D to HTML */
+        #svg-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* The floating HTML cards tied to 3D coords */
+        .anchored-card {
+            position: fixed;
+            /* Center origins so transform translates work perfectly from 3D projected coords */
+            top: 0;
+            left: 0;
+            background: rgba(255, 255, 255, 0.85);
             border: 1px solid var(--bento-border);
-            border-radius: 24px;
-            padding: 2.5rem;
-            box-shadow: 0 10px 30px rgba(45, 74, 54, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 15px 35px rgba(45, 74, 54, 0.1);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            position: absolute;
-            width: 90%;
-            max-width: 500px; /* Keep cards relatively narrow so they float on sides */
-            pointer-events: auto; /* Re-enable interaction for cards */
-            transition: border-color 0.4s ease;
-            opacity: 0; /* Hidden initially for scroll reveal */
-            transform: translateY(50px);
+            width: 380px;
+            pointer-events: auto;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 10;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            transform: translate(-50%, -50%); /* Base centering, will be overridden by JS */
         }
 
-        .bento-item:hover {
+        .anchored-card:hover {
             border-color: var(--eco-leaf);
-            box-shadow: 0 15px 40px rgba(107, 143, 113, 0.15);
+            box-shadow: 0 20px 40px rgba(107, 143, 113, 0.2);
             z-index: 50 !important;
         }
 
-        /* Positioning specific cards in the orbit */
-        .card-profile { top: 5%; left: 5%; z-index: 10; }
-        .card-bio { top: 15%; right: 5%; z-index: 11; }
-        .card-stats { top: 35%; left: 5%; z-index: 12; max-width: 600px; }
-        .card-awards { top: 50%; right: 5%; z-index: 13; }
-
-        /* Center large elements further down */
-        .card-menu {
+        /* Full width elements for the end of the journey */
+        .static-card {
             position: relative;
-            margin: 60vh auto 0;
+            margin: 0 auto;
             width: 90%;
-            max-width: 1000px;
-            top: auto; left: auto; right: auto;
-            opacity: 1; transform: none; /* Let standard flow handle these */
+            max-width: 1200px;
             pointer-events: auto;
+            z-index: 20;
         }
-
-        .card-gallery {
-            position: relative;
-            margin: 5vh auto 10vh;
-            width: 90%;
-            max-width: 1400px;
-            top: auto; left: auto; right: auto;
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            backdrop-filter: none;
-            padding: 0;
-            opacity: 1; transform: none;
-            pointer-events: auto;
-        }
-
-        /* Grid Placements */
-        .profile-bento { grid-column: span 12; display: flex; flex-direction: column; align-items: center; text-align: center; }
 
         @media (min-width: 768px) {
             .profile-bento { grid-column: span 4; grid-row: span 2; }
@@ -268,15 +259,17 @@
             </div>
         </div>
 
-        <div class="orbital-container">
-            <!-- Profile Info Compartment (Top Left Orbit) -->
-            <div class="bento-item card-profile orbit-elem text-center flex flex-col items-center">
+        <svg id="svg-lines"></svg>
+
+        <div class="story-container">
+
+            <!-- These cards are extracted from the 3D anchors -->
+            <div id="card-profile" class="anchored-card text-center flex flex-col items-center">
                 <div class="avatar-container mb-4 w-32 h-32">
                     <img src="/assets/img/guild/12eatpure/avatar.webp" alt="12eatpure" class="avatar-img" onerror="this.src='https://ui-avatars.com/api/?name=12eatpure&background=6b8f71&color=ffffff'">
                 </div>
                 <h2 class="text-2xl eco-font mb-2 text-emerald-900">12eatpure</h2>
                 <p class="text-xs font-medium text-emerald-600 mb-4 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">衛生局 七級 質地示範店家</p>
-
                 <div class="flex flex-wrap justify-center gap-2">
                     <a href="https://www.instagram.com/12eatpure/" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"><i class="fa-brands fa-instagram"></i></a>
                     <a href="https://www.threads.net/@12eatpure" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"><i class="fa-brands fa-threads"></i></a>
@@ -284,111 +277,93 @@
                 </div>
             </div>
 
-            <!-- Intro / Bio (Top Right Orbit) -->
-            <div class="bento-item card-bio orbit-elem">
+            <div id="card-bio" class="anchored-card">
                 <h3 class="text-xl eco-font text-emerald-800 mb-4 flex items-center"><i class="fa-solid fa-seedling text-emerald-600 mr-2 text-2xl"></i>讓餐盒成爲永續的起點</h3>
                 <p class="text-emerald-900/80 leading-relaxed mb-4 text-sm font-medium">
                     常態性使用的 PP 餐盒，還是不鏽鋼 316 餐盒，都會告知訂購的業者選擇。<br>
                     想要帶走，可選擇重複使用的 PP 餐盒；<br>
                     想要由我們回收清洗跟更美觀，可選擇不鏽鋼餐盒哦。
                 </p>
-                <div class="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
-                    <p class="text-emerald-800 font-bold text-sm mb-1"><i class="fa-solid fa-recycle text-emerald-600 mr-2"></i> 循環再利用及均衡飲食</p>
-                    <p class="text-xs text-emerald-900/70 font-medium">無論您想要清淡的健康餐，或者是需要點醬汁的健康餐，我們都可以量身訂做。</p>
-                </div>
             </div>
 
-            <!-- Feature Highlight (Middle Left Orbit) -->
-            <div class="bento-item card-stats orbit-elem">
+            <div id="card-stats" class="anchored-card">
                 <h3 class="text-xl eco-font text-emerald-800 mb-4 flex items-center border-b border-emerald-100 pb-3"><i class="fa-solid fa-utensils text-emerald-600 mr-3 text-xl"></i>高雄最健康的健康餐盒</h3>
-                <div class="grid grid-cols-1 gap-4">
-                    <p class="text-emerald-900/80 leading-relaxed font-medium text-sm">
-                        餐點現點現做，建議先打電話/LINE訂購喔。歡迎團體訂購客製化餐點：月訂購 / 周訂購 / 異業合作 / 循環餐盒。
-                    </p>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 flex items-center">
-                        <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-3 flex-shrink-0">
-                            <i class="fa-solid fa-droplet text-amber-500"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-emerald-900 font-bold mb-1 text-sm">使用西班牙添德瑞橄欖油</h4>
-                            <p class="text-xs text-emerald-900/60 font-medium">高級健康油脂，無味精、調味粉</p>
-                        </div>
+                <p class="text-emerald-900/80 leading-relaxed font-medium text-sm mb-4">
+                    餐點現點現做，建議先打電話/LINE訂購喔。歡迎團體訂購客製化餐點：月訂購 / 周訂購 / 異業合作 / 循環餐盒。
+                </p>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-emerald-100 flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="fa-solid fa-droplet text-amber-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-emerald-900 font-bold text-xs">使用西班牙添德瑞橄欖油</h4>
                     </div>
                 </div>
             </div>
 
-            <!-- Awards (Middle Right Orbit) -->
-            <div class="bento-item card-awards orbit-elem bg-emerald-50/30">
+            <div id="card-awards" class="anchored-card bg-emerald-50/90">
                 <h3 class="text-xl eco-font text-emerald-800 mb-4 flex items-center border-b border-emerald-100 pb-3"><i class="fa-solid fa-award text-amber-500 mr-3 text-xl"></i>榮譽與認證</h3>
                 <ul class="space-y-3 text-emerald-900/80 font-medium text-sm">
                     <li class="flex items-start"><i class="fa-solid fa-check text-emerald-500 mt-1 mr-2"></i><span>2023 經濟部 優選餐盒獎</span></li>
                     <li class="flex items-start"><i class="fa-solid fa-check text-emerald-500 mt-1 mr-2"></i><span>2026 綠色餐飲評鑑指南推薦餐廳</span></li>
                     <li class="flex items-start"><i class="fa-solid fa-check text-emerald-500 mt-1 mr-2"></i><span>AMOT 三星朔源餐廳</span></li>
-                    <li class="flex items-start p-2 bg-white rounded-lg border border-emerald-100 shadow-sm mt-3"><i class="fa-solid fa-user-md text-emerald-600 mt-1 mr-2"></i><span class="text-emerald-800 font-bold">衛生局營養師認證標準</span></li>
+                    <li class="flex items-start p-2 bg-white rounded-lg border border-emerald-100 shadow-sm mt-3"><i class="fa-solid fa-user-md text-emerald-600 mt-1 mr-2"></i><span class="text-emerald-800 font-bold">衛生局營養師認證</span></li>
                 </ul>
             </div>
 
-            <!-- Menu Signatures (Flows naturally below the orbits) -->
-            <div class="bento-item card-menu g-elem bg-white">
-                <h3 class="text-3xl text-center text-emerald-900 mb-8 eco-font">Signature Menu</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all text-center">
-                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 shadow-sm text-emerald-600 text-xl">
-                            <i class="fa-solid fa-drumstick-bite"></i>
-                        </div>
-                        <h4 class="text-lg font-bold text-emerald-900 mb-2">舒肥香草雞胸 / 雞腿</h4>
-                        <p class="text-xs text-emerald-800/70 font-medium leading-relaxed">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米，內用外帶都方便。</p>
+            <!-- Padding space for the camera journey -->
+            <div style="height: 380vh;"></div>
+
+            <div class="static-card bg-white/90 backdrop-blur rounded-3xl p-10 border border-emerald-100 shadow-xl mb-12" id="end-menu">
+                <h3 class="text-4xl text-center text-emerald-900 mb-10 eco-font">Signature Menu</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
+                        <div class="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-emerald-600 text-2xl"><i class="fa-solid fa-drumstick-bite"></i></div>
+                        <h4 class="text-xl font-bold text-emerald-900 mb-2">舒肥香草雞胸 / 雞腿</h4>
+                        <p class="text-sm text-emerald-800/70 font-medium">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米。</p>
                     </div>
-                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all text-center">
-                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 shadow-sm text-rose-500 text-xl">
-                            <i class="fa-solid fa-fire-burner"></i>
-                        </div>
-                        <h4 class="text-lg font-bold text-emerald-900 mb-2">爐烤梅花豬</h4>
-                        <p class="text-xs text-emerald-800/70 font-medium leading-relaxed">肉質嫩滑多汁，香氣十足！完全不油膩，簡單調味就很好吃。</p>
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
+                        <div class="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-rose-500 text-2xl"><i class="fa-solid fa-fire-burner"></i></div>
+                        <h4 class="text-xl font-bold text-emerald-900 mb-2">爐烤梅花豬</h4>
+                        <p class="text-sm text-emerald-800/70 font-medium">肉質嫩滑多汁，香氣十足！完全不油膩。</p>
                     </div>
-                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all text-center">
-                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 shadow-sm text-blue-500 text-xl">
-                            <i class="fa-solid fa-fish"></i>
-                        </div>
-                        <h4 class="text-lg font-bold text-emerald-900 mb-2">舒肥鮭魚 / 烤鱸魚</h4>
-                        <p class="text-xs text-emerald-800/70 font-medium leading-relaxed">舒肥過後肉質更嫩，入口即化。蒔蘿烤鱸魚外酥內嫩多汁，輕微煙燻香。</p>
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
+                        <div class="w-16 h-16 mx-auto bg-white rounded-full flex items-center justify-center mb-4 shadow-sm text-blue-500 text-2xl"><i class="fa-solid fa-fish"></i></div>
+                        <h4 class="text-xl font-bold text-emerald-900 mb-2">舒肥鮭魚 / 烤鱸魚</h4>
+                        <p class="text-sm text-emerald-800/70 font-medium">舒肥過後肉質更嫩，入口即化。外酥內嫩多汁。</p>
                     </div>
-                </div>
-                <div class="mt-8 p-4 bg-white rounded-xl shadow-sm text-center text-emerald-800 font-bold max-w-lg mx-auto border border-emerald-100 flex items-center justify-center text-sm">
-                    <i class="fa-solid fa-mug-hot text-amber-600 mr-3 text-xl"></i>
-                    <span>飲品推：特調鮮奶茶 / 蜂蜜檸檬，真材實料</span>
                 </div>
             </div>
 
-            <!-- Image Gallery Grid (Flows naturally at bottom) -->
-            <div class="bento-item card-gallery g-elem">
+            <!-- Image Gallery Grid -->
+            <div class="static-card">
                 <div class="text-center mb-8">
-                    <h3 class="eco-font text-2xl text-emerald-900 inline-block px-8 py-3 bg-white rounded-full border border-emerald-100 shadow-sm"><i class="fa-solid fa-camera text-emerald-600 mr-2"></i> 餐盒實拍</h3>
+                    <h3 class="eco-font text-3xl text-emerald-900 inline-block px-10 py-4 bg-white/90 backdrop-blur rounded-full border border-emerald-100 shadow-md"><i class="fa-solid fa-camera text-emerald-600 mr-2"></i> 餐盒實拍</h3>
                 </div>
 
                 <div class="grid grid-cols-12 gap-6">
-                    <div class="bento-item p-2 overflow-hidden col-span-12 md:col-span-4" style="height: 300px; position: relative; opacity: 1; transform: none; width: 100%;">
+                    <div class="p-2 overflow-hidden col-span-12 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
                         <img src="/assets/img/guild/12eatpure/img1.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="bento-item p-2 overflow-hidden col-span-6 md:col-span-4" style="height: 300px; position: relative; opacity: 1; transform: none; width: 100%;">
+                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
                         <img src="/assets/img/guild/12eatpure/img2.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="bento-item p-2 overflow-hidden col-span-6 md:col-span-4" style="height: 300px; position: relative; opacity: 1; transform: none; width: 100%;">
+                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
                         <img src="/assets/img/guild/12eatpure/img3.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="bento-item p-2 overflow-hidden col-span-12 md:col-span-4" style="height: 300px; position: relative; opacity: 1; transform: none; width: 100%;">
+                    <div class="p-2 overflow-hidden col-span-12 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
                         <img src="/assets/img/guild/12eatpure/img4.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="bento-item p-2 overflow-hidden col-span-6 md:col-span-4" style="height: 300px; position: relative; opacity: 1; transform: none; width: 100%;">
+                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
                         <img src="/assets/img/guild/12eatpure/img5.webp" alt="Gallery" class="eco-img">
                     </div>
-                    <div class="bento-item p-2 overflow-hidden col-span-6 md:col-span-4" style="height: 300px; position: relative; opacity: 1; transform: none; width: 100%;">
+                    <div class="p-2 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-2xl shadow-sm border border-emerald-50" style="height: 350px;">
                         <img src="/assets/img/guild/12eatpure/img6.webp" alt="Gallery" class="eco-img">
                     </div>
                 </div>
             </div>
 
-        </div> <!-- End orbital container -->
+        </div> <!-- End story container -->
 
         <footer class="text-center py-10 text-emerald-800 font-medium bg-white/50 backdrop-blur-sm border-t border-emerald-100 mt-10">
             <p>12eatpure &copy; 2024 / 綠食飯桌 / Sustainable Eco Bento</p>
@@ -411,53 +386,42 @@
             }
         });
 
-        // Setup Orbital scroll reveals
-        gsap.utils.toArray('.orbit-elem').forEach((elem, i) => {
-            // Determine side based on left/right positioning
-            const isLeft = elem.classList.contains('card-profile') || elem.classList.contains('card-stats');
-            const xOffset = isLeft ? -100 : 100;
+        // Helper to project 3D coordinates to 2D screen space
+        const projectToScreen = (vector3, camera, renderer) => {
+            const vector = vector3.clone();
+            vector.project(camera);
+            const x = Math.round((0.5 + vector.x / 2) * (renderer.domElement.width / window.devicePixelRatio));
+            const y = Math.round((0.5 - vector.y / 2) * (renderer.domElement.height / window.devicePixelRatio));
+            return { x, y };
+        };
 
-            gsap.fromTo(elem,
-                { x: xOffset, y: 50, opacity: 0 },
-                {
-                    x: 0, y: 0, opacity: 1,
-                    duration: 1,
-                    ease: "power3.out",
-                    scrollTrigger: {
-                        trigger: elem,
-                        start: "top 80%", // Trigger slightly earlier for orbits
-                        toggleActions: "play none none reverse"
-                    }
-                }
-            );
+        // Draw dynamic SVG line from 3D point to HTML card
+        const drawLine = (svg, x1, y1, x2, y2, opacity) => {
+            let path = svg.querySelector(`path[data-start="${x1}-${y1}"]`);
+            if(!path) {
+                path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("data-start", `${x1}-${y1}`);
+                path.setAttribute("stroke", "rgba(107, 143, 113, 0.4)");
+                path.setAttribute("stroke-width", "2");
+                path.setAttribute("fill", "none");
+                path.setAttribute("stroke-dasharray", "5,5");
+                svg.appendChild(path);
+            }
+            // Draw a curved line
+            const cx = (x1 + x2) / 2;
+            const cy = y1 - 50; // Curve slightly up
+            path.setAttribute("d", `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+            path.setAttribute("opacity", opacity);
+            return path;
+        };
 
-            // Add a subtle continuous float effect to orbital cards
-            gsap.to(elem, {
-                y: "-=15",
-                duration: 2 + Math.random(),
-                yoyo: true,
-                repeat: -1,
-                ease: "sine.inOut",
-                delay: Math.random()
-            });
-        });
-
-        // Standard bottom-up reveals for the rest
-        gsap.utils.toArray('.g-elem').forEach((elem) => {
-            gsap.fromTo(elem,
-                { y: 50, opacity: 0 },
-                {
-                    y: 0, opacity: 1,
-                    duration: 0.8,
-                    ease: "back.out(1.2)",
-                    scrollTrigger: {
-                        trigger: elem,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    }
-                }
-            );
-        });
+        // Define Anchor logic globally so Three.js can update it
+        window.anchors = [
+            { id: 'card-profile', v3: new THREE.Vector3(-4, 2, 0), card: document.getElementById('card-profile'), scrollStart: 0, scrollEnd: 0.25, line: null, align: 'left' },
+            { id: 'card-bio', v3: new THREE.Vector3(4, 4, -2), card: document.getElementById('card-bio'), scrollStart: 0.15, scrollEnd: 0.45, line: null, align: 'right' },
+            { id: 'card-stats', v3: new THREE.Vector3(-4, -1, 3), card: document.getElementById('card-stats'), scrollStart: 0.35, scrollEnd: 0.65, line: null, align: 'left' },
+            { id: 'card-awards', v3: new THREE.Vector3(4, 0, 4), card: document.getElementById('card-awards'), scrollStart: 0.55, scrollEnd: 0.85, line: null, align: 'right' }
+        ];
 
         // --- 2. Three.js: Centralized Floating Eco-Island (Core Anchor) ---
         const initThreeJS = () => {
@@ -612,11 +576,13 @@
             fillLight.position.set(-15, -5, -15);
             scene.add(fillLight);
 
-            // Anchor Camera to the Center
-            camera.position.set(0, 8, 28);
-            islandGroup.position.set(0, 0, 0); // Dead Center
+            // Initial Camera
+            camera.position.set(0, 15, 35);
+            islandGroup.position.set(0, -2, 0);
 
-            // Mouse interaction
+            // Mouse interaction & Raycaster
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
             let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
             const windowHalfX = window.innerWidth / 2;
             const windowHalfY = window.innerHeight / 2;
@@ -624,30 +590,54 @@
             document.addEventListener('mousemove', (event) => {
                 mouseX = (event.clientX - windowHalfX);
                 mouseY = (event.clientY - windowHalfY);
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             });
 
-            // GSAP Scroll Parallax - Pivot island instead of moving it away
-            ScrollTrigger.create({
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                onUpdate: (self) => {
-                    // Instead of drifting off, the island rotates to show different sides based on scroll
-                    gsap.to(islandGroup.rotation, {
-                        y: self.progress * Math.PI * 1.5, // 270 degree rotation over full scroll
-                        duration: 1,
-                        overwrite: "auto",
-                        ease: "power2.out"
-                    });
-                    // Camera zooms in slightly and dips
-                    gsap.to(camera.position, {
-                        y: 8 - (self.progress * 4),
-                        z: 28 - (self.progress * 6),
-                        duration: 1,
-                        overwrite: "auto"
-                    });
+            // Interactive burst on 3D click
+            document.addEventListener('click', () => {
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(islandGroup.children, true);
+                if (intersects.length > 0) {
+                    // Trigger p5.js leaf burst at the projected 3D click point
+                    if(window.triggerLeafBurst) {
+                        const pt = projectToScreen(intersects[0].point, camera, renderer);
+                        window.triggerLeafBurst(pt.x, pt.y);
+                    }
+
+                    // Flash the island
+                    gsap.to(mainLight, {intensity: 3, duration: 0.1, yoyo: true, repeat: 1});
+                    gsap.fromTo(islandGroup.position, {y: -2.5}, {y: -2, duration: 0.5, ease: "elastic.out(1, 0.3)"});
                 }
             });
+
+            // GSAP Camera Journey
+            let scrollProgress = 0;
+            ScrollTrigger.create({
+                trigger: ".story-container",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: (self) => {
+                    scrollProgress = self.progress;
+
+                    // The Journey: Zoom in, orbit, then pull back
+                    const angle = self.progress * Math.PI * 1.5;
+                    const radius = 35 - Math.sin(self.progress * Math.PI) * 15; // swoops in to 20, then back out
+                    const height = 15 - Math.sin(self.progress * Math.PI) * 10; // dips down to 5
+
+                    gsap.to(camera.position, {
+                        x: Math.sin(angle) * radius,
+                        y: height,
+                        z: Math.cos(angle) * radius,
+                        duration: 0.5,
+                        overwrite: "auto"
+                    });
+                    camera.lookAt(islandGroup.position);
+                }
+            });
+
+            const svgLayer = document.getElementById('svg-lines');
 
             const animate = () => {
                 requestAnimationFrame(animate);
@@ -655,9 +645,9 @@
                 targetX = mouseX * .001;
                 targetY = mouseY * .001;
 
-                // Gentle interactive wobble for the whole island (additive to scroll rotation)
-                islandGroup.rotation.x += 0.05 * (targetY - islandGroup.rotation.x);
-                // We don't overwrite Y rotation directly here to avoid fighting ScrollTrigger
+                // Subtle wobble
+                islandGroup.rotation.x = Math.sin(Date.now()*0.0005) * 0.05 + (targetY * 0.5);
+                islandGroup.rotation.z = Math.cos(Date.now()*0.0007) * 0.05 + (-targetX * 0.5);
 
                 // Animate Earth Circulation Leaves
                 const time = Date.now() * 0.001;
@@ -671,6 +661,44 @@
                     item.mesh.rotation.y = -item.angle;
                 });
 
+                // Update 3D Anchors to 2D HTML Elements
+                // Clear old SVG paths
+                svgLayer.innerHTML = '';
+
+                window.anchors.forEach(anchor => {
+                    // Calculate local 3D point transformed by island rotation
+                    const localPt = anchor.v3.clone();
+                    localPt.applyMatrix4(islandGroup.matrixWorld);
+
+                    const screenPt = projectToScreen(localPt, camera, renderer);
+
+                    // Logic to show/hide based on scroll progress
+                    let opacity = 0;
+                    if(scrollProgress >= anchor.scrollStart && scrollProgress <= anchor.scrollEnd) {
+                        // Fade in and out
+                        const range = anchor.scrollEnd - anchor.scrollStart;
+                        const localP = (scrollProgress - anchor.scrollStart) / range;
+                        opacity = Math.sin(localP * Math.PI); // 0 -> 1 -> 0 curve
+                    }
+
+                    if (opacity > 0.01) {
+                        anchor.card.style.visibility = 'visible';
+                        anchor.card.style.opacity = opacity;
+
+                        // Push card to the side so it doesn't block the anchor point
+                        const offset = anchor.align === 'left' ? -250 : 250;
+                        anchor.card.style.left = `${screenPt.x + offset}px`;
+                        anchor.card.style.top = `${screenPt.y}px`;
+
+                        // Draw connecting line
+                        drawLine(svgLayer, screenPt.x, screenPt.y, screenPt.x + (offset > 0 ? offset - 190 : offset + 190), screenPt.y, opacity);
+                    } else {
+                        anchor.card.style.visibility = 'hidden';
+                        anchor.card.style.opacity = 0;
+                    }
+                });
+
+                camera.lookAt(islandGroup.position);
                 renderer.render(scene, camera);
             };
 
@@ -779,22 +807,27 @@
                 }
             };
 
-            p.mousePressed = () => {
-                // When user clicks, spawn leaves dropping from the central tree canopy
-                // rather than just at the mouse
-                let numLeaves = p.random(6, 12);
+            // Expose a function to trigger a burst from a specific screen coordinate
+            // Called by the Three.js raycaster click event
+            window.triggerLeafBurst = (x, y) => {
+                let numLeaves = p.random(15, 25); // Bigger burst
                 for(let i=0; i<numLeaves; i++) {
                     leaves.push({
-                        x: centerX + p.random(-100, 100),
-                        y: centerY + p.random(-50, 50),
+                        x: x + p.random(-20, 20),
+                        y: y + p.random(-20, 20),
                         life: 255,
-                        size: p.random(8, 15),
-                        vx: p.random(-4, 4), // Burst outward
-                        vy: p.random(-2, 1), // Slightly up then fall
+                        size: p.random(10, 20),
+                        vx: p.random(-6, 6), // Explode outward
+                        vy: p.random(-8, 2), // Shoot up then fall
                         rotation: p.random(p.TWO_PI),
-                        rotSpeed: p.random(-0.05, 0.05)
+                        rotSpeed: p.random(-0.1, 0.1)
                     });
                 }
+            };
+
+            // Keep normal click as a fallback, but make it use mouse position
+            p.mousePressed = () => {
+                window.triggerLeafBurst(p.mouseX, p.mouseY);
             };
 
             p.windowResized = () => {
