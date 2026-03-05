@@ -256,6 +256,27 @@
 </head>
 <body class="font-rounded antialiased selection:bg-sky-200 selection:text-sky-900">
 
+    <!-- Entrance Overlay -->
+    <div id="entrance-overlay" class="fixed inset-0 z-[100] bg-sky-100 flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-sky-50">
+        <!-- Cute sleeping cat SVG -->
+        <div class="w-32 h-32 mb-6 animate-pulse" id="entrance-icon">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 60 C20 40 40 30 50 30 C60 30 80 40 80 60 C80 75 60 85 50 85 C40 85 20 75 20 60 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
+                <!-- Ears -->
+                <path d="M25 45 L20 20 L40 35 M75 45 L80 20 L60 35" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
+                <!-- Closed Eyes -->
+                <path d="M35 55 Q40 60 45 55 M55 55 Q60 60 65 55" stroke="#506055" stroke-width="3" stroke-linecap="round"/>
+                <!-- Snout/Nose -->
+                <circle cx="50" cy="65" r="3" fill="#FFC0CB"/>
+                <!-- Zzz -->
+                <path d="M65 25 L75 25 L65 35 L75 35" stroke="#A8B4A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce" style="animation-delay: 0.5s;"/>
+                <path d="M75 15 L82 15 L75 22 L82 22" stroke="#A8B4A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce"/>
+            </svg>
+        </div>
+        <h2 class="font-serif text-3xl font-bold text-sky-700 tracking-widest mb-2" id="entrance-title">貓青</h2>
+        <p class="font-rounded text-sky-500 text-lg animate-bounce mt-4" id="entrance-prompt">點擊翻開天空畫布 <i class="fa-solid fa-arrow-pointer ml-1"></i></p>
+    </div>
+
     <!-- Background Layers -->
     <div id="webgl-container"></div>
     <div class="cloud-layer" id="cloud-layer-back"></div>
@@ -263,7 +284,7 @@
     <div id="p5-container"></div>
 
     <!-- Main Content Wrapper -->
-    <main class="relative z-10 w-full min-h-screen pb-32 book-container">
+    <main class="relative z-10 w-full min-h-screen pb-32 book-container opacity-0" id="main-content">
 
         <!-- Navigation / Top bar -->
         <nav class="fixed top-0 w-full p-6 z-50 flex justify-between items-center pointer-events-none">
@@ -496,8 +517,68 @@
             );
         });
 
+        // --- ENTRANCE INTERACTION ---
+        const overlay = document.getElementById('entrance-overlay');
+        const mainContent = document.getElementById('main-content');
+
+        // Stop scroll before click
+        lenis.stop();
+        document.body.style.overflow = 'hidden';
+
+        overlay.addEventListener('click', () => {
+            const tl = gsap.timeline();
+
+            // Cat wakes up (eyes open)
+            gsap.to(overlay.querySelector('svg'), {
+                scale: 1.1,
+                rotation: -5,
+                duration: 0.3,
+                ease: "back.out"
+            });
+
+            tl.to("#entrance-title, #entrance-prompt, #entrance-icon", {
+                y: -50,
+                opacity: 0,
+                duration: 0.5,
+                stagger: 0.1,
+                ease: "power2.in"
+            })
+            .to(overlay, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    overlay.style.display = 'none';
+                    lenis.start();
+                    document.body.style.overflow = '';
+                }
+            }, "-=0.2")
+            // Fade in main content and make the hero elements pop up
+            .to(mainContent, {
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out"
+            }, "-=0.4")
+            .from(".hero-text > *", {
+                y: 30,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: "back.out(1.5)"
+            }, "-=0.6")
+            .from(".hero-images .polaroid", {
+                y: 50,
+                rotationX: -45,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.15,
+                ease: "back.out(1.5)"
+            }, "-=0.6");
+        });
+
+
         // Add a "page turn" or floating effect to chapter titles
-        const sectionTitles = document.querySelectorAll('h2');
+        const sectionTitles = document.querySelectorAll('h2:not(#entrance-title)');
         sectionTitles.forEach((title) => {
             gsap.from(title, {
                 y: 50,
@@ -512,11 +593,12 @@
         });
 
 
-        // 3. SVG Hand-Drawn Background Elements (Clouds, Cats, Stars, Notes)
-        // Re-writing to be explicitly positioned across the full document height so they are always visible without complex wrapping math
+        // 3. SVG Hand-Drawn Background Elements (Clouds, Cats, Stars, Notes, Flowers)
+        // Explicitly positioned across the full document height so they are always visible without complex wrapping math
         const createBackgroundElements = () => {
             const backLayer = document.getElementById('cloud-layer-back');
             const frontLayer = document.getElementById('cloud-layer-front');
+            const mouseParallaxElements = []; // Store elements for mousemove parallax
 
             // Adjust to ensure elements stay visible across a long scroll (assuming 3-4 viewport heights)
             const documentHeight = Math.max(document.body.scrollHeight, window.innerHeight * 4);
@@ -529,9 +611,32 @@
                 `<svg viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; filter: drop-shadow(0px 8px 12px rgba(0,0,0,0.06));">
                     <path d="M40 90 C10 90 5 60 25 40 C35 20 65 10 85 30 C105 0 155 0 175 30 C195 10 230 40 210 70 C225 90 190 90 170 90 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>`,
-                // Add a cute star element
-                `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
-                    <path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#EAB308" stroke-width="2" stroke-linejoin="round" opacity="0.8"/>
+                // Star element
+                `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; opacity: 0.9;">
+                    <path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="3" stroke-linejoin="round"/>
+                </svg>`,
+                // Flower Element
+                `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; opacity: 0.8; animation: float 6s ease-in-out infinite alternate;">
+                    <circle cx="50" cy="50" r="15" fill="#FDE047" />
+                    <!-- Petals -->
+                    <circle cx="50" cy="20" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="80" cy="50" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="50" cy="80" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="20" cy="50" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <!-- Diagonal Petals -->
+                    <circle cx="70" cy="30" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="70" cy="70" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="30" cy="70" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="30" cy="30" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <!-- Re-draw center to be on top -->
+                    <circle cx="50" cy="50" r="15" fill="#FEF08A" stroke="#FDE047" stroke-width="2"/>
+                </svg>`,
+                // Small Paw Print
+                `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; opacity: 0.6; transform: rotate(-15deg);">
+                    <path d="M50 80 C 30 80, 25 60, 25 50 C 25 40, 40 30, 50 30 C 60 30, 75 40, 75 50 C 75 60, 70 80, 50 80 Z" fill="#A8B4A5" />
+                    <circle cx="30" cy="25" r="10" fill="#A8B4A5" />
+                    <circle cx="50" cy="15" r="12" fill="#A8B4A5" />
+                    <circle cx="70" cy="25" r="10" fill="#A8B4A5" />
                 </svg>`
             ];
 
@@ -579,24 +684,36 @@
                     const rand = Math.random();
                     let scale = 1;
 
-                    if (rand > 0.8 && isFront) {
+                    if (rand > 0.85 && isFront) {
                         // Spawn a Note
                         elWrapper.innerHTML = noteSVG;
                         scale = 0.8 + Math.random() * 0.5;
                         elWrapper.style.width = `${120 * scale}px`;
+                        elWrapper.dataset.depth = 0.2; // Mouse parallax depth
                     } else {
-                        // Spawn a Cloud or Star
+                        // Spawn a Cloud, Star, Flower, or Paw
                         const typeIndex = Math.floor(Math.random() * cloudSVGs.length);
                         elWrapper.innerHTML = cloudSVGs[typeIndex];
-                        scale = (typeIndex === 2) ? (0.3 + Math.random() * 0.4) : (1.5 + Math.random() * 2); // Stars smaller, clouds bigger
-                        elWrapper.style.width = `${150 * scale}px`;
-                        elWrapper.style.opacity = typeIndex === 2 ? 0.9 : (isFront ? 1.0 : 0.6); // Background clouds softer
 
-                        // 30% chance for a front cloud to have a cat character on it
-                        if (isFront && typeIndex < 2 && Math.random() > 0.7) {
-                            elWrapper.insertAdjacentHTML('beforeend', characterSVG);
-                            const charDiv = elWrapper.lastElementChild;
-                            charDiv.firstElementChild.style.animationDelay = `${Math.random() * 2}s`;
+                        // Size mapping based on index
+                        if (typeIndex === 0 || typeIndex === 1) { // Clouds
+                            scale = 1.0 + Math.random() * 2;
+                            elWrapper.style.width = `${150 * scale}px`;
+                            elWrapper.style.opacity = isFront ? (0.8 + Math.random() * 0.2) : (0.4 + Math.random() * 0.3);
+                            elWrapper.dataset.depth = isFront ? 0.15 : 0.05;
+                            elWrapper.style.zIndex = isFront ? 0 : -1;
+
+                            // 30% chance for a front cloud to have a cat character
+                            if (isFront && Math.random() > 0.7) {
+                                elWrapper.insertAdjacentHTML('beforeend', characterSVG);
+                                const charDiv = elWrapper.lastElementChild;
+                                charDiv.firstElementChild.style.animationDelay = `${Math.random() * 2}s`;
+                            }
+                        } else { // Decorative (Stars, Flowers, Paws)
+                            scale = 0.4 + Math.random() * 0.5;
+                            elWrapper.style.width = `${80 * scale}px`;
+                            elWrapper.dataset.depth = isFront ? 0.3 : 0.1;
+                            elWrapper.style.opacity = isFront ? 0.9 : 0.5;
                         }
                     }
 
@@ -609,15 +726,19 @@
                     elWrapper.style.top = `${startY}vh`;
 
                     layer.appendChild(elWrapper);
+                    mouseParallaxElements.push(elWrapper);
 
-                    // Add subtle horizontal drift
-                    gsap.to(elWrapper, {
-                        x: `+=${(Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 100)}`, // Drift left or right
-                        duration: 30 + Math.random() * 40,
-                        ease: "sine.inOut",
-                        yoyo: true,
-                        repeat: -1
-                    });
+                    // Add subtle float
+                    if (Math.random() > 0.5) {
+                        gsap.to(elWrapper, {
+                            x: `+=${(Math.random() > 0.5 ? 1 : -1) * (30 + Math.random() * 60)}`,
+                            y: `+=${(Math.random() > 0.5 ? 1 : -1) * (15 + Math.random() * 30)}`,
+                            duration: 15 + Math.random() * 20,
+                            ease: "sine.inOut",
+                            yoyo: true,
+                            repeat: -1
+                        });
+                    }
 
                     // Add slight vertical float
                     gsap.to(elWrapper, {
@@ -637,8 +758,25 @@
             frontLayer.style.position = 'absolute';
             frontLayer.style.height = '400vh';
 
-            spawnElements(backLayer, 25, false); // Background subtle clouds/stars
-            spawnElements(frontLayer, 20, true); // Foreground clear clouds, cats, notes
+            spawnElements(backLayer, 30, false); // Increased background elements
+            spawnElements(frontLayer, 25, true); // Increased foreground elements
+
+            // Mouse Move Parallax Logic
+            document.addEventListener('mousemove', (e) => {
+                const mouseX = (e.clientX / window.innerWidth - 0.5) * 2; // -1 to 1
+                const mouseY = (e.clientY / window.innerHeight - 0.5) * 2; // -1 to 1
+
+                mouseParallaxElements.forEach(el => {
+                    const depth = parseFloat(el.dataset.depth) || 0.1;
+                    gsap.to(el, {
+                        x: mouseX * 100 * depth,
+                        y: mouseY * 50 * depth,
+                        duration: 1.5,
+                        ease: "power2.out",
+                        overwrite: "auto"
+                    });
+                });
+            });
         };
 
         // Ensure body height is mostly calculated before spawning
@@ -718,11 +856,18 @@
             p.mouseMoved = () => {
                 // Throttle particle creation
                 if (p.frameCount % 2 === 0) {
-                    addParticle(p.mouseX, p.mouseY, p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY));
+                    addParticle(p.mouseX, p.mouseY, p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY), 0); // 0 = standard star/circle
                 }
             };
 
-            function addParticle(x, y, speed) {
+            p.mouseClicked = () => {
+                // Burst of particles on click
+                for (let i = 0; i < 8; i++) {
+                    addParticle(p.mouseX, p.mouseY, p.random(10, 30), 1); // 1 = paw print or flower burst
+                }
+            };
+
+            function addParticle(x, y, speed, typeOverride) {
                 // Colors: Yellow, White, Sky Blue
                 const colors = [
                     [255, 255, 255], // White
@@ -732,16 +877,17 @@
 
                 let sizeMod = p.constrain(speed * 0.5, 2, 12);
 
+                let isBurst = typeOverride === 1;
                 trails.push({
                     x: x,
                     y: y,
-                    vx: p.random(-1, 1),
-                    vy: p.random(-1, 2), // Drift down slowly
-                    size: p.random(4, 8) + sizeMod,
+                    vx: isBurst ? p.random(-5, 5) : p.random(-1, 1),
+                    vy: isBurst ? p.random(-5, 5) : p.random(-1, 2), // Drift down slowly
+                    size: isBurst ? p.random(10, 25) : p.random(4, 8) + sizeMod,
                     life: 255,
                     maxAlpha: p.random(150, 255),
                     c: p.random(colors),
-                    type: p.random(1),
+                    type: isBurst ? (p.random(1) > 0.5 ? 2 : 3) : p.random(1), // 2 = Paw, 3 = Flower
                     angle: p.random(p.TWO_PI),
                     rotSpeed: p.random(-0.1, 0.1)
                 });
