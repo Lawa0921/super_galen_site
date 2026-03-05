@@ -1,512 +1,667 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="dark">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raven | 密契主義的自學女巫師</title>
+    <title>Raven Office | Mystical Alchemy</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Noto+Serif+TC:wght@300;400;700&display=swap');
-
         :root {
-            --witch-purple: #9d4edd;
-            --witch-dark: #0a0015;
-            --water-glow: #4cc9f0;
-            --alchemy-gold: #ffb703;
+            --mystic-purple: #c084fc;
+            --dark-bg: #050308;
+            --gold: #fcd34d;
         }
 
-        body {
+        body, html {
+            margin: 0; padding: 0; width: 100%; min-height: 100vh;
+            background-color: transparent;
+            color: #e5e7eb;
             font-family: 'Noto Serif TC', serif;
-            background-color: var(--witch-dark);
-            color: #f8f9fa;
-            margin: 0;
             overflow-x: hidden;
-            /* The scroll container is large to allow scrolling through states */
-            height: 400vh;
+            scroll-behavior: smooth;
         }
 
-        h1, h2, h3, .magic-font {
-            font-family: 'Cinzel Decorative', serif;
-        }
+        /* Fixed Background Container */
+        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -10; pointer-events: none; }
 
-        /* ------------------
-           FIXED CANVAS LIBRARIES
-           ------------------ */
-        #webgl-canvas {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 1; /* Behind UI, but holds the 3D bowl */
-            pointer-events: none;
-        }
-
+        /* p5 Canvas Overlay */
         #p5-container {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            z-index: 9999;
+            z-index: 50; /* Above WebGL, below Text */
             pointer-events: none;
-            mix-blend-mode: screen;
         }
 
-        /* ------------------
-           FIXED UI OVERLAYS
-           ------------------ */
-        #ui-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 10;
-            pointer-events: none; /* Let clicks pass through to 3D if needed, but we rely on scroll */
+        /* Content Overlay Structure */
+        #content-layer {
+            position: relative;
+            z-index: 100;
+            width: 100%;
         }
 
-        /* Common class for the 4 narrative sections that fade in/out */
-        .story-panel {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+        h1, h2, h3, .cinzel { font-family: 'Cinzel', serif; }
+
+        .section-container {
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            opacity: 0; /* Hidden by default, GSAP controls this */
-            pointer-events: none;
-            padding: 2rem;
+            padding: 4rem 10vw;
             box-sizing: border-box;
+            opacity: 1; /* Was 0, changed to 1 for headless safety */
+            transform: translateY(30px);
         }
 
-        .story-panel.active {
-            pointer-events: auto; /* Allow clicking links when visible */
-        }
+        /* Layout Modifiers */
+        .align-left { justify-content: flex-start; text-align: left; }
+        .align-right { justify-content: flex-end; text-align: right; }
+        .align-center { justify-content: center; text-align: center; }
 
-        /* Text Styling */
-        .witch-glow {
-            text-shadow: 0 0 20px var(--witch-purple), 0 0 40px var(--witch-purple), 0 0 80px #c77dff;
-        }
-
-        .water-glow {
-            text-shadow: 0 0 15px var(--water-glow);
-        }
-
-        /* Panel specific positioning to avoid the central bowl */
-        #panel-1 { justify-content: flex-start; padding-top: 10vh; }
-        #panel-2 { align-items: flex-start; padding-left: 10vw; justify-content: center; text-align: left; }
-        #panel-3 { align-items: flex-end; padding-right: 10vw; justify-content: center; text-align: right; }
-        #panel-4 { justify-content: flex-end; padding-bottom: 10vh; }
-
-        .glass-card {
-            background: rgba(10, 0, 21, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(157, 78, 221, 0.3);
-            border-radius: 20px;
-            padding: 2rem;
+        .content-box {
             max-width: 600px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(157, 78, 221, 0.1);
+            background: rgba(10, 5, 20, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 2.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(192, 132, 252, 0.2);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(192, 132, 252, 0.05);
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .scroll-indicator {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0.7;
-            animation: pulse 2s infinite;
+        .content-box:hover {
+            border-color: rgba(192, 132, 252, 0.5);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(192, 132, 252, 0.15);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; transform: translate(-50%, 0); }
-            50% { opacity: 1; transform: translate(-50%, 10px); }
+        h1 {
+            font-size: 3.5rem;
+            color: var(--mystic-purple);
+            text-shadow: 0 0 20px rgba(192, 132, 252, 0.5);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            color: var(--mystic-purple);
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(192, 132, 252, 0.3);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.2rem;
+            color: #d1d5db;
+        }
+
+        .highlight { color: #f3e8ff; font-weight: 700; }
+        .accent { color: var(--gold); }
+
+        ul.service-list {
+            list-style: none; padding: 0; margin: 0; text-align: left;
+        }
+        ul.service-list li {
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-left: 2rem;
+        }
+        ul.service-list li::before {
+            content: '✧';
+            position: absolute; left: 0; top: 0;
+            color: var(--mystic-purple);
+            font-size: 1.2rem;
+        }
+        ul.service-list h3 {
+            font-size: 1.2rem; margin-bottom: 0.5rem; color: #e9d5ff;
+            font-family: 'Noto Serif TC', serif; font-weight: bold;
+        }
+
+        .social-icons {
+            position: fixed; top: 2rem; right: 2rem;
+            z-index: 200; display: flex; gap: 1.5rem;
+        }
+        .social-icons a {
+            color: var(--mystic-purple); font-size: 1.5rem;
+            transition: color 0.3s, transform 0.3s, text-shadow 0.3s;
+        }
+        .social-icons a:hover {
+            color: #fff; transform: scale(1.1);
+            text-shadow: 0 0 15px rgba(192, 132, 252, 0.8);
+        }
+
+        .blessing-text {
+            font-family: 'Cinzel', serif;
+            color: var(--mystic-purple);
+            font-size: 1.2rem;
+            letter-spacing: 0.2em;
+            text-align: center;
+            margin: 4rem 0;
+            text-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
+        }
+
+        /* Scroll Indicator */
+        .scroll-down {
+            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            color: var(--mystic-purple); font-size: 2rem;
+            animation: bounce 2s infinite; opacity: 0.7;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+            40% { transform: translateY(-15px) translateX(-50%); }
+            60% { transform: translateY(-7px) translateX(-50%); }
+        }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed; inset: 0; background: #050308; z-index: 999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--mystic-purple); font-family: 'Cinzel', serif;
+            transition: opacity 1s ease-out;
+        }
+        .spinner {
+            width: 60px; height: 60px; border: 3px solid rgba(192, 132, 252, 0.2);
+            border-radius: 50%; border-top-color: var(--mystic-purple);
+            animation: spin 1s ease-in-out infinite; margin-bottom: 1.5rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .section-container { padding: 4rem 5vw; justify-content: center !important; text-align: center !important; }
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 2rem; }
+            .content-box { padding: 1.5rem; }
+            ul.service-list li { text-align: left; }
         }
     </style>
 </head>
 <body>
 
-    <!-- 3D Environment: The Scrying Bowl -->
-    <canvas id="webgl-canvas"></canvas>
 
-    <!-- 2D Magic Interactions -->
+
+    </div>
+
+    <div id="webgl-container"></div>
     <div id="p5-container"></div>
 
-    <!-- UI Overlay linked to Scroll Progress -->
-    <div id="ui-container">
-
-        <!-- STATE 1: Intro (0% - 25%) -->
-        <div id="panel-1" class="story-panel">
-            <h2 class="text-xl md:text-2xl font-bold mb-2 uppercase tracking-[0.3em] text-purple-400 magic-font">Mystic Witch</h2>
-            <h1 class="text-6xl md:text-8xl font-black mb-4 witch-glow text-white uppercase tracking-wider">Raven</h1>
-            <p class="text-xl md:text-2xl text-purple-200 font-bold tracking-widest mb-8">密契主義的自學女巫師</p>
-
-            <div class="flex gap-6 pointer-events-auto">
-                <a href="https://www.threads.com/@raven.office" target="_blank" class="text-3xl text-purple-500 hover:text-white hover:scale-125 transition-all drop-shadow-[0_0_15px_var(--witch-purple)]"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/raven.office/" target="_blank" class="text-3xl text-purple-500 hover:text-white hover:scale-125 transition-all drop-shadow-[0_0_15px_var(--witch-purple)]"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-        </div>
-
-        <!-- STATE 2: The Awakening (25% - 50%) -->
-        <div id="panel-2" class="story-panel">
-            <div class="glass-card">
-                <h3 class="text-3xl font-bold mb-6 text-purple-300 magic-font"><i class="fa-solid fa-moon mr-3"></i>The Awakening</h3>
-                <div class="text-gray-300 text-lg leading-loose space-y-4">
-                    <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。</p>
-                    <p>那些難以解釋的相遇，讓我帶著不安長大。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。</p>
-                    <p class="text-purple-400 italic mt-4">"你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。"</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- STATE 3: Guardians (50% - 75%) -->
-        <div id="panel-3" class="story-panel">
-            <div class="glass-card">
-                <h3 class="text-3xl font-bold mb-6 text-[#4cc9f0] magic-font">Spiritual Guardians<i class="fa-solid fa-star ml-3"></i></h3>
-                <div class="space-y-6">
-                    <div class="border-b border-purple-900/50 pb-4">
-                        <div class="text-2xl font-bold text-[#ffb703] mb-2">𝟙 . 大天使 烏列爾</div>
-                        <p class="text-gray-300">合作的天使。帶來神聖的啟示與照亮黑暗的光芒。</p>
-                    </div>
-                    <div>
-                        <div class="text-2xl font-bold text-[#4cc9f0] mb-2">🟚 . Mishipeshu</div>
-                        <p class="text-gray-300">美洲虎守護獸（水下豹）。代表狂野且強大的守護力量。</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- STATE 4: Services (75% - 100%) -->
-        <div id="panel-4" class="story-panel">
-            <div class="glass-card max-w-4xl w-full text-center">
-                <h3 class="text-4xl font-bold mb-8 text-white magic-font witch-glow">Mystical Services</h3>
-
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-sm">
-                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
-                        <i class="fa-solid fa-gem text-2xl text-[#4cc9f0] mb-2"></i>
-                        <div class="font-bold text-white mb-1">礦靈媒合</div>
-                        <div class="text-gray-400 text-xs">鑑定與溝通</div>
-                    </div>
-                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
-                        <i class="fa-solid fa-eye text-2xl text-purple-400 mb-2"></i>
-                        <div class="font-bold text-white mb-1">高我連結</div>
-                        <div class="text-gray-400 text-xs">知曉人生方向</div>
-                    </div>
-                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
-                        <i class="fa-solid fa-hourglass-half text-2xl text-yellow-500 mb-2"></i>
-                        <div class="font-bold text-white mb-1">前世解讀</div>
-                        <div class="text-gray-400 text-xs">了解累世經驗</div>
-                    </div>
-                    <div class="p-4 bg-black/40 rounded-lg border border-purple-800 hover:border-purple-400 transition-colors">
-                        <i class="fa-solid fa-fire text-2xl text-red-500 mb-2"></i>
-                        <div class="font-bold text-white mb-1">詛咒移除</div>
-                        <div class="text-gray-400 text-xs">專業能量淨化</div>
-                    </div>
-                </div>
-
-                <div class="text-[#ffb703] text-sm bg-yellow-900/20 py-2 rounded border border-yellow-700/50 inline-block px-4">
-                    | ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |
-                </div>
-            </div>
-        </div>
-
+    <div class="social-icons">
+        <a href="https://www.instagram.com/raven.office/" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.threads.net/@raven.office" target="_blank"><i class="fa-brands fa-threads"></i></a>
     </div>
 
-    <div class="scroll-indicator text-purple-400 pointer-events-none">
-        <span class="text-xs tracking-widest font-bold mb-2">GAZE INTO THE WATER</span>
-        <i class="fa-solid fa-chevron-down text-xl"></i>
-    </div>
+    <main id="content-layer">
+
+        <!-- Hero Section -->
+        <section class="section-container align-center" id="hero">
+            <div class="content-box border-none bg-transparent shadow-none" style="backdrop-filter: none;">
+                <h1>Raven Office</h1>
+                <p class="cinzel text-xl tracking-[0.3em] mb-4 text-[#c084fc]">Mystical Alchemy</p>
+                <p class="text-lg">密契主義 ✧ 自學女巫</p>
+            </div>
+            <i class="fas fa-chevron-down scroll-down"></i>
+        </section>
+
+        <!-- About Section -->
+        <section class="section-container align-left" id="about">
+            <div class="content-box">
+                <h2>The Awakening</h2>
+                <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。</p>
+                <p>那些難以解釋的相遇，讓我帶著不安長大，也讓我開始尋求答案。我閱讀、查找、試圖理解，卻始終與這身分無法產生共鳴。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。</p>
+                <p>在我幾乎撐不下去的日子裡，祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。於是我明白，人生只能從有限的選擇去做出決定，也是等待既定的時間軌道到來而啟動。</p>
+                <p>現在，我會用輕鬆甚至有點幽默的方式，分享靈界的日常趣事。不是為了神秘，而是為了讓那些曾經孤單的人知道——<span class="highlight">你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。</span></p>
+
+                <p class="blessing-text">| ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |</p>
+
+                <p class="text-sm opacity-80 mt-4">喜歡慢步調的閱讀，有時候會查查資料科普一下。</p>
+            </div>
+        </section>
+
+        <!-- Guardians Section -->
+        <section class="section-container align-right" id="guardians">
+            <div class="content-box text-left">
+                <h2>The Guardians</h2>
+                <p>有兩位超愛我的守護者，平常他們都會打打鬧鬧：</p>
+
+                <div class="mt-6 space-y-4">
+                    <div class="p-4 rounded-lg bg-black/30 border border-purple-500/20">
+                        <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟙. 大天使烏列爾 (Uriel)</h3>
+                        <p class="m-0 text-sm">合作的天使，帶來智慧與光芒的指引。</p>
+                    </div>
+
+                    <div class="p-4 rounded-lg bg-black/30 border border-purple-500/20">
+                        <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟚. Mishipeshu</h3>
+                        <p class="m-0 text-sm">美洲虎守護獸（意為「偉大的猞猁」或「水下豹」），強大的守護力量。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section class="section-container align-left" id="services">
+            <div class="content-box">
+                <h2>Mystical Services</h2>
+                <p class="mb-6 opacity-80">最近積極探索與擴展靈性業務。其他未列出的業務，歡迎委託人來跟我詢問 (∗ ˊωˋ ∗)</p>
+
+                <ul class="service-list">
+                    <li>
+                        <h3>高我連結溝通</h3>
+                        <p class="text-sm m-0">需遠端語音進行高我連結與溝通，可藉由與高我的溝通更了解自身的困境跟疑問，也能知曉此生的人生大方向。</p>
+                    </li>
+                    <li>
+                        <h3>前世解讀</h3>
+                        <p class="text-sm m-0">需遠端語音進行解讀，依每次隨機抓取訊號為主，前世解讀最多三世。從過去的篇章去了解累世的經驗，不指定時間軸。</p>
+                    </li>
+                    <li>
+                        <h3>靈界 / 離世溝通 / 礦靈媒合</h3>
+                        <p class="text-sm m-0">需遠端語音進行，去連結離世的親人解讀、或宿緣對象協調、守護或指導靈溝通。<br>
+                        <span class="text-purple-300 text-xs mt-2 block">* 請提前整理好想詢問的內容，不包含敏感爭議議題。溝通時間約一到兩小時。預約需付1000元定金。</span></p>
+                    </li>
+                    <li>
+                        <h3>詛咒移除</h3>
+                        <p class="text-sm m-0">需評估詛咒的複雜程度來決定處理方式。</p>
+                    </li>
+                    <li>
+                        <h3>物品加持</h3>
+                        <p class="text-sm m-0">需接觸到實體物品，附魔種類有：智慧、健康、運氣、魅力、財富、防護等。</p>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Empty padding section to allow scrolling past the last text to see the final 3D water state -->
+        <section style="height: 50vh;"></section>
+
+    </main>
 
     <!-- Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
     <script>
-        // ==========================================
-        // THREE.JS: THE SCRYING BOWL
-        // ==========================================
-        const canvas = document.getElementById('webgl-canvas');
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        gsap.registerPlugin(ScrollTrigger);
 
+        // ==== HTML GSAP Animations ====
+        document.querySelectorAll('.section-container').forEach((sec) => {
+            gsap.to(sec, {
+                opacity: 1,
+                y: 0,
+                duration: 1.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: sec,
+                    start: "top 80%",
+                    end: "top 20%",
+                    toggleActions: "play reverse play reverse"
+                }
+            });
+        });
+
+        // ==== p5.js Magical Cursor ====
+        const sketch = (p) => {
+            let trails = [];
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noStroke();
+            };
+
+            p.draw = () => {
+                p.clear();
+                if (p.mouseX !== 0 && p.mouseY !== 0 && (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY)) {
+                    for(let i=0; i<3; i++) {
+                        trails.push({
+                            x: p.mouseX + p.random(-15, 15),
+                            y: p.mouseY + p.random(-15, 15),
+                            life: 255,
+                            vx: p.random(-1, 1),
+                            vy: p.random(-2, 0.5),
+                            size: p.random(2, 6),
+                            col: p.random() > 0.5 ? [192, 132, 252] : [232, 121, 249] // Purple or Pink
+                        });
+                    }
+                }
+                for (let i = trails.length - 1; i >= 0; i--) {
+                    let t = trails[i];
+                    t.x += t.vx; t.y += t.vy; t.life -= 6;
+
+                    if (t.life <= 0) trails.splice(i, 1);
+                    else {
+                        p.fill(t.col[0], t.col[1], t.col[2], t.life * 0.6);
+                        p.circle(t.x, t.y, t.size * 1.5);
+                        p.fill(255, 255, 255, t.life);
+                        p.circle(t.x, t.y, t.size * 0.5);
+                    }
+                }
+            };
+            p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
+        };
+        new p5(sketch);
+
+        // ==== Three.js Alchemy Cauldron & Water Visions ====
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0a0015, 0.005);
+        scene.fog = new THREE.FogExp2(0x050308, 0.02);
 
-        // Camera looks slightly down at the bowl
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 15, 20);
-        camera.lookAt(0, 0, 0);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+        // Start view looking slightly down into the cauldron
+        camera.position.set(0, 15, 25);
+        camera.lookAt(0, 5, 0);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0x2a1040, 1);
-        scene.add(ambientLight);
+        const renderer = new THREE.WebGLRenderer({alpha: false, antialias: true});
+        renderer.setClearColor(0x050308);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('webgl-container').appendChild(renderer.domElement);
 
-        const spotLight = new THREE.SpotLight(0x9d4edd, 8);
-        spotLight.position.set(0, 20, 0);
-        spotLight.angle = Math.PI / 4;
-        spotLight.penumbra = 0.5;
-        scene.add(spotLight);
+        // Lights
+        const ambient = new THREE.AmbientLight(0xffffff, 1.5);
+        scene.add(ambient);
 
-        // 1. The Cauldron/Bowl
-        const bowlGroup = new THREE.Group();
+        // Main light from top
+        const mainLight = new THREE.PointLight(0xc084fc, 10.0, 300);
+        mainLight.position.set(10, 20, 10);
+        scene.add(mainLight);
 
-        const bowlGeo = new THREE.SphereGeometry(8, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2.2);
-        const bowlMat = new THREE.MeshStandardMaterial({
-            color: 0x111111,
-            metalness: 0.9,
-            roughness: 0.4,
+        // Cauldron inner glow (green/purple magical mix)
+        const cauldronGlow = new THREE.PointLight(0x8b5cf6, 2, 30);
+        cauldronGlow.position.set(0, 5, 0);
+        scene.add(cauldronGlow);
+
+        // --- Model the Cauldron ---
+        const cauldronGroup = new THREE.Group();
+        scene.add(cauldronGroup);
+
+        // Cauldron Material (Dark rough iron)
+        const ironMat = new THREE.MeshStandardMaterial({
+            color: 0x111111, roughness: 0.9, metalness: 0.6,
             side: THREE.DoubleSide
         });
-        const bowl = new THREE.Mesh(bowlGeo, bowlMat);
-        bowl.rotation.x = Math.PI; // Flip it open-side up
-        bowlGroup.add(bowl);
 
-        // Bowl Rim
-        const rimGeo = new THREE.TorusGeometry(7.8, 0.4, 16, 64);
-        const rimMat = new THREE.MeshStandardMaterial({
-            color: 0x222222,
-            metalness: 0.8,
-            roughness: 0.2
-        });
-        const rim = new THREE.Mesh(rimGeo, rimMat);
-        rim.position.y = 3.6;
-        bowl.add(rim);
+        // The Bowl (Hemisphere)
+        const bowlGeo = new THREE.SphereGeometry(10, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+        const bowl = new THREE.Mesh(bowlGeo, ironMat);
+        // bowl.rotation.x = Math.PI; // Do not flip, it is already a bowl (bottom half of sphere)
+        bowl.position.y = 8;
+        cauldronGroup.add(bowl);
 
-        scene.add(bowlGroup);
+        // The Rim (Torus)
+        const rimGeo = new THREE.TorusGeometry(10, 0.8, 16, 64);
+        const rim = new THREE.Mesh(rimGeo, ironMat);
+        rim.rotation.x = -Math.PI/2;
+        rim.position.y = 8;
+        cauldronGroup.add(rim);
 
-        // 2. The Water Surface (Refractive/Transparent)
-        const waterGeo = new THREE.CylinderGeometry(7.6, 7.6, 0.1, 64, 32);
-        // Perturb water vertices
-        const posAttribute = waterGeo.attributes.position;
-        const vertexData = [];
-        for (let i = 0; i < posAttribute.count; i++) {
-            vertexData.push({
-                x: posAttribute.getX(i),
-                y: posAttribute.getY(i),
-                z: posAttribute.getZ(i),
-                ang: Math.random() * Math.PI * 2,
-                amp: Math.random() * 0.15 + 0.05,
-                speed: Math.random() * 0.02 + 0.01
+        // The Base
+        const baseGeo = new THREE.CylinderGeometry(6, 8, 2, 32);
+        const base = new THREE.Mesh(baseGeo, ironMat);
+        base.position.y = -1;
+        cauldronGroup.add(base);
+
+        // --- The Magic Water Surface ---
+        const waterGeo = new THREE.CircleGeometry(9.6, 64);
+
+        // Add vertices to geometry for ripples
+        const posAttr = waterGeo.attributes.position;
+        const vData = [];
+        for(let i=0; i<posAttr.count; i++) {
+            const vx = posAttr.getX(i);
+            const vy = posAttr.getY(i);
+            const len = Math.sqrt(vx*vx + vy*vy);
+            vData.push({
+                z: posAttr.getZ(i),
+                dist: len,
+                ang: len * 2.0, // wave frequency
+                amp: Math.random() * 0.15 + 0.05 // wave amplitude
             });
         }
 
         const waterMat = new THREE.MeshPhysicalMaterial({
-            color: 0x000000,
-            transmission: 0.95, // Glass/Water effect
-            opacity: 1,
-            metalness: 0,
-            roughness: 0.1,
-            ior: 1.33,
-            thickness: 2.0,
+            color: 0x2e1065, // Deep purple
+            transmission: 0.8, // Glass-like transparency
+            opacity: 1, transparent: true,
+            roughness: 0.1, metalness: 0.1,
+            ior: 1.33, // Water IOR
             side: THREE.DoubleSide
         });
-        const water = new THREE.Mesh(waterGeo, waterMat);
-        water.position.y = 3.2; // Just below rim
-        bowlGroup.add(water);
 
-        // 3. Image Planes (Visions in the Water)
-        const textureLoader = new THREE.TextureLoader();
-        const visions = [];
-        const imagePaths = [
-            '/assets/raven_office/profile.webp', // State 1
-            '/assets/raven_office/altar.webp',   // State 2
-            '/assets/raven_office/cards.webp',   // State 3
-            '/assets/raven_office/crystals.webp' // State 4
+        const water = new THREE.Mesh(waterGeo, waterMat);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 7.2; // Slightly below the rim
+        cauldronGroup.add(water);
+
+        // --- Image Planes in the Water ---
+        // We will create planes for the images and place them below the water.
+        // We will use a custom shader to make them look wavy, or just rely on the water transmission above them.
+        const imagesToLoad = [
+            '/assets/raven_office/profile.webp',   // About
+            '/assets/raven_office/cards.webp',     // Guardians
+            '/assets/raven_office/crystals.webp',  // Services 1
+            '/assets/raven_office/altar.webp'      // Services 2
         ];
 
-        // Group to hold planes so we can rotate them together beneath water
-        const planesGroup = new THREE.Group();
-        planesGroup.position.y = 2.0; // Deep inside the bowl
-        planesGroup.rotation.x = -Math.PI / 2; // Lay flat
-        bowlGroup.add(planesGroup);
+        const imagePlanes = [];
+        const texLoader = new THREE.TextureLoader();
 
-        imagePaths.forEach((path, index) => {
-            const tex = textureLoader.load(path);
-            // Circle mask material
-            const planeMat = new THREE.MeshBasicMaterial({
-                map: tex,
-                transparent: true,
-                opacity: index === 0 ? 0.8 : 0, // Only show first initially
-                depthWrite: false
-            });
-            const planeGeo = new THREE.CircleGeometry(6.5, 64);
-            const plane = new THREE.Mesh(planeGeo, planeMat);
-            // Push each plane slightly down so they don't z-fight
-            plane.position.z = -index * 0.1;
-            planesGroup.add(plane);
-            visions.push(plane);
-        });
+        let loadedImgs = 0;
 
-        // Background Particles (Dust/Magic)
-        const particlesGeo = new THREE.BufferGeometry();
-        const particlesCount = 1000;
-        const posArray = new Float32Array(particlesCount * 3);
-        for(let i=0; i<particlesCount*3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 50;
-        }
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMat = new THREE.PointsMaterial({
-            size: 0.15,
-            color: 0x9d4edd,
-            transparent: true,
-            opacity: 0.4,
-            blending: THREE.AdditiveBlending
-        });
-        const particles = new THREE.Points(particlesGeo, particlesMat);
-        scene.add(particles);
+        imagesToLoad.forEach((url, i) => {
+            texLoader.load(url, (tex) => {
+                tex.minFilter = THREE.LinearMipmapLinearFilter;
 
-        // Render Loop
-        const clock = new THREE.Clock();
-        function animateThree() {
-            requestAnimationFrame(animateThree);
-            const time = clock.getElapsedTime();
+                // Keep aspect ratio
+                const aspect = tex.image.width / tex.image.height;
+                let w = 12;
+                let h = w / aspect;
 
-            // Ripple Water Surface
-            for (let i = 0; i < posAttribute.count; i++) {
-                const data = vertexData[i];
-                // Only ripple Y axis
-                if (Math.abs(data.y) > 0.01) { // Skip center exact point if needed, or just ripple all
-                    const newY = data.y + Math.sin(time * 2 + data.ang) * data.amp;
-                    posAttribute.setY(i, newY);
+                // If it's too tall, constrain by height
+                if (h > 12) {
+                    h = 12;
+                    w = h * aspect;
                 }
+
+                const geo = new THREE.PlaneGeometry(w, h);
+                const mat = new THREE.MeshBasicMaterial({
+                    map: tex,
+                    transparent: true,
+                    opacity: 0, // Start invisible
+                    side: THREE.DoubleSide
+                });
+
+                const plane = new THREE.Mesh(geo, mat);
+                plane.rotation.x = -Math.PI / 2;
+                // Place it inside the bowl, under the water
+                plane.position.y = 6.8;
+
+                cauldronGroup.add(plane);
+                imagePlanes[i] = plane;
+
+                loadedImgs++;
+                if (loadedImgs === imagesToLoad.length) {
+                    // All loaded, hide loader
+                    const loader = null; // document.getElementById('loader');
+                    if(loader) { loader.style.opacity = '0'; }
+                    setTimeout(() => loader.style.display = 'none', 1000);
+                }
+            }, undefined, () => {
+                // On error, just inc count so loader can disappear
+                loadedImgs++;
+            });
+        });
+
+        // Fallback for loader
+        setTimeout(() => {
+            const loader = null; // document.getElementById('loader');
+            if(loader && loader.style.display !== 'none') {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 1000);
             }
-            posAttribute.needsUpdate = true;
+        }, 4000);
 
-            // Slow rotation of the bowl contents
-            planesGroup.rotation.z = time * 0.05;
+        // Magic floating dust
+        const dustGeo = new THREE.BufferGeometry();
+        const dustCount = 300;
+        const dPos = new Float32Array(dustCount * 3);
+        const dSpeed = new Float32Array(dustCount);
+        for(let i=0; i<dustCount; i++) {
+            // Random position in a column above the cauldron
+            const radius = Math.random() * 8;
+            const theta = Math.random() * Math.PI * 2;
+            dPos[i*3] = Math.cos(theta) * radius;
+            dPos[i*3+1] = 8 + Math.random() * 20; // Above water (8 to 28)
+            dPos[i*3+2] = Math.sin(theta) * radius;
+            dSpeed[i] = Math.random() * 0.02 + 0.01;
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+        dustGeo.setAttribute('speed', new THREE.BufferAttribute(dSpeed, 1));
 
-            // Particles drift
-            particles.rotation.y = time * 0.02;
+        // Create round particle texture
+        const ptCanvas = document.createElement('canvas');
+        ptCanvas.width = 16; ptCanvas.height = 16;
+        const ptCtx = ptCanvas.getContext('2d');
+        ptCtx.fillStyle = '#ffffff';
+        ptCtx.beginPath(); ptCtx.arc(8, 8, 8, 0, Math.PI*2); ptCtx.fill();
+        const ptTex = new THREE.CanvasTexture(ptCanvas);
+
+        const dustMat = new THREE.PointsMaterial({
+            size: 0.3, map: ptTex, transparent: true, opacity: 0.6,
+            blending: THREE.AdditiveBlending, depthWrite: false, color: 0xfbcfe8
+        });
+        const dust = new THREE.Points(dustGeo, dustMat);
+        scene.add(dust);
+
+        // --- Render Loop ---
+        const clock = new THREE.Clock();
+
+        function render() {
+            requestAnimationFrame(render);
+            const t = clock.getElapsedTime();
+
+            // Water ripples
+            for(let i=0; i<posAttr.count; i++) {
+                const d = vData[i];
+                const wave = Math.sin(d.ang - t * 3.0) * d.amp;
+                // Add a secondary wave for complexity
+                const wave2 = Math.cos(d.ang * 0.5 + t * 1.5) * d.amp * 0.5;
+                posAttr.setZ(i, d.z + wave + wave2);
+            }
+            posAttr.needsUpdate = true;
+            waterGeo.computeVertexNormals();
+
+            // Floating dust animation
+            const dPosAttr = dustGeo.attributes.position;
+            const dSpeedAttr = dustGeo.attributes.speed;
+            for(let i=0; i<dustCount; i++) {
+                let py = dPosAttr.getY(i);
+                py += dSpeedAttr.getX(i);
+                if (py > 28) py = 8; // Reset to water surface
+                dPosAttr.setY(i, py);
+
+                // Slight waver in X and Z
+                dPosAttr.setX(i, dPosAttr.getX(i) + Math.sin(t + py)*0.01);
+                dPosAttr.setZ(i, dPosAttr.getZ(i) + Math.cos(t + py)*0.01);
+            }
+            dPosAttr.needsUpdate = true;
+
+            // Slowly rotate cauldron group for mystical feel
+            cauldronGroup.rotation.y = Math.sin(t * 0.1) * 0.1;
+
+            // Image floating effect inside the water
+            imagePlanes.forEach((plane) => {
+                if(plane) {
+                    // Slowly drift under water
+                    plane.position.y = 6.8 + Math.sin(t + plane.uuid.charCodeAt(0)) * 0.2;
+                    // Slowly rotate
+                    plane.rotation.z = Math.sin(t * 0.2 + plane.uuid.charCodeAt(0)) * 0.05;
+                }
+            });
 
             renderer.render(scene, camera);
         }
-        animateThree();
+        render();
 
+        // --- Scroll Driven Image Switching & Camera Logic ---
+
+        function updateScryingImage(activeIndex) {
+            imagePlanes.forEach((plane, i) => {
+                if(plane) {
+                    gsap.to(plane.material, {
+                        opacity: i === activeIndex ? 0.9 : 0,
+                        duration: 1.5,
+                        ease: "power2.inOut"
+                    });
+                }
+            });
+
+            // Change glow color based on image
+            const colors = [0x8b5cf6, 0xe879f9, 0x3b82f6, 0x10b981];
+            if(activeIndex >= 0 && activeIndex < colors.length) {
+                gsap.to(cauldronGlow.color, {
+                    r: new THREE.Color(colors[activeIndex]).r,
+                    g: new THREE.Color(colors[activeIndex]).g,
+                    b: new THREE.Color(colors[activeIndex]).b,
+                    duration: 1.5
+                });
+            }
+        }
+
+        // Map sections to image indices
+        const sections = [
+            { id: '#hero', imgIdx: -1 }, // No image, dark water
+            { id: '#about', imgIdx: 0 },
+            { id: '#guardians', imgIdx: 1 },
+            { id: '#services', imgIdx: 2 }
+            // The empty section at the end will just keep the last image or we can switch to 3
+        ];
+
+        sections.forEach((sec) => {
+            ScrollTrigger.create({
+                trigger: sec.id,
+                start: "top 50%",
+                end: "bottom 50%",
+                onEnter: () => updateScryingImage(sec.imgIdx),
+                onEnterBack: () => updateScryingImage(sec.imgIdx)
+            });
+        });
+
+        // Special trigger for the very bottom to show the last altar image
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "bottom 110%", // When reached bottom
+            onEnter: () => updateScryingImage(3)
+        });
+
+        // Camera scroll effect (Move closer to the water as you scroll down)
+        window.addEventListener('scroll', () => {
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const progress = window.scrollY / maxScroll;
+
+            // Hero: Y=15, Z=25
+            // End: Y=11, Z=8 (Looking straight down into the bowl)
+            gsap.to(camera.position, {
+                y: 15 - (progress * 4),
+                z: 25 - (progress * 17),
+                duration: 0.5,
+                ease: "power1.out",
+                overwrite: "auto"
+            });
+
+            // Adjust lookAt slightly as we move
+            const lookZ = - (progress * 5); // Look slightly deeper towards back
+            camera.lookAt(0, 5, lookZ);
+        });
+
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        // ==========================================
-        // P5.JS: MAGIC CURSOR
-        // ==========================================
-        let sketch = function(p) {
-            let p_particles = [];
-            p.setup = function() {
-                let p5canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                p5canvas.parent('p5-container');
-                p.colorMode(p.HSB, 360, 100, 100, 1);
-                p.noStroke();
-            };
-            p.draw = function() {
-                p.clear();
-
-                // Cursor ring
-                p.noFill();
-                p.stroke(280, 80, 100, 0.5);
-                p.strokeWeight(2);
-                p.circle(p.mouseX, p.mouseY, 30);
-                p.stroke(50, 80, 100, 0.8);
-                p.circle(p.mouseX, p.mouseY, 10);
-
-                if (p.mouseX !== 0 && p.pmouseX !== 0) {
-                    p_particles.push({
-                        x: p.mouseX,
-                        y: p.mouseY,
-                        vx: p.random(-1, 1),
-                        vy: p.random(-1, 1),
-                        life: 255,
-                        size: p.random(5, 15),
-                        hue: p.random([270, 180, 45])
-                    });
-                }
-
-                for (let i = p_particles.length - 1; i >= 0; i--) {
-                    let pt = p_particles[i];
-                    pt.x += pt.vx;
-                    pt.y += pt.vy;
-                    pt.life -= 10;
-                    if (pt.life <= 0) {
-                        p_particles.splice(i, 1);
-                    } else {
-                        let alpha = pt.life / 255;
-                        p.noStroke();
-                        p.fill(pt.hue, 80, 100, alpha * 0.5);
-                        p.circle(pt.x, pt.y, pt.size);
-                    }
-                }
-            };
-            p.windowResized = function() {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-            };
-        };
-        new p5(sketch);
-
-        // ==========================================
-        // GSAP: SCROLL SYNC
-        // ==========================================
-        gsap.registerPlugin(ScrollTrigger);
-
-        const panels = document.querySelectorAll('.story-panel');
-        const numStates = 4;
-
-        // Define exact scroll positions where states hit their peak (0, 0.33, 0.66, 1.0)
-        // Since height is 400vh, scroll range is 0 to 300vh.
-
-        window.addEventListener('scroll', () => {
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const scrollProgress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
-
-            // 1. Update HTML UI Visibility
-            panels.forEach((panel, i) => {
-                const stateProgress = i / (numStates - 1); // 0, 0.33, 0.66, 1
-                const distance = Math.abs(scrollProgress - stateProgress);
-
-                // Visibility window
-                if (distance < 0.2) {
-                    const opacity = 1 - (distance / 0.2); // Fade out at edges
-                    panel.style.opacity = opacity;
-                    panel.classList.add('active');
-                } else {
-                    panel.style.opacity = 0;
-                    panel.classList.remove('active');
-                }
-            });
-
-            // 2. Update 3D Water Visions
-            visions.forEach((visionPlane, i) => {
-                const stateProgress = i / (numStates - 1);
-                const distance = Math.abs(scrollProgress - stateProgress);
-
-                if (distance < 0.2) {
-                    const opacity = 1 - (distance / 0.2);
-                    visionPlane.material.opacity = opacity * 0.8; // Max 0.8 opacity
-                } else {
-                    visionPlane.material.opacity = 0;
-                }
-            });
-
-            // 3. Camera Parallax based on scroll (move slightly down and rotate)
-            camera.position.z = 20 - (scrollProgress * 5); // Zoom in slightly
-            camera.position.y = 15 - (scrollProgress * 3); // Lower angle
-            camera.lookAt(0, 0, 0);
-
-            // Hide scroll indicator if scrolled past 10%
-            const indicator = document.querySelector('.scroll-indicator');
-            if (scrollProgress > 0.1) {
-                indicator.style.display = 'none';
-            } else {
-                indicator.style.display = 'flex';
-                indicator.style.opacity = 1 - (scrollProgress * 10);
-            }
-        });
-
-        // Trigger initial state
-        window.dispatchEvent(new Event('scroll'));
 
     </script>
 </body>
