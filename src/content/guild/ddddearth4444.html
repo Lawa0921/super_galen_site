@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邪教教主 ddddearth | 烏托邦架構師</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+
+    <style>
+        :root {
+            --color-rose: rgb(169, 121, 129); /* #a97981 */
+            --color-sand: rgb(239, 228, 176); /* #efe4b0 */
+            --color-lavender: rgb(200, 191, 231); /* #c8bfe7 */
+            --color-void: #1a1a24;
+        }
+
+        body {
+            background-color: transparent;
+            color: var(--color-sand);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        /* 8-bit Pixel Font */
+        .font-pixel {
+            font-family: 'Press Start 2P', monospace;
+            line-height: 1.5;
+        }
+
+        /* The Background Canvas Container */
+        #p5-container {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: -1;
+            background-color: var(--color-void);
+        }
+
+        /* Retro CRT Scanline Effect Overlay */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            opacity: 0.3;
+        }
+
+        /* UI Containers */
+        .glass-panel {
+            background: rgba(26, 26, 36, 0.85);
+            backdrop-filter: blur(12px);
+            border: 2px solid var(--color-rose);
+            box-shadow: 4px 4px 0px var(--color-lavender);
+        }
+
+        .pixel-border {
+            box-shadow:
+                -4px 0 0 0 var(--color-rose),
+                4px 0 0 0 var(--color-rose),
+                0 -4px 0 0 var(--color-rose),
+                0 4px 0 0 var(--color-rose);
+            border: 4px solid transparent;
+        }
+
+        .reveal-elem {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        /* Editorial Grid for Images */
+        .arsenal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .img-card {
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--color-lavender);
+            background: var(--color-void);
+            transition: transform 0.3s ease;
+        }
+
+        .img-card:hover {
+            transform: scale(1.02) translateY(-5px);
+            box-shadow: 0 10px 20px rgba(169, 121, 129, 0.4);
+            z-index: 10;
+        }
+
+        .img-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            aspect-ratio: 1/1;
+            display: block;
+            filter: grayscale(20%) sepia(20%) hue-rotate(290deg) contrast(1.1);
+            transition: filter 0.3s ease;
+        }
+
+        .img-card:hover img {
+            filter: grayscale(0%) sepia(0%);
+        }
+
+        .glitch-text {
+            position: relative;
+        }
+
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--color-rose);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--color-lavender);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 83px, 0); }
+            20% { clip: rect(65px, 9999px, 12px, 0); }
+            40% { clip: rect(12px, 9999px, 94px, 0); }
+            60% { clip: rect(85px, 9999px, 45px, 0); }
+            80% { clip: rect(23px, 9999px, 78px, 0); }
+            100% { clip: rect(98px, 9999px, 21px, 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(29px, 9999px, 81px, 0); }
+            20% { clip: rect(72px, 9999px, 14px, 0); }
+            40% { clip: rect(18px, 9999px, 55px, 0); }
+            60% { clip: rect(84px, 9999px, 33px, 0); }
+            80% { clip: rect(41px, 9999px, 92px, 0); }
+            100% { clip: rect(9px, 9999px, 66px, 0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Canvas -->
+    <div id="p5-container"></div>
+    <div class="scanlines"></div>
+
+    <!-- Main Content Container -->
+    <main class="relative z-10 w-full min-h-screen pt-24 pb-32 px-6 md:px-12 max-w-7xl mx-auto flex flex-col gap-24">
+
+        <!-- Hero Section -->
+        <section class="flex flex-col md:flex-row items-center gap-12 mt-12 reveal-elem">
+            <!-- Avatar -->
+            <div class="relative w-64 h-64 md:w-80 md:h-80 shrink-0">
+                <div class="absolute inset-0 bg-[#a97981] translate-x-4 translate-y-4"></div>
+                <img src="/assets/img/guild/ddddearth4444/avatar.webp" alt="邪教教主 ddddearth" class="relative z-10 w-full h-full object-cover border-4 border-[#efe4b0] shadow-xl">
+                <div class="absolute -bottom-6 -right-6 z-20 glass-panel px-4 py-2 font-pixel text-xs text-[#c8bfe7]">Lv.99 Cult Leader</div>
+            </div>
+
+            <!-- Hero Text -->
+            <div class="flex flex-col gap-6">
+                <div class="inline-block px-3 py-1 bg-[#a97981] text-[#1a1a24] font-pixel text-xs w-max tracking-widest uppercase">
+                    Status: Unemployed Vibe Coder
+                </div>
+                <h1 class="font-pixel text-4xl md:text-5xl lg:text-6xl text-[#efe4b0] leading-tight glitch-text" data-text="DDDD EARTH">
+                    DDDD EARTH
+                </h1>
+                <h2 class="text-2xl font-bold text-[#c8bfe7] tracking-widest">邪教教主 / 烏托邦架構師</h2>
+                <p class="text-lg leading-relaxed text-gray-300 max-w-2xl">
+                    「嗨，我想當邪教教主（？）」<br>
+                    小時候玩韓國遊戲、看日本動畫、吃台灣米，卻對美式文化有著無可救藥的超強濾鏡。目標是在虛擬的烏托邦裡建立被動收入帝國。
+                </p>
+
+                <!-- Social Links -->
+                <div class="flex gap-6 mt-4">
+                    <a href="https://www.threads.net/@ddddearth4444" target="_blank" class="text-2xl text-[#a97981] hover:text-[#efe4b0] transition-colors"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/ddddearth4444/" target="_blank" class="text-2xl text-[#a97981] hover:text-[#efe4b0] transition-colors"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@deathdeath9285" target="_blank" class="text-2xl text-[#a97981] hover:text-[#efe4b0] transition-colors"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Identity Matrix -->
+        <section class="reveal-elem">
+            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-8 border-b-2 border-[#a97981] pb-4 inline-block">IDENTITY.sys</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div class="glass-panel p-4 text-center font-bold text-[#c8bfe7]">吉他手</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#efe4b0]">重金屬樂迷</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#a97981]">遊戲配樂</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#c8bfe7]">小說家</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#efe4b0]">像素畫家</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#a97981]">IP製作人</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#c8bfe7]">饒舌 Wannabe</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#efe4b0] col-span-2 md:col-span-1">日文N1低空飛過</div>
+                <div class="glass-panel p-4 text-center font-bold text-[#a97981] col-span-2 text-sm flex items-center justify-center">「被女友說：我幹嘛聽你唱KTV？」</div>
+            </div>
+        </section>
+
+        <!-- Core Philosophy -->
+        <section class="glass-panel p-8 md:p-12 reveal-elem relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <i class="fa-solid fa-skull text-8xl text-[#a97981]"></i>
+            </div>
+            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-6 relative z-10">THE ZERO-BUDGET MANIFESTO</h3>
+            <div class="space-y-6 text-lg text-gray-200 relative z-10">
+                <p>
+                    <span class="text-[#a97981] font-bold">［現狀］</span>實際上沒有任何一點突出到可以維生，所以定義上還是<strong class="text-[#efe4b0]">無業遊民</strong>。
+                </p>
+                <p>
+                    <span class="text-[#c8bfe7] font-bold">［願景］</span>幻想自己可以活在假想的烏托邦式美國。目標是用 IP 養活自己，建立被動收入、募資出週邊、改編電影，然後跟喜歡/不喜歡的音樂人合作，最終成為流行文化的一部份——然後<strong class="text-[#efe4b0]">不再需要上班</strong>。
+                </p>
+                <p>
+                    <span class="text-[#a97981] font-bold">［策略］</span>因為全家都很不會賺錢，所以創作講究一個<strong class="text-[#efe4b0]">零成本</strong>。什麼都自己做：學區塊鏈、畫畫、遊戲製作。非常迫切需要個人網頁繼續壓榨自己搞酷東西。
+                </p>
+                <p class="text-[#c8bfe7] italic border-l-4 border-[#a97981] pl-4 mt-8">
+                    "去年被朋友花錢請去製作音樂之後，覺得自己有用了很多。也因為語言模型好用之後，目標清晰很多。希望我的東西夠有趣，您有被娛樂到，感恩的心。"
+                </p>
+            </div>
+        </section>
+
+        <!-- Visual Arsenal (Image Grid) -->
+        <section class="reveal-elem">
+            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-8 border-b-2 border-[#a97981] pb-4 inline-block">VISUAL_ASSETS.exe</h3>
+            <div class="arsenal-grid">
+                <!-- Using the 9 remaining webp images provided -->
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619851337_17932277922173558_5005232186217852206_n.webp" alt="Asset 1"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619898404_17932277931173558_8647813133019183347_n.webp" alt="Asset 2"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619900097_17932277961173558_2840015148556983233_n.webp" alt="Asset 3"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619906196_17932277940173558_1769157990463057000_n.webp" alt="Asset 4"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620166611_17932277913173558_7677886328719183869_n.webp" alt="Asset 5"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620728734_17932277877173558_4872305616879296059_n.webp" alt="Asset 6"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620933597_17932277979173558_9061577388327562947_n.webp" alt="Asset 7"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620979916_17932277970173558_8001220106545045221_n.webp" alt="Asset 8"></div>
+                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/621207087_17932277949173558_1524504185617431890_n.webp" alt="Asset 9"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Reveal elements on scroll
+        gsap.utils.toArray('.reveal-elem').forEach((elem) => {
+            gsap.to(elem, {
+                scrollTrigger: {
+                    trigger: elem,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: "power3.out"
+            });
+        });
+
+        // Image Grid Stagger
+        gsap.from(".img-card", {
+            scrollTrigger: {
+                trigger: ".arsenal-grid",
+                start: "top 80%",
+            },
+            y: 50,
+            opacity: 0,
+            duration: 0.6,
+            stagger: 0.1,
+            ease: "back.out(1.7)"
+        });
+
+        // ----- P5.js Retro Matrix / Utopia Atmosphere Sketch -----
+        // Implements a "Data Rain" + Audio Visualizer wave vibe
+        const sketch = (p) => {
+            let particles = [];
+            const cols = [
+                p.color(169, 121, 129), // Rose
+                p.color(239, 228, 176), // Sand
+                p.color(200, 191, 231)  // Lavender
+            ];
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.background(26, 26, 36);
+
+                // Initialize particles
+                for(let i=0; i<150; i++) {
+                    particles.push(new Particle());
+                }
+            };
+
+            p.draw = () => {
+                // Fading background for trail effect
+                p.background(26, 26, 36, 40);
+
+                // Draw horizon line / waveform simulator
+                p.strokeWeight(2);
+                p.noFill();
+                p.stroke(169, 121, 129, 100);
+                p.beginShape();
+                for(let x = 0; x < p.width; x += 20) {
+                    let y = p.height * 0.7 + p.map(p.noise(x * 0.01, p.frameCount * 0.01), 0, 1, -100, 100);
+                    p.vertex(x, y);
+                }
+                p.endShape();
+
+                p.stroke(200, 191, 231, 80);
+                p.beginShape();
+                for(let x = 0; x < p.width; x += 30) {
+                    let y = p.height * 0.7 + p.map(p.noise(x * 0.015, p.frameCount * 0.01 + 100), 0, 1, -150, 150);
+                    p.vertex(x, y);
+                }
+                p.endShape();
+
+                // Update and display particles
+                for(let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].display();
+
+                    // Interactive repulse from mouse
+                    let d = p.dist(p.mouseX, p.mouseY, particles[i].pos.x, particles[i].pos.y);
+                    if(d < 150) {
+                        let force = p5.Vector.sub(particles[i].pos, p.createVector(p.mouseX, p.mouseY));
+                        force.setMag(2);
+                        particles[i].vel.add(force);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class Particle {
+                constructor() {
+                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
+                    this.vel = p.createVector(p.random(-1, 1), p.random(-3, -1)); // Floating upwards
+                    this.size = p.random(2, 6);
+                    this.col = p.random(cols);
+                    this.baseSpeed = this.vel.copy();
+                }
+
+                update() {
+                    this.pos.add(this.vel);
+
+                    // Slight noise movement
+                    this.pos.x += p.map(p.noise(this.pos.y * 0.01, p.frameCount * 0.01), 0, 1, -1, 1);
+
+                    // Friction/Return to base speed
+                    this.vel.lerp(this.baseSpeed, 0.05);
+
+                    // Wrap around
+                    if(this.pos.y < -10) this.pos.y = p.height + 10;
+                    if(this.pos.y > p.height + 10) this.pos.y = -10;
+                    if(this.pos.x < -10) this.pos.x = p.width + 10;
+                    if(this.pos.x > p.width + 10) this.pos.x = -10;
+                }
+
+                display() {
+                    p.noStroke();
+                    p.fill(this.col);
+                    // Draw as tiny 8-bit squares
+                    p.rect(this.pos.x, this.pos.y, this.size, this.size);
+                }
+            }
+        };
+
+        new p5(sketch);
+    </script>
+</body>
+</html>
