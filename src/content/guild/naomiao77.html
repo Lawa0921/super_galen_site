@@ -55,7 +55,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
-    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
 
     <style>
         body {
@@ -271,6 +270,44 @@
             60% { transform: translateY(-30px) scale(1.1, 0.9); }
         }
         </style>
+
+    <style>
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 50; /* Above most things, below interactive layers if needed */
+            opacity: 0.4;
+            /* Simple noisy SVG data URI for paper texture */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            mix-blend-mode: multiply;
+        }
+        .polaroid {
+            background-color: #fffaf0; /* warmer paper white */
+            padding: 8px 8px 30px 8px;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            position: relative;
+        }
+        .polaroid::after {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 40px;
+            height: 15px;
+            background-color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+            /* Masking tape effect */
+        }
+    </style>
+
 </head>
 <body class="font-rounded antialiased selection:bg-sky-200 selection:text-sky-900">
 
@@ -468,24 +505,7 @@
     </main>
 
     <script>
-        // 1. Initialize Lenis for Smooth Scrolling (Tuned for immediate, snappy feel)
-        const lenis = new Lenis({
-            duration: 0.4, // Much faster, direct response
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Very snappy ease out
-            direction: 'vertical',
-            gestureDirection: 'vertical',
-            smooth: true,
-            smoothTouch: false,
-            touchMultiplier: 2.0, // More responsive to touch/trackpad
-        });
-
-        function raf(time) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
-        }
-        requestAnimationFrame(raf);
-
-        // 2. GSAP Scroll Animations
+                // 2. GSAP Scroll Animations
         gsap.registerPlugin(ScrollTrigger);
 
         // Parallax for hero images
@@ -497,7 +517,7 @@
                 trigger: "#hero",
                 start: "top top",
                 end: "bottom top",
-                scrub: true
+                scrub: 0.1
             }
         });
 
@@ -540,8 +560,7 @@
         const mainContent = document.getElementById('main-content');
 
         // Stop scroll before click
-        lenis.stop();
-        document.body.style.overflow = 'hidden';
+                document.body.style.overflow = 'hidden';
 
         overlay.addEventListener('click', () => {
             const tl = gsap.timeline();
@@ -567,8 +586,7 @@
                 ease: "power2.inOut",
                 onComplete: () => {
                     overlay.style.display = 'none';
-                    lenis.start();
-                    document.body.style.overflow = '';
+                                        document.body.style.overflow = '';
                 }
             }, "-=0.2")
             // Fade in main content and make the hero elements pop up
@@ -790,17 +808,17 @@
 
                     layer.appendChild(elWrapper);
 
-                    // Reduced float animations to save CPU
-                    if (isFront && Math.random() > 0.5) {
-                        gsap.to(elWrapper, {
-                            y: `-=${10 + Math.random() * 20}`,
-                            duration: 4 + Math.random() * 4,
-                            ease: "sine.inOut",
-                            yoyo: true,
-                            repeat: -1,
-                            delay: Math.random() * 2
-                        });
-                    }
+                    // Continuous floating animation to make clouds feel alive
+                    gsap.to(elWrapper, {
+                        y: `-=${15 + Math.random() * 25}`,
+                        x: `+=${-10 + Math.random() * 20}`, // gentle drift horizontal
+                        rotation: -2 + Math.random() * 4,
+                        duration: 3 + Math.random() * 5,
+                        ease: "sine.inOut",
+                        yoyo: true,
+                        repeat: -1,
+                        delay: Math.random() * 2
+                    });
                 }
             };
 
@@ -823,7 +841,7 @@
                         trigger: mainContent, // Bind to main container scroll
                         start: "top top",
                         end: "bottom bottom",
-                        scrub: true
+                        scrub: 0.1
                     }
                 });
             });
