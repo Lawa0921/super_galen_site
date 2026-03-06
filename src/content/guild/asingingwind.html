@@ -1065,10 +1065,10 @@
 
         terrain.material.color.lerpColors(ThreeSceneState.sandColor, ThreeSceneState.nightSandColor, p);
 
-        // Fade out and sink terrain to prevent overlap with oasis
-        const terrainFade = Math.max(0, 1 - Math.max(0, (p - 0.35)) * 2);
+        // Fade out and sink terrain to prevent overlap with oasis (after oasis starts appearing)
+        const terrainFade = Math.max(0, 1 - Math.max(0, (p - 0.6)) * 5);
         terrain.material.opacity = terrainFade;
-        terrain.position.y = -10 - Math.max(0, (p - 0.4)) * 25;
+        terrain.position.y = -10 - Math.max(0, (p - 0.65)) * 30;
 
         // --- NEW: Fade in Oasis ---
         const oasisVisibility = Math.max(0, (p - 0.5) * 2); // 0 to 1 in second half of scroll
