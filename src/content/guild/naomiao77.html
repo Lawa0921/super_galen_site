@@ -42,8 +42,8 @@
                             '50%': { transform: 'translateY(-20px)' },
                         },
                         pulseGlow: {
-                            '0%, 100%': { opacity: '0.8', filter: 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.5))' },
-                            '50%': { opacity: '1', filter: 'drop-shadow(0 0 25px rgba(255, 255, 255, 0.9))' },
+                            '0%, 100%': { opacity: '0.8' },
+                            '50%': { opacity: '1' },
                         }
                     }
                 }
@@ -55,17 +55,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        h1, h2, h3, .font-handwriting {
+            font-family: 'Zhi Mang Xing', cursive;
+        }
+
         body {
+            font-family: 'Zen Maru Gothic', sans-serif;
             background-color: #e0f2fe; /* Light sky blue fallback */
             color: #4A5568;
             overflow-x: hidden;
             cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234A5568" d="M12 2L9 9H2L7 14L5 22L12 17L19 22L17 14L22 9H15L12 2Z"/></svg>') 12 12, auto;
-            /* Global paper noise texture to enhance illustration feel */
-            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
-            background-attachment: fixed;
-            background-blend-mode: multiply;
+            /* Removed noise texture to fix blurriness and ensure crisp illustration style */
         }
 
         /* Replaced WebGL with SVG layers for Pop-up book feel, but keep container for gradient background */
@@ -678,6 +681,27 @@
             });
         });
 
+        // Thematic Interaction: "Organizing the Illustration Book"
+        // Polaroids snap from chaotic scatter to aligned when scrolled into view
+        const worksSection = document.getElementById('chapter2');
+        if (worksSection) {
+            const worksPolaroids = worksSection.querySelectorAll('.polaroid');
+            gsap.from(worksPolaroids, {
+                scrollTrigger: {
+                    trigger: worksSection,
+                    start: "top 70%",
+                    toggleActions: "play none none reverse"
+                },
+                x: () => (Math.random() - 0.5) * 400, // Scatter horizontally
+                y: () => (Math.random() - 0.5) * 400, // Scatter vertically
+                rotation: () => (Math.random() - 0.5) * 180, // Random rotation
+                opacity: 0,
+                duration: 1.5,
+                stagger: 0.2,
+                ease: "elastic.out(1, 0.7)"
+            });
+        }
+
 
         // 3. SVG Hand-Drawn Background Elements (Clouds, Cats, Stars, Notes, Flowers)
         const createBackgroundElements = () => {
@@ -888,7 +912,68 @@
             spawnElements(backLayer, 15, false);
             spawnElements(frontLayer, 12, true);
 
-            // Removed vertical scroll parallax to keep the clouds independent and moving horizontally
+            // Added Thematic Growing Flowers on Scroll along the edges
+            const spawnFlowers = () => {
+                const flowerSVG = `
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+                        <path d="M50 90 Q 55 70 50 50 Q 45 70 50 90" fill="none" stroke="#A7F3D0" stroke-width="4"/>
+                        <circle cx="50" cy="40" r="10" fill="#FDE047"/>
+                        <ellipse cx="30" cy="40" rx="15" ry="10" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <ellipse cx="70" cy="40" rx="15" ry="10" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <ellipse cx="50" cy="20" rx="10" ry="15" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <ellipse cx="50" cy="60" rx="10" ry="15" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <path d="M50 60 Q 30 70 40 80 Q 50 70 50 60" fill="#A7F3D0" opacity="0.8"/>
+                    </svg>
+                `;
+                const contentHeight = document.body.scrollHeight;
+                const numFlowers = Math.floor(contentHeight / 400); // 1 flower per 400px of scroll height
+                const container = document.createElement('div');
+                container.style.position = 'absolute';
+                container.style.top = '0';
+                container.style.left = '0';
+                container.style.width = '100%';
+                container.style.height = `${contentHeight}px`;
+                container.style.pointerEvents = 'none';
+                container.style.zIndex = '0';
+                document.getElementById('cloud-layer-front').appendChild(container);
+
+                for (let i = 0; i < numFlowers; i++) {
+                    const flower = document.createElement('div');
+                    flower.innerHTML = flowerSVG;
+                    flower.style.position = 'absolute';
+                    flower.style.width = `${50 + Math.random() * 40}px`;
+                    // Alternate left/right edges
+                    if (i % 2 === 0) {
+                        flower.style.left = `${5 + Math.random() * 10}%`;
+                    } else {
+                        flower.style.right = `${5 + Math.random() * 10}%`;
+                    }
+                    flower.style.top = `${200 + i * (contentHeight / numFlowers)}px`;
+                    flower.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
+                    flower.classList.add('thematic-flower');
+                    container.appendChild(flower);
+
+                    gsap.fromTo(flower,
+                        { scale: 0, opacity: 0, rotation: -30 },
+                        {
+                            scale: 1,
+                            opacity: 1,
+                            rotation: 0,
+                            duration: 1.5,
+                            ease: "elastic.out(1, 0.5)",
+                            scrollTrigger: {
+                                trigger: flower,
+                                start: "top 80%",
+                                toggleActions: "play none none reverse"
+                            }
+                        }
+                    );
+                }
+            };
+
+            // Need a slight delay to ensure body height is accurate for flower distribution
+            setTimeout(spawnFlowers, 500);
+
         };
 
         // Ensure body height is mostly calculated before spawning
