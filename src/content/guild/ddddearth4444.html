@@ -20,17 +20,73 @@
         }
 
         body {
-            background-color: transparent;
+            background-color: var(--color-void);
             color: var(--color-sand);
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             margin: 0;
+            cursor: none; /* Hide default cursor for custom cursor */
         }
 
         /* 8-bit Pixel Font */
         .font-pixel {
             font-family: 'Press Start 2P', monospace;
             line-height: 1.5;
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background-color: var(--color-void);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--color-sand);
+        }
+
+        #enter-btn {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: transparent;
+            border: 2px solid var(--color-rose);
+            color: var(--color-rose);
+            font-family: 'Press Start 2P', monospace;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #enter-btn:hover {
+            background: var(--color-rose);
+            color: var(--color-void);
+            box-shadow: 0 0 15px var(--color-rose);
+        }
+
+        /* Custom Cursor */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--color-sand);
+            border-radius: 0; /* Square for pixel vibe */
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        #custom-cursor.hovering {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(239, 228, 176, 0.3);
+            border-color: var(--color-rose);
         }
 
         /* The Background Canvas Container */
@@ -41,8 +97,7 @@
             height: 100vh;
             pointer-events: none;
             overflow: hidden;
-            z-index: -1;
-            background-color: var(--color-void);
+            z-index: 0;
         }
 
         /* Retro CRT Scanline Effect Overlay */
@@ -53,20 +108,26 @@
             z-index: 50;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             background-size: 100% 4px, 6px 100%;
-            opacity: 0.3;
+            opacity: 0.4;
         }
 
         /* UI Containers */
         .glass-panel {
-            background: rgba(26, 26, 36, 0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(26, 26, 36, 0.75);
+            backdrop-filter: blur(8px);
             border: 2px solid var(--color-rose);
-            box-shadow: 4px 4px 0px var(--color-lavender);
+            box-shadow: 6px 6px 0px rgba(200, 191, 231, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px var(--color-lavender);
         }
 
         .reveal-elem {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(40px);
         }
 
         /* Editorial Grid for Images */
@@ -84,11 +145,13 @@
             background: var(--color-void);
             transition: transform 0.3s ease;
             image-rendering: pixelated; /* Enhancing the pixel art feel */
+            cursor: none;
         }
 
         .img-card:hover {
-            transform: scale(1.02) translateY(-5px);
-            box-shadow: 0 10px 20px rgba(169, 121, 129, 0.4);
+            transform: scale(1.03) translateY(-5px) rotate(1deg);
+            box-shadow: 0 10px 25px rgba(169, 121, 129, 0.6);
+            border-color: var(--color-sand);
             z-index: 10;
         }
 
@@ -98,12 +161,19 @@
             object-fit: cover;
             aspect-ratio: 1/1;
             display: block;
-            filter: contrast(1.1);
-            transition: filter 0.3s ease;
+            filter: contrast(1.1) saturate(0.8);
+            transition: filter 0.3s ease, transform 0.5s ease;
         }
 
+        .img-card:hover img {
+            filter: contrast(1.2) saturate(1.2);
+            transform: scale(1.1);
+        }
+
+        /* Glitch Text Effect */
         .glitch-text {
             position: relative;
+            display: inline-block;
         }
 
         .glitch-text::before,
@@ -118,14 +188,14 @@
         }
 
         .glitch-text::before {
-            left: 2px;
+            left: 3px;
             text-shadow: -2px 0 var(--color-rose);
             clip: rect(24px, 550px, 90px, 0);
             animation: glitch-anim-2 3s infinite linear alternate-reverse;
         }
 
         .glitch-text::after {
-            left: -2px;
+            left: -3px;
             text-shadow: -2px 0 var(--color-lavender);
             clip: rect(85px, 550px, 140px, 0);
             animation: glitch-anim 2.5s infinite linear alternate-reverse;
@@ -148,123 +218,153 @@
             80% { clip: rect(41px, 9999px, 92px, 0); }
             100% { clip: rect(9px, 9999px, 66px, 0); }
         }
+
+        /* Utility specific styles */
+        .main-wrapper {
+            opacity: 0; /* Hidden initially, revealed by preloader */
+            visibility: hidden;
+        }
+
+        .role-card {
+            border: 2px dashed var(--color-lavender);
+            background: rgba(26, 26, 36, 0.6);
+            transition: all 0.3s;
+        }
+
+        .role-card:hover {
+            border-style: solid;
+            border-color: var(--color-rose);
+            background: rgba(169, 121, 129, 0.1);
+            transform: translateY(-5px);
+        }
     </style>
 </head>
 <body>
+
+    <!-- Custom Cursor -->
+    <div id="custom-cursor"></div>
+
+    <!-- Preloader / Entrance Sequence -->
+    <div id="preloader">
+        <div class="text-center">
+            <h1 class="font-pixel text-2xl md:text-4xl text-[#efe4b0] mb-4 glitch-text" data-text="SYSTEM BOOTING...">SYSTEM BOOTING...</h1>
+            <p class="font-pixel text-xs text-[#c8bfe7] mb-8">LOADING UTOPIA ENGINE V1.0</p>
+            <div class="w-64 h-4 border-2 border-[#a97981] mx-auto p-1">
+                <div id="loading-bar" class="h-full bg-[#c8bfe7] w-0"></div>
+            </div>
+            <button id="enter-btn" class="hidden mt-8 hover-target">ENTER THE CULT</button>
+        </div>
+    </div>
+
     <!-- Background Canvas -->
     <div id="p5-container"></div>
     <div class="scanlines"></div>
 
     <!-- Main Content Container -->
-    <main class="relative z-10 w-full min-h-screen pt-24 pb-32 px-6 md:px-12 max-w-7xl mx-auto flex flex-col gap-24">
+    <main class="main-wrapper relative z-10 w-full min-h-screen pt-24 pb-32 px-6 md:px-12 max-w-7xl mx-auto flex flex-col gap-24">
 
         <!-- Hero Section -->
-        <section class="flex flex-col md:flex-row items-center gap-12 mt-12 reveal-elem">
+        <section class="flex flex-col lg:flex-row items-center lg:items-start gap-12 mt-12 reveal-elem">
             <!-- Avatar / Main Identity -->
-            <div class="relative w-64 h-64 md:w-80 md:h-80 shrink-0">
+            <div class="relative w-64 h-64 md:w-80 md:h-80 shrink-0 mx-auto lg:mx-0 group hover-target">
                 <!-- Glitch decorative boxes -->
-                <div class="absolute inset-0 bg-[#a97981] translate-x-4 translate-y-4"></div>
-                <div class="absolute inset-0 bg-[#c8bfe7] -translate-x-4 -translate-y-4 opacity-50"></div>
+                <div class="absolute inset-0 bg-[#a97981] translate-x-4 translate-y-4 transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
+                <div class="absolute inset-0 bg-[#c8bfe7] -translate-x-4 -translate-y-4 opacity-50 transition-transform group-hover:-translate-x-6 group-hover:-translate-y-6"></div>
                 <!-- Pixelated Avatar rendering -->
-                <img src="/assets/img/guild/ddddearth4444/avatar.webp" alt="邪教教主 ddddearth" style="image-rendering: pixelated;" class="relative z-10 w-full h-full object-cover border-4 border-[#efe4b0] shadow-xl">
+                <img src="/assets/img/guild/ddddearth4444/avatar.webp" alt="邪教教主 ddddearth" style="image-rendering: pixelated;" class="relative z-10 w-full h-full object-cover border-4 border-[#efe4b0] shadow-xl filter saturate-75 contrast-125 group-hover:saturate-100 transition-all duration-300">
                 <!-- Status Badge -->
-                <div class="absolute -bottom-6 -right-6 z-20 glass-panel px-4 py-2 font-pixel text-xs text-[#c8bfe7]">Lv.99 Cult Leader</div>
+                <div class="absolute -bottom-6 -right-6 z-20 glass-panel px-4 py-2 font-pixel text-xs text-[#c8bfe7] animate-bounce">Lv.99 Cult Leader</div>
             </div>
 
             <!-- Hero Text -->
-            <div class="flex flex-col gap-6">
-                <div class="inline-block px-3 py-1 bg-[#a97981] text-[#1a1a24] font-pixel text-xs w-max tracking-widest uppercase shadow-[2px_2px_0px_#efe4b0]">
+            <div class="flex flex-col gap-6 text-center lg:text-left">
+                <div class="inline-block px-3 py-1 bg-[#a97981] text-[#1a1a24] font-pixel text-xs w-max mx-auto lg:mx-0 tracking-widest uppercase shadow-[2px_2px_0px_#efe4b0]">
                     Status: Unemployed Vibe Coder
                 </div>
                 <h1 class="font-pixel text-4xl md:text-5xl lg:text-6xl text-[#efe4b0] leading-tight glitch-text" data-text="DDDD EARTH">
                     DDDD EARTH
                 </h1>
-                <h2 class="text-xl font-bold text-[#c8bfe7] tracking-widest flex flex-wrap gap-2">
+                <h2 class="text-lg md:text-xl font-bold text-[#c8bfe7] tracking-widest flex flex-wrap justify-center lg:justify-start gap-2">
                     <span class="bg-[#1a1a24] border border-[#a97981] px-2 py-1"><i class="fa-solid fa-crown text-[#efe4b0] mr-2"></i>邪教教主</span>
                     <span class="bg-[#1a1a24] border border-[#a97981] px-2 py-1"><i class="fa-solid fa-city text-[#efe4b0] mr-2"></i>烏托邦架構師</span>
                     <span class="bg-[#1a1a24] border border-[#a97981] px-2 py-1"><i class="fa-solid fa-music text-[#efe4b0] mr-2"></i>重金屬樂迷</span>
                 </h2>
-                <p class="text-lg leading-relaxed text-gray-300 max-w-2xl bg-[#1a1a24]/80 p-4 border-l-4 border-[#c8bfe7]">
+                <p class="text-lg leading-relaxed text-gray-300 max-w-2xl bg-[#1a1a24]/80 p-4 border-l-4 border-[#c8bfe7] mx-auto lg:mx-0 text-left">
                     「嗨，我想當邪教教主（？）」<br>
                     小時候玩韓國遊戲、看日本動畫、吃台灣米，卻對美式文化有著無可救藥的超強濾鏡。目標是在虛擬的烏托邦裡建立被動收入帝國。
                 </p>
 
                 <!-- Social Links -->
-                <div class="flex gap-6 mt-4">
-                    <a href="https://www.threads.net/@ddddearth4444" target="_blank" class="text-2xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-1 transition-transform"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/ddddearth4444/" target="_blank" class="text-2xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-1 transition-transform"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.youtube.com/@deathdeath9285" target="_blank" class="text-2xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-1 transition-transform"><i class="fa-brands fa-youtube"></i></a>
+                <div class="flex gap-6 mt-4 justify-center lg:justify-start">
+                    <a href="https://www.threads.net/@ddddearth4444" target="_blank" class="text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-transform hover-target"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/ddddearth4444/" target="_blank" class="text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-transform hover-target"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@deathdeath9285" target="_blank" class="text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-transform hover-target"><i class="fa-brands fa-youtube"></i></a>
                 </div>
             </div>
         </section>
 
-        <!-- Identity Matrix -->
+        <!-- The Multiverse Identity -->
         <section class="reveal-elem">
-            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-8 border-b-4 border-[#a97981] pb-2 inline-block shadow-[0_4px_0_0_#c8bfe7]">CLASS_SKILLS.sys</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <!-- Thematic groupings of his skills (Music, Gaming, Writing) -->
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors">
-                    <i class="fa-solid fa-guitar text-3xl text-[#c8bfe7]"></i>
-                    <span class="font-bold text-[#efe4b0]">吉他手</span>
+            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-8 border-b-4 border-[#a97981] pb-2 inline-block shadow-[0_4px_0_0_#c8bfe7]">MULTIVERSE_IDENTITIES.sys</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <!-- Identity Cards -->
+                <div class="role-card p-6 flex flex-col gap-4 hover-target">
+                    <div class="text-[#a97981] text-4xl"><i class="fa-solid fa-guitar"></i></div>
+                    <h4 class="font-pixel text-[#efe4b0] text-sm">GUITARIST / METALHEAD</h4>
+                    <p class="text-sm text-gray-300">重金屬樂迷，樂風研究愛好者。「去年被朋友花錢請去製作音樂之後，覺得自己有用了很多。」</p>
                 </div>
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors">
-                    <i class="fa-solid fa-headphones text-3xl text-[#c8bfe7]"></i>
-                    <span class="font-bold text-[#efe4b0]">遊戲配樂</span>
+
+                <div class="role-card p-6 flex flex-col gap-4 hover-target">
+                    <div class="text-[#c8bfe7] text-4xl"><i class="fa-solid fa-gamepad"></i></div>
+                    <h4 class="font-pixel text-[#efe4b0] text-sm">GAME OST / PIXEL ART</h4>
+                    <p class="text-sm text-gray-300">遊戲配樂製作者與像素畫家(自我流)。想學畫畫、遊戲製作，繼續壓榨自己搞很多酷酷的東西。</p>
                 </div>
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors">
-                    <i class="fa-solid fa-book-journal-whills text-3xl text-[#a97981]"></i>
-                    <span class="font-bold text-[#efe4b0]">小說家</span>
+
+                <div class="role-card p-6 flex flex-col gap-4 hover-target">
+                    <div class="text-[#efe4b0] text-4xl"><i class="fa-solid fa-book-journal-whills"></i></div>
+                    <h4 class="font-pixel text-[#efe4b0] text-sm">NOVELIST / IP CREATOR</h4>
+                    <p class="text-sm text-gray-300">創作中的小說跟假想的烏托邦美式文化有關。目標是用IP養活自己，募資出週邊、改編電影。</p>
                 </div>
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors">
-                    <i class="fa-solid fa-gamepad text-3xl text-[#a97981]"></i>
-                    <span class="font-bold text-[#efe4b0]">像素畫家</span>
+
+                <div class="role-card p-6 flex flex-col gap-4 hover-target">
+                    <div class="text-[#a97981] text-4xl"><i class="fa-solid fa-microphone-lines"></i></div>
+                    <h4 class="font-pixel text-[#efe4b0] text-sm">RAPPER WANNABE</h4>
+                    <p class="text-sm text-gray-300">日文N1低空飛過本科生。被女朋友吐糟：「我幹嘛聽你唱KTV？」</p>
                 </div>
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors">
-                    <i class="fa-solid fa-copyright text-3xl text-[#efe4b0]"></i>
-                    <span class="font-bold text-[#c8bfe7]">IP製作人</span>
-                </div>
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors">
-                    <i class="fa-solid fa-microphone-lines text-3xl text-[#efe4b0]"></i>
-                    <span class="font-bold text-[#c8bfe7]">饒舌 Wannabe</span>
-                </div>
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors">
-                    <i class="fa-solid fa-language text-3xl text-[#a97981]"></i>
-                    <span class="font-bold text-center text-[#c8bfe7] text-sm">日文N1<br>低空飛過</span>
-                </div>
-                <div class="glass-panel p-4 flex flex-col items-center justify-center gap-2 hover:bg-[#a97981]/20 transition-colors text-center text-xs text-gray-400">
-                    <i class="fa-solid fa-comment-dots text-2xl text-[#a97981]"></i>
-                    <span>「被女友說：<br>我幹嘛聽你唱KTV？」</span>
-                </div>
+
             </div>
         </section>
 
         <!-- Core Philosophy / Utopian Engine -->
-        <section class="glass-panel p-8 md:p-12 reveal-elem relative overflow-hidden border-4 border-double border-[#efe4b0]">
-            <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
-                <i class="fa-solid fa-chess-knight text-[200px] text-[#a97981]"></i>
+        <section class="glass-panel p-8 md:p-12 reveal-elem relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none z-0">
+                <i class="fa-solid fa-chess-knight text-[250px] text-[#a97981]"></i>
             </div>
             <h3 class="font-pixel text-2xl text-[#efe4b0] mb-6 relative z-10 flex items-center gap-4">
                 <i class="fa-solid fa-server text-[#c8bfe7]"></i>
                 THE ZERO-BUDGET UTOPIA
             </h3>
             <div class="space-y-6 text-lg text-gray-200 relative z-10 max-w-4xl">
-                <p>
-                    <span class="inline-block bg-[#a97981] text-[#1a1a24] px-2 py-0.5 font-bold mr-2 text-sm">現狀</span>
-                    實際上沒有任何一點突出到可以維生，所以定義上還是<strong class="text-[#efe4b0] border-b border-dashed border-[#efe4b0]">無業遊民</strong>。
-                </p>
-                <p>
-                    <span class="inline-block bg-[#c8bfe7] text-[#1a1a24] px-2 py-0.5 font-bold mr-2 text-sm">願景</span>
-                    幻想自己可以活在假想的烏托邦式美國。目標是用 IP 養活自己，建立被動收入、募資出週邊、改編電影，然後跟喜歡/不喜歡的音樂人合作，最終成為流行文化的一部份——然後<strong class="text-[#efe4b0]">不再需要上班</strong>。
-                </p>
-                <p>
-                    <span class="inline-block bg-[#efe4b0] text-[#1a1a24] px-2 py-0.5 font-bold mr-2 text-sm">策略</span>
-                    因為全家都很不會賺錢，所以創作講究一個<strong class="text-[#a97981]">零成本</strong>。什麼都自己做：學區塊鏈、畫畫、遊戲製作。非常迫切需要個人網頁繼續壓榨自己搞酷東西。希望能有錢委託好朋友們創作。
-                </p>
-                <div class="bg-black/40 p-6 mt-8 border-l-4 border-[#a97981] text-sm text-[#c8bfe7] font-pixel leading-loose">
-                    > SYSTEM LOG_ <br>
-                    > 去年被朋友花錢請去製作音樂之後，覺得自己有用了很多。<br>
+                <div class="flex items-start gap-4 group">
+                    <span class="shrink-0 inline-block bg-[#a97981] text-[#1a1a24] px-2 py-1 font-pixel text-xs mt-1">STATUS</span>
+                    <p>實際上沒有任何一點突出到可以維生，所以定義上還是<strong class="text-[#efe4b0] border-b border-dashed border-[#efe4b0] hover:text-[#c8bfe7] transition-colors cursor-help">無業遊民</strong>。</p>
+                </div>
+                <div class="flex items-start gap-4 group">
+                    <span class="shrink-0 inline-block bg-[#c8bfe7] text-[#1a1a24] px-2 py-1 font-pixel text-xs mt-1">VISION</span>
+                    <p>幻想自己可以活在假想的烏托邦式美國。目標是用 IP 養活自己，建立被動收入，然後跟喜歡/不喜歡的音樂人合作，最終成為流行文化的一部份——然後<strong class="text-[#efe4b0]">不再需要上班</strong>。</p>
+                </div>
+                <div class="flex items-start gap-4 group">
+                    <span class="shrink-0 inline-block bg-[#efe4b0] text-[#1a1a24] px-2 py-1 font-pixel text-xs mt-1">STRATEGY</span>
+                    <p>因為全家都很不會賺錢，所以創作講究一個<strong class="text-[#a97981] text-xl">零成本</strong>。什麼都自己做：學區塊鏈、畫畫、遊戲製作。非常迫切需要個人網頁繼續壓榨自己搞酷東西。希望能有錢委託好朋友們創作。</p>
+                </div>
+
+                <div class="bg-black/60 p-6 mt-8 border-l-4 border-[#a97981] text-sm text-[#c8bfe7] font-pixel leading-loose shadow-inner relative hover-target">
+                    <div class="absolute top-0 right-0 p-2 text-[#a97981] opacity-50"><i class="fa-solid fa-terminal"></i></div>
+                    > SYSTEM LOG_<br>
                     > 也因為語言模型好用之後，目標清晰很多。<br>
-                    > 希望我的東西夠有趣，您有被娛樂到，感恩的心。 <span class="animate-pulse">_</span>
+                    > 希望我的東西夠有趣，您有被娛樂到，感恩的心。<br>
+                    > <span class="animate-pulse block mt-2 text-[#efe4b0]">AWAITING_INPUT... _</span>
                 </div>
             </div>
         </section>
@@ -274,55 +374,121 @@
             <h3 class="font-pixel text-2xl text-[#efe4b0] mb-8 border-b-4 border-[#a97981] pb-2 inline-block shadow-[0_4px_0_0_#c8bfe7]">VISUAL_ASSETS.exe</h3>
             <div class="arsenal-grid">
                 <!-- Using the remaining webp images provided -->
-                <!-- The user explicitly stated the pixel art vibe is good, so we keep image-rendering pixelated on the container style to enhance it -->
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619851337_17932277922173558_5005232186217852206_n.webp" alt="Asset 1"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619898404_17932277931173558_8647813133019183347_n.webp" alt="Asset 2"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619900097_17932277961173558_2840015148556983233_n.webp" alt="Asset 3"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/619906196_17932277940173558_1769157990463057000_n.webp" alt="Asset 4"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620166611_17932277913173558_7677886328719183869_n.webp" alt="Asset 5"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620728734_17932277877173558_4872305616879296059_n.webp" alt="Asset 6"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620933597_17932277979173558_9061577388327562947_n.webp" alt="Asset 7"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/620979916_17932277970173558_8001220106545045221_n.webp" alt="Asset 8"></div>
-                <div class="img-card"><img src="/assets/img/guild/ddddearth4444/621207087_17932277949173558_1524504185617431890_n.webp" alt="Asset 9"></div>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619851337_17932277922173558_5005232186217852206_n.webp" alt="Asset 1"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619898404_17932277931173558_8647813133019183347_n.webp" alt="Asset 2"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619900097_17932277961173558_2840015148556983233_n.webp" alt="Asset 3"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620166611_17932277913173558_7677886328719183869_n.webp" alt="Asset 5"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620728734_17932277877173558_4872305616879296059_n.webp" alt="Asset 6"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620933597_17932277979173558_9061577388327562947_n.webp" alt="Asset 7"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620979916_17932277970173558_8001220106545045221_n.webp" alt="Asset 8"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/621128767_17932277904173558_1998991646209162419_n.webp" alt="Asset 9"></a>
+                <a href="#" class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/621207087_17932277949173558_1524504185617431890_n.webp" alt="Asset 10"></a>
             </div>
         </section>
 
     </main>
 
     <script>
-        // GSAP Animations
-        gsap.registerPlugin(ScrollTrigger);
+        // --- Preloader & Entrance Sequence ---
+        const enterBtn = document.getElementById('enter-btn');
+        const preloader = document.getElementById('preloader');
+        const mainWrapper = document.querySelector('.main-wrapper');
 
-        // Reveal elements on scroll
-        gsap.utils.toArray('.reveal-elem').forEach((elem) => {
-            gsap.to(elem, {
-                scrollTrigger: {
-                    trigger: elem,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
-                },
-                opacity: 1,
-                y: 0,
+        // Simulate loading bar
+        gsap.to('#loading-bar', {
+            width: '100%',
+            duration: 1.5,
+            ease: 'power2.inOut',
+            onComplete: () => {
+                enterBtn.classList.remove('hidden');
+                gsap.from(enterBtn, { y: 20, opacity: 0, duration: 0.5 });
+            }
+        });
+
+        enterBtn.addEventListener('click', () => {
+            // Trigger explosion in p5 sketch
+            if(window.triggerGlobalExplosion) window.triggerGlobalExplosion();
+
+            // Hide preloader with glitch/scale effect
+            gsap.to(preloader, {
+                scale: 1.5,
+                opacity: 0,
+                filter: 'blur(10px)',
                 duration: 0.8,
-                ease: "power3.out"
+                ease: 'power4.inOut',
+                onComplete: () => {
+                    preloader.style.display = 'none';
+                    // Reveal Main Content
+                    mainWrapper.style.visibility = 'visible';
+                    gsap.to(mainWrapper, { opacity: 1, duration: 0.5 });
+
+                    // Initialize ScrollTriggers AFTER layout is visible
+                    initScrollAnimations();
+                }
             });
         });
 
-        // Image Grid Stagger
-        gsap.from(".img-card", {
-            scrollTrigger: {
-                trigger: ".arsenal-grid",
-                start: "top 80%",
-            },
-            y: 50,
-            opacity: 0,
-            duration: 0.6,
-            stagger: 0.1,
-            ease: "back.out(1.7)"
+        // --- Custom Cursor Logic ---
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
         });
 
-        // ----- P5.js Utopia/Audio/Pixel Environment Sketch -----
-        // Fuses "Music" (audio wave horizon), "Game/Pixel" (blocky drawing), and "Utopia" (distant glowing sun).
+        // Add hover effects for interactive elements
+        document.querySelectorAll('a, button, .hover-target').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
+        });
+
+        // --- GSAP Scroll Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        function initScrollAnimations() {
+            gsap.utils.toArray('.reveal-elem').forEach((elem) => {
+                gsap.to(elem, {
+                    scrollTrigger: {
+                        trigger: elem,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    },
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power3.out"
+                });
+            });
+
+            // Role Cards Stagger
+            gsap.from(".role-card", {
+                scrollTrigger: {
+                    trigger: ".role-card",
+                    start: "top 85%",
+                },
+                y: 30,
+                opacity: 0,
+                duration: 0.6,
+                stagger: 0.15,
+                ease: "back.out(1.5)"
+            });
+
+            // Image Grid Stagger
+            gsap.from(".img-card", {
+                scrollTrigger: {
+                    trigger: ".arsenal-grid",
+                    start: "top 80%",
+                },
+                scale: 0.8,
+                rotation: -5,
+                opacity: 0,
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "back.out(1.7)"
+            });
+        }
+
+
+        // --- P5.js Interactive Environment Sketch ---
         const sketch = (p) => {
             let cols = {
                 rose: p.color(169, 121, 129),
@@ -332,69 +498,117 @@
             };
 
             let stars = [];
-            let pixelSize = 8; // Emphasize the retro game feel
+            let pixelSize = 8;
+            let explosions = [];
+
+            // Mouse interaction variables
+            let targetWaveAmp = 0;
+            let currentWaveAmp = 0;
 
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
-                p.noSmooth(); // Ensures crisp pixel edges
+                p.noSmooth();
 
-                // Initialize pixel stars
-                for(let i=0; i<80; i++) {
+                // Initialize background stars
+                for(let i=0; i<100; i++) {
                     stars.push({
                         x: p.random(p.width),
-                        y: p.random(p.height * 0.6), // Only in sky
-                        speed: p.random(0.5, 2),
+                        y: p.random(p.height),
+                        z: p.random(0.5, 3), // Depth for parallax
                         size: p.random([pixelSize, pixelSize*2])
                     });
                 }
+
+                // Expose explosion trigger to global window for HTML buttons
+                window.triggerGlobalExplosion = () => {
+                    spawnExplosion(p.width/2, p.height/2, 100);
+                };
             };
 
             p.draw = () => {
-                p.background(26, 26, 36, 150); // Slight trail
+                p.background(26, 26, 36, 120); // Motion blur trail
 
-                // 1. Pixel Stars (Game/Pixel element)
+                // 1. Interactive Mouse Trails (Audio frequency ripple)
+                let mouseDist = p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY);
+                targetWaveAmp = p.lerp(targetWaveAmp, p.constrain(mouseDist * 2, 0, 150), 0.1);
+                currentWaveAmp = p.lerp(currentWaveAmp, targetWaveAmp, 0.1);
+
+                // 2. Parallax Stars with Mouse Repel
                 p.noStroke();
-                p.fill(cols.lav);
                 stars.forEach(star => {
-                    star.x -= star.speed;
-                    if(star.x < 0) {
+                    // Move left
+                    star.x -= star.z;
+                    if(star.x < -star.size) {
                         star.x = p.width;
-                        star.y = p.random(p.height * 0.6);
+                        star.y = p.random(p.height);
                     }
-                    // Flickering effect
-                    if(p.random() > 0.1) {
-                        p.rect(Math.floor(star.x/pixelSize)*pixelSize, Math.floor(star.y/pixelSize)*pixelSize, star.size, star.size);
+
+                    // Mouse Repulsion
+                    let d = p.dist(p.mouseX, p.mouseY, star.x, star.y);
+                    if (d < 150) {
+                        let angle = p.atan2(star.y - p.mouseY, star.x - p.mouseX);
+                        star.x += p.cos(angle) * (150 - d) * 0.05;
+                        star.y += p.sin(angle) * (150 - d) * 0.05;
                     }
+
+                    p.fill(p.random() > 0.95 ? cols.rose : cols.lav);
+                    p.rect(Math.floor(star.x/pixelSize)*pixelSize, Math.floor(star.y/pixelSize)*pixelSize, star.size, star.size);
                 });
 
-                // 2. The Utopian Sun (Pixelated Circle)
-                let sunX = p.width / 2;
-                let sunY = p.height * 0.4;
-                let radius = p.width > 800 ? 150 : 100;
+                // 3. The Utopian Sun (Pixelated Circle)
+                let sunX = p.width * 0.7;
+                let sunY = p.height * 0.3;
+                let radius = p.width > 800 ? 180 : 120;
+
+                // Sun reacts to mouse position subtly
+                sunX += (p.mouseX - p.width/2) * -0.05;
+                sunY += (p.mouseY - p.height/2) * -0.05;
+
                 p.fill(cols.sand);
                 for(let y = -radius; y <= radius; y += pixelSize) {
                     for(let x = -radius; x <= radius; x += pixelSize) {
                         if(x*x + y*y <= radius*radius) {
-                            // Audio-reactive glitch slice effect on the sun
-                            if(p.sin((p.frameCount + y)*0.05) > 0.8) continue;
-                            p.rect(
-                                Math.floor((sunX + x)/pixelSize)*pixelSize,
-                                Math.floor((sunY + y)/pixelSize)*pixelSize,
-                                pixelSize, pixelSize
-                            );
+                            // Audio-reactive glitch slice effect + mouse influence
+                            let glitch = p.sin((p.frameCount + y + currentWaveAmp)*0.05) > 0.85;
+                            if(!glitch) {
+                                p.rect(
+                                    Math.floor((sunX + x)/pixelSize)*pixelSize,
+                                    Math.floor((sunY + y)/pixelSize)*pixelSize,
+                                    pixelSize, pixelSize
+                                );
+                            }
                         }
                     }
                 }
 
-                // 3. Audio/Synthwave Horizon Terrain (Music/Game Element)
+                // 4. Audio/Synthwave Horizon Terrain
                 p.strokeWeight(pixelSize);
                 p.strokeCap(p.SQUARE);
 
-                // Draw multiple layers of audio-wave terrain
-                drawPixelWave(0.65, 0.01, cols.rose, 50, 2);
-                drawPixelWave(0.75, 0.02, cols.lav, 80, -1.5);
-                drawPixelWave(0.85, 0.015, cols.sand, 120, 3);
+                drawPixelWave(0.7, 0.01, cols.rose, 40 + currentWaveAmp*0.5, 2);
+                drawPixelWave(0.8, 0.02, cols.lav, 70 + currentWaveAmp*0.8, -1.5);
+                drawPixelWave(0.9, 0.015, cols.sand, 100 + currentWaveAmp, 3);
+
+                // 5. Update and Draw Explosions
+                for(let i = explosions.length - 1; i >= 0; i--) {
+                    let ex = explosions[i];
+                    ex.life -= 2;
+                    p.noStroke();
+
+                    ex.particles.forEach(pt => {
+                        pt.x += pt.vx;
+                        pt.y += pt.vy;
+                        pt.vy += 0.2; // Gravity
+
+                        p.fill(pt.color[0], pt.color[1], pt.color[2], ex.life * 2.5);
+                        p.rect(Math.floor(pt.x/pixelSize)*pixelSize, Math.floor(pt.y/pixelSize)*pixelSize, pt.size, pt.size);
+                    });
+
+                    if(ex.life <= 0) {
+                        explosions.splice(i, 1);
+                    }
+                }
             };
 
             function drawPixelWave(heightMult, noiseScale, color, amp, timeMult) {
@@ -402,18 +616,52 @@
                 p.noFill();
                 p.beginShape();
                 for(let x = 0; x < p.width + pixelSize; x += pixelSize) {
-                    // Combine noise with sine waves for a "music frequency" + "terrain" look
                     let noiseVal = p.noise(x * noiseScale, p.frameCount * 0.005 * Math.abs(timeMult));
                     let waveVal = p.sin(x * 0.01 + p.frameCount * 0.05 * timeMult) * 20;
 
                     let y = p.height * heightMult + (noiseVal * amp) + waveVal;
-                    // Snap to pixel grid
                     y = Math.floor(y / pixelSize) * pixelSize;
 
                     p.vertex(x, y);
                 }
                 p.endShape();
             }
+
+            function spawnExplosion(x, y, amount) {
+                let particles = [];
+                let colors = [
+                    [169, 121, 129], // rose
+                    [239, 228, 176], // sand
+                    [200, 191, 231], // lav
+                    [255, 255, 255]
+                ];
+
+                for(let i=0; i<amount; i++) {
+                    let angle = p.random(p.TWO_PI);
+                    let speed = p.random(2, 15);
+                    particles.push({
+                        x: x,
+                        y: y,
+                        vx: p.cos(angle) * speed,
+                        vy: p.sin(angle) * speed,
+                        size: p.random([pixelSize, pixelSize*2, pixelSize*3]),
+                        color: p.random(colors)
+                    });
+                }
+
+                explosions.push({
+                    life: 100,
+                    particles: particles
+                });
+            }
+
+            // Click triggers pixel explosion
+            p.mousePressed = () => {
+                // Ensure we don't block HTML clicks if interacting with UI
+                if(p.mouseY > 0 && p.mouseY < p.height && document.activeElement.tagName !== 'A' && document.activeElement.tagName !== 'BUTTON') {
+                     spawnExplosion(p.mouseX, p.mouseY, 40);
+                }
+            };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
