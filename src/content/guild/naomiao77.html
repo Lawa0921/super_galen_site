@@ -325,17 +325,19 @@
     <div id="webgl-container"></div>
 
     <!-- Hand-drawn Illustration Sun -->
-    <div class="fixed top-12 right-12 md:top-20 md:right-24 z-[-2] opacity-90 animate-[spin_60s_linear_infinite]" id="illustration-sun" style="width: 120px; height: 120px; pointer-events: none;">
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Sun Core -->
-            <circle cx="50" cy="50" r="25" fill="#FEF08A" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
-            <path d="M50 25 C65 25 75 35 75 50 C75 65 65 75 50 75 C35 75 25 65 25 50 C25 35 35 25 50 25 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="2" opacity="0.5" stroke-dasharray="4 4"/>
-            <!-- Sun Rays (Hand-drawn style) -->
-            <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50 M22 22 L29 29 M71 71 L78 78 M22 78 L29 71 M71 22 L78 29" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
-            <!-- Cute Blush -->
-            <circle cx="42" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
-            <circle cx="58" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
-        </svg>
+    <div class="fixed top-12 right-12 md:top-20 md:right-24 z-[20] cursor-pointer" id="illustration-sun-wrapper" style="width: 120px; height: 120px; pointer-events: auto;">
+        <div class="w-full h-full opacity-90 animate-[spin_60s_linear_infinite]" id="illustration-sun">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full transition-transform duration-300 hover:scale-110">
+                <!-- Sun Core -->
+                <circle cx="50" cy="50" r="25" fill="#FEF08A" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
+                <path d="M50 25 C65 25 75 35 75 50 C75 65 65 75 50 75 C35 75 25 65 25 50 C25 35 35 25 50 25 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="2" opacity="0.5" stroke-dasharray="4 4"/>
+                <!-- Sun Rays (Hand-drawn style) -->
+                <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50 M22 22 L29 29 M71 71 L78 78 M22 78 L29 71 M71 22 L78 29" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
+                <!-- Cute Blush -->
+                <circle cx="42" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
+                <circle cx="58" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
+            </svg>
+        </div>
     </div>
 
     <div class="cloud-layer" id="cloud-layer-back"></div>
@@ -343,7 +345,8 @@
     <div id="p5-container"></div>
 
     <!-- Main Content Wrapper -->
-    <main class="relative z-10 w-full min-h-screen pb-32 book-container opacity-0" id="main-content">
+    <!-- Main content needs to let pointer events pass through to background layers where empty -->
+    <main class="relative z-10 w-full min-h-screen pb-32 book-container opacity-0 pointer-events-none" id="main-content">
 
         <!-- Navigation / Top bar -->
         <nav class="fixed top-0 w-full p-6 z-50 flex justify-between items-center pointer-events-none">
@@ -360,7 +363,7 @@
         </nav>
 
         <!-- Chapter 1: Hero / Introduction -->
-        <section class="min-h-screen relative flex items-center justify-center pt-20" id="hero">
+        <section class="min-h-screen relative flex items-center justify-center pt-20 pointer-events-auto" id="hero">
             <!-- Decorative SVG Clouds -->
             <svg class="svg-cloud w-64 h-32 top-1/4 left-10 animate-float-slow" viewBox="0 0 24 24"><path d="M6.5,17.5C4.57,17.5 3,15.93 3,14C3,12.3 4.22,10.87 5.86,10.58C6.54,7.88 9,6 12,6C14.78,6 17.15,7.67 18.06,10.1C18.23,10.08 18.39,10.06 18.57,10.06C21.03,10.06 23,12.06 23,14.5C23,16.96 21.04,18.96 18.57,18.96L6.5,17.5Z"/></svg>
             <svg class="svg-cloud w-48 h-24 bottom-1/4 right-20 animate-float-fast" viewBox="0 0 24 24"><path d="M6.5,17.5C4.57,17.5 3,15.93 3,14C3,12.3 4.22,10.87 5.86,10.58C6.54,7.88 9,6 12,6C14.78,6 17.15,7.67 18.06,10.1C18.23,10.08 18.39,10.06 18.57,10.06C21.03,10.06 23,12.06 23,14.5C23,16.96 21.04,18.96 18.57,18.96L6.5,17.5Z"/></svg>
@@ -409,7 +412,7 @@
         </section>
 
         <!-- Chapter 2: The Art & Life -->
-        <section class="min-h-screen relative py-32 px-6" id="chapter2">
+        <section class="min-h-screen relative py-32 px-6 pointer-events-auto" id="chapter2">
             <div class="max-w-7xl mx-auto">
                 <div class="text-center mb-20">
                     <p class="font-serif text-sky-600 text-lg mb-2 tracking-widest"><i class="fa-solid fa-cat text-slate-400"></i> Chapter 2</p>
@@ -463,7 +466,7 @@
         </section>
 
         <!-- Chapter 3: The Mind & Closure -->
-        <section class="min-h-screen relative flex items-center justify-center py-20 px-6" id="chapter3">
+        <section class="min-h-screen relative flex items-center justify-center py-20 px-6 pointer-events-auto" id="chapter3">
             <div class="max-w-5xl mx-auto w-full flex flex-col items-center">
 
                 <p class="font-serif text-sky-600 text-lg mb-6 tracking-widest"><i class="fa-solid fa-seedling text-green-400"></i> Chapter 3</p>
@@ -668,6 +671,46 @@
             });
         });
 
+        // Sun Interaction
+        const sunWrapper = document.getElementById('illustration-sun-wrapper');
+        const sunInner = document.getElementById('illustration-sun');
+        if (sunWrapper && sunInner) {
+            sunWrapper.addEventListener('click', (e) => {
+                // Squish and pop animation
+                gsap.timeline()
+                    .to(sunInner, { scale: 0.8, duration: 0.1, ease: "power2.in" })
+                    .to(sunInner, { scale: 1.3, duration: 0.4, ease: "elastic.out(1, 0.3)" })
+                    .to(sunInner, { scale: 1, duration: 0.2 });
+
+                // Spawn mini suns/stars burst
+                for (let i = 0; i < 5; i++) {
+                    const spark = document.createElement('div');
+                    spark.style.position = 'absolute';
+                    spark.style.left = '50%';
+                    spark.style.top = '50%';
+                    spark.style.width = '20px';
+                    spark.style.height = '20px';
+                    spark.style.transform = 'translate(-50%, -50%)';
+                    spark.style.pointerEvents = 'none';
+                    spark.innerHTML = `<svg viewBox="0 0 100 100" fill="none"><path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="4"/></svg>`;
+                    sunWrapper.appendChild(spark);
+
+                    const angle = (i / 5) * Math.PI * 2;
+                    const dist = 60 + Math.random() * 40;
+
+                    gsap.to(spark, {
+                        x: Math.cos(angle) * dist,
+                        y: Math.sin(angle) * dist,
+                        rotation: Math.random() * 360,
+                        opacity: 0,
+                        duration: 1 + Math.random(),
+                        ease: "power2.out",
+                        onComplete: () => spark.remove()
+                    });
+                }
+            });
+        }
+
         // Add a "page turn" or floating effect to chapter titles
         const sectionTitles = document.querySelectorAll('h2:not(#entrance-title)');
         sectionTitles.forEach((title) => {
@@ -813,8 +856,58 @@
                 for (let i = 0; i < count; i++) {
                     const elWrapper = document.createElement('div');
                     elWrapper.style.position = 'absolute';
-                    elWrapper.style.pointerEvents = 'none';
+                    elWrapper.style.pointerEvents = 'auto'; // Make interactive
+                    elWrapper.style.cursor = 'pointer'; // Give affordance
                     elWrapper.classList.add('parallax-bg-el'); // Class for scrolltrigger
+
+                    // Hover and Click interaction for background elements
+                    elWrapper.addEventListener('mouseenter', () => {
+                        gsap.to(elWrapper, { scale: 1.1, duration: 0.3, ease: "power2.out", overwrite: "auto" });
+                    });
+
+                    elWrapper.addEventListener('mouseleave', () => {
+                        gsap.to(elWrapper, { scale: 1, duration: 0.3, ease: "power2.in", overwrite: "auto" });
+                    });
+
+                    elWrapper.addEventListener('click', (e) => {
+                        // Prevent the click from bubbling to the background canvas
+                        e.stopPropagation();
+
+                        // Fun bounce animation
+                        gsap.timeline()
+                            .to(elWrapper, { scale: 0.9, duration: 0.1, ease: "power2.in", overwrite: "auto" })
+                            .to(elWrapper, { scale: 1.2, rotation: "+=15", duration: 0.4, ease: "elastic.out(1, 0.4)" })
+                            .to(elWrapper, { scale: 1, rotation: "-=15", duration: 0.3 });
+
+                        // Spawn mini music notes or stars
+                        for (let j = 0; j < 3; j++) {
+                            const spark = document.createElement('div');
+                            spark.style.position = 'absolute';
+                            spark.style.left = '50%';
+                            spark.style.top = '50%';
+                            spark.style.width = '15px';
+                            spark.style.height = '15px';
+                            spark.style.pointerEvents = 'none';
+                            spark.style.zIndex = '5';
+                            // A simple music note or star
+                            const icons = [
+                                `<svg viewBox="0 0 100 100" fill="none"><path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="4"/></svg>`,
+                                `<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="30" fill="#bae6fd" stroke="#7dd3fc" stroke-width="4"/></svg>`
+                            ];
+                            spark.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+                            elWrapper.appendChild(spark);
+
+                            gsap.to(spark, {
+                                y: -50 - Math.random() * 50,
+                                x: (Math.random() - 0.5) * 60,
+                                opacity: 0,
+                                rotation: Math.random() * 180,
+                                duration: 1 + Math.random(),
+                                ease: "power2.out",
+                                onComplete: () => spark.remove()
+                            });
+                        }
+                    });
 
                     const rand = Math.random();
                     let scale = 1;
@@ -981,9 +1074,10 @@
         // Ensure body height is mostly calculated before spawning
         setTimeout(createBackgroundElements, 100);
 
-        // 4. p5.js Magic Drawing / Continuous Interactive Trails
+        // 4. p5.js Magic Drawing / Continuous Interactive Trails & Stamps
         const sketch = (p) => {
             let inkLines = [];
+            let stamps = []; // Stamps to leave on click
             let isDrawing = false;
             let currentLine = [];
 
@@ -1031,6 +1125,58 @@
                         p.vertex(pt.x, pt.y);
                     }
                     p.endShape();
+                }
+
+                // Draw stamps (clicks)
+                for (let i = stamps.length - 1; i >= 0; i--) {
+                    let stamp = stamps[i];
+                    stamp.life -= 1; // slow fade
+
+                    if (stamp.life <= 0) {
+                        stamps.splice(i, 1);
+                        continue;
+                    }
+
+                    let alpha = p.map(stamp.life, 0, 200, 0, 200);
+
+                    p.push();
+                    p.translate(stamp.x, stamp.y);
+                    p.rotate(stamp.rotation);
+                    p.scale(stamp.scale * p.map(stamp.life, 0, 200, 0.5, 1.2));
+
+                    p.noFill();
+                    if (stamp.type === 0) {
+                        // Star
+                        p.stroke(255, 245, 150, alpha);
+                        p.strokeWeight(3);
+                        p.beginShape();
+                        for (let a = 0; a < p.TWO_PI; a += p.TWO_PI / 5) {
+                            let r = 10;
+                            p.vertex(p.cos(a) * r, p.sin(a) * r);
+                            p.vertex(p.cos(a + p.PI / 5) * (r * 0.4), p.sin(a + p.PI / 5) * (r * 0.4));
+                        }
+                        p.endShape(p.CLOSE);
+                    } else if (stamp.type === 1) {
+                        // Paw
+                        p.fill(200, 220, 240, alpha);
+                        p.noStroke();
+                        p.ellipse(0, 0, 15, 12);
+                        p.ellipse(-10, -10, 8, 8);
+                        p.ellipse(0, -15, 8, 8);
+                        p.ellipse(10, -10, 8, 8);
+                    } else {
+                        // Bubble
+                        p.stroke(186, 230, 253, alpha);
+                        p.strokeWeight(2);
+                        p.circle(0, 0, 20);
+                        p.stroke(255, 255, 255, alpha);
+                        p.arc(-5, -5, 10, 10, p.PI, p.PI + p.HALF_PI);
+                    }
+
+                    p.pop();
+
+                    // drift upwards slightly
+                    stamp.y -= 0.3;
                 }
 
                 // If mouse is held down/moving fast, create a current line
@@ -1088,7 +1234,20 @@
             };
 
             p.mouseClicked = () => {
+                // Prevent capturing clicks on DOM elements
+                // p5 triggers mouseClicked globally, but we only want stamps if the user clicks the background
+                // Or we can just limit to when the user is moving/clicking
                 createBurst(p.mouseX, p.mouseY);
+
+                // Add a permanent-feeling (but fading) stamp
+                stamps.push({
+                    x: p.mouseX,
+                    y: p.mouseY,
+                    rotation: p.random(p.TWO_PI),
+                    scale: p.random(0.8, 1.5),
+                    type: p.floor(p.random(3)), // 0: Star, 1: Paw, 2: Bubble
+                    life: 200
+                });
             };
 
             function createBurst(x, y) {
