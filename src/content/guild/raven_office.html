@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raven Office | Mystical Alchemy</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -54,11 +54,9 @@
         .scene.active { opacity: 1; pointer-events: auto; }
 
         /* Scene Backgrounds */
-        #scene-exterior { background-image: url('/assets/raven_office/content4.webp'); }
-        #scene-interior { background-image: url('/assets/raven_office/content.webp'); }
-        #scene-books { background-image: url('/assets/raven_office/content2.webp'); }
-        #scene-crystal { background-image: url('/assets/raven_office/content3.webp'); }
-        #scene-altar { background-image: url('/assets/raven_office/content1.webp'); }
+        /* Entry is the bright room (content.webp), Workshop is the dark room (content4.webp) */
+        #scene-exterior { background-image: url('/assets/raven_office/content.webp'); }
+        #scene-interior { background-image: url('/assets/raven_office/content4.webp'); }
 
         /* Interactive Hitboxes */
         .hitbox {
@@ -66,48 +64,57 @@
             border: 2px solid transparent; transition: all 0.3s ease;
         }
         .hitbox:hover {
-            border-color: rgba(192, 132, 252, 0.5);
-            background: rgba(192, 132, 252, 0.1);
-            box-shadow: 0 0 20px rgba(192, 132, 252, 0.4);
+            border-color: rgba(192, 132, 252, 0.8);
+            background: rgba(192, 132, 252, 0.2);
+            box-shadow: 0 0 30px rgba(192, 132, 252, 0.6), inset 0 0 20px rgba(192, 132, 252, 0.4);
         }
 
-        /* Specific Hitbox Positions (Percentages for responsive) */
-        #btn-enter { left: 45%; top: 40%; width: 10%; height: 30%; }
-        #btn-books { left: 10%; top: 30%; width: 25%; height: 50%; }
-        #btn-crystal { left: 40%; top: 55%; width: 20%; height: 30%; }
-        #btn-altar { left: 70%; top: 40%; width: 20%; height: 40%; }
+        /* Entry Door: Left side white door */
+        #btn-enter { left: 19%; top: 29%; width: 14%; height: 49%; border-radius: 4px; }
+
+        /* Workshop Objects */
+        /* Books/Desk: Right side table with book */
+        #btn-books { left: 63%; top: 60%; width: 22%; height: 25%; }
+        /* Crystal/Services: Shelves with potions */
+        #btn-crystal { left: 34%; top: 28%; width: 44%; height: 35%; }
+        /* Altar/Guardians: Fireplace/Cauldron */
+        #btn-altar { left: 13%; top: 41%; width: 19%; height: 26%; border-radius: 50% 50% 0 0; }
+
         .btn-back { left: 5%; bottom: 5%; width: auto; height: auto; border: none !important; }
 
         /* Info Panels */
         .info-panel {
-            position: fixed; right: -500px; top: 0;
-            width: 400px; height: 100vh;
-            background: rgba(10, 5, 20, 0.85);
+            position: fixed; right: -600px; top: 0;
+            width: 600px; max-width: 100vw; height: 100vh;
+            background: rgba(10, 5, 20, 0.95);
             backdrop-filter: blur(12px); border-left: 1px solid rgba(192, 132, 252, 0.3);
-            padding: 3rem 2rem; overflow-y: auto; z-index: 1000;
+            padding: 3rem 3rem; overflow-y: auto; z-index: 1000;
             box-shadow: -10px 0 30px rgba(0,0,0,0.8);
             transition: right 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        @media (max-width: 768px) {
+            .info-panel { width: 100vw; padding: 3rem 1.5rem; }
         }
         .info-panel.open { right: 0; }
 
         .info-panel h2 {
             font-family: 'Cinzel', serif; color: var(--mystic-purple);
-            font-size: 2rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(192, 132, 252, 0.3);
+            font-size: 2.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(192, 132, 252, 0.3);
             padding-bottom: 0.5rem;
         }
-        .info-panel p { color: #d1d5db; line-height: 1.8; margin-bottom: 1rem; }
+        .info-panel p { color: #d1d5db; line-height: 1.8; margin-bottom: 1rem; font-size: 1.1rem; }
         .info-panel .highlight { color: #f3e8ff; font-weight: 700; }
         .info-panel .close-btn {
-            position: absolute; top: 1rem; right: 1.5rem;
-            color: var(--mystic-purple); font-size: 1.5rem; cursor: pointer;
+            position: absolute; top: 1.5rem; right: 2rem;
+            color: var(--mystic-purple); font-size: 2rem; cursor: pointer;
             transition: transform 0.3s, color 0.3s;
         }
-        .info-panel .close-btn:hover { color: #fff; transform: scale(1.1) rotate(90deg); }
+        .info-panel .close-btn:hover { color: #fff; transform: scale(1.2) rotate(90deg); }
 
         ul.service-list { list-style: none; padding: 0; margin: 0; }
-        ul.service-list li { margin-bottom: 1.5rem; position: relative; padding-left: 1.5rem; }
-        ul.service-list li::before { content: '✧'; position: absolute; left: 0; top: 0; color: var(--mystic-purple); }
-        ul.service-list h3 { font-size: 1.1rem; margin-bottom: 0.3rem; color: #e9d5ff; font-weight: bold; }
+        ul.service-list li { margin-bottom: 2rem; position: relative; padding-left: 1.5rem; }
+        ul.service-list li::before { content: '✧'; position: absolute; left: 0; top: 0; color: var(--mystic-purple); font-size: 1.2rem; }
+        ul.service-list h3 { font-size: 1.3rem; margin-bottom: 0.5rem; color: #e9d5ff; font-weight: bold; }
 
         /* p5 Canvas Overlay */
         #p5-container {
@@ -117,22 +124,26 @@
 
         .social-icons {
             position: fixed; top: 2rem; right: 2rem;
-            z-index: 200; display: flex; gap: 1.5rem;
+            z-index: 200; display: flex; gap: 1rem;
         }
         .social-icons a {
             color: var(--mystic-purple); font-size: 1.5rem;
             transition: color 0.3s, transform 0.3s, text-shadow 0.3s;
-            background: rgba(0,0,0,0.5); padding: 0.5rem; border-radius: 50%;
+            background: rgba(0,0,0,0.6); width: 45px; height: 45px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; border: 1px solid rgba(192, 132, 252, 0.3);
         }
         .social-icons a:hover {
-            color: #fff; transform: scale(1.1);
+            color: #fff; transform: scale(1.1); border-color: #fff;
             text-shadow: 0 0 15px rgba(192, 132, 252, 0.8);
+            box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
         }
 
         /* Intro Title overlay */
         #intro-title {
-            position: absolute; top: 20%; width: 100%; text-align: center;
+            position: absolute; top: 20%; right: 10%; text-align: right;
             pointer-events: none; text-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5); padding: 2rem; border-radius: 12px; backdrop-filter: blur(5px);
+            border: 1px solid rgba(192, 132, 252, 0.2);
         }
         #intro-title h1 { font-family: 'Cinzel', serif; font-size: 4rem; color: var(--mystic-purple); margin-bottom: 0.5rem;}
         #intro-title p { font-size: 1.2rem; color: #e5e7eb; letter-spacing: 0.2em; }
@@ -149,70 +160,58 @@
     <div class="social-icons">
         <a href="https://www.instagram.com/raven.office/" target="_blank"><i class="fab fa-instagram"></i></a>
         <a href="https://www.threads.net/@raven.office" target="_blank"><i class="fa-brands fa-threads"></i></a>
+        <a href="https://www.facebook.com/profile.php?id=61550929252486" target="_blank"><i class="fab fa-facebook-f"></i></a>
     </div>
 
     <div id="scene-container">
-        <!-- Exterior: The Door -->
+        <!-- Exterior: The Bright Room -->
         <div id="scene-exterior" class="scene active">
             <div id="intro-title">
                 <h1>Raven Office</h1>
                 <p>密契主義 ✧ 自學女巫</p>
+                <div class="mt-4 text-sm text-purple-300 opacity-70 italic">Click the white door to enter the sanctum...</div>
             </div>
+            <!-- Hitbox over the white door -->
             <div id="btn-enter" class="hitbox" title="Enter the Sanctum"></div>
         </div>
 
-        <!-- Interior: Main Room -->
+        <!-- Interior: Dark Workshop -->
         <div id="scene-interior" class="scene">
+            <!-- Table with open book -->
             <div id="btn-books" class="hitbox" title="The Awakening (About)"></div>
+            <!-- Potions on shelf -->
             <div id="btn-crystal" class="hitbox" title="Mystical Services"></div>
+            <!-- Cauldron in fireplace -->
             <div id="btn-altar" class="hitbox" title="The Guardians"></div>
 
             <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-exterior')">
                 <i class="fas fa-door-open"></i> Leave Sanctum
             </button>
         </div>
-
-        <!-- Closeup: Books (About) -->
-        <div id="scene-books" class="scene">
-            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-interior', 'panel-about')">
-                <i class="fas fa-arrow-left"></i> Step Back
-            </button>
-        </div>
-
-        <!-- Closeup: Crystal (Services) -->
-        <div id="scene-crystal" class="scene">
-            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-interior', 'panel-services')">
-                <i class="fas fa-arrow-left"></i> Step Back
-            </button>
-        </div>
-
-        <!-- Closeup: Altar (Guardians) -->
-        <div id="scene-altar" class="scene">
-            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-interior', 'panel-guardians')">
-                <i class="fas fa-arrow-left"></i> Step Back
-            </button>
-        </div>
     </div>
 
     <!-- Info Panels -->
     <div id="panel-about" class="info-panel">
-        <i class="fas fa-times close-btn" onclick="closePanel('panel-about', 'scene-interior')"></i>
+        <i class="fas fa-times close-btn" onclick="closePanel('panel-about')"></i>
         <h2>The Awakening</h2>
-        <div class="flex justify-center mb-6">
-            <img src="/assets/raven_office/profile.webp" alt="Raven" class="w-32 h-32 rounded-full border-2 border-purple-500 shadow-[0_0_15px_rgba(192,132,252,0.5)] object-cover">
+        <div class="flex justify-center mb-8">
+            <img src="/assets/raven_office/profile.webp" alt="Raven" class="w-40 h-40 rounded-full border-2 border-purple-500 shadow-[0_0_20px_rgba(192,132,252,0.6)] object-cover">
         </div>
         <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。</p>
         <p>那些難以解釋的相遇，讓我帶著不安長大，也讓我開始尋求答案。我閱讀、查找、試圖理解，卻始終與這身分無法產生共鳴。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。</p>
         <p>在我幾乎撐不下去的日子裡，祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。於是我明白，人生只能從有限的選擇去做出決定，也是等待既定的時間軌道到來而啟動。</p>
         <p>現在，我會用輕鬆甚至有點幽默的方式，分享靈界的日常趣事。不是為了神秘，而是為了讓那些曾經孤單的人知道——<span class="highlight">你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。</span></p>
-        <p class="text-center text-purple-400 my-8 font-serif tracking-widest text-sm">| ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |</p>
-        <p class="text-sm opacity-80 border-t border-purple-900 pt-4">喜歡慢步調的閱讀，有時候會查查資料科普一下。</p>
+        <p class="text-center text-purple-400 my-10 font-serif tracking-widest text-sm text-shadow-glow">| ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |</p>
+        <p class="text-sm opacity-80 border-t border-purple-900 pt-6">喜歡慢步調的閱讀，有時候會查查資料科普一下。</p>
     </div>
 
     <div id="panel-services" class="info-panel">
-        <i class="fas fa-times close-btn" onclick="closePanel('panel-services', 'scene-interior')"></i>
+        <i class="fas fa-times close-btn" onclick="closePanel('panel-services')"></i>
         <h2>Mystical Services</h2>
-        <p class="mb-6 opacity-80 text-sm">最近積極探索與擴展靈性業務。其他未列出的業務，歡迎委託人來跟我詢問 (∗ ˊωˋ ∗)</p>
+        <div class="mb-8 w-full">
+            <img src="/assets/raven_office/content3.webp" alt="Mystical Objects" class="w-full rounded-xl shadow-[0_0_15px_rgba(192,132,252,0.3)] object-cover border border-purple-500/20" style="image-rendering: pixelated;">
+        </div>
+        <p class="mb-8 opacity-80 text-sm italic border-l-2 border-purple-500 pl-4">最近積極探索與擴展靈性業務。其他未列出的業務，歡迎委託人來跟我詢問 (∗ ˊωˋ ∗)</p>
         <ul class="service-list">
             <li>
                 <h3>高我連結溝通</h3>
@@ -225,7 +224,7 @@
             <li>
                 <h3>靈界 / 離世溝通 / 礦靈媒合</h3>
                 <p class="text-sm m-0">需遠端語音進行，去連結離世的親人解讀、或宿緣對象協調、守護或指導靈溝通。<br>
-                <span class="text-purple-400 text-xs mt-2 block">* 請提前整理好想詢問的內容，不包含敏感爭議議題。溝通時間約一到兩小時。預約需付1000元定金。</span></p>
+                <span class="text-purple-400 text-xs mt-3 p-2 bg-purple-900/30 rounded border border-purple-500/30 block">* 請提前整理好想詢問的內容，不包含敏感爭議議題。溝通時間約一到兩小時。預約需付1000元定金。</span></p>
             </li>
             <li>
                 <h3>詛咒移除</h3>
@@ -239,21 +238,25 @@
     </div>
 
     <div id="panel-guardians" class="info-panel">
-        <i class="fas fa-times close-btn" onclick="closePanel('panel-guardians', 'scene-interior')"></i>
+        <i class="fas fa-times close-btn" onclick="closePanel('panel-guardians')"></i>
         <h2>The Guardians</h2>
-        <p>有兩位超愛我的守護者，平常他們都會打打鬧鬧：</p>
+        <p class="mb-6 text-lg">有兩位超愛我的守護者，平常他們都會打打鬧鬧：</p>
 
-        <div class="mt-6 space-y-6">
-            <div class="p-4 rounded-lg bg-black/50 border border-purple-500/30 relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 text-purple-500/10 text-6xl"><i class="fas fa-feather-alt"></i></div>
-                <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟙. 大天使烏列爾</h3>
-                <p class="m-0 text-sm">合作的天使，帶來智慧與光芒的指引。</p>
+        <div class="mt-8 space-y-8">
+            <div class="p-6 rounded-xl bg-black/60 border border-purple-500/40 relative overflow-hidden shadow-lg">
+                <div class="w-full mb-4 flex justify-center bg-white/5 rounded-lg py-2">
+                    <img src="/assets/raven_office/content2.webp" alt="Uriel" class="h-48 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
+                </div>
+                <h3 class="text-2xl text-[#fcd34d] font-bold mb-2">𝟙. 大天使烏列爾</h3>
+                <p class="m-0 text-md">合作的天使，帶來智慧與光芒的指引。</p>
             </div>
 
-            <div class="p-4 rounded-lg bg-black/50 border border-purple-500/30 relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 text-purple-500/10 text-6xl"><i class="fas fa-paw"></i></div>
-                <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟚. Mishipeshu</h3>
-                <p class="m-0 text-sm">美洲虎守護獸（意為「偉大的猞猁」或「水下豹」），強大的守護力量。</p>
+            <div class="p-6 rounded-xl bg-black/60 border border-purple-500/40 relative overflow-hidden shadow-lg">
+                <div class="w-full mb-4 flex justify-center bg-white/5 rounded-lg py-2">
+                    <img src="/assets/raven_office/content1.webp" alt="Mishipeshu" class="h-48 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]">
+                </div>
+                <h3 class="text-2xl text-[#fca5a5] font-bold mb-2">𝟚. Mishipeshu</h3>
+                <p class="m-0 text-md">美洲虎守護獸（意為「偉大的猞猁」或「水下豹」），強大的守護力量。</p>
             </div>
         </div>
     </div>
@@ -274,27 +277,21 @@
         // Scene Transition Logic
         let activeScene = 'scene-exterior';
 
-        function changeScene(newSceneId, openPanelId = null) {
+        function changeScene(newSceneId) {
             // Fade out current
             document.getElementById(activeScene).classList.remove('active');
 
             // Fade in new
             activeScene = newSceneId;
             document.getElementById(activeScene).classList.add('active');
-
-            // Open panel if requested
-            if (openPanelId) {
-                setTimeout(() => {
-                    document.getElementById(openPanelId).classList.add('open');
-                }, 500); // Wait for scene fade
-            }
         }
 
-        function closePanel(panelId, revertSceneId = null) {
+        function openPanel(panelId) {
+            document.getElementById(panelId).classList.add('open');
+        }
+
+        function closePanel(panelId) {
             document.getElementById(panelId).classList.remove('open');
-            if (revertSceneId) {
-                setTimeout(() => changeScene(revertSceneId), 300);
-            }
         }
 
         // Interaction Bindings
@@ -304,20 +301,20 @@
         });
 
         document.getElementById('btn-books').addEventListener('click', () => {
-            changeScene('scene-books', 'panel-about');
+            openPanel('panel-about');
         });
 
         document.getElementById('btn-crystal').addEventListener('click', () => {
-            changeScene('scene-crystal', 'panel-services');
+            openPanel('panel-services');
             triggerMagicBurst(); // Extra magic for crystal
         });
 
         document.getElementById('btn-altar').addEventListener('click', () => {
-            changeScene('scene-altar', 'panel-guardians');
+            openPanel('panel-guardians');
         });
 
         // ==== p5.js Magical Particles & Cursor ====
-        let triggerMagicBurst = () => {}; // Will be assigned in p5 setup
+        let triggerMagicBurst = () => {};
 
         const sketch = (p) => {
             let trails = [];
@@ -329,14 +326,14 @@
                 p.noStroke();
 
                 triggerMagicBurst = () => {
-                    for(let i=0; i<30; i++) {
+                    for(let i=0; i<40; i++) {
                         bursts.push({
-                            x: p.width/2 + p.random(-50, 50),
-                            y: p.height/2 + p.random(-50, 50),
+                            x: p.width/2 + p.random(-100, 100),
+                            y: p.height/2 + p.random(-100, 100),
                             life: 255,
-                            vx: p.random(-5, 5),
-                            vy: p.random(-5, 5),
-                            size: p.random(3, 10),
+                            vx: p.random(-6, 6),
+                            vy: p.random(-6, 6),
+                            size: p.random(4, 15),
                             col: [192, 132, 252]
                         });
                     }
@@ -348,14 +345,14 @@
 
                 // Cursor trails
                 if (p.mouseX !== 0 && p.mouseY !== 0 && (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY)) {
-                    for(let i=0; i<2; i++) {
+                    for(let i=0; i<3; i++) {
                         trails.push({
-                            x: p.mouseX + p.random(-10, 10),
-                            y: p.mouseY + p.random(-10, 10),
+                            x: p.mouseX + p.random(-15, 15),
+                            y: p.mouseY + p.random(-15, 15),
                             life: 255,
                             vx: p.random(-1, 1),
                             vy: p.random(-2, 0.5),
-                            size: p.random(2, 5),
+                            size: p.random(2, 6),
                             col: p.random() > 0.5 ? [192, 132, 252] : [232, 121, 249]
                         });
                     }
@@ -364,7 +361,7 @@
                 // Render Trails
                 for (let i = trails.length - 1; i >= 0; i--) {
                     let t = trails[i];
-                    t.x += t.vx; t.y += t.vy; t.life -= 8;
+                    t.x += t.vx; t.y += t.vy; t.life -= 7;
 
                     if (t.life <= 0) trails.splice(i, 1);
                     else {
@@ -378,7 +375,7 @@
                 // Render Bursts
                 for (let i = bursts.length - 1; i >= 0; i--) {
                     let b = bursts[i];
-                    b.x += b.vx; b.y += b.vy; b.life -= 10;
+                    b.x += b.vx; b.y += b.vy; b.life -= 8;
                     b.vx *= 0.95; b.vy *= 0.95; // Friction
 
                     if (b.life <= 0) bursts.splice(i, 1);
