@@ -235,7 +235,7 @@
 
         <div class="lg:col-span-5 flex justify-center lg:justify-end relative z-10">
           <div class="avatar-frame gs-reveal">
-            <img src="/assets/guild/asingingwind/image1.webp" alt="許漪 a singing wind">
+            <img src="/assets/guild/asingingwind/image3.webp" alt="許漪 a singing wind">
           </div>
         </div>
 
@@ -397,7 +397,7 @@
             <div class="w-1/3 hidden md:block z-10">
                <div class="rounded-2xl overflow-hidden border border-[var(--sand-mid)]/30 box-shadow-2xl transform rotate-3 hover:-translate-y-2 transition duration-500 relative">
                   <div class="absolute inset-0 bg-black/20 hover:bg-transparent transition duration-500"></div>
-                  <img src="/assets/guild/asingingwind/image3.webp" alt="呼吸詩人" class="w-full h-auto object-cover">
+                  <img src="/assets/guild/asingingwind/image1.webp" alt="呼吸詩人" class="w-full h-auto object-cover">
                </div>
             </div>
 
@@ -437,8 +437,30 @@
 
         <!-- Panel 5: Empty Buffer for smooth end -->
         <div class="panel text-white transition-colors duration-1000" id="end-panel">
-           <div class="text-center opacity-50 cinzel tracking-widest text-[var(--sand-light)]">
-              END OF THE JOURNEY
+           <div class="text-center w-full max-w-2xl mx-auto flex flex-col items-center justify-center relative z-20">
+              <div class="glass-panel-dark p-12 mb-8">
+                 <h2 class="text-3xl cinzel text-[var(--sand-light)] mb-6 text-shadow">CONNECT</h2>
+                 <p class="text-[var(--sand-light)] text-lg mb-8 leading-relaxed">
+                    我不會告訴你怎麼做，也不會要求你成為某個理想中的自己。<br>
+                    我存在的價值，是希望能陪伴你走進自己的真實，並且活出內在最深的呼喚。<br>
+                    如果你準備好了，我在這裡，隨時準備與你一起走這段路。
+                 </p>
+                 <div class="flex gap-6 justify-center">
+                   <a href="https://www.threads.com/@asingingwind" target="_blank" class="nav-btn w-14 h-14 flex items-center justify-center text-2xl rounded-full" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                   <a href="https://www.instagram.com/asingingwind/" target="_blank" class="nav-btn w-14 h-14 flex items-center justify-center text-2xl rounded-full" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                   <a href="https://linktr.ee/asingingwind" target="_blank" class="nav-btn w-14 h-14 flex items-center justify-center text-2xl rounded-full" title="Linktree"><i class="fa-solid fa-link"></i></a>
+                 </div>
+              </div>
+              <div class="opacity-50 cinzel tracking-widest text-[var(--sand-light)] mt-4">
+                 END OF THE JOURNEY
+              </div>
+
+              <!-- Back to Guild button -->
+              <div class="mt-12 text-center">
+                <a href="/hall-of-fame" class="inline-flex items-center gap-2 px-8 py-3 rounded-full border border-[var(--sand-mid)] text-[var(--sand-light)] hover:bg-[var(--sand-mid)] hover:text-[var(--desert-night)] transition-all duration-300">
+                  <i class="fa-solid fa-arrow-left"></i> 返回冒險公會
+                </a>
+              </div>
            </div>
         </div>
 
@@ -813,8 +835,9 @@
         // Slow down wind, stop completely at night (when p is close to 1)
         const windSpeed = Math.max(0, (1 - p * 1.2)) * 0.5;
 
-        // Move terrain slightly to simulate walking/flying
-        terrain.position.z = (time * 5); // Smooth continuous scroll instead of jumping
+        // Move terrain forward based on both time and scroll progress
+        // to make scrolling feel like moving through the desert
+        terrain.position.z = (time * 3) + (p * 50);
 
         // Sandstorm wind effect
         const pPositions = sandstorm.geometry.attributes.position.array;
@@ -1041,19 +1064,26 @@
             // Update global state for Three.js render loop
             ThreeSceneState.progress = self.progress;
 
-            // Also fade the HTML overlay gradient to match the night theme
-            if(self.progress > 0.5) {
-                const darkProgress = Math.pow((self.progress - 0.5) * 2, 1.5); // 0 to 1 in second half, eased for darker end
-                overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(10, 13, 20, ${0.6 + darkProgress * 0.4}) 100%)`;
-                // Linearly interpolate the background color manually to avoid strings
-                const r = Math.round(232 - (232-10)*darkProgress);
-                const g = Math.round(211 - (211-13)*darkProgress);
-                const b = Math.round(162 - (162-20)*darkProgress);
-                document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-            } else {
-                overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(232, 211, 162, 0.6) 100%)`;
-                document.body.style.backgroundColor = `var(--sand-light)`;
-            }
+            // Also fade the HTML overlay gradient to match the night theme gradually
+            // We use the full progress (0 to 1) instead of jumping at 0.5 to make it smoother
+            const darkProgress = self.progress;
+
+            // Interpolate the gradient stop colors
+            const baseA_r = 232, baseA_g = 211, baseA_b = 162, baseA_a = 0.6;
+            const darkA_r = 10,  darkA_g = 13,  darkA_b = 20,  darkA_a = 1.0;
+
+            const curA_r = Math.round(baseA_r - (baseA_r - darkA_r) * darkProgress);
+            const curA_g = Math.round(baseA_g - (baseA_g - darkA_g) * darkProgress);
+            const curA_b = Math.round(baseA_b - (baseA_b - darkA_b) * darkProgress);
+            const curA_a = baseA_a - (baseA_a - darkA_a) * darkProgress;
+
+            overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(${curA_r}, ${curA_g}, ${curA_b}, ${curA_a}) 100%)`;
+
+            // Interpolate the solid body background
+            const r = Math.round(232 - (232-10)*darkProgress);
+            const g = Math.round(211 - (211-13)*darkProgress);
+            const b = Math.round(162 - (162-20)*darkProgress);
+            document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
           }
         }
       });
