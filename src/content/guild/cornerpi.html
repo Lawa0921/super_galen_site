@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三又一木 | 天使 LAB.</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'priest-gold': '#D4AF37',
+                        'priest-dark': '#1a1a1a',
+                        'priest-light': '#f4f1ea',
+                        'crystal-blue': '#88b5d3',
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif TC"', 'serif'],
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <!-- Lenis for smooth scroll -->
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
+
+    <style>
+        body {
+            background-color: transparent; /* Required for Three.js background */
+            color: #f4f1ea;
+            font-family: "Noto Serif TC", serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 3D Canvas Background */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        /* p5.js Overlay */
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .highlight-text {
+            color: #D4AF37;
+            font-weight: 500;
+        }
+
+        /* Gallery Grid */
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1.5rem;
+        }
+        @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .masonry-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .masonry-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .masonry-item::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .masonry-item:hover::after {
+            opacity: 1;
+        }
+
+        /* Timeline Styles */
+        .timeline-line {
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, #D4AF37, transparent);
+        }
+
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #D4AF37;
+            box-shadow: 0 0 15px #D4AF37;
+            position: absolute;
+            left: -5px;
+        }
+
+        /* Floating Nav/Back button */
+        .nav-back {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: #D4AF37;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            text-decoration: none;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            font-family: "Noto Sans TC", sans-serif;
+            font-size: 0.875rem;
+        }
+        .nav-back:hover {
+            background: rgba(212, 175, 55, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Avatar Container */
+        .avatar-container {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            margin: 0 auto;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        .avatar-halo {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            border-radius: 50%;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            animation: pulse-ring 4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            z-index: 5;
+        }
+
+        .avatar-halo-2 {
+            position: absolute;
+            top: -20%;
+            left: -20%;
+            width: 140%;
+            height: 140%;
+            border-radius: 50%;
+            border: 1px dashed rgba(212, 175, 55, 0.1);
+            animation: spin-slow 20s linear infinite;
+            z-index: 4;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { opacity: 1; box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Section Spacing */
+        section {
+            position: relative;
+            z-index: 10;
+            padding: 6rem 1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Back Navigation -->
+    <a href="/" class="nav-back">
+        <i class="fa-solid fa-arrow-left mr-2"></i>返回公會
+    </a>
+
+    <!-- Background Containers -->
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto w-full relative pt-20">
+
+        <!-- Hero Section -->
+        <section class="min-h-[80vh] flex flex-col items-center justify-center text-center gsap-fade-up">
+            <div class="avatar-container mb-8">
+                <div class="avatar-halo"></div>
+                <div class="avatar-halo-2"></div>
+                <img src="/assets/img/guild/cornerpi/avatar.webp" alt="三又一木" class="avatar-img">
+            </div>
+
+            <h1 class="text-4xl md:text-6xl text-priest-gold mb-4 tracking-widest">三又一木</h1>
+            <p class="text-xl md:text-2xl font-light text-gray-300 mb-6 tracking-wider">
+                英國天使靈氣®教師 <span class="text-priest-gold mx-2">|</span> 國際催眠師 <span class="text-priest-gold mx-2">|</span> 心靈諮詢師
+            </p>
+
+            <div class="flex gap-4 justify-center mt-4">
+                <a href="https://www.instagram.com/cornerpi/" target="_blank" class="w-12 h-12 rounded-full border border-priest-gold flex items-center justify-center text-priest-gold hover:bg-priest-gold hover:text-black transition-colors duration-300">
+                    <i class="fa-brands fa-instagram text-xl"></i>
+                </a>
+                <a href="https://www.threads.com/@cornerpi" target="_blank" class="w-12 h-12 rounded-full border border-priest-gold flex items-center justify-center text-priest-gold hover:bg-priest-gold hover:text-black transition-colors duration-300">
+                    <i class="fa-brands fa-threads text-xl"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- Intro Section -->
+        <section class="gsap-fade-up">
+            <div class="glass-panel rounded-2xl p-8 md:p-12 relative overflow-hidden">
+                <div class="absolute top-0 right-0 text-9xl text-priest-gold opacity-5 transform translate-x-1/4 -translate-y-1/4">
+                    <i class="fa-solid fa-dove"></i>
+                </div>
+                <div class="relative z-10 max-w-3xl mx-auto space-y-6 leading-relaxed font-sans font-light text-lg">
+                    <p>將自身經驗和實驗結果與所學內化，協助探索內在深處的訊息與智慧。</p>
+                    <p>用簡單的方式深入內心，靈性與生活結合，讓身心靈不再是神秘難以觸碰。</p>
+
+                    <div class="my-8 border-l-2 border-priest-gold pl-6 py-2">
+                        <p class="mb-4"><span class="highlight-text">【在能量層面】 → 運用天使靈氣</span><br>
+                        協助淨化與平衡個人能量場，讓身心靈恢復和諧。<br>
+                        協助解讀高維指引，提供清晰的方向，幫助你看見生命與靈性成長的契機。</p>
+
+                        <p><span class="highlight-text">【將靈性落實帶進生活】 → 運作信念轉化</span><br>
+                        我也調配專屬的能量空間噴霧，將振動頻率轉化為可感受的香氣與場域支持，讓居家或工作環境成為高頻共振的空間。</p>
+                    </div>
+
+                    <p class="text-center italic text-priest-gold mt-8">
+                        "協助你在安全、溫暖且有深度的能量場中，<br>喚醒自我覺知、釋放舊有限制，並重新連結內在的光與靈魂力量。"
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Specialties Section -->
+        <section class="gsap-fade-up">
+            <h2 class="text-3xl text-center text-priest-gold mb-12"><i class="fa-solid fa-sparkles mr-3 text-sm"></i>擅長領域</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 font-sans">
+                <!-- Items -->
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-feather-pointed text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>天使靈氣</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-sun text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>光頻調整</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-brain text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>潛意識引導</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-eye text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>催眠冥想引導</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-cards-blank text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>神諭卡占卜</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-leaf text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>信念轉化重建</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-spray-can-sparkles text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>能量空間噴霧</p>
+                </div>
+                <div class="glass-panel p-6 rounded-xl text-center hover:border-priest-gold transition-colors group cursor-default">
+                    <i class="fa-solid fa-seedling text-3xl text-priest-gold/50 group-hover:text-priest-gold transition-colors mb-4"></i>
+                    <p>靈性生活技巧</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline / Experience -->
+        <section class="gsap-fade-up">
+            <h2 class="text-3xl text-center text-priest-gold mb-16"><i class="fa-solid fa-hourglass-half mr-3 text-sm"></i>靈魂歷程</h2>
+            <div class="relative max-w-3xl mx-auto font-sans">
+                <!-- Center Line -->
+                <div class="absolute left-4 md:left-1/2 top-0 bottom-0 timeline-line md:-translate-x-1/2"></div>
+
+                <!-- 2021 -->
+                <div class="relative flex flex-col md:flex-row items-center mb-16 gsap-timeline-item">
+                    <div class="absolute left-4 md:left-1/2 timeline-dot md:-translate-x-1/2 mt-1.5 md:mt-0"></div>
+                    <div class="ml-12 md:ml-0 md:w-1/2 md:pr-12 md:text-right">
+                        <h3 class="text-2xl text-priest-gold font-serif mb-2">2021</h3>
+                        <p class="text-gray-300">美國IAPC國際催眠師</p>
+                        <p class="text-gray-300">英國AMBMS國際催眠師</p>
+                    </div>
+                    <div class="hidden md:block md:w-1/2 pl-12"></div>
+                </div>
+
+                <!-- 2022 -->
+                <div class="relative flex flex-col md:flex-row items-center mb-16 gsap-timeline-item">
+                    <div class="absolute left-4 md:left-1/2 timeline-dot md:-translate-x-1/2 mt-1.5 md:mt-0"></div>
+                    <div class="hidden md:block md:w-1/2 pr-12 text-right"></div>
+                    <div class="ml-12 md:ml-0 md:w-1/2 md:pl-12">
+                        <h3 class="text-2xl text-priest-gold font-serif mb-2">2022 <span class="text-lg font-sans text-gray-300 ml-2">創立木公苑</span></h3>
+                        <ul class="text-gray-300 text-sm space-y-1 list-none">
+                            <li><span class="text-priest-gold/50 mr-2">•</span>催眠療癒（內在小孩/前世回朔/信念轉換）</li>
+                            <li><span class="text-priest-gold/50 mr-2">•</span>歐甘樹文占卜/神諭卡占卜</li>
+                            <li><span class="text-priest-gold/50 mr-2">•</span>心靈諮詢</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 2023 -->
+                <div class="relative flex flex-col md:flex-row items-center mb-16 gsap-timeline-item">
+                    <div class="absolute left-4 md:left-1/2 timeline-dot md:-translate-x-1/2 mt-1.5 md:mt-0"></div>
+                    <div class="ml-12 md:ml-0 md:w-1/2 md:pr-12 md:text-right">
+                        <h3 class="text-2xl text-priest-gold font-serif mb-2">2023 <span class="text-lg font-sans text-gray-300 ml-2">創立緣結社</span></h3>
+                        <p class="text-sm text-gray-400 mb-2">日式水引細工創作</p>
+                        <ul class="text-gray-300 text-sm space-y-1 list-none">
+                            <li>手作體驗<span class="text-priest-gold/50 ml-2 hidden md:inline">•</span></li>
+                            <li>客製能量祝福飾品擺件<span class="text-priest-gold/50 ml-2 hidden md:inline">•</span></li>
+                        </ul>
+                    </div>
+                    <div class="hidden md:block md:w-1/2 pl-12"></div>
+                </div>
+
+                <!-- 2024 -->
+                <div class="relative flex flex-col md:flex-row items-center mb-16 gsap-timeline-item">
+                    <div class="absolute left-4 md:left-1/2 timeline-dot md:-translate-x-1/2 mt-1.5 md:mt-0"></div>
+                    <div class="hidden md:block md:w-1/2 pr-12 text-right"></div>
+                    <div class="ml-12 md:ml-0 md:w-1/2 md:pl-12">
+                        <h3 class="text-2xl text-priest-gold font-serif mb-2">2024</h3>
+                        <ul class="text-gray-300 text-sm space-y-1 list-none">
+                            <li><span class="text-priest-gold/50 mr-2">•</span>進駐橋頭糖廠白屋藝術村</li>
+                            <li><span class="text-priest-gold/50 mr-2">•</span>鳳山社區大學-水引創作教學</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- 2025 -->
+                <div class="relative flex flex-col md:flex-row items-center mb-8 gsap-timeline-item">
+                    <div class="absolute left-4 md:left-1/2 timeline-dot md:-translate-x-1/2 mt-1.5 md:mt-0 shadow-[0_0_20px_#D4AF37,0_0_40px_#D4AF37]"></div>
+                    <div class="ml-12 md:ml-0 md:w-1/2 md:pr-12 md:text-right">
+                        <h3 class="text-3xl text-priest-gold font-serif mb-2">2025 <span class="text-xl font-sans text-white ml-2">創立天使 LAB.</span></h3>
+                        <ul class="text-gray-200 text-base space-y-1 list-none">
+                            <li>執行能量療癒<span class="text-priest-gold/50 ml-2 hidden md:inline">•</span></li>
+                            <li>英國天使靈氣®教學<span class="text-priest-gold/50 ml-2 hidden md:inline">•</span></li>
+                            <li>靈性落實生活<span class="text-priest-gold/50 ml-2 hidden md:inline">•</span></li>
+                            <li>靈性活動串連協辦<span class="text-priest-gold/50 ml-2 hidden md:inline">•</span></li>
+                        </ul>
+                    </div>
+                    <div class="hidden md:block md:w-1/2 pl-12"></div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Aesthetic/Hobbies Section & Gallery -->
+        <section class="pb-32 gsap-fade-up">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl text-priest-gold mb-4"><i class="fa-solid fa-gem mr-3 text-sm"></i>礦石與金屬的鍊金術</h2>
+                <p class="font-sans font-light text-gray-400 max-w-2xl mx-auto">
+                    "我很喜歡將不同元素融合重新詮釋，最近很愛把礦石和金屬結合"
+                </p>
+            </div>
+
+            <!-- Masonry Gallery -->
+            <div class="masonry-grid">
+                <!-- Using the 18 images provided, skipping avatar (img_2) -->
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_1.webp" alt="Gallery Image 1" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_3.webp" alt="Gallery Image 3" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_4.webp" alt="Gallery Image 4" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_5.webp" alt="Gallery Image 5" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_6.webp" alt="Gallery Image 6" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_7.webp" alt="Gallery Image 7" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_8.webp" alt="Gallery Image 8" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_9.webp" alt="Gallery Image 9" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_10.webp" alt="Gallery Image 10" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_11.webp" alt="Gallery Image 11" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_12.webp" alt="Gallery Image 12" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_13.webp" alt="Gallery Image 13" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_14.webp" alt="Gallery Image 14" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_15.webp" alt="Gallery Image 15" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_16.webp" alt="Gallery Image 16" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_17.webp" alt="Gallery Image 17" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_18.webp" alt="Gallery Image 18" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_19.webp" alt="Gallery Image 19" loading="lazy"></div>
+                <div class="masonry-item"><img src="/assets/img/guild/cornerpi/img_20.webp" alt="Gallery Image 20" loading="lazy"></div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center pb-8 text-gray-500 font-sans text-sm">
+            <p>天使 LAB. &copy; 2025</p>
+        </footer>
+    </main>
+
+    <!-- Scripts -->
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+
+    <script>
+        // ----------------------------------------------------
+        // 1. Lenis Smooth Scrolling
+        // ----------------------------------------------------
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // Connect GSAP to Lenis
+        gsap.registerPlugin(ScrollTrigger);
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time)=>{
+          lenis.raf(time * 1000)
+        });
+        gsap.ticker.lagSmoothing(0);
+
+        // ----------------------------------------------------
+        // 2. GSAP Animations
+        // ----------------------------------------------------
+        document.addEventListener("DOMContentLoaded", () => {
+            // Fade up sections
+            gsap.utils.toArray('.gsap-fade-up').forEach((section) => {
+                gsap.from(section, {
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+            });
+
+            // Timeline items
+            gsap.utils.toArray('.gsap-timeline-item').forEach((item, i) => {
+                gsap.from(item, {
+                    scrollTrigger: {
+                        trigger: item,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    },
+                    x: i % 2 === 0 ? -30 : 30,
+                    opacity: 0,
+                    duration: 0.8,
+                    ease: "power2.out"
+                });
+            });
+
+            // Masonry Parallax (subtle)
+            gsap.utils.toArray('.masonry-item img').forEach((img) => {
+                gsap.to(img, {
+                    scrollTrigger: {
+                        trigger: img,
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: 0.5
+                    },
+                    y: -15, // slight upward movement during scroll
+                    ease: "none"
+                });
+            });
+        });
+
+    </script>
+</body>
+</html>
+<!-- Append Three.js and p5.js scripts here in the next steps -->
+    <script>
+        // ----------------------------------------------------
+        // 3. Three.js Background (Temple/Minerals/Rays)
+        // ----------------------------------------------------
+        (function initThreeJS() {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x1a1a1a, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // Setting a dark base background
+            renderer.setClearColor(0x050505, 1);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6); // Soft white
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0xD4AF37, 2, 100);
+            pointLight.position.set(0, 20, 10);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0x88b5d3, 1.5, 100);
+            pointLight2.position.set(-20, -10, 20);
+            scene.add(pointLight2);
+
+            // Floating Minerals / Crystals
+            const crystals = [];
+            const geometry = new THREE.OctahedronGeometry(1, 0); // Diamond-like shape
+
+            // Crystal materials
+            const materials = [
+                new THREE.MeshStandardMaterial({
+                    color: 0xD4AF37,
+                    roughness: 0.1,
+                    metalness: 0.8,
+                    transparent: true,
+                    opacity: 0.8
+                }),
+                new THREE.MeshStandardMaterial({
+                    color: 0x88b5d3,
+                    roughness: 0.2,
+                    metalness: 0.6,
+                    transparent: true,
+                    opacity: 0.7
+                }),
+                new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    roughness: 0.0,
+                    metalness: 0.9,
+                    transparent: true,
+                    opacity: 0.5
+                })
+            ];
+
+            // Create 150 floating crystals
+            for(let i = 0; i < 150; i++) {
+                const mesh = new THREE.Mesh(geometry, materials[Math.floor(Math.random() * materials.length)]);
+
+                // Random positions across a wide field
+                mesh.position.x = (Math.random() - 0.5) * 100;
+                mesh.position.y = (Math.random() - 0.5) * 100 - 20; // Start lower due to scrolling
+                mesh.position.z = (Math.random() - 0.5) * 60 - 20;
+
+                // Random rotation
+                mesh.rotation.x = Math.random() * Math.PI;
+                mesh.rotation.y = Math.random() * Math.PI;
+
+                // Random scale
+                const scale = Math.random() * 0.8 + 0.2;
+                mesh.scale.set(scale, scale * (Math.random() + 1), scale);
+
+                // Add custom animation data
+                mesh.userData = {
+                    rotSpeedX: (Math.random() - 0.5) * 0.02,
+                    rotSpeedY: (Math.random() - 0.5) * 0.02,
+                    floatSpeed: Math.random() * 0.02 + 0.01,
+                    floatOffset: Math.random() * Math.PI * 2
+                };
+
+                scene.add(mesh);
+                crystals.push(mesh);
+            }
+
+            // Mouse interaction for parallax
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+            });
+
+            // Scroll position for parallax
+            let scrollY = 0;
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Animation Loop
+            let time = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.01;
+
+                targetX = mouseX * 0.001;
+                targetY = mouseY * 0.001;
+
+                // Camera parallax based on scroll and slight mouse movement
+                // Move camera down as we scroll down
+                camera.position.y = -scrollY * 0.02 + (targetY * -5);
+                camera.position.x += (targetX * 5 - camera.position.x) * 0.05;
+                camera.lookAt(scene.position);
+
+                // Animate crystals
+                crystals.forEach(crystal => {
+                    crystal.rotation.x += crystal.userData.rotSpeedX;
+                    crystal.rotation.y += crystal.userData.rotSpeedY;
+
+                    // Gentle floating up and down
+                    crystal.position.y += Math.sin(time + crystal.userData.floatOffset) * crystal.userData.floatSpeed;
+                });
+
+                // Pulse lights
+                pointLight.intensity = 2 + Math.sin(time * 2) * 0.5;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        })();
+    </script>
+    <script>
+        // ----------------------------------------------------
+        // 4. p5.js Magic Rings/Reiki Particles (Ethereal Magic)
+        // ----------------------------------------------------
+        const sketch = (p) => {
+            let particles = [];
+            let rings = [];
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noStroke();
+            };
+
+            p.draw = () => {
+                p.clear(); // Transparent background
+
+                // Mouse trail particles
+                if (p.mouseX !== 0 || p.mouseY !== 0) {
+                    particles.push(new Particle(p.mouseX, p.mouseY));
+                }
+
+                // Ethereal cursor rings
+                p.push();
+                p.translate(p.mouseX, p.mouseY);
+                p.noFill();
+                p.strokeWeight(1);
+                p.stroke(212, 175, 55, 100 * p.sin(p.frameCount * 0.05)); // Priest Gold with alpha
+                p.ellipse(0, 0, 40 + 20 * p.sin(p.frameCount * 0.02));
+
+                p.stroke(136, 181, 211, 50); // Crystal Blue with alpha
+                p.ellipse(0, 0, 80 - 10 * p.cos(p.frameCount * 0.03));
+                p.pop();
+
+                // Update and display particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].display();
+                    if (particles[i].finished()) {
+                        particles.splice(i, 1);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            // Particle Class
+            class Particle {
+                constructor(x, y) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = p.random(-1, 1);
+                    this.vy = p.random(-2, -0.5); // Drift upwards like light
+                    this.alpha = 255;
+                    this.size = p.random(2, 6);
+                    // Mix of Gold and White
+                    this.color = p.random() > 0.5 ? p.color(212, 175, 55) : p.color(255, 255, 255);
+                }
+
+                finished() {
+                    return this.alpha < 0;
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.alpha -= 5;
+                    // Slightly expand as it fades
+                    this.size += 0.05;
+                }
+
+                display() {
+                    p.noStroke();
+                    this.color.setAlpha(this.alpha);
+                    p.fill(this.color);
+                    p.ellipse(this.x, this.y, this.size);
+
+                    // Add glow effect
+                    this.color.setAlpha(this.alpha * 0.3);
+                    p.fill(this.color);
+                    p.ellipse(this.x, this.y, this.size * 2);
+                }
+            }
+        };
+
+        new p5(sketch);
+    </script>
