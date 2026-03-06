@@ -56,7 +56,7 @@
             height: 100vh;
             z-index: 1;
             pointer-events: none;
-            mix-blend-mode: multiply; /* Natural blend for light backgrounds */
+            /* mix-blend-mode removed to guarantee visibility of p5 layer on all backgrounds */
         }
 
         .content-layer {
@@ -734,19 +734,9 @@
             let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
             const windowHalfX = window.innerWidth / 2;
             const windowHalfY = window.innerHeight / 2;
-
-            document.addEventListener('mousemove', (event) => {
-                mouseX = (event.clientX - windowHalfX);
-                mouseY = (event.clientY - windowHalfY);
-                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            });
-
-            // Setup Raycaster for strong interactivity
-            const raycaster = new THREE.Raycaster();
             let hoveredOrb = null;
 
-            // Interactive Hover State (Combines earlier mousemove listener)
+            // Interactive Hover State (Combines generic tracking and Raycaster)
             document.addEventListener('mousemove', (event) => {
                 window.globalClientX = event.clientX;
                 window.globalClientY = event.clientY;
@@ -1123,11 +1113,24 @@
             };
         };
 
-        // Initialize both
-        window.addEventListener('load', () => {
+        // Initialize both synchronously
+        // Since CDNs are loaded synchronously in the head, and this script is at the end of the body,
+        // the DOM is ready and the libraries are available.
+
+        try {
             initThreeJS();
+            window.__12eatpureInitialized = true;
+            console.log("Three.js successfully initialized.");
+        } catch (e) {
+            console.error("Three.js init failed:", e);
+        }
+
+        try {
             new p5(sketch);
-        });
+            console.log("p5.js successfully initialized.");
+        } catch (e) {
+            console.error("p5.js init failed:", e);
+        }
 
     </script>
 </body>
