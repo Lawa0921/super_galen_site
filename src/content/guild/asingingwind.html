@@ -477,6 +477,24 @@
         return texture;
     }
 
+    // Create a glowing, soft radial gradient for fireflies
+    function createGlowTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gradient.addColorStop(0, 'rgba(204, 255, 0, 1)');
+        gradient.addColorStop(0.2, 'rgba(150, 255, 0, 0.8)');
+        gradient.addColorStop(0.5, 'rgba(50, 150, 0, 0.2)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 64, 64);
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
     // Create a softer smoke texture
     function createSmokeTexture() {
         const canvas = document.createElement('canvas');
@@ -791,6 +809,63 @@
       }
       oasisGroup.add(grassGroup);
 
+      // Stylized Lotus Flowers on Water
+      const lotusMat = new THREE.MeshStandardMaterial({
+        color: 0xffaacc, // Soft pink/white
+        emissive: 0xff4488,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0,
+        roughness: 0.3,
+        side: THREE.DoubleSide,
+        flatShading: true
+      });
+
+      const lotuses = [];
+      const numLotuses = 5;
+      for(let i=0; i<numLotuses; i++) {
+         const lotusGroup = new THREE.Group();
+
+         // Create petals
+         for(let j=0; j<8; j++) {
+            const angle = (j / 8) * Math.PI * 2;
+            const petalGeo = new THREE.ConeGeometry(0.5, 2, 3);
+            // Move origin to base
+            petalGeo.translate(0, 1, 0);
+            // Flatten cone to look like a petal
+            petalGeo.scale(1, 1, 0.2);
+
+            const petal = new THREE.Mesh(petalGeo, lotusMat);
+            petal.rotation.y = angle;
+            // Flare out the petals
+            petal.rotation.x = Math.PI / 4;
+
+            // Re-apply translation after rotation to position them around center
+            const pGroup = new THREE.Group();
+            pGroup.add(petal);
+            pGroup.rotation.y = angle;
+
+            lotusGroup.add(pGroup);
+         }
+
+         // Add a soft glow point light inside lotus
+         const lotusLight = new THREE.PointLight(0xffaacc, 0, 5);
+         lotusLight.position.y = 0.5;
+         lotusGroup.add(lotusLight);
+
+         // Position on water
+         const radius = Math.random() * 12 + 2;
+         const angle = Math.random() * Math.PI * 2;
+         lotusGroup.position.set(
+            Math.cos(angle) * radius,
+            1.0, // Water surface
+            Math.sin(angle) * radius
+         );
+
+         oasisGroup.add(lotusGroup);
+         lotuses.push({ group: lotusGroup, light: lotusLight, baseX: lotusGroup.position.x, baseZ: lotusGroup.position.z });
+      }
+
       // Oasis Trees (More detailed)
       const treeTrunkMat = new THREE.MeshStandardMaterial({
         color: 0x2a1e12, // Darker wood
@@ -885,33 +960,64 @@
 
       // Firefly Particles
       const fireflyGeo = new THREE.BufferGeometry();
-      const fireflyCount = 200;
+      const fireflyCount = 300;
       const fireflyPosArray = new Float32Array(fireflyCount * 3);
       const fireflyPhaseArray = new Float32Array(fireflyCount); // for twinkling
+      const fireflyColorArray = new Float32Array(fireflyCount * 3); // RGB
 
       for(let i=0; i<fireflyCount; i++) {
-         fireflyPosArray[i*3] = (Math.random() - 0.5) * 60; // x spread around oasis
-         fireflyPosArray[i*3+1] = Math.random() * 15;        // y height
-         fireflyPosArray[i*3+2] = (Math.random() - 0.5) * 60; // z spread around oasis
+         fireflyPosArray[i*3] = (Math.random() - 0.5) * 70; // x spread around oasis
+         fireflyPosArray[i*3+1] = Math.random() * 20 + 1;    // y height
+         fireflyPosArray[i*3+2] = (Math.random() - 0.5) * 70; // z spread around oasis
+
+         // Phase for bobbing and flickering
          fireflyPhaseArray[i] = Math.random() * Math.PI * 2;
+
+         // Start fully yellow-green
+         fireflyColorArray[i*3] = 0.8;   // R
+         fireflyColorArray[i*3+1] = 1.0; // G
+         fireflyColorArray[i*3+2] = 0.0; // B
       }
 
       fireflyGeo.setAttribute('position', new THREE.BufferAttribute(fireflyPosArray, 3));
       fireflyGeo.setAttribute('phase', new THREE.BufferAttribute(fireflyPhaseArray, 1));
+      fireflyGeo.setAttribute('color', new THREE.BufferAttribute(fireflyColorArray, 3));
 
       const fireflyMat = new THREE.PointsMaterial({
-         size: 1.0, // Smaller fireflies
-         color: 0xCCFF00, // Yellow-green glow
+         size: 2.5, // Larger to see the gradient glow
          transparent: true,
          opacity: 0,
-         map: circleTex,
+         map: createGlowTexture(),
          blending: THREE.AdditiveBlending,
-         depthWrite: false
+         depthWrite: false,
+         vertexColors: true
       });
 
       const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
       fireflies.position.copy(oasisGroup.position);
       scene.add(fireflies);
+
+      // Dynamic Glowing Firefly Lights (Real PointLights to cast light on the scene)
+      const dynamicLights = [];
+      const numLights = 6;
+      for(let i=0; i<numLights; i++) {
+         const pl = new THREE.PointLight(0xCCFF00, 0, 30); // starts off
+         const phase = Math.random() * Math.PI * 2;
+         const startX = (Math.random() - 0.5) * 40;
+         const startZ = (Math.random() - 0.5) * 40;
+         pl.position.set(startX, 5, startZ);
+         oasisGroup.add(pl);
+
+         dynamicLights.push({
+             light: pl,
+             baseX: startX,
+             baseZ: startZ,
+             phase: phase,
+             speed: Math.random() * 0.5 + 0.5,
+             radius: Math.random() * 10 + 5
+         });
+      }
+
       // --- END Oasis Visuals ---
 
 
@@ -975,6 +1081,19 @@
             blade.geometry.attributes.position.needsUpdate = true;
         });
 
+        // Animate Lotus Flowers
+        lotusMat.opacity = oasisVisibility * 0.9;
+        lotuses.forEach((lotus, idx) => {
+           // Bobbing on water
+           const waterWave = Math.sin(lotus.baseX * 0.5 + time * 2) * 0.3 + Math.sin(lotus.baseZ * 0.5 + time * 1.5) * 0.3;
+           lotus.group.position.y = 1.0 + waterWave;
+
+           // Slow rotation
+           lotus.group.rotation.y = time * 0.2 + idx;
+
+           lotus.light.intensity = oasisVisibility * (0.5 + Math.sin(time * 3 + idx) * 0.2);
+        });
+
         // Animate water rippling
         const wPos = water.geometry.attributes.position;
         for(let i=0; i<wPos.count; i++) {
@@ -995,6 +1114,7 @@
         // Animate Fireflies
         const fPositions = fireflies.geometry.attributes.position.array;
         const fPhases = fireflies.geometry.attributes.phase.array;
+        const fColors = fireflies.geometry.attributes.color.array;
         for(let i=0; i<fireflyCount; i++) {
             // Swaying motion
             fPositions[i*3] += Math.sin(time * 2 + fPhases[i]) * 0.05;
@@ -1002,10 +1122,32 @@
             fPositions[i*3+2] += Math.sin(time * 1 + fPhases[i]) * 0.05;
 
             // Keep within bounds
-            if(fPositions[i*3+1] < 2) fPositions[i*3+1] = 2; // don't go below water
-            if(fPositions[i*3+1] > 30) fPositions[i*3+1] = 30; // don't go too high
+            if(fPositions[i*3+1] < 1) fPositions[i*3+1] = 1; // don't go below water
+            if(fPositions[i*3+1] > 25) fPositions[i*3+1] = 25; // don't go too high
+
+            // Twinkling effect (pulsing alpha via color)
+            // A sine wave that oscillates between ~0.1 and 1.0 based on phase
+            const intensity = 0.1 + (Math.sin(time * 3 + fPhases[i]) + 1) / 2 * 0.9;
+
+            fColors[i*3] = 0.8 * intensity;   // R
+            fColors[i*3+1] = 1.0 * intensity; // G
+            fColors[i*3+2] = 0.0 * intensity; // B
         }
         fireflies.geometry.attributes.position.needsUpdate = true;
+        fireflies.geometry.attributes.color.needsUpdate = true;
+
+        // Animate Dynamic Light Sources (Big glowing fireflies casting light)
+        dynamicLights.forEach((dl) => {
+            // Figure-8 swirling pattern
+            const swirlX = dl.baseX + Math.sin(time * dl.speed + dl.phase) * dl.radius;
+            const swirlZ = dl.baseZ + Math.cos(time * dl.speed * 0.8 + dl.phase) * dl.radius;
+            const swirlY = 4 + Math.sin(time * 1.5 + dl.phase) * 3;
+            dl.light.position.set(swirlX, swirlY, swirlZ);
+
+            // Pulse light intensity
+            const intensity = 0.8 + (Math.sin(time * 4 + dl.phase) + 1) / 2 * 1.5;
+            dl.light.intensity = oasisVisibility * intensity;
+        });
         // --- END Oasis Animation ---
 
         // Slow down wind, stop completely at night (when p is close to 1)
