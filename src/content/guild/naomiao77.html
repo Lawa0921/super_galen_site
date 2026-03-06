@@ -80,8 +80,8 @@
             height: 100vh;
             z-index: -3; /* Move further back */
             pointer-events: none;
-            /* Make the sky background softer and cleaner, like a pale cream to sky gradient */
-            background: linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 40%, #FDFBF7 100%);
+            /* Update to match requested colors: Grayish blue -> Pale green -> Cream */
+            background: linear-gradient(180deg, #E2E8F0 0%, #ECFDF5 50%, #FDFBF7 100%);
         }
 
         /* Background Illustration Layers */
@@ -411,6 +411,13 @@
             </div>
         </section>
 
+        <!-- Page Divider -->
+        <div class="w-full flex justify-center py-10 opacity-60 pointer-events-none relative z-10">
+            <svg width="200" height="20" viewBox="0 0 200 20">
+                <path d="M 0 10 Q 50 20 100 10 T 200 10" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 6" stroke-linecap="round" />
+            </svg>
+        </div>
+
         <!-- Chapter 2: The Art & Life -->
         <section class="min-h-screen relative py-32 px-6 pointer-events-auto" id="chapter2">
             <div class="max-w-7xl mx-auto">
@@ -464,6 +471,13 @@
                 </div>
             </div>
         </section>
+
+        <!-- Page Divider -->
+        <div class="w-full flex justify-center py-10 opacity-60 pointer-events-none relative z-10">
+            <svg width="200" height="20" viewBox="0 0 200 20">
+                <path d="M 0 10 Q 50 20 100 10 T 200 10" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 6" stroke-linecap="round" />
+            </svg>
+        </div>
 
         <!-- Chapter 3: The Mind & Closure -->
         <section class="min-h-screen relative flex items-center justify-center py-20 px-6 pointer-events-auto" id="chapter3">
@@ -1091,10 +1105,10 @@
             p.draw = () => {
                 p.clear();
 
-                // Draw trailing glowing ink lines
+                // Draw trailing pencil lines (hand-drawn feel instead of glowing magic)
                 for (let i = inkLines.length - 1; i >= 0; i--) {
                     let lineObj = inkLines[i];
-                    lineObj.life -= 1.5; // fade rate
+                    lineObj.life -= 1.0; // slower fade rate
 
                     if (lineObj.life <= 0) {
                         inkLines.splice(i, 1);
@@ -1102,27 +1116,17 @@
                     }
 
                     p.noFill();
-                    // Magic ink colors: Soft white/yellow glow
-                    p.strokeWeight(lineObj.thickness * p.map(lineObj.life, 0, 255, 0.1, 1));
-                    let alpha = p.map(lineObj.life, 0, 255, 0, 150);
-                    p.stroke(255, 245, 200, alpha); // Soft creamy glow
+                    p.strokeWeight(lineObj.thickness);
+                    let alpha = p.map(lineObj.life, 0, 255, 0, 120);
+                    // Pencil color (grayish blue / slate-400)
+                    p.stroke(148, 163, 184, alpha);
 
                     p.beginShape();
                     for (let pt of lineObj.points) {
-                        // Add slight organic noise to points over time to make them feel "alive" or like dispersing ink
-                        let nY = p.noise(pt.x * 0.01, pt.y * 0.01, p.frameCount * 0.05) * 10 - 5;
-                        p.vertex(pt.x, pt.y + nY);
-                        // Gravity/drift
-                        pt.y -= 0.2;
-                    }
-                    p.endShape();
-
-                    // Inner bright core
-                    p.strokeWeight(lineObj.thickness * 0.4 * p.map(lineObj.life, 0, 255, 0.1, 1));
-                    p.stroke(255, 255, 255, alpha * 1.5);
-                    p.beginShape();
-                    for (let pt of lineObj.points) {
-                        p.vertex(pt.x, pt.y);
+                        // Add slight jitter for hand-drawn pencil look
+                        let nX = p.noise(pt.x * 0.1, pt.y * 0.1, i) * 2 - 1;
+                        let nY = p.noise(pt.x * 0.1 + 100, pt.y * 0.1 + 100, i) * 2 - 1;
+                        p.vertex(pt.x + nX, pt.y + nY);
                     }
                     p.endShape();
                 }
@@ -1130,24 +1134,24 @@
                 // Draw stamps (clicks)
                 for (let i = stamps.length - 1; i >= 0; i--) {
                     let stamp = stamps[i];
-                    stamp.life -= 1; // slow fade
+                    stamp.life -= 0.6; // slow fade, stays like a book marking
 
                     if (stamp.life <= 0) {
                         stamps.splice(i, 1);
                         continue;
                     }
 
-                    let alpha = p.map(stamp.life, 0, 200, 0, 200);
+                    let alpha = p.map(stamp.life, 0, 300, 0, 200);
 
                     p.push();
                     p.translate(stamp.x, stamp.y);
                     p.rotate(stamp.rotation);
-                    p.scale(stamp.scale * p.map(stamp.life, 0, 200, 0.5, 1.2));
+                    p.scale(stamp.scale); // Keep scale constant to feel like a real stamp
 
                     p.noFill();
                     if (stamp.type === 0) {
-                        // Star
-                        p.stroke(255, 245, 150, alpha);
+                        // Star - Cream/Soft Yellow
+                        p.stroke(253, 230, 138, alpha); // amber-200
                         p.strokeWeight(3);
                         p.beginShape();
                         for (let a = 0; a < p.TWO_PI; a += p.TWO_PI / 5) {
@@ -1157,26 +1161,27 @@
                         }
                         p.endShape(p.CLOSE);
                     } else if (stamp.type === 1) {
-                        // Paw
-                        p.fill(200, 220, 240, alpha);
+                        // Paw - Grayish Blue
+                        p.fill(148, 163, 184, alpha); // slate-400
                         p.noStroke();
                         p.ellipse(0, 0, 15, 12);
                         p.ellipse(-10, -10, 8, 8);
                         p.ellipse(0, -15, 8, 8);
                         p.ellipse(10, -10, 8, 8);
                     } else {
-                        // Bubble
-                        p.stroke(186, 230, 253, alpha);
-                        p.strokeWeight(2);
-                        p.circle(0, 0, 20);
-                        p.stroke(255, 255, 255, alpha);
-                        p.arc(-5, -5, 10, 10, p.PI, p.PI + p.HALF_PI);
+                        // Leaf/Sprout - Light Green
+                        p.stroke(167, 243, 208, alpha); // emerald-200
+                        p.strokeWeight(3);
+                        p.fill(209, 250, 229, alpha * 0.5); // emerald-100
+                        p.beginShape();
+                        p.vertex(0, -10);
+                        p.bezierVertex(10, -10, 10, 10, 0, 10);
+                        p.bezierVertex(-10, 10, -10, -10, 0, -10);
+                        p.endShape();
+                        p.line(0, 10, 0, 15);
                     }
 
                     p.pop();
-
-                    // drift upwards slightly
-                    stamp.y -= 0.3;
                 }
 
                 // If mouse is held down/moving fast, create a current line
@@ -1245,23 +1250,23 @@
                     y: p.mouseY,
                     rotation: p.random(p.TWO_PI),
                     scale: p.random(0.8, 1.5),
-                    type: p.floor(p.random(3)), // 0: Star, 1: Paw, 2: Bubble
-                    life: 200
+                    type: p.floor(p.random(3)), // 0: Star, 1: Paw, 2: Leaf
+                    life: 300 // Longer life for book marks
                 });
             };
 
             function createBurst(x, y) {
-                // Create a small, rapid splash of short lines
-                for(let i=0; i<5; i++) {
+                // Create a small, rapid splash of short pencil lines
+                for(let i=0; i<4; i++) {
                     let angle = p.random(p.TWO_PI);
-                    let radius = p.random(10, 40);
+                    let radius = p.random(10, 30);
                     inkLines.push({
                         points: [
                             {x: x, y: y},
                             {x: x + p.cos(angle)*radius, y: y + p.sin(angle)*radius}
                         ],
-                        life: 200,
-                        thickness: p.random(2, 6)
+                        life: 150,
+                        thickness: p.random(1, 3)
                     });
                 }
             }
