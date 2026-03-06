@@ -9,7 +9,7 @@ import { chromium } from 'playwright';
 
   // Wait for the p5.js canvas to initialize and render
   await page.waitForSelector('canvas.p5Canvas');
-  await page.waitForTimeout(2000); // Give it some time to draw
+  await page.waitForTimeout(2000); // Give it some time to draw the sun and waves
 
   await page.screenshot({ path: '/tmp/verification.png', fullPage: true });
   await browser.close();
