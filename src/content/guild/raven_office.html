@@ -37,50 +37,98 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* V2 Scene Layout */
+        /* V2 Scene Layout: Aspect Ratio Container */
         #scene-container {
             position: relative;
             width: 100vw; height: 100vh;
             display: flex; align-items: center; justify-content: center;
+            background: #000;
         }
 
         .scene {
             position: absolute;
             inset: 0;
             opacity: 0; pointer-events: none;
-            background-size: cover; background-position: center;
             transition: opacity 1.5s ease;
+            display: flex; align-items: center; justify-content: center;
         }
-        .scene.active { opacity: 1; pointer-events: auto; }
+        .scene.active { opacity: 1; pointer-events: auto; z-index: 10; }
 
-        /* Scene Backgrounds */
-        /* Entry is the bright room (content.webp), Workshop is the dark room (content4.webp) */
-        #scene-exterior { background-image: url('/assets/raven_office/content.webp'); }
-        #scene-interior { background-image: url('/assets/raven_office/content4.webp'); }
+        /* Background blurring wrapper for non-3:2 viewports */
+        .scene-bg-blur {
+            position: absolute; inset: -5%; width: 110%; height: 110%;
+            background-size: cover; background-position: center;
+            filter: blur(40px) brightness(0.3); z-index: 0;
+        }
+
+        /* Inner container maintaining exact image aspect ratio (1536x1024) */
+        .scene-inner {
+            position: relative;
+            width: 100%; max-width: 100vw; max-height: 100vh;
+            aspect-ratio: 1536 / 1024;
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+            z-index: 1;
+            box-shadow: 0 0 50px rgba(0,0,0,1);
+        }
+
+        /* Ambient Fog / Glow Overlay */
+        .fog-overlay {
+            position: absolute; inset: 0; z-index: 2; pointer-events: none;
+            background: radial-gradient(circle at center, transparent 30%, rgba(5, 3, 8, 0.8) 100%);
+            mix-blend-mode: multiply;
+        }
+
+        /* Scene Background Images */
+        #scene-exterior .scene-bg-blur, #scene-exterior .scene-inner { background-image: url('/assets/raven_office/content.webp'); }
+        #scene-interior .scene-bg-blur, #scene-interior .scene-inner { background-image: url('/assets/raven_office/content4.webp'); }
 
         /* Interactive Hitboxes */
         .hitbox {
-            position: absolute; cursor: pointer;
-            border: 2px solid transparent; transition: all 0.3s ease;
+            position: absolute; cursor: pointer; z-index: 5;
+            border: 2px dashed rgba(192, 132, 252, 0.4);
+            background: rgba(192, 132, 252, 0.05);
+            transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px;
+            animation: pulse-border 2s infinite alternate;
         }
         .hitbox:hover {
-            border-color: rgba(192, 132, 252, 0.8);
+            border: 2px solid rgba(192, 132, 252, 0.9);
             background: rgba(192, 132, 252, 0.2);
-            box-shadow: 0 0 30px rgba(192, 132, 252, 0.6), inset 0 0 20px rgba(192, 132, 252, 0.4);
+            box-shadow: 0 0 30px rgba(192, 132, 252, 0.8), inset 0 0 20px rgba(192, 132, 252, 0.5);
+            transform: scale(1.02);
+        }
+        .hitbox span {
+            font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: bold;
+            color: #fff; text-shadow: 0 0 10px #c084fc; letter-spacing: 0.2em;
+            opacity: 0.6; transition: opacity 0.3s;
+        }
+        .hitbox:hover span { opacity: 1; }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(192, 132, 252, 0.2); box-shadow: inset 0 0 10px rgba(192, 132, 252, 0.1); }
+            100% { border-color: rgba(192, 132, 252, 0.6); box-shadow: inset 0 0 20px rgba(192, 132, 252, 0.3); }
         }
 
-        /* Entry Door: Left side white door */
-        #btn-enter { left: 19%; top: 29%; width: 14%; height: 49%; border-radius: 4px; }
+        /* Exact Hitbox Positions based on 1536x1024 aspect ratio container */
 
-        /* Workshop Objects */
-        /* Books/Desk: Right side table with book */
-        #btn-books { left: 63%; top: 60%; width: 22%; height: 25%; }
-        /* Crystal/Services: Shelves with potions */
-        #btn-crystal { left: 34%; top: 28%; width: 44%; height: 35%; }
-        /* Altar/Guardians: Fireplace/Cauldron */
-        #btn-altar { left: 13%; top: 41%; width: 19%; height: 26%; border-radius: 50% 50% 0 0; }
+        /* Bright Room (content.webp) - The Door is on the left */
+        #btn-enter { left: 18%; top: 28%; width: 14%; height: 49%; }
 
-        .btn-back { left: 5%; bottom: 5%; width: auto; height: auto; border: none !important; }
+        /* Dark Workshop (content4.webp) */
+        /* Table with open book */
+        #btn-books { left: 60%; top: 62%; width: 20%; height: 18%; }
+        /* Shelves full of potions in the back */
+        #btn-crystal { left: 34%; top: 28%; width: 44%; height: 32%; }
+        /* Fireplace with cauldron */
+        #btn-altar { left: 13%; top: 41%; width: 17%; height: 25%; border-radius: 50% 50% 10px 10px; }
+
+        .btn-back {
+            position: absolute; left: 2%; bottom: 2%; width: auto; height: auto;
+            border: none !important; z-index: 100; cursor: pointer;
+            animation: none; background: rgba(0,0,0,0.6);
+        }
+        .btn-back:hover { background: rgba(192, 132, 252, 0.3); transform: scale(1.05); }
 
         /* Info Panels */
         .info-panel {
@@ -140,7 +188,7 @@
 
         /* Intro Title overlay */
         #intro-title {
-            position: absolute; top: 20%; right: 10%; text-align: right;
+            position: absolute; top: 10%; right: 10%; text-align: right; z-index: 10;
             pointer-events: none; text-shadow: 0 5px 20px rgba(0,0,0,0.8);
             background: rgba(0,0,0,0.5); padding: 2rem; border-radius: 12px; backdrop-filter: blur(5px);
             border: 1px solid rgba(192, 132, 252, 0.2);
@@ -166,25 +214,33 @@
     <div id="scene-container">
         <!-- Exterior: The Bright Room -->
         <div id="scene-exterior" class="scene active">
-            <div id="intro-title">
-                <h1>Raven Office</h1>
-                <p>密契主義 ✧ 自學女巫</p>
-                <div class="mt-4 text-sm text-purple-300 opacity-70 italic">Click the white door to enter the sanctum...</div>
+            <div class="scene-bg-blur"></div>
+            <div class="scene-inner">
+                <div class="fog-overlay"></div>
+                <div id="intro-title">
+                    <h1>Raven Office</h1>
+                    <p>密契主義 ✧ 自學女巫</p>
+                    <div class="mt-4 text-sm text-purple-300 opacity-70 italic">Find the door...</div>
+                </div>
+                <!-- Hitbox over the white door -->
+                <div id="btn-enter" class="hitbox" title="Enter the Sanctum"><span>ENTER</span></div>
             </div>
-            <!-- Hitbox over the white door -->
-            <div id="btn-enter" class="hitbox" title="Enter the Sanctum"></div>
         </div>
 
         <!-- Interior: Dark Workshop -->
         <div id="scene-interior" class="scene">
-            <!-- Table with open book -->
-            <div id="btn-books" class="hitbox" title="The Awakening (About)"></div>
-            <!-- Potions on shelf -->
-            <div id="btn-crystal" class="hitbox" title="Mystical Services"></div>
-            <!-- Cauldron in fireplace -->
-            <div id="btn-altar" class="hitbox" title="The Guardians"></div>
+            <div class="scene-bg-blur"></div>
+            <div class="scene-inner">
+                <div class="fog-overlay"></div>
+                <!-- Table with open book -->
+                <div id="btn-books" class="hitbox" title="The Awakening"><span>ABOUT</span></div>
+                <!-- Potions on shelf -->
+                <div id="btn-crystal" class="hitbox" title="Mystical Services"><span>SERVICES</span></div>
+                <!-- Cauldron in fireplace -->
+                <div id="btn-altar" class="hitbox" title="The Guardians"><span>GUARDIANS</span></div>
+            </div>
 
-            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-exterior')">
+            <button class="btn-back flex items-center gap-2 text-purple-400 hover:text-white px-4 py-3 rounded-lg backdrop-blur" onclick="changeScene('scene-exterior')">
                 <i class="fas fa-door-open"></i> Leave Sanctum
             </button>
         </div>
@@ -306,7 +362,7 @@
 
         document.getElementById('btn-crystal').addEventListener('click', () => {
             openPanel('panel-services');
-            triggerMagicBurst(); // Extra magic for crystal
+            triggerMagicBurst();
         });
 
         document.getElementById('btn-altar').addEventListener('click', () => {
@@ -319,11 +375,24 @@
         const sketch = (p) => {
             let trails = [];
             let bursts = [];
+            let ambientMotes = [];
 
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
                 p.noStroke();
+
+                // Initialize ambient motes (dust/fireflies)
+                for(let i=0; i<80; i++) {
+                    ambientMotes.push({
+                        x: p.random(p.width),
+                        y: p.random(p.height),
+                        vx: p.random(-0.5, 0.5),
+                        vy: p.random(-0.5, -0.1),
+                        size: p.random(1, 4),
+                        offset: p.random(1000)
+                    });
+                }
 
                 triggerMagicBurst = () => {
                     for(let i=0; i<40; i++) {
@@ -331,8 +400,8 @@
                             x: p.width/2 + p.random(-100, 100),
                             y: p.height/2 + p.random(-100, 100),
                             life: 255,
-                            vx: p.random(-6, 6),
-                            vy: p.random(-6, 6),
+                            vx: p.random(-8, 8),
+                            vy: p.random(-8, 8),
                             size: p.random(4, 15),
                             col: [192, 132, 252]
                         });
@@ -342,6 +411,22 @@
 
             p.draw = () => {
                 p.clear();
+
+                // Render Ambient Motes
+                p.fill(192, 132, 252, 100);
+                for(let i=0; i<ambientMotes.length; i++) {
+                    let m = ambientMotes[i];
+                    m.x += m.vx + p.sin(p.frameCount * 0.01 + m.offset) * 0.5;
+                    m.y += m.vy;
+
+                    if(m.y < -10) m.y = p.height + 10;
+                    if(m.x < -10) m.x = p.width + 10;
+                    if(m.x > p.width + 10) m.x = -10;
+
+                    let alpha = p.map(p.sin(p.frameCount * 0.05 + m.offset), -1, 1, 50, 150);
+                    p.fill(192, 132, 252, alpha);
+                    p.circle(m.x, m.y, m.size);
+                }
 
                 // Cursor trails
                 if (p.mouseX !== 0 && p.mouseY !== 0 && (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY)) {
@@ -382,6 +467,8 @@
                     else {
                         p.fill(b.col[0], b.col[1], b.col[2], b.life);
                         p.circle(b.x, b.y, b.size);
+                        p.fill(255, 255, 255, b.life * 0.8);
+                        p.circle(b.x, b.y, b.size * 0.5);
                     }
                 }
             };
