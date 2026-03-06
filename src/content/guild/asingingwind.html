@@ -578,7 +578,9 @@
         color: ThreeSceneState.sandColor.getHex(),
         roughness: 0.9,
         metalness: 0.1,
-        flatShading: true
+        flatShading: true,
+        transparent: true,
+        opacity: 1.0
       });
 
       terrain = new THREE.Mesh(planeGeo, sandMat);
@@ -666,6 +668,21 @@
       oasisGroup.position.set(0, -10, -150); // Positioned deep in the scene
       scene.add(oasisGroup);
 
+      // Sandy Shore — circular ground under the oasis
+      const shoreGeo = new THREE.CircleGeometry(35, 48);
+      shoreGeo.rotateX(-Math.PI / 2);
+      const shoreMat = new THREE.MeshStandardMaterial({
+        color: 0xC4A56C,
+        roughness: 0.95,
+        metalness: 0.0,
+        transparent: true,
+        opacity: 0,
+        flatShading: true
+      });
+      const shore = new THREE.Mesh(shoreGeo, shoreMat);
+      shore.position.y = -0.3;
+      oasisGroup.add(shore);
+
       // Water Pool - Upgraded to a more detailed plane for rippling
       const waterGeo = new THREE.PlaneGeometry(50, 50, 64, 64);
       waterGeo.rotateX(-Math.PI / 2);
@@ -684,13 +701,13 @@
       waterGeo.computeVertexNormals();
 
       const waterMat = new THREE.MeshStandardMaterial({
-        color: 0x1E3A8A, // Deep blue
-        emissive: 0x102A4A, // Slight magical glow
+        color: 0x0F4C75, // Deep teal-blue
+        emissive: 0x0A2F55, // Stronger magical glow
         transparent: true,
         opacity: 0, // Starts invisible
-        roughness: 0.1,
-        metalness: 0.9,
-        flatShading: true // Gives a cool low-poly water reflection
+        roughness: 0.05,
+        metalness: 0.95,
+        flatShading: true
       });
       const water = new THREE.Mesh(waterGeo, waterMat);
       water.position.y = 0.5; // Slightly above terrain (-10)
@@ -698,9 +715,9 @@
 
       // Rocks around the water
       const rockMat = new THREE.MeshStandardMaterial({
-        color: 0x333333,
-        roughness: 0.8,
-        metalness: 0.2,
+        color: 0x5a534a, // Warmer stone color
+        roughness: 0.9,
+        metalness: 0.05,
         transparent: true,
         opacity: 0,
         flatShading: true
@@ -736,9 +753,9 @@
       // Grass / Reeds near water
       // Magic Crystals around water
       const crystalMat = new THREE.MeshStandardMaterial({
-        color: 0x00ffff, // Cyan
-        emissive: 0x00aaff,
-        emissiveIntensity: 0.8,
+        color: 0x55ccdd, // Softer teal
+        emissive: 0x2288aa,
+        emissiveIntensity: 0.5,
         transparent: true,
         opacity: 0,
         roughness: 0.1,
@@ -1048,6 +1065,11 @@
 
         terrain.material.color.lerpColors(ThreeSceneState.sandColor, ThreeSceneState.nightSandColor, p);
 
+        // Fade out and sink terrain to prevent overlap with oasis
+        const terrainFade = Math.max(0, 1 - Math.max(0, (p - 0.35)) * 2);
+        terrain.material.opacity = terrainFade;
+        terrain.position.y = -10 - Math.max(0, (p - 0.4)) * 25;
+
         // --- NEW: Fade in Oasis ---
         const oasisVisibility = Math.max(0, (p - 0.5) * 2); // 0 to 1 in second half of scroll
 
@@ -1061,6 +1083,7 @@
         treeCanopyMat.opacity = oasisVisibility * 0.9;
         treeCanopyMat.emissiveIntensity = oasisVisibility * 0.5;
         rockMat.opacity = oasisVisibility;
+        shoreMat.opacity = oasisVisibility;
         grassMat.opacity = oasisVisibility;
         crystalMat.opacity = oasisVisibility * 0.9;
 
@@ -1213,6 +1236,16 @@
     const sketch = (p) => {
       let particles = [];
       let clickBursts = [];
+      let sandStreaks = [];
+      let scrollVelocity = 0;
+      let lastScrollY = 0;
+
+      // Track scroll speed for sand effects
+      window.addEventListener('scroll', () => {
+        const newScrollY = window.pageYOffset;
+        scrollVelocity = Math.abs(newScrollY - lastScrollY);
+        lastScrollY = newScrollY;
+      });
 
       p.setup = () => {
         let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -1223,6 +1256,47 @@
       p.draw = () => {
         p.clear();
 
+        // === Scroll-triggered sand/wind effect ===
+        const scrollIntensity = Math.min(scrollVelocity / 5, 1);
+        scrollVelocity *= 0.92; // Smooth decay
+
+        if (scrollIntensity > 0.05) {
+          // Horizontal sand streaks
+          const streakCount = p.floor(scrollIntensity * 10);
+          for (let i = 0; i < streakCount; i++) {
+            sandStreaks.push({
+              x: p.random(-100, p.width * 0.3),
+              y: p.random(p.height),
+              vx: p.random(10, 28) * (0.5 + scrollIntensity),
+              vy: p.random(-0.5, 0.5),
+              life: p.random(160, 255),
+              maxLife: 255,
+              length: p.random(25, 90) * scrollIntensity,
+              thickness: p.random(0.5, 1.8),
+              color: p.random([
+                [232, 211, 162],
+                [212, 184, 114],
+                [200, 175, 110],
+                [180, 155, 90],
+              ]),
+              opacity: p.random(0.3, 0.65) * scrollIntensity
+            });
+          }
+          // Fine sand grains
+          for (let i = 0; i < p.floor(scrollIntensity * 6); i++) {
+            particles.push({
+              x: p.random(p.width),
+              y: p.random(p.height),
+              vx: p.random(4, 14),
+              vy: p.random(-2, 2),
+              life: p.random(60, 150),
+              maxLife: 150,
+              size: p.random(1, 2.5),
+              color: [212, 184, 114]
+            });
+          }
+        }
+
         // Add wind particles based on mouse movement (More dynamic)
         const mouseSpeed = p.dist(p.pmouseX, p.pmouseY, p.mouseX, p.mouseY);
 
@@ -1232,15 +1306,15 @@
               particles.push({
                 x: p.mouseX + p.random(-10, 10),
                 y: p.mouseY + p.random(-10, 10),
-                vx: (p.mouseX - p.pmouseX) * p.random(0.1, 0.3) + p.random(1, 4), // Follow mouse dir + base wind
+                vx: (p.mouseX - p.pmouseX) * p.random(0.1, 0.3) + p.random(1, 4),
                 vy: (p.mouseY - p.pmouseY) * p.random(0.1, 0.3) + p.random(-1, 1),
                 life: 255,
                 maxLife: p.random(100, 255),
                 size: p.random(2, 8),
                 color: p.random([
                   [255, 255, 255],
-                  [232, 211, 162], // Sand light
-                  [226, 114, 91]   // Sunset glow
+                  [232, 211, 162],
+                  [226, 114, 91]
                 ])
               });
           }
@@ -1281,6 +1355,22 @@
 
           if (pt.life <= 0 || pt.x > p.width || pt.y < 0 || pt.y > p.height) {
             particles.splice(i, 1);
+          }
+        }
+
+        // Update and draw sand streaks (scroll wind)
+        for (let i = sandStreaks.length - 1; i >= 0; i--) {
+          let s = sandStreaks[i];
+          s.x += s.vx;
+          s.y += s.vy;
+          s.life -= 3;
+          let alpha = p.map(s.life, 0, s.maxLife, 0, 1) * s.opacity;
+          p.stroke(s.color[0], s.color[1], s.color[2], alpha * 200);
+          p.strokeWeight(s.thickness);
+          p.line(s.x, s.y, s.x - s.length, s.y - s.vy * 2);
+          p.noStroke();
+          if (s.life <= 0 || s.x > p.width + 100) {
+            sandStreaks.splice(i, 1);
           }
         }
 
