@@ -744,11 +744,13 @@
 
             // Setup Raycaster for strong interactivity
             const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2();
             let hoveredOrb = null;
 
-            // Interactive Hover State
+            // Interactive Hover State (Combines earlier mousemove listener)
             document.addEventListener('mousemove', (event) => {
+                window.globalClientX = event.clientX;
+                window.globalClientY = event.clientY;
+
                 mouseX = (event.clientX - windowHalfX);
                 mouseY = (event.clientY - windowHalfY);
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -773,7 +775,7 @@
             });
 
             // Interactive Click Burst
-            document.addEventListener('click', () => {
+            document.addEventListener('click', (event) => {
                 raycaster.setFromCamera(mouse, camera);
                 const intersects = raycaster.intersectObjects(interactables);
 
@@ -796,7 +798,7 @@
                     gsap.to(mainLight.color, { r: 1, g: 0.8, b: 0, duration: 0.1, yoyo: true, repeat: 1 });
                     gsap.to(mainLight, { intensity: 3, duration: 0.1, yoyo: true, repeat: 1 });
                 } else {
-                    // Fallback: Clicked somewhere else on the island
+                    // Fallback: Clicked somewhere else on the island or background
                     const islandIntersects = raycaster.intersectObjects(islandGroup.children, true);
                     if (islandIntersects.length > 0 && !islandIntersects[0].object.userData.isOrb) {
                         if(window.triggerLeafBurst) {
@@ -804,6 +806,11 @@
                             window.triggerLeafBurst(pt.x, pt.y);
                         }
                         gsap.fromTo(islandGroup.position, {y: -2.2}, {y: -2, duration: 0.5, ease: "elastic.out(1, 0.3)"});
+                    } else {
+                        // Clicked empty space: trigger burst at raw mouse coordinates
+                        if(window.triggerLeafBurst) {
+                            window.triggerLeafBurst(event.clientX, event.clientY);
+                        }
                     }
                 }
             });
@@ -1001,7 +1008,7 @@
                 canvas.parent('p5-container');
                 p.noStroke();
                 centerX = p.width / 2;
-                centerY = p.height * 0.4; // Estimate tree canopy position
+                centerY = p.height * 0.4;
             };
 
             p.draw = () => {
@@ -1011,11 +1018,16 @@
                 centerY = p.height * 0.4;
 
                 // 1. Drifting Fireflies Trail (Pull towards the Tree)
-                if (p.mouseX !== 0 && p.mouseY !== 0) {
+                // Use global mouse coordinates tracked by the document listener
+                // because #p5-container has pointer-events: none to allow 3D raycasting
+                const gMouseX = window.globalClientX || 0;
+                const gMouseY = window.globalClientY || 0;
+
+                if (gMouseX !== 0 && gMouseY !== 0) {
                     if (p.frameCount % 2 === 0) {
                         fireflies.push({
-                            x: p.mouseX + p.random(-20, 20),
-                            y: p.mouseY + p.random(-20, 20),
+                            x: gMouseX + p.random(-20, 20),
+                            y: gMouseY + p.random(-20, 20),
                             life: 255,
                             size: p.random(2, 6),
                             vx: p.random(-1, 1),
@@ -1101,10 +1113,8 @@
                 }
             };
 
-            // Keep normal click as a fallback, but make it use mouse position
-            p.mousePressed = () => {
-                window.triggerLeafBurst(p.mouseX, p.mouseY);
-            };
+            // Remove p.mousePressed because pointer-events: none prevents it from firing.
+            // The document.addEventListener('click') in Three.js handles all clicks now.
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
