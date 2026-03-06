@@ -80,7 +80,8 @@
             height: 100vh;
             z-index: -3; /* Move further back */
             pointer-events: none;
-            background: linear-gradient(180deg, #7dd3fc 0%, #bae6fd 40%, #e0f2fe 80%, #f0f9ff 100%);
+            /* Make the sky background softer and cleaner, like a pale cream to sky gradient */
+            background: linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 40%, #FDFBF7 100%);
         }
 
         /* Background Illustration Layers */
@@ -274,20 +275,6 @@
         </style>
 
     <style>
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 50; /* Above most things, below interactive layers if needed */
-            opacity: 0.4;
-            /* Simple noisy SVG data URI for paper texture */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            mix-blend-mode: multiply;
-        }
         .polaroid {
             background-color: #fffaf0; /* warmer paper white */
             padding: 8px 8px 30px 8px;
@@ -336,6 +323,21 @@
 
     <!-- Background Layers -->
     <div id="webgl-container"></div>
+
+    <!-- Hand-drawn Illustration Sun -->
+    <div class="fixed top-12 right-12 md:top-20 md:right-24 z-[-2] opacity-90 animate-[spin_60s_linear_infinite]" id="illustration-sun" style="width: 120px; height: 120px; pointer-events: none;">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sun Core -->
+            <circle cx="50" cy="50" r="25" fill="#FEF08A" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
+            <path d="M50 25 C65 25 75 35 75 50 C75 65 65 75 50 75 C35 75 25 65 25 50 C25 35 35 25 50 25 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="2" opacity="0.5" stroke-dasharray="4 4"/>
+            <!-- Sun Rays (Hand-drawn style) -->
+            <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50 M22 22 L29 29 M71 71 L78 78 M22 78 L29 71 M71 22 L78 29" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
+            <!-- Cute Blush -->
+            <circle cx="42" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
+            <circle cx="58" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
+        </svg>
+    </div>
+
     <div class="cloud-layer" id="cloud-layer-back"></div>
     <div class="cloud-layer" id="cloud-layer-front"></div>
     <div id="p5-container"></div>
