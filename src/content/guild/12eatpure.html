@@ -289,6 +289,33 @@
         }
 
     </style>
+
+    <!-- Extreme Failsafe script injected immediately to guarantee loader removal even if subsequent scripts fail -->
+    <script>
+        window.removeEcoLoader = function() {
+            const loader = document.getElementById('loader');
+            if (loader && loader.style.opacity !== '0') {
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+                document.body.classList.remove('loading');
+                document.body.classList.add('loaded');
+
+                if (window.gsap && window.islandGroup) {
+                    window.gsap.fromTo(window.islandGroup.position,
+                        { y: -15, scale: 0.5 },
+                        { y: -2, scale: 1, duration: 2.5, ease: "elastic.out(1, 0.5)" }
+                    );
+                }
+            }
+        };
+        // Guarantee removal after 2.5 seconds regardless of network status
+        setTimeout(window.removeEcoLoader, 2500);
+
+        // Also try on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(window.removeEcoLoader, 500);
+        });
+    </script>
 </head>
 <body class="loading">
 
@@ -476,32 +503,10 @@
         window.addEventListener('resize', resizeLineCanvas);
         resizeLineCanvas();
 
-        // Aggressive Failsafe Loading Logic
-        const removeLoader = () => {
-            if (!document.body.classList.contains('loading')) return; // Already removed
-
-            const loader = document.getElementById('loader');
-            loader.style.opacity = '0';
-            loader.style.visibility = 'hidden';
-            document.body.classList.remove('loading');
-            document.body.classList.add('loaded');
-
-            // Fly-in intro animation for the island
-            if (window.islandGroup && window.gsap) {
-                gsap.fromTo(window.islandGroup.position,
-                    { y: -15, scale: 0.5 },
-                    { y: -2, scale: 1, duration: 2.5, ease: "elastic.out(1, 0.5)" }
-                );
-            }
-        };
-
-        // Try standard load
+        // Let the inline head script handle standard loading, just tie into the window.onload as a final check
         window.addEventListener('load', () => {
-            setTimeout(removeLoader, 500); // Small buffer for compilation
+            setTimeout(window.removeEcoLoader, 100);
         });
-
-        // Failsafe: if CDNs hang, force start after 2.5 seconds max
-        setTimeout(removeLoader, 2500);
 
         // Expand the story container height massively to support the extended journey
         document.querySelector('.story-container').style.height = '1000vh';
