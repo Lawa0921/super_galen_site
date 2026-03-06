@@ -445,8 +445,10 @@
         const projectToScreen = (vector3, camera, renderer) => {
             const vector = vector3.clone();
             vector.project(camera);
-            const x = Math.round((0.5 + vector.x / 2) * (renderer.domElement.width / window.devicePixelRatio));
-            const y = Math.round((0.5 - vector.y / 2) * (renderer.domElement.height / window.devicePixelRatio));
+            // Critical for removing jitter: Force strictly integer pixel values for the final transform
+            // Sub-pixel rendering of massive floating HTML cards causes severe visual shaking during movement
+            const x = Math.floor((0.5 + vector.x / 2) * (renderer.domElement.width / window.devicePixelRatio));
+            const y = Math.floor((0.5 - vector.y / 2) * (renderer.domElement.height / window.devicePixelRatio));
             return { x, y };
         };
 
@@ -498,14 +500,14 @@
 
         // Define Anchor logic globally so Three.js can update it
         window.anchors = [
-            { id: 'card-profile', v3: new THREE.Vector3(-4, 2, 0), card: document.getElementById('card-profile'), scrollStart: 0, scrollEnd: 0.15, align: 'left' },
-            { id: 'card-bio', v3: new THREE.Vector3(4, 4, -2), card: document.getElementById('card-bio'), scrollStart: 0.10, scrollEnd: 0.30, align: 'right' },
-            { id: 'card-stats', v3: new THREE.Vector3(-4, -1, 3), card: document.getElementById('card-stats'), scrollStart: 0.25, scrollEnd: 0.45, align: 'left' },
-            { id: 'card-awards', v3: new THREE.Vector3(4, 0, 4), card: document.getElementById('card-awards'), scrollStart: 0.40, scrollEnd: 0.60, align: 'right' },
+            { id: 'card-profile', v3: new THREE.Vector3(-4, 2, 0), card: document.getElementById('card-profile'), scrollStart: 0, scrollEnd: 0.15, align: 'left', mesh: null },
+            { id: 'card-bio', v3: new THREE.Vector3(4, 4, -2), card: document.getElementById('card-bio'), scrollStart: 0.10, scrollEnd: 0.30, align: 'right', mesh: null },
+            { id: 'card-stats', v3: new THREE.Vector3(-4, -1, 3), card: document.getElementById('card-stats'), scrollStart: 0.25, scrollEnd: 0.45, align: 'left', mesh: null },
+            { id: 'card-awards', v3: new THREE.Vector3(4, 0, 4), card: document.getElementById('card-awards'), scrollStart: 0.40, scrollEnd: 0.60, align: 'right', mesh: null },
             // New Anchors - Using 'center' alignment logic for large cards (we'll adapt the render loop)
-            { id: 'card-menu', v3: new THREE.Vector3(0, 5, -5), card: document.getElementById('card-menu'), scrollStart: 0.55, scrollEnd: 0.80, align: 'center' },
-            { id: 'card-gallery', v3: new THREE.Vector3(0, -3, 0), card: document.getElementById('card-gallery'), scrollStart: 0.75, scrollEnd: 0.95, align: 'center' },
-            { id: 'card-footer', v3: new THREE.Vector3(0, 10, 0), card: document.getElementById('card-footer'), scrollStart: 0.90, scrollEnd: 1.0, align: 'center' }
+            { id: 'card-menu', v3: new THREE.Vector3(0, 5, -5), card: document.getElementById('card-menu'), scrollStart: 0.55, scrollEnd: 0.80, align: 'center', mesh: null },
+            { id: 'card-gallery', v3: new THREE.Vector3(0, -3, 0), card: document.getElementById('card-gallery'), scrollStart: 0.75, scrollEnd: 0.95, align: 'center', mesh: null },
+            { id: 'card-footer', v3: new THREE.Vector3(0, 10, 0), card: document.getElementById('card-footer'), scrollStart: 0.90, scrollEnd: 1.0, align: 'center', mesh: null }
         ];
 
         // --- 2. Three.js: Centralized Floating Eco-Island (Core Anchor) ---
@@ -551,6 +553,34 @@
             grass.position.y = 1.6;
             grass.receiveShadow = true;
             islandGroup.add(grass);
+
+            // Interactive Eco-Orbs (Clickable 3D elements on the island)
+            const interactables = [];
+            const orbGeo = new THREE.SphereGeometry(0.8, 16, 16);
+            const orbMat = new THREE.MeshStandardMaterial({
+                color: 0xffcc00, // Golden yellow
+                emissive: 0xaa6600,
+                emissiveIntensity: 0.5,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+
+            const orbPositions = [
+                { x: -3, y: 2.2, z: 4 },
+                { x: 4, y: 2.2, z: 2 },
+                { x: 1, y: 2.2, z: -4 }
+            ];
+
+            orbPositions.forEach((pos, index) => {
+                const orb = new THREE.Mesh(orbGeo, orbMat.clone());
+                orb.position.set(pos.x, pos.y, pos.z);
+                orb.castShadow = true;
+                orb.userData = { isOrb: true, index: index, baseScale: 1, targetScale: 1 };
+
+                // Add a gentle floating animation wrapping the orb
+                islandGroup.add(orb);
+                interactables.push(orb);
+            });
 
             // 2. Giant Stylized Tree (Center of the Island)
             const treeGroup = new THREE.Group();
@@ -664,6 +694,23 @@
             fillLight.position.set(-15, -5, -15);
             scene.add(fillLight);
 
+            // Generate visual anchor nodes on the island where the cards connect
+            const anchorGeo = new THREE.IcosahedronGeometry(0.3, 1);
+            const anchorMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0x6b8f71,
+                emissiveIntensity: 0.8,
+                roughness: 0.2,
+                metalness: 0.5
+            });
+
+            window.anchors.forEach(anchor => {
+                const node = new THREE.Mesh(anchorGeo, anchorMat.clone());
+                node.position.copy(anchor.v3);
+                islandGroup.add(node);
+                anchor.mesh = node;
+            });
+
             // Initial Camera
             camera.position.set(0, 15, 35);
             islandGroup.position.set(0, -2, 0);
@@ -682,20 +729,69 @@
                 mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             });
 
-            // Interactive burst on 3D click
+            // Setup Raycaster for strong interactivity
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            let hoveredOrb = null;
+
+            // Interactive Hover State
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(interactables);
+
+                if (intersects.length > 0) {
+                    if (hoveredOrb !== intersects[0].object) {
+                        hoveredOrb = intersects[0].object;
+                        document.body.style.cursor = 'pointer';
+                        gsap.to(hoveredOrb.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.4, ease: "back.out(2)" });
+                        gsap.to(hoveredOrb.material, { emissiveIntensity: 2, duration: 0.2 });
+                    }
+                } else if (hoveredOrb) {
+                    document.body.style.cursor = 'default';
+                    gsap.to(hoveredOrb.scale, { x: 1, y: 1, z: 1, duration: 0.4, ease: "power2.out" });
+                    gsap.to(hoveredOrb.material, { emissiveIntensity: 0.5, duration: 0.2 });
+                    hoveredOrb = null;
+                }
+            });
+
+            // Interactive Click Burst
             document.addEventListener('click', () => {
                 raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(islandGroup.children, true);
+                const intersects = raycaster.intersectObjects(interactables);
+
                 if (intersects.length > 0) {
-                    // Trigger p5.js leaf burst at the projected 3D click point
+                    const clickedOrb = intersects[0].object;
+
+                    // 1. Trigger massive p5.js leaf burst at the exact 3D point
                     if(window.triggerLeafBurst) {
-                        const pt = projectToScreen(intersects[0].point, camera, renderer);
+                        const pt = projectToScreen(clickedOrb.position.clone().applyMatrix4(islandGroup.matrixWorld), camera, renderer);
                         window.triggerLeafBurst(pt.x, pt.y);
                     }
 
-                    // Flash the island
-                    gsap.to(mainLight, {intensity: 3, duration: 0.1, yoyo: true, repeat: 1});
-                    gsap.fromTo(islandGroup.position, {y: -2.5}, {y: -2, duration: 0.5, ease: "elastic.out(1, 0.3)"});
+                    // 2. Physical reaction: Orb jumps up and down
+                    gsap.fromTo(clickedOrb.position,
+                        { y: 2.2 },
+                        { y: 5, duration: 0.4, yoyo: true, repeat: 1, ease: "power1.out" }
+                    );
+
+                    // 3. Flash the environment lighting to match the orb's color
+                    gsap.to(mainLight.color, { r: 1, g: 0.8, b: 0, duration: 0.1, yoyo: true, repeat: 1 });
+                    gsap.to(mainLight, { intensity: 3, duration: 0.1, yoyo: true, repeat: 1 });
+                } else {
+                    // Fallback: Clicked somewhere else on the island
+                    const islandIntersects = raycaster.intersectObjects(islandGroup.children, true);
+                    if (islandIntersects.length > 0 && !islandIntersects[0].object.userData.isOrb) {
+                        if(window.triggerLeafBurst) {
+                            const pt = projectToScreen(islandIntersects[0].point, camera, renderer);
+                            window.triggerLeafBurst(pt.x, pt.y);
+                        }
+                        gsap.fromTo(islandGroup.position, {y: -2.2}, {y: -2, duration: 0.5, ease: "elastic.out(1, 0.3)"});
+                    }
                 }
             });
 
@@ -727,12 +823,23 @@
                 targetX = mouseX * .001;
                 targetY = mouseY * .001;
 
-                // Subtle wobble
-                islandGroup.rotation.x = Math.sin(Date.now()*0.0005) * 0.05 + (targetY * 0.5);
-                islandGroup.rotation.z = Math.cos(Date.now()*0.0007) * 0.05 + (-targetX * 0.5);
+                // Removed the continuous Date.now() wobble from the islandGroup entirely.
+                // The constant micro-rotations were causing the projected anchor coordinates
+                // to jitter by 1-2 pixels every frame, making the attached HTML cards shake violently.
+                // We only apply the smooth, heavily dampened mouse parallax now.
+                islandGroup.rotation.x += 0.05 * (targetY - islandGroup.rotation.x);
+                islandGroup.rotation.z += 0.05 * (-targetX - islandGroup.rotation.z);
+
+                const time = Date.now() * 0.001;
+
+                // Animate interactable orbs (gentle floating)
+                interactables.forEach((orb, i) => {
+                    if (orb !== hoveredOrb) {
+                        orb.position.y = 2.2 + Math.sin(time * 2 + i) * 0.2;
+                    }
+                });
 
                 // Animate Earth Circulation Leaves
-                const time = Date.now() * 0.001;
                 orbitItems.forEach((item) => {
                     item.angle += item.speed;
                     item.mesh.position.x = Math.cos(item.angle) * item.radius;
@@ -786,6 +893,21 @@
                         anchor.card.style.visibility = 'visible';
                         anchor.card.style.opacity = opacity;
 
+                        // Pulse the 3D anchor mesh
+                        if (anchor.mesh) {
+                            anchor.mesh.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.2);
+                            anchor.mesh.material.emissiveIntensity = opacity * 2;
+                        }
+
+                        // Draw glowing origin dot on canvas
+                        lineCtx.beginPath();
+                        lineCtx.arc(screenPt.x, screenPt.y, 4, 0, Math.PI * 2);
+                        lineCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                        lineCtx.fill();
+                        lineCtx.lineWidth = 2;
+                        lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity})`;
+                        lineCtx.stroke();
+
                         // Use translate3d for GPU acceleration, avoiding layout thrashing
                         let targetX, targetY;
 
@@ -794,11 +916,11 @@
                             // We position them relative to the 3D point but centered
                             targetX = screenPt.x;
                             targetY = screenPt.y + 100; // Float slightly below anchor point
-                            anchor.card.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+                            anchor.card.style.transform = `translate3d(${Math.floor(targetX)}px, ${Math.floor(targetY)}px, 0)`;
 
                             // Draw vertical connecting line
                             lineCtx.beginPath();
-                            lineCtx.moveTo(screenPt.x, screenPt.y);
+                            lineCtx.moveTo(screenPt.x, screenPt.y + 4);
                             lineCtx.lineTo(screenPt.x, targetY);
                             lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity * 0.8})`;
                             lineCtx.lineWidth = 3;
@@ -811,7 +933,7 @@
                             const offset = anchor.align === 'left' ? -300 : 300;
                             targetX = screenPt.x + offset;
                             targetY = screenPt.y;
-                            anchor.card.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+                            anchor.card.style.transform = `translate3d(${Math.floor(targetX)}px, ${Math.floor(targetY)}px, 0)`;
 
                             // Draw curved connecting line via Canvas 2D
                             lineCtx.beginPath();
@@ -832,6 +954,10 @@
                     } else {
                         anchor.card.style.visibility = 'hidden';
                         anchor.card.style.opacity = 0;
+                        if (anchor.mesh) {
+                            anchor.mesh.scale.setScalar(1);
+                            anchor.mesh.material.emissiveIntensity = 0.2;
+                        }
                     }
                 });
 
