@@ -6,7 +6,7 @@
   <title>許漪 - 吟遊詩人 | A Singing Wind</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Serif+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
       --sand-light: #E8D3A2;
@@ -499,16 +499,16 @@
     const ThreeSceneState = {
       progress: 0,
       fogColor: new THREE.Color(0xE8D3A2), // Sand light
-      nightFogColor: new THREE.Color(0x0a0d14), // Desert night - Darker, almost black
+      nightFogColor: new THREE.Color(0x152336), // Desert night - Brighter deep moonlit blue
       dirLightColor: new THREE.Color(0xE2725B), // Sunset orange
-      nightDirLightColor: new THREE.Color(0x1a2b1c), // Oasis moonlight/greenish - Darker
+      nightDirLightColor: new THREE.Color(0xc9e4ff), // Bright silvery-blue moonlight
       ambientColor: new THREE.Color(0xffffff),
-      nightAmbientColor: new THREE.Color(0x11111a), // Darker ambient
+      nightAmbientColor: new THREE.Color(0x354a6b), // Brighter ambient blue for night
       sandColor: new THREE.Color(0xD4B872),
-      nightSandColor: new THREE.Color(0x05080c), // Darker sand at night
+      nightSandColor: new THREE.Color(0x0d1a2d), // Deep blue sand, not black
     };
 
-    let dirLight, ambientLight, terrain, sandstorm, smokeParticles, sceneFog;
+    let dirLight, ambientLight, terrain, sandstorm, smokeParticles, sceneFog, moon;
 
     // ==========================================
     // Three.js: Desert Dunes & Sandstorm
@@ -630,6 +630,19 @@
       oasisLight.position.set(-40, 5, -80);
       scene.add(oasisLight);
 
+      // Moon
+      const moonGeo = new THREE.CircleGeometry(15, 64);
+      const moonMat = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0, // Starts invisible
+          fog: false // The moon shouldn't be affected by fog
+      });
+      moon = new THREE.Mesh(moonGeo, moonMat);
+      // Place it far in the background
+      moon.position.set(-30, -50, -250); // Starts low
+      scene.add(moon);
+
       // --- NEW: Oasis Visuals (Trees, Water, Fireflies) ---
       const oasisGroup = new THREE.Group();
       oasisGroup.position.set(0, -10, -150); // Positioned deep in the scene
@@ -703,6 +716,44 @@
       }
 
       // Grass / Reeds near water
+      // Magic Crystals around water
+      const crystalMat = new THREE.MeshStandardMaterial({
+        color: 0x00ffff, // Cyan
+        emissive: 0x00aaff,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0,
+        roughness: 0.1,
+        metalness: 0.8,
+        flatShading: true
+      });
+
+      const crystals = [];
+      for(let i=0; i<8; i++) {
+          const cGeo = new THREE.ConeGeometry(0.5, 3 + Math.random()*2, 5);
+          const crystal = new THREE.Mesh(cGeo, crystalMat);
+
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 20 + Math.random() * 2;
+          crystal.position.set(
+             Math.cos(angle) * radius,
+             0,
+             Math.sin(angle) * radius
+          );
+          crystal.rotation.set(
+             (Math.random()-0.5)*0.5,
+             Math.random()*Math.PI,
+             (Math.random()-0.5)*0.5
+          );
+
+          // Add a small light to each crystal
+          const cLight = new THREE.PointLight(0x00ffff, 0, 10);
+          crystal.add(cLight);
+
+          oasisGroup.add(crystal);
+          crystals.push({ mesh: crystal, light: cLight, baseHeight: crystal.position.y });
+      }
+
       const grassMat = new THREE.MeshStandardMaterial({
         color: 0x4A5D23,
         transparent: true,
@@ -712,6 +763,7 @@
       });
 
       const grassGroup = new THREE.Group();
+      const grassBlades = [];
       for(let i=0; i<150; i++) {
           const angle = Math.random() * Math.PI * 2;
           const radius = 20 + Math.random() * 8;
@@ -735,6 +787,7 @@
           blade.position.set(gx, 0.5, gz);
           blade.rotation.y = Math.random() * Math.PI * 2;
           grassGroup.add(blade);
+          grassBlades.push(blade);
       }
       oasisGroup.add(grassGroup);
 
@@ -891,6 +944,11 @@
 
         // --- NEW: Fade in Oasis ---
         const oasisVisibility = Math.max(0, (p - 0.5) * 2); // 0 to 1 in second half of scroll
+
+        // Rise the moon and fade it in
+        moon.position.y = -50 + (oasisVisibility * 100); // Rises from -50 up to 50
+        moon.material.opacity = oasisVisibility;
+
         water.material.opacity = oasisVisibility * 0.8;
 
         treeTrunkMat.opacity = oasisVisibility * 0.9;
@@ -898,8 +956,24 @@
         treeCanopyMat.emissiveIntensity = oasisVisibility * 0.5;
         rockMat.opacity = oasisVisibility;
         grassMat.opacity = oasisVisibility;
+        crystalMat.opacity = oasisVisibility * 0.9;
 
         fireflyMat.opacity = oasisVisibility * 0.8;
+
+        // Animate Crystals (bobbing & glow)
+        crystals.forEach((c, idx) => {
+           c.mesh.position.y = c.baseHeight + Math.sin(time * 2 + idx) * 0.5;
+           c.light.intensity = oasisVisibility * (1 + Math.sin(time * 4 + idx) * 0.5);
+        });
+
+        // Animate Grass Sway
+        grassBlades.forEach((blade, idx) => {
+            const posAttr = blade.geometry.attributes.position;
+            // The top vertex is index 2 (0, grassHeight, z)
+            const topZ = posAttr.getZ(2);
+            posAttr.setZ(2, topZ + Math.sin(time * 3 + idx) * 0.05); // Sway based on time
+            blade.geometry.attributes.position.needsUpdate = true;
+        });
 
         // Animate water rippling
         const wPos = water.geometry.attributes.position;
