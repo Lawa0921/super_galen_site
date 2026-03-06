@@ -110,7 +110,26 @@
             100% { border-color: rgba(192, 132, 252, 0.6); box-shadow: inset 0 0 20px rgba(192, 132, 252, 0.3); }
         }
 
-        /* Exact Hitbox Positions based on 1536x1024 aspect ratio container */
+        /* Gate Scene Specifics */
+        #scene-gate { background: radial-gradient(circle at center, #110822 0%, #050308 100%); flex-direction: column; gap: 2rem; }
+        .mystic-door {
+            font-size: 6rem; color: rgba(192, 132, 252, 0.4); cursor: pointer;
+            transition: all 0.5s ease;
+            text-shadow: 0 0 20px rgba(192, 132, 252, 0.2);
+        }
+        .mystic-door:hover {
+            color: #fff; transform: scale(1.1);
+            text-shadow: 0 0 40px rgba(192, 132, 252, 0.8);
+        }
+
+        /* Intro Title overlay */
+        .intro-title {
+            text-align: center;
+            pointer-events: none; text-shadow: 0 5px 20px rgba(0,0,0,0.8);
+        }
+        .intro-title h1 { font-family: 'Cinzel', serif; font-size: 4rem; color: var(--mystic-purple); margin-bottom: 0.5rem;}
+        .intro-title p { font-size: 1.2rem; color: #e5e7eb; letter-spacing: 0.2em; }
+
 
         /* Bright Room (content.webp) - The Door is on the left */
         #btn-enter { left: 18%; top: 28%; width: 14%; height: 49%; }
@@ -185,16 +204,6 @@
             text-shadow: 0 0 15px rgba(192, 132, 252, 0.8);
             box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
         }
-
-        /* Intro Title overlay */
-        #intro-title {
-            position: absolute; top: 10%; right: 10%; text-align: right; z-index: 10;
-            pointer-events: none; text-shadow: 0 5px 20px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.5); padding: 2rem; border-radius: 12px; backdrop-filter: blur(5px);
-            border: 1px solid rgba(192, 132, 252, 0.2);
-        }
-        #intro-title h1 { font-family: 'Cinzel', serif; font-size: 4rem; color: var(--mystic-purple); margin-bottom: 0.5rem;}
-        #intro-title p { font-size: 1.2rem; color: #e5e7eb; letter-spacing: 0.2em; }
     </style>
 </head>
 <body>
@@ -202,6 +211,9 @@
         <div class="spinner"></div>
         <div class="tracking-widest">GATHERING MANA...</div>
     </div>
+
+    <!-- Audio Effects -->
+    <audio id="sfx-door-open" src="https://actions.google.com/sounds/v1/doors/wood_door_open.ogg" preload="auto"></audio>
 
     <div id="p5-container"></div>
 
@@ -212,22 +224,41 @@
     </div>
 
     <div id="scene-container">
-        <!-- Exterior: The Bright Room -->
-        <div id="scene-exterior" class="scene active">
-            <div class="scene-bg-blur"></div>
-            <div class="scene-inner">
-                <div class="fog-overlay"></div>
-                <div id="intro-title">
-                    <h1>Raven Office</h1>
-                    <p>密契主義 ✧ 自學女巫</p>
-                    <div class="mt-4 text-sm text-purple-300 opacity-70 italic">Find the door...</div>
-                </div>
-                <!-- Hitbox over the white door -->
-                <div id="btn-enter" class="hitbox" title="Enter the Sanctum"><span>ENTER</span></div>
+
+        <!-- Stage 1: The Gate -->
+        <div id="scene-gate" class="scene active">
+            <div class="intro-title z-10">
+                <h1>Raven Office</h1>
+                <p>密契主義 ✧ 自學女巫</p>
+                <div class="mt-8 text-sm text-purple-300 opacity-70 italic">Knock to enter...</div>
+            </div>
+
+            <div id="btn-gate" class="mystic-door z-10">
+                <i class="fas fa-door-closed" id="gate-icon"></i>
             </div>
         </div>
 
-        <!-- Interior: Dark Workshop -->
+        <!-- Stage 2: Exterior (Bright Room) -->
+        <div id="scene-exterior" class="scene">
+            <div class="scene-bg-blur"></div>
+            <div class="scene-inner">
+                <div class="fog-overlay"></div>
+
+                <div class="absolute top-[10%] right-[10%] text-right z-10 pointer-events-none text-shadow-lg bg-black/50 p-6 rounded-xl backdrop-blur border border-purple-500/20">
+                    <p class="text-xl text-purple-300 tracking-widest font-serif mb-2">The Vestibule</p>
+                    <p class="text-sm text-gray-400 italic">Find the inner door...</p>
+                </div>
+
+                <!-- Hitbox over the white door -->
+                <div id="btn-enter" class="hitbox" title="Enter the Workshop"><span>ENTER</span></div>
+            </div>
+
+            <button class="btn-back flex items-center gap-2 text-purple-400 hover:text-white px-4 py-3 rounded-lg backdrop-blur" onclick="changeScene('scene-gate')">
+                <i class="fas fa-arrow-left"></i> Leave
+            </button>
+        </div>
+
+        <!-- Stage 3: Interior (Dark Workshop) -->
         <div id="scene-interior" class="scene">
             <div class="scene-bg-blur"></div>
             <div class="scene-inner">
@@ -241,7 +272,7 @@
             </div>
 
             <button class="btn-back flex items-center gap-2 text-purple-400 hover:text-white px-4 py-3 rounded-lg backdrop-blur" onclick="changeScene('scene-exterior')">
-                <i class="fas fa-door-open"></i> Leave Sanctum
+                <i class="fas fa-door-open"></i> Back to Vestibule
             </button>
         </div>
     </div>
@@ -321,6 +352,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <script>
+        // Audio elements
+        const doorSfx = document.getElementById('sfx-door-open');
+
         // Loading Screen Removal
         window.addEventListener('load', () => {
             setTimeout(() => {
@@ -331,7 +365,7 @@
         });
 
         // Scene Transition Logic
-        let activeScene = 'scene-exterior';
+        let activeScene = 'scene-gate';
 
         function changeScene(newSceneId) {
             // Fade out current
@@ -351,9 +385,41 @@
         }
 
         // Interaction Bindings
-        document.getElementById('btn-enter').addEventListener('click', () => {
-            changeScene('scene-interior');
+
+        // Stage 1 -> Stage 2 (Gate -> Bright Room)
+        document.getElementById('btn-gate').addEventListener('click', () => {
+            // Play sound
+            doorSfx.currentTime = 0;
+            doorSfx.volume = 0.5;
+            doorSfx.play().catch(e => console.log("Audio play failed:", e));
+
+            // Visual feedback: change icon to open door
+            document.getElementById('gate-icon').classList.remove('fa-door-closed');
+            document.getElementById('gate-icon').classList.add('fa-door-open');
             triggerMagicBurst();
+
+            // Transition
+            setTimeout(() => {
+                changeScene('scene-exterior');
+                // Reset icon for when user comes back
+                setTimeout(() => {
+                    document.getElementById('gate-icon').classList.remove('fa-door-open');
+                    document.getElementById('gate-icon').classList.add('fa-door-closed');
+                }, 1000);
+            }, 800);
+        });
+
+        // Stage 2 -> Stage 3 (Bright Room -> Workshop)
+        document.getElementById('btn-enter').addEventListener('click', () => {
+            // Play sound
+            doorSfx.currentTime = 0;
+            doorSfx.volume = 0.5;
+            doorSfx.play().catch(e => console.log("Audio play failed:", e));
+
+            triggerMagicBurst();
+            setTimeout(() => {
+                changeScene('scene-interior');
+            }, 500);
         });
 
         document.getElementById('btn-books').addEventListener('click', () => {
@@ -400,8 +466,8 @@
                             x: p.width/2 + p.random(-100, 100),
                             y: p.height/2 + p.random(-100, 100),
                             life: 255,
-                            vx: p.random(-8, 8),
-                            vy: p.random(-8, 8),
+                            vx: p.random(-6, 6),
+                            vy: p.random(-6, 6),
                             size: p.random(4, 15),
                             col: [192, 132, 252]
                         });
