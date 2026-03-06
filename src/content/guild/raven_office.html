@@ -15,150 +15,17 @@
         }
 
         body, html {
-            margin: 0; padding: 0; width: 100%; min-height: 100vh;
-            background-color: transparent;
+            margin: 0; padding: 0; width: 100%; height: 100vh;
+            background-color: var(--dark-bg);
             color: #e5e7eb;
             font-family: 'Noto Serif TC', serif;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
-        }
-
-        /* Fixed Background Container */
-        #webgl-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -10; pointer-events: none; }
-
-        /* p5 Canvas Overlay */
-        #p5-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 50; /* Above WebGL, below Text */
-            pointer-events: none;
-        }
-
-        /* Content Overlay Structure */
-        #content-layer {
-            position: relative;
-            z-index: 100;
-            width: 100%;
-        }
-
-        h1, h2, h3, .cinzel { font-family: 'Cinzel', serif; }
-
-        .section-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            padding: 4rem 10vw;
-            box-sizing: border-box;
-            opacity: 1; /* Was 0, changed to 1 for headless safety */
-            transform: translateY(30px);
-        }
-
-        /* Layout Modifiers */
-        .align-left { justify-content: flex-start; text-align: left; }
-        .align-right { justify-content: flex-end; text-align: right; }
-        .align-center { justify-content: center; text-align: center; }
-
-        .content-box {
-            max-width: 600px;
-            background: rgba(10, 5, 20, 0.4);
-            backdrop-filter: blur(8px);
-            padding: 2.5rem;
-            border-radius: 12px;
-            border: 1px solid rgba(192, 132, 252, 0.2);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(192, 132, 252, 0.05);
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .content-box:hover {
-            border-color: rgba(192, 132, 252, 0.5);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(192, 132, 252, 0.15);
-        }
-
-        h1 {
-            font-size: 3.5rem;
-            color: var(--mystic-purple);
-            text-shadow: 0 0 20px rgba(192, 132, 252, 0.5);
-            margin-bottom: 0.5rem;
-            letter-spacing: 0.1em;
-        }
-
-        h2 {
-            font-size: 2.5rem;
-            color: var(--mystic-purple);
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(192, 132, 252, 0.3);
-            padding-bottom: 0.5rem;
-            display: inline-block;
-        }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 1.2rem;
-            color: #d1d5db;
-        }
-
-        .highlight { color: #f3e8ff; font-weight: 700; }
-        .accent { color: var(--gold); }
-
-        ul.service-list {
-            list-style: none; padding: 0; margin: 0; text-align: left;
-        }
-        ul.service-list li {
-            margin-bottom: 1.5rem;
-            position: relative;
-            padding-left: 2rem;
-        }
-        ul.service-list li::before {
-            content: '✧';
-            position: absolute; left: 0; top: 0;
-            color: var(--mystic-purple);
-            font-size: 1.2rem;
-        }
-        ul.service-list h3 {
-            font-size: 1.2rem; margin-bottom: 0.5rem; color: #e9d5ff;
-            font-family: 'Noto Serif TC', serif; font-weight: bold;
-        }
-
-        .social-icons {
-            position: fixed; top: 2rem; right: 2rem;
-            z-index: 200; display: flex; gap: 1.5rem;
-        }
-        .social-icons a {
-            color: var(--mystic-purple); font-size: 1.5rem;
-            transition: color 0.3s, transform 0.3s, text-shadow 0.3s;
-        }
-        .social-icons a:hover {
-            color: #fff; transform: scale(1.1);
-            text-shadow: 0 0 15px rgba(192, 132, 252, 0.8);
-        }
-
-        .blessing-text {
-            font-family: 'Cinzel', serif;
-            color: var(--mystic-purple);
-            font-size: 1.2rem;
-            letter-spacing: 0.2em;
-            text-align: center;
-            margin: 4rem 0;
-            text-shadow: 0 0 15px rgba(192, 132, 252, 0.4);
-        }
-
-        /* Scroll Indicator */
-        .scroll-down {
-            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-            color: var(--mystic-purple); font-size: 2rem;
-            animation: bounce 2s infinite; opacity: 0.7;
-        }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
-            40% { transform: translateY(-15px) translateX(-50%); }
-            60% { transform: translateY(-7px) translateX(-50%); }
+            overflow: hidden;
+            user-select: none;
         }
 
         /* Loading Screen */
         #loader {
-            position: fixed; inset: 0; background: #050308; z-index: 999;
+            position: fixed; inset: 0; background: #050308; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: var(--mystic-purple); font-family: 'Cinzel', serif;
             transition: opacity 1s ease-out;
@@ -170,23 +37,113 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .section-container { padding: 4rem 5vw; justify-content: center !important; text-align: center !important; }
-            h1 { font-size: 2.5rem; }
-            h2 { font-size: 2rem; }
-            .content-box { padding: 1.5rem; }
-            ul.service-list li { text-align: left; }
+        /* V2 Scene Layout */
+        #scene-container {
+            position: relative;
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
         }
+
+        .scene {
+            position: absolute;
+            inset: 0;
+            opacity: 0; pointer-events: none;
+            background-size: cover; background-position: center;
+            transition: opacity 1.5s ease;
+        }
+        .scene.active { opacity: 1; pointer-events: auto; }
+
+        /* Scene Backgrounds */
+        #scene-exterior { background-image: url('/assets/raven_office/content4.webp'); }
+        #scene-interior { background-image: url('/assets/raven_office/content.webp'); }
+        #scene-books { background-image: url('/assets/raven_office/content2.webp'); }
+        #scene-crystal { background-image: url('/assets/raven_office/content3.webp'); }
+        #scene-altar { background-image: url('/assets/raven_office/content1.webp'); }
+
+        /* Interactive Hitboxes */
+        .hitbox {
+            position: absolute; cursor: pointer;
+            border: 2px solid transparent; transition: all 0.3s ease;
+        }
+        .hitbox:hover {
+            border-color: rgba(192, 132, 252, 0.5);
+            background: rgba(192, 132, 252, 0.1);
+            box-shadow: 0 0 20px rgba(192, 132, 252, 0.4);
+        }
+
+        /* Specific Hitbox Positions (Percentages for responsive) */
+        #btn-enter { left: 45%; top: 40%; width: 10%; height: 30%; }
+        #btn-books { left: 10%; top: 30%; width: 25%; height: 50%; }
+        #btn-crystal { left: 40%; top: 55%; width: 20%; height: 30%; }
+        #btn-altar { left: 70%; top: 40%; width: 20%; height: 40%; }
+        .btn-back { left: 5%; bottom: 5%; width: auto; height: auto; border: none !important; }
+
+        /* Info Panels */
+        .info-panel {
+            position: fixed; right: -500px; top: 0;
+            width: 400px; height: 100vh;
+            background: rgba(10, 5, 20, 0.85);
+            backdrop-filter: blur(12px); border-left: 1px solid rgba(192, 132, 252, 0.3);
+            padding: 3rem 2rem; overflow-y: auto; z-index: 1000;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+            transition: right 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .info-panel.open { right: 0; }
+
+        .info-panel h2 {
+            font-family: 'Cinzel', serif; color: var(--mystic-purple);
+            font-size: 2rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(192, 132, 252, 0.3);
+            padding-bottom: 0.5rem;
+        }
+        .info-panel p { color: #d1d5db; line-height: 1.8; margin-bottom: 1rem; }
+        .info-panel .highlight { color: #f3e8ff; font-weight: 700; }
+        .info-panel .close-btn {
+            position: absolute; top: 1rem; right: 1.5rem;
+            color: var(--mystic-purple); font-size: 1.5rem; cursor: pointer;
+            transition: transform 0.3s, color 0.3s;
+        }
+        .info-panel .close-btn:hover { color: #fff; transform: scale(1.1) rotate(90deg); }
+
+        ul.service-list { list-style: none; padding: 0; margin: 0; }
+        ul.service-list li { margin-bottom: 1.5rem; position: relative; padding-left: 1.5rem; }
+        ul.service-list li::before { content: '✧'; position: absolute; left: 0; top: 0; color: var(--mystic-purple); }
+        ul.service-list h3 { font-size: 1.1rem; margin-bottom: 0.3rem; color: #e9d5ff; font-weight: bold; }
+
+        /* p5 Canvas Overlay */
+        #p5-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 500; pointer-events: none; mix-blend-mode: screen;
+        }
+
+        .social-icons {
+            position: fixed; top: 2rem; right: 2rem;
+            z-index: 200; display: flex; gap: 1.5rem;
+        }
+        .social-icons a {
+            color: var(--mystic-purple); font-size: 1.5rem;
+            transition: color 0.3s, transform 0.3s, text-shadow 0.3s;
+            background: rgba(0,0,0,0.5); padding: 0.5rem; border-radius: 50%;
+        }
+        .social-icons a:hover {
+            color: #fff; transform: scale(1.1);
+            text-shadow: 0 0 15px rgba(192, 132, 252, 0.8);
+        }
+
+        /* Intro Title overlay */
+        #intro-title {
+            position: absolute; top: 20%; width: 100%; text-align: center;
+            pointer-events: none; text-shadow: 0 5px 20px rgba(0,0,0,0.8);
+        }
+        #intro-title h1 { font-family: 'Cinzel', serif; font-size: 4rem; color: var(--mystic-purple); margin-bottom: 0.5rem;}
+        #intro-title p { font-size: 1.2rem; color: #e5e7eb; letter-spacing: 0.2em; }
     </style>
 </head>
 <body>
-
-
-
+    <div id="loader">
+        <div class="spinner"></div>
+        <div class="tracking-widest">GATHERING MANA...</div>
     </div>
 
-    <div id="webgl-container"></div>
     <div id="p5-container"></div>
 
     <div class="social-icons">
@@ -194,142 +151,220 @@
         <a href="https://www.threads.net/@raven.office" target="_blank"><i class="fa-brands fa-threads"></i></a>
     </div>
 
-    <main id="content-layer">
-
-        <!-- Hero Section -->
-        <section class="section-container align-center" id="hero">
-            <div class="content-box border-none bg-transparent shadow-none" style="backdrop-filter: none;">
+    <div id="scene-container">
+        <!-- Exterior: The Door -->
+        <div id="scene-exterior" class="scene active">
+            <div id="intro-title">
                 <h1>Raven Office</h1>
-                <p class="cinzel text-xl tracking-[0.3em] mb-4 text-[#c084fc]">Mystical Alchemy</p>
-                <p class="text-lg">密契主義 ✧ 自學女巫</p>
+                <p>密契主義 ✧ 自學女巫</p>
             </div>
-            <i class="fas fa-chevron-down scroll-down"></i>
-        </section>
+            <div id="btn-enter" class="hitbox" title="Enter the Sanctum"></div>
+        </div>
 
-        <!-- About Section -->
-        <section class="section-container align-left" id="about">
-            <div class="content-box">
-                <h2>The Awakening</h2>
-                <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。</p>
-                <p>那些難以解釋的相遇，讓我帶著不安長大，也讓我開始尋求答案。我閱讀、查找、試圖理解，卻始終與這身分無法產生共鳴。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。</p>
-                <p>在我幾乎撐不下去的日子裡，祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。於是我明白，人生只能從有限的選擇去做出決定，也是等待既定的時間軌道到來而啟動。</p>
-                <p>現在，我會用輕鬆甚至有點幽默的方式，分享靈界的日常趣事。不是為了神秘，而是為了讓那些曾經孤單的人知道——<span class="highlight">你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。</span></p>
+        <!-- Interior: Main Room -->
+        <div id="scene-interior" class="scene">
+            <div id="btn-books" class="hitbox" title="The Awakening (About)"></div>
+            <div id="btn-crystal" class="hitbox" title="Mystical Services"></div>
+            <div id="btn-altar" class="hitbox" title="The Guardians"></div>
 
-                <p class="blessing-text">| ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |</p>
+            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-exterior')">
+                <i class="fas fa-door-open"></i> Leave Sanctum
+            </button>
+        </div>
 
-                <p class="text-sm opacity-80 mt-4">喜歡慢步調的閱讀，有時候會查查資料科普一下。</p>
+        <!-- Closeup: Books (About) -->
+        <div id="scene-books" class="scene">
+            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-interior', 'panel-about')">
+                <i class="fas fa-arrow-left"></i> Step Back
+            </button>
+        </div>
+
+        <!-- Closeup: Crystal (Services) -->
+        <div id="scene-crystal" class="scene">
+            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-interior', 'panel-services')">
+                <i class="fas fa-arrow-left"></i> Step Back
+            </button>
+        </div>
+
+        <!-- Closeup: Altar (Guardians) -->
+        <div id="scene-altar" class="scene">
+            <button class="hitbox btn-back absolute flex items-center gap-2 text-purple-400 hover:text-white px-4 py-2 bg-black/50 rounded-lg backdrop-blur" onclick="changeScene('scene-interior', 'panel-guardians')">
+                <i class="fas fa-arrow-left"></i> Step Back
+            </button>
+        </div>
+    </div>
+
+    <!-- Info Panels -->
+    <div id="panel-about" class="info-panel">
+        <i class="fas fa-times close-btn" onclick="closePanel('panel-about', 'scene-interior')"></i>
+        <h2>The Awakening</h2>
+        <div class="flex justify-center mb-6">
+            <img src="/assets/raven_office/profile.webp" alt="Raven" class="w-32 h-32 rounded-full border-2 border-purple-500 shadow-[0_0_15px_rgba(192,132,252,0.5)] object-cover">
+        </div>
+        <p>在成為靈媒之前，我一直以為自己只是個普通人。從小，世界對我來說並不只有人類存在。</p>
+        <p>那些難以解釋的相遇，讓我帶著不安長大，也讓我開始尋求答案。我閱讀、查找、試圖理解，卻始終與這身分無法產生共鳴。直到人生瀕臨崩潰萬念俱灰時，我遇見了守護著我的靈性存在。</p>
+        <p>在我幾乎撐不下去的日子裡，祂們沒有要求我改變什麼，只是陪伴我走過人生旅途。於是我明白，人生只能從有限的選擇去做出決定，也是等待既定的時間軌道到來而啟動。</p>
+        <p>現在，我會用輕鬆甚至有點幽默的方式，分享靈界的日常趣事。不是為了神秘，而是為了讓那些曾經孤單的人知道——<span class="highlight">你並不孤單，你總會遇到一個能夠理解、願意傾聽的夥伴。</span></p>
+        <p class="text-center text-purple-400 my-8 font-serif tracking-widest text-sm">| ︒ ⍋ ⊹⋆ 𝔹𝕝𝕖𝕤𝕤𝕖𝕕 𝕎𝕚𝕤𝕙𝕖𝕤 𝕗𝕠𝕣 𝕐𝕠𝕦𝕣 ℙ𝕒𝕥𝕙 ⋆⊹⍋︒ |</p>
+        <p class="text-sm opacity-80 border-t border-purple-900 pt-4">喜歡慢步調的閱讀，有時候會查查資料科普一下。</p>
+    </div>
+
+    <div id="panel-services" class="info-panel">
+        <i class="fas fa-times close-btn" onclick="closePanel('panel-services', 'scene-interior')"></i>
+        <h2>Mystical Services</h2>
+        <p class="mb-6 opacity-80 text-sm">最近積極探索與擴展靈性業務。其他未列出的業務，歡迎委託人來跟我詢問 (∗ ˊωˋ ∗)</p>
+        <ul class="service-list">
+            <li>
+                <h3>高我連結溝通</h3>
+                <p class="text-sm m-0">需遠端語音進行高我連結與溝通，可藉由與高我的溝通更了解自身的困境跟疑問，也能知曉此生的人生大方向。</p>
+            </li>
+            <li>
+                <h3>前世解讀</h3>
+                <p class="text-sm m-0">需遠端語音進行解讀，依每次隨機抓取訊號為主，前世解讀最多三世。從過去的篇章去了解累世的經驗，不指定時間軸。</p>
+            </li>
+            <li>
+                <h3>靈界 / 離世溝通 / 礦靈媒合</h3>
+                <p class="text-sm m-0">需遠端語音進行，去連結離世的親人解讀、或宿緣對象協調、守護或指導靈溝通。<br>
+                <span class="text-purple-400 text-xs mt-2 block">* 請提前整理好想詢問的內容，不包含敏感爭議議題。溝通時間約一到兩小時。預約需付1000元定金。</span></p>
+            </li>
+            <li>
+                <h3>詛咒移除</h3>
+                <p class="text-sm m-0">需評估詛咒的複雜程度來決定處理方式。</p>
+            </li>
+            <li>
+                <h3>物品加持</h3>
+                <p class="text-sm m-0">需接觸到實體物品，附魔種類有：智慧、健康、運氣、魅力、財富、防護等。</p>
+            </li>
+        </ul>
+    </div>
+
+    <div id="panel-guardians" class="info-panel">
+        <i class="fas fa-times close-btn" onclick="closePanel('panel-guardians', 'scene-interior')"></i>
+        <h2>The Guardians</h2>
+        <p>有兩位超愛我的守護者，平常他們都會打打鬧鬧：</p>
+
+        <div class="mt-6 space-y-6">
+            <div class="p-4 rounded-lg bg-black/50 border border-purple-500/30 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-purple-500/10 text-6xl"><i class="fas fa-feather-alt"></i></div>
+                <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟙. 大天使烏列爾</h3>
+                <p class="m-0 text-sm">合作的天使，帶來智慧與光芒的指引。</p>
             </div>
-        </section>
 
-        <!-- Guardians Section -->
-        <section class="section-container align-right" id="guardians">
-            <div class="content-box text-left">
-                <h2>The Guardians</h2>
-                <p>有兩位超愛我的守護者，平常他們都會打打鬧鬧：</p>
-
-                <div class="mt-6 space-y-4">
-                    <div class="p-4 rounded-lg bg-black/30 border border-purple-500/20">
-                        <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟙. 大天使烏列爾 (Uriel)</h3>
-                        <p class="m-0 text-sm">合作的天使，帶來智慧與光芒的指引。</p>
-                    </div>
-
-                    <div class="p-4 rounded-lg bg-black/30 border border-purple-500/20">
-                        <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟚. Mishipeshu</h3>
-                        <p class="m-0 text-sm">美洲虎守護獸（意為「偉大的猞猁」或「水下豹」），強大的守護力量。</p>
-                    </div>
-                </div>
+            <div class="p-4 rounded-lg bg-black/50 border border-purple-500/30 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-purple-500/10 text-6xl"><i class="fas fa-paw"></i></div>
+                <h3 class="text-xl text-[#fbcfe8] font-bold mb-2">𝟚. Mishipeshu</h3>
+                <p class="m-0 text-sm">美洲虎守護獸（意為「偉大的猞猁」或「水下豹」），強大的守護力量。</p>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- Services Section -->
-        <section class="section-container align-left" id="services">
-            <div class="content-box">
-                <h2>Mystical Services</h2>
-                <p class="mb-6 opacity-80">最近積極探索與擴展靈性業務。其他未列出的業務，歡迎委託人來跟我詢問 (∗ ˊωˋ ∗)</p>
-
-                <ul class="service-list">
-                    <li>
-                        <h3>高我連結溝通</h3>
-                        <p class="text-sm m-0">需遠端語音進行高我連結與溝通，可藉由與高我的溝通更了解自身的困境跟疑問，也能知曉此生的人生大方向。</p>
-                    </li>
-                    <li>
-                        <h3>前世解讀</h3>
-                        <p class="text-sm m-0">需遠端語音進行解讀，依每次隨機抓取訊號為主，前世解讀最多三世。從過去的篇章去了解累世的經驗，不指定時間軸。</p>
-                    </li>
-                    <li>
-                        <h3>靈界 / 離世溝通 / 礦靈媒合</h3>
-                        <p class="text-sm m-0">需遠端語音進行，去連結離世的親人解讀、或宿緣對象協調、守護或指導靈溝通。<br>
-                        <span class="text-purple-300 text-xs mt-2 block">* 請提前整理好想詢問的內容，不包含敏感爭議議題。溝通時間約一到兩小時。預約需付1000元定金。</span></p>
-                    </li>
-                    <li>
-                        <h3>詛咒移除</h3>
-                        <p class="text-sm m-0">需評估詛咒的複雜程度來決定處理方式。</p>
-                    </li>
-                    <li>
-                        <h3>物品加持</h3>
-                        <p class="text-sm m-0">需接觸到實體物品，附魔種類有：智慧、健康、運氣、魅力、財富、防護等。</p>
-                    </li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- Empty padding section to allow scrolling past the last text to see the final 3D water state -->
-        <section style="height: 50vh;"></section>
-
-    </main>
-
-    <!-- Dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <script>
-        gsap.registerPlugin(ScrollTrigger);
-
-        // ==== HTML GSAP Animations ====
-        document.querySelectorAll('.section-container').forEach((sec) => {
-            gsap.to(sec, {
-                opacity: 1,
-                y: 0,
-                duration: 1.5,
-                ease: "power2.out",
-                scrollTrigger: {
-                    trigger: sec,
-                    start: "top 80%",
-                    end: "top 20%",
-                    toggleActions: "play reverse play reverse"
-                }
-            });
+        // Loading Screen Removal
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 1000);
+            }, 1000);
         });
 
-        // ==== p5.js Magical Cursor ====
+        // Scene Transition Logic
+        let activeScene = 'scene-exterior';
+
+        function changeScene(newSceneId, openPanelId = null) {
+            // Fade out current
+            document.getElementById(activeScene).classList.remove('active');
+
+            // Fade in new
+            activeScene = newSceneId;
+            document.getElementById(activeScene).classList.add('active');
+
+            // Open panel if requested
+            if (openPanelId) {
+                setTimeout(() => {
+                    document.getElementById(openPanelId).classList.add('open');
+                }, 500); // Wait for scene fade
+            }
+        }
+
+        function closePanel(panelId, revertSceneId = null) {
+            document.getElementById(panelId).classList.remove('open');
+            if (revertSceneId) {
+                setTimeout(() => changeScene(revertSceneId), 300);
+            }
+        }
+
+        // Interaction Bindings
+        document.getElementById('btn-enter').addEventListener('click', () => {
+            changeScene('scene-interior');
+            triggerMagicBurst();
+        });
+
+        document.getElementById('btn-books').addEventListener('click', () => {
+            changeScene('scene-books', 'panel-about');
+        });
+
+        document.getElementById('btn-crystal').addEventListener('click', () => {
+            changeScene('scene-crystal', 'panel-services');
+            triggerMagicBurst(); // Extra magic for crystal
+        });
+
+        document.getElementById('btn-altar').addEventListener('click', () => {
+            changeScene('scene-altar', 'panel-guardians');
+        });
+
+        // ==== p5.js Magical Particles & Cursor ====
+        let triggerMagicBurst = () => {}; // Will be assigned in p5 setup
+
         const sketch = (p) => {
             let trails = [];
+            let bursts = [];
+
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
                 p.noStroke();
+
+                triggerMagicBurst = () => {
+                    for(let i=0; i<30; i++) {
+                        bursts.push({
+                            x: p.width/2 + p.random(-50, 50),
+                            y: p.height/2 + p.random(-50, 50),
+                            life: 255,
+                            vx: p.random(-5, 5),
+                            vy: p.random(-5, 5),
+                            size: p.random(3, 10),
+                            col: [192, 132, 252]
+                        });
+                    }
+                };
             };
 
             p.draw = () => {
                 p.clear();
+
+                // Cursor trails
                 if (p.mouseX !== 0 && p.mouseY !== 0 && (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY)) {
-                    for(let i=0; i<3; i++) {
+                    for(let i=0; i<2; i++) {
                         trails.push({
-                            x: p.mouseX + p.random(-15, 15),
-                            y: p.mouseY + p.random(-15, 15),
+                            x: p.mouseX + p.random(-10, 10),
+                            y: p.mouseY + p.random(-10, 10),
                             life: 255,
                             vx: p.random(-1, 1),
                             vy: p.random(-2, 0.5),
-                            size: p.random(2, 6),
-                            col: p.random() > 0.5 ? [192, 132, 252] : [232, 121, 249] // Purple or Pink
+                            size: p.random(2, 5),
+                            col: p.random() > 0.5 ? [192, 132, 252] : [232, 121, 249]
                         });
                     }
                 }
+
+                // Render Trails
                 for (let i = trails.length - 1; i >= 0; i--) {
                     let t = trails[i];
-                    t.x += t.vx; t.y += t.vy; t.life -= 6;
+                    t.x += t.vx; t.y += t.vy; t.life -= 8;
 
                     if (t.life <= 0) trails.splice(i, 1);
                     else {
@@ -339,330 +374,24 @@
                         p.circle(t.x, t.y, t.size * 0.5);
                     }
                 }
+
+                // Render Bursts
+                for (let i = bursts.length - 1; i >= 0; i--) {
+                    let b = bursts[i];
+                    b.x += b.vx; b.y += b.vy; b.life -= 10;
+                    b.vx *= 0.95; b.vy *= 0.95; // Friction
+
+                    if (b.life <= 0) bursts.splice(i, 1);
+                    else {
+                        p.fill(b.col[0], b.col[1], b.col[2], b.life);
+                        p.circle(b.x, b.y, b.size);
+                    }
+                }
             };
+
             p.windowResized = () => p.resizeCanvas(p.windowWidth, p.windowHeight);
         };
         new p5(sketch);
-
-        // ==== Three.js Alchemy Cauldron & Water Visions ====
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050308, 0.02);
-
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-        // Start view looking slightly down into the cauldron
-        camera.position.set(0, 15, 25);
-        camera.lookAt(0, 5, 0);
-
-        const renderer = new THREE.WebGLRenderer({alpha: false, antialias: true});
-        renderer.setClearColor(0x050308);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.getElementById('webgl-container').appendChild(renderer.domElement);
-
-        // Lights
-        const ambient = new THREE.AmbientLight(0xffffff, 1.5);
-        scene.add(ambient);
-
-        // Main light from top
-        const mainLight = new THREE.PointLight(0xc084fc, 10.0, 300);
-        mainLight.position.set(10, 20, 10);
-        scene.add(mainLight);
-
-        // Cauldron inner glow (green/purple magical mix)
-        const cauldronGlow = new THREE.PointLight(0x8b5cf6, 2, 30);
-        cauldronGlow.position.set(0, 5, 0);
-        scene.add(cauldronGlow);
-
-        // --- Model the Cauldron ---
-        const cauldronGroup = new THREE.Group();
-        scene.add(cauldronGroup);
-
-        // Cauldron Material (Dark rough iron)
-        const ironMat = new THREE.MeshStandardMaterial({
-            color: 0x111111, roughness: 0.9, metalness: 0.6,
-            side: THREE.DoubleSide
-        });
-
-        // The Bowl (Hemisphere)
-        const bowlGeo = new THREE.SphereGeometry(10, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
-        const bowl = new THREE.Mesh(bowlGeo, ironMat);
-        // bowl.rotation.x = Math.PI; // Do not flip, it is already a bowl (bottom half of sphere)
-        bowl.position.y = 8;
-        cauldronGroup.add(bowl);
-
-        // The Rim (Torus)
-        const rimGeo = new THREE.TorusGeometry(10, 0.8, 16, 64);
-        const rim = new THREE.Mesh(rimGeo, ironMat);
-        rim.rotation.x = -Math.PI/2;
-        rim.position.y = 8;
-        cauldronGroup.add(rim);
-
-        // The Base
-        const baseGeo = new THREE.CylinderGeometry(6, 8, 2, 32);
-        const base = new THREE.Mesh(baseGeo, ironMat);
-        base.position.y = -1;
-        cauldronGroup.add(base);
-
-        // --- The Magic Water Surface ---
-        const waterGeo = new THREE.CircleGeometry(9.6, 64);
-
-        // Add vertices to geometry for ripples
-        const posAttr = waterGeo.attributes.position;
-        const vData = [];
-        for(let i=0; i<posAttr.count; i++) {
-            const vx = posAttr.getX(i);
-            const vy = posAttr.getY(i);
-            const len = Math.sqrt(vx*vx + vy*vy);
-            vData.push({
-                z: posAttr.getZ(i),
-                dist: len,
-                ang: len * 2.0, // wave frequency
-                amp: Math.random() * 0.15 + 0.05 // wave amplitude
-            });
-        }
-
-        const waterMat = new THREE.MeshPhysicalMaterial({
-            color: 0x2e1065, // Deep purple
-            transmission: 0.8, // Glass-like transparency
-            opacity: 1, transparent: true,
-            roughness: 0.1, metalness: 0.1,
-            ior: 1.33, // Water IOR
-            side: THREE.DoubleSide
-        });
-
-        const water = new THREE.Mesh(waterGeo, waterMat);
-        water.rotation.x = -Math.PI / 2;
-        water.position.y = 7.2; // Slightly below the rim
-        cauldronGroup.add(water);
-
-        // --- Image Planes in the Water ---
-        // We will create planes for the images and place them below the water.
-        // We will use a custom shader to make them look wavy, or just rely on the water transmission above them.
-        const imagesToLoad = [
-            '/assets/raven_office/profile.webp',   // About
-            '/assets/raven_office/cards.webp',     // Guardians
-            '/assets/raven_office/crystals.webp',  // Services 1
-            '/assets/raven_office/altar.webp'      // Services 2
-        ];
-
-        const imagePlanes = [];
-        const texLoader = new THREE.TextureLoader();
-
-        let loadedImgs = 0;
-
-        imagesToLoad.forEach((url, i) => {
-            texLoader.load(url, (tex) => {
-                tex.minFilter = THREE.LinearMipmapLinearFilter;
-
-                // Keep aspect ratio
-                const aspect = tex.image.width / tex.image.height;
-                let w = 12;
-                let h = w / aspect;
-
-                // If it's too tall, constrain by height
-                if (h > 12) {
-                    h = 12;
-                    w = h * aspect;
-                }
-
-                const geo = new THREE.PlaneGeometry(w, h);
-                const mat = new THREE.MeshBasicMaterial({
-                    map: tex,
-                    transparent: true,
-                    opacity: 0, // Start invisible
-                    side: THREE.DoubleSide
-                });
-
-                const plane = new THREE.Mesh(geo, mat);
-                plane.rotation.x = -Math.PI / 2;
-                // Place it inside the bowl, under the water
-                plane.position.y = 6.8;
-
-                cauldronGroup.add(plane);
-                imagePlanes[i] = plane;
-
-                loadedImgs++;
-                if (loadedImgs === imagesToLoad.length) {
-                    // All loaded, hide loader
-                    const loader = null; // document.getElementById('loader');
-                    if(loader) { loader.style.opacity = '0'; }
-                    setTimeout(() => loader.style.display = 'none', 1000);
-                }
-            }, undefined, () => {
-                // On error, just inc count so loader can disappear
-                loadedImgs++;
-            });
-        });
-
-        // Fallback for loader
-        setTimeout(() => {
-            const loader = null; // document.getElementById('loader');
-            if(loader && loader.style.display !== 'none') {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 1000);
-            }
-        }, 4000);
-
-        // Magic floating dust
-        const dustGeo = new THREE.BufferGeometry();
-        const dustCount = 300;
-        const dPos = new Float32Array(dustCount * 3);
-        const dSpeed = new Float32Array(dustCount);
-        for(let i=0; i<dustCount; i++) {
-            // Random position in a column above the cauldron
-            const radius = Math.random() * 8;
-            const theta = Math.random() * Math.PI * 2;
-            dPos[i*3] = Math.cos(theta) * radius;
-            dPos[i*3+1] = 8 + Math.random() * 20; // Above water (8 to 28)
-            dPos[i*3+2] = Math.sin(theta) * radius;
-            dSpeed[i] = Math.random() * 0.02 + 0.01;
-        }
-        dustGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
-        dustGeo.setAttribute('speed', new THREE.BufferAttribute(dSpeed, 1));
-
-        // Create round particle texture
-        const ptCanvas = document.createElement('canvas');
-        ptCanvas.width = 16; ptCanvas.height = 16;
-        const ptCtx = ptCanvas.getContext('2d');
-        ptCtx.fillStyle = '#ffffff';
-        ptCtx.beginPath(); ptCtx.arc(8, 8, 8, 0, Math.PI*2); ptCtx.fill();
-        const ptTex = new THREE.CanvasTexture(ptCanvas);
-
-        const dustMat = new THREE.PointsMaterial({
-            size: 0.3, map: ptTex, transparent: true, opacity: 0.6,
-            blending: THREE.AdditiveBlending, depthWrite: false, color: 0xfbcfe8
-        });
-        const dust = new THREE.Points(dustGeo, dustMat);
-        scene.add(dust);
-
-        // --- Render Loop ---
-        const clock = new THREE.Clock();
-
-        function render() {
-            requestAnimationFrame(render);
-            const t = clock.getElapsedTime();
-
-            // Water ripples
-            for(let i=0; i<posAttr.count; i++) {
-                const d = vData[i];
-                const wave = Math.sin(d.ang - t * 3.0) * d.amp;
-                // Add a secondary wave for complexity
-                const wave2 = Math.cos(d.ang * 0.5 + t * 1.5) * d.amp * 0.5;
-                posAttr.setZ(i, d.z + wave + wave2);
-            }
-            posAttr.needsUpdate = true;
-            waterGeo.computeVertexNormals();
-
-            // Floating dust animation
-            const dPosAttr = dustGeo.attributes.position;
-            const dSpeedAttr = dustGeo.attributes.speed;
-            for(let i=0; i<dustCount; i++) {
-                let py = dPosAttr.getY(i);
-                py += dSpeedAttr.getX(i);
-                if (py > 28) py = 8; // Reset to water surface
-                dPosAttr.setY(i, py);
-
-                // Slight waver in X and Z
-                dPosAttr.setX(i, dPosAttr.getX(i) + Math.sin(t + py)*0.01);
-                dPosAttr.setZ(i, dPosAttr.getZ(i) + Math.cos(t + py)*0.01);
-            }
-            dPosAttr.needsUpdate = true;
-
-            // Slowly rotate cauldron group for mystical feel
-            cauldronGroup.rotation.y = Math.sin(t * 0.1) * 0.1;
-
-            // Image floating effect inside the water
-            imagePlanes.forEach((plane) => {
-                if(plane) {
-                    // Slowly drift under water
-                    plane.position.y = 6.8 + Math.sin(t + plane.uuid.charCodeAt(0)) * 0.2;
-                    // Slowly rotate
-                    plane.rotation.z = Math.sin(t * 0.2 + plane.uuid.charCodeAt(0)) * 0.05;
-                }
-            });
-
-            renderer.render(scene, camera);
-        }
-        render();
-
-        // --- Scroll Driven Image Switching & Camera Logic ---
-
-        function updateScryingImage(activeIndex) {
-            imagePlanes.forEach((plane, i) => {
-                if(plane) {
-                    gsap.to(plane.material, {
-                        opacity: i === activeIndex ? 0.9 : 0,
-                        duration: 1.5,
-                        ease: "power2.inOut"
-                    });
-                }
-            });
-
-            // Change glow color based on image
-            const colors = [0x8b5cf6, 0xe879f9, 0x3b82f6, 0x10b981];
-            if(activeIndex >= 0 && activeIndex < colors.length) {
-                gsap.to(cauldronGlow.color, {
-                    r: new THREE.Color(colors[activeIndex]).r,
-                    g: new THREE.Color(colors[activeIndex]).g,
-                    b: new THREE.Color(colors[activeIndex]).b,
-                    duration: 1.5
-                });
-            }
-        }
-
-        // Map sections to image indices
-        const sections = [
-            { id: '#hero', imgIdx: -1 }, // No image, dark water
-            { id: '#about', imgIdx: 0 },
-            { id: '#guardians', imgIdx: 1 },
-            { id: '#services', imgIdx: 2 }
-            // The empty section at the end will just keep the last image or we can switch to 3
-        ];
-
-        sections.forEach((sec) => {
-            ScrollTrigger.create({
-                trigger: sec.id,
-                start: "top 50%",
-                end: "bottom 50%",
-                onEnter: () => updateScryingImage(sec.imgIdx),
-                onEnterBack: () => updateScryingImage(sec.imgIdx)
-            });
-        });
-
-        // Special trigger for the very bottom to show the last altar image
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "bottom 110%", // When reached bottom
-            onEnter: () => updateScryingImage(3)
-        });
-
-        // Camera scroll effect (Move closer to the water as you scroll down)
-        window.addEventListener('scroll', () => {
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const progress = window.scrollY / maxScroll;
-
-            // Hero: Y=15, Z=25
-            // End: Y=11, Z=8 (Looking straight down into the bowl)
-            gsap.to(camera.position, {
-                y: 15 - (progress * 4),
-                z: 25 - (progress * 17),
-                duration: 0.5,
-                ease: "power1.out",
-                overwrite: "auto"
-            });
-
-            // Adjust lookAt slightly as we move
-            const lookZ = - (progress * 5); // Look slightly deeper towards back
-            camera.lookAt(0, 5, lookZ);
-        });
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
     </script>
 </body>
 </html>
