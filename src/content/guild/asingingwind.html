@@ -235,7 +235,7 @@
 
         <div class="lg:col-span-5 flex justify-center lg:justify-end relative z-10">
           <div class="avatar-frame gs-reveal">
-            <img src="/assets/guild/asingingwind/image3.webp" alt="許漪 a singing wind">
+            <img src="/assets/guild/asingingwind/avatar_new.webp" alt="許漪 a singing wind">
           </div>
         </div>
 
@@ -418,20 +418,6 @@
               </p>
             </div>
 
-            <div class="pt-8 border-t border-white/10">
-              <p class="text-sm cinzel tracking-widest mb-6 text-white/60">CONNECT WITH @ASINGINGWIND</p>
-              <div class="flex justify-center gap-6">
-                <a href="https://www.threads.com/@asingingwind" target="_blank" class="nav-btn w-14 h-14 rounded-full border border-white/30 flex items-center justify-center text-2xl text-white hover:text-black hover:bg-white transition-all">
-                  <i class="fa-brands fa-threads"></i>
-                </a>
-                <a href="https://www.instagram.com/asingingwind/" target="_blank" class="nav-btn w-14 h-14 rounded-full border border-white/30 flex items-center justify-center text-2xl text-white hover:text-black hover:bg-white transition-all">
-                  <i class="fa-brands fa-instagram"></i>
-                </a>
-                <a href="https://linktr.ee/asingingwind" target="_blank" class="nav-btn w-14 h-14 rounded-full border border-white/30 flex items-center justify-center text-xl text-white hover:text-black hover:bg-white transition-all">
-                  <i class="fa-solid fa-link"></i>
-                </a>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -649,27 +635,116 @@
       oasisGroup.position.set(0, -10, -150); // Positioned deep in the scene
       scene.add(oasisGroup);
 
-      // Water Pool
-      const waterGeo = new THREE.CircleGeometry(20, 64);
+      // Water Pool - Upgraded to a more detailed plane for rippling
+      const waterGeo = new THREE.PlaneGeometry(50, 50, 64, 64);
       waterGeo.rotateX(-Math.PI / 2);
+
+      // Make water shape slightly organic (not a perfect circle)
+      const waterPos = waterGeo.attributes.position;
+      for (let i = 0; i < waterPos.count; i++) {
+        const x = waterPos.getX(i);
+        const z = waterPos.getZ(i);
+        const dist = Math.sqrt(x*x + z*z);
+        // Cut off vertices outside radius ~20 to make a rough circle
+        if (dist > 20 + Math.sin(Math.atan2(z, x) * 5) * 2) {
+             waterPos.setY(i, -10); // Hide them below
+        }
+      }
+      waterGeo.computeVertexNormals();
+
       const waterMat = new THREE.MeshStandardMaterial({
         color: 0x1E3A8A, // Deep blue
         emissive: 0x102A4A, // Slight magical glow
         transparent: true,
         opacity: 0, // Starts invisible
         roughness: 0.1,
-        metalness: 0.9
+        metalness: 0.9,
+        flatShading: true // Gives a cool low-poly water reflection
       });
       const water = new THREE.Mesh(waterGeo, waterMat);
       water.position.y = 0.5; // Slightly above terrain (-10)
       oasisGroup.add(water);
 
-      // Oasis Trees
-      const treeTrunkMat = new THREE.MeshStandardMaterial({
-        color: 0x3d2b1f, // Dark brown
+      // Rocks around the water
+      const rockMat = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        roughness: 0.8,
+        metalness: 0.2,
         transparent: true,
         opacity: 0,
-        roughness: 0.9
+        flatShading: true
+      });
+
+      for (let i=0; i<20; i++) {
+        const rockSize = Math.random() * 2 + 1;
+        const rockGeo = new THREE.DodecahedronGeometry(rockSize, 1);
+
+        // Deform rocks
+        const rPos = rockGeo.attributes.position;
+        for (let j=0; j<rPos.count; j++) {
+            rPos.setXYZ(j,
+                rPos.getX(j) * (1 + (Math.random()-0.5)*0.5),
+                rPos.getY(j) * (1 + (Math.random()-0.5)*0.5),
+                rPos.getZ(j) * (1 + (Math.random()-0.5)*0.5)
+            );
+        }
+        rockGeo.computeVertexNormals();
+
+        const rock = new THREE.Mesh(rockGeo, rockMat);
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 19 + Math.random() * 4; // Around the water edge
+        rock.position.set(
+            Math.cos(angle) * radius,
+            0.5,
+            Math.sin(angle) * radius
+        );
+        rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+        oasisGroup.add(rock);
+      }
+
+      // Grass / Reeds near water
+      const grassMat = new THREE.MeshStandardMaterial({
+        color: 0x4A5D23,
+        transparent: true,
+        opacity: 0,
+        roughness: 1.0,
+        side: THREE.DoubleSide
+      });
+
+      const grassGroup = new THREE.Group();
+      for(let i=0; i<150; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 20 + Math.random() * 8;
+          const gx = Math.cos(angle) * radius;
+          const gz = Math.sin(angle) * radius;
+
+          if(gz > 15 && gx > -15 && gx < 15) continue; // Leave path open
+
+          const grassHeight = Math.random() * 2 + 1;
+          // Simple triangle blade
+          const gGeo = new THREE.BufferGeometry();
+          const gVerts = new Float32Array([
+             -0.1, 0, 0,
+              0.1, 0, 0,
+              0, grassHeight, (Math.random()-0.5)*0.5
+          ]);
+          gGeo.setAttribute('position', new THREE.BufferAttribute(gVerts, 3));
+          gGeo.computeVertexNormals();
+
+          const blade = new THREE.Mesh(gGeo, grassMat);
+          blade.position.set(gx, 0.5, gz);
+          blade.rotation.y = Math.random() * Math.PI * 2;
+          grassGroup.add(blade);
+      }
+      oasisGroup.add(grassGroup);
+
+      // Oasis Trees (More detailed)
+      const treeTrunkMat = new THREE.MeshStandardMaterial({
+        color: 0x2a1e12, // Darker wood
+        transparent: true,
+        opacity: 0,
+        roughness: 0.9,
+        flatShading: true
       });
 
       const treeCanopyMat = new THREE.MeshStandardMaterial({
@@ -678,58 +753,73 @@
         emissiveIntensity: 0,
         transparent: true,
         opacity: 0,
-        roughness: 0.6
+        roughness: 0.6,
+        flatShading: true
       });
 
       const trees = [];
-      for(let i=0; i<35; i++) {
+      for(let i=0; i<45; i++) { // Increased tree count
         // Position trees around the water edge
         const angle = Math.random() * Math.PI * 2;
-        const radius = 21 + Math.random() * 18; // Around the 20-radius pool
+        const radius = 23 + Math.random() * 25; // Wider forest spread
         const px = Math.cos(angle) * radius;
         const pz = Math.sin(angle) * radius;
 
         // Don't place trees right in front of the camera (blocks the view of the pool)
-        if(pz > 15 && px > -15 && px < 15) continue;
+        if(pz > 15 && px > -20 && px < 20) continue;
 
-        const h = Math.random() * 8 + 5;
+        const h = Math.random() * 10 + 6; // Taller trees
 
         const treeGroup = new THREE.Group();
         // The terrain plane is at z=0 normally but we offset it. Trees placed relative to oasisGroup
         treeGroup.position.set(px, 0, pz);
 
-        // Trunk
-        const trunkGeo = new THREE.CylinderGeometry(0.6, 1.2, h, 7);
+        // Trunk (More segments for gnarly look)
+        const trunkGeo = new THREE.CylinderGeometry(0.3, 1.0, h, 6, 4);
+        const tPos = trunkGeo.attributes.position;
+        for(let j=0; j<tPos.count; j++) {
+            if (tPos.getY(j) > -h/2 + 1) { // Don't deform bottom too much
+                tPos.setXYZ(j,
+                   tPos.getX(j) + (Math.random()-0.5)*0.4,
+                   tPos.getY(j),
+                   tPos.getZ(j) + (Math.random()-0.5)*0.4
+                );
+            }
+        }
+        trunkGeo.computeVertexNormals();
+
         const trunk = new THREE.Mesh(trunkGeo, treeTrunkMat);
         trunk.position.y = h/2;
 
         // Slight natural curve/lean
-        trunk.rotation.x = (Math.random() - 0.5) * 0.3;
-        trunk.rotation.z = (Math.random() - 0.5) * 0.3;
+        trunk.rotation.x = (Math.random() - 0.5) * 0.2;
+        trunk.rotation.z = (Math.random() - 0.5) * 0.2;
         treeGroup.add(trunk);
 
         // Multi-Sphere Canopy for more detail
-        const numCanopies = Math.floor(Math.random() * 3) + 2;
+        const numCanopies = Math.floor(Math.random() * 4) + 3; // More canopies
         for(let j=0; j<numCanopies; j++) {
-            const canopySize = Math.random() * 2.5 + 2.5;
-            const canopyGeo = new THREE.SphereGeometry(canopySize, 12, 12);
+            const canopySize = Math.random() * 3 + 2;
+            // Use Dodecahedron for cooler stylized low-poly look
+            const canopyGeo = new THREE.DodecahedronGeometry(canopySize, 1);
 
             // Apply slight noise/displacement to sphere vertices to make it look leafy/organic
             const posAttr = canopyGeo.attributes.position;
             const vertex = new THREE.Vector3();
             for(let k=0; k<posAttr.count; k++) {
                 vertex.fromBufferAttribute(posAttr, k);
-                vertex.normalize().multiplyScalar(canopySize + (Math.random() - 0.5) * 0.8);
+                vertex.normalize().multiplyScalar(canopySize + (Math.random() - 0.5) * 1.5);
                 posAttr.setXYZ(k, vertex.x, vertex.y, vertex.z);
             }
             canopyGeo.computeVertexNormals();
 
             const canopy = new THREE.Mesh(canopyGeo, treeCanopyMat);
-            // Position near the top of the trunk, offset slightly
+            // Position near the top of the trunk, offset slightly, some lower branches
+            const hOffset = h * (0.6 + Math.random() * 0.5);
             canopy.position.set(
-                (Math.random() - 0.5) * 2,
-                h + (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2
+                (Math.random() - 0.5) * 3,
+                hOffset,
+                (Math.random() - 0.5) * 3
             );
             // Squashed shape
             canopy.scale.set(1.2, 0.8, 1.2);
@@ -806,11 +896,23 @@
         treeTrunkMat.opacity = oasisVisibility * 0.9;
         treeCanopyMat.opacity = oasisVisibility * 0.9;
         treeCanopyMat.emissiveIntensity = oasisVisibility * 0.5;
+        rockMat.opacity = oasisVisibility;
+        grassMat.opacity = oasisVisibility;
 
         fireflyMat.opacity = oasisVisibility * 0.8;
 
         // Animate water rippling
-        water.position.y = 1 + Math.sin(time * 3) * 0.2;
+        const wPos = water.geometry.attributes.position;
+        for(let i=0; i<wPos.count; i++) {
+            const x = wPos.getX(i);
+            const z = wPos.getZ(i);
+            // Ignore the edges that are cut off below -5
+            if (wPos.getY(i) > -5) {
+                wPos.setY(i, Math.sin(x * 0.5 + time * 2) * 0.3 + Math.sin(z * 0.5 + time * 1.5) * 0.3);
+            }
+        }
+        water.geometry.computeVertexNormals();
+        water.geometry.attributes.position.needsUpdate = true;
 
         // Move oasis group towards camera based on scroll
         oasisGroup.position.z = -150 + (p * 130);
