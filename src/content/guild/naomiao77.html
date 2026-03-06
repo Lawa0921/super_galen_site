@@ -109,12 +109,11 @@
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            box-shadow: 0 8px 32px 0 rgba(125, 211, 252, 0.2), inset 0 0 20px rgba(255,255,255,0.5);
-            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.95);
+            /* Removed blur for crisp illustration style */
+            border: 2px solid #BAE6FD;
+            box-shadow: 4px 4px 0px rgba(186, 230, 253, 0.5);
+            border-radius: 16px;
         }
 
         .polaroid {
@@ -192,15 +191,15 @@
             position: absolute;
             width: 80px;
             height: 25px;
-            background-color: rgba(255, 255, 255, 0.4);
+            background-color: rgba(255, 255, 255, 0.8);
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             top: -10px;
             left: 50%;
             transform: translateX(-50%) rotate(-2deg);
             z-index: 2;
-            backdrop-filter: blur(2px);
-            border-left: 2px dashed rgba(255,255,255,0.5);
-            border-right: 2px dashed rgba(255,255,255,0.5);
+            /* Removed blur */
+            border-left: 2px dashed rgba(200,200,200,0.5);
+            border-right: 2px dashed rgba(200,200,200,0.5);
         }
 
         .tape.blue { background-color: rgba(186, 230, 253, 0.6); }
@@ -465,8 +464,8 @@
                 <p class="font-serif text-sky-600 text-lg mb-6 tracking-widest"><i class="fa-solid fa-seedling text-green-400"></i> Chapter 3</p>
 
                 <div class="glass-card p-10 md:p-16 text-center shadow-2xl relative overflow-hidden gs-reveal w-full max-w-3xl">
-                    <!-- Decorative subtle sun -->
-                    <div class="absolute -top-20 -right-20 w-64 h-64 bg-yellow-200 rounded-full blur-3xl opacity-30 animate-pulse-glow"></div>
+                    <!-- Decorative subtle sun (Crisp Illustration version) -->
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-100 rounded-full border-2 border-yellow-200 opacity-80 animate-pulse-glow"></div>
 
                     <h3 class="font-serif text-3xl md:text-4xl font-bold text-slate-700 mb-8 relative z-10">在發芽，在曬太陽</h3>
 
@@ -726,9 +725,9 @@
                 </svg>`
             ];
 
-            const characterSVG = `
-                <div class="cloud-character" style="position: absolute; bottom: 70%; left: 30%; width: 70px; height: 70px;">
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: jump 2s ease-in-out infinite;">
+            const catCharacterSVG = `
+                <div class="cloud-character" style="position: absolute; bottom: 60%; left: 30%; width: 60px; height: 60px;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: jump 2.5s ease-in-out infinite;">
                         <!-- Cute Cat Body -->
                         <path d="M20 50 L30 20 L50 35 L70 20 L80 50 C95 70 85 95 50 95 C15 95 5 70 20 50 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
                         <!-- Eyes -->
@@ -742,6 +741,29 @@
                     </svg>
                 </div>
             `;
+
+            const sleepCatSVG = `
+                <div class="cloud-character" style="position: absolute; bottom: 50%; left: 40%; width: 70px; height: 70px;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: float 3s ease-in-out infinite alternate;">
+                        <path d="M20 60 C20 40 40 30 50 30 C60 30 80 40 80 60 C80 75 60 85 50 85 C40 85 20 75 20 60 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="3" stroke-linejoin="round"/>
+                        <!-- Ears -->
+                        <path d="M25 45 L20 25 L40 35 M75 45 L80 25 L60 35" fill="#ffffff" stroke="#A8B4A5" stroke-width="3" stroke-linejoin="round"/>
+                        <!-- Closed Eyes -->
+                        <path d="M35 55 Q40 60 45 55 M55 55 Q60 60 65 55" stroke="#506055" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="50" cy="62" r="2.5" fill="#FFC0CB"/>
+                        <path d="M65 25 L75 25 L65 35 L75 35" stroke="#A8B4A5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="animation: jump 2s infinite;"/>
+                    </svg>
+                </div>
+            `;
+
+            // Array of user's illustration URLs to put on the clouds
+            const illustrationURLs = [
+                "/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp",
+                "/assets/img/guild/naomiao77/620439760_17907653019337939_277965404648345672_n.webp",
+                "/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp",
+                "/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp",
+                "/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" // Avatar
+            ];
 
             // Note paper decoration
             const noteSVG = `
@@ -787,10 +809,26 @@
                             elWrapper.dataset.speed = isFront ? "1.2" : "0.5";
                             elWrapper.style.zIndex = isFront ? 0 : -1;
 
-                            if (isFront && Math.random() > 0.7) {
-                                elWrapper.insertAdjacentHTML('beforeend', characterSVG);
-                                const charDiv = elWrapper.lastElementChild;
-                                charDiv.firstElementChild.style.animationDelay = `${Math.random() * 2}s`;
+                            if (isFront && Math.random() > 0.4) {
+                                // 60% chance to have a passenger on the cloud if it's a front cloud
+                                const passengerType = Math.random();
+                                let passengerHTML = '';
+
+                                if (passengerType < 0.33) {
+                                    passengerHTML = catCharacterSVG;
+                                } else if (passengerType < 0.66) {
+                                    passengerHTML = sleepCatSVG;
+                                } else {
+                                    // Small illustration frame
+                                    const imgUrl = illustrationURLs[Math.floor(Math.random() * illustrationURLs.length)];
+                                    passengerHTML = `
+                                        <div class="cloud-character" style="position: absolute; bottom: 60%; left: 20%; width: 80px; height: auto; transform: rotate(${Math.random() * 20 - 10}deg); background: white; padding: 4px; border: 1px solid #bae6fd; box-shadow: 2px 2px 0 rgba(186,230,253,0.5); border-radius: 4px;">
+                                            <img src="${imgUrl}" style="width: 100%; height: auto; display: block;" alt="illustration" />
+                                        </div>
+                                    `;
+                                }
+
+                                elWrapper.insertAdjacentHTML('beforeend', passengerHTML);
                             }
                         } else { // Decorative (Stars, Flowers, Paws)
                             scale = 0.4 + Math.random() * 0.5;
@@ -800,20 +838,39 @@
                         }
                     }
 
-                    const startX = Math.random() * 90; // 0-90vw
+                    // Distribute vertically across the document height
                     const startY = Math.random() * 350; // 0-350vh
+                    // Start from right off-screen or randomly within screen for initial population
+                    // Use a wide range so clouds start at different times and wrap around seamlessly
+                    const startX = Math.random() * 200; // 0 to 200vw
 
                     elWrapper.style.left = `${startX}vw`;
                     elWrapper.style.top = `${startY}vh`;
 
                     layer.appendChild(elWrapper);
 
-                    // Continuous floating animation to make clouds feel alive
+                    // Right to Left drift animation
+                    // Faster for front layer, slower for back layer
+                    const duration = (30 + Math.random() * 20) / (parseFloat(elWrapper.dataset.speed) || 1);
+
+                    // Simple infinite wrapping animation from right to left using modifiers
                     gsap.to(elWrapper, {
-                        y: `-=${15 + Math.random() * 25}`,
-                        x: `+=${-10 + Math.random() * 20}`, // gentle drift horizontal
-                        rotation: -2 + Math.random() * 4,
-                        duration: 3 + Math.random() * 5,
+                        x: "-=200vw", // Move left by 200vw
+                        duration: duration,
+                        ease: "none",
+                        repeat: -1,
+                        modifiers: {
+                            // Once a cloud goes far left, wrap it back to the far right (+150vw roughly)
+                            // We use modulo to keep the x value in bounds
+                            x: gsap.utils.unitize(x => parseFloat(x) % 200, "vw")
+                        }
+                    });
+
+                    // Subtle bobbing up and down
+                    gsap.to(elWrapper, {
+                        y: `-=${10 + Math.random() * 15}`,
+                        rotation: -1 + Math.random() * 2,
+                        duration: 2 + Math.random() * 3,
                         ease: "sine.inOut",
                         yoyo: true,
                         repeat: -1,
@@ -827,24 +884,11 @@
             frontLayer.style.position = 'absolute';
             frontLayer.style.height = '400vh';
 
-            // drastically reduced count for performance and decluttering
-            spawnElements(backLayer, 10, false);
-            spawnElements(frontLayer, 8, true);
+            // Spawn elements for horizontal drift
+            spawnElements(backLayer, 15, false);
+            spawnElements(frontLayer, 12, true);
 
-            // Scroll Parallax Logic (Replaces mousemove parallax for better performance)
-            gsap.utils.toArray('.parallax-bg-el').forEach(el => {
-                const speed = parseFloat(el.dataset.speed) || 1;
-                gsap.to(el, {
-                    yPercent: -50 * speed, // Move up as you scroll down
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: mainContent, // Bind to main container scroll
-                        start: "top top",
-                        end: "bottom bottom",
-                        scrub: 0.1
-                    }
-                });
-            });
+            // Removed vertical scroll parallax to keep the clouds independent and moving horizontally
         };
 
         // Ensure body height is mostly calculated before spawning
