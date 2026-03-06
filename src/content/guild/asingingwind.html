@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>許漪 - 吟遊詩人 | A Singing Wind</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Serif+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --sand-light: #E8D3A2;
+      --sand-mid: #D4B872;
+      --sand-dark: #A67C41;
+      --oasis-green: #2E472D;
+      --sunset-glow: #E2725B;
+      --desert-night: #1C2331;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--sand-light);
+      color: var(--desert-night);
+      font-family: 'Noto Serif TC', serif;
+      overflow-x: hidden;
+    }
+
+    .cinzel { font-family: 'Cinzel', serif; }
+
+    /* Background Canvases */
+    #three-canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #p5-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Overlay Gradient for depth */
+    .desert-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(to bottom, transparent 40%, rgba(232, 211, 162, 0.6) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    main {
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Glass Panels */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 10px 40px rgba(166, 124, 65, 0.15);
+      border-radius: 24px;
+    }
+
+    .glass-panel-dark {
+      background: rgba(28, 35, 49, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(212, 184, 114, 0.3);
+      color: var(--sand-light);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      border-radius: 24px;
+    }
+
+    .glass-panel-oasis {
+      background: rgba(46, 71, 45, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(166, 124, 65, 0.4);
+      color: var(--sand-light);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      border-radius: 24px;
+    }
+
+    /* Horizontal Scroll Sections */
+    .horizontal-scroll-wrapper {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .horizontal-scroll-container {
+      display: flex;
+      width: 500vw; /* 5 panels */
+      height: 100%;
+    }
+
+    .panel {
+      width: 100vw;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+    }
+
+    .avatar-frame {
+      position: relative;
+      width: 100%;
+      max-width: 450px;
+      aspect-ratio: 1 / 1; /* Profile image might be square, adjust to contain */
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(166, 124, 65, 0.5);
+      background: rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .avatar-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* Prevent cropping */
+      filter: sepia(0.1) contrast(1.05);
+    }
+
+    .avatar-frame::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      pointer-events: none;
+    }
+
+    .text-highlight {
+      color: var(--sunset-glow);
+    }
+
+    .text-gold {
+      color: var(--sand-mid);
+    }
+
+    .nav-btn {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-btn:hover {
+      transform: translateY(-5px);
+      background-color: var(--sand-mid);
+      color: var(--desert-night);
+      box-shadow: 0 10px 20px rgba(212, 184, 114, 0.4);
+    }
+
+    /* Typography specifics */
+    .writing-vertical {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+
+    .title-stroke {
+      -webkit-text-stroke: 1px var(--desert-night);
+      color: transparent;
+    }
+
+    .dark .title-stroke {
+      -webkit-text-stroke: 1px var(--sand-light);
+    }
+
+    .quote-mark {
+      font-size: 4rem;
+      line-height: 0;
+      opacity: 0.2;
+      font-family: serif;
+      position: absolute;
+    }
+
+    /* Scroll Indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0.6;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: translate(-50%, 0); }
+      50% { opacity: 1; transform: translate(-50%, 10px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Backgrounds -->
+  <div id="three-canvas-container"></div>
+  <div class="desert-overlay"></div>
+  <div id="p5-container"></div>
+
+  <main>
+    <!-- Entry Hero Section -->
+    <section class="hero-section gs-hero">
+      <div class="max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+
+        <div class="lg:col-span-5 flex justify-center lg:justify-end relative z-10">
+          <div class="avatar-frame gs-reveal">
+            <img src="/assets/guild/asingingwind/avatar_new.webp" alt="許漪 a singing wind">
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 glass-panel p-10 md:p-14 gs-reveal">
+          <div class="flex items-center gap-4 mb-4">
+            <span class="cinzel text-sm tracking-widest text-[var(--sand-dark)]">BARD OF THE DESERT</span>
+            <div class="h-px bg-[var(--sand-dark)] w-12 opacity-50"></div>
+          </div>
+
+          <h1 class="text-5xl md:text-6xl font-bold mb-4 tracking-wider">
+            💧 許漪 🦋
+          </h1>
+          <h2 class="text-2xl md:text-3xl font-light mb-8 text-[var(--sunset-glow)] tracking-widest">
+            吟遊詩人 <span class="mx-2 opacity-30">|</span> 呼吸詩人
+          </h2>
+
+          <div class="space-y-6 text-lg leading-relaxed text-gray-800">
+            <p class="font-medium">
+              「我是風神雷神的自燃系妖精」
+            </p>
+            <p>
+              開始旅行，是為了完成一個看似簡單卻深刻的目標——<br>
+              <span class="text-2xl font-bold title-stroke">讀一萬本書、走一萬公里。</span>
+            </p>
+            <p class="text-base opacity-80">
+              這段旅程不只是對外在世界的探索，它更是對內在真實的尋找。八年前，我決定放下過去的一切，走進世界，帶著對知識的渴望，帶著對心靈深處未解謎題的好奇。
+            </p>
+          </div>
+
+          <div class="mt-10 flex items-center gap-4">
+            <div class="text-sm cinzel tracking-widest opacity-50">SCROLL TO JOURNEY</div>
+            <i class="fa-solid fa-arrow-down opacity-50"></i>
+          </div>
+        </div>
+
+      </div>
+      <div class="scroll-indicator">
+        <div class="w-px h-16 bg-current mb-2"></div>
+      </div>
+    </section>
+
+    <!-- Horizontal Journey Section -->
+    <section class="horizontal-scroll-wrapper">
+      <div class="horizontal-scroll-container">
+
+        <!-- Panel 1: The Journey -->
+        <div class="panel">
+          <div class="max-w-4xl w-full glass-panel p-12 relative overflow-hidden">
+            <span class="quote-mark text-[var(--sand-dark)] top-4 left-4">"</span>
+            <div class="flex flex-col md:flex-row gap-12 items-center">
+              <div class="flex-1 space-y-6">
+                <div class="cinzel text-[var(--sand-dark)] tracking-widest text-sm mb-2">CHAPTER I : THE PATH</div>
+                <h2 class="text-4xl font-bold mb-6">風沙中的行者</h2>
+                <p class="text-lg leading-relaxed">
+                  在這些年的旅途中，我收集了各種不同的技能與智慧。
+                </p>
+                <p class="text-lg leading-relaxed">
+                  我學會了<span class="text-highlight font-bold">自然建築</span>，學會了與大地對話；我深入各地，研究世界各族的音樂與文化，聆聽著不同語言背後的故事。
+                </p>
+                <p class="text-lg leading-relaxed">
+                  我也學會了如何更精準地與自己、與他人溝通。在無垠的沙漠與風沙中，尋找那些被遺忘的聲波種子。
+                </p>
+              </div>
+              <div class="w-1/3 flex justify-center items-center">
+                <div class="w-48 h-48 rounded-full border border-[var(--sand-dark)] p-4 relative animate-[spin_30s_linear_infinite]">
+                  <div class="w-full h-full rounded-full border border-dashed border-[var(--sunset-glow)] flex items-center justify-center">
+                    <i class="fa-solid fa-compass text-4xl text-[var(--sand-dark)]"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: The Oasis / Workshops -->
+        <div class="panel">
+          <div class="max-w-6xl w-full flex gap-8 items-center justify-center">
+
+            <div class="w-1/3 hidden md:block">
+               <div class="rounded-2xl overflow-hidden border border-[var(--sand-dark)]/30 box-shadow-xl transform -rotate-3 hover:rotate-0 transition duration-500">
+                  <img src="/assets/guild/asingingwind/image2.webp" alt="心靈門牌" class="w-full h-auto object-cover grayscale hover:grayscale-0 transition duration-700">
+               </div>
+            </div>
+
+            <div class="w-full md:w-2/3 glass-panel-oasis p-12 relative">
+              <div class="absolute right-0 top-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+
+              <div class="cinzel text-white/50 tracking-widest text-sm mb-8 text-center md:text-left">CHAPTER II : THE OASIS</div>
+              <h2 class="text-4xl font-bold mb-10 text-center md:text-left text-white">心靈門牌與綠洲</h2>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="space-y-6">
+                  <p class="text-lg leading-relaxed">
+                    我花了四年半的時間，開發出一套名為<span class="text-[var(--sand-mid)] font-bold">《心靈門牌》</span>的牌卡。
+                  </p>
+                  <p class="text-base leading-relaxed opacity-90">
+                    這不僅是一套工具，它是關於深度聆聽和真誠交流的實踐。它幫助我們更清楚地聽見內心的聲音，並在溝通中建立更真實的連結。
+                  </p>
+                  <div class="h-px w-full bg-white/20 my-6"></div>
+                  <p class="text-sm leading-relaxed opacity-80">
+                    除了工作坊，我也透過一對一的塔羅與易經引導，幫助人們釐清生命中的課題。我不是在告訴別人未來會如何，而是在與他們一起，探索內心的力量。
+                  </p>
+                </div>
+
+                <div class="flex flex-col justify-center gap-4">
+                  <div class="p-4 border border-white/20 rounded-xl bg-black/20 hover:bg-black/40 transition">
+                    <h3 class="font-bold text-[var(--sand-mid)] mb-1">積極傾聽</h3>
+                    <p class="text-sm opacity-80">深度連結的關鍵，開放自己接受他人聲音。</p>
+                  </div>
+                  <div class="p-4 border border-white/20 rounded-xl bg-black/20 hover:bg-black/40 transition">
+                    <h3 class="font-bold text-[var(--sand-mid)] mb-1">12項提問技巧</h3>
+                    <p class="text-sm opacity-80">精準提問，清楚表達的藝術。</p>
+                  </div>
+                  <div class="p-4 border border-white/20 rounded-xl bg-black/20 hover:bg-black/40 transition">
+                    <h3 class="font-bold text-[var(--sand-mid)] mb-1">自我祈禱儀式設計</h3>
+                    <p class="text-sm opacity-80">建立屬於自己的神聖空間與內在對話。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Panel 3: The Breath Poet -->
+        <div class="panel">
+          <div class="max-w-6xl w-full flex flex-col md:flex-row gap-8 items-center justify-center">
+
+            <div class="w-full md:w-2/3 glass-panel-dark dark p-12 flex flex-col md:flex-row gap-8 items-center relative">
+
+              <div class="md:w-1/3 flex justify-center relative">
+                <div class="writing-vertical text-5xl md:text-7xl font-bold opacity-10 absolute left-0 top-0 -translate-x-full cinzel whitespace-nowrap">
+                  ALCHEMY OF SOUND
+                </div>
+                <h2 class="writing-vertical text-4xl leading-loose tracking-widest font-light text-[var(--sand-mid)]">
+                  地質學的聲音祭司<br>天空學的呼吸詩人
+                </h2>
+              </div>
+
+              <div class="md:w-2/3 space-y-6">
+                <p class="text-xl leading-relaxed font-light">
+                  他所吹出的，不是旋律，而是氣——<br>
+                  來自時間深處的祖靈氣息，是語言尚未誕生前的聲波種子。
+                </p>
+                <div class="pl-6 border-l-2 border-[var(--sand-dark)] space-y-4 py-2">
+                  <p class="text-base leading-relaxed opacity-80">
+                    那些聲音，像幽靈，像地脈的耳語，在他身體中甦醒，如同祖先骨骸間的回音。他的身體，是一座星象工坊。他不背樂譜，而是將旋律串接為元素符文。
+                  </p>
+                  <p class="text-base leading-relaxed opacity-80">
+                    他將五行與星體的軌跡熔成七拍十二聲的魔法陣，吹出之瞬，即喚起內輪、聲場與星之律曆——音變為意，氣成為光，聲即為咒。
+                  </p>
+                </div>
+                <p class="text-lg leading-relaxed text-[var(--sand-mid)] italic mt-6">
+                  「每一場演出，都是一場轉化。每支笛子吹奏一次，就會老去一歲，而那老去，正是煉金的起點——記憶沉澱、聲音結晶，時間從氣中再誕生。」
+                </p>
+              </div>
+            </div>
+
+            <div class="w-1/3 hidden md:block z-10">
+               <div class="rounded-2xl overflow-hidden border border-[var(--sand-mid)]/30 box-shadow-2xl transform rotate-3 hover:-translate-y-2 transition duration-500 relative">
+                  <div class="absolute inset-0 bg-black/20 hover:bg-transparent transition duration-500"></div>
+                  <img src="/assets/guild/asingingwind/image1.webp" alt="呼吸詩人" class="w-full h-auto object-cover">
+               </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Panel 4: Connection -->
+        <div class="panel text-white transition-colors duration-1000" id="connection-panel">
+          <div class="max-w-4xl w-full text-center space-y-10 relative z-10 glass-panel-dark p-12">
+            <i class="fa-solid fa-wind text-5xl text-[var(--sand-mid)] opacity-50 mb-4"></i>
+            <h2 class="text-4xl font-bold text-white">與呼吸緊密相連</h2>
+
+            <div class="max-w-2xl mx-auto space-y-6 text-lg leading-relaxed text-gray-200">
+              <p>我的生命，與每一個當下的呼吸、每一個微小的步伐緊密相連。</p>
+              <p>我不會告訴你怎麼做，也不會要求你成為某個理想中的自己。我存在的價值，是希望能陪伴你走進自己的真實，並且活出內在最深的呼喚。</p>
+              <p class="font-bold text-[var(--sand-light)] text-xl mt-8">
+                如果你準備好了，無論是探索心靈的深度，還是學會真誠的溝通，我在這裡，隨時準備與你一起走這段路。
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Panel 5: Empty Buffer for smooth end -->
+        <div class="panel text-white transition-colors duration-1000" id="end-panel">
+           <div class="text-center w-full max-w-2xl mx-auto flex flex-col items-center justify-center relative z-20">
+              <div class="glass-panel-dark p-12 mb-8">
+                 <h2 class="text-3xl cinzel text-[var(--sand-light)] mb-6 text-shadow">CONNECT</h2>
+                 <p class="text-[var(--sand-light)] text-lg mb-8 leading-relaxed">
+                    我不會告訴你怎麼做，也不會要求你成為某個理想中的自己。<br>
+                    我存在的價值，是希望能陪伴你走進自己的真實，並且活出內在最深的呼喚。<br>
+                    如果你準備好了，我在這裡，隨時準備與你一起走這段路。
+                 </p>
+                 <div class="flex gap-6 justify-center">
+                   <a href="https://www.threads.com/@asingingwind" target="_blank" class="nav-btn w-14 h-14 flex items-center justify-center text-2xl rounded-full" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                   <a href="https://www.instagram.com/asingingwind/" target="_blank" class="nav-btn w-14 h-14 flex items-center justify-center text-2xl rounded-full" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                   <a href="https://linktr.ee/asingingwind" target="_blank" class="nav-btn w-14 h-14 flex items-center justify-center text-2xl rounded-full" title="Linktree"><i class="fa-solid fa-link"></i></a>
+                 </div>
+              </div>
+              <div class="opacity-50 cinzel tracking-widest text-[var(--sand-light)] mt-4">
+                 END OF THE JOURNEY
+              </div>
+
+              <!-- Back to Guild button -->
+              <div class="mt-12 text-center">
+                <a href="/hall-of-fame" class="inline-flex items-center gap-2 px-8 py-3 rounded-full border border-[var(--sand-mid)] text-[var(--sand-light)] hover:bg-[var(--sand-mid)] hover:text-[var(--desert-night)] transition-all duration-300">
+                  <i class="fa-solid fa-arrow-left"></i> 返回冒險公會
+                </a>
+              </div>
+           </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- External Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <script>
+    // Create a circular texture for particles programmatically
+    function createCircleTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(32, 32, 30, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    // Create a glowing, soft radial gradient for fireflies
+    function createGlowTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        gradient.addColorStop(0, 'rgba(204, 255, 0, 1)');
+        gradient.addColorStop(0.2, 'rgba(150, 255, 0, 0.8)');
+        gradient.addColorStop(0.5, 'rgba(50, 150, 0, 0.2)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 64, 64);
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    // Create a softer smoke texture
+    function createSmokeTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(0.4, 'rgba(255,255,255,0.8)');
+        gradient.addColorStop(0.8, 'rgba(255,255,255,0.2)');
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 128, 128);
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    // Global objects to modify via ScrollTrigger
+    const ThreeSceneState = {
+      progress: 0,
+      fogColor: new THREE.Color(0xE8D3A2), // Sand light
+      nightFogColor: new THREE.Color(0x152336), // Desert night - Brighter deep moonlit blue
+      dirLightColor: new THREE.Color(0xE2725B), // Sunset orange
+      nightDirLightColor: new THREE.Color(0xc9e4ff), // Bright silvery-blue moonlight
+      ambientColor: new THREE.Color(0xffffff),
+      nightAmbientColor: new THREE.Color(0x354a6b), // Brighter ambient blue for night
+      sandColor: new THREE.Color(0xD4B872),
+      nightSandColor: new THREE.Color(0x0d1a2d), // Deep blue sand, not black
+    };
+
+    let dirLight, ambientLight, terrain, sandstorm, smokeParticles, sceneFog, moon;
+
+    // ==========================================
+    // Three.js: Desert Dunes & Sandstorm
+    // ==========================================
+    const initThreeJS = () => {
+      const container = document.getElementById('three-canvas-container');
+      const scene = new THREE.Scene();
+
+      // Warm desert fog
+      sceneFog = new THREE.FogExp2(ThreeSceneState.fogColor.getHex(), 0.015);
+      scene.fog = sceneFog;
+      scene.background = sceneFog.color;
+
+      const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 10, 40);
+      camera.lookAt(0, 0, 0);
+
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(renderer.domElement);
+
+      // Lighting
+      ambientLight = new THREE.AmbientLight(ThreeSceneState.ambientColor.getHex(), 0.6);
+      scene.add(ambientLight);
+
+      dirLight = new THREE.DirectionalLight(ThreeSceneState.dirLightColor.getHex(), 1.2);
+      dirLight.position.set(100, 50, -50);
+      scene.add(dirLight);
+
+      // Desert Terrain (Dunes)
+      const planeGeo = new THREE.PlaneGeometry(200, 200, 128, 128);
+      planeGeo.rotateX(-Math.PI / 2);
+
+      // Modify vertices to create dunes
+      const positions = planeGeo.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i);
+        const z = positions.getZ(i);
+        // More complex procedural noise for better dunes
+        const y = Math.sin(x * 0.1) * Math.cos(z * 0.1) * 3 +
+                  Math.sin(x * 0.03 + z * 0.05) * 5 +
+                  Math.sin(x * 0.2 + z * 0.1) * 1.5;
+        positions.setY(i, y);
+      }
+      planeGeo.computeVertexNormals();
+
+      const sandMat = new THREE.MeshStandardMaterial({
+        color: ThreeSceneState.sandColor.getHex(),
+        roughness: 0.9,
+        metalness: 0.1,
+        flatShading: true
+      });
+
+      terrain = new THREE.Mesh(planeGeo, sandMat);
+      terrain.position.y = -10;
+      scene.add(terrain);
+
+      // Fine Sandstorm Particles (Circular)
+      const circleTex = createCircleTexture();
+      const particleGeo = new THREE.BufferGeometry();
+      const particleCount = 6000; // More particles for finer look
+      const posArray = new Float32Array(particleCount * 3);
+
+      for(let i = 0; i < particleCount * 3; i+=3) {
+        posArray[i] = (Math.random() - 0.5) * 200; // x
+        posArray[i+1] = Math.random() * 50 - 5;   // y
+        posArray[i+2] = (Math.random() - 0.5) * 200; // z
+      }
+
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+      const particleMat = new THREE.PointsMaterial({
+        size: 0.15, // Smaller particles
+        color: 0xE8D3A2,
+        map: circleTex,
+        alphaTest: 0.1,
+        transparent: true,
+        opacity: 0.7,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+
+      sandstorm = new THREE.Points(particleGeo, particleMat);
+      scene.add(sandstorm);
+
+      // Smoke / Dust Fog Particles
+      const smokeGeo = new THREE.BufferGeometry();
+      const smokeCount = 100;
+      const smokePosArray = new Float32Array(smokeCount * 3);
+      const smokeSizeArray = new Float32Array(smokeCount);
+
+      for(let i = 0; i < smokeCount; i++) {
+        smokePosArray[i*3] = (Math.random() - 0.5) * 200;
+        smokePosArray[i*3+1] = Math.random() * 20;
+        smokePosArray[i*3+2] = (Math.random() - 0.5) * 100;
+        smokeSizeArray[i] = Math.random() * 20 + 10;
+      }
+      smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePosArray, 3));
+      smokeGeo.setAttribute('size', new THREE.BufferAttribute(smokeSizeArray, 1));
+
+      // Use a basic points material with size attenuation for smoke
+      const smokeMat = new THREE.PointsMaterial({
+        size: 25,
+        map: createSmokeTexture(),
+        transparent: true,
+        opacity: 0.15,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        color: 0xE8D3A2
+      });
+
+      smokeParticles = new THREE.Points(smokeGeo, smokeMat);
+      scene.add(smokeParticles);
+
+
+
+      // Distant Oasis Light
+      const oasisLight = new THREE.PointLight(0x4A5D23, 2, 100);
+      oasisLight.position.set(-40, 5, -80);
+      scene.add(oasisLight);
+
+      // Moon
+      const moonGeo = new THREE.CircleGeometry(15, 64);
+      const moonMat = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0, // Starts invisible
+          fog: false // The moon shouldn't be affected by fog
+      });
+      moon = new THREE.Mesh(moonGeo, moonMat);
+      // Place it far in the background
+      moon.position.set(-30, -50, -250); // Starts low
+      scene.add(moon);
+
+      // --- NEW: Oasis Visuals (Trees, Water, Fireflies) ---
+      const oasisGroup = new THREE.Group();
+      oasisGroup.position.set(0, -10, -150); // Positioned deep in the scene
+      scene.add(oasisGroup);
+
+      // Water Pool - Upgraded to a more detailed plane for rippling
+      const waterGeo = new THREE.PlaneGeometry(50, 50, 64, 64);
+      waterGeo.rotateX(-Math.PI / 2);
+
+      // Make water shape slightly organic (not a perfect circle)
+      const waterPos = waterGeo.attributes.position;
+      for (let i = 0; i < waterPos.count; i++) {
+        const x = waterPos.getX(i);
+        const z = waterPos.getZ(i);
+        const dist = Math.sqrt(x*x + z*z);
+        // Cut off vertices outside radius ~20 to make a rough circle
+        if (dist > 20 + Math.sin(Math.atan2(z, x) * 5) * 2) {
+             waterPos.setY(i, -10); // Hide them below
+        }
+      }
+      waterGeo.computeVertexNormals();
+
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x1E3A8A, // Deep blue
+        emissive: 0x102A4A, // Slight magical glow
+        transparent: true,
+        opacity: 0, // Starts invisible
+        roughness: 0.1,
+        metalness: 0.9,
+        flatShading: true // Gives a cool low-poly water reflection
+      });
+      const water = new THREE.Mesh(waterGeo, waterMat);
+      water.position.y = 0.5; // Slightly above terrain (-10)
+      oasisGroup.add(water);
+
+      // Rocks around the water
+      const rockMat = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        roughness: 0.8,
+        metalness: 0.2,
+        transparent: true,
+        opacity: 0,
+        flatShading: true
+      });
+
+      for (let i=0; i<20; i++) {
+        const rockSize = Math.random() * 2 + 1;
+        const rockGeo = new THREE.DodecahedronGeometry(rockSize, 1);
+
+        // Deform rocks
+        const rPos = rockGeo.attributes.position;
+        for (let j=0; j<rPos.count; j++) {
+            rPos.setXYZ(j,
+                rPos.getX(j) * (1 + (Math.random()-0.5)*0.5),
+                rPos.getY(j) * (1 + (Math.random()-0.5)*0.5),
+                rPos.getZ(j) * (1 + (Math.random()-0.5)*0.5)
+            );
+        }
+        rockGeo.computeVertexNormals();
+
+        const rock = new THREE.Mesh(rockGeo, rockMat);
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 19 + Math.random() * 4; // Around the water edge
+        rock.position.set(
+            Math.cos(angle) * radius,
+            0.5,
+            Math.sin(angle) * radius
+        );
+        rock.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+        oasisGroup.add(rock);
+      }
+
+      // Grass / Reeds near water
+      // Magic Crystals around water
+      const crystalMat = new THREE.MeshStandardMaterial({
+        color: 0x00ffff, // Cyan
+        emissive: 0x00aaff,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0,
+        roughness: 0.1,
+        metalness: 0.8,
+        flatShading: true
+      });
+
+      const crystals = [];
+      for(let i=0; i<8; i++) {
+          const cGeo = new THREE.ConeGeometry(0.5, 3 + Math.random()*2, 5);
+          const crystal = new THREE.Mesh(cGeo, crystalMat);
+
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 20 + Math.random() * 2;
+          crystal.position.set(
+             Math.cos(angle) * radius,
+             0,
+             Math.sin(angle) * radius
+          );
+          crystal.rotation.set(
+             (Math.random()-0.5)*0.5,
+             Math.random()*Math.PI,
+             (Math.random()-0.5)*0.5
+          );
+
+          // Add a small light to each crystal
+          const cLight = new THREE.PointLight(0x00ffff, 0, 10);
+          crystal.add(cLight);
+
+          oasisGroup.add(crystal);
+          crystals.push({ mesh: crystal, light: cLight, baseHeight: crystal.position.y });
+      }
+
+      const grassMat = new THREE.MeshStandardMaterial({
+        color: 0x4A5D23,
+        transparent: true,
+        opacity: 0,
+        roughness: 1.0,
+        side: THREE.DoubleSide
+      });
+
+      const grassGroup = new THREE.Group();
+      const grassBlades = [];
+      for(let i=0; i<150; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 20 + Math.random() * 8;
+          const gx = Math.cos(angle) * radius;
+          const gz = Math.sin(angle) * radius;
+
+          if(gz > 15 && gx > -15 && gx < 15) continue; // Leave path open
+
+          const grassHeight = Math.random() * 2 + 1;
+          // Simple triangle blade
+          const gGeo = new THREE.BufferGeometry();
+          const gVerts = new Float32Array([
+             -0.1, 0, 0,
+              0.1, 0, 0,
+              0, grassHeight, (Math.random()-0.5)*0.5
+          ]);
+          gGeo.setAttribute('position', new THREE.BufferAttribute(gVerts, 3));
+          gGeo.computeVertexNormals();
+
+          const blade = new THREE.Mesh(gGeo, grassMat);
+          blade.position.set(gx, 0.5, gz);
+          blade.rotation.y = Math.random() * Math.PI * 2;
+          grassGroup.add(blade);
+          grassBlades.push(blade);
+      }
+      oasisGroup.add(grassGroup);
+
+      // Stylized Lotus Flowers on Water
+      const lotusMat = new THREE.MeshStandardMaterial({
+        color: 0xffaacc, // Soft pink/white
+        emissive: 0xff4488,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0,
+        roughness: 0.3,
+        side: THREE.DoubleSide,
+        flatShading: true
+      });
+
+      const lotuses = [];
+      const numLotuses = 5;
+      for(let i=0; i<numLotuses; i++) {
+         const lotusGroup = new THREE.Group();
+
+         // Create petals
+         for(let j=0; j<8; j++) {
+            const angle = (j / 8) * Math.PI * 2;
+            const petalGeo = new THREE.ConeGeometry(0.5, 2, 3);
+            // Move origin to base
+            petalGeo.translate(0, 1, 0);
+            // Flatten cone to look like a petal
+            petalGeo.scale(1, 1, 0.2);
+
+            const petal = new THREE.Mesh(petalGeo, lotusMat);
+            petal.rotation.y = angle;
+            // Flare out the petals
+            petal.rotation.x = Math.PI / 4;
+
+            // Re-apply translation after rotation to position them around center
+            const pGroup = new THREE.Group();
+            pGroup.add(petal);
+            pGroup.rotation.y = angle;
+
+            lotusGroup.add(pGroup);
+         }
+
+         // Add a soft glow point light inside lotus
+         const lotusLight = new THREE.PointLight(0xffaacc, 0, 5);
+         lotusLight.position.y = 0.5;
+         lotusGroup.add(lotusLight);
+
+         // Position on water
+         const radius = Math.random() * 12 + 2;
+         const angle = Math.random() * Math.PI * 2;
+         lotusGroup.position.set(
+            Math.cos(angle) * radius,
+            1.0, // Water surface
+            Math.sin(angle) * radius
+         );
+
+         oasisGroup.add(lotusGroup);
+         lotuses.push({ group: lotusGroup, light: lotusLight, baseX: lotusGroup.position.x, baseZ: lotusGroup.position.z });
+      }
+
+      // Oasis Trees (More detailed)
+      const treeTrunkMat = new THREE.MeshStandardMaterial({
+        color: 0x2a1e12, // Darker wood
+        transparent: true,
+        opacity: 0,
+        roughness: 0.9,
+        flatShading: true
+      });
+
+      const treeCanopyMat = new THREE.MeshStandardMaterial({
+        color: 0x1a3320, // Deep green
+        emissive: 0x0a1f10, // Slight green glow
+        emissiveIntensity: 0,
+        transparent: true,
+        opacity: 0,
+        roughness: 0.6,
+        flatShading: true
+      });
+
+      const trees = [];
+      for(let i=0; i<45; i++) { // Increased tree count
+        // Position trees around the water edge
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 23 + Math.random() * 25; // Wider forest spread
+        const px = Math.cos(angle) * radius;
+        const pz = Math.sin(angle) * radius;
+
+        // Don't place trees right in front of the camera (blocks the view of the pool)
+        if(pz > 15 && px > -20 && px < 20) continue;
+
+        const h = Math.random() * 10 + 6; // Taller trees
+
+        const treeGroup = new THREE.Group();
+        // The terrain plane is at z=0 normally but we offset it. Trees placed relative to oasisGroup
+        treeGroup.position.set(px, 0, pz);
+
+        // Trunk (More segments for gnarly look)
+        const trunkGeo = new THREE.CylinderGeometry(0.3, 1.0, h, 6, 4);
+        const tPos = trunkGeo.attributes.position;
+        for(let j=0; j<tPos.count; j++) {
+            if (tPos.getY(j) > -h/2 + 1) { // Don't deform bottom too much
+                tPos.setXYZ(j,
+                   tPos.getX(j) + (Math.random()-0.5)*0.4,
+                   tPos.getY(j),
+                   tPos.getZ(j) + (Math.random()-0.5)*0.4
+                );
+            }
+        }
+        trunkGeo.computeVertexNormals();
+
+        const trunk = new THREE.Mesh(trunkGeo, treeTrunkMat);
+        trunk.position.y = h/2;
+
+        // Slight natural curve/lean
+        trunk.rotation.x = (Math.random() - 0.5) * 0.2;
+        trunk.rotation.z = (Math.random() - 0.5) * 0.2;
+        treeGroup.add(trunk);
+
+        // Multi-Sphere Canopy for more detail
+        const numCanopies = Math.floor(Math.random() * 4) + 3; // More canopies
+        for(let j=0; j<numCanopies; j++) {
+            const canopySize = Math.random() * 3 + 2;
+            // Use Dodecahedron for cooler stylized low-poly look
+            const canopyGeo = new THREE.DodecahedronGeometry(canopySize, 1);
+
+            // Apply slight noise/displacement to sphere vertices to make it look leafy/organic
+            const posAttr = canopyGeo.attributes.position;
+            const vertex = new THREE.Vector3();
+            for(let k=0; k<posAttr.count; k++) {
+                vertex.fromBufferAttribute(posAttr, k);
+                vertex.normalize().multiplyScalar(canopySize + (Math.random() - 0.5) * 1.5);
+                posAttr.setXYZ(k, vertex.x, vertex.y, vertex.z);
+            }
+            canopyGeo.computeVertexNormals();
+
+            const canopy = new THREE.Mesh(canopyGeo, treeCanopyMat);
+            // Position near the top of the trunk, offset slightly, some lower branches
+            const hOffset = h * (0.6 + Math.random() * 0.5);
+            canopy.position.set(
+                (Math.random() - 0.5) * 3,
+                hOffset,
+                (Math.random() - 0.5) * 3
+            );
+            // Squashed shape
+            canopy.scale.set(1.2, 0.8, 1.2);
+            treeGroup.add(canopy);
+        }
+
+        oasisGroup.add(treeGroup);
+        trees.push({ group: treeGroup });
+      }
+
+      // Firefly Particles
+      const fireflyGeo = new THREE.BufferGeometry();
+      const fireflyCount = 300;
+      const fireflyPosArray = new Float32Array(fireflyCount * 3);
+      const fireflyPhaseArray = new Float32Array(fireflyCount); // for twinkling
+      const fireflyColorArray = new Float32Array(fireflyCount * 3); // RGB
+
+      for(let i=0; i<fireflyCount; i++) {
+         fireflyPosArray[i*3] = (Math.random() - 0.5) * 70; // x spread around oasis
+         fireflyPosArray[i*3+1] = Math.random() * 20 + 1;    // y height
+         fireflyPosArray[i*3+2] = (Math.random() - 0.5) * 70; // z spread around oasis
+
+         // Phase for bobbing and flickering
+         fireflyPhaseArray[i] = Math.random() * Math.PI * 2;
+
+         // Start fully yellow-green
+         fireflyColorArray[i*3] = 0.8;   // R
+         fireflyColorArray[i*3+1] = 1.0; // G
+         fireflyColorArray[i*3+2] = 0.0; // B
+      }
+
+      fireflyGeo.setAttribute('position', new THREE.BufferAttribute(fireflyPosArray, 3));
+      fireflyGeo.setAttribute('phase', new THREE.BufferAttribute(fireflyPhaseArray, 1));
+      fireflyGeo.setAttribute('color', new THREE.BufferAttribute(fireflyColorArray, 3));
+
+      const fireflyMat = new THREE.PointsMaterial({
+         size: 2.5, // Larger to see the gradient glow
+         transparent: true,
+         opacity: 0,
+         map: createGlowTexture(),
+         blending: THREE.AdditiveBlending,
+         depthWrite: false,
+         vertexColors: true
+      });
+
+      const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
+      fireflies.position.copy(oasisGroup.position);
+      scene.add(fireflies);
+
+      // Dynamic Glowing Firefly Lights (Real PointLights to cast light on the scene)
+      const dynamicLights = [];
+      const numLights = 6;
+      for(let i=0; i<numLights; i++) {
+         const pl = new THREE.PointLight(0xCCFF00, 0, 30); // starts off
+         const phase = Math.random() * Math.PI * 2;
+         const startX = (Math.random() - 0.5) * 40;
+         const startZ = (Math.random() - 0.5) * 40;
+         pl.position.set(startX, 5, startZ);
+         oasisGroup.add(pl);
+
+         dynamicLights.push({
+             light: pl,
+             baseX: startX,
+             baseZ: startZ,
+             phase: phase,
+             speed: Math.random() * 0.5 + 0.5,
+             radius: Math.random() * 10 + 5
+         });
+      }
+
+      // --- END Oasis Visuals ---
+
+
+      // Mouse Parallax
+      let mouseX = 0;
+      let mouseY = 0;
+      document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+      });
+
+      // Animation Loop
+      let time = 0;
+      const animate = () => {
+        requestAnimationFrame(animate);
+        time += 0.005;
+
+        // Apply Scroll Progression (Transition to Night Oasis)
+        const p = ThreeSceneState.progress;
+
+        // Interpolate colors
+        sceneFog.color.lerpColors(ThreeSceneState.fogColor, ThreeSceneState.nightFogColor, p);
+        scene.background = sceneFog.color;
+
+        dirLight.color.lerpColors(ThreeSceneState.dirLightColor, ThreeSceneState.nightDirLightColor, p);
+        ambientLight.color.lerpColors(ThreeSceneState.ambientColor, ThreeSceneState.nightAmbientColor, p);
+
+
+        terrain.material.color.lerpColors(ThreeSceneState.sandColor, ThreeSceneState.nightSandColor, p);
+
+        // --- NEW: Fade in Oasis ---
+        const oasisVisibility = Math.max(0, (p - 0.5) * 2); // 0 to 1 in second half of scroll
+
+        // Rise the moon and fade it in
+        moon.position.y = -50 + (oasisVisibility * 100); // Rises from -50 up to 50
+        moon.material.opacity = oasisVisibility;
+
+        water.material.opacity = oasisVisibility * 0.8;
+
+        treeTrunkMat.opacity = oasisVisibility * 0.9;
+        treeCanopyMat.opacity = oasisVisibility * 0.9;
+        treeCanopyMat.emissiveIntensity = oasisVisibility * 0.5;
+        rockMat.opacity = oasisVisibility;
+        grassMat.opacity = oasisVisibility;
+        crystalMat.opacity = oasisVisibility * 0.9;
+
+        fireflyMat.opacity = oasisVisibility * 0.8;
+
+        // Animate Crystals (bobbing & glow)
+        crystals.forEach((c, idx) => {
+           c.mesh.position.y = c.baseHeight + Math.sin(time * 2 + idx) * 0.5;
+           c.light.intensity = oasisVisibility * (1 + Math.sin(time * 4 + idx) * 0.5);
+        });
+
+        // Animate Grass Sway
+        grassBlades.forEach((blade, idx) => {
+            const posAttr = blade.geometry.attributes.position;
+            // The top vertex is index 2 (0, grassHeight, z)
+            const topZ = posAttr.getZ(2);
+            posAttr.setZ(2, topZ + Math.sin(time * 3 + idx) * 0.05); // Sway based on time
+            blade.geometry.attributes.position.needsUpdate = true;
+        });
+
+        // Animate Lotus Flowers
+        lotusMat.opacity = oasisVisibility * 0.9;
+        lotuses.forEach((lotus, idx) => {
+           // Bobbing on water
+           const waterWave = Math.sin(lotus.baseX * 0.5 + time * 2) * 0.3 + Math.sin(lotus.baseZ * 0.5 + time * 1.5) * 0.3;
+           lotus.group.position.y = 1.0 + waterWave;
+
+           // Slow rotation
+           lotus.group.rotation.y = time * 0.2 + idx;
+
+           lotus.light.intensity = oasisVisibility * (0.5 + Math.sin(time * 3 + idx) * 0.2);
+        });
+
+        // Animate water rippling
+        const wPos = water.geometry.attributes.position;
+        for(let i=0; i<wPos.count; i++) {
+            const x = wPos.getX(i);
+            const z = wPos.getZ(i);
+            // Ignore the edges that are cut off below -5
+            if (wPos.getY(i) > -5) {
+                wPos.setY(i, Math.sin(x * 0.5 + time * 2) * 0.3 + Math.sin(z * 0.5 + time * 1.5) * 0.3);
+            }
+        }
+        water.geometry.computeVertexNormals();
+        water.geometry.attributes.position.needsUpdate = true;
+
+        // Move oasis group towards camera based on scroll
+        oasisGroup.position.z = -150 + (p * 130);
+        fireflies.position.z = oasisGroup.position.z;
+
+        // Animate Fireflies
+        const fPositions = fireflies.geometry.attributes.position.array;
+        const fPhases = fireflies.geometry.attributes.phase.array;
+        const fColors = fireflies.geometry.attributes.color.array;
+        for(let i=0; i<fireflyCount; i++) {
+            // Swaying motion
+            fPositions[i*3] += Math.sin(time * 2 + fPhases[i]) * 0.05;
+            fPositions[i*3+1] += Math.cos(time * 1.5 + fPhases[i]) * 0.05;
+            fPositions[i*3+2] += Math.sin(time * 1 + fPhases[i]) * 0.05;
+
+            // Keep within bounds
+            if(fPositions[i*3+1] < 1) fPositions[i*3+1] = 1; // don't go below water
+            if(fPositions[i*3+1] > 25) fPositions[i*3+1] = 25; // don't go too high
+
+            // Twinkling effect (pulsing alpha via color)
+            // A sine wave that oscillates between ~0.1 and 1.0 based on phase
+            const intensity = 0.1 + (Math.sin(time * 3 + fPhases[i]) + 1) / 2 * 0.9;
+
+            fColors[i*3] = 0.8 * intensity;   // R
+            fColors[i*3+1] = 1.0 * intensity; // G
+            fColors[i*3+2] = 0.0 * intensity; // B
+        }
+        fireflies.geometry.attributes.position.needsUpdate = true;
+        fireflies.geometry.attributes.color.needsUpdate = true;
+
+        // Animate Dynamic Light Sources (Big glowing fireflies casting light)
+        dynamicLights.forEach((dl) => {
+            // Figure-8 swirling pattern
+            const swirlX = dl.baseX + Math.sin(time * dl.speed + dl.phase) * dl.radius;
+            const swirlZ = dl.baseZ + Math.cos(time * dl.speed * 0.8 + dl.phase) * dl.radius;
+            const swirlY = 4 + Math.sin(time * 1.5 + dl.phase) * 3;
+            dl.light.position.set(swirlX, swirlY, swirlZ);
+
+            // Pulse light intensity
+            const intensity = 0.8 + (Math.sin(time * 4 + dl.phase) + 1) / 2 * 1.5;
+            dl.light.intensity = oasisVisibility * intensity;
+        });
+        // --- END Oasis Animation ---
+
+        // Slow down wind, stop completely at night (when p is close to 1)
+        const windSpeed = Math.max(0, (1 - p * 1.2)) * 0.5;
+
+        // Move terrain forward based on both time and scroll progress
+        // to make scrolling feel like moving through the desert
+        terrain.position.z = (time * 3) + (p * 50);
+
+        // Sandstorm wind effect
+        const pPositions = sandstorm.geometry.attributes.position.array;
+        for(let i = 0; i < particleCount * 3; i+=3) {
+          pPositions[i] -= windSpeed; // Wind blowing left
+          if(pPositions[i] < -100) {
+            pPositions[i] = 100;
+            pPositions[i+1] = Math.random() * 50 - 5;
+          }
+        }
+        sandstorm.geometry.attributes.position.needsUpdate = true;
+        // Fade out sandstorm completely at night
+        sandstorm.material.opacity = Math.max(0, (1 - p * 1.5)) * 0.7;
+
+
+        // Smoke effect
+        const sPositions = smokeParticles.geometry.attributes.position.array;
+        for(let i = 0; i < smokeCount * 3; i+=3) {
+            sPositions[i] -= windSpeed * 0.5;
+            sPositions[i+1] += Math.sin(time * 2 + i) * 0.02; // drifting up/down
+            if(sPositions[i] < -100) {
+                sPositions[i] = 100;
+            }
+        }
+        smokeParticles.geometry.attributes.position.needsUpdate = true;
+        smokeParticles.material.opacity = Math.max(0, (1 - p * 1.5)) * 0.15;
+
+
+        // Camera Parallax & Movement based on scroll
+        // Move camera deeper into the scene as we scroll
+        const baseZ = 40 - p * 20;
+        const baseY = 10 - p * 5;
+
+        camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+        camera.position.y += (baseY + mouseY * 2 - camera.position.y) * 0.05;
+        camera.position.z += (baseZ - camera.position.z) * 0.05;
+
+        camera.lookAt(0, 0, 0);
+
+        renderer.render(scene, camera);
+      };
+
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    };
+
+    // ==========================================
+    // p5.js: Interactive Wind / Breath
+    // ==========================================
+    const sketch = (p) => {
+      let particles = [];
+      let clickBursts = [];
+
+      p.setup = () => {
+        let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+        canvas.parent('p5-container');
+        p.noStroke();
+      };
+
+      p.draw = () => {
+        p.clear();
+
+        // Add wind particles based on mouse movement (More dynamic)
+        const mouseSpeed = p.dist(p.pmouseX, p.pmouseY, p.mouseX, p.mouseY);
+
+        if (mouseSpeed > 1) {
+          let count = p.floor(p.map(mouseSpeed, 1, 50, 1, 5));
+          for(let i=0; i<count; i++) {
+              particles.push({
+                x: p.mouseX + p.random(-10, 10),
+                y: p.mouseY + p.random(-10, 10),
+                vx: (p.mouseX - p.pmouseX) * p.random(0.1, 0.3) + p.random(1, 4), // Follow mouse dir + base wind
+                vy: (p.mouseY - p.pmouseY) * p.random(0.1, 0.3) + p.random(-1, 1),
+                life: 255,
+                maxLife: p.random(100, 255),
+                size: p.random(2, 8),
+                color: p.random([
+                  [255, 255, 255],
+                  [232, 211, 162], // Sand light
+                  [226, 114, 91]   // Sunset glow
+                ])
+              });
+          }
+        }
+
+        // Add random ambient wind particles
+        if(p.random(1) < 0.2) {
+          particles.push({
+            x: -20,
+            y: p.random(p.height),
+            vx: p.random(3, 8),
+            vy: p.random(-1, 1),
+            life: 255,
+            maxLife: 255,
+            size: p.random(1, 4),
+            color: [255, 255, 255]
+          });
+        }
+
+        // Update and draw trails
+        for (let i = particles.length - 1; i >= 0; i--) {
+          let pt = particles[i];
+
+          // Noise turbulence for organic movement
+          let n = p.noise(pt.x * 0.005, pt.y * 0.005, p.frameCount * 0.01);
+          let angle = p.map(n, 0, 1, -p.PI, p.PI);
+
+          pt.vx += p.cos(angle) * 0.1;
+          pt.vy += p.sin(angle) * 0.1;
+
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.life -= 2;
+
+          let alpha = p.map(pt.life, 0, pt.maxLife, 0, 1);
+          p.fill(pt.color[0], pt.color[1], pt.color[2], alpha * 150);
+          p.ellipse(pt.x, pt.y, pt.size);
+
+          if (pt.life <= 0 || pt.x > p.width || pt.y < 0 || pt.y > p.height) {
+            particles.splice(i, 1);
+          }
+        }
+
+        // Update and draw click bursts (Sound waves)
+        for (let i = clickBursts.length - 1; i >= 0; i--) {
+            let b = clickBursts[i];
+            b.radius += b.speed;
+            b.life -= 5;
+
+            p.noFill();
+            p.stroke(226, 114, 91, b.life); // Sunset color
+            p.strokeWeight(b.life / 50);
+            p.ellipse(b.x, b.y, b.radius * 2);
+            p.noStroke();
+
+            if (b.life <= 0) {
+                clickBursts.splice(i, 1);
+            }
+        }
+      };
+
+      p.mousePressed = () => {
+          // Create sound wave burst
+          clickBursts.push({
+              x: p.mouseX,
+              y: p.mouseY,
+              radius: 10,
+              speed: 4,
+              life: 255
+          });
+
+          // Explode particles
+          for(let i=0; i<20; i++) {
+              let angle = p.random(p.TWO_PI);
+              let speed = p.random(2, 8);
+              particles.push({
+                x: p.mouseX,
+                y: p.mouseY,
+                vx: p.cos(angle) * speed,
+                vy: p.sin(angle) * speed,
+                life: 255,
+                maxLife: 255,
+                size: p.random(3, 10),
+                color: [255, 255, 255]
+              });
+          }
+      };
+
+      p.windowResized = () => {
+        p.resizeCanvas(p.windowWidth, p.windowHeight);
+      };
+    };
+
+    // ==========================================
+    // GSAP Animations & Initialization
+    // ==========================================
+    window.addEventListener('load', () => {
+      initThreeJS();
+      new p5(sketch);
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      // Hero Entry Animation
+      const heroTl = gsap.timeline();
+      heroTl.fromTo('.avatar-frame',
+        { scale: 0.8, opacity: 0, rotationY: 15 },
+        { scale: 1, opacity: 1, rotationY: 0, duration: 2, ease: "power3.out" }
+      )
+      .fromTo('.gs-reveal h1',
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.5, ease: "power2.out" },
+        "-=1.5"
+      )
+      .fromTo('.gs-reveal h2',
+        { opacity: 0 },
+        { opacity: 1, duration: 2 },
+        "-=1"
+      )
+      .fromTo('.gs-reveal p',
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, stagger: 0.2 },
+        "-=1.5"
+      );
+
+      // Horizontal Scroll Section Pinning & Scene Transition
+      const scrollContainer = document.querySelector('.horizontal-scroll-container');
+      const panels = gsap.utils.toArray('.panel');
+      const overlay = document.querySelector('.desert-overlay');
+
+      const horizontalTween = gsap.to(panels, {
+        xPercent: -100 * (panels.length - 1),
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".horizontal-scroll-wrapper",
+          pin: true,
+          scrub: 1,
+          end: () => "+=" + (scrollContainer.offsetWidth * 1.5), // Make the scroll longer/more noticeable
+          onUpdate: (self) => {
+            // Update global state for Three.js render loop
+            ThreeSceneState.progress = self.progress;
+
+            // Also fade the HTML overlay gradient to match the night theme gradually
+            // We use the full progress (0 to 1) instead of jumping at 0.5 to make it smoother
+            const darkProgress = self.progress;
+
+            // Interpolate the gradient stop colors
+            const baseA_r = 232, baseA_g = 211, baseA_b = 162, baseA_a = 0.6;
+            const darkA_r = 10,  darkA_g = 13,  darkA_b = 20,  darkA_a = 1.0;
+
+            const curA_r = Math.round(baseA_r - (baseA_r - darkA_r) * darkProgress);
+            const curA_g = Math.round(baseA_g - (baseA_g - darkA_g) * darkProgress);
+            const curA_b = Math.round(baseA_b - (baseA_b - darkA_b) * darkProgress);
+            const curA_a = baseA_a - (baseA_a - darkA_a) * darkProgress;
+
+            overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(${curA_r}, ${curA_g}, ${curA_b}, ${curA_a}) 100%)`;
+
+            // Interpolate the solid body background
+            const r = Math.round(232 - (232-10)*darkProgress);
+            const g = Math.round(211 - (211-13)*darkProgress);
+            const b = Math.round(162 - (162-20)*darkProgress);
+            document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+          }
+        }
+      });
+
+      // Simple parallax inside panels
+      panels.forEach((panel) => {
+        const content = panel.querySelector('.glass-panel, .glass-panel-oasis, .glass-panel-dark');
+        if(content) {
+          gsap.from(content, {
+            y: 50,
+            opacity: 0,
+            scrollTrigger: {
+              trigger: panel,
+              containerAnimation: horizontalTween,
+              start: "left 70%",
+              toggleActions: "play none none reverse"
+            }
+          });
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
