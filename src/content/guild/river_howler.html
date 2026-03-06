@@ -284,8 +284,8 @@
 
                 <div class="avatar-container magic-glow mb-12">
                     <div class="avatar-inner">
-                        <!-- Using 10.webp (Flute) as the main avatar based on request -->
-                        <img src="/assets/guild/river_howler/10.webp" alt="River Howler" id="hero-avatar" class="avatar-img">
+                        <!-- Using 1.webp as the main avatar based on user request -->
+                        <img src="/assets/guild/river_howler/1.webp" alt="River Howler" id="hero-avatar" class="avatar-img">
                     </div>
                 </div>
 
@@ -470,183 +470,237 @@
         const initThreeJS = () => {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050101, 0.025); // Dense catacomb fog
+            scene.fog = new THREE.FogExp2(0x050101, 0.015); // Eerie atmospheric fog
 
-            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-            camera.position.set(0, 5, 30);
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 8, 40);
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
+            renderer.toneMappingExposure = 1.2;
             container.appendChild(renderer.domElement);
 
-            window.THREE_SCENE_COLORS = { r: 1.0, g: 0.1, b: 0.1 }; // Base reddish tone for Necromancer
+            window.THREE_SCENE_COLORS = { r: 0.6, g: 0.05, b: 0.05 }; // Necromancer deep blood red
 
-            // 1. Moving Ground (Catacomb Floor)
-            // Use a grid helper and a dark plane to simulate the floor moving
+            // --- 1. Palace Summoning Floor (Runic Ring) ---
             const floorGroup = new THREE.Group();
 
-            const groundGeo = new THREE.PlaneGeometry(200, 400, 20, 40);
-            const groundMat = new THREE.MeshStandardMaterial({
-                color: 0x0a0a0a,
-                roughness: 0.9,
-                metalness: 0.1,
-                wireframe: true, // Wireframe gives a cool tech/magic hybrid floor look
+            // Giant glowing runic ring
+            const ringGeo = new THREE.RingGeometry(15, 20, 64);
+            const ringMat = new THREE.MeshStandardMaterial({
+                color: 0xaa0000,
+                emissive: 0xaa0000,
+                emissiveIntensity: 0.8,
                 transparent: true,
-                opacity: 0.15
+                opacity: 0.6,
+                side: THREE.DoubleSide,
+                wireframe: true // creates a runic tech look
             });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            ground.position.y = -5;
-            floorGroup.add(ground);
+            const summoningRing = new THREE.Mesh(ringGeo, ringMat);
+            summoningRing.rotation.x = -Math.PI / 2;
+            summoningRing.position.y = -4.9;
+            floorGroup.add(summoningRing);
+            window.THREE_SUMMONING_RING = summoningRing;
 
-            // Add a solid dark floor underneath the wireframe
-            const solidGroundGeo = new THREE.PlaneGeometry(200, 400);
-            const solidGroundMat = new THREE.MeshBasicMaterial({ color: 0x020000 });
-            const solidGround = new THREE.Mesh(solidGroundGeo, solidGroundMat);
-            solidGround.rotation.x = -Math.PI / 2;
-            solidGround.position.y = -5.1;
-            floorGroup.add(solidGround);
+            // Inner dark stone floor
+            const stoneGeo = new THREE.CylinderGeometry(25, 25, 0.5, 64);
+            const stoneMat = new THREE.MeshStandardMaterial({
+                color: 0x050505,
+                roughness: 0.9,
+                metalness: 0.2
+            });
+            const stoneFloor = new THREE.Mesh(stoneGeo, stoneMat);
+            stoneFloor.position.y = -5.2;
+            floorGroup.add(stoneFloor);
+
+            // Infinite Abyss beneath
+            const abyssGeo = new THREE.PlaneGeometry(1000, 1000);
+            const abyssMat = new THREE.MeshBasicMaterial({ color: 0x010000 });
+            const abyssFloor = new THREE.Mesh(abyssGeo, abyssMat);
+            abyssFloor.rotation.x = -Math.PI / 2;
+            abyssFloor.position.y = -20;
+            floorGroup.add(abyssFloor);
 
             scene.add(floorGroup);
 
-            // 2. Pillars of the Palace
+            // --- 2. Gothic Palace Pillars ---
             const pillars = [];
-            const pillarGeo = new THREE.CylinderGeometry(1.5, 2, 60, 8);
-            const pillarMat = new THREE.MeshStandardMaterial({
-                color: 0x111111,
-                roughness: 0.8,
-                metalness: 0.3
-            });
+            const pillarGroup = new THREE.Group();
 
-            for(let i=0; i<12; i++) {
-                // Left side pillars
-                const pillarL = new THREE.Mesh(pillarGeo, pillarMat);
-                pillarL.position.set(-15, 20, -i * 20 + 20);
-                scene.add(pillarL);
-                pillars.push(pillarL);
+            // Complex gothic pillar construction
+            const createGothicPillar = () => {
+                const group = new THREE.Group();
 
-                // Right side pillars
-                const pillarR = new THREE.Mesh(pillarGeo, pillarMat);
-                pillarR.position.set(15, 20, -i * 20 + 20);
-                scene.add(pillarR);
-                pillars.push(pillarR);
+                // Base shaft
+                const shaftGeo = new THREE.CylinderGeometry(1.5, 2, 80, 8);
+                const stoneMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 1.0, metalness: 0.3 });
+                const shaft = new THREE.Mesh(shaftGeo, stoneMaterial);
+                shaft.position.y = 35;
+                group.add(shaft);
+
+                // Ornate sharp trim
+                const trimGeo = new THREE.ConeGeometry(2.5, 10, 4);
+                const trimMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7, metalness: 0.8 });
+                const trim = new THREE.Mesh(trimGeo, trimMat);
+                trim.position.y = -2;
+                group.add(trim);
+
+                // Floating flame orb holder
+                const holderGeo = new THREE.TorusGeometry(2, 0.2, 8, 24);
+                const holder = new THREE.Mesh(holderGeo, trimMat);
+                holder.position.y = 15;
+                holder.rotation.x = Math.PI / 2;
+                group.add(holder);
+
+                // Flame orb
+                const orbGeo = new THREE.SphereGeometry(1, 16, 16);
+                const orbMat = new THREE.MeshStandardMaterial({
+                    color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2, transparent: true, opacity: 0.8
+                });
+                const orb = new THREE.Mesh(orbGeo, orbMat);
+                orb.position.y = 15;
+                group.add(orb);
+
+                // Light source for the orb
+                const pointLight = new THREE.PointLight(0xff0000, 2, 30);
+                pointLight.position.y = 15;
+                group.add(pointLight);
+
+                return { mesh: group, orb, light: pointLight, orbMat };
+            };
+
+            const numPillars = 8;
+            const radius = 35;
+            for(let i = 0; i < numPillars; i++) {
+                const angle = (i / numPillars) * Math.PI * 2;
+                const pillarData = createGothicPillar();
+
+                pillarData.mesh.position.x = Math.cos(angle) * radius;
+                pillarData.mesh.position.z = Math.sin(angle) * radius - 20; // offset back
+
+                pillarGroup.add(pillarData.mesh);
+                pillars.push(pillarData);
             }
+            scene.add(pillarGroup);
+            window.THREE_PILLARS = pillars;
 
-            // 3. Piles of Skulls (Abstract representations via grouped geometry)
-            const skulls = [];
-            const skullGeo = new THREE.DodecahedronGeometry(0.8, 1); // Low-poly skull approximation
-            const skullMat = new THREE.MeshStandardMaterial({
-                color: 0x333333,
-                emissive: 0x000000,
-                roughness: 0.7
+            // --- 3. Floating Bone/Crystal Fragments (Alchemical Debris) ---
+            const debris = [];
+            const debrisGeo = new THREE.OctahedronGeometry(0.5, 0); // Sharp crystal/bone shape
+            const debrisMat = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                roughness: 0.4,
+                metalness: 0.6,
+                flatShading: true
             });
-            window.THREE_SKULL_MAT = skullMat;
 
-            // Scatter skulls along the edges of the path
-            for(let i=0; i<300; i++) {
-                const mesh = new THREE.Mesh(skullGeo, skullMat);
-                const side = Math.random() > 0.5 ? 1 : -1;
-                const xPos = side * (Math.random() * 20 + 10); // Spread out on sides
-                const zPos = Math.random() * -250 + 40;
+            for(let i=0; i<150; i++) {
+                const mesh = new THREE.Mesh(debrisGeo, debrisMat);
+                mesh.position.set(
+                    (Math.random() - 0.5) * 80,
+                    Math.random() * 60 - 10,
+                    (Math.random() - 0.5) * 80 - 20
+                );
 
-                // Height based on pile clustering (noise)
-                const cluster = Math.sin(zPos * 0.1) * Math.cos(xPos * 0.1);
-                const yPos = -4 + Math.max(0, cluster * 3) + Math.random() * 1.5;
+                // Random scale
+                const scale = Math.random() * 1.5 + 0.5;
+                mesh.scale.set(scale, scale, scale);
 
-                mesh.position.set(xPos, yPos, zPos);
-                mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-
-                // Add tiny floating souls near some skulls
-                if (Math.random() > 0.8) {
-                    const soulLight = new THREE.PointLight(0xff0000, 0.5, 5);
-                    soulLight.position.set(0, 1, 0);
-                    mesh.add(soulLight);
-                    mesh.userData.isSoulNode = true;
-                    mesh.userData.light = soulLight;
-                }
+                mesh.userData = {
+                    speedRot: new THREE.Vector3(Math.random() * 0.05, Math.random() * 0.05, Math.random() * 0.05),
+                    speedY: Math.random() * 0.02 + 0.01,
+                    baseY: mesh.position.y,
+                    offset: Math.random() * Math.PI * 2
+                };
 
                 scene.add(mesh);
-                skulls.push(mesh);
+                debris.push(mesh);
             }
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0x111111);
+            // --- 4. Lighting ---
+            const ambientLight = new THREE.AmbientLight(0x1a1a1a);
             scene.add(ambientLight);
 
-            const mainLight = new THREE.PointLight(0xff0000, 2, 100);
-            mainLight.position.set(0, 10, 20);
-            scene.add(mainLight);
+            // Central ritual spotlight
+            const centralLight = new THREE.PointLight(0xff0000, 3, 80);
+            centralLight.position.set(0, 10, 0);
+            scene.add(centralLight);
 
-            const fogLight = new THREE.PointLight(0xaa0000, 1.5, 150);
-            fogLight.position.set(0, 5, -50);
-            scene.add(fogLight);
-
-            window.THREE_LIGHTS = [mainLight, fogLight];
+            // Deep background rim light
+            const rimLight = new THREE.PointLight(0x440000, 5, 200);
+            rimLight.position.set(0, 40, -80);
+            scene.add(rimLight);
 
             window.updateThreeColors = () => {
                 const c = window.THREE_SCENE_COLORS;
                 const hexColor = new THREE.Color(c.r, c.g, c.b);
 
-                mainLight.color.copy(hexColor);
-                fogLight.color.copy(hexColor);
+                centralLight.color.copy(hexColor);
+                rimLight.color.copy(hexColor);
 
-                // Update skull soul lights
-                skulls.forEach(s => {
-                    if (s.userData.isSoulNode) {
-                        s.userData.light.color.copy(hexColor);
-                    }
+                // Update summoning ring
+                summoningRing.material.color.copy(hexColor);
+                summoningRing.material.emissive.copy(hexColor);
+
+                // Update pillar orbs and lights
+                pillars.forEach(p => {
+                    p.orbMat.color.copy(hexColor);
+                    p.orbMat.emissive.copy(hexColor);
+                    p.light.color.copy(hexColor);
                 });
 
                 // Update fog color matching the theme
-                scene.fog.color.setHex(hexColor.getHex()).multiplyScalar(0.05); // very dark version of the color
-
-                // Update solid ground color
-                solidGroundMat.color.setHex(hexColor.getHex()).multiplyScalar(0.02);
+                scene.fog.color.setHex(hexColor.getHex()).multiplyScalar(0.08);
             };
 
             // Initial color setup
             window.updateThreeColors();
 
-            // Animation Loop
+            // --- 5. Animation Loop ---
             let time = 0;
-            let targetCameraZ = 30;
-            let currentCameraZ = 30;
-            let previousScrollProgress = 0;
+            let currentCameraZ = 40;
+            let currentCameraY = 8;
 
             const animate = () => {
                 requestAnimationFrame(animate);
                 time += 0.01;
 
-                // Forward movement based on scroll
-                // We map scrollProgress (0 to 1) to a deep Z distance
-                const scrollDelta = APP_STATE.scrollProgress - previousScrollProgress;
-                previousScrollProgress = APP_STATE.scrollProgress;
+                // Rotate the summoning ring slowly
+                summoningRing.rotation.z -= 0.002;
 
-                // Move ground texture/mesh to simulate continuous forward movement
-                APP_STATE.groundOffset += scrollDelta * 200;
+                // Pulsate central light
+                centralLight.intensity = 2 + Math.sin(time * 2) * 1;
 
-                // Move camera smoothly through the corridor
-                targetCameraZ = 30 - (APP_STATE.scrollProgress * 150); // Move deep into the palace
-                currentCameraZ += (targetCameraZ - currentCameraZ) * 0.05; // Ease camera movement
+                // Animate floating debris
+                debris.forEach(d => {
+                    d.rotation.x += d.userData.speedRot.x;
+                    d.rotation.y += d.userData.speedRot.y;
+                    d.rotation.z += d.userData.speedRot.z;
+                    d.position.y = d.userData.baseY + Math.sin(time * 2 + d.userData.offset) * 2;
+                });
+
+                // Animate pillar orbs (hovering)
+                pillars.forEach((p, i) => {
+                    p.orb.position.y = 15 + Math.sin(time * 3 + i) * 0.5;
+                });
+
+                // Camera movement mapped to scroll
+                // As the user scrolls, the camera descends slightly and moves into the center of the summoning circle
+                const scrollFactor = APP_STATE.scrollProgress;
+
+                const targetCameraZ = 40 - (scrollFactor * 30); // Move from z=40 to z=10
+                const targetCameraY = 8 - (scrollFactor * 4);   // Move from y=8 to y=4
+
+                currentCameraZ += (targetCameraZ - currentCameraZ) * 0.05;
+                currentCameraY += (targetCameraY - currentCameraY) * 0.05;
 
                 camera.position.z = currentCameraZ;
-
-                // Subtle camera breathing
-                camera.position.y = 5 + Math.sin(time) * 0.5;
+                camera.position.y = currentCameraY + Math.sin(time) * 0.5; // add breathing
                 camera.position.x = Math.sin(time * 0.5) * 1;
 
-                // Parallax looking down slightly when scrolling far
-                camera.lookAt(0, 0, currentCameraZ - 40);
-
-                // Animate skull lights pulsating
-                skulls.forEach(s => {
-                    if (s.userData.isSoulNode) {
-                        s.userData.light.intensity = 0.5 + Math.sin(time * 3 + s.position.x) * 0.3;
-                    }
-                });
+                camera.lookAt(0, 0, -20); // Always look towards the center/back of the palace
 
                 renderer.render(scene, camera);
             };
@@ -932,7 +986,7 @@
                 gsap.to(mainAvatar, {
                     scale: 0.8, opacity: 0, rotationY: 180, duration: 1.5, ease: "power2.in",
                     onComplete: () => {
-                        mainAvatar.src = "/assets/guild/river_howler/7.webp";
+                        mainAvatar.src = "/assets/guild/river_howler/3.webp";
                         mainAvatar.style.filter = "none";
                         gsap.to(mainAvatar, {
                             scale: 1.1, opacity: 1, rotationY: 360, duration: 2, ease: "power2.out",
@@ -989,7 +1043,7 @@
                 gsap.to(mainAvatar, {
                     scale: 0.8, opacity: 0, rotationY: 180, duration: 1.5, ease: "power2.in",
                     onComplete: () => {
-                        mainAvatar.src = "/assets/guild/river_howler/10.webp";
+                        mainAvatar.src = "/assets/guild/river_howler/1.webp";
                         mainAvatar.style.filter = "grayscale(20%) contrast(120%)";
                         gsap.to(mainAvatar, {
                             scale: 1, opacity: 1, rotationY: 0, duration: 2, ease: "power2.out",
