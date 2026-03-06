@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>綠食飯桌 - 12eatpure | 永續的起點</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+        :root {
+            --eco-leaf: #6b8f71;      /* Sage Green */
+            --eco-forest: #2d4a36;    /* Deep Forest */
+            --eco-earth: #c0a080;     /* Soft Earth Brown */
+            --eco-bg: #f5f7f2;        /* Warm Off-White */
+            --eco-card: #ffffff;      /* Pure White */
+            --bento-border: #e3e8de;  /* Subtle Border */
+            --text-main: #2d4a36;
+            --text-muted: #6b8f71;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            /* Primary font: Zen Maru Gothic gives a rounded, organic, natural feel to Chinese characters */
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: var(--eco-bg);
+            color: var(--text-main);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* 3D Canvas Context */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            /* mix-blend-mode removed to guarantee visibility of p5 layer on all backgrounds */
+        }
+
+        .content-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Typography */
+        h1, h2, h3, .eco-font {
+            /* Elegant organic serif for headings and English text */
+            font-family: 'Cormorant Garamond', 'Zen Maru Gothic', serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .text-glow {
+            color: var(--eco-forest);
+            text-shadow: 0 4px 10px rgba(107, 143, 113, 0.2);
+        }
+
+        /* Elegant Air Bento Box Base */
+        .bento-container-wrapper {
+            background: linear-gradient(to bottom, transparent, rgba(245, 247, 242, 0.9) 10%, rgba(245, 247, 242, 1) 100%);
+            padding: 4rem 0;
+            position: relative;
+        }
+
+        /* Hero Text Area */
+        .hero-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            position: relative;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* 3D Anchored Content Overlay System */
+        .story-container {
+            position: relative;
+            width: 100%;
+            /* Scroll height for the camera journey */
+            height: 500vh;
+            pointer-events: none;
+        }
+
+        /* Connection Lines from 3D to HTML */
+        #svg-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* The floating HTML cards tied to 3D coords */
+        .anchored-card {
+            position: fixed;
+            /* Use hardware accelerated transform from top-left origin */
+            top: 0;
+            left: 0;
+            will-change: transform, opacity;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid var(--bento-border);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 15px 35px rgba(45, 74, 54, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            width: 380px;
+            pointer-events: auto;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 10;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            /* Center the card relative to its transform origin */
+            margin-left: -190px;
+            margin-top: -100px;
+        }
+
+        .anchored-card:hover {
+            border-color: var(--eco-leaf);
+            box-shadow: 0 20px 40px rgba(107, 143, 113, 0.2);
+            z-index: 50 !important;
+        }
+
+        .anchored-card.large-card {
+            width: 800px;
+            max-width: 90vw;
+            margin-left: -400px;
+            margin-top: -200px;
+            padding: 3rem;
+        }
+
+        /* Ensures gallery images inside floating cards look right */
+        .anchored-card.large-card .eco-img {
+            height: 250px;
+        }
+
+        /* Remove static cards completely, ALL content is now anchored */
+
+        @media (min-width: 768px) {
+            .profile-bento { grid-column: span 4; grid-row: span 2; }
+            .bio-bento { grid-column: span 8; }
+            .awards-bento { grid-column: span 4; }
+            .food-img-1 { grid-column: span 4; }
+            .stats-bento { grid-column: span 8; }
+            .menu-bento { grid-column: span 12; }
+            .gallery-bento { grid-column: span 12; display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; padding: 15px; background: rgba(46, 204, 113, 0.1); border: 4px solid #2ecc71; border-radius: 20px; box-shadow: inset 0 10px 20px rgba(0,0,0,0.1);}
+        }
+
+        /* Image Styling */
+        .eco-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 4px 15px rgba(45,74,54,0.1);
+        }
+
+        .eco-img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 15px 30px rgba(107,143,113,0.3);
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            padding: 8px;
+            background: linear-gradient(135deg, var(--eco-leaf), var(--eco-earth));
+            box-shadow: 0 10px 30px rgba(107, 143, 113, 0.2);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--eco-card);
+        }
+
+        /* Badges & Tags */
+        .eco-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.6rem 1.4rem;
+            border-radius: 50px;
+            background: var(--eco-card);
+            border: 1px solid var(--eco-leaf);
+            color: var(--eco-forest);
+            font-weight: bold;
+            font-size: 0.95rem;
+            margin: 0.25rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(45,74,54,0.05);
+        }
+
+        .eco-badge:hover {
+            background: var(--eco-leaf);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(107,143,113,0.3);
+        }
+
+        /* Scroll Progress */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--eco-leaf), var(--eco-forest));
+            z-index: 100;
+            width: 0%;
+            border-radius: 0 3px 3px 0;
+        }
+
+        /* Decorative UI Elements */
+        .leaf-icon {
+            color: var(--eco-leaf);
+        }
+
+        /* Loading Screen Overlay */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--eco-bg);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+
+        .loader-icon {
+            font-size: 3rem;
+            color: var(--eco-leaf);
+            animation: pulse-grow 2s infinite ease-in-out;
+            margin-bottom: 1rem;
+        }
+
+        .loader-text {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            color: var(--eco-forest);
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+        }
+
+        @keyframes pulse-grow {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+        body.loaded {
+            overflow: auto;
+        }
+        body.loading {
+            overflow: hidden;
+        }
+
+    </style>
+
+    <!-- Extreme Failsafe script injected immediately to guarantee loader removal even if subsequent scripts fail -->
+    <script>
+        window.removeEcoLoader = function() {
+            const loader = document.getElementById('loader');
+            if (loader && loader.style.opacity !== '0') {
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+                document.body.classList.remove('loading');
+                document.body.classList.add('loaded');
+
+                if (window.gsap && window.islandGroup) {
+                    window.gsap.fromTo(window.islandGroup.position,
+                        { y: -15, scale: 0.5 },
+                        { y: -2, scale: 1, duration: 2.5, ease: "elastic.out(1, 0.5)" }
+                    );
+                }
+            }
+        };
+        // Guarantee removal after 2.5 seconds regardless of network status
+        setTimeout(window.removeEcoLoader, 2500);
+
+        // Also try on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(window.removeEcoLoader, 500);
+        });
+    </script>
+</head>
+<body class="loading">
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <i class="fa-solid fa-seedling loader-icon"></i>
+        <div class="loader-text">載入生態浮島中...</div>
+    </div>
+
+    <div class="progress-bar" id="progressBar"></div>
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+
+    <main class="content-layer">
+
+        <!-- Hero Title (Outside the box) -->
+        <div class="hero-section g-elem">
+            <div class="text-center pointer-events-auto">
+                <h1 class="text-6xl md:text-9xl eco-font mb-4 text-glow">綠食飯桌</h1>
+                <p class="text-2xl md:text-3xl font-medium tracking-widest text-emerald-800 bg-white/70 px-8 py-3 rounded-full backdrop-blur-md shadow-sm border border-emerald-100 uppercase">Sustainable Eco Bento</p>
+                <div class="mt-8 flex justify-center gap-4 flex-wrap">
+                    <span class="eco-badge text-lg"><i class="fa-solid fa-earth-americas leaf-icon mr-2"></i>地球循環</span>
+                    <span class="eco-badge text-lg"><i class="fa-solid fa-leaf leaf-icon mr-2"></i>自然永續</span>
+                    <span class="eco-badge text-lg"><i class="fa-solid fa-box leaf-icon mr-2"></i>優質餐盒</span>
+                </div>
+            </div>
+        </div>
+
+        <svg id="svg-lines"></svg>
+
+        <div class="story-container">
+
+            <!-- These cards are extracted from the 3D anchors -->
+            <div id="card-profile" class="anchored-card text-center flex flex-col items-center">
+                <div class="avatar-container mb-4 w-32 h-32">
+                    <img src="/assets/img/guild/12eatpure/avatar.webp" alt="12eatpure" class="avatar-img" onerror="this.src='https://ui-avatars.com/api/?name=12eatpure&background=6b8f71&color=ffffff'">
+                </div>
+                <h2 class="text-2xl eco-font mb-2 text-emerald-900">12eatpure</h2>
+                <p class="text-xs font-medium text-emerald-600 mb-4 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">衛生局 七級 質地示範店家</p>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <a href="https://www.instagram.com/12eatpure/" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.net/@12eatpure" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://page.line.me/871pbbhl" target="_blank" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"><i class="fa-brands fa-line"></i></a>
+                </div>
+            </div>
+
+            <div id="card-bio" class="anchored-card">
+                <h3 class="text-xl eco-font text-emerald-800 mb-4 flex items-center"><i class="fa-solid fa-seedling text-emerald-600 mr-2 text-2xl"></i>讓餐盒成爲永續的起點</h3>
+                <p class="text-emerald-900/80 leading-relaxed mb-4 text-sm font-medium">
+                    常態性使用的 PP 餐盒，還是不鏽鋼 316 餐盒，都會告知訂購的業者選擇。<br>
+                    想要帶走，可選擇重複使用的 PP 餐盒；<br>
+                    想要由我們回收清洗跟更美觀，可選擇不鏽鋼餐盒哦。
+                </p>
+            </div>
+
+            <div id="card-stats" class="anchored-card">
+                <h3 class="text-xl eco-font text-emerald-800 mb-4 flex items-center border-b border-emerald-100 pb-3"><i class="fa-solid fa-utensils text-emerald-600 mr-3 text-xl"></i>高雄最健康的健康餐盒</h3>
+                <p class="text-emerald-900/80 leading-relaxed font-medium text-sm mb-4">
+                    餐點現點現做，建議先打電話/LINE訂購喔。歡迎團體訂購客製化餐點：月訂購 / 周訂購 / 異業合作 / 循環餐盒。
+                </p>
+                <div class="bg-white p-3 rounded-xl shadow-sm border border-emerald-100 flex items-center">
+                    <div class="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="fa-solid fa-droplet text-amber-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-emerald-900 font-bold text-xs">使用西班牙添德瑞橄欖油</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-awards" class="anchored-card bg-emerald-50/90">
+                <h3 class="text-xl eco-font text-emerald-800 mb-4 flex items-center border-b border-emerald-100 pb-3"><i class="fa-solid fa-award text-amber-500 mr-3 text-xl"></i>榮譽與認證</h3>
+                <ul class="space-y-3 text-emerald-900/80 font-medium text-sm">
+                    <li class="flex items-start"><i class="fa-solid fa-check text-emerald-500 mt-1 mr-2"></i><span>2023 經濟部 優選餐盒獎</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-check text-emerald-500 mt-1 mr-2"></i><span>2026 綠色餐飲評鑑指南推薦餐廳</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-check text-emerald-500 mt-1 mr-2"></i><span>AMOT 三星朔源餐廳</span></li>
+                    <li class="flex items-start p-2 bg-white rounded-lg border border-emerald-100 shadow-sm mt-3"><i class="fa-solid fa-user-md text-emerald-600 mt-1 mr-2"></i><span class="text-emerald-800 font-bold">衛生局營養師認證</span></li>
+                </ul>
+            </div>
+
+            <!-- Now Anchored Menu -->
+            <div id="card-menu" class="anchored-card large-card">
+                <h3 class="text-3xl text-center text-emerald-900 mb-8 eco-font">Signature Menu</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center shadow-sm">
+                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 text-emerald-600 text-xl"><i class="fa-solid fa-drumstick-bite"></i></div>
+                        <h4 class="text-lg font-bold text-emerald-900 mb-2">舒肥香草雞胸 / 雞腿</h4>
+                        <p class="text-xs text-emerald-800/70 font-medium">軟嫩不乾柴份量超大滿足感。雞腿 +$15換黑米。</p>
+                    </div>
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center shadow-sm">
+                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 text-rose-500 text-xl"><i class="fa-solid fa-fire-burner"></i></div>
+                        <h4 class="text-lg font-bold text-emerald-900 mb-2">爐烤梅花豬</h4>
+                        <p class="text-xs text-emerald-800/70 font-medium">肉質嫩滑多汁，香氣十足！完全不油膩。</p>
+                    </div>
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center shadow-sm">
+                        <div class="w-14 h-14 mx-auto bg-white rounded-full flex items-center justify-center mb-3 text-blue-500 text-xl"><i class="fa-solid fa-fish"></i></div>
+                        <h4 class="text-lg font-bold text-emerald-900 mb-2">舒肥鮭魚 / 烤鱸魚</h4>
+                        <p class="text-xs text-emerald-800/70 font-medium">舒肥過後肉質更嫩，入口即化。外酥內嫩多汁。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Now Anchored Image Gallery Grid -->
+            <div id="card-gallery" class="anchored-card large-card" style="background: transparent; border: none; box-shadow: none; backdrop-filter: none;">
+                <div class="text-center mb-6">
+                    <h3 class="eco-font text-2xl text-emerald-900 inline-block px-8 py-3 bg-white/90 backdrop-blur rounded-full border border-emerald-100 shadow-md"><i class="fa-solid fa-camera text-emerald-600 mr-2"></i> 餐盒實拍</h3>
+                </div>
+
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
+                        <img src="/assets/img/guild/12eatpure/img1.webp" alt="Gallery" class="eco-img">
+                    </div>
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
+                        <img src="/assets/img/guild/12eatpure/img2.webp" alt="Gallery" class="eco-img">
+                    </div>
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
+                        <img src="/assets/img/guild/12eatpure/img3.webp" alt="Gallery" class="eco-img">
+                    </div>
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
+                        <img src="/assets/img/guild/12eatpure/img4.webp" alt="Gallery" class="eco-img">
+                    </div>
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
+                        <img src="/assets/img/guild/12eatpure/img5.webp" alt="Gallery" class="eco-img">
+                    </div>
+                    <div class="p-1 overflow-hidden col-span-6 md:col-span-4 bg-white rounded-xl shadow-sm border border-emerald-50">
+                        <img src="/assets/img/guild/12eatpure/img6.webp" alt="Gallery" class="eco-img">
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-footer" class="anchored-card text-center bg-white/80" style="padding: 1.5rem; width: auto; min-width: 300px; transform: translate(-50%, -50%); margin: 0;">
+                <p class="text-emerald-800 font-medium text-sm">12eatpure &copy; 2024<br>綠食飯桌 / Sustainable Eco Bento</p>
+            </div>
+
+        </div> <!-- End story container -->
+    </main>
+
+    <script>
+        // --- 1. GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Progress bar
+        gsap.to("#progressBar", {
+            width: "100%",
+            ease: "none",
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.3
+            }
+        });
+
+        // Helper to project 3D coordinates to 2D screen space
+        const projectToScreen = (vector3, camera, renderer) => {
+            const vector = vector3.clone();
+            vector.project(camera);
+            // Critical for removing jitter: Force strictly integer pixel values for the final transform
+            // Sub-pixel rendering of massive floating HTML cards causes severe visual shaking during movement
+            const x = Math.floor((0.5 + vector.x / 2) * (renderer.domElement.width / window.devicePixelRatio));
+            const y = Math.floor((0.5 - vector.y / 2) * (renderer.domElement.height / window.devicePixelRatio));
+            return { x, y };
+        };
+
+        // Performance Optimization: Remove expensive SVG path creation in render loop
+        // We will use simpler canvas drawing context for lines to avoid DOM thrashing
+
+        // Create an overlay canvas specifically for high-performance lines
+        const lineCanvas = document.createElement('canvas');
+        lineCanvas.style.position = 'fixed';
+        lineCanvas.style.top = '0';
+        lineCanvas.style.left = '0';
+        lineCanvas.style.width = '100vw';
+        lineCanvas.style.height = '100vh';
+        lineCanvas.style.zIndex = '5';
+        lineCanvas.style.pointerEvents = 'none';
+        document.body.appendChild(lineCanvas);
+        const lineCtx = lineCanvas.getContext('2d', { alpha: true });
+
+        const resizeLineCanvas = () => {
+            lineCanvas.width = window.innerWidth * window.devicePixelRatio;
+            lineCanvas.height = window.innerHeight * window.devicePixelRatio;
+            lineCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        };
+        window.addEventListener('resize', resizeLineCanvas);
+        resizeLineCanvas();
+
+        // Let the inline head script handle standard loading, just tie into the window.onload as a final check
+        window.addEventListener('load', () => {
+            setTimeout(window.removeEcoLoader, 100);
+        });
+
+        // Expand the story container height massively to support the extended journey
+        document.querySelector('.story-container').style.height = '1000vh';
+
+        // Define Anchor logic globally so Three.js can update it
+        window.anchors = [
+            { id: 'card-profile', v3: new THREE.Vector3(-4, 2, 0), card: document.getElementById('card-profile'), scrollStart: 0, scrollEnd: 0.15, align: 'left', mesh: null },
+            { id: 'card-bio', v3: new THREE.Vector3(4, 4, -2), card: document.getElementById('card-bio'), scrollStart: 0.10, scrollEnd: 0.30, align: 'right', mesh: null },
+            { id: 'card-stats', v3: new THREE.Vector3(-4, -1, 3), card: document.getElementById('card-stats'), scrollStart: 0.25, scrollEnd: 0.45, align: 'left', mesh: null },
+            { id: 'card-awards', v3: new THREE.Vector3(4, 0, 4), card: document.getElementById('card-awards'), scrollStart: 0.40, scrollEnd: 0.60, align: 'right', mesh: null },
+            // New Anchors - Using 'center' alignment logic for large cards (we'll adapt the render loop)
+            { id: 'card-menu', v3: new THREE.Vector3(0, 5, -5), card: document.getElementById('card-menu'), scrollStart: 0.55, scrollEnd: 0.80, align: 'center', mesh: null },
+            { id: 'card-gallery', v3: new THREE.Vector3(0, -3, 0), card: document.getElementById('card-gallery'), scrollStart: 0.75, scrollEnd: 0.95, align: 'center', mesh: null },
+            { id: 'card-footer', v3: new THREE.Vector3(0, 10, 0), card: document.getElementById('card-footer'), scrollStart: 0.90, scrollEnd: 1.0, align: 'center', mesh: null }
+        ];
+
+        // --- 2. Three.js: Centralized Floating Eco-Island (Core Anchor) ---
+        const initThreeJS = () => {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0xf5f7f2, 0.01);
+
+            const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            container.appendChild(renderer.domElement);
+
+            const islandGroup = new THREE.Group();
+            window.islandGroup = islandGroup; // Expose globally for intro animation
+            scene.add(islandGroup);
+
+            // 1. Massive Eco-Island Base (Centralized)
+            const islandGeo = new THREE.CylinderGeometry(7, 4, 3, 32);
+            const islandMat = new THREE.MeshStandardMaterial({
+                color: 0xc0a080, // Earth brown
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const island = new THREE.Mesh(islandGeo, islandMat);
+            island.receiveShadow = true;
+            island.castShadow = true;
+            islandGroup.add(island);
+
+            // Grass topping
+            const grassGeo = new THREE.CylinderGeometry(7.2, 7, 0.6, 32);
+            const grassMat = new THREE.MeshStandardMaterial({
+                color: 0x6b8f71, // Sage green
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const grass = new THREE.Mesh(grassGeo, grassMat);
+            grass.position.y = 1.6;
+            grass.receiveShadow = true;
+            islandGroup.add(grass);
+
+            // Interactive Eco-Orbs (Clickable 3D elements on the island)
+            const interactables = [];
+            const orbGeo = new THREE.SphereGeometry(0.8, 16, 16);
+            const orbMat = new THREE.MeshStandardMaterial({
+                color: 0xffcc00, // Golden yellow
+                emissive: 0xaa6600,
+                emissiveIntensity: 0.5,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+
+            const orbPositions = [
+                { x: -3, y: 2.2, z: 4 },
+                { x: 4, y: 2.2, z: 2 },
+                { x: 1, y: 2.2, z: -4 }
+            ];
+
+            orbPositions.forEach((pos, index) => {
+                const orb = new THREE.Mesh(orbGeo, orbMat.clone());
+                orb.position.set(pos.x, pos.y, pos.z);
+                orb.castShadow = true;
+                orb.userData = { isOrb: true, index: index, baseScale: 1, targetScale: 1 };
+
+                // Add a gentle floating animation wrapping the orb
+                islandGroup.add(orb);
+                interactables.push(orb);
+            });
+
+            // 2. Giant Stylized Tree (Center of the Island)
+            const treeGroup = new THREE.Group();
+            treeGroup.position.set(0, 1.8, 0); // Position exactly center
+            islandGroup.add(treeGroup);
+
+            // Tree Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.8, 1.2, 5, 8);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 1 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 2.5;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+
+            // Tree Canopy (Massive fluffy spheres)
+            const canopyMat = new THREE.MeshStandardMaterial({
+                color: 0x2d4a36,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+
+            const positions = [
+                [0, 5.5, 0, 3.5], // Main core
+                [2, 4.5, 1.5, 2.5],
+                [-2, 5, -1.5, 2.5],
+                [1.5, 4.5, -2, 2],
+                [-1.5, 4, 2, 2.2],
+                [0, 6.5, 1, 2] // Top puff
+            ];
+
+            positions.forEach(pos => {
+                const s = pos[3];
+                const leafGeo = new THREE.IcosahedronGeometry(s, 2);
+                const leaf = new THREE.Mesh(leafGeo, canopyMat);
+                leaf.position.set(pos[0], pos[1], pos[2]);
+                leaf.castShadow = true;
+                treeGroup.add(leaf);
+            });
+
+            // 3. Dynamic Earth Circulation (Ring of Orbiting Elements around the Tree)
+            const circulationGroup = new THREE.Group();
+            islandGroup.add(circulationGroup);
+
+            const orbitItems = [];
+            const leafShape = new THREE.Shape();
+            leafShape.moveTo(0, 0.4);
+            leafShape.quadraticCurveTo(0.2, 0.2, 0, -0.4);
+            leafShape.quadraticCurveTo(-0.2, 0.2, 0, 0.4);
+
+            const leafExtrudeSettings = { depth: 0.05, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.02, bevelThickness: 0.02 };
+            const orbitLeafGeo = new THREE.ExtrudeGeometry(leafShape, leafExtrudeSettings);
+            const orbitLeafMat = new THREE.MeshStandardMaterial({
+                color: 0x6b8f71,
+                roughness: 0.3,
+                side: THREE.DoubleSide
+            });
+
+            for(let i=0; i<60; i++) {
+                const leaf = new THREE.Mesh(orbitLeafGeo, orbitLeafMat);
+
+                // Position in a wide ring wrapping the entire island
+                const angle = (i / 60) * Math.PI * 2;
+                const radius = 10 + Math.random() * 3;
+                leaf.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * 4 + 2, Math.sin(angle) * radius);
+
+                // Orient along the orbit path
+                leaf.rotation.y = -angle;
+                leaf.rotation.x = Math.random() * Math.PI;
+                leaf.rotation.z = Math.random() * Math.PI;
+
+                const s = 0.6 + Math.random() * 1.0;
+                leaf.scale.set(s,s,s);
+
+                leaf.castShadow = true;
+                circulationGroup.add(leaf);
+                orbitItems.push({
+                    mesh: leaf,
+                    angle: angle,
+                    radius: radius,
+                    speed: 0.003 + Math.random() * 0.005,
+                    heightOffset: leaf.position.y,
+                    bobSpeed: 0.01 + Math.random() * 0.02
+                });
+            }
+
+            // Tilt the circulation ring gracefully
+            circulationGroup.rotation.x = 0.2;
+            circulationGroup.rotation.z = -0.1;
+
+
+            // Lighting setup for Clean Nature
+            // Reduced shadow map resolution from 2048 to 1024 for performance,
+            // visually acceptable due to PCFSoftShadowMap and stylized low-poly art style.
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambient);
+
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1.4);
+            mainLight.position.set(15, 25, 10);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 1024;
+            mainLight.shadow.mapSize.height = 1024;
+            mainLight.shadow.camera.near = 0.5;
+            mainLight.shadow.camera.far = 60;
+            mainLight.shadow.camera.left = -20;
+            mainLight.shadow.camera.right = 20;
+            mainLight.shadow.camera.top = 20;
+            mainLight.shadow.camera.bottom = -20;
+            scene.add(mainLight);
+
+            const fillLight = new THREE.DirectionalLight(0xc0a080, 0.6);
+            fillLight.position.set(-15, -5, -15);
+            scene.add(fillLight);
+
+            // Generate visual anchor nodes on the island where the cards connect
+            const anchorGeo = new THREE.IcosahedronGeometry(0.3, 1);
+            const anchorMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0x6b8f71,
+                emissiveIntensity: 0.8,
+                roughness: 0.2,
+                metalness: 0.5
+            });
+
+            window.anchors.forEach(anchor => {
+                const node = new THREE.Mesh(anchorGeo, anchorMat.clone());
+                node.position.copy(anchor.v3);
+                islandGroup.add(node);
+                anchor.mesh = node;
+            });
+
+            // Initial Camera
+            camera.position.set(0, 15, 35);
+            islandGroup.position.set(0, -2, 0);
+
+            // Mouse interaction & Raycaster
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+            let hoveredOrb = null;
+
+            // Interactive Hover State (Combines generic tracking and Raycaster)
+            document.addEventListener('mousemove', (event) => {
+                window.globalClientX = event.clientX;
+                window.globalClientY = event.clientY;
+
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(interactables);
+
+                if (intersects.length > 0) {
+                    if (hoveredOrb !== intersects[0].object) {
+                        hoveredOrb = intersects[0].object;
+                        document.body.style.cursor = 'pointer';
+                        gsap.to(hoveredOrb.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.4, ease: "back.out(2)" });
+                        gsap.to(hoveredOrb.material, { emissiveIntensity: 2, duration: 0.2 });
+                    }
+                } else if (hoveredOrb) {
+                    document.body.style.cursor = 'default';
+                    gsap.to(hoveredOrb.scale, { x: 1, y: 1, z: 1, duration: 0.4, ease: "power2.out" });
+                    gsap.to(hoveredOrb.material, { emissiveIntensity: 0.5, duration: 0.2 });
+                    hoveredOrb = null;
+                }
+            });
+
+            // Interactive Click Burst
+            document.addEventListener('click', (event) => {
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(interactables);
+
+                if (intersects.length > 0) {
+                    const clickedOrb = intersects[0].object;
+
+                    // 1. Trigger massive p5.js leaf burst at the exact 3D point
+                    if(window.triggerLeafBurst) {
+                        const pt = projectToScreen(clickedOrb.position.clone().applyMatrix4(islandGroup.matrixWorld), camera, renderer);
+                        window.triggerLeafBurst(pt.x, pt.y);
+                    }
+
+                    // 2. Physical reaction: Orb jumps up and down
+                    gsap.fromTo(clickedOrb.position,
+                        { y: 2.2 },
+                        { y: 5, duration: 0.4, yoyo: true, repeat: 1, ease: "power1.out" }
+                    );
+
+                    // 3. Flash the environment lighting to match the orb's color
+                    gsap.to(mainLight.color, { r: 1, g: 0.8, b: 0, duration: 0.1, yoyo: true, repeat: 1 });
+                    gsap.to(mainLight, { intensity: 3, duration: 0.1, yoyo: true, repeat: 1 });
+                } else {
+                    // Fallback: Clicked somewhere else on the island or background
+                    const islandIntersects = raycaster.intersectObjects(islandGroup.children, true);
+                    if (islandIntersects.length > 0 && !islandIntersects[0].object.userData.isOrb) {
+                        if(window.triggerLeafBurst) {
+                            const pt = projectToScreen(islandIntersects[0].point, camera, renderer);
+                            window.triggerLeafBurst(pt.x, pt.y);
+                        }
+                        gsap.fromTo(islandGroup.position, {y: -2.2}, {y: -2, duration: 0.5, ease: "elastic.out(1, 0.3)"});
+                    } else {
+                        // Clicked empty space: trigger burst at raw mouse coordinates
+                        if(window.triggerLeafBurst) {
+                            window.triggerLeafBurst(event.clientX, event.clientY);
+                        }
+                    }
+                }
+            });
+
+            // GSAP Camera Journey
+            // We use a smoothed proxy object for the scroll progress to heavily dampen the movement
+            const scrollProxy = { progress: 0 };
+
+            ScrollTrigger.create({
+                trigger: ".story-container",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 2, // Increased scrub smoothing
+                onUpdate: (self) => {
+                    // Animate the proxy object instead of directly mapping, providing secondary smoothing
+                    gsap.to(scrollProxy, {
+                        progress: self.progress,
+                        duration: 1.5, // Long duration for ultra-smooth buttery interpolation
+                        ease: "power2.out",
+                        overwrite: "auto"
+                    });
+                }
+            });
+
+            const svgLayer = document.getElementById('svg-lines');
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                targetX = mouseX * .001;
+                targetY = mouseY * .001;
+
+                // Removed the continuous Date.now() wobble from the islandGroup entirely.
+                // The constant micro-rotations were causing the projected anchor coordinates
+                // to jitter by 1-2 pixels every frame, making the attached HTML cards shake violently.
+                // We only apply the smooth, heavily dampened mouse parallax now.
+                islandGroup.rotation.x += 0.05 * (targetY - islandGroup.rotation.x);
+                islandGroup.rotation.z += 0.05 * (-targetX - islandGroup.rotation.z);
+
+                const time = Date.now() * 0.001;
+
+                // Animate interactable orbs (gentle floating)
+                interactables.forEach((orb, i) => {
+                    if (orb !== hoveredOrb) {
+                        orb.position.y = 2.2 + Math.sin(time * 2 + i) * 0.2;
+                    }
+                });
+
+                // Animate Earth Circulation Leaves
+                orbitItems.forEach((item) => {
+                    item.angle += item.speed;
+                    item.mesh.position.x = Math.cos(item.angle) * item.radius;
+                    item.mesh.position.z = Math.sin(item.angle) * item.radius;
+                    item.mesh.position.y = item.heightOffset + Math.sin(time * item.bobSpeed * 100) * 0.5;
+
+                    item.mesh.rotation.x += 0.01;
+                    item.mesh.rotation.y = -item.angle;
+                });
+
+                // Apply the smoothed scroll progress to the camera
+                // Extend the journey to 3 full rotations (PI * 6) so we can see all sides
+                const angle = scrollProxy.progress * Math.PI * 6;
+                // Complex radius that swoops in and out multiple times during the journey
+                const radius = 40 - Math.sin(scrollProxy.progress * Math.PI * 3) * 15;
+                // Height variations to view island from above and below
+                const height = 15 - Math.sin(scrollProxy.progress * Math.PI * 2) * 20;
+
+                // We directly set the camera here in the RAF loop based on the smoothed proxy
+                camera.position.x = Math.sin(angle) * radius;
+                camera.position.y = height;
+                camera.position.z = Math.cos(angle) * radius;
+                camera.lookAt(islandGroup.position);
+
+                // Update 3D Anchors to 2D HTML Elements
+                // Clear the highly-optimized canvas overlay
+                lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+
+                window.anchors.forEach(anchor => {
+                    // Calculate local 3D point transformed by island rotation
+                    const localPt = anchor.v3.clone();
+                    localPt.applyMatrix4(islandGroup.matrixWorld);
+
+                    const screenPt = projectToScreen(localPt, camera, renderer);
+
+                    // Prevent drawing if the 3D point is exactly behind the camera
+                    // (vector projection gives weird results if z < 0 in local space)
+                    const tempV = localPt.clone().project(camera);
+                    const isBehindCamera = tempV.z > 1;
+
+                    // Logic to show/hide based on smoothed scroll progress
+                    let opacity = 0;
+                    if(!isBehindCamera && scrollProxy.progress >= anchor.scrollStart && scrollProxy.progress <= anchor.scrollEnd) {
+                        // Fade in and out smoothly
+                        const range = anchor.scrollEnd - anchor.scrollStart;
+                        const localP = (scrollProxy.progress - anchor.scrollStart) / range;
+                        opacity = Math.sin(localP * Math.PI); // 0 -> 1 -> 0 curve
+                    }
+
+                    if (opacity > 0.01) {
+                        anchor.card.style.visibility = 'visible';
+                        anchor.card.style.opacity = opacity;
+
+                        // Pulse the 3D anchor mesh
+                        if (anchor.mesh) {
+                            anchor.mesh.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.2);
+                            anchor.mesh.material.emissiveIntensity = opacity * 2;
+                        }
+
+                        // Draw glowing origin dot on canvas
+                        lineCtx.beginPath();
+                        lineCtx.arc(screenPt.x, screenPt.y, 4, 0, Math.PI * 2);
+                        lineCtx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                        lineCtx.fill();
+                        lineCtx.lineWidth = 2;
+                        lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity})`;
+                        lineCtx.stroke();
+
+                        // Use translate3d for GPU acceleration, avoiding layout thrashing
+                        let targetX, targetY;
+
+                        if (anchor.align === 'center') {
+                            // Center alignment for large cards (Menu/Gallery)
+                            // We position them relative to the 3D point but centered
+                            targetX = screenPt.x;
+                            targetY = screenPt.y + 100; // Float slightly below anchor point
+                            anchor.card.style.transform = `translate3d(${Math.floor(targetX)}px, ${Math.floor(targetY)}px, 0)`;
+
+                            // Draw vertical connecting line
+                            lineCtx.beginPath();
+                            lineCtx.moveTo(screenPt.x, screenPt.y + 4);
+                            lineCtx.lineTo(screenPt.x, targetY);
+                            lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity * 0.8})`;
+                            lineCtx.lineWidth = 3;
+                            lineCtx.setLineDash([5, 5]);
+                            lineCtx.stroke();
+                            lineCtx.setLineDash([]);
+
+                        } else {
+                            // Side alignment for smaller cards
+                            const offset = anchor.align === 'left' ? -300 : 300;
+                            targetX = screenPt.x + offset;
+                            targetY = screenPt.y;
+                            anchor.card.style.transform = `translate3d(${Math.floor(targetX)}px, ${Math.floor(targetY)}px, 0)`;
+
+                            // Draw curved connecting line via Canvas 2D
+                            lineCtx.beginPath();
+                            lineCtx.moveTo(screenPt.x, screenPt.y);
+
+                            const endX = screenPt.x + (offset > 0 ? offset - 190 : offset + 190);
+                            const cx = (screenPt.x + endX) / 2;
+                            const cy = screenPt.y - 50;
+
+                            lineCtx.quadraticCurveTo(cx, cy, endX, screenPt.y);
+
+                            lineCtx.strokeStyle = `rgba(107, 143, 113, ${opacity * 0.5})`;
+                            lineCtx.lineWidth = 2;
+                            lineCtx.setLineDash([5, 5]);
+                            lineCtx.stroke();
+                            lineCtx.setLineDash([]);
+                        }
+                    } else {
+                        anchor.card.style.visibility = 'hidden';
+                        anchor.card.style.opacity = 0;
+                        if (anchor.mesh) {
+                            anchor.mesh.scale.setScalar(1);
+                            anchor.mesh.material.emissiveIntensity = 0.2;
+                        }
+                    }
+                });
+
+                camera.lookAt(islandGroup.position);
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // --- 3. p5.js: Centralized Organic Nature (Fireflies pulling to center & Leaves falling from Tree) ---
+        const sketch = (p) => {
+            let fireflies = [];
+            let leaves = [];
+
+            // The Tree is roughly in the center-top of the screen
+            let centerX = 0;
+            let centerY = 0;
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noStroke();
+                centerX = p.width / 2;
+                centerY = p.height * 0.4;
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                centerX = p.width / 2;
+                centerY = p.height * 0.4;
+
+                // 1. Drifting Fireflies Trail (Pull towards the Tree)
+                // Use global mouse coordinates tracked by the document listener
+                // because #p5-container has pointer-events: none to allow 3D raycasting
+                const gMouseX = window.globalClientX || 0;
+                const gMouseY = window.globalClientY || 0;
+
+                if (gMouseX !== 0 && gMouseY !== 0) {
+                    if (p.frameCount % 2 === 0) {
+                        fireflies.push({
+                            x: gMouseX + p.random(-20, 20),
+                            y: gMouseY + p.random(-20, 20),
+                            life: 255,
+                            size: p.random(2, 6),
+                            vx: p.random(-1, 1),
+                            vy: p.random(-1, 1)
+                        });
+                    }
+                }
+
+                for (let i = fireflies.length - 1; i >= 0; i--) {
+                    let f = fireflies[i];
+                    f.life -= 1.5; // Slow fade
+
+                    // Add a magnetic pull towards the center tree
+                    let dx = centerX - f.x;
+                    let dy = centerY - f.y;
+                    let dist = p.dist(centerX, centerY, f.x, f.y);
+
+                    if (dist > 50) {
+                        f.vx += (dx / dist) * 0.05; // Gentle pull
+                        f.vy += (dy / dist) * 0.05;
+                    }
+
+                    // Add some organic wander
+                    f.vx += p.random(-0.1, 0.1);
+                    f.vy += p.random(-0.1, 0.1);
+
+                    f.x += f.vx;
+                    f.y += f.vy;
+
+                    // Soft warm glow
+                    p.fill(192, 160, 128, f.life * 0.9);
+                    p.circle(f.x, f.y, f.size * (f.life/255));
+
+                    if (f.life <= 0) fireflies.splice(i, 1);
+                }
+
+                // 2. Gentle Leaf Burst (Falls FROM the tree center outward)
+                for (let i = leaves.length - 1; i >= 0; i--) {
+                    let l = leaves[i];
+                    l.life -= 1.5;
+                    l.x += l.vx;
+                    l.y += l.vy;
+                    l.rotation += l.rotSpeed;
+
+                    // Gravity and sway
+                    l.vy += 0.03;
+                    l.x += p.sin(p.frameCount * 0.02 + i) * 0.8;
+
+                    p.push();
+                    p.translate(l.x, l.y);
+                    p.rotate(l.rotation);
+
+                    let alpha = p.map(l.life, 0, 255, 0, 200);
+                    p.fill(107, 143, 113, alpha);
+
+                    p.beginShape();
+                    p.vertex(0, -l.size);
+                    p.bezierVertex(l.size, -l.size, l.size, l.size, 0, l.size*1.5);
+                    p.bezierVertex(-l.size, l.size, -l.size, -l.size, 0, -l.size);
+                    p.endShape(p.CLOSE);
+
+                    p.pop();
+
+                    if (l.life <= 0) leaves.splice(i, 1);
+                }
+            };
+
+            // Expose a function to trigger a burst from a specific screen coordinate
+            // Called by the Three.js raycaster click event
+            window.triggerLeafBurst = (x, y) => {
+                let numLeaves = p.random(15, 25); // Bigger burst
+                for(let i=0; i<numLeaves; i++) {
+                    leaves.push({
+                        x: x + p.random(-20, 20),
+                        y: y + p.random(-20, 20),
+                        life: 255,
+                        size: p.random(10, 20),
+                        vx: p.random(-6, 6), // Explode outward
+                        vy: p.random(-8, 2), // Shoot up then fall
+                        rotation: p.random(p.TWO_PI),
+                        rotSpeed: p.random(-0.1, 0.1)
+                    });
+                }
+            };
+
+            // Remove p.mousePressed because pointer-events: none prevents it from firing.
+            // The document.addEventListener('click') in Three.js handles all clicks now.
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                centerX = p.width / 2;
+                centerY = p.height * 0.4;
+            };
+        };
+
+        // Initialize both synchronously
+        // Since CDNs are loaded synchronously in the head, and this script is at the end of the body,
+        // the DOM is ready and the libraries are available.
+
+        try {
+            initThreeJS();
+            window.__12eatpureInitialized = true;
+            console.log("Three.js successfully initialized.");
+        } catch (e) {
+            console.error("Three.js init failed:", e);
+        }
+
+        try {
+            new p5(sketch);
+            console.log("p5.js successfully initialized.");
+        } catch (e) {
+            console.error("p5.js init failed:", e);
+        }
+
+    </script>
+</body>
+</html>
