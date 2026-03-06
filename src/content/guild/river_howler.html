@@ -123,7 +123,6 @@
             border-radius: 50%;
             padding: 8px;
             background: conic-gradient(from 0deg, transparent 0%, var(--blood) 25%, transparent 50%, var(--blood) 75%, transparent 100%);
-            animation: spin 15s linear infinite;
             transition: background 1.5s;
         }
 
@@ -131,15 +130,12 @@
             background: conic-gradient(from 0deg, transparent 0%, var(--necro-green) 25%, transparent 50%, var(--necro-green) 75%, transparent 100%);
         }
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
         .avatar-inner {
             width: 100%; height: 100%;
             border-radius: 50%;
             overflow: hidden;
             background-color: var(--void);
             position: relative;
-            animation: spin -15s linear infinite; /* Counter spin to keep image upright */
             box-shadow: inset 0 0 50px #000;
         }
 
@@ -341,6 +337,9 @@
                     嗨，我是身兼三職的龍狼混血德魯伊—沒川狼雨。<br>
                     同時從事群獸守護者、死靈法師，以及煉金術師。<br>
                 </p>
+                <p class="text-md text-bone-dim leading-relaxed max-w-2xl mx-auto font-serif italic mt-6 opacity-80 drop-shadow-md">
+                    "在生與死的交界處，我編織骨血，喚醒沉睡的野獸。我的工作室是一座祭壇，每一次的煉金與標本製作，都是對生命無常的最高敬意。踏入我的領域，準備迎接奇幻與獵奇的交響曲。"
+                </p>
                 <div class="mt-8 text-xs text-bone-dim font-mono tracking-[0.3em] opacity-50 uppercase">
                     Press <kbd class="px-2 py-1 border border-bone-dim rounded text-white bg-black/50 transition-colors duration-1000 role-border">SPACE</kbd> or <kbd class="px-2 py-1 border border-bone-dim rounded text-white bg-black/50 transition-colors duration-1000 role-border">T</kbd> to transform
                 </div>
@@ -366,7 +365,7 @@
                     </div>
                     <h2 class="text-2xl mb-2 text-white border-b border-blood pb-2 w-full role-border">群獸守護者</h2>
                     <h3 class="text-sm font-serif text-bone-dim mb-6 uppercase tracking-widest">Pet Breeder</h3>
-                    <p class="text-sm mb-6 text-bone leading-loose">如果你想飼養特殊的動物，可以找我購買。我守護的群獸有：</p>
+                    <p class="text-sm mb-6 text-bone leading-loose">做為一名血脈中流淌著龍狼之息的德魯伊，我能聽見那些奇異生命的低語。如果你想飼養特殊的靈魂，可以在我的聖所中尋找牠們的身影。我守護的群獸有：</p>
                     <ul class="blood-list text-left text-sm w-full font-bold">
                         <li>各種花色的蘆丁雞</li>
                         <li>加州冠鵪鶉</li>
@@ -383,7 +382,7 @@
                     </div>
                     <h2 class="text-2xl mb-2 text-white border-b border-blood pb-2 w-full role-border">死靈法師</h2>
                     <h3 class="text-sm font-serif text-bone-dim mb-6 uppercase tracking-widest">Taxidermist</h3>
-                    <p class="text-sm mb-6 text-bone leading-loose">如果你想訂製標本，我提供的死靈復甦服務有：</p>
+                    <p class="text-sm mb-6 text-bone leading-loose">死亡不是終點，而是另一種形式的藝術。如果你想為逝去的生命訂製永恆的容器，我提供的死靈復甦儀式有：</p>
                     <ul class="blood-list text-left text-sm w-full font-bold">
                         <li>小型鳥類剝製標本</li>
                         <li>小型動物骨胳標本</li>
@@ -400,7 +399,7 @@
                     </div>
                     <h2 class="text-2xl mb-2 text-white border-b border-blood pb-2 w-full role-border">煉金術師</h2>
                     <h3 class="text-sm font-serif text-bone-dim mb-6 uppercase tracking-widest">Model Maker</h3>
-                    <p class="text-sm mb-6 text-bone leading-loose">如果你想訂製模型，我提供的煉金術服務有：</p>
+                    <p class="text-sm mb-6 text-bone leading-loose">血肉苦弱，模型飛昇。從泥土、樹脂到骨骸，我將妄想具象化。如果你想訂製異端造物，我提供的煉金術服務有：</p>
                     <ul class="blood-list text-left text-sm w-full font-bold">
                         <li>寵物、動物模型</li>
                         <li>內臟模型</li>
@@ -598,14 +597,14 @@
             const skullTexture = new THREE.CanvasTexture(skullCanvas);
             const skullMat = new THREE.SpriteMaterial({ map: skullTexture, color: 0xffffff });
 
-            // Generate hundreds of skulls in a mound around the altar steps
-            const numSkulls = 800;
+            // Generate a smaller mound of skulls around the altar steps for better performance
+            const numSkulls = 150;
             const skullSprites = [];
             for(let i=0; i<numSkulls; i++) {
                 const sprite = new THREE.Sprite(skullMat);
 
                 // Mound distribution math
-                const radius = Math.random() * 30;
+                const radius = Math.random() * 20;
                 const angle = Math.random() * Math.PI * 2;
 
                 // Scattered mostly on the ground, forming part of the environment
@@ -636,7 +635,8 @@
                 flatShading: true
             });
 
-            for(let i=0; i<150; i++) {
+            // Reduced debris count to improve performance
+            for(let i=0; i<40; i++) {
                 const mesh = new THREE.Mesh(debrisGeo, debrisMat);
                 mesh.position.set(
                     (Math.random() - 0.5) * 80,
@@ -791,22 +791,25 @@
                     const speed = sk.dist(sk.mouseX, sk.mouseY, sk.pmouseX, sk.pmouseY);
                     const isMoving = speed > 2;
 
-                    // Continuous dense bloody/spectral trail
-                    if (isMoving || (APP_STATE.isBeastMode && sk.frameCount % 2 === 0)) {
-                        const spawnCount = APP_STATE.isBeastMode ? 5 : 2;
+                    // Continuous bloody/spectral trail
+                    // Throttled to reduce lag (only spawn every few frames when moving)
+                    if ((isMoving && sk.frameCount % 2 === 0) || (APP_STATE.isBeastMode && sk.frameCount % 8 === 0)) {
+                        const spawnCount = 1;
 
                         // Draw connecting splatter line between frames
-                        splatters.push({
-                            x1: sk.pmouseX, y1: sk.pmouseY,
-                            x2: sk.mouseX, y2: sk.mouseY,
-                            life: 255,
-                            weight: sk.random(5, 20) * (1 + beastChaos * 2),
-                            isBeast: APP_STATE.isBeastMode
-                        });
+                        if (isMoving) {
+                            splatters.push({
+                                x1: sk.pmouseX, y1: sk.pmouseY,
+                                x2: sk.mouseX, y2: sk.mouseY,
+                                life: 255,
+                                weight: sk.random(5, 15) * (1 + beastChaos * 1.5),
+                                isBeast: APP_STATE.isBeastMode
+                            });
+                        }
 
                         // Spawn mist/blood particles
                         for(let i=0; i<spawnCount; i++) {
-                            let isRune = sk.random() > 0.95;
+                            let isRune = sk.random() > 0.90;
                             let r = runes[sk.floor(sk.random(runes.length))];
 
                             const isGreen = APP_STATE.isBeastMode ? sk.random() > 0.3 : sk.random() > 0.8;
@@ -879,14 +882,14 @@
 
                 // Expose a method to burst particles
                 window.burstParticles = () => {
-                    for(let i=0; i<150; i++) {
+                    for(let i=0; i<40; i++) {
                         particles.push({
                             x: window.innerWidth/2 + sk.random(-100, 100),
                             y: window.innerHeight/2 + sk.random(-100, 100),
-                            vx: sk.random(-25, 25),
-                            vy: sk.random(-25, 25),
-                            life: 255,
-                            size: sk.random(15, 40),
+                            vx: sk.random(-20, 20),
+                            vy: sk.random(-20, 20),
+                            life: 200,
+                            size: sk.random(10, 30),
                             color: [46, 204, 113],
                             isRune: sk.random() > 0.5,
                             text: runes[sk.floor(sk.random(runes.length))],
