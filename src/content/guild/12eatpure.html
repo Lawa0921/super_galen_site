@@ -12,8 +12,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
         :root {
             --eco-leaf: #6b8f71;      /* Sage Green */
@@ -30,7 +29,8 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            font-family: 'Noto Sans TC', sans-serif;
+            /* Primary font: Zen Maru Gothic gives a rounded, organic, natural feel to Chinese characters */
+            font-family: 'Zen Maru Gothic', sans-serif;
             background-color: var(--eco-bg);
             color: var(--text-main);
             overflow-x: hidden;
@@ -66,7 +66,8 @@
 
         /* Typography */
         h1, h2, h3, .eco-font {
-            font-family: 'Noto Sans TC', serif; /* Switch to elegant serif/sans mix */
+            /* Elegant organic serif for headings and English text */
+            font-family: 'Cormorant Garamond', 'Zen Maru Gothic', serif;
             font-weight: 700;
             letter-spacing: 1px;
         }
@@ -268,7 +269,7 @@
         }
 
         .loader-text {
-            font-family: 'Noto Sans TC', serif;
+            font-family: 'Zen Maru Gothic', sans-serif;
             color: var(--eco-forest);
             font-size: 1.2rem;
             letter-spacing: 3px;
@@ -475,25 +476,32 @@
         window.addEventListener('resize', resizeLineCanvas);
         resizeLineCanvas();
 
-        // Handle initial load logic
-        window.addEventListener('load', () => {
-            // Guarantee at least a minimal showing of the loader and compilation time
-            setTimeout(() => {
-                const loader = document.getElementById('loader');
-                loader.style.opacity = '0';
-                loader.style.visibility = 'hidden';
-                document.body.classList.remove('loading');
-                document.body.classList.add('loaded');
+        // Aggressive Failsafe Loading Logic
+        const removeLoader = () => {
+            if (!document.body.classList.contains('loading')) return; // Already removed
 
-                // Fly-in intro animation for the island
-                if (window.islandGroup) {
-                    gsap.fromTo(window.islandGroup.position,
-                        { y: -15, scale: 0.5 },
-                        { y: -2, scale: 1, duration: 2.5, ease: "elastic.out(1, 0.5)" }
-                    );
-                }
-            }, 800);
+            const loader = document.getElementById('loader');
+            loader.style.opacity = '0';
+            loader.style.visibility = 'hidden';
+            document.body.classList.remove('loading');
+            document.body.classList.add('loaded');
+
+            // Fly-in intro animation for the island
+            if (window.islandGroup && window.gsap) {
+                gsap.fromTo(window.islandGroup.position,
+                    { y: -15, scale: 0.5 },
+                    { y: -2, scale: 1, duration: 2.5, ease: "elastic.out(1, 0.5)" }
+                );
+            }
+        };
+
+        // Try standard load
+        window.addEventListener('load', () => {
+            setTimeout(removeLoader, 500); // Small buffer for compilation
         });
+
+        // Failsafe: if CDNs hang, force start after 2.5 seconds max
+        setTimeout(removeLoader, 2500);
 
         // Expand the story container height massively to support the extended journey
         document.querySelector('.story-container').style.height = '1000vh';
