@@ -164,10 +164,6 @@
       color: var(--sunset-glow);
     }
 
-    .text-gold {
-      color: var(--sand-mid);
-    }
-
     .nav-btn {
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -188,10 +184,6 @@
     .title-stroke {
       -webkit-text-stroke: 1px var(--desert-night);
       color: transparent;
-    }
-
-    .dark .title-stroke {
-      -webkit-text-stroke: 1px var(--sand-light);
     }
 
     .quote-mark {
@@ -763,7 +755,7 @@
       camera.lookAt(0, 0, 0);
 
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(window.innerWidth, window.innerHeight);
       container.appendChild(renderer.domElement);
 
@@ -776,7 +768,7 @@
       scene.add(dirLight);
 
       // Desert Terrain (Dunes)
-      const planeGeo = new THREE.PlaneGeometry(200, 200, 128, 128);
+      const planeGeo = new THREE.PlaneGeometry(200, 200, 64, 64);
       planeGeo.rotateX(-Math.PI / 2);
 
       // Modify vertices to create dunes
@@ -808,7 +800,7 @@
       // Fine Sandstorm Particles (Circular)
       const circleTex = createCircleTexture();
       const particleGeo = new THREE.BufferGeometry();
-      const particleCount = 6000; // More particles for finer look
+      const particleCount = 4000;
       const posArray = new Float32Array(particleCount * 3);
 
       for(let i = 0; i < particleCount * 3; i+=3) {
@@ -836,16 +828,13 @@
       const smokeGeo = new THREE.BufferGeometry();
       const smokeCount = 100;
       const smokePosArray = new Float32Array(smokeCount * 3);
-      const smokeSizeArray = new Float32Array(smokeCount);
 
       for(let i = 0; i < smokeCount; i++) {
         smokePosArray[i*3] = (Math.random() - 0.5) * 200;
         smokePosArray[i*3+1] = Math.random() * 20;
         smokePosArray[i*3+2] = (Math.random() - 0.5) * 100;
-        smokeSizeArray[i] = Math.random() * 20 + 10;
       }
       smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePosArray, 3));
-      smokeGeo.setAttribute('size', new THREE.BufferAttribute(smokeSizeArray, 1));
 
       // Use a basic points material with size attenuation for smoke
       const smokeMat = new THREE.PointsMaterial({
@@ -860,13 +849,6 @@
 
       smokeParticles = new THREE.Points(smokeGeo, smokeMat);
       scene.add(smokeParticles);
-
-
-
-      // Distant Oasis Light
-      const oasisLight = new THREE.PointLight(0x4A5D23, 2, 100);
-      oasisLight.position.set(-40, 5, -80);
-      scene.add(oasisLight);
 
       // Moon
       const moonGeo = new THREE.CircleGeometry(15, 64);
@@ -906,8 +888,6 @@
         oasisGroup.add(sMesh);
         shoreMats.push(sMat);
       });
-      // Alias for backward compat
-      const shoreMat = shoreMats[0];
 
       // Water Pool - Upgraded to a more detailed plane for rippling
       const waterGeo = new THREE.PlaneGeometry(50, 50, 64, 64);
@@ -1023,7 +1003,6 @@
         oasisGroup.add(stone);
       }
 
-      // Grass / Reeds near water
       // Magic Crystals around water
       const crystalMat = new THREE.MeshStandardMaterial({
         color: 0x55ccdd, // Softer teal
@@ -1072,7 +1051,7 @@
 
       const grassGroup = new THREE.Group();
       const grassBlades = [];
-      for(let i=0; i<150; i++) {
+      for(let i=0; i<80; i++) {
           const angle = Math.random() * Math.PI * 2;
           const radius = 20 + Math.random() * 8;
           const gx = Math.cos(angle) * radius;
@@ -1207,7 +1186,6 @@
         flatShading: true
       });
 
-      const bushes = [];
       for (let i=0; i<25; i++) {
         const bushGroup = new THREE.Group();
         const numSpheres = Math.floor(Math.random() * 3) + 2;
@@ -1231,7 +1209,6 @@
         if (bz > 14 && bx > -14 && bx < 14) continue;
         bushGroup.position.set(bx, 0, bz);
         oasisGroup.add(bushGroup);
-        bushes.push(bushGroup);
       }
 
       // Water Mist Particles (fog hovering above the pool)
@@ -1280,8 +1257,7 @@
         flatShading: true
       });
 
-      const trees = [];
-      for(let i=0; i<45; i++) { // Increased tree count
+      for(let i=0; i<45; i++) {
         // Position trees around the water edge
         const angle = Math.random() * Math.PI * 2;
         const radius = 23 + Math.random() * 25; // Wider forest spread
@@ -1350,12 +1326,11 @@
         }
 
         oasisGroup.add(treeGroup);
-        trees.push({ group: treeGroup });
       }
 
       // Firefly Particles
       const fireflyGeo = new THREE.BufferGeometry();
-      const fireflyCount = 300;
+      const fireflyCount = 200;
       const fireflyPosArray = new Float32Array(fireflyCount * 3);
       const fireflyPhaseArray = new Float32Array(fireflyCount); // for twinkling
       const fireflyColorArray = new Float32Array(fireflyCount * 3); // RGB
@@ -1479,13 +1454,9 @@
            c.light.intensity = oasisVisibility * (1 + Math.sin(time * 4 + idx) * 0.5);
         });
 
-        // Animate Grass Sway
+        // Animate Grass Sway (rotation-based for performance)
         grassBlades.forEach((blade, idx) => {
-            const posAttr = blade.geometry.attributes.position;
-            // The top vertex is index 2 (0, grassHeight, z)
-            const topZ = posAttr.getZ(2);
-            posAttr.setZ(2, topZ + Math.sin(time * 3 + idx) * 0.05); // Sway based on time
-            blade.geometry.attributes.position.needsUpdate = true;
+            blade.rotation.z = Math.sin(time * 3 + idx) * 0.15;
         });
 
         // Animate Lotus Flowers
@@ -1519,18 +1490,19 @@
         }
         mistParticles.geometry.attributes.position.needsUpdate = true;
 
-        // Animate water rippling
-        const wPos = water.geometry.attributes.position;
-        for(let i=0; i<wPos.count; i++) {
-            const x = wPos.getX(i);
-            const z = wPos.getZ(i);
-            // Ignore the edges that are cut off below -5
-            if (wPos.getY(i) > -5) {
-                wPos.setY(i, Math.sin(x * 0.5 + time * 2) * 0.3 + Math.sin(z * 0.5 + time * 1.5) * 0.3);
-            }
+        // Animate water rippling (throttled normals for performance)
+        if (Math.floor(time * 200) % 3 === 0) {
+          const wPos = water.geometry.attributes.position;
+          for(let i=0; i<wPos.count; i++) {
+              const x = wPos.getX(i);
+              const z = wPos.getZ(i);
+              if (wPos.getY(i) > -5) {
+                  wPos.setY(i, Math.sin(x * 0.5 + time * 2) * 0.3 + Math.sin(z * 0.5 + time * 1.5) * 0.3);
+              }
+          }
+          water.geometry.computeVertexNormals();
+          water.geometry.attributes.position.needsUpdate = true;
         }
-        water.geometry.computeVertexNormals();
-        water.geometry.attributes.position.needsUpdate = true;
 
         // Move oasis group towards camera based on scroll
         oasisGroup.position.z = -150 + (p * 130);
