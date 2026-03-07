@@ -348,22 +348,38 @@
     <!-- Main content needs to let pointer events pass through to background layers where empty -->
     <main class="relative z-10 w-full min-h-screen pb-32 book-container opacity-0 pointer-events-none" id="main-content">
 
+        <!-- SCROLL PROGRESS DRAWING PATH -->
+        <!-- A decorative continuous line drawing that completes as you scroll down -->
+        <div class="fixed top-0 left-10 h-full w-24 pointer-events-none z-0 hidden lg:block opacity-60">
+            <svg viewBox="0 0 100 2000" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                <path id="scroll-path" d="M 50 0 C 80 200 20 400 50 600 C 80 800 20 1000 50 1200 C 80 1400 20 1600 50 1800 C 80 1900 50 2000 50 2000"
+                      fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4 8" stroke-linecap="round" />
+                <path id="scroll-path-fill" d="M 50 0 C 80 200 20 400 50 600 C 80 800 20 1000 50 1200 C 80 1400 20 1600 50 1800 C 80 1900 50 2000 50 2000"
+                      fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" />
+            </svg>
+            <div id="scroll-follower" class="absolute w-8 h-8 -ml-4 -mt-4" style="left: 50%; top: 0;">
+                <svg viewBox="0 0 100 100" class="animate-[spin_4s_linear_infinite]">
+                    <path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="3"/>
+                </svg>
+            </div>
+        </div>
+
         <!-- Navigation / Top bar -->
         <nav class="fixed top-0 w-full p-6 z-50 flex justify-between items-center pointer-events-none">
-            <div class="glass-card px-6 py-3 pointer-events-auto hover:bg-white/90 transition-colors">
+            <div class="glass-card px-6 py-3 pointer-events-auto hover:bg-white/90 transition-colors shadow-sm">
                 <a href="/" class="text-sky-600 font-serif font-bold text-xl tracking-wider flex items-center gap-2">
                     <i class="fa-solid fa-cloud"></i> 貓青
                 </a>
             </div>
-            <div class="glass-card px-4 py-3 flex gap-4 pointer-events-auto">
+            <div class="glass-card px-4 py-3 flex gap-4 pointer-events-auto shadow-sm">
                 <a href="https://www.threads.net/@naomiao77" target="_blank" class="text-text hover:text-sky-500 transition-colors"><i class="fa-brands fa-threads text-xl"></i></a>
                 <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-text hover:text-sky-500 transition-colors"><i class="fa-brands fa-instagram text-xl"></i></a>
                 <a href="https://portaly.cc/naomiao77" target="_blank" class="text-text hover:text-sky-500 transition-colors"><i class="fa-solid fa-link text-xl"></i></a>
             </div>
         </nav>
 
-        <!-- Chapter 1: Hero / Introduction -->
-        <section class="min-h-screen relative flex items-center justify-center pt-20 pointer-events-auto" id="hero">
+        <!-- Prologue: Introduction -->
+        <section class="min-h-screen relative flex items-center justify-center pt-20 pb-32 pointer-events-auto" id="hero">
             <!-- Decorative SVG Clouds -->
             <svg class="svg-cloud w-64 h-32 top-1/4 left-10 animate-float-slow" viewBox="0 0 24 24"><path d="M6.5,17.5C4.57,17.5 3,15.93 3,14C3,12.3 4.22,10.87 5.86,10.58C6.54,7.88 9,6 12,6C14.78,6 17.15,7.67 18.06,10.1C18.23,10.08 18.39,10.06 18.57,10.06C21.03,10.06 23,12.06 23,14.5C23,16.96 21.04,18.96 18.57,18.96L6.5,17.5Z"/></svg>
             <svg class="svg-cloud w-48 h-24 bottom-1/4 right-20 animate-float-fast" viewBox="0 0 24 24"><path d="M6.5,17.5C4.57,17.5 3,15.93 3,14C3,12.3 4.22,10.87 5.86,10.58C6.54,7.88 9,6 12,6C14.78,6 17.15,7.67 18.06,10.1C18.23,10.08 18.39,10.06 18.57,10.06C21.03,10.06 23,12.06 23,14.5C23,16.96 21.04,18.96 18.57,18.96L6.5,17.5Z"/></svg>
@@ -371,33 +387,36 @@
             <div class="max-w-6xl w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <!-- Text Content -->
                 <div class="hero-text z-10 text-center lg:text-left">
-                    <p class="font-serif text-sky-600 text-lg mb-4 tracking-widest pl-1"><i class="fa-solid fa-star text-yellow-400 text-sm"></i> Chapter 1</p>
+                    <p class="font-serif text-sky-600 text-lg mb-4 tracking-widest pl-1 opacity-80"><i class="fa-solid fa-pen-nib text-slate-400 mr-2"></i>Prologue</p>
                     <h1 class="font-serif text-5xl md:text-7xl font-bold mb-6 text-slate-700 leading-tight">
                         我是 <span class="title-stroke">貓青。</span>
                     </h1>
 
-                    <div class="glass-card p-8 text-lg md:text-xl leading-relaxed text-slate-600 font-serif inline-block text-left shadow-xl">
+                    <div class="glass-card p-8 md:p-10 text-lg md:text-xl leading-relaxed text-slate-600 font-serif inline-block text-left shadow-xl relative mt-4">
+                        <i class="fa-solid fa-quote-left absolute -top-5 -left-5 text-4xl text-sky-200 opacity-50"></i>
                         <p class="mb-4">畫貓、畫花、畫天馬行空的瞬間。</p>
-                        <p class="mb-4">不是一路順著走來的創作者，<br>而是慢慢把喜歡的事撿起來，<br><span class="highlight-text">一筆一筆，畫成現在的樣子。</span></p>
+                        <p class="mb-4">不是一路順著走來的創作者，<br>而是慢慢把喜歡的事撿起來，</p>
+                        <p class="font-bold text-slate-700 text-2xl mt-6"><span class="highlight-text">一筆一筆，畫成現在的樣子。</span></p>
                     </div>
                 </div>
 
                 <!-- Avatar / Floating Polaroids -->
                 <div class="hero-images relative h-[500px] w-full flex justify-center items-center">
                     <!-- Main Avatar -->
-                    <div class="polaroid w-64 md:w-80 absolute z-20 shadow-2xl animate-float-slow" style="transform: rotate(3deg);">
+                    <div class="polaroid w-64 md:w-80 absolute z-20 shadow-2xl animate-float-slow group" style="transform: rotate(3deg);">
                         <div class="tape blue"></div>
-                        <img src="/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" alt="貓青 Avatar" class="aspect-[3/4] object-cover">
-                        <p class="text-center font-serif mt-4 text-slate-500 text-sm">天空裡的畫布</p>
+                        <img src="/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" alt="貓青 Avatar" class="aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm pointer-events-none mix-blend-overlay"></div>
+                        <p class="text-center font-serif mt-4 text-slate-500 text-sm italic">「天空裡的畫布」</p>
                     </div>
 
                     <!-- Floating Background Images -->
-                    <div class="polaroid w-40 md:w-52 absolute -left-4 md:-left-10 top-10 z-10 opacity-90 animate-float-medium" style="transform: rotate(-10deg);">
+                    <div class="polaroid w-32 md:w-48 absolute -left-4 md:-left-16 top-4 md:top-10 z-10 opacity-90 animate-float-medium" style="transform: rotate(-12deg);">
                         <div class="tape yellow"></div>
-                        <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="Artwork" class="aspect-square object-cover">
+                        <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="Artwork" class="aspect-square object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-300">
                     </div>
 
-                    <div class="polaroid w-48 md:w-60 absolute -right-4 md:-right-12 bottom-10 z-30 opacity-95 animate-float-fast" style="transform: rotate(8deg);">
+                    <div class="polaroid w-40 md:w-56 absolute -right-4 md:-right-12 bottom-4 md:bottom-10 z-30 opacity-95 animate-float-fast" style="transform: rotate(8deg);">
                         <div class="tape"></div>
                         <img src="/assets/img/guild/naomiao77/620439760_17907653019337939_277965404648345672_n.webp" alt="Artwork" class="aspect-[4/3] object-cover">
                     </div>
@@ -405,82 +424,114 @@
             </div>
 
             <!-- Scroll Indicator -->
-            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce text-sky-500">
-                <span class="font-serif text-sm tracking-widest mb-2">慢慢往下翻</span>
-                <i class="fa-solid fa-arrow-down"></i>
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce text-slate-400">
+                <span class="font-serif text-sm tracking-widest mb-2 opacity-70">輕輕翻開第一頁</span>
+                <i class="fa-solid fa-angle-down"></i>
             </div>
         </section>
 
-        <!-- Page Divider -->
-        <div class="w-full flex justify-center py-10 opacity-60 pointer-events-none relative z-10">
-            <svg width="200" height="20" viewBox="0 0 200 20">
-                <path d="M 0 10 Q 50 20 100 10 T 200 10" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 6" stroke-linecap="round" />
-            </svg>
-        </div>
+        <!-- Chapter 1: The Touch of Gentleness -->
+        <section class="min-h-screen relative py-32 px-6 pointer-events-auto flex items-center" id="chapter1">
+            <div class="max-w-6xl mx-auto w-full">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
 
-        <!-- Chapter 2: The Art & Life -->
-        <section class="min-h-screen relative py-32 px-6 pointer-events-auto" id="chapter2">
-            <div class="max-w-7xl mx-auto">
-                <div class="text-center mb-20">
-                    <p class="font-serif text-sky-600 text-lg mb-2 tracking-widest"><i class="fa-solid fa-cat text-slate-400"></i> Chapter 2</p>
-                    <h2 class="font-serif text-4xl md:text-5xl font-bold text-slate-700">日常裡的小小魔法</h2>
+                    <div class="order-2 md:order-1 relative">
+                        <div class="polaroid w-full max-w-md mx-auto gs-reveal shadow-xl transform -rotate-2">
+                            <div class="tape blue"></div>
+                            <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="Art" class="aspect-[4/5] object-cover">
+                            <p class="text-center font-serif mt-4 text-slate-400 text-sm">喜歡柔軟的線條</p>
+                        </div>
+                        <!-- Background doodle -->
+                        <div class="absolute -bottom-10 -right-10 w-32 h-32 opacity-30 pointer-events-none rotate-12">
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 50 Q 50 10 80 50 T 20 50" stroke="#94A3B8" stroke-width="2" fill="none" stroke-dasharray="4 4"/>
+                                <circle cx="50" cy="50" r="30" stroke="#94A3B8" stroke-width="1" fill="none"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="order-1 md:order-2 text-left gs-reveal">
+                        <p class="font-serif text-sky-600 text-sm mb-2 tracking-widest uppercase"><i class="fa-solid fa-leaf text-emerald-400 mr-2"></i>Chapter 1</p>
+                        <h2 class="font-serif text-4xl md:text-5xl font-bold text-slate-700 mb-8">被放進生活裡的陪伴</h2>
+
+                        <div class="note-paper shadow-md transform rotate-1">
+                            <p class="font-serif text-lg leading-loose text-slate-600">
+                                喜歡柔軟的線條、溫和的顏色，<br>
+                                也喜歡作品被放進生活裡——<br><br>
+                                變成一張明信片、一幅畫，<br>
+                                <span class="highlight-text font-bold text-slate-700">或某天剛好被需要的陪伴。</span><br><br>
+                                <span class="text-sm text-slate-400 mt-4 block">不只是掛在牆上的藝術，而是可以拿在手心裡的溫暖。</span>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter 2: Daily Magic & Scrapbook (Horizontal Scroll Section) -->
+        <section class="h-screen relative bg-white/30 backdrop-blur-sm border-y border-slate-200 pointer-events-auto overflow-hidden flex flex-col justify-center" id="chapter2-horizontal">
+            <div class="absolute top-10 left-10 md:left-20 z-10">
+                <p class="font-serif text-sky-600 text-sm mb-2 tracking-widest uppercase"><i class="fa-solid fa-wand-magic-sparkles text-yellow-400 mr-2"></i>Chapter 2</p>
+                <h2 class="font-serif text-4xl md:text-5xl font-bold text-slate-700">日常裡的小小魔法</h2>
+            </div>
+
+            <div class="absolute bottom-10 left-10 text-slate-400 font-serif text-sm flex items-center gap-2 animate-pulse">
+                <i class="fa-solid fa-arrow-right-long"></i> 向旁邊滑動翻頁
+            </div>
+
+            <!-- The wide canvas for horizontal scrolling -->
+            <div class="flex items-center pl-[20vw] pr-[20vw] h-full gap-16 md:gap-32 w-fit" id="horizontal-container">
+
+                <!-- Item 1: Text Intro -->
+                <div class="w-[300px] shrink-0">
+                    <p class="font-serif text-2xl leading-loose text-slate-600">
+                        <span class="highlight-text">養貓，畫畫，偶爾旅行，</span><br>
+                        喜歡動漫，也相信日常裡的小小魔法。<br>
+                    </p>
+                    <svg class="w-20 h-20 mt-8 opacity-50 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,19.93C7.05,19.43 4,16.05 4,12C4,7.95 7.05,4.57 11,4.07V19.93M13,4.07C16.95,4.57 20,7.95 20,12C20,16.05 16.95,19.43 13,19.93V4.07Z" /></svg>
                 </div>
 
-                <!-- Masonry Layout for Artworks -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 md:gap-8 items-center">
-
-                    <!-- Text Block (Note Paper) -->
-                    <div class="note-paper md:col-span-2 lg:col-span-1 shadow-lg transform -rotate-1 hover:rotate-0 transition-transform duration-300 gs-reveal">
-                        <i class="fa-solid fa-thumbtack absolute top-4 left-1/2 transform -translate-x-1/2 text-red-400 text-xl shadow-sm rounded-full bg-white p-1"></i>
-                        <p class="font-serif text-lg leading-loose text-slate-700 mt-4">
-                            喜歡柔軟的線條、溫和的顏色，<br>
-                            也喜歡作品被放進生活裡——<br>
-                            變成一張明信片、一幅畫，<br>
-                            或某天剛好被需要的陪伴。<br><br>
-                            <span class="highlight-text">養貓，畫畫，偶爾旅行，</span><br>
-                            喜歡動漫，也相信日常裡的小小魔法。
-                        </p>
-                    </div>
-
-                    <!-- Images -->
-                    <div class="polaroid gs-reveal" style="transform: rotate(2deg);">
-                        <div class="tape blue"></div>
-                        <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="Art" class="aspect-[4/5] object-cover">
-                        <p class="text-center font-serif mt-3 text-slate-400 text-xs">柔軟的瞬間</p>
-                    </div>
-
-                    <div class="polaroid gs-reveal" style="transform: rotate(-3deg); margin-top: 40px;">
-                        <img src="/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp" alt="Art" class="aspect-square object-cover">
-                        <p class="text-center font-serif mt-3 text-slate-400 text-xs">貓與日常</p>
-                    </div>
-
-                    <div class="polaroid gs-reveal lg:mt-[-60px]" style="transform: rotate(4deg);">
+                <!-- Item 2: Cat Art -->
+                <div class="w-[350px] shrink-0 relative">
+                    <div class="polaroid shadow-lg transform -rotate-3 hover:rotate-0 transition-transform">
                         <div class="tape yellow"></div>
-                        <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="Art" class="aspect-[3/4] object-cover">
+                        <img src="/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp" alt="Cat Art" class="aspect-square object-cover">
+                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">貓與日常</p>
                     </div>
-
-                    <div class="polaroid gs-reveal" style="transform: rotate(-2deg);">
-                        <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" alt="Art" class="aspect-square object-cover">
-                    </div>
-
-                    <div class="polaroid gs-reveal" style="transform: rotate(1deg);">
-                        <div class="tape"></div>
-                        <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" alt="Art" class="aspect-[4/3] object-cover">
-                        <p class="text-center font-serif mt-3 text-slate-400 text-xs">喜歡動漫</p>
+                    <!-- Cute paw prints trailing from it -->
+                    <div class="absolute -bottom-10 -right-10 flex gap-2 rotate-[20deg] opacity-40 text-slate-400 text-xl">
+                        <i class="fa-solid fa-paw translate-y-2"></i>
+                        <i class="fa-solid fa-paw translate-y-4"></i>
+                        <i class="fa-solid fa-paw translate-y-1"></i>
                     </div>
                 </div>
+
+                <!-- Item 3: Anime/Fantasy Art -->
+                <div class="w-[400px] shrink-0">
+                    <div class="polaroid shadow-xl transform rotate-2 hover:-translate-y-4 transition-transform">
+                        <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" alt="Fantasy Art" class="aspect-square object-cover">
+                    </div>
+                </div>
+
+                <!-- Item 4: Travel/Hobby -->
+                <div class="w-[350px] shrink-0 relative">
+                    <div class="polaroid shadow-md transform -rotate-1">
+                        <div class="tape"></div>
+                        <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" alt="Hobby Art" class="aspect-[4/3] object-cover">
+                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">喜歡動漫</p>
+                    </div>
+                    <!-- decorative stamp -->
+                    <div class="absolute -top-6 -right-6 w-16 h-16 border-4 border-red-300 rounded-full flex items-center justify-center rotate-12 opacity-50">
+                        <span class="font-serif text-red-300 font-bold text-xl">MAGIC</span>
+                    </div>
+                </div>
+
             </div>
         </section>
-
-        <!-- Page Divider -->
-        <div class="w-full flex justify-center py-10 opacity-60 pointer-events-none relative z-10">
-            <svg width="200" height="20" viewBox="0 0 200 20">
-                <path d="M 0 10 Q 50 20 100 10 T 200 10" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 6" stroke-linecap="round" />
-            </svg>
-        </div>
 
         <!-- Chapter 3: The Mind & Closure -->
-        <section class="min-h-screen relative flex items-center justify-center py-20 px-6 pointer-events-auto" id="chapter3">
+        <section class="min-h-screen relative flex items-center justify-center py-32 px-6 pointer-events-auto" id="chapter3">
             <div class="max-w-5xl mx-auto w-full flex flex-col items-center">
 
                 <p class="font-serif text-sky-600 text-lg mb-6 tracking-widest"><i class="fa-solid fa-seedling text-green-400"></i> Chapter 3</p>
@@ -725,6 +776,85 @@
             });
         }
 
+        // Horizontal Scroll for Chapter 2 Gallery
+        const horizontalContainer = document.getElementById('horizontal-container');
+        if (horizontalContainer) {
+            // Get total scrollable width
+            const scrollWidth = horizontalContainer.scrollWidth - window.innerWidth;
+
+            gsap.to(horizontalContainer, {
+                x: -scrollWidth,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#chapter2-horizontal",
+                    start: "top top",
+                    end: `+=${scrollWidth + window.innerWidth}`, // Scroll distance equivalent to content width
+                    pin: true,
+                    scrub: 0.5,
+                    invalidateOnRefresh: true,
+                    // When scrolling horizontally, add a slight tilt to the polaroids simulating wind/movement
+                    onUpdate: (self) => {
+                        const velocity = self.getVelocity();
+                        const tilt = Math.max(Math.min(velocity / 100, 10), -10); // Cap tilt
+                        gsap.to("#horizontal-container .polaroid", {
+                            rotationZ: (i, el) => {
+                                // Keep base rotation and add tilt
+                                const baseRotation = el._gsap ? el._gsap.rotation || 0 : 0;
+                                return baseRotation + (tilt * 0.2);
+                            },
+                            duration: 0.5,
+                            ease: "power1.out",
+                            overwrite: "auto"
+                        });
+
+                        // Send velocity info to global window for p5.js to access
+                        window.scrollVelocity = velocity;
+                    }
+                }
+            });
+        }
+
+        // SVG Scroll Path Drawing
+        const scrollPathFill = document.getElementById('scroll-path-fill');
+        const scrollFollower = document.getElementById('scroll-follower');
+        if (scrollPathFill && scrollFollower) {
+            const pathLength = scrollPathFill.getTotalLength();
+
+            // Set up initial path drawing state
+            gsap.set(scrollPathFill, {
+                strokeDasharray: pathLength,
+                strokeDashoffset: pathLength
+            });
+
+            // Animate path draw based on overall page scroll
+            gsap.to(scrollPathFill, {
+                strokeDashoffset: 0,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.1
+                }
+            });
+
+            // Follow the path with the follower element
+            gsap.to(scrollFollower, {
+                motionPath: {
+                    path: scrollPathFill,
+                    align: scrollPathFill,
+                    alignOrigin: [0.5, 0.5]
+                },
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.1
+                }
+            });
+        }
+
         // Add a "page turn" or floating effect to chapter titles
         const sectionTitles = document.querySelectorAll('h2:not(#entrance-title)');
         sectionTitles.forEach((title) => {
@@ -739,27 +869,6 @@
                 }
             });
         });
-
-        // Thematic Interaction: "Organizing the Illustration Book"
-        // Polaroids snap from chaotic scatter to aligned when scrolled into view
-        const worksSection = document.getElementById('chapter2');
-        if (worksSection) {
-            const worksPolaroids = worksSection.querySelectorAll('.polaroid');
-            gsap.from(worksPolaroids, {
-                scrollTrigger: {
-                    trigger: worksSection,
-                    start: "top 70%",
-                    toggleActions: "play none none reverse"
-                },
-                x: () => (Math.random() - 0.5) * 400, // Scatter horizontally
-                y: () => (Math.random() - 0.5) * 400, // Scatter vertically
-                rotation: () => (Math.random() - 0.5) * 180, // Random rotation
-                opacity: 0,
-                duration: 1.5,
-                stagger: 0.2,
-                ease: "elastic.out(1, 0.7)"
-            });
-        }
 
 
         // 3. SVG Hand-Drawn Background Elements (Clouds, Cats, Stars, Notes, Flowers)
@@ -1088,22 +1197,80 @@
         // Ensure body height is mostly calculated before spawning
         setTimeout(createBackgroundElements, 100);
 
+        // Include MotionPathPlugin for the scroll tracker
+        gsap.registerPlugin(MotionPathPlugin);
+
         // 4. p5.js Magic Drawing / Continuous Interactive Trails & Stamps
         const sketch = (p) => {
             let inkLines = [];
             let stamps = []; // Stamps to leave on click
             let isDrawing = false;
             let currentLine = [];
+            let floatingPetals = []; // Scroll-reactive particles
 
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
                 p.strokeJoin(p.ROUND);
                 p.strokeCap(p.ROUND);
+
+                // Initialize some ambient petals
+                for(let i=0; i<30; i++) {
+                    floatingPetals.push({
+                        x: p.random(p.width),
+                        y: p.random(p.height),
+                        size: p.random(3, 8),
+                        speedX: p.random(-0.5, 0.5),
+                        speedY: p.random(-1, -0.2),
+                        rotation: p.random(p.TWO_PI),
+                        rotSpeed: p.random(-0.05, 0.05),
+                        type: p.floor(p.random(2)) // 0: dust, 1: small leaf
+                    });
+                }
             };
 
             p.draw = () => {
                 p.clear();
+
+                // Get scroll velocity injected by GSAP
+                let scrollV = window.scrollVelocity || 0;
+                let windForce = p.constrain(scrollV * 0.01, -5, 5); // Scroll up creates updraft, down creates downdraft
+
+                // Draw and update ambient floating elements (reactive to scroll)
+                for (let petal of floatingPetals) {
+                    petal.x += petal.speedX;
+                    // Apply scroll wind force to vertical speed
+                    petal.y += petal.speedY - (windForce * 2);
+                    petal.rotation += petal.rotSpeed + (windForce * 0.01);
+
+                    // Wrap around edges
+                    if (petal.y < -50) petal.y = p.height + 50;
+                    if (petal.y > p.height + 50) petal.y = -50;
+                    if (petal.x < -50) petal.x = p.width + 50;
+                    if (petal.x > p.width + 50) petal.x = -50;
+
+                    p.push();
+                    p.translate(petal.x, petal.y);
+                    p.rotate(petal.rotation);
+                    p.noFill();
+
+                    // Add slight horizontal drift based on scroll to simulate 3D depth wind
+                    let horizontalWind = p.abs(windForce) * 0.5 * p.sign(petal.speedX);
+                    petal.x += horizontalWind;
+
+                    if (petal.type === 0) {
+                        // Dust mote (small circle)
+                        p.stroke(148, 163, 184, 80); // slate-400 with low opacity
+                        p.strokeWeight(1);
+                        p.circle(0, 0, petal.size);
+                    } else {
+                        // Tiny leaf/dash
+                        p.stroke(167, 243, 208, 100); // emerald-200
+                        p.strokeWeight(2);
+                        p.line(-petal.size, 0, petal.size, 0);
+                    }
+                    p.pop();
+                }
 
                 // Draw trailing pencil lines (hand-drawn feel instead of glowing magic)
                 for (let i = inkLines.length - 1; i >= 0; i--) {
@@ -1139,6 +1306,14 @@
                     if (stamp.life <= 0) {
                         stamps.splice(i, 1);
                         continue;
+                    }
+
+                    // Apply intense scroll wind to stamps causing them to drift slightly and fade faster
+                    if (p.abs(windForce) > 1) {
+                        stamp.y -= windForce * 0.5;
+                        stamp.x += p.random(-0.5, 0.5) * windForce;
+                        stamp.rotation += windForce * 0.01;
+                        stamp.life -= p.abs(windForce) * 0.5; // fast scrolling blows them away
                     }
 
                     let alpha = p.map(stamp.life, 0, 300, 0, 200);
