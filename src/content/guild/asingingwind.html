@@ -230,7 +230,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+      transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.4s;
     }
 
     #loading-screen.fade-out {
@@ -239,52 +239,72 @@
       pointer-events: none;
     }
 
-    .loading-symbol {
+    .loading-breath {
       position: relative;
-      width: 120px;
-      height: 120px;
-      margin-bottom: 2rem;
+      width: 140px;
+      height: 140px;
+      margin-bottom: 2.5rem;
     }
 
-    .loading-ring {
+    .loading-breath-circle {
       position: absolute;
       inset: 0;
-      border: 2px solid transparent;
-      border-top-color: var(--sand-dark);
       border-radius: 50%;
-      animation: loadSpin 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      border: 1px solid var(--sand-dark);
+      opacity: 0.3;
+      animation: breathPulse 4s ease-in-out infinite;
     }
 
-    .loading-ring:nth-child(2) {
-      inset: 12px;
-      border-top-color: var(--sunset-glow);
-      animation-delay: -0.3s;
-      animation-duration: 1.6s;
+    .loading-breath-circle:nth-child(2) {
+      inset: 18px;
+      border-color: var(--sunset-glow);
+      animation-delay: -1s;
     }
 
-    .loading-ring:nth-child(3) {
-      inset: 24px;
-      border-top-color: var(--sand-mid);
-      animation-delay: -0.6s;
-      animation-duration: 1.2s;
+    .loading-breath-circle:nth-child(3) {
+      inset: 36px;
+      border-color: var(--sand-mid);
+      animation-delay: -2s;
     }
 
-    @keyframes loadSpin {
-      to { transform: rotate(360deg); }
+    @keyframes breathPulse {
+      0%, 100% { transform: scale(0.9); opacity: 0.2; }
+      50% { transform: scale(1.1); opacity: 0.6; }
     }
 
-    .loading-text {
-      font-family: 'Cinzel', serif;
-      font-size: 0.85rem;
-      letter-spacing: 0.4em;
+    .loading-tibetan {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: var(--sand-dark);
+      opacity: 0.5;
+      animation: breathPulse 4s ease-in-out infinite;
+      animation-delay: -1.5s;
+    }
+
+    .loading-quote {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.3em;
       color: var(--sand-dark);
       opacity: 0.7;
-      animation: loadTextPulse 2s ease-in-out infinite;
+      animation: loadTextPulse 3s ease-in-out infinite;
+      margin-bottom: 0.8rem;
+    }
+
+    .loading-symbols {
+      font-size: 0.9rem;
+      letter-spacing: 0.6em;
+      color: var(--sand-mid);
+      opacity: 0.4;
     }
 
     @keyframes loadTextPulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1; }
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.9; }
     }
 
     .loading-sand-line {
@@ -295,16 +315,80 @@
       animation: sandDrift 3s ease-in-out infinite;
     }
 
-    .loading-sand-line:nth-child(1) { top: 30%; width: 200px; left: 10%; animation-delay: 0s; }
-    .loading-sand-line:nth-child(2) { top: 45%; width: 150px; right: 15%; animation-delay: 0.8s; }
-    .loading-sand-line:nth-child(3) { top: 60%; width: 180px; left: 20%; animation-delay: 1.6s; }
-    .loading-sand-line:nth-child(4) { top: 75%; width: 120px; right: 25%; animation-delay: 2.4s; }
+    .loading-sand-line:nth-child(1) { top: 25%; width: 200px; left: 8%; animation-delay: 0s; }
+    .loading-sand-line:nth-child(2) { top: 40%; width: 150px; right: 12%; animation-delay: 0.7s; }
+    .loading-sand-line:nth-child(3) { top: 55%; width: 180px; left: 18%; animation-delay: 1.4s; }
+    .loading-sand-line:nth-child(4) { top: 70%; width: 120px; right: 22%; animation-delay: 2.1s; }
+    .loading-sand-line:nth-child(5) { top: 82%; width: 160px; left: 30%; animation-delay: 2.8s; }
 
     @keyframes sandDrift {
-      0% { opacity: 0; transform: translateX(-30px); }
-      30% { opacity: 0.5; }
-      70% { opacity: 0.5; }
-      100% { opacity: 0; transform: translateX(60px); }
+      0% { opacity: 0; transform: translateX(-40px); }
+      30% { opacity: 0.4; }
+      70% { opacity: 0.4; }
+      100% { opacity: 0; transform: translateX(80px); }
+    }
+
+    /* ===== Floating Sacred Symbols ===== */
+    .sacred-symbols {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .sacred-symbol {
+      position: absolute;
+      font-size: 1.4rem;
+      opacity: 0;
+      color: var(--sand-dark);
+      animation: symbolFloat 12s ease-in-out infinite;
+      text-shadow: 0 0 20px rgba(166, 124, 65, 0.3);
+    }
+
+    .sacred-symbol:nth-child(1) { left: 5%; top: 15%; animation-delay: 0s; }
+    .sacred-symbol:nth-child(2) { right: 8%; top: 25%; animation-delay: 2.4s; }
+    .sacred-symbol:nth-child(3) { left: 12%; top: 55%; animation-delay: 4.8s; }
+    .sacred-symbol:nth-child(4) { right: 15%; top: 65%; animation-delay: 7.2s; }
+    .sacred-symbol:nth-child(5) { left: 8%; top: 85%; animation-delay: 9.6s; }
+    .sacred-symbol:nth-child(6) { right: 5%; top: 45%; animation-delay: 1.2s; font-size: 1rem; }
+    .sacred-symbol:nth-child(7) { left: 25%; top: 35%; animation-delay: 6s; font-size: 1rem; }
+
+    @keyframes symbolFloat {
+      0%, 100% { opacity: 0; transform: translateY(10px); }
+      20% { opacity: 0.25; }
+      50% { opacity: 0.15; transform: translateY(-15px); }
+      80% { opacity: 0.25; }
+    }
+
+    /* ===== Sound Wave Decoration ===== */
+    .sound-wave {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      height: 30px;
+    }
+
+    .sound-wave-bar {
+      width: 2px;
+      background: var(--sand-dark);
+      opacity: 0.3;
+      border-radius: 1px;
+      animation: waveBar 1.5s ease-in-out infinite;
+    }
+
+    .sound-wave-bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+    .sound-wave-bar:nth-child(2) { height: 16px; animation-delay: 0.15s; }
+    .sound-wave-bar:nth-child(3) { height: 24px; animation-delay: 0.3s; }
+    .sound-wave-bar:nth-child(4) { height: 12px; animation-delay: 0.45s; }
+    .sound-wave-bar:nth-child(5) { height: 20px; animation-delay: 0.6s; }
+    .sound-wave-bar:nth-child(6) { height: 8px; animation-delay: 0.75s; }
+    .sound-wave-bar:nth-child(7) { height: 14px; animation-delay: 0.9s; }
+
+    @keyframes waveBar {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
     }
   </style>
 </head>
@@ -316,12 +400,26 @@
     <div class="loading-sand-line"></div>
     <div class="loading-sand-line"></div>
     <div class="loading-sand-line"></div>
-    <div class="loading-symbol">
-      <div class="loading-ring"></div>
-      <div class="loading-ring"></div>
-      <div class="loading-ring"></div>
+    <div class="loading-sand-line"></div>
+    <div class="loading-breath">
+      <div class="loading-breath-circle"></div>
+      <div class="loading-breath-circle"></div>
+      <div class="loading-breath-circle"></div>
+      <div class="loading-tibetan">࿇</div>
     </div>
-    <div class="loading-text">ENTERING THE DESERT</div>
+    <div class="loading-quote">萬物之以息相吹</div>
+    <div class="loading-symbols">࿓ ༄ ꩜ ࿐</div>
+  </div>
+
+  <!-- Floating Sacred Symbols -->
+  <div class="sacred-symbols">
+    <span class="sacred-symbol">࿓</span>
+    <span class="sacred-symbol">༄</span>
+    <span class="sacred-symbol">꩜</span>
+    <span class="sacred-symbol">࿐</span>
+    <span class="sacred-symbol">࿇</span>
+    <span class="sacred-symbol">֍</span>
+    <span class="sacred-symbol">𖤓</span>
   </div>
 
   <!-- Backgrounds -->
@@ -366,7 +464,20 @@
             </p>
           </div>
 
-          <div class="mt-10 flex items-center gap-4">
+          <div class="mt-6 pt-4 border-t border-[var(--sand-dark)]/20">
+            <p class="text-sm opacity-50 italic tracking-wide">世界音樂為花、詩文故事為果；人心觀察為根。</p>
+          </div>
+
+          <div class="mt-8 flex items-center gap-6">
+            <div class="sound-wave">
+              <div class="sound-wave-bar"></div>
+              <div class="sound-wave-bar"></div>
+              <div class="sound-wave-bar"></div>
+              <div class="sound-wave-bar"></div>
+              <div class="sound-wave-bar"></div>
+              <div class="sound-wave-bar"></div>
+              <div class="sound-wave-bar"></div>
+            </div>
             <div class="text-sm cinzel tracking-widest opacity-50">SCROLL TO JOURNEY</div>
             <i class="fa-solid fa-arrow-down opacity-50"></i>
           </div>
@@ -508,12 +619,17 @@
         <!-- Panel 4: Connection -->
         <div class="panel text-white transition-colors duration-1000" id="connection-panel">
           <div class="max-w-4xl w-full text-center space-y-10 relative z-10 glass-panel-dark p-12">
-            <i class="fa-solid fa-wind text-5xl text-[var(--sand-mid)] opacity-50 mb-4"></i>
+            <div class="flex items-center justify-center gap-3 mb-2">
+              <span class="text-[var(--sand-mid)] opacity-40">࿓</span>
+              <i class="fa-solid fa-wind text-5xl text-[var(--sand-mid)] opacity-50"></i>
+              <span class="text-[var(--sand-mid)] opacity-40">࿐</span>
+            </div>
             <h2 class="text-4xl font-bold text-white">與呼吸緊密相連</h2>
 
             <div class="max-w-2xl mx-auto space-y-6 text-lg leading-relaxed text-gray-200">
               <p>我的生命，與每一個當下的呼吸、每一個微小的步伐緊密相連。</p>
               <p>我不會告訴你怎麼做，也不會要求你成為某個理想中的自己。我存在的價值，是希望能陪伴你走進自己的真實，並且活出內在最深的呼喚。</p>
+              <p class="text-sm opacity-40 italic mt-4">「陪你緩下來，讓感受自然發生。」</p>
               <p class="font-bold text-[var(--sand-light)] text-xl mt-8">
                 如果你準備好了，無論是探索心靈的深度，還是學會真誠的溝通，我在這裡，隨時準備與你一起走這段路。
               </p>
@@ -526,6 +642,7 @@
         <div class="panel text-white transition-colors duration-1000" id="end-panel">
            <div class="text-center w-full max-w-2xl mx-auto flex flex-col items-center justify-center relative z-20">
               <div class="glass-panel-dark p-12 mb-8">
+                 <div class="text-[var(--sand-mid)] opacity-30 text-sm tracking-[0.5em] mb-4">࿓ ༄ ꩜ ࿐</div>
                  <h2 class="text-3xl cinzel text-[var(--sand-light)] mb-6 text-shadow">CONNECT</h2>
                  <p class="text-[var(--sand-light)] text-lg mb-8 leading-relaxed">
                     我不會告訴你怎麼做，也不會要求你成為某個理想中的自己。<br>
