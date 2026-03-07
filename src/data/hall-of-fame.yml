@@ -1047,8 +1047,8 @@ members:
         label: "N8N 自動化"
       - id: "slashie"
         label: "全能斜槓"
-      - id: "cat_parent"
-        label: "貓奴"
+#     - id: "cat_parent"
+#       label: "貓奴"
 
   - id: "joanna_army"
     name: "Joanna"
@@ -1061,3 +1061,17 @@ members:
         label: "混沌藝術"
       - id: "imaginative"
         label: "天馬行空"
+
+  - id: "naomiao77"
+    name: "貓青"
+    avatar: "/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp"
+    page: "/guild/naomiao77.html"
+    title: "插畫家 / 溫柔魔法使"
+    description: "畫貓、畫花、畫天馬行空的瞬間。用柔軟的線條與顏色，替你留下一小塊剛剛好的溫柔。"
+    tags:
+      - id: "illustrator"
+        label: "手繪插畫"
+      - id: "cat_lover"
+        label: "繪本"
+      - id: "gentle_magic"
+        label: "日常魔法"
