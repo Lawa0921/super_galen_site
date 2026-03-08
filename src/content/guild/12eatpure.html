@@ -473,10 +473,10 @@
         const projectToScreen = (vector3, camera, renderer) => {
             const vector = vector3.clone();
             vector.project(camera);
-            // Critical for removing jitter: Force strictly integer pixel values for the final transform
-            // Sub-pixel rendering of massive floating HTML cards causes severe visual shaking during movement
-            const x = Math.floor((0.5 + vector.x / 2) * (renderer.domElement.width / window.devicePixelRatio));
-            const y = Math.floor((0.5 - vector.y / 2) * (renderer.domElement.height / window.devicePixelRatio));
+            // We use exact float values because CSS transform: translate3d supports sub-pixel rendering.
+            // Using Math.floor() actually causes a "staircase" visual stutter during slow camera movements.
+            const x = (0.5 + vector.x / 2) * (renderer.domElement.width / window.devicePixelRatio);
+            const y = (0.5 - vector.y / 2) * (renderer.domElement.height / window.devicePixelRatio);
             return { x, y };
         };
 
@@ -813,13 +813,14 @@
                 trigger: ".story-container",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 2, // Increased scrub smoothing
+                scrub: 1.5, // High scrub for native smooth scrolling integration
                 onUpdate: (self) => {
-                    // Animate the proxy object instead of directly mapping, providing secondary smoothing
+                    // Linear ease here is critical! If we use power2.out inside the onUpdate loop
+                    // while scrub is active, we create conflicting interpolation curves causing micro-stutters.
                     gsap.to(scrollProxy, {
                         progress: self.progress,
-                        duration: 1.5, // Long duration for ultra-smooth buttery interpolation
-                        ease: "power2.out",
+                        duration: 0.5,
+                        ease: "none",
                         overwrite: "auto"
                     });
                 }
@@ -833,12 +834,13 @@
                 targetX = mouseX * .001;
                 targetY = mouseY * .001;
 
-                // Removed the continuous Date.now() wobble from the islandGroup entirely.
-                // The constant micro-rotations were causing the projected anchor coordinates
-                // to jitter by 1-2 pixels every frame, making the attached HTML cards shake violently.
-                // We only apply the smooth, heavily dampened mouse parallax now.
-                islandGroup.rotation.x += 0.05 * (targetY - islandGroup.rotation.x);
-                islandGroup.rotation.z += 0.05 * (-targetX - islandGroup.rotation.z);
+                // For the absolute smoothest HTML card anchoring, we must freeze the base mesh's rotation
+                // relative to the world, otherwise the 3D-to-2D projection math will constantly update the HTML
+                // transform string even when the user isn't scrolling, causing microscopic browser repaints.
+                // Only the camera moves. The interactive elements (orbs, leaves) move independently.
+
+                // Let's apply mouse parallax ONLY to the camera look target, not the mesh that holds the anchors.
+                // islandGroup.rotation.x is now fixed to 0.
 
                 const time = Date.now() * 0.001;
 
@@ -872,7 +874,12 @@
                 camera.position.x = Math.sin(angle) * radius;
                 camera.position.y = height;
                 camera.position.z = Math.cos(angle) * radius;
-                camera.lookAt(islandGroup.position);
+
+                // Camera look target modified slightly by mouse parallax, keeping the island anchors rock solid
+                const lookTarget = islandGroup.position.clone();
+                lookTarget.x -= targetX * 5;
+                lookTarget.y += targetY * 5;
+                camera.lookAt(lookTarget);
 
                 // Update 3D Anchors to 2D HTML Elements
                 // Clear the highly-optimized canvas overlay
@@ -926,7 +933,8 @@
                             // We position them relative to the 3D point but centered
                             targetX = screenPt.x;
                             targetY = screenPt.y + 100; // Float slightly below anchor point
-                            anchor.card.style.transform = `translate3d(${Math.floor(targetX)}px, ${Math.floor(targetY)}px, 0)`;
+                            // Use raw float values to enable hardware sub-pixel anti-aliasing interpolation
+                            anchor.card.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
 
                             // Draw vertical connecting line
                             lineCtx.beginPath();
@@ -943,7 +951,7 @@
                             const offset = anchor.align === 'left' ? -300 : 300;
                             targetX = screenPt.x + offset;
                             targetY = screenPt.y;
-                            anchor.card.style.transform = `translate3d(${Math.floor(targetX)}px, ${Math.floor(targetY)}px, 0)`;
+                            anchor.card.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
 
                             // Draw curved connecting line via Canvas 2D
                             lineCtx.beginPath();
