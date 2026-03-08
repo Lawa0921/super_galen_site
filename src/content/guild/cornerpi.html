@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>三又一木 | 天使 LAB.</title>
+    <title>三又一木 | The Ethereal Alchemist</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -11,19 +11,19 @@
             theme: {
                 extend: {
                     colors: {
-                        'void': '#020104',
-                        'amethyst': '#8a2be2',
-                        'ethereal-gold': '#f5d76e',
-                        'crystal-cyan': '#00ffff',
-                        'reiki-white': '#fdfbfb'
+                        'alabaster': '#f8f6f0',
+                        'raw-umber': '#3a2d24',
+                        'muted-gold': '#c5a880',
+                        'pale-amethyst': '#d1c4e9',
+                        'oxidized-copper': '#4a7c59',
+                        'deep-slate': '#1a1d24',
+                        'soft-pearl': '#fbfaf5'
                     },
                     fontFamily: {
-                        serif: ['"Cinzel"', '"Noto Serif TC"', 'serif'],
-                        sans: ['"Jost"', '"Noto Sans TC"', 'sans-serif'],
+                        serif: ['"Cormorant Garamond"', '"Noto Serif TC"', 'serif'],
+                        sans: ['"Optima"', '"Noto Sans TC"', 'sans-serif'],
+                        display: ['"Cinzel Decorative"', 'serif']
                     },
-                    backgroundImage: {
-                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-                    }
                 }
             }
         }
@@ -31,50 +31,39 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Jost:wght@300;400;500&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet">
     <!-- Lenis for smooth scroll -->
     <script src="https://unpkg.com/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
 
     <style>
         body {
-            background-color: transparent; /* WebGL Base */
-            color: #fdfbfb;
+            background-color: #f8f6f0; /* Alabaster Base */
+            color: #3a2d24; /* Raw Umber Text */
             font-family: "Noto Serif TC", serif;
             overflow-x: hidden;
             margin: 0;
             padding: 0;
-            cursor: none; /* Hide default cursor for p5 magic cursor */
+            cursor: none; /* Custom p5 cursor */
         }
 
         ::selection {
-            background: rgba(245, 215, 110, 0.3);
+            background: #c5a880; /* Muted Gold */
             color: #fff;
         }
 
-        /* 3D Canvas Background */
+        /* The 'Canvas' Texture Overlay */
+        .texture-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.15;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            mix-blend-mode: multiply;
+        }
+
+        /* 3D WebGL Container - The "Soul Geode" */
         #webgl-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -2;
-            pointer-events: none;
-        }
-
-        /* p5.js Overlay (Hypnotic & Cursor) */
-        #p5-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 50; /* Bring above content for cursor, but disable pointer events */
-            pointer-events: none;
-            mix-blend-mode: screen;
-        }
-
-        #p5-bg-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -82,8 +71,18 @@
             height: 100vh;
             z-index: -1;
             pointer-events: none;
-            opacity: 0.4;
-            mix-blend-mode: color-dodge;
+        }
+
+        /* p5.js Overlay - The "Reiki Aura/Smoke" */
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50;
+            pointer-events: none;
+            mix-blend-mode: multiply; /* Soft watercolor/smoke effect */
         }
 
         /* Floating Nav/Back button */
@@ -92,531 +91,427 @@
             top: 2rem;
             left: 2rem;
             z-index: 100;
-            background: rgba(2, 1, 4, 0.6);
-            border: 1px solid rgba(138, 43, 226, 0.4);
-            color: #f5d76e;
+            background: rgba(248, 246, 240, 0.8);
+            border: 1px solid rgba(197, 168, 128, 0.4);
+            color: #3a2d24;
             padding: 0.75rem 1.5rem;
             border-radius: 9999px;
             text-decoration: none;
             backdrop-filter: blur(10px);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: "Jost", sans-serif;
+            font-family: "Optima", "Noto Sans TC", sans-serif;
             font-size: 0.875rem;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(138, 43, 226, 0.2);
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(58, 45, 36, 0.05);
         }
         .nav-back:hover {
-            background: rgba(138, 43, 226, 0.3);
-            border-color: #f5d76e;
-            box-shadow: 0 0 30px rgba(245, 215, 110, 0.4);
-            transform: scale(1.05);
+            background: #c5a880;
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(197, 168, 128, 0.3);
         }
 
-        /* Typography & Glows */
-        .glow-text-gold {
-            text-shadow: 0 0 20px rgba(245, 215, 110, 0.6), 0 0 40px rgba(245, 215, 110, 0.2);
+        /* Typography Elegance */
+        .title-display {
+            font-family: 'Cinzel Decorative', serif;
+            letter-spacing: 0.15em;
+            color: #1a1d24;
         }
-        .glow-text-amethyst {
-            text-shadow: 0 0 20px rgba(138, 43, 226, 0.8), 0 0 40px rgba(138, 43, 226, 0.4);
+        .subtitle-elegant {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            letter-spacing: 0.05em;
+            color: #4a7c59; /* Oxidized Copper */
+        }
+        .drop-cap::first-letter {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 3.5rem;
+            float: left;
+            line-height: 0.8;
+            margin-right: 0.5rem;
+            color: #c5a880;
         }
 
-        .char-title {
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.3em;
-            background: linear-gradient(180deg, #fff 0%, #f5d76e 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 15px rgba(245, 215, 110, 0.5));
+        /* Layout specific */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            min-height: 100vh;
+        }
+        @media (min-width: 1024px) {
+            .split-layout {
+                grid-template-columns: 45% 55%;
+            }
         }
 
-        /* Avatar Hologram */
-        .avatar-hologram {
+        /* Avatar styling - Editorial frame */
+        .avatar-frame {
             position: relative;
-            width: 300px;
-            height: 300px;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 3/4;
             margin: 0 auto;
-            border-radius: 50%;
-            perspective: 1000px;
-            transform-style: preserve-3d;
+            border-radius: 100rem 100rem 0 0; /* Arch shape */
+            overflow: hidden;
+            box-shadow:
+                0 20px 50px rgba(26, 29, 36, 0.1),
+                inset 0 0 0 1px rgba(197, 168, 128, 0.3); /* Subtle gold inner line */
         }
-
         .avatar-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 50%;
-            border: 2px solid rgba(245, 215, 110, 0.8);
-            box-shadow:
-                0 0 50px rgba(138, 43, 226, 0.5),
-                inset 0 0 30px rgba(0, 255, 255, 0.3);
-            position: relative;
-            z-index: 10;
-            filter: contrast(1.1) brightness(1.1);
+            filter: contrast(0.95) saturate(0.85); /* Slightly muted, vintage feel */
+            transition: transform 1.5s ease-out;
+        }
+        .avatar-frame:hover .avatar-img {
+            transform: scale(1.05);
         }
 
-        /* Interactive Tarot Cards (Specialties) */
-        .tarot-container {
-            perspective: 1500px;
-        }
-        .tarot-card {
-            background: linear-gradient(135deg, rgba(20, 10, 30, 0.8) 0%, rgba(5, 2, 10, 0.9) 100%);
-            border: 1px solid rgba(138, 43, 226, 0.3);
-            border-radius: 1rem;
-            padding: 2.5rem 1.5rem;
-            text-align: center;
-            backdrop-filter: blur(15px);
-            transform-style: preserve-3d;
-            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        /* The "Altar" - Services */
+        .altar-item {
             position: relative;
-            overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(138, 43, 226, 0.1) inset;
+            padding: 2rem 0;
+            border-bottom: 1px solid rgba(58, 45, 36, 0.1);
+            transition: all 0.4s ease;
             cursor: pointer;
+            overflow: hidden;
         }
-        .tarot-card::before {
+        .altar-item::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(circle at 50% 0%, rgba(245, 215, 110, 0.15), transparent 60%);
-            z-index: 1;
+            left: 0; bottom: 0;
+            width: 0%; height: 2px;
+            background: #c5a880;
+            transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        .tarot-card::after {
-            content: '';
-            position: absolute;
-            inset: 2px;
-            border: 1px solid rgba(245, 215, 110, 0.1);
-            border-radius: 0.9rem;
-            z-index: 1;
+        .altar-item:hover::before {
+            width: 100%;
         }
-        .tarot-card:hover {
-            transform: translateY(-15px) rotateX(10deg) rotateY(-5deg);
-            border-color: rgba(245, 215, 110, 0.6);
-            box-shadow:
-                0 25px 50px rgba(0,0,0,0.7),
-                0 0 40px rgba(138, 43, 226, 0.4),
-                inset 0 0 30px rgba(245, 215, 110, 0.1);
-        }
-        .tarot-card > * {
-            position: relative;
-            z-index: 2;
-            transform: translateZ(30px);
-        }
-        .tarot-icon-wrapper {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-            background: -webkit-linear-gradient(45deg, #f5d76e, #00ffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 10px rgba(138, 43, 226, 0.8));
-        }
-
-        /* Hypnotic Intro Panel */
-        .hypno-panel {
-            background: radial-gradient(ellipse at center, rgba(30, 15, 50, 0.6) 0%, rgba(5, 2, 10, 0.8) 100%);
-            border-top: 1px solid rgba(245, 215, 110, 0.4);
-            border-bottom: 1px solid rgba(245, 215, 110, 0.4);
-            box-shadow: 0 0 50px rgba(138, 43, 226, 0.15);
-            position: relative;
-        }
-        .hypno-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(138, 43, 226, 0.03) 10px, rgba(138, 43, 226, 0.03) 20px);
-            pointer-events: none;
-        }
-
-        /* Stairway Timeline */
-        .stairway-timeline {
-            position: relative;
-            padding-left: 3rem;
-        }
-        .stairway-line {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: 4px;
-            background: linear-gradient(180deg, transparent, #8a2be2, #f5d76e, transparent);
-            border-radius: 2px;
-            box-shadow: 0 0 15px #8a2be2;
-        }
-        .stairway-item {
-            position: relative;
-            margin-bottom: 4rem;
-            background: rgba(10, 5, 20, 0.6);
-            border-left: 2px solid #f5d76e;
-            padding: 2rem;
-            border-radius: 0 1rem 1rem 0;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s ease;
-        }
-        .stairway-item:hover {
-            background: rgba(20, 10, 40, 0.8);
-            border-left-color: #00ffff;
-            box-shadow: 20px 0 50px rgba(138, 43, 226, 0.2);
+        .altar-item:hover {
             transform: translateX(10px);
+            padding-left: 1rem;
         }
-        .stairway-node {
-            position: absolute;
-            left: -3rem; /* Align with line */
-            top: 2rem;
-            width: 24px;
-            height: 24px;
-            background: #020104;
-            border: 3px solid #f5d76e;
-            border-radius: 50%;
-            transform: translateX(-50%);
-            box-shadow: 0 0 20px #f5d76e;
-            z-index: 2;
+        .altar-icon {
+            font-size: 1.5rem;
+            color: #d1c4e9; /* Pale Amethyst */
+            transition: color 0.4s ease;
         }
-        .stairway-item:hover .stairway-node {
-            background: #f5d76e;
-            border-color: #00ffff;
-            box-shadow: 0 0 30px #00ffff;
+        .altar-item:hover .altar-icon {
+            color: #c5a880;
         }
 
-        /* Gallery Grid (Crystal Shards) */
-        .shard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 2rem;
-            padding: 2rem;
-        }
-        .shard-item {
-            position: relative;
-            aspect-ratio: 3/4;
+        /* Horizontal Scroll Exhibition (GSAP Pin) */
+        .exhibition-wrapper {
+            width: 100%;
+            height: 100vh;
             overflow: hidden;
-            border-radius: 0;
-            clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%); /* Angular shard look */
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            filter: grayscale(40%) sepia(20%) hue-rotate(240deg);
-            cursor: pointer;
+            position: relative;
+            background: #1a1d24; /* Dark contrast for the art */
+            color: #f8f6f0;
         }
-        .shard-item img {
+        .exhibition-container {
+            display: flex;
+            width: fit-content;
+            height: 100%;
+            align-items: center;
+            padding: 0 15vw;
+        }
+        .exhibition-panel {
+            width: 45vw;
+            height: 70vh;
+            margin-right: 10vw;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0.4;
+            transition: opacity 0.5s ease;
+        }
+        .exhibition-panel.active {
+            opacity: 1;
+        }
+        .exhibition-img-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border-radius: 4px;
+            box-shadow: 20px 30px 60px rgba(0,0,0,0.5);
+        }
+        .exhibition-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            /* Parallax subtle scale */
             transform: scale(1.1);
-            transition: transform 1s ease;
         }
-        .shard-item::after {
-            content: '';
+        /* A quiet, elegant caption */
+        .exhibition-caption {
             position: absolute;
-            inset: 0;
-            background: linear-gradient(45deg, rgba(138, 43, 226, 0.4), transparent, rgba(245, 215, 110, 0.4));
-            mix-blend-mode: overlay;
-            opacity: 0.8;
-            transition: opacity 0.5s ease;
-        }
-        .shard-item:hover {
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-            filter: grayscale(0%) sepia(0%) hue-rotate(0deg);
-            z-index: 10;
-            transform: scale(1.05);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
-        .shard-item:hover img {
-            transform: scale(1);
-        }
-        .shard-item:hover::after {
-            opacity: 0;
+            bottom: -3rem;
+            left: 0;
+            font-family: 'Optima', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 0.2em;
+            color: #c5a880;
+            text-transform: uppercase;
         }
 
-        /* Social Orbs */
-        .social-orb {
+        /* Clean Social Connect */
+        .social-link {
+            position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(245, 215, 110, 0.3);
-            color: #f5d76e;
-            font-size: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s ease;
+            border: 1px solid rgba(58, 45, 36, 0.2);
+            color: #3a2d24;
+            font-size: 1.25rem;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            background: transparent;
             cursor: pointer;
-            backdrop-filter: blur(5px);
         }
-        .social-orb::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 0; height: 0;
-            background: rgba(138, 43, 226, 0.5);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.4s ease, height 0.4s ease;
-            z-index: -1;
-        }
-        .social-orb:hover {
-            color: #fff;
-            border-color: #00ffff;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        .social-link:hover {
+            background: #3a2d24;
+            color: #f8f6f0;
+            border-color: #3a2d24;
             transform: translateY(-5px);
         }
-        .social-orb:hover::before {
-            width: 120%; height: 120%;
-        }
 
-        /* Animations */
-        @keyframes float-hologram {
-            0%, 100% { transform: translateY(0) rotateX(5deg) rotateY(0deg); }
-            50% { transform: translateY(-20px) rotateX(-5deg) rotateY(10deg); }
+        /* Timline - The Quiet Path */
+        .quiet-path {
+            position: relative;
+            padding-left: 2rem;
+            border-left: 1px solid rgba(197, 168, 128, 0.3);
         }
-        .anim-float {
-            animation: float-hologram 8s ease-in-out infinite;
+        .quiet-node {
+            position: relative;
+            margin-bottom: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .quiet-node::before {
+            content: '';
+            position: absolute;
+            left: -2.35rem; /* align with border */
+            top: 0.5rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f8f6f0;
+            border: 2px solid #c5a880;
+            transition: all 0.3s ease;
+        }
+        .quiet-node:hover::before {
+            background: #c5a880;
+            box-shadow: 0 0 15px rgba(197, 168, 128, 0.5);
+            transform: scale(1.2);
         }
 
     </style>
 </head>
-<body class="bg-void">
+<body>
 
-    <!-- Back Navigation -->
-    <a href="/" class="nav-back">
-        <i class="fa-solid fa-moon mr-2"></i>Return to Guild
-    </a>
-
-    <!-- Background Containers -->
+    <div class="texture-overlay"></div>
     <div id="webgl-container"></div>
-    <div id="p5-bg-container"></div>
     <div id="p5-container"></div>
 
-    <!-- Main Content -->
-    <main class="w-full relative">
+    <a href="/" class="nav-back">
+        <i class="fa-solid fa-arrow-left-long mr-2"></i>Return to Guild
+    </a>
 
-        <!-- Hero Section -->
-        <section class="min-h-screen flex flex-col items-center justify-center text-center relative z-10 pt-20 overflow-hidden">
-            <!-- Decorative esoteric circles -->
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-amethyst/20 rounded-full animate-[spin_60s_linear_infinite] pointer-events-none"></div>
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-ethereal-gold/10 rounded-full animate-[spin_90s_linear_infinite_reverse] pointer-events-none"></div>
-
-            <div class="avatar-hologram mb-12 anim-float gsap-hero">
-                <img src="/assets/img/guild/cornerpi/avatar.webp" alt="三又一木" class="avatar-img">
-                <!-- Inner glow ring -->
-                <div class="absolute inset-0 border-4 border-amethyst/40 rounded-full blur-md mix-blend-screen pointer-events-none"></div>
-            </div>
-
-            <h1 class="text-6xl md:text-8xl char-title mb-6 gsap-hero">三又一木</h1>
-
-            <p class="text-xl md:text-2xl font-sans font-light tracking-[0.2em] text-crystal-cyan mb-8 gsap-hero uppercase">
-                Angel Reiki Teacher <span class="text-amethyst mx-4">✦</span> Hypnotherapist <span class="text-amethyst mx-4">✦</span> Spiritual Counselor
-            </p>
-
-            <div class="flex gap-6 justify-center mt-4 gsap-hero">
-                <a href="https://www.instagram.com/cornerpi/" target="_blank" class="social-orb">
-                    <i class="fa-brands fa-instagram"></i>
-                </a>
-                <a href="https://www.threads.com/@cornerpi" target="_blank" class="social-orb">
-                    <i class="fa-brands fa-threads"></i>
-                </a>
-            </div>
-
-            <!-- Scroll indicator -->
-            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 text-ethereal-gold/50 flex flex-col items-center animate-bounce gsap-hero pointer-events-none">
-                <span class="font-sans text-xs tracking-widest mb-2 uppercase">Descend</span>
-                <i class="fa-solid fa-chevron-down"></i>
-            </div>
-        </section>
-
-        <!-- Hypnotic Intro Panel -->
-        <section class="py-32 w-full hypno-panel z-10">
-            <div class="max-w-4xl mx-auto px-6 gsap-fade-up">
-                <div class="text-center mb-16">
-                    <i class="fa-solid fa-eye text-5xl text-amethyst mb-6 opacity-80 glow-text-amethyst"></i>
-                    <h2 class="text-4xl font-serif text-ethereal-gold tracking-widest mb-4">Awaken the Inner Wisdom</h2>
-                    <div class="h-px w-32 bg-gradient-to-r from-transparent via-crystal-cyan to-transparent mx-auto"></div>
+    <!-- Introduction / Hero -->
+    <section class="split-layout relative z-10">
+        <!-- Left: The Visual / The Priest -->
+        <div class="relative flex items-center justify-center p-8 lg:p-20 bg-alabaster/40 backdrop-blur-sm border-r border-raw-umber/5">
+            <div class="w-full max-w-md gsap-reveal-slow">
+                <div class="avatar-frame mb-8">
+                    <img src="/assets/img/guild/cornerpi/avatar.webp" alt="三又一木" class="avatar-img gsap-img-parallax">
                 </div>
+                <div class="flex justify-center gap-6 mt-8">
+                    <a href="https://www.instagram.com/cornerpi/" target="_blank" class="social-link">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    <a href="https://www.threads.com/@cornerpi" target="_blank" class="social-link">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
 
-                <div class="space-y-8 font-sans font-light text-xl leading-relaxed text-gray-300 text-center">
-                    <p class="hover:text-white transition-colors">將自身經驗和實驗結果與所學內化，協助探索內在深處的訊息與智慧。</p>
-                    <p class="hover:text-white transition-colors">用簡單的方式深入內心，靈性與生活結合，讓身心靈不再是神秘難以觸碰。</p>
+        <!-- Right: The Words / The Sanctuary -->
+        <div class="relative flex flex-col justify-center p-8 lg:p-24 bg-soft-pearl/60 backdrop-blur-md">
+            <div class="max-w-xl">
+                <p class="font-sans text-muted-gold tracking-[0.3em] uppercase text-sm mb-6 gsap-stagger-text">
+                    The Ethereal Alchemist
+                </p>
+                <h1 class="text-6xl md:text-7xl lg:text-8xl title-display mb-4 gsap-stagger-text leading-none">
+                    三又一木
+                </h1>
+                <p class="text-2xl subtitle-elegant mb-12 gsap-stagger-text">
+                    Priest of Angelic Reiki & the Inner Sanctuary
+                </p>
 
-                    <div class="grid md:grid-cols-2 gap-8 mt-16 text-left">
-                        <div class="bg-void/50 p-8 rounded-2xl border border-amethyst/30 hover:border-ethereal-gold/50 transition-colors">
-                            <h3 class="text-2xl text-crystal-cyan mb-4 font-serif flex items-center">
-                                <i class="fa-solid fa-hands-holding-circle mr-3"></i>能量層面
-                            </h3>
-                            <p class="mb-4 text-base"><strong class="text-ethereal-gold font-normal tracking-wide">運用天使靈氣</strong></p>
-                            <p class="text-base text-gray-400">協助淨化與平衡個人能量場，讓身心靈恢復和諧。<br>協助解讀高維指引，提供清晰的方向，幫助你看見生命與靈性成長的契機。</p>
-                        </div>
-
-                        <div class="bg-void/50 p-8 rounded-2xl border border-amethyst/30 hover:border-ethereal-gold/50 transition-colors">
-                            <h3 class="text-2xl text-crystal-cyan mb-4 font-serif flex items-center">
-                                <i class="fa-solid fa-seedling mr-3"></i>落實生活
-                            </h3>
-                            <p class="mb-4 text-base"><strong class="text-ethereal-gold font-normal tracking-wide">運作信念轉化</strong></p>
-                            <p class="text-base text-gray-400">調配專屬的能量空間噴霧，將振動頻率轉化為可感受的香氣與場域支持，讓居家或工作環境成為高頻共振的空間。</p>
-                        </div>
-                    </div>
-
-                    <p class="text-center italic text-ethereal-gold/80 mt-16 text-2xl font-serif glow-text-gold">
-                        "協助你在安全、溫暖且有深度的能量場中，<br>喚醒自我覺知、釋放舊有限制，並重新連結內在的光與靈魂力量。"
+                <div class="space-y-6 text-lg text-raw-umber/80 font-light leading-relaxed gsap-stagger-text">
+                    <p class="drop-cap">
+                        將自身經驗和實驗結果與所學內化，協助探索內在深處的訊息與智慧。用簡單的方式深入內心，靈性與生活結合，讓身心靈不再是神秘難以觸碰。
+                    </p>
+                    <p>
+                        協助你在安全、溫暖且有深度的能量場中，喚醒自我覺知、釋放舊有限制，並重新連結內在的光與靈魂力量。
                     </p>
                 </div>
-            </div>
-        </section>
 
-        <!-- Specialties (Tarot Grid) -->
-        <section class="py-32 px-6 max-w-7xl mx-auto z-10 relative">
-            <div class="text-center mb-20 gsap-fade-up">
-                <h2 class="text-5xl font-serif text-ethereal-gold tracking-[0.2em] mb-4 glow-text-gold">Sacred Arts</h2>
-                <p class="font-sans text-crystal-cyan tracking-widest uppercase text-sm">Realms of Expertise</p>
-            </div>
+                <!-- Expertise 'Altar' -->
+                <div class="mt-16 space-y-2 gsap-stagger-text">
+                    <h3 class="font-sans text-xs tracking-[0.2em] text-raw-umber/50 uppercase mb-6 border-b border-raw-umber/10 pb-2">Sacred Expertise</h3>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 tarot-container">
-                <!-- Cards -->
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-feather"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">天使靈氣</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Angelic Reiki</p>
-                </div>
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-sun-dust"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">光頻調整</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Light Frequency</p>
-                </div>
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-brain"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">潛意識引導</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Subconscious</p>
-                </div>
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-yin-yang"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">催眠與冥想</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Hypnosis</p>
-                </div>
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-cards-blank"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">神諭卡占卜</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Oracle Cards</p>
-                </div>
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-leaf"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">信念轉化重建</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Belief Alchemy</p>
-                </div>
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-spray-can-sparkles"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">能量空間噴霧</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Aura Sprays</p>
-                </div>
-                <div class="tarot-card gsap-stagger">
-                    <div class="tarot-icon-wrapper"><i class="fa-solid fa-om"></i></div>
-                    <h3 class="text-xl font-serif text-white mb-2 tracking-wider">靈性生活技巧</h3>
-                    <p class="text-xs text-gray-400 font-sans tracking-widest uppercase">Spiritual Living</p>
+                    <div class="altar-item flex items-center justify-between">
+                        <span class="text-xl font-serif text-deep-slate">天使靈氣 & 光頻調整</span>
+                        <i class="fa-solid fa-feather-pointed altar-icon"></i>
+                    </div>
+                    <div class="altar-item flex items-center justify-between">
+                        <span class="text-xl font-serif text-deep-slate">冥想、催眠與潛意識引導</span>
+                        <i class="fa-solid fa-moon altar-icon"></i>
+                    </div>
+                    <div class="altar-item flex items-center justify-between">
+                        <span class="text-xl font-serif text-deep-slate">神諭卡占卜 & 信念轉化</span>
+                        <i class="fa-solid fa-cards-blank altar-icon"></i>
+                    </div>
+                    <div class="altar-item flex items-center justify-between">
+                        <span class="text-xl font-serif text-deep-slate">能量空間噴霧調配</span>
+                        <i class="fa-solid fa-spray-can-sparkles altar-icon"></i>
+                    </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        <!-- Timeline (Descent) -->
-        <section class="py-32 px-6 max-w-4xl mx-auto z-10 relative">
-            <div class="text-center mb-20 gsap-fade-up">
-                <h2 class="text-5xl font-serif text-amethyst tracking-[0.2em] mb-4 glow-text-amethyst">Chronicles</h2>
-                <p class="font-sans text-crystal-cyan tracking-widest uppercase text-sm">Journey of the Soul</p>
+    <!-- The Journey (Vertical Timeline) -->
+    <section class="py-32 px-6 lg:px-24 bg-alabaster relative z-10">
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-20 text-center gsap-fade-up">
+                <i class="fa-solid fa-hourglass-half text-muted-gold text-2xl mb-4"></i>
+                <h2 class="text-4xl md:text-5xl title-display text-deep-slate">Chronicles of the Soul</h2>
+                <div class="h-px w-24 bg-muted-gold mx-auto mt-6"></div>
             </div>
 
-            <div class="stairway-timeline font-sans">
-                <div class="stairway-line"></div>
+            <div class="quiet-path mx-auto max-w-2xl font-sans">
 
-                <div class="stairway-item gsap-fade-up">
-                    <div class="stairway-node"></div>
-                    <h3 class="text-3xl font-serif text-ethereal-gold mb-2">2021</h3>
-                    <p class="text-gray-300 text-lg">美國IAPC國際催眠師</p>
-                    <p class="text-gray-300 text-lg">英國AMBMS國際催眠師</p>
+                <div class="quiet-node gsap-timeline-item">
+                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2021 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Awakening</span></h3>
+                    <p class="text-raw-umber/70 mb-1">美國IAPC國際催眠師</p>
+                    <p class="text-raw-umber/70">英國AMBMS國際催眠師</p>
                 </div>
 
-                <div class="stairway-item gsap-fade-up">
-                    <div class="stairway-node"></div>
-                    <h3 class="text-3xl font-serif text-ethereal-gold mb-2 flex items-baseline gap-4">
-                        2022 <span class="text-xl text-crystal-cyan tracking-widest">創立木公苑</span>
-                    </h3>
-                    <ul class="text-gray-400 space-y-2 mt-4 list-none">
-                        <li class="flex items-start"><i class="fa-solid fa-caret-right text-amethyst mt-1 mr-3"></i>催眠療癒（內在小孩/前世回朔/信念轉換）</li>
-                        <li class="flex items-start"><i class="fa-solid fa-caret-right text-amethyst mt-1 mr-3"></i>歐甘樹文占卜/神諭卡占卜</li>
-                        <li class="flex items-start"><i class="fa-solid fa-caret-right text-amethyst mt-1 mr-3"></i>心靈諮詢</li>
+                <div class="quiet-node gsap-timeline-item">
+                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2022 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Foundation</span></h3>
+                    <p class="text-xl text-oxidized-copper mb-3">創立木公苑</p>
+                    <ul class="text-raw-umber/70 space-y-2 list-none text-sm tracking-wide">
+                        <li>— 催眠療癒（內在小孩 / 前世回朔 / 信念轉換）</li>
+                        <li>— 歐甘樹文占卜 / 神諭卡占卜</li>
+                        <li>— 心靈諮詢</li>
                     </ul>
                 </div>
 
-                <div class="stairway-item gsap-fade-up">
-                    <div class="stairway-node"></div>
-                    <h3 class="text-3xl font-serif text-ethereal-gold mb-2 flex items-baseline gap-4">
-                        2023 <span class="text-xl text-crystal-cyan tracking-widest">創立緣結社</span>
-                    </h3>
-                    <p class="text-amethyst/80 text-sm mb-4 uppercase tracking-widest">日式水引細工創作</p>
-                    <ul class="text-gray-400 space-y-2 list-none">
-                        <li class="flex items-start"><i class="fa-solid fa-caret-right text-amethyst mt-1 mr-3"></i>手作體驗</li>
-                        <li class="flex items-start"><i class="fa-solid fa-caret-right text-amethyst mt-1 mr-3"></i>客製能量祝福飾品擺件</li>
+                <div class="quiet-node gsap-timeline-item">
+                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2023 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Creation</span></h3>
+                    <p class="text-xl text-oxidized-copper mb-3">創立緣結社 <span class="text-sm text-raw-umber/50 italic ml-2">日式水引細工創作</span></p>
+                    <ul class="text-raw-umber/70 space-y-2 list-none text-sm tracking-wide">
+                        <li>— 手作體驗</li>
+                        <li>— 客製能量祝福飾品擺件</li>
                     </ul>
                 </div>
 
-                <div class="stairway-item gsap-fade-up">
-                    <div class="stairway-node"></div>
-                    <h3 class="text-3xl font-serif text-ethereal-gold mb-4">2024</h3>
-                    <ul class="text-gray-400 space-y-2 list-none">
-                        <li class="flex items-start"><i class="fa-solid fa-caret-right text-amethyst mt-1 mr-3"></i>進駐橋頭糖廠白屋藝術村</li>
-                        <li class="flex items-start"><i class="fa-solid fa-caret-right text-amethyst mt-1 mr-3"></i>鳳山社區大學-水引創作教學</li>
+                <div class="quiet-node gsap-timeline-item">
+                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2024 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Expansion</span></h3>
+                    <ul class="text-raw-umber/70 space-y-2 list-none text-sm tracking-wide mt-3">
+                        <li>— 進駐橋頭糖廠白屋藝術村</li>
+                        <li>— 鳳山社區大學 水引創作教學</li>
                     </ul>
                 </div>
 
-                <div class="stairway-item gsap-fade-up border-l-[3px] border-l-crystal-cyan bg-void/80 shadow-[0_0_30px_rgba(0,255,255,0.2)]">
-                    <div class="stairway-node bg-crystal-cyan border-white shadow-[0_0_20px_#00ffff]"></div>
-                    <h3 class="text-4xl font-serif text-white mb-2 flex items-baseline gap-4 glow-text-gold">
-                        2025 <span class="text-2xl text-ethereal-gold tracking-widest">創立天使 LAB.</span>
-                    </h3>
-                    <ul class="text-gray-200 space-y-3 mt-6 list-none text-lg">
-                        <li class="flex items-center"><i class="fa-solid fa-star text-ethereal-gold mr-4 text-sm"></i>執行能量療癒</li>
-                        <li class="flex items-center"><i class="fa-solid fa-star text-ethereal-gold mr-4 text-sm"></i>英國天使靈氣®教學</li>
-                        <li class="flex items-center"><i class="fa-solid fa-star text-ethereal-gold mr-4 text-sm"></i>靈性落實生活</li>
-                        <li class="flex items-center"><i class="fa-solid fa-star text-ethereal-gold mr-4 text-sm"></i>靈性活動串連協辦</li>
-                    </ul>
+                <div class="quiet-node gsap-timeline-item mt-16">
+                    <div class="p-8 bg-soft-pearl/80 border border-muted-gold/30 rounded-br-3xl shadow-sm">
+                        <h3 class="text-4xl font-serif text-deep-slate mb-2 flex items-center">
+                            2025 <i class="fa-solid fa-star-of-life text-muted-gold text-lg ml-4"></i>
+                        </h3>
+                        <p class="text-2xl text-pale-amethyst font-serif mb-4 drop-shadow-sm">創立天使 LAB.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-raw-umber/80 text-sm tracking-wider font-sans">
+                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 執行能量療癒</p>
+                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 英國天使靈氣®教學</p>
+                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 靈性落實生活</p>
+                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 靈性活動串連協辦</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- Aesthetic/Hobbies Section & Gallery -->
-        <section class="py-32 bg-gradient-to-b from-transparent to-void z-10 relative">
-            <div class="text-center mb-16 gsap-fade-up">
-                <i class="fa-solid fa-gem text-4xl text-crystal-cyan mb-6 glow-text-amethyst"></i>
-                <h2 class="text-4xl font-serif text-white mb-6 tracking-widest">Alchemy of Minerals & Metals</h2>
-                <p class="font-sans font-light text-gray-400 text-xl max-w-2xl mx-auto italic">
-                    "我很喜歡將不同元素融合重新詮釋，最近很愛把礦石和金屬結合"
-                </p>
             </div>
+        </div>
+    </section>
 
-            <!-- Shard Gallery -->
-            <div class="shard-grid max-w-[1400px] mx-auto">
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_1.webp" alt="Alchemy 1" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_3.webp" alt="Alchemy 3" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_4.webp" alt="Alchemy 4" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_5.webp" alt="Alchemy 5" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_6.webp" alt="Alchemy 6" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_7.webp" alt="Alchemy 7" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_8.webp" alt="Alchemy 8" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_9.webp" alt="Alchemy 9" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_10.webp" alt="Alchemy 10" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_11.webp" alt="Alchemy 11" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_12.webp" alt="Alchemy 12" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_13.webp" alt="Alchemy 13" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_14.webp" alt="Alchemy 14" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_15.webp" alt="Alchemy 15" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_16.webp" alt="Alchemy 16" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_17.webp" alt="Alchemy 17" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_18.webp" alt="Alchemy 18" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_19.webp" alt="Alchemy 19" loading="lazy"></div>
-                <div class="shard-item gsap-stagger-img"><img src="/assets/img/guild/cornerpi/img_20.webp" alt="Alchemy 20" loading="lazy"></div>
+    <!-- Mineral & Metal Alchemy (Horizontal Scroll Exhibition) -->
+    <!-- We switch background to dark to emphasize the art pieces -->
+    <section class="exhibition-wrapper z-10" id="exhibition-section">
+        <div class="absolute top-12 left-1/2 -translate-x-1/2 text-center z-20 text-alabaster w-full px-6">
+            <h2 class="text-3xl md:text-4xl title-display mb-2">Alchemy of Minerals & Metals</h2>
+            <p class="font-sans text-muted-gold tracking-widest text-xs uppercase">"我很喜歡將不同元素融合重新詮釋，最近很愛把礦石和金屬結合"</p>
+        </div>
+
+        <div class="exhibition-container" id="exhibition-container">
+            <!-- Panels injected dynamically or manually -->
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_1.webp" class="exhibition-img" alt="Mineral Art 1"></div>
+                <div class="exhibition-caption">Obj. I</div>
             </div>
-        </section>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_3.webp" class="exhibition-img" alt="Mineral Art 3"></div>
+                <div class="exhibition-caption">Obj. II</div>
+            </div>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_4.webp" class="exhibition-img" alt="Mineral Art 4"></div>
+                <div class="exhibition-caption">Obj. III</div>
+            </div>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_5.webp" class="exhibition-img" alt="Mineral Art 5"></div>
+                <div class="exhibition-caption">Obj. IV</div>
+            </div>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_6.webp" class="exhibition-img" alt="Mineral Art 6"></div>
+                <div class="exhibition-caption">Obj. V</div>
+            </div>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_7.webp" class="exhibition-img" alt="Mineral Art 7"></div>
+                <div class="exhibition-caption">Obj. VI</div>
+            </div>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_12.webp" class="exhibition-img" alt="Mineral Art 12"></div>
+                <div class="exhibition-caption">Obj. VII</div>
+            </div>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_14.webp" class="exhibition-img" alt="Mineral Art 14"></div>
+                <div class="exhibition-caption">Obj. VIII</div>
+            </div>
+            <div class="exhibition-panel">
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_17.webp" class="exhibition-img" alt="Mineral Art 17"></div>
+                <div class="exhibition-caption">Obj. IX</div>
+            </div>
+            <div class="exhibition-panel" style="margin-right: 30vw;"> <!-- End spacer -->
+                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_19.webp" class="exhibition-img" alt="Mineral Art 19"></div>
+                <div class="exhibition-caption">Obj. X</div>
+            </div>
+        </div>
+    </section>
 
-        <!-- Footer -->
-        <footer class="text-center py-12 text-amethyst/50 font-sans text-xs uppercase tracking-[0.3em] border-t border-amethyst/10">
-            <p>天使 LAB. &copy; 2025 <span class="mx-2">|</span> Ethereal Resonance</p>
-        </footer>
-    </main>
+    <!-- Footer -->
+    <footer class="py-16 bg-deep-slate text-center text-alabaster/40 font-sans text-xs uppercase tracking-[0.3em] z-10 relative border-t border-muted-gold/10">
+        <p>天使 LAB. &copy; 2025</p>
+        <p class="mt-2 text-[10px] text-muted-gold/50">The Ethereal Alchemist</p>
+    </footer>
 
     <!-- Scripts -->
     <!-- GSAP -->
@@ -629,15 +524,15 @@
 
     <script>
         // ----------------------------------------------------
-        // 1. Lenis Smooth Scrolling (Extremely Smooth)
+        // 1. Lenis Smooth Scrolling (Gentle & Fluid)
         // ----------------------------------------------------
         const lenis = new Lenis({
-            duration: 1.5, // Slower, more hypnotic scroll
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Expo ease out
             direction: 'vertical',
             gestureDirection: 'vertical',
             smooth: true,
-            mouseMultiplier: 0.8,
+            mouseMultiplier: 1,
             smoothTouch: false,
             touchMultiplier: 2,
         });
@@ -648,7 +543,7 @@
         }
         requestAnimationFrame(raf);
 
-        // Connect GSAP to Lenis
+        // Connect GSAP
         gsap.registerPlugin(ScrollTrigger);
         lenis.on('scroll', ScrollTrigger.update);
         gsap.ticker.add((time)=>{
@@ -657,87 +552,105 @@
         gsap.ticker.lagSmoothing(0);
 
         // ----------------------------------------------------
-        // 2. GSAP Animations (Hypnotic Reveals)
+        // 2. GSAP Animations (Editorial Flow)
         // ----------------------------------------------------
         document.addEventListener("DOMContentLoaded", () => {
-            // Hero sequence
-            gsap.from('.gsap-hero', {
+            // Hero Intro Sequence
+            const tl = gsap.timeline();
+
+            tl.from('.gsap-reveal-slow', {
+                y: 50,
+                opacity: 0,
+                duration: 2,
+                ease: "power3.out",
+                filter: "blur(10px)"
+            })
+            .from('.gsap-stagger-text', {
                 y: 30,
                 opacity: 0,
                 duration: 1.5,
-                stagger: 0.2,
-                ease: "power3.out",
-                delay: 0.5
-            });
-
-            // Fade up standard sections
-            gsap.utils.toArray('.gsap-fade-up').forEach((el) => {
-                gsap.from(el, {
-                    scrollTrigger: {
-                        trigger: el,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    },
-                    y: 40,
-                    opacity: 0,
-                    duration: 1.2,
-                    ease: "power2.out",
-                    filter: "blur(10px)" // Blur reveal effect
-                });
-            });
-
-            // Tarot Cards Stagger
-            gsap.from('.gsap-stagger', {
-                scrollTrigger: {
-                    trigger: '.tarot-container',
-                    start: "top 80%"
-                },
-                y: 50,
-                rotationX: -20,
-                opacity: 0,
-                duration: 1,
-                stagger: 0.1,
-                ease: "back.out(1.7)"
-            });
-
-            // Shard Gallery Stagger
-            gsap.from('.gsap-stagger-img', {
-                scrollTrigger: {
-                    trigger: '.shard-grid',
-                    start: "top 80%"
-                },
-                scale: 0.8,
-                opacity: 0,
-                duration: 0.8,
-                stagger: 0.05,
+                stagger: 0.15,
                 ease: "power2.out"
+            }, "-=1.5");
+
+            // Hero Image Parallax (tied to scroll)
+            gsap.to('.gsap-img-parallax', {
+                scrollTrigger: {
+                    trigger: '.split-layout',
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: true
+                },
+                y: 100, // Move image down slightly as we scroll away
+                ease: "none"
             });
 
-            // Interactive 3D tilt for Tarot cards
-            document.querySelectorAll('.tarot-card').forEach(card => {
-                card.addEventListener('mousemove', e => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-                    const rotateX = ((y - centerY) / centerY) * -15; // Max 15deg
-                    const rotateY = ((x - centerX) / centerX) * 15;
-
-                    gsap.to(card, {
-                        rotateX: rotateX,
-                        rotateY: rotateY,
-                        duration: 0.5,
-                        ease: "power1.out"
-                    });
+            // Timeline items fade up
+            gsap.utils.toArray('.gsap-timeline-item').forEach((item) => {
+                gsap.to(item, {
+                    scrollTrigger: {
+                        trigger: item,
+                        start: "top 85%",
+                        toggleClass: "active"
+                    },
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: "power2.out"
                 });
-                card.addEventListener('mouseleave', () => {
-                    gsap.to(card, {
-                        rotateX: 0,
-                        rotateY: 0,
-                        duration: 0.5,
-                        ease: "power1.out"
-                    });
+            });
+
+            // Horizontal Scroll for Exhibition
+            const exhibitionContainer = document.getElementById("exhibition-container");
+            const panels = gsap.utils.toArray(".exhibition-panel");
+
+            // Calculate total scroll amount
+            function getScrollAmount() {
+                let panelsWidth = 0;
+                panels.forEach(panel => {
+                    panelsWidth += panel.offsetWidth + parseFloat(window.getComputedStyle(panel).marginRight);
+                });
+                return -(panelsWidth - window.innerWidth + window.innerWidth * 0.15); // Adjust for padding
+            }
+
+            const tween = gsap.to(panels, {
+                x: getScrollAmount,
+                ease: "none"
+            });
+
+            ScrollTrigger.create({
+                trigger: "#exhibition-section",
+                start: "top top",
+                end: () => `+=${getScrollAmount() * -1}`,
+                pin: true,
+                animation: tween,
+                scrub: 1,
+                invalidateOnRefresh: true
+            });
+
+            // Panel Parallax & Opacity effect during horizontal scroll
+            panels.forEach((panel, i) => {
+                // Focus effect
+                ScrollTrigger.create({
+                    trigger: panel,
+                    containerAnimation: tween,
+                    start: "left center",
+                    end: "right center",
+                    toggleClass: {targets: panel, className: "active"}
+                });
+
+                // Image pan effect within wrapper
+                const img = panel.querySelector('.exhibition-img');
+                gsap.to(img, {
+                    xPercent: 15, // pan image to right slightly
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: panel,
+                        containerAnimation: tween,
+                        start: "left right",
+                        end: "right left",
+                        scrub: true
+                    }
                 });
             });
         });
@@ -745,148 +658,77 @@
     </script>
     <script>
         // ----------------------------------------------------
-        // 3. Three.js: The Raw Crystal Sanctuary
+        // 3. Three.js: The 'Soul Geode' / Subconscious Matrix
+        // A soft, floating, organic shape that pulses
         // ----------------------------------------------------
         (function initThreeJS() {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            // Deep purple/black void fog
-            scene.fog = new THREE.FogExp2(0x05010a, 0.003);
+            // We use the CSS background, so keep Three.js transparent
+            // but add a very subtle fog for depth
+            scene.fog = new THREE.Fog(0xf8f6f0, 10, 50);
 
-            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 40;
-            camera.position.y = 10;
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.z = 25;
 
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setClearColor(0x020104, 1); // True Void background
-
-            // Advanced lighting setup
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.2;
-
             container.appendChild(renderer.domElement);
 
-            // Lighting: Ethereal Sanctuary
-            const ambientLight = new THREE.AmbientLight(0x201030, 1.5); // Deep purple ambient
-            scene.add(ambientLight);
+            // Lighting (Soft, ethereal)
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambient);
 
-            // Gold Reiki Light
-            const mainLight = new THREE.PointLight(0xf5d76e, 5, 100);
-            mainLight.position.set(0, 20, 10);
-            scene.add(mainLight);
+            const dirLight = new THREE.DirectionalLight(0xc5a880, 1.5); // Gold
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
 
-            // Cyan Crystal Light
-            const rimLight = new THREE.PointLight(0x00ffff, 3, 80);
-            rimLight.position.set(-20, -10, -10);
-            scene.add(rimLight);
+            const pointLight = new THREE.PointLight(0xd1c4e9, 2, 20); // Amethyst
+            pointLight.position.set(-5, -2, 5);
+            scene.add(pointLight);
 
-            // Amethyst Core Light
-            const coreLight = new THREE.PointLight(0x8a2be2, 4, 150);
-            coreLight.position.set(20, 0, -20);
-            scene.add(coreLight);
+            // The Geometry - Highly subdivided sphere for vertex displacement
+            const geometry = new THREE.IcosahedronGeometry(8, 32);
 
-            // Central Massive Raw Crystal Cluster
-            const crystalGroup = new THREE.Group();
-            scene.add(crystalGroup);
-
-            // Glass/Crystal Material
-            const glassMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
+            // The Material - Soft, almost liquid/pearl-like
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0xfbfaf5, // Pearl
                 metalness: 0.1,
-                roughness: 0.05,
-                transmission: 0.9, // glass-like
-                ior: 1.5,
-                thickness: 2.0,
-                emissive: 0x100520,
-                emissiveIntensity: 0.2,
+                roughness: 0.2,
                 clearcoat: 1.0,
-                clearcoatRoughness: 0.1
+                clearcoatRoughness: 0.1,
+                transmission: 0.4, // Slight glassiness
+                ior: 1.4,
+                thickness: 0.5,
+                emissive: 0xc5a880,
+                emissiveIntensity: 0.05
             });
 
-            // Create cluster of large shards
-            const numShards = 7;
-            for(let i=0; i<numShards; i++) {
-                const geo = new THREE.ConeGeometry(Math.random() * 2 + 2, Math.random() * 15 + 15, 6);
-                const shard = new THREE.Mesh(geo, glassMaterial);
+            const sphere = new THREE.Mesh(geometry, material);
+            // Position it to the right, behind the text in the split layout
+            sphere.position.set(10, 0, -5);
+            scene.add(sphere);
 
-                shard.position.x = (Math.random() - 0.5) * 8;
-                shard.position.z = (Math.random() - 0.5) * 8;
-                shard.position.y = (Math.random() - 0.5) * 10;
-
-                shard.rotation.x = (Math.random() - 0.5) * 0.5;
-                shard.rotation.z = (Math.random() - 0.5) * 0.5;
-                shard.rotation.y = Math.random() * Math.PI;
-
-                crystalGroup.add(shard);
+            // Store original vertices for organic distortion
+            const positions = sphere.geometry.attributes.position;
+            const originalPositions = new Float32Array(positions.count * 3);
+            for(let i=0; i<positions.count*3; i++) {
+                originalPositions[i] = positions.array[i];
             }
 
-            // Position the cluster in the background, deep down
-            crystalGroup.position.set(0, -30, -30);
-
-            // Surrounding Floating Minerals
-            const particles = [];
-            const particleGeo = new THREE.DodecahedronGeometry(0.5, 0);
-
-            const pMats = [
-                new THREE.MeshStandardMaterial({ color: 0xf5d76e, emissive: 0xf5d76e, emissiveIntensity: 0.5, roughness: 0.2 }),
-                new THREE.MeshStandardMaterial({ color: 0x8a2be2, emissive: 0x8a2be2, emissiveIntensity: 0.5, roughness: 0.2 }),
-                new THREE.MeshStandardMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6, roughness: 0.1 })
-            ];
-
-            for(let i = 0; i < 200; i++) {
-                const mesh = new THREE.Mesh(particleGeo, pMats[Math.floor(Math.random() * pMats.length)]);
-
-                // Spiral distribution
-                const radius = 10 + Math.random() * 60;
-                const theta = Math.random() * Math.PI * 2;
-                const y = (Math.random() - 0.5) * 120;
-
-                mesh.position.x = Math.cos(theta) * radius;
-                mesh.position.z = Math.sin(theta) * radius - 20;
-                mesh.position.y = y;
-
-                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-
-                const scale = Math.random() * 0.5 + 0.1;
-                mesh.scale.set(scale, scale, scale);
-
-                mesh.userData = {
-                    angle: theta,
-                    radius: radius,
-                    speed: (Math.random() * 0.002) + 0.001,
-                    yFloat: Math.random() * Math.PI * 2
-                };
-
-                scene.add(mesh);
-                particles.push(mesh);
-            }
-
-            // Angelic Halos (Rings)
-            const ringGeo = new THREE.TorusGeometry(35, 0.1, 16, 100);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5d76e, transparent: true, opacity: 0.3 });
-            const ring1 = new THREE.Mesh(ringGeo, ringMat);
-            ring1.rotation.x = Math.PI / 2;
-            ring1.position.y = -20;
-            scene.add(ring1);
-
-            const ring2 = new THREE.Mesh(new THREE.TorusGeometry(45, 0.05, 16, 100), new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.2 }));
-            ring2.rotation.x = Math.PI / 2.2;
-            ring2.position.y = -40;
-            scene.add(ring2);
-
-            // Interaction state
+            // Interaction
             let mouseX = 0, mouseY = 0;
             let targetX = 0, targetY = 0;
             let scrollY = 0;
 
             document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX - window.innerWidth / 2) * 0.001;
-                mouseY = (e.clientY - window.innerHeight / 2) * 0.001;
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
             });
-
             window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -897,54 +739,47 @@
             let time = 0;
             function animate() {
                 requestAnimationFrame(animate);
-                time += 0.005;
+                time += 0.01;
 
-                // Smooth mouse interpolation
+                // Smooth mouse follow
                 targetX += (mouseX - targetX) * 0.05;
                 targetY += (mouseY - targetY) * 0.05;
 
-                // Descent mechanic: Camera moves down as user scrolls
-                // Max depth based on document height
-                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                const scrollProgress = scrollY / (maxScroll || 1);
+                // Rotate the sphere
+                sphere.rotation.y = time * 0.2;
+                sphere.rotation.z = time * 0.1;
 
-                // Camera descends deep into the crystal sanctuary
-                const targetCamY = 10 - (scrollProgress * 80);
-                camera.position.y += (targetCamY - camera.position.y) * 0.1;
+                // Move sphere based on mouse and scroll
+                // As you scroll down to the dark gallery, the sphere sinks and fades
+                const maxScroll = document.body.scrollHeight - window.innerHeight;
+                const scrollNorm = Math.min(1, scrollY / (maxScroll || 1));
 
-                // Parallax sway
-                camera.position.x = Math.sin(time) * 5 + (targetX * 20);
-                camera.position.z = 40 + (targetY * 10);
+                sphere.position.y = (targetY * 2) - (scrollNorm * 15);
+                sphere.position.x = 10 + (targetX * 2);
 
-                // Always look towards the center column but slightly offset by scroll
-                camera.lookAt(0, camera.position.y - 10, 0);
+                // Dim light when scrolling to dark section
+                dirLight.intensity = 1.5 * (1 - scrollNorm * 0.8);
 
-                // Rotate central crystal
-                crystalGroup.rotation.y = time * 0.5;
-                crystalGroup.position.y = -30 + Math.sin(time * 2) * 2;
+                // Organic Vertex Displacement (Simulate liquid/breathing mineral)
+                for (let i = 0; i < positions.count; i++) {
+                    const ix = i * 3;
+                    const iy = i * 3 + 1;
+                    const iz = i * 3 + 2;
 
-                // Animate Halos
-                ring1.rotation.z = time * 0.2;
-                ring2.rotation.z = -time * 0.15;
-                ring1.position.y = camera.position.y - 10 + Math.sin(time*3)*2; // Follow camera roughly
-                ring2.position.y = camera.position.y - 20 + Math.cos(time*2)*3;
+                    const ox = originalPositions[ix];
+                    const oy = originalPositions[iy];
+                    const oz = originalPositions[iz];
 
-                // Animate particles (orbiting)
-                particles.forEach(p => {
-                    p.userData.angle += p.userData.speed;
-                    p.position.x = Math.cos(p.userData.angle) * p.userData.radius;
-                    p.position.z = Math.sin(p.userData.angle) * p.userData.radius - 20;
+                    // Simple noise approximation using sine waves
+                    const distortion = Math.sin(time * 2 + ox * 0.5) * Math.cos(time * 1.5 + oy * 0.5) * Math.sin(time + oz * 0.5);
+                    const amount = 0.5; // displacement amount
 
-                    p.rotation.x += 0.01;
-                    p.rotation.y += 0.02;
-
-                    // Gentle vertical bob
-                    p.position.y += Math.sin(time * 10 + p.userData.yFloat) * 0.05;
-                });
-
-                // Pulsing lights
-                mainLight.intensity = 5 + Math.sin(time * 5) * 1.5;
-                coreLight.intensity = 4 + Math.cos(time * 3) * 1;
+                    positions.array[ix] = ox + ox * distortion * amount;
+                    positions.array[iy] = oy + oy * distortion * amount;
+                    positions.array[iz] = oz + oz * distortion * amount;
+                }
+                positions.needsUpdate = true;
+                sphere.geometry.computeVertexNormals();
 
                 renderer.render(scene, camera);
             }
@@ -953,55 +788,10 @@
     </script>
     <script>
         // ----------------------------------------------------
-        // 4. p5.js: Hypnotic Mandala & Reiki Energy Cursor
+        // 4. p5.js: "Reiki Energy Spray / Aura Field" Cursor
+        // A soft, watercolor-like fluid that follows the cursor
         // ----------------------------------------------------
-
-        // Background Hypnotic Mandala (Slow spinning geometry)
-        const bgSketch = (p) => {
-            p.setup = () => {
-                let c = p.createCanvas(p.windowWidth, p.windowHeight);
-                c.parent('p5-bg-container');
-                p.angleMode(p.DEGREES);
-            };
-
-            p.draw = () => {
-                p.clear();
-                p.translate(p.width / 2, p.height / 2);
-
-                // Parallax shift based on scroll
-                const scrollY = window.scrollY || document.documentElement.scrollTop;
-                p.rotate(p.frameCount * 0.05 + scrollY * 0.01);
-
-                p.noFill();
-                p.strokeWeight(0.5);
-
-                // Draw complex hypnotic mandala rings
-                for (let i = 0; i < 360; i += 15) {
-                    p.push();
-                    p.rotate(i);
-
-                    // Amethyst ring
-                    p.stroke(138, 43, 226, 30);
-                    p.ellipse(150 + p.sin(p.frameCount * 0.5) * 50, 0, 300, 100);
-
-                    // Cyan ring
-                    p.stroke(0, 255, 255, 15);
-                    p.rectMode(p.CENTER);
-                    p.rect(300 + p.cos(p.frameCount * 0.3) * 30, 0, 200, 200, 20);
-
-                    p.pop();
-                }
-            };
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-            };
-        };
-        new p5(bgSketch);
-
-
-        // Foreground Interactive Reiki Cursor
-        const cursorSketch = (p) => {
+        const sketch = (p) => {
             let particles = [];
             let targetX = 0, targetY = 0;
 
@@ -1014,49 +804,42 @@
             p.draw = () => {
                 p.clear();
 
-                // Smooth cursor tracking
-                targetX += (p.mouseX - targetX) * 0.2;
-                targetY += (p.mouseY - targetY) * 0.2;
+                // Smooth tracking
+                targetX += (p.mouseX - targetX) * 0.15;
+                targetY += (p.mouseY - targetY) * 0.15;
 
-                // Only generate particles if mouse is moving or clicked
+                // Generate aura particles if mouse moves
                 let mouseDist = p.dist(p.pmouseX, p.pmouseY, p.mouseX, p.mouseY);
-                if (mouseDist > 1 && p.mouseX > 0) {
-                    // Generate more particles based on speed
-                    let num = p.map(mouseDist, 0, 50, 1, 5, true);
+                if (mouseDist > 0.5 && p.mouseX > 0) {
+                    let num = p.map(mouseDist, 0, 100, 1, 3, true);
                     for(let i=0; i<num; i++){
-                        particles.push(new EnergyParticle(targetX, targetY));
+                        particles.push(new AuraDrop(targetX, targetY));
                     }
                 }
 
-                // Draw Core Cursor (The "Reiki Point")
-                if(p.mouseX > 0) {
-                    p.push();
-                    p.translate(targetX, targetY);
-
-                    // Inner bright dot
-                    p.fill(255);
-                    p.circle(0, 0, 4);
-
-                    // Rotating magical sigil rings
-                    p.noFill();
-                    p.strokeWeight(1.5);
-
-                    p.rotate(p.frameCount * 0.05);
-                    p.stroke(245, 215, 110, 150); // Gold
-                    p.arc(0, 0, 30, 30, 0, p.PI);
-
-                    p.rotate(-p.frameCount * 0.08);
-                    p.stroke(0, 255, 255, 150); // Cyan
-                    p.arc(0, 0, 45, 45, p.PI, p.TWO_PI);
-
-                    p.pop();
+                // Keep drawing a subtle trail even when still
+                if(p.frameCount % 5 === 0 && p.mouseX > 0) {
+                     particles.push(new AuraDrop(targetX, targetY));
                 }
 
-                // Update and draw particles
+                // Custom Core Cursor (A quiet dot)
+                if(p.mouseX > 0) {
+                    p.fill(197, 168, 128, 200); // Muted gold
+                    p.circle(targetX, targetY, 6);
+
+                    // Outer ring
+                    p.noFill();
+                    p.stroke(197, 168, 128, 100);
+                    p.strokeWeight(1);
+                    p.circle(targetX, targetY, 24 + p.sin(p.frameCount*0.1)*4);
+                    p.noStroke();
+                }
+
+                // Update and draw aura
                 for (let i = particles.length - 1; i >= 0; i--) {
                     particles[i].update();
                     particles[i].display();
-                    if (particles[i].finished()) {
+                    if (particles[i].isDead()) {
                         particles.splice(i, 1);
                     }
                 }
@@ -1066,50 +849,57 @@
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
 
-            class EnergyParticle {
+            class AuraDrop {
                 constructor(x, y) {
-                    this.pos = p.createVector(x + p.random(-10, 10), y + p.random(-10, 10));
-                    this.vel = p.createVector(p.random(-1, 1), p.random(-2, 0.5));
+                    // Spread around cursor
+                    this.pos = p.createVector(x + p.random(-15, 15), y + p.random(-15, 15));
+                    // Gentle drifting upward and outward
+                    this.vel = p.createVector(p.random(-0.5, 0.5), p.random(-1, 0));
                     this.life = 255;
-                    this.size = p.random(3, 8);
+                    this.maxLife = p.random(100, 200);
+                    this.size = p.random(20, 60);
 
-                    // Color palette: Gold, Amethyst, Cyan, White
-                    let rnd = p.random();
-                    if(rnd < 0.4) this.color = p.color(245, 215, 110); // Gold
-                    else if(rnd < 0.7) this.color = p.color(138, 43, 226); // Amethyst
-                    else if(rnd < 0.9) this.color = p.color(0, 255, 255); // Cyan
-                    else this.color = p.color(255, 255, 255); // White
-                }
-
-                finished() {
-                    return this.life < 0;
+                    // Colors: Soft Amethyst, Pale Cyan, Muted Gold
+                    let r = p.random();
+                    if(r < 0.4) {
+                        this.color = p.color(209, 196, 233); // pale amethyst
+                    } else if(r < 0.7) {
+                        this.color = p.color(197, 168, 128); // muted gold
+                    } else {
+                        this.color = p.color(180, 220, 220); // pale cyan/water
+                    }
                 }
 
                 update() {
-                    // Drift upwards like smoke/energy
-                    this.vel.y -= 0.02;
-                    // Add slight sine wave wobble
-                    this.vel.x += p.sin(p.frameCount * 0.1 + this.pos.y * 0.01) * 0.1;
+                    // Perlin noise for smoke/fluid-like drift
+                    let noiseX = p.map(p.noise(this.pos.x * 0.01, p.frameCount * 0.01), 0, 1, -1, 1);
+                    let noiseY = p.map(p.noise(this.pos.y * 0.01, p.frameCount * 0.01), 0, 1, -1, 0.5);
+
+                    this.vel.x += noiseX * 0.05;
+                    this.vel.y += noiseY * 0.05;
+
+                    // Friction
+                    this.vel.mult(0.98);
 
                     this.pos.add(this.vel);
-                    this.life -= 4; // Fade out speed
-                    this.size *= 0.98; // Shrink slightly
+                    this.life -= (255 / this.maxLife);
+                    this.size += 0.2; // Expand as it fades
                 }
 
                 display() {
-                    p.noStroke();
-                    this.color.setAlpha(this.life);
+                    // Very soft, watercolor-like brush
+                    let alpha = p.map(this.life, 0, 255, 0, 30); // Very low opacity
+                    this.color.setAlpha(alpha);
                     p.fill(this.color);
                     p.circle(this.pos.x, this.pos.y, this.size);
+                }
 
-                    // Glow
-                    this.color.setAlpha(this.life * 0.3);
-                    p.fill(this.color);
-                    p.circle(this.pos.x, this.pos.y, this.size * 2.5);
+                isDead() {
+                    return this.life <= 0;
                 }
             }
         };
-        new p5(cursorSketch);
+        new p5(sketch);
     </script>
 </body>
 </html>
