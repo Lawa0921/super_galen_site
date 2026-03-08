@@ -3,20 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>邪教教主 ddddearth | 烏托邦架構師</title>
+    <title>死地冥肆 ddddearth | 烏托邦架構師</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@400;700;900&family=DotGothic16&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
-            --color-rose: rgb(169, 121, 129); /* #a97981 */
-            --color-sand: rgb(239, 228, 176); /* #efe4b0 */
-            --color-lavender: rgb(200, 191, 231); /* #c8bfe7 */
+            --color-rose: rgb(169, 121, 129);
+            --color-sand: rgb(239, 228, 176);
+            --color-lavender: rgb(200, 191, 231);
             --color-void: #1a1a24;
+            --color-cyan: #7ecfc0;
+            --color-hot-pink: #e84393;
         }
 
         body {
@@ -25,13 +30,16 @@
             font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             margin: 0;
-            cursor: none; /* Hide default cursor for custom cursor */
+            cursor: none;
         }
 
-        /* 8-bit Pixel Font */
         .font-pixel {
             font-family: 'Press Start 2P', monospace;
             line-height: 1.5;
+        }
+
+        .font-dot {
+            font-family: 'DotGothic16', monospace;
         }
 
         /* Preloader */
@@ -63,7 +71,7 @@
         #enter-btn:hover {
             background: var(--color-rose);
             color: var(--color-void);
-            box-shadow: 0 0 15px var(--color-rose);
+            box-shadow: 0 0 15px var(--color-rose), 0 0 40px rgba(169, 121, 129, 0.3);
         }
 
         /* Custom Cursor */
@@ -74,11 +82,11 @@
             width: 20px;
             height: 20px;
             border: 2px solid var(--color-sand);
-            border-radius: 0; /* Square for pixel vibe */
+            border-radius: 0;
             pointer-events: none;
             z-index: 10000;
             transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            transition: width 0.2s, height 0.2s, background-color 0.2s, border-color 0.2s;
             mix-blend-mode: difference;
         }
 
@@ -89,7 +97,7 @@
             border-color: var(--color-rose);
         }
 
-        /* The Background Canvas Container */
+        /* Background Canvas */
         #p5-container {
             position: fixed;
             inset: 0;
@@ -100,7 +108,7 @@
             z-index: 0;
         }
 
-        /* Retro CRT Scanline Effect Overlay */
+        /* Retro CRT Scanline */
         .scanlines {
             position: fixed;
             inset: 0;
@@ -130,7 +138,7 @@
             transform: translateY(40px);
         }
 
-        /* Editorial Grid for Images */
+        /* Image Grid */
         .arsenal-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -144,7 +152,7 @@
             border: 2px solid var(--color-lavender);
             background: var(--color-void);
             transition: transform 0.3s ease;
-            image-rendering: pixelated; /* Enhancing the pixel art feel */
+            image-rendering: pixelated;
             cursor: none;
         }
 
@@ -170,10 +178,19 @@
             transform: scale(1.1);
         }
 
-        /* Glitch Text Effect */
+        /* Glitch Text */
         .glitch-text {
             position: relative;
             display: inline-block;
+            text-shadow:
+                0 0 8px rgba(26, 26, 36, 1),
+                0 0 16px rgba(26, 26, 36, 1),
+                0 0 32px rgba(26, 26, 36, 0.9),
+                0 0 60px rgba(26, 26, 36, 0.7),
+                4px 4px 0 rgba(26, 26, 36, 0.8),
+                -1px -1px 0 rgba(26, 26, 36, 0.8),
+                1px -1px 0 rgba(26, 26, 36, 0.8),
+                -1px 1px 0 rgba(26, 26, 36, 0.8);
         }
 
         .glitch-text::before,
@@ -219,23 +236,463 @@
             100% { clip: rect(9px, 9999px, 66px, 0); }
         }
 
-        /* Utility specific styles */
+        /* Main Wrapper */
         .main-wrapper {
-            opacity: 0; /* Hidden initially, revealed by preloader */
+            opacity: 0;
             visibility: hidden;
+        }
+
+        .identities-section {
+            position: relative;
+            z-index: 10;
+            background: var(--color-void);
+            padding: 2rem;
+            margin: -2rem;
+            border-radius: 4px;
+            border: 1px solid rgba(169, 121, 129, 0.15);
         }
 
         .role-card {
             border: 2px dashed var(--color-lavender);
-            background: rgba(26, 26, 36, 0.6);
+            background: rgba(26, 26, 36, 0.9);
             transition: all 0.3s;
         }
 
         .role-card:hover {
             border-style: solid;
             border-color: var(--color-rose);
-            background: rgba(169, 121, 129, 0.1);
+            background: rgba(169, 121, 129, 0.15);
             transform: translateY(-5px);
+        }
+
+        /* === NEW: Pixel Divider (Highway Sunset) === */
+        .pixel-divider {
+            width: 100%;
+            height: 48px;
+            position: relative;
+            overflow: hidden;
+            opacity: 0.6;
+        }
+
+        .pixel-divider::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--color-rose) 0px,
+                var(--color-rose) 16px,
+                transparent 16px,
+                transparent 32px
+            );
+        }
+
+        .pixel-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            background: var(--color-sand);
+            box-shadow:
+                -32px 0 0 var(--color-lavender),
+                32px 0 0 var(--color-lavender),
+                0 -12px 0 var(--color-rose),
+                0 12px 0 var(--color-rose);
+        }
+
+        /* === NEW: Track Cards === */
+        .track-card {
+            background: rgba(26, 26, 36, 0.8);
+            border: 2px solid var(--color-lavender);
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .track-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--color-rose);
+            transition: width 0.3s ease;
+        }
+
+        .track-card:hover {
+            border-color: var(--color-rose);
+            background: rgba(169, 121, 129, 0.08);
+            transform: translateX(8px);
+        }
+
+        .track-card:hover::before {
+            width: 6px;
+        }
+
+        .track-icon {
+            width: 48px;
+            height: 48px;
+            border: 2px solid var(--color-rose);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+            color: var(--color-sand);
+            background: rgba(169, 121, 129, 0.15);
+        }
+
+        /* === NEW: Equalizer bars animation === */
+        .eq-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 20px;
+        }
+
+        .eq-bar {
+            width: 4px;
+            background: var(--color-cyan);
+            animation: eq-bounce var(--duration) ease-in-out infinite alternate;
+        }
+
+        @keyframes eq-bounce {
+            0% { height: 4px; }
+            100% { height: var(--max-h); }
+        }
+
+        /* === NEW: Novel section terminal === */
+        .novel-terminal {
+            background: #0a0a12;
+            border: 2px solid var(--color-cyan);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .novel-terminal::before {
+            content: 'DELTA_NOISE.exe';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 12px;
+            background: var(--color-cyan);
+            color: #0a0a12;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+        }
+
+        .novel-terminal .terminal-body {
+            padding: 2.5rem 1.5rem 1.5rem;
+        }
+
+        /* === NEW: Crystal Star decoration (CSS pixel art) === */
+        .crystal-star {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--color-cyan);
+            box-shadow:
+                8px -8px 0 var(--color-lavender),
+                -8px -8px 0 var(--color-lavender),
+                8px 8px 0 var(--color-lavender),
+                -8px 8px 0 var(--color-lavender),
+                0 -16px 0 var(--color-cyan),
+                0 16px 0 var(--color-cyan),
+                16px 0 0 var(--color-cyan),
+                -16px 0 0 var(--color-cyan);
+            opacity: 0.3;
+            pointer-events: none;
+            animation: crystal-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes crystal-pulse {
+            0%, 100% { opacity: 0.15; transform: scale(1) rotate(0deg); }
+            50% { opacity: 0.4; transform: scale(1.2) rotate(45deg); }
+        }
+
+        /* === NEW: Kanji brand watermark === */
+        .brand-watermark {
+            position: fixed;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+            font-family: 'DotGothic16', monospace;
+            font-size: 80px;
+            color: rgba(169, 121, 129, 0.04);
+            letter-spacing: 20px;
+            pointer-events: none;
+            z-index: 1;
+            white-space: nowrap;
+            writing-mode: vertical-rl;
+        }
+
+        /* === NEW: Game badge === */
+        .game-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--color-hot-pink);
+            background: rgba(232, 67, 147, 0.08);
+            color: var(--color-hot-pink);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            transition: all 0.3s;
+        }
+
+        .game-badge:hover {
+            background: rgba(232, 67, 147, 0.2);
+            box-shadow: 0 0 20px rgba(232, 67, 147, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* === NEW: Section header style === */
+        .section-header {
+            font-size: 1.5rem;
+            color: var(--color-sand);
+            margin-bottom: 2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 4px solid var(--color-rose);
+            display: inline-block;
+            box-shadow: 0 4px 0 0 var(--color-lavender);
+        }
+
+        /* === Footer === */
+        .site-footer {
+            position: relative;
+            z-index: 10;
+            margin-top: 4rem;
+            padding: 3rem 0 2rem;
+            text-align: center;
+            background: linear-gradient(180deg, transparent 0%, rgba(26, 26, 36, 0.95) 30%, rgba(26, 26, 36, 1) 100%);
+        }
+
+        .footer-social {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-social a {
+            font-size: 1.8rem;
+            color: var(--color-rose);
+            transition: all 0.3s;
+        }
+
+        .footer-social a:hover {
+            color: var(--color-sand);
+            transform: scale(1.1);
+        }
+
+        .footer-text {
+            font-size: 0.85rem;
+            color: var(--color-lavender);
+            opacity: 0.5;
+        }
+
+        .footer-text .heart {
+            color: var(--color-rose);
+            display: inline-block;
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .footer-text a {
+            color: var(--color-sand);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-text a:hover {
+            color: var(--color-rose);
+        }
+
+        /* === Cultural DNA Section === */
+        .dna-strand {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 1rem 0;
+        }
+
+        .dna-card {
+            flex: 0 1 200px;
+            border: 2px solid rgba(200, 191, 231, 0.3);
+            background: rgba(26, 26, 36, 0.9);
+            padding: 1.25rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .dna-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-rose), var(--color-cyan));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .dna-card:hover {
+            border-color: var(--color-rose);
+            transform: translateY(-4px);
+        }
+
+        .dna-card:hover::after {
+            transform: scaleX(1);
+        }
+
+        .dna-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        /* === Track card waveform on hover === */
+        .track-card .wave-mini {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .track-card:hover .wave-mini {
+            opacity: 1;
+        }
+
+        .wave-mini span {
+            display: block;
+            width: 3px;
+            background: var(--color-rose);
+            animation: wave-bar 0.6s ease-in-out infinite alternate;
+        }
+
+        .wave-mini span:nth-child(2) { animation-delay: 0.1s; }
+        .wave-mini span:nth-child(3) { animation-delay: 0.2s; }
+        .wave-mini span:nth-child(4) { animation-delay: 0.15s; }
+        .wave-mini span:nth-child(5) { animation-delay: 0.25s; }
+
+        @keyframes wave-bar {
+            0% { height: 4px; }
+            100% { height: 16px; }
+        }
+
+        /* === Floating quote bubble === */
+        .quote-float {
+            position: relative;
+            display: inline-block;
+            background: rgba(169, 121, 129, 0.1);
+            border: 1px solid rgba(169, 121, 129, 0.3);
+            padding: 0.5rem 1rem;
+            font-style: italic;
+            color: var(--color-lavender);
+            font-size: 0.8rem;
+        }
+
+        .quote-float::before {
+            content: '>';
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            color: var(--color-cyan);
+            margin-right: 0.5rem;
+            font-style: normal;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .brand-watermark {
+                display: none;
+            }
+            .crystal-star {
+                display: none;
+            }
+            .section-header {
+                font-size: 0.85rem;
+                word-break: break-all;
+            }
+            .dna-card {
+                flex: 0 0 160px;
+                padding: 1rem;
+            }
+            .dna-icon {
+                font-size: 1.5rem;
+            }
+            .identities-section {
+                padding: 1rem;
+                margin: -1rem;
+            }
+            .novel-terminal .terminal-body {
+                padding: 2rem 1rem 1rem;
+            }
+            .track-card {
+                padding: 0.75rem 1rem;
+            }
+            .track-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+            .pixel-divider {
+                height: 32px;
+            }
+            .arsenal-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 0.75rem;
+            }
+            body {
+                cursor: auto;
+            }
+            #custom-cursor {
+                display: none;
+            }
+            .quote-float {
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-header {
+                font-size: 0.7rem;
+            }
+            .dna-card {
+                flex: 0 0 140px;
+            }
+            .track-card .wave-mini {
+                display: none;
+            }
+            .arsenal-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+            .quote-float {
+                font-size: 0.65rem;
+                padding: 0.4rem 0.75rem;
+            }
         }
     </style>
 </head>
@@ -244,11 +701,20 @@
     <!-- Custom Cursor -->
     <div id="custom-cursor"></div>
 
-    <!-- Preloader / Entrance Sequence -->
+    <!-- Brand Watermark -->
+    <div class="brand-watermark">死地冥肆</div>
+
+    <!-- Crystal Star Decorations -->
+    <div class="crystal-star" style="top: 15%; left: 5%;"></div>
+    <div class="crystal-star" style="top: 45%; right: 8%; animation-delay: -1.5s;"></div>
+    <div class="crystal-star" style="top: 75%; left: 3%; animation-delay: -3s;"></div>
+
+    <!-- Preloader -->
     <div id="preloader">
         <div class="text-center">
+            <p class="font-dot text-lg text-[#a97981] mb-2 tracking-[0.5em] opacity-60">死地冥肆 // シジメイシ</p>
             <h1 class="font-pixel text-2xl md:text-4xl text-[#efe4b0] mb-4 glitch-text" data-text="SYSTEM BOOTING...">SYSTEM BOOTING...</h1>
-            <p class="font-pixel text-xs text-[#c8bfe7] mb-8">LOADING UTOPIA ENGINE V1.0</p>
+            <p class="font-pixel text-xs text-[#c8bfe7] mb-8">LOADING UTOPIA ENGINE V2.0</p>
             <div class="w-64 h-4 border-2 border-[#a97981] mx-auto p-1">
                 <div id="loading-bar" class="h-full bg-[#c8bfe7] w-0"></div>
             </div>
@@ -260,55 +726,67 @@
     <div id="p5-container"></div>
     <div class="scanlines"></div>
 
-    <!-- Main Content Container -->
-    <main class="main-wrapper relative z-10 w-full min-h-screen pt-24 pb-32 px-6 md:px-12 max-w-7xl mx-auto flex flex-col gap-24">
+    <!-- Main Content -->
+    <main class="main-wrapper relative z-10 w-full min-h-screen pt-12 md:pt-24 pb-16 md:pb-32 px-4 md:px-12 max-w-7xl mx-auto flex flex-col gap-12 md:gap-24">
 
-        <!-- Hero Section -->
-        <section class="flex flex-col lg:flex-row items-center lg:items-start gap-12 mt-12 reveal-elem">
-            <!-- Avatar / Main Identity -->
-            <div class="relative w-64 h-64 md:w-80 md:h-80 shrink-0 mx-auto lg:mx-0 group hover-target">
-                <!-- Glitch decorative boxes -->
+        <!-- ============ HERO SECTION ============ -->
+        <section class="flex flex-col lg:flex-row items-center lg:items-start gap-6 md:gap-12 mt-6 md:mt-12 reveal-elem">
+            <!-- Avatar -->
+            <div class="relative w-40 h-40 md:w-80 md:h-80 shrink-0 mx-auto lg:mx-0 group hover-target">
                 <div class="absolute inset-0 bg-[#a97981] translate-x-4 translate-y-4 transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
                 <div class="absolute inset-0 bg-[#c8bfe7] -translate-x-4 -translate-y-4 opacity-50 transition-transform group-hover:-translate-x-6 group-hover:-translate-y-6"></div>
-                <!-- Pixelated Avatar rendering -->
-                <img src="/assets/img/guild/ddddearth4444/avatar.webp" alt="邪教教主 ddddearth" style="image-rendering: pixelated;" class="relative z-10 w-full h-full object-cover border-4 border-[#efe4b0] shadow-xl filter saturate-75 contrast-125 group-hover:saturate-100 transition-all duration-300">
-                <!-- Status Badge -->
+                <img src="/assets/img/guild/ddddearth4444/avatar.webp" alt="死地冥肆 ddddearth" style="image-rendering: pixelated;" class="relative z-10 w-full h-full object-cover border-4 border-[#efe4b0] shadow-xl filter saturate-75 contrast-125 group-hover:saturate-100 transition-all duration-300">
                 <div class="absolute -bottom-6 -right-6 z-20 glass-panel px-4 py-2 font-pixel text-xs text-[#c8bfe7] animate-bounce">Lv.99 Cult Leader</div>
             </div>
 
             <!-- Hero Text -->
-            <div class="flex flex-col gap-6 text-center lg:text-left">
-                <div class="inline-block px-3 py-1 bg-[#a97981] text-[#1a1a24] font-pixel text-xs w-max mx-auto lg:mx-0 tracking-widest uppercase shadow-[2px_2px_0px_#efe4b0]">
-                    Status: Unemployed Vibe Coder
+            <div class="flex flex-col gap-6 text-center lg:text-left" style="position: relative; z-index: 5; text-shadow: 0 0 12px rgba(26,26,36,0.8);">
+                <!-- Brand Name -->
+                <div class="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
+                    <span class="inline-block px-3 py-1 bg-[#a97981] text-[#1a1a24] font-pixel text-xs tracking-widest uppercase shadow-[2px_2px_0px_#efe4b0]">
+                        Status: Unemployed Vibe Coder
+                    </span>
+                    <span class="font-dot text-sm text-[#a97981] tracking-[0.3em] opacity-70">by Showergymstudio</span>
                 </div>
-                <h1 class="font-pixel text-4xl md:text-5xl lg:text-6xl text-[#efe4b0] leading-tight glitch-text" data-text="DDDD EARTH">
+
+                <h1 class="font-pixel text-2xl md:text-5xl lg:text-6xl text-[#efe4b0] leading-tight glitch-text" data-text="DDDD EARTH">
                     DDDD EARTH
                 </h1>
-                <h2 class="text-lg md:text-xl font-bold text-[#c8bfe7] tracking-widest flex flex-wrap justify-center lg:justify-start gap-2">
+
+                <!-- Kanji subtitle -->
+                <div class="font-dot text-lg md:text-3xl text-[#a97981] tracking-[0.3em] md:tracking-[0.5em] -mt-2 opacity-80">
+                    死地冥肆<span class="text-[#c8bfe7] mx-2">//</span><span class="text-[#c8bfe7]">シジメイシ</span>
+                </div>
+
+                <h2 class="text-sm md:text-xl font-bold text-[#c8bfe7] tracking-wide md:tracking-widest flex flex-wrap justify-center lg:justify-start gap-2">
                     <span class="bg-[#1a1a24] border border-[#a97981] px-2 py-1"><i class="fa-solid fa-crown text-[#efe4b0] mr-2"></i>邪教教主</span>
                     <span class="bg-[#1a1a24] border border-[#a97981] px-2 py-1"><i class="fa-solid fa-city text-[#efe4b0] mr-2"></i>烏托邦架構師</span>
                     <span class="bg-[#1a1a24] border border-[#a97981] px-2 py-1"><i class="fa-solid fa-music text-[#efe4b0] mr-2"></i>重金屬樂迷</span>
                 </h2>
-                <p class="text-lg leading-relaxed text-gray-300 max-w-2xl bg-[#1a1a24]/80 p-4 border-l-4 border-[#c8bfe7] mx-auto lg:mx-0 text-left">
+
+                <p class="text-sm md:text-lg leading-relaxed text-gray-300 max-w-2xl bg-[#1a1a24]/80 p-3 md:p-4 border-l-4 border-[#c8bfe7] mx-auto lg:mx-0 text-left">
                     「嗨我想當邪教教主(?)」<br>
                     小時候玩韓國遊戲、看日本動畫、吃台灣米，但對美式文化有超強濾鏡。目前想替自己定義為：吉他手、重金屬樂迷、遊戲配樂製作者、小說家、像素畫家(自我流)、IP製作人、饒舌歌手wannabe、被女朋友說我幹嘛聽你唱KTV、樂風研究愛好者、日文N1低空飛過本科生。
                 </p>
 
+                <!-- Threads Quote -->
+                <div class="quote-float mt-2">從小就很喜歡Cha-la head Cha-la，學電吉他的時候也練過</div>
+
                 <!-- Social Links -->
-                <div class="flex gap-6 mt-4 justify-center lg:justify-start">
-                    <a href="https://www.threads.net/@ddddearth4444" target="_blank" class="text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-transform hover-target"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/ddddearth4444/" target="_blank" class="text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-transform hover-target"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.youtube.com/@deathdeath9285" target="_blank" class="text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-transform hover-target"><i class="fa-brands fa-youtube"></i></a>
+                <div class="flex gap-4 md:gap-6 mt-4 justify-center lg:justify-start">
+                    <a href="https://www.threads.net/@ddddearth4444" target="_blank" class="text-2xl md:text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-all hover-target" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/ddddearth4444/" target="_blank" class="text-2xl md:text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-all hover-target" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/@deathdeath9285" target="_blank" class="text-2xl md:text-3xl text-[#a97981] hover:text-[#efe4b0] hover:-translate-y-2 transition-all hover-target" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="https://cxc.today/@ddddearth4444" target="_blank" class="text-2xl md:text-3xl text-[#a97981] hover:text-[#7ecfc0] hover:-translate-y-2 transition-all hover-target" title="CxC (Novel)"><i class="fa-solid fa-feather-pointed"></i></a>
                 </div>
             </div>
         </section>
 
-        <!-- The Multiverse Identity -->
+        <!-- ============ MULTIVERSE IDENTITIES ============ -->
         <section class="reveal-elem">
-            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-8 border-b-4 border-[#a97981] pb-2 inline-block shadow-[0_4px_0_0_#c8bfe7]">MULTIVERSE_IDENTITIES.sys</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-                <!-- Identity Cards -->
+            <div class="identities-section">
+            <h3 class="font-pixel section-header">MULTIVERSE_IDENTITIES.sys</h3>
+            <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
                 <div class="role-card p-6 flex flex-col gap-4 hover-target">
                     <div class="text-[#a97981] text-4xl"><i class="fa-solid fa-guitar"></i></div>
                     <h4 class="font-pixel text-[#efe4b0] text-sm">GUITARIST / METALHEAD</h4>
@@ -332,20 +810,222 @@
                     <h4 class="font-pixel text-[#efe4b0] text-sm">RAPPER WANNABE</h4>
                     <p class="text-sm text-gray-300">日文N1低空飛過本科生。被女朋友吐糟：「我幹嘛聽你唱KTV？」</p>
                 </div>
-
+            </div>
             </div>
         </section>
 
-        <!-- Core Philosophy / Utopian Engine -->
-        <section class="glass-panel p-8 md:p-12 reveal-elem relative overflow-hidden">
+        <!-- ============ PIXEL DIVIDER ============ -->
+        <div class="pixel-divider"></div>
+
+        <!-- ============ SOUND ARSENAL (NEW) ============ -->
+        <section class="reveal-elem">
+            <div class="flex items-center gap-4 mb-8">
+                <h3 class="font-pixel section-header mb-0">SOUND_ARSENAL.wav</h3>
+                <div class="eq-bars ml-4">
+                    <div class="eq-bar" style="--duration: 0.4s; --max-h: 16px;"></div>
+                    <div class="eq-bar" style="--duration: 0.55s; --max-h: 20px; animation-delay: -0.1s;"></div>
+                    <div class="eq-bar" style="--duration: 0.35s; --max-h: 12px; animation-delay: -0.2s;"></div>
+                    <div class="eq-bar" style="--duration: 0.5s; --max-h: 18px; animation-delay: -0.15s;"></div>
+                    <div class="eq-bar" style="--duration: 0.45s; --max-h: 14px; animation-delay: -0.25s;"></div>
+                </div>
+            </div>
+
+            <p class="text-gray-400 mb-6 max-w-2xl text-sm">
+                總而言之，有在做音樂。另負責獨立遊戲《誠徵新人 Now Hiring》中使用到的音樂創作。
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                <!-- Track 1 -->
+                <a href="https://www.youtube.com/watch?v=WfjMfUvtrA0" target="_blank" class="track-card hover-target group">
+                    <div class="track-icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-pixel text-xs text-[#efe4b0] mb-1 truncate">8-STRING GUITAR DUBSTEP</div>
+                        <div class="text-xs text-gray-400 group-hover:text-[#c8bfe7] transition-colors">Tried to fake my guitar playing as Polyphia (failed)</div>
+                    </div>
+                    <div class="wave-mini"><span></span><span></span><span></span><span></span><span></span></div>
+                    <span class="font-pixel text-[10px] text-[#a97981] shrink-0">1:47</span>
+                </a>
+
+                <!-- Track 2 -->
+                <a href="https://www.youtube.com/watch?v=K1KPwEbz0gY" target="_blank" class="track-card hover-target group">
+                    <div class="track-icon">
+                        <i class="fa-solid fa-water"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-pixel text-xs text-[#efe4b0] mb-1 truncate">DREAM OF DELUGE</div>
+                        <div class="text-xs text-gray-400 group-hover:text-[#c8bfe7] transition-colors">ddddearth4444 original</div>
+                    </div>
+                    <div class="wave-mini"><span></span><span></span><span></span><span></span><span></span></div>
+                    <span class="font-pixel text-[10px] text-[#a97981] shrink-0">7:05</span>
+                </a>
+
+                <!-- Track 3 -->
+                <a href="https://www.youtube.com/watch?v=N32JtyJYqnY" target="_blank" class="track-card hover-target group">
+                    <div class="track-icon" style="border-color: var(--color-cyan); background: rgba(126, 207, 192, 0.1);">
+                        <i class="fa-solid fa-skull" style="color: var(--color-cyan);"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-pixel text-xs text-[#efe4b0] mb-1 truncate">1999 ODD EVENTS - RAW</div>
+                        <div class="text-xs text-gray-400 group-hover:text-[#c8bfe7] transition-colors">Phase series</div>
+                    </div>
+                    <div class="wave-mini"><span></span><span></span><span></span><span></span><span></span></div>
+                    <span class="font-pixel text-[10px] text-[#a97981] shrink-0">4:52</span>
+                </a>
+
+                <!-- Track 4 -->
+                <a href="https://www.youtube.com/watch?v=oKgmZ52JDNo" target="_blank" class="track-card hover-target group">
+                    <div class="track-icon" style="border-color: var(--color-cyan); background: rgba(126, 207, 192, 0.1);">
+                        <i class="fa-solid fa-book-skull" style="color: var(--color-cyan);"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-pixel text-xs text-[#efe4b0] mb-1 truncate">1999 ODD EVENTS - STORYTELLER</div>
+                        <div class="text-xs text-gray-400 group-hover:text-[#c8bfe7] transition-colors">Phase series</div>
+                    </div>
+                    <div class="wave-mini"><span></span><span></span><span></span><span></span><span></span></div>
+                    <span class="font-pixel text-[10px] text-[#a97981] shrink-0">3:44</span>
+                </a>
+
+                <!-- Track 5 -->
+                <a href="https://www.youtube.com/watch?v=BIALwhNIJ7g" target="_blank" class="track-card hover-target group">
+                    <div class="track-icon" style="border-color: var(--color-cyan); background: rgba(126, 207, 192, 0.1);">
+                        <i class="fa-solid fa-infinity" style="color: var(--color-cyan);"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-pixel text-xs text-[#efe4b0] mb-1 truncate">1999 ODD EVENTS - MATHMATH</div>
+                        <div class="text-xs text-gray-400 group-hover:text-[#c8bfe7] transition-colors">Phase series</div>
+                    </div>
+                    <div class="wave-mini"><span></span><span></span><span></span><span></span><span></span></div>
+                    <span class="font-pixel text-[10px] text-[#a97981] shrink-0">0:56</span>
+                </a>
+
+                <!-- All Videos Link -->
+                <a href="https://www.youtube.com/@deathdeath9285/videos" target="_blank" class="track-card hover-target group" style="border-style: dashed;">
+                    <div class="track-icon" style="border-color: var(--color-lavender); background: rgba(200, 191, 231, 0.1);">
+                        <i class="fa-brands fa-youtube" style="color: var(--color-lavender);"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-pixel text-xs text-[#c8bfe7] mb-1">VIEW ALL 20 TRACKS</div>
+                        <div class="text-xs text-gray-400 group-hover:text-[#efe4b0] transition-colors">@deathdeath9285</div>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-[#c8bfe7] group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+
+            <!-- Playlists -->
+            <div class="mt-6 flex flex-wrap gap-3">
+                <span class="font-pixel text-[10px] text-gray-500 self-center mr-2">PLAYLISTS:</span>
+                <a href="https://www.youtube.com/playlist?list=PL2swUKSxghDQ5HCIcxj_0bScrny-Yl_RT" target="_blank" class="px-3 py-1 border border-[#a97981] text-[#a97981] text-xs hover:bg-[#a97981] hover:text-[#1a1a24] transition-all hover-target">Phase</a>
+                <a href="https://www.youtube.com/playlist?list=PL2swUKSxghDToyERPnvjqOCjHIP07a_3Y" target="_blank" class="px-3 py-1 border border-[#c8bfe7] text-[#c8bfe7] text-xs hover:bg-[#c8bfe7] hover:text-[#1a1a24] transition-all hover-target">RogueMagician</a>
+                <a href="https://www.youtube.com/playlist?list=PL2swUKSxghDSPcBpowaZphpp-0Cxe1hus" target="_blank" class="px-3 py-1 border border-[#7ecfc0] text-[#7ecfc0] text-xs hover:bg-[#7ecfc0] hover:text-[#1a1a24] transition-all hover-target">Ambient Guitar</a>
+                <a href="https://www.youtube.com/playlist?list=PL2swUKSxghDQLnrc2infSGqAFkvvVfK62" target="_blank" class="px-3 py-1 border border-[#efe4b0] text-[#efe4b0] text-xs hover:bg-[#efe4b0] hover:text-[#1a1a24] transition-all hover-target">Jingles</a>
+                <a href="https://www.youtube.com/playlist?list=PL2swUKSxghDSYGLQmhRGRm_jrT3Kz0WbO" target="_blank" class="px-3 py-1 border border-[#e84393] text-[#e84393] text-xs hover:bg-[#e84393] hover:text-[#1a1a24] transition-all hover-target">A year of my life</a>
+            </div>
+        </section>
+
+        <!-- ============ DELTA NOISE - Novel (NEW) ============ -->
+        <section class="reveal-elem">
+            <h3 class="font-pixel section-header">CREATIVE_WORKS.log</h3>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <!-- Novel Terminal -->
+                <div class="novel-terminal lg:col-span-3 hover-target">
+                    <div class="terminal-body font-dot">
+                        <div class="text-[#7ecfc0] text-lg mb-3 font-bold tracking-wider">
+                            <i class="fa-solid fa-terminal mr-2 text-sm"></i>變異量雜訊 <span class="text-[#efe4b0]">Delta Noise</span>
+                        </div>
+                        <div class="text-gray-400 text-sm leading-relaxed mb-4">
+                            <span class="text-[#7ecfc0]">></span> 創作中的小說，與假想的烏托邦式美國有關。<br>
+                            <span class="text-[#7ecfc0]">></span> 目標是用 IP 養活自己，被動收入、募資出週邊、改編電影。<br>
+                            <span class="text-[#7ecfc0]">></span> 然後跟自己喜歡不喜歡的音樂人合作。<br>
+                            <span class="text-[#7ecfc0]">></span> 最好變成流行文化的一部份。<br>
+                            <span class="text-[#7ecfc0]">></span><br>
+                            <span class="text-[#efe4b0] animate-pulse">WRITING_IN_PROGRESS... _</span>
+                        </div>
+                        <a href="https://cxc.today/@ddddearth4444/work/47216" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-[#7ecfc0] text-[#0a0a12] font-pixel text-[10px] hover:bg-[#efe4b0] transition-colors hover-target">
+                            <i class="fa-solid fa-book-open"></i> READ ON CxC
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Game Project -->
+                <div class="lg:col-span-2 flex flex-col gap-4">
+                    <div class="glass-panel p-6 flex-1 hover-target">
+                        <div class="game-badge mb-4">
+                            <i class="fa-solid fa-gamepad"></i>
+                            INDIE GAME
+                        </div>
+                        <h4 class="text-xl font-bold text-[#efe4b0] mb-2">誠徵新人<br><span class="text-[#e84393] font-pixel text-sm">Now Hiring</span></h4>
+                        <p class="text-sm text-gray-400 leading-relaxed">
+                            負責獨立遊戲中使用到的音樂創作。結合了重金屬、電子、ambient 等多種風格。
+                        </p>
+                    </div>
+
+                    <!-- Tags from Threads -->
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-2 py-1 bg-[#1a1a24] border border-[#a97981]/30 text-[#a97981] text-xs">#故事創作</span>
+                        <span class="px-2 py-1 bg-[#1a1a24] border border-[#c8bfe7]/30 text-[#c8bfe7] text-xs">#音樂分享</span>
+                        <span class="px-2 py-1 bg-[#1a1a24] border border-[#efe4b0]/30 text-[#efe4b0] text-xs">#電吉他</span>
+                        <span class="px-2 py-1 bg-[#1a1a24] border border-[#7ecfc0]/30 text-[#7ecfc0] text-xs">#重金屬樂團</span>
+                        <span class="px-2 py-1 bg-[#1a1a24] border border-[#e84393]/30 text-[#e84393] text-xs">#嘻哈</span>
+                        <span class="px-2 py-1 bg-[#1a1a24] border border-[#c8bfe7]/30 text-[#c8bfe7] text-xs">#樂團</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ CULTURAL DNA ============ -->
+        <section class="reveal-elem">
+            <h3 class="font-pixel section-header">CULTURAL_DNA.json</h3>
+            <p class="text-gray-500 text-xs mb-4 font-pixel">// influences that shaped the utopia</p>
+            <div class="dna-strand">
+                <div class="dna-card hover-target">
+                    <span class="dna-icon text-[#efe4b0]"><i class="fa-solid fa-guitar"></i></span>
+                    <div class="font-pixel text-[10px] text-[#efe4b0] mb-2">HEAVY METAL</div>
+                    <p class="text-xs text-gray-400">8弦吉他 / Djent / Polyphia / Dubstep Metal 的交叉地帶</p>
+                </div>
+                <div class="dna-card hover-target">
+                    <span class="dna-icon text-[#7ecfc0]"><i class="fa-solid fa-gamepad"></i></span>
+                    <div class="font-pixel text-[10px] text-[#7ecfc0] mb-2">RETRO GAMING</div>
+                    <p class="text-xs text-gray-400">韓國線上遊戲 / 像素藝術 / 遊戲配樂 / 8-bit 美學</p>
+                </div>
+                <div class="dna-card hover-target">
+                    <span class="dna-icon text-[#c8bfe7]"><i class="fa-solid fa-torii-gate"></i></span>
+                    <div class="font-pixel text-[10px] text-[#c8bfe7] mb-2">ANIME & MANGA</div>
+                    <p class="text-xs text-gray-400">銀魂 / 日本動畫 / N1低空飛過 / シジメイシ</p>
+                </div>
+                <div class="dna-card hover-target">
+                    <span class="dna-icon text-[#a97981]"><i class="fa-solid fa-flag-usa"></i></span>
+                    <div class="font-pixel text-[10px] text-[#a97981] mb-2">AMERICAN DREAM</div>
+                    <p class="text-xs text-gray-400">美式文化超強濾鏡 / 假想烏托邦 / Rick and Morty 式哲學</p>
+                </div>
+                <div class="dna-card hover-target">
+                    <span class="dna-icon text-[#e84393]"><i class="fa-solid fa-pen-nib"></i></span>
+                    <div class="font-pixel text-[10px] text-[#e84393] mb-2">STORYTELLING</div>
+                    <p class="text-xs text-gray-400">變異量雜訊 / IP 創造 / 零成本創作革命</p>
+                </div>
+                <div class="dna-card hover-target">
+                    <span class="dna-icon text-[#efe4b0]"><i class="fa-solid fa-microphone-lines"></i></span>
+                    <div class="font-pixel text-[10px] text-[#efe4b0] mb-2">HIP-HOP</div>
+                    <p class="text-xs text-gray-400">饒舌歌手wannabe / 被女朋友嫌棄唱KTV / 不死心</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ PIXEL DIVIDER 2 ============ -->
+        <div class="pixel-divider"></div>
+
+        <!-- ============ ZERO-BUDGET UTOPIA ============ -->
+        <section class="glass-panel p-4 md:p-12 reveal-elem relative overflow-hidden">
             <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none z-0">
                 <i class="fa-solid fa-chess-knight text-[250px] text-[#a97981]"></i>
             </div>
-            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-6 relative z-10 flex items-center gap-4">
+            <h3 class="font-pixel text-sm md:text-2xl text-[#efe4b0] mb-4 md:mb-6 relative z-10 flex items-center gap-2 md:gap-4">
                 <i class="fa-solid fa-server text-[#c8bfe7]"></i>
                 THE ZERO-BUDGET UTOPIA
             </h3>
-            <div class="space-y-6 text-lg text-gray-200 relative z-10 max-w-4xl">
+            <div class="space-y-4 md:space-y-6 text-sm md:text-lg text-gray-200 relative z-10 max-w-4xl">
                 <div class="flex items-start gap-4 group">
                     <span class="shrink-0 inline-block bg-[#a97981] text-[#1a1a24] px-2 py-1 font-pixel text-xs mt-1">STATUS</span>
                     <p>實際上沒有任何一點突出到可以維生，所以定義上還是<strong class="text-[#efe4b0] border-b border-dashed border-[#efe4b0] hover:text-[#c8bfe7] transition-colors cursor-help">無業遊民</strong>。</p>
@@ -370,32 +1050,41 @@
             </div>
         </section>
 
-        <!-- Visual Arsenal (Image Grid) -->
+        <!-- ============ VISUAL ARSENAL ============ -->
         <section class="reveal-elem">
-            <h3 class="font-pixel text-2xl text-[#efe4b0] mb-8 border-b-4 border-[#a97981] pb-2 inline-block shadow-[0_4px_0_0_#c8bfe7]">VISUAL_ASSETS.exe</h3>
+            <h3 class="font-pixel section-header">VISUAL_ASSETS.exe</h3>
             <div class="arsenal-grid">
-                <!-- Using the remaining webp images provided -->
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619851337_17932277922173558_5005232186217852206_n.webp" alt="Asset 1"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619898404_17932277931173558_8647813133019183347_n.webp" alt="Asset 2"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619900097_17932277961173558_2840015148556983233_n.webp" alt="Asset 3"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620166611_17932277913173558_7677886328719183869_n.webp" alt="Asset 5"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619906196_17932277940173558_1769157990463057000_n.webp" alt="Asset 6"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620933597_17932277979173558_9061577388327562947_n.webp" alt="Asset 7"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620979916_17932277970173558_8001220106545045221_n.webp" alt="Asset 8"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/621128767_17932277904173558_1998991646209162419_n.webp" alt="Asset 9"></div>
-                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/621207087_17932277949173558_1524504185617431890_n.webp" alt="Asset 10"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619851337_17932277922173558_5005232186217852206_n.webp" alt="Pixel Art - Dusty Rose #A97981 Color Swatch" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619898404_17932277931173558_8647813133019183347_n.webp" alt="Pixel Art - Crystal Star Mandala" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619900097_17932277961173558_2840015148556983233_n.webp" alt="Pixel Art - Anime Character" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620166611_17932277913173558_7677886328719183869_n.webp" alt="Pixel Art - BLAMING Dark Figure" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/619906196_17932277940173558_1769157990463057000_n.webp" alt="Pixel Art - Highway Sunset Car" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620933597_17932277979173558_9061577388327562947_n.webp" alt="Pixel Art - Landscape Scene" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/620979916_17932277970173558_8001220106545045221_n.webp" alt="Pixel Art - Eye Close-up" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/621128767_17932277904173558_1998991646209162419_n.webp" alt="Pixel Art - Salt Shaker" loading="lazy" decoding="async" width="400" height="400"></div>
+                <div class="img-card hover-target block"><img src="/assets/img/guild/ddddearth4444/621207087_17932277949173558_1524504185617431890_n.webp" alt="Pixel Art - Character Portrait" loading="lazy" decoding="async" width="400" height="400"></div>
             </div>
         </section>
 
     </main>
 
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <div class="footer-social">
+            <a href="https://www.threads.net/@ddddearth4444" target="_blank" rel="noopener" aria-label="Threads" class="hover-target"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/ddddearth4444/" target="_blank" rel="noopener" aria-label="Instagram" class="hover-target"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.youtube.com/@deathdeath9285" target="_blank" rel="noopener" aria-label="YouTube" class="hover-target"><i class="fa-brands fa-youtube"></i></a>
+            <a href="https://cxc.today/@ddddearth4444" target="_blank" rel="noopener" aria-label="CxC" class="hover-target"><i class="fa-solid fa-feather-pointed"></i></a>
+        </div>
+        <p class="footer-text">Made with <span class="heart"><i class="fa-solid fa-heart"></i></span> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+    </footer>
+
     <script>
-        // --- Preloader & Entrance Sequence ---
+        // --- Preloader ---
         const enterBtn = document.getElementById('enter-btn');
         const preloader = document.getElementById('preloader');
         const mainWrapper = document.querySelector('.main-wrapper');
 
-        // Simulate loading bar
         gsap.to('#loading-bar', {
             width: '100%',
             duration: 1.5,
@@ -407,10 +1096,8 @@
         });
 
         enterBtn.addEventListener('click', () => {
-            // Trigger explosion in p5 sketch
             if(window.triggerGlobalExplosion) window.triggerGlobalExplosion();
 
-            // Hide preloader with glitch/scale effect
             gsap.to(preloader, {
                 scale: 1.5,
                 opacity: 0,
@@ -419,24 +1106,20 @@
                 ease: 'power4.inOut',
                 onComplete: () => {
                     preloader.style.display = 'none';
-                    // Reveal Main Content
                     mainWrapper.style.visibility = 'visible';
                     gsap.to(mainWrapper, { opacity: 1, duration: 0.5 });
-
-                    // Initialize ScrollTriggers AFTER layout is visible
                     initScrollAnimations();
                 }
             });
         });
 
-        // --- Custom Cursor Logic ---
+        // --- Custom Cursor ---
         const cursor = document.getElementById('custom-cursor');
         document.addEventListener('mousemove', (e) => {
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
         });
 
-        // Add hover effects for interactive elements
         document.querySelectorAll('a, button, .hover-target').forEach(el => {
             el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
             el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
@@ -461,154 +1144,193 @@
             });
 
             // Role Cards Stagger
-            gsap.from(".role-card", {
-                scrollTrigger: {
-                    trigger: ".role-card",
-                    start: "top 85%",
-                },
-                y: 30,
-                opacity: 0,
-                duration: 0.6,
-                stagger: 0.15,
-                ease: "back.out(1.5)"
+            ScrollTrigger.create({
+                trigger: ".identities-section",
+                start: "top 90%",
+                once: true,
+                onEnter: () => {
+                    gsap.fromTo(".role-card",
+                        { y: 30, opacity: 0 },
+                        { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: "back.out(1.5)" }
+                    );
+                }
+            });
+
+            // Track Cards Stagger - use onComplete of parent reveal to animate children
+            ScrollTrigger.create({
+                trigger: ".track-card",
+                start: "top 90%",
+                once: true,
+                onEnter: () => {
+                    gsap.fromTo(".track-card",
+                        { x: -30, opacity: 0 },
+                        { x: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power2.out" }
+                    );
+                }
             });
 
             // Image Grid Stagger
-            gsap.from(".img-card", {
-                scrollTrigger: {
-                    trigger: ".arsenal-grid",
-                    start: "top 80%",
-                },
-                scale: 0.8,
-                rotation: -5,
-                opacity: 0,
-                duration: 0.6,
-                stagger: 0.1,
-                ease: "back.out(1.7)"
+            ScrollTrigger.create({
+                trigger: ".arsenal-grid",
+                start: "top 85%",
+                once: true,
+                onEnter: () => {
+                    gsap.fromTo(".img-card",
+                        { scale: 0.8, rotation: -5, opacity: 0 },
+                        { scale: 1, rotation: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: "back.out(1.7)" }
+                    );
+                }
+            });
+
+            // Novel terminal typing effect
+            gsap.from(".novel-terminal", {
+                scrollTrigger: { trigger: ".novel-terminal", start: "top 80%" },
+                scaleY: 0.01, transformOrigin: "top center", duration: 0.6, ease: "power4.out"
+            });
+
+            // Cultural DNA cards stagger
+            ScrollTrigger.create({
+                trigger: ".dna-strand",
+                start: "top 90%",
+                once: true,
+                onEnter: () => {
+                    gsap.fromTo(".dna-card",
+                        { y: 20, opacity: 0, scale: 0.9 },
+                        { y: 0, opacity: 1, scale: 1, duration: 0.5, stagger: 0.08, ease: "back.out(1.3)" }
+                    );
+                }
             });
         }
 
 
-        // --- P5.js Interactive Environment Sketch ---
+        // --- P5.js Interactive Background ---
         const sketch = (p) => {
             let cols = {
                 rose: p.color(169, 121, 129),
                 sand: p.color(239, 228, 176),
                 lav: p.color(200, 191, 231),
-                bg: p.color(26, 26, 36)
+                cyan: p.color(126, 207, 192)
             };
 
+            const starColors = [cols.lav, cols.lav, cols.lav, cols.rose, cols.cyan];
             let stars = [];
             let pixelSize = 8;
             let explosions = [];
-
-            // Mouse interaction variables
             let targetWaveAmp = 0;
             let currentWaveAmp = 0;
+            let sunPixels = [];
+            let cachedSunRadius = 0;
+
+            function buildSunCache(radius) {
+                sunPixels = [];
+                for (let y = -radius; y <= radius; y += pixelSize) {
+                    for (let x = -radius; x <= radius; x += pixelSize) {
+                        if (x * x + y * y <= radius * radius) {
+                            sunPixels.push({ x, y });
+                        }
+                    }
+                }
+                cachedSunRadius = radius;
+            }
 
             p.setup = () => {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
                 p.noSmooth();
 
-                // Initialize background stars
-                for(let i=0; i<100; i++) {
+                for (let i = 0; i < 100; i++) {
                     stars.push({
                         x: p.random(p.width),
                         y: p.random(p.height),
-                        z: p.random(0.5, 3), // Depth for parallax
-                        size: p.random([pixelSize, pixelSize*2])
+                        z: p.random(0.5, 3),
+                        size: p.random([pixelSize, pixelSize * 2]),
+                        color: p.random(starColors)
                     });
                 }
 
-                // Expose explosion trigger to global window for HTML buttons
+                buildSunCache(p.width > 800 ? 100 : 60);
+
                 window.triggerGlobalExplosion = () => {
-                    spawnExplosion(p.width/2, p.height/2, 100);
+                    spawnExplosion(p.width / 2, p.height / 2, 100);
                 };
             };
 
             p.draw = () => {
-                p.background(26, 26, 36, 120); // Motion blur trail
+                p.background(26, 26, 36, 120);
 
-                // 1. Interactive Mouse Trails (Audio frequency ripple)
                 let mouseDist = p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY);
                 targetWaveAmp = p.lerp(targetWaveAmp, p.constrain(mouseDist * 2, 0, 150), 0.1);
                 currentWaveAmp = p.lerp(currentWaveAmp, targetWaveAmp, 0.1);
 
-                // 2. Parallax Stars with Mouse Repel
+                // Parallax Stars
                 p.noStroke();
-                stars.forEach(star => {
-                    // Move left
+                for (let i = 0; i < stars.length; i++) {
+                    let star = stars[i];
                     star.x -= star.z;
-                    if(star.x < -star.size) {
+                    if (star.x < -star.size) {
                         star.x = p.width;
                         star.y = p.random(p.height);
+                        star.color = p.random(starColors);
                     }
 
-                    // Mouse Repulsion
-                    let d = p.dist(p.mouseX, p.mouseY, star.x, star.y);
-                    if (d < 150) {
-                        let angle = p.atan2(star.y - p.mouseY, star.x - p.mouseX);
-                        star.x += p.cos(angle) * (150 - d) * 0.05;
-                        star.y += p.sin(angle) * (150 - d) * 0.05;
+                    let dx = p.mouseX - star.x;
+                    let dy = p.mouseY - star.y;
+                    let d = dx * dx + dy * dy;
+                    if (d < 22500) {
+                        let dist = Math.sqrt(d);
+                        let force = (150 - dist) * 0.05;
+                        star.x -= (dx / dist) * force;
+                        star.y -= (dy / dist) * force;
                     }
 
-                    p.fill(p.random() > 0.95 ? cols.rose : cols.lav);
-                    p.rect(Math.floor(star.x/pixelSize)*pixelSize, Math.floor(star.y/pixelSize)*pixelSize, star.size, star.size);
-                });
+                    p.fill(star.color);
+                    p.rect(Math.floor(star.x / pixelSize) * pixelSize, Math.floor(star.y / pixelSize) * pixelSize, star.size, star.size);
+                }
 
-                // 3. The Utopian Sun (Pixelated Circle)
-                let sunX = p.width * 0.7;
-                let sunY = p.height * 0.3;
-                let radius = p.width > 800 ? 180 : 120;
-
-                // Sun reacts to mouse position subtly
-                sunX += (p.mouseX - p.width/2) * -0.05;
-                sunY += (p.mouseY - p.height/2) * -0.05;
+                // Utopian Sun (cached pixels)
+                let sunX = p.width * 0.88 + (p.mouseX - p.width / 2) * -0.05;
+                let sunY = p.height * 0.12 + (p.mouseY - p.height / 2) * -0.05;
+                let radius = p.width > 800 ? 100 : 60;
+                if (radius !== cachedSunRadius) buildSunCache(radius);
 
                 p.fill(cols.sand);
-                for(let y = -radius; y <= radius; y += pixelSize) {
-                    for(let x = -radius; x <= radius; x += pixelSize) {
-                        if(x*x + y*y <= radius*radius) {
-                            // Audio-reactive glitch slice effect + mouse influence
-                            let glitch = p.sin((p.frameCount + y + currentWaveAmp)*0.05) > 0.85;
-                            if(!glitch) {
-                                p.rect(
-                                    Math.floor((sunX + x)/pixelSize)*pixelSize,
-                                    Math.floor((sunY + y)/pixelSize)*pixelSize,
-                                    pixelSize, pixelSize
-                                );
-                            }
-                        }
+                for (let i = 0; i < sunPixels.length; i++) {
+                    let sp = sunPixels[i];
+                    let glitch = p.sin((p.frameCount + sp.y + currentWaveAmp) * 0.05) > 0.85;
+                    if (!glitch) {
+                        p.rect(
+                            Math.floor((sunX + sp.x) / pixelSize) * pixelSize,
+                            Math.floor((sunY + sp.y) / pixelSize) * pixelSize,
+                            pixelSize, pixelSize
+                        );
                     }
                 }
 
-                // 4. Audio/Synthwave Horizon Terrain
+                // Synthwave Horizon Terrain
                 p.strokeWeight(pixelSize);
                 p.strokeCap(p.SQUARE);
 
-                drawPixelWave(0.7, 0.01, cols.rose, 40 + currentWaveAmp*0.5, 2);
-                drawPixelWave(0.8, 0.02, cols.lav, 70 + currentWaveAmp*0.8, -1.5);
+                drawPixelWave(0.7, 0.01, cols.rose, 40 + currentWaveAmp * 0.5, 2);
+                drawPixelWave(0.8, 0.02, cols.lav, 70 + currentWaveAmp * 0.8, -1.5);
                 drawPixelWave(0.9, 0.015, cols.sand, 100 + currentWaveAmp, 3);
 
-                // 5. Update and Draw Explosions
-                for(let i = explosions.length - 1; i >= 0; i--) {
+                // Explosions
+                for (let i = explosions.length - 1; i >= 0; i--) {
                     let ex = explosions[i];
                     ex.life -= 2;
                     p.noStroke();
 
-                    ex.particles.forEach(pt => {
+                    for (let j = 0; j < ex.particles.length; j++) {
+                        let pt = ex.particles[j];
                         pt.x += pt.vx;
                         pt.y += pt.vy;
-                        pt.vy += 0.2; // Gravity
+                        pt.vy += 0.2;
 
                         p.fill(pt.color[0], pt.color[1], pt.color[2], ex.life * 2.5);
-                        p.rect(Math.floor(pt.x/pixelSize)*pixelSize, Math.floor(pt.y/pixelSize)*pixelSize, pt.size, pt.size);
-                    });
-
-                    if(ex.life <= 0) {
-                        explosions.splice(i, 1);
+                        p.rect(Math.floor(pt.x / pixelSize) * pixelSize, Math.floor(pt.y / pixelSize) * pixelSize, pt.size, pt.size);
                     }
+
+                    if (ex.life <= 0) explosions.splice(i, 1);
                 }
             };
 
@@ -616,14 +1338,14 @@
                 p.stroke(color);
                 p.noFill();
                 p.beginShape();
-                for(let x = 0; x < p.width + pixelSize; x += pixelSize) {
-                    let noiseVal = p.noise(x * noiseScale, p.frameCount * 0.005 * Math.abs(timeMult));
-                    let waveVal = p.sin(x * 0.01 + p.frameCount * 0.05 * timeMult) * 20;
-
+                let absTimeMult = Math.abs(timeMult);
+                let frameTime = p.frameCount * 0.005 * absTimeMult;
+                let frameSin = p.frameCount * 0.05 * timeMult;
+                for (let x = 0; x < p.width + pixelSize; x += pixelSize) {
+                    let noiseVal = p.noise(x * noiseScale, frameTime);
+                    let waveVal = p.sin(x * 0.01 + frameSin) * 20;
                     let y = p.height * heightMult + (noiseVal * amp) + waveVal;
-                    y = Math.floor(y / pixelSize) * pixelSize;
-
-                    p.vertex(x, y);
+                    p.vertex(x, Math.floor(y / pixelSize) * pixelSize);
                 }
                 p.endShape();
             }
@@ -631,41 +1353,31 @@
             function spawnExplosion(x, y, amount) {
                 let particles = [];
                 let colors = [
-                    [169, 121, 129], // rose
-                    [239, 228, 176], // sand
-                    [200, 191, 231], // lav
+                    [169, 121, 129],
+                    [239, 228, 176],
+                    [200, 191, 231],
+                    [126, 207, 192],
                     [255, 255, 255]
                 ];
 
-                for(let i=0; i<amount; i++) {
+                for (let i = 0; i < amount; i++) {
                     let angle = p.random(p.TWO_PI);
                     let speed = p.random(2, 15);
                     particles.push({
-                        x: x,
-                        y: y,
+                        x: x, y: y,
                         vx: p.cos(angle) * speed,
                         vy: p.sin(angle) * speed,
-                        size: p.random([pixelSize, pixelSize*2, pixelSize*3]),
+                        size: p.random([pixelSize, pixelSize * 2, pixelSize * 3]),
                         color: p.random(colors)
                     });
                 }
 
-                explosions.push({
-                    life: 100,
-                    particles: particles
-                });
+                explosions.push({ life: 100, particles: particles });
             }
-
-            // Click triggers pixel explosion
-            p.mousePressed = () => {
-                // Ensure we don't block HTML clicks if interacting with UI
-                if(p.mouseY > 0 && p.mouseY < p.height && document.activeElement.tagName !== 'A' && document.activeElement.tagName !== 'BUTTON') {
-                     spawnExplosion(p.mouseX, p.mouseY, 40);
-                }
-            };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
+                buildSunCache(p.width > 800 ? 100 : 60);
             };
         };
 
