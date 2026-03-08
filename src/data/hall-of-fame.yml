@@ -1061,3 +1061,15 @@ members:
         label: "混沌藝術"
       - id: "imaginative"
         label: "天馬行空"
+
+  - id: "asingingwind"
+    name: "許漪 💧🦋"
+    avatar: "/assets/guild/asingingwind/avatar.webp"
+    page: "/guild/asingingwind.html"
+    tags:
+      - id: "bard"
+        label: "吟遊詩人"
+      - id: "sound_priest"
+        label: "聲音祭司"
+      - id: "tarot_guide"
+        label: "塔羅引導"
