@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>許漪 - 吟遊詩人 | A Singing Wind</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Noto+Serif+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
       --sand-light: #E8D3A2;
       --sand-mid: #D4B872;
       --sand-dark: #A67C41;
-      --oasis-green: #2E472D;
       --sunset-glow: #E2725B;
       --desert-night: #1C2331;
     }
@@ -22,11 +21,11 @@
       padding: 0;
       background-color: var(--sand-light);
       color: var(--desert-night);
-      font-family: 'Noto Serif TC', serif;
+      font-family: 'LXGW WenKai TC', 'Noto Serif TC', serif;
       overflow-x: hidden;
     }
 
-    .cinzel { font-family: 'Cinzel', serif; }
+    .cinzel { font-family: 'Cormorant Garamond', 'Cinzel', serif; }
 
     /* Background Canvases */
     #three-canvas-container {
@@ -118,6 +117,144 @@
       justify-content: center;
       padding: 2rem;
       position: relative;
+    }
+
+    /* ===== Mobile RWD ===== */
+    @media (max-width: 768px) {
+      .horizontal-scroll-wrapper {
+        height: auto;
+        overflow: visible;
+      }
+      .horizontal-scroll-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: auto;
+      }
+      .panel {
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 2rem 1rem;
+        align-items: flex-start;
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+      }
+      .hero-section {
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 2rem 1rem;
+      }
+      .hero-section .glass-panel {
+        padding: 1.5rem;
+      }
+      .hero-section .avatar-frame {
+        max-width: 280px;
+      }
+      .hero-section h1 {
+        font-size: 2.5rem;
+      }
+      .hero-section h2 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      .hero-section .space-y-6 > * + * {
+        margin-top: 1rem;
+      }
+      .hero-section .text-lg {
+        font-size: 0.95rem;
+      }
+      .hero-section .text-2xl.title-stroke {
+        font-size: 1.25rem;
+      }
+      /* Panel content mobile overrides */
+      .panel .glass-panel,
+      .panel .glass-panel-dark,
+      .panel .glass-panel-oasis {
+        padding: 1.5rem;
+        border-radius: 16px;
+      }
+      .panel h2 {
+        font-size: 1.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .panel .text-lg {
+        font-size: 0.95rem;
+      }
+      .panel .text-xl {
+        font-size: 1rem;
+      }
+      .panel .text-4xl {
+        font-size: 1.75rem;
+      }
+      .panel .text-5xl {
+        font-size: 2rem;
+      }
+      /* Panel 1: compass hidden on mobile, full width text */
+      .panel .flex-1 {
+        width: 100%;
+      }
+      /* Panel 2: oasis - single column, reduced spacing */
+      .panel .glass-panel-oasis .grid {
+        gap: 1.5rem;
+      }
+      .panel .glass-panel-oasis .mb-10 {
+        margin-bottom: 1.5rem;
+      }
+      .panel .glass-panel-oasis .mb-8 {
+        margin-bottom: 1rem;
+      }
+      /* Panel 3: breath poet - vertical stack */
+      .panel .glass-panel-dark.dark {
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .panel .glass-panel-dark.dark .writing-vertical {
+        writing-mode: horizontal-tb;
+        font-size: 1.5rem;
+        line-height: 1.6;
+        letter-spacing: 0.1em;
+      }
+      .panel .glass-panel-dark.dark .writing-vertical.absolute {
+        display: none;
+      }
+      .panel .glass-panel-dark.dark .md\:w-1\/3 {
+        width: 100%;
+      }
+      .panel .glass-panel-dark.dark .md\:w-2\/3 {
+        width: 100%;
+      }
+      .panel .glass-panel-dark.dark .space-y-6 > * + * {
+        margin-top: 1rem;
+      }
+      .panel .glass-panel-dark.dark .pl-6 {
+        padding-left: 1rem;
+      }
+      /* Panel 4 & 5: reduce padding */
+      #connection-panel .glass-panel-dark,
+      #end-panel .glass-panel-dark {
+        padding: 1.5rem;
+      }
+      #connection-panel h2 {
+        font-size: 1.5rem;
+      }
+      #connection-panel .text-lg {
+        font-size: 0.9rem;
+      }
+      #connection-panel .text-xl {
+        font-size: 1rem;
+      }
+      #end-panel .text-lg {
+        font-size: 0.9rem;
+      }
+      #end-panel h2 {
+        font-size: 1.5rem;
+      }
+      /* Quote mark smaller on mobile */
+      .quote-mark {
+        font-size: 2.5rem;
+      }
     }
 
     /* Hero Section */
@@ -437,7 +574,7 @@
           </div>
 
           <h1 class="text-5xl md:text-6xl font-bold mb-4 tracking-wider">
-            💧 許漪 🦋
+            許漪
           </h1>
           <h2 class="text-2xl md:text-3xl font-light mb-8 text-[var(--sunset-glow)] tracking-widest">
             吟遊詩人 <span class="mx-2 opacity-30">|</span> 呼吸詩人
@@ -503,7 +640,7 @@
                   我也學會了如何更精準地與自己、與他人溝通。在無垠的沙漠與風沙中，尋找那些被遺忘的聲波種子。
                 </p>
               </div>
-              <div class="w-1/3 flex justify-center items-center">
+              <div class="hidden md:flex w-1/3 justify-center items-center">
                 <div class="w-48 h-48 rounded-full border border-[var(--sand-dark)] p-4 relative animate-[spin_30s_linear_infinite]">
                   <div class="w-full h-full rounded-full border border-dashed border-[var(--sunset-glow)] flex items-center justify-center">
                     <i class="fa-solid fa-compass text-4xl text-[var(--sand-dark)]"></i>
@@ -516,10 +653,10 @@
 
         <!-- Panel 2: The Oasis / Workshops -->
         <div class="panel">
-          <div class="max-w-6xl w-full flex gap-8 items-center justify-center">
+          <div class="max-w-6xl w-full flex flex-col md:flex-row gap-8 items-center justify-center">
 
-            <div class="w-1/3 hidden md:block">
-               <div class="rounded-2xl overflow-hidden border border-[var(--sand-dark)]/30 box-shadow-xl transform -rotate-3 hover:rotate-0 transition duration-500">
+            <div class="w-full md:w-1/3">
+               <div class="rounded-2xl overflow-hidden border border-[var(--sand-dark)]/30 box-shadow-xl transform md:-rotate-3 md:hover:rotate-0 transition duration-500">
                   <img src="/assets/guild/asingingwind/image2.webp" alt="心靈門牌" class="w-full h-auto object-cover grayscale hover:grayscale-0 transition duration-700">
                </div>
             </div>
@@ -598,7 +735,7 @@
               </div>
             </div>
 
-            <div class="w-1/3 hidden md:block z-10">
+            <div class="w-full md:w-1/3 z-10">
                <div class="rounded-2xl overflow-hidden border border-[var(--sand-mid)]/30 box-shadow-2xl transform rotate-3 hover:-translate-y-2 transition duration-500 relative">
                   <div class="absolute inset-0 bg-black/20 hover:bg-transparent transition duration-500"></div>
                   <img src="/assets/guild/asingingwind/image1.webp" alt="呼吸詩人" class="w-full h-auto object-cover">
@@ -723,6 +860,9 @@
         return texture;
     }
 
+    // Cache reusable textures
+    const _smokeTexture = createSmokeTexture();
+
     // Global objects to modify via ScrollTrigger
     const ThreeSceneState = {
       progress: 0,
@@ -839,7 +979,7 @@
       // Use a basic points material with size attenuation for smoke
       const smokeMat = new THREE.PointsMaterial({
         size: 25,
-        map: createSmokeTexture(),
+        map: _smokeTexture,
         transparent: true,
         opacity: 0.15,
         blending: THREE.AdditiveBlending,
@@ -851,7 +991,7 @@
       scene.add(smokeParticles);
 
       // Moon
-      const moonGeo = new THREE.CircleGeometry(15, 64);
+      const moonGeo = new THREE.CircleGeometry(15, 32);
       const moonMat = new THREE.MeshBasicMaterial({
           color: 0xffffff,
           transparent: true,
@@ -865,15 +1005,15 @@
 
       // --- NEW: Oasis Visuals (Trees, Water, Fireflies) ---
       const oasisGroup = new THREE.Group();
-      oasisGroup.position.set(0, -10, -150); // Positioned deep in the scene
+      oasisGroup.position.set(0, -10, -180); // Far end of the desert
       scene.add(oasisGroup);
 
       // Sandy Shore — layered rings for gradient beach effect
       const shoreMats = [];
-      const shoreColors = [0xC4A56C, 0xB89B5A, 0xA08848, 0x8A7640];
+      const shoreColors = [0xD4B872, 0xC4A56C, 0xB89B5A, 0xA08848, 0x8A7640, 0x6A5830];
       shoreColors.forEach((color, idx) => {
-        const radius = 38 - idx * 4;
-        const sGeo = new THREE.CircleGeometry(radius, 48);
+        const radius = 48 - idx * 5;
+        const sGeo = new THREE.CircleGeometry(radius, 32);
         sGeo.rotateX(-Math.PI / 2);
         const sMat = new THREE.MeshStandardMaterial({
           color: color,
@@ -890,7 +1030,7 @@
       });
 
       // Water Pool - Upgraded to a more detailed plane for rippling
-      const waterGeo = new THREE.PlaneGeometry(50, 50, 64, 64);
+      const waterGeo = new THREE.PlaneGeometry(50, 50, 32, 32);
       waterGeo.rotateX(-Math.PI / 2);
 
       // Make water shape slightly organic (not a perfect circle)
@@ -1226,7 +1366,7 @@
 
       const mistMat = new THREE.PointsMaterial({
         size: 8,
-        map: createSmokeTexture(),
+        map: _smokeTexture,
         transparent: true,
         opacity: 0,
         blending: THREE.AdditiveBlending,
@@ -1330,7 +1470,7 @@
 
       // Firefly Particles
       const fireflyGeo = new THREE.BufferGeometry();
-      const fireflyCount = 200;
+      const fireflyCount = 120;
       const fireflyPosArray = new Float32Array(fireflyCount * 3);
       const fireflyPhaseArray = new Float32Array(fireflyCount); // for twinkling
       const fireflyColorArray = new Float32Array(fireflyCount * 3); // RGB
@@ -1401,52 +1541,63 @@
 
       // Animation Loop
       let time = 0;
+      let lastProgress = -1;
+      let frameCount = 0;
       const animate = () => {
         requestAnimationFrame(animate);
         time += 0.005;
+        frameCount++;
 
         // Apply Scroll Progression (Transition to Night Oasis)
         const p = ThreeSceneState.progress;
+        const progressChanged = Math.abs(p - lastProgress) > 0.001;
+        if (progressChanged) lastProgress = p;
 
-        // Interpolate colors
-        sceneFog.color.lerpColors(ThreeSceneState.fogColor, ThreeSceneState.nightFogColor, p);
-        scene.background = sceneFog.color;
+        // Only recalculate progress-dependent values when progress changes
+        let oasisVisibility = 0;
+        if (progressChanged) {
+          // Interpolate colors
+          sceneFog.color.lerpColors(ThreeSceneState.fogColor, ThreeSceneState.nightFogColor, p);
+          scene.background = sceneFog.color;
 
-        dirLight.color.lerpColors(ThreeSceneState.dirLightColor, ThreeSceneState.nightDirLightColor, p);
-        ambientLight.color.lerpColors(ThreeSceneState.ambientColor, ThreeSceneState.nightAmbientColor, p);
+          dirLight.color.lerpColors(ThreeSceneState.dirLightColor, ThreeSceneState.nightDirLightColor, p);
+          ambientLight.color.lerpColors(ThreeSceneState.ambientColor, ThreeSceneState.nightAmbientColor, p);
 
+          // Terrain color stays sand, darkens only as it fades out
+          terrain.material.color.lerpColors(ThreeSceneState.sandColor, ThreeSceneState.nightSandColor, Math.max(0, (p - 0.5)) * 1.5);
 
-        terrain.material.color.lerpColors(ThreeSceneState.sandColor, ThreeSceneState.nightSandColor, p);
+          // Terrain: fully visible, then fade out + sink before oasis arrives
+          const terrainFade = Math.max(0, 1 - Math.max(0, (p - 0.6)) * 3.3); // 1→0 from 60%→90%
+          terrain.material.opacity = terrainFade;
+          terrain.position.y = -10 - Math.max(0, (p - 0.6)) * 40;
 
-        // Fade out and sink terrain to prevent overlap with oasis (after oasis starts appearing)
-        const terrainFade = Math.max(0, 1 - Math.max(0, (p - 0.6)) * 5);
-        terrain.material.opacity = terrainFade;
-        terrain.position.y = -10 - Math.max(0, (p - 0.65)) * 30;
+          // --- Oasis appears at the far end of the desert ---
+          oasisVisibility = Math.min(1, Math.max(0, (p - 0.65) / 0.25)); // Starts at 65%, full at 90%
 
-        // --- NEW: Fade in Oasis ---
-        const oasisVisibility = Math.max(0, (p - 0.5) * 2); // 0 to 1 in second half of scroll
+          // Rise the moon and fade it in
+          moon.position.y = -50 + (oasisVisibility * 100);
+          moon.material.opacity = oasisVisibility;
 
-        // Rise the moon and fade it in
-        moon.position.y = -50 + (oasisVisibility * 100); // Rises from -50 up to 50
-        moon.material.opacity = oasisVisibility;
+          water.material.opacity = oasisVisibility * 0.8;
 
-        water.material.opacity = oasisVisibility * 0.8;
+          treeTrunkMat.opacity = oasisVisibility * 0.9;
+          treeCanopyMat.opacity = oasisVisibility * 0.9;
+          treeCanopyMat.emissiveIntensity = oasisVisibility * 0.5;
+          rockMat.opacity = oasisVisibility;
+          mossyRockMat.opacity = oasisVisibility;
+          darkRockMat.opacity = oasisVisibility;
+          steppingStoneMat.opacity = oasisVisibility;
+          shoreMats.forEach(m => m.opacity = oasisVisibility);
+          grassMat.opacity = oasisVisibility;
+          lilyPadMat.opacity = oasisVisibility * 0.85;
+          bushMat.opacity = oasisVisibility * 0.9;
+          bushMat.emissiveIntensity = oasisVisibility * 0.3;
+          crystalMat.opacity = oasisVisibility * 0.9;
 
-        treeTrunkMat.opacity = oasisVisibility * 0.9;
-        treeCanopyMat.opacity = oasisVisibility * 0.9;
-        treeCanopyMat.emissiveIntensity = oasisVisibility * 0.5;
-        rockMat.opacity = oasisVisibility;
-        mossyRockMat.opacity = oasisVisibility;
-        darkRockMat.opacity = oasisVisibility;
-        steppingStoneMat.opacity = oasisVisibility;
-        shoreMats.forEach(m => m.opacity = oasisVisibility);
-        grassMat.opacity = oasisVisibility;
-        lilyPadMat.opacity = oasisVisibility * 0.85;
-        bushMat.opacity = oasisVisibility * 0.9;
-        bushMat.emissiveIntensity = oasisVisibility * 0.3;
-        crystalMat.opacity = oasisVisibility * 0.9;
-
-        fireflyMat.opacity = oasisVisibility * 0.8;
+          fireflyMat.opacity = oasisVisibility * 0.8;
+        } else {
+          oasisVisibility = Math.min(1, Math.max(0, (p - 0.65) / 0.25));
+        }
 
         // Animate Crystals (bobbing & glow)
         crystals.forEach((c, idx) => {
@@ -1479,16 +1630,18 @@
           lp.mesh.rotation.z = Math.sin(time + idx) * 0.03;
         });
 
-        // Animate mist
+        // Animate mist (throttled to every other frame)
         mistMat.opacity = oasisVisibility * 0.2;
         mistParticles.position.z = oasisGroup.position.z;
-        const mPositions = mistParticles.geometry.attributes.position.array;
-        for (let i=0; i<mistCount; i++) {
-          mPositions[i*3] += Math.sin(time * 0.5 + i) * 0.02;
-          mPositions[i*3+1] = 1.5 + Math.sin(time * 0.8 + i * 0.5) * 1.0;
-          mPositions[i*3+2] += Math.cos(time * 0.3 + i) * 0.02;
+        if (frameCount % 2 === 0) {
+          const mPositions = mistParticles.geometry.attributes.position.array;
+          for (let i=0; i<mistCount; i++) {
+            mPositions[i*3] += Math.sin(time * 0.5 + i) * 0.02;
+            mPositions[i*3+1] = 1.5 + Math.sin(time * 0.8 + i * 0.5) * 1.0;
+            mPositions[i*3+2] += Math.cos(time * 0.3 + i) * 0.02;
+          }
+          mistParticles.geometry.attributes.position.needsUpdate = true;
         }
-        mistParticles.geometry.attributes.position.needsUpdate = true;
 
         // Animate water rippling (throttled normals for performance)
         if (Math.floor(time * 200) % 3 === 0) {
@@ -1504,34 +1657,31 @@
           water.geometry.attributes.position.needsUpdate = true;
         }
 
-        // Move oasis group towards camera based on scroll
-        oasisGroup.position.z = -150 + (p * 130);
+        // Oasis stays far until desert ends, then approaches in the final stretch
+        oasisGroup.position.z = -180 + (p * 170);
         fireflies.position.z = oasisGroup.position.z;
 
-        // Animate Fireflies
-        const fPositions = fireflies.geometry.attributes.position.array;
-        const fPhases = fireflies.geometry.attributes.phase.array;
-        const fColors = fireflies.geometry.attributes.color.array;
-        for(let i=0; i<fireflyCount; i++) {
-            // Swaying motion
-            fPositions[i*3] += Math.sin(time * 2 + fPhases[i]) * 0.05;
-            fPositions[i*3+1] += Math.cos(time * 1.5 + fPhases[i]) * 0.05;
-            fPositions[i*3+2] += Math.sin(time * 1 + fPhases[i]) * 0.05;
+        // Animate Fireflies (throttled to every other frame)
+        if (frameCount % 2 === 0) {
+          const fPositions = fireflies.geometry.attributes.position.array;
+          const fPhases = fireflies.geometry.attributes.phase.array;
+          const fColors = fireflies.geometry.attributes.color.array;
+          for(let i=0; i<fireflyCount; i++) {
+              fPositions[i*3] += Math.sin(time * 2 + fPhases[i]) * 0.05;
+              fPositions[i*3+1] += Math.cos(time * 1.5 + fPhases[i]) * 0.05;
+              fPositions[i*3+2] += Math.sin(time * 1 + fPhases[i]) * 0.05;
 
-            // Keep within bounds
-            if(fPositions[i*3+1] < 1) fPositions[i*3+1] = 1; // don't go below water
-            if(fPositions[i*3+1] > 25) fPositions[i*3+1] = 25; // don't go too high
+              if(fPositions[i*3+1] < 1) fPositions[i*3+1] = 1;
+              if(fPositions[i*3+1] > 25) fPositions[i*3+1] = 25;
 
-            // Twinkling effect (pulsing alpha via color)
-            // A sine wave that oscillates between ~0.1 and 1.0 based on phase
-            const intensity = 0.1 + (Math.sin(time * 3 + fPhases[i]) + 1) / 2 * 0.9;
-
-            fColors[i*3] = 0.8 * intensity;   // R
-            fColors[i*3+1] = 1.0 * intensity; // G
-            fColors[i*3+2] = 0.0 * intensity; // B
+              const intensity = 0.1 + (Math.sin(time * 3 + fPhases[i]) + 1) / 2 * 0.9;
+              fColors[i*3] = 0.8 * intensity;
+              fColors[i*3+1] = 1.0 * intensity;
+              fColors[i*3+2] = 0.0 * intensity;
+          }
+          fireflies.geometry.attributes.position.needsUpdate = true;
+          fireflies.geometry.attributes.color.needsUpdate = true;
         }
-        fireflies.geometry.attributes.position.needsUpdate = true;
-        fireflies.geometry.attributes.color.needsUpdate = true;
 
         // Animate Dynamic Light Sources (Big glowing fireflies casting light)
         dynamicLights.forEach((dl) => {
@@ -1550,9 +1700,10 @@
         // Slow down wind, stop completely at night (when p is close to 1)
         const windSpeed = Math.max(0, (1 - p * 1.2)) * 0.5;
 
-        // Move terrain forward based on both time and scroll progress
-        // to make scrolling feel like moving through the desert
-        terrain.position.z = (time * 3) + (p * 50);
+        // Move terrain forward; accelerate it away from camera in the final stretch
+        // so it clears out before the oasis arrives
+        const terrainPush = p < 0.6 ? (p * 50) : (30 + Math.pow((p - 0.6) / 0.4, 2) * 200);
+        terrain.position.z = (time * 3) + terrainPush;
 
         // Sandstorm wind effect
         const pPositions = sandstorm.geometry.attributes.position.array;
@@ -1568,16 +1719,18 @@
         sandstorm.material.opacity = Math.max(0, (1 - p * 1.5)) * 0.7;
 
 
-        // Smoke effect
-        const sPositions = smokeParticles.geometry.attributes.position.array;
-        for(let i = 0; i < smokeCount * 3; i+=3) {
-            sPositions[i] -= windSpeed * 0.5;
-            sPositions[i+1] += Math.sin(time * 2 + i) * 0.02; // drifting up/down
-            if(sPositions[i] < -100) {
-                sPositions[i] = 100;
-            }
+        // Smoke effect (throttled to every other frame)
+        if (frameCount % 2 === 0) {
+          const sPositions = smokeParticles.geometry.attributes.position.array;
+          for(let i = 0; i < smokeCount * 3; i+=3) {
+              sPositions[i] -= windSpeed * 0.5;
+              sPositions[i+1] += Math.sin(time * 2 + i) * 0.02;
+              if(sPositions[i] < -100) {
+                  sPositions[i] = 100;
+              }
+          }
+          smokeParticles.geometry.attributes.position.needsUpdate = true;
         }
-        smokeParticles.geometry.attributes.position.needsUpdate = true;
         smokeParticles.material.opacity = Math.max(0, (1 - p * 1.5)) * 0.15;
 
 
@@ -1845,54 +1998,80 @@
       const panels = gsap.utils.toArray('.panel');
       const overlay = document.querySelector('.desert-overlay');
 
-      const horizontalTween = gsap.to(panels, {
-        xPercent: -100 * (panels.length - 1),
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".horizontal-scroll-wrapper",
-          pin: true,
-          scrub: 1,
-          end: () => "+=" + (scrollContainer.offsetWidth * 1.5), // Make the scroll longer/more noticeable
-          onUpdate: (self) => {
-            // Update global state for Three.js render loop
-            ThreeSceneState.progress = self.progress;
+      // Shared progress update function for day→night transition
+      function updateSceneProgress(progress) {
+        ThreeSceneState.progress = progress;
+        const darkProgress = progress;
+        const baseA_r = 232, baseA_g = 211, baseA_b = 162, baseA_a = 0.6;
+        const darkA_r = 10,  darkA_g = 13,  darkA_b = 20,  darkA_a = 1.0;
+        const curA_r = Math.round(baseA_r - (baseA_r - darkA_r) * darkProgress);
+        const curA_g = Math.round(baseA_g - (baseA_g - darkA_g) * darkProgress);
+        const curA_b = Math.round(baseA_b - (baseA_b - darkA_b) * darkProgress);
+        const curA_a = baseA_a - (baseA_a - darkA_a) * darkProgress;
+        overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(${curA_r}, ${curA_g}, ${curA_b}, ${curA_a}) 100%)`;
+        const r = Math.round(232 - (232-10)*darkProgress);
+        const g = Math.round(211 - (211-13)*darkProgress);
+        const b = Math.round(162 - (162-20)*darkProgress);
+        document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+      }
 
-            // Also fade the HTML overlay gradient to match the night theme gradually
-            // We use the full progress (0 to 1) instead of jumping at 0.5 to make it smoother
-            const darkProgress = self.progress;
-
-            // Interpolate the gradient stop colors
-            const baseA_r = 232, baseA_g = 211, baseA_b = 162, baseA_a = 0.6;
-            const darkA_r = 10,  darkA_g = 13,  darkA_b = 20,  darkA_a = 1.0;
-
-            const curA_r = Math.round(baseA_r - (baseA_r - darkA_r) * darkProgress);
-            const curA_g = Math.round(baseA_g - (baseA_g - darkA_g) * darkProgress);
-            const curA_b = Math.round(baseA_b - (baseA_b - darkA_b) * darkProgress);
-            const curA_a = baseA_a - (baseA_a - darkA_a) * darkProgress;
-
-            overlay.style.background = `linear-gradient(to bottom, transparent 40%, rgba(${curA_r}, ${curA_g}, ${curA_b}, ${curA_a}) 100%)`;
-
-            // Interpolate the solid body background
-            const r = Math.round(232 - (232-10)*darkProgress);
-            const g = Math.round(211 - (211-13)*darkProgress);
-            const b = Math.round(162 - (162-20)*darkProgress);
-            document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-          }
-        }
-      });
-
-      // Simple parallax inside panels
-      panels.forEach((panel) => {
-        const content = panel.querySelector('.glass-panel, .glass-panel-oasis, .glass-panel-dark');
-        if(content) {
-          gsap.from(content, {
-            y: 50,
-            opacity: 0,
+      // Use matchMedia for responsive GSAP behavior
+      ScrollTrigger.matchMedia({
+        // Desktop: horizontal scroll pinning
+        "(min-width: 769px)": function() {
+          const horizontalTween = gsap.to(panels, {
+            xPercent: -100 * (panels.length - 1),
+            ease: "none",
             scrollTrigger: {
-              trigger: panel,
-              containerAnimation: horizontalTween,
-              start: "left 70%",
-              toggleActions: "play none none reverse"
+              trigger: ".horizontal-scroll-wrapper",
+              pin: true,
+              scrub: 1,
+              end: () => "+=" + (scrollContainer.offsetWidth * 1.5),
+              onUpdate: (self) => updateSceneProgress(self.progress)
+            }
+          });
+
+          // Simple parallax inside panels
+          panels.forEach((panel) => {
+            const content = panel.querySelector('.glass-panel, .glass-panel-oasis, .glass-panel-dark');
+            if(content) {
+              gsap.from(content, {
+                y: 50,
+                opacity: 0,
+                scrollTrigger: {
+                  trigger: panel,
+                  containerAnimation: horizontalTween,
+                  start: "left 70%",
+                  toggleActions: "play none none reverse"
+                }
+              });
+            }
+          });
+        },
+
+        // Mobile: vertical scroll with scene transition
+        "(max-width: 768px)": function() {
+          ScrollTrigger.create({
+            trigger: ".horizontal-scroll-wrapper",
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1,
+            onUpdate: (self) => updateSceneProgress(self.progress)
+          });
+
+          // Fade-in for each panel on mobile
+          panels.forEach((panel) => {
+            const content = panel.querySelector('.glass-panel, .glass-panel-oasis, .glass-panel-dark');
+            if(content) {
+              gsap.from(content, {
+                y: 40,
+                opacity: 0,
+                scrollTrigger: {
+                  trigger: panel,
+                  start: "top 80%",
+                  toggleActions: "play none none reverse"
+                }
+              });
             }
           });
         }
