@@ -272,7 +272,65 @@
             50% { transform: translateY(-35px) scale(1, 1); }
             60% { transform: translateY(-30px) scale(1.1, 0.9); }
         }
-        </style>
+
+        /* --- BOOK SPREAD STYLING --- */
+        .book-spread {
+            background-color: #FDFBF7;
+            background-image:
+                linear-gradient(90deg, transparent 49.5%, rgba(0,0,0,0.05) 49.5%, rgba(0,0,0,0.1) 50%, transparent 50.5%),
+                linear-gradient(rgba(186, 230, 253, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 40px;
+            box-shadow:
+                0 20px 40px rgba(0,0,0,0.1),
+                inset 0 0 40px rgba(226, 232, 240, 0.4),
+                inset 5px 0 10px rgba(0,0,0,0.05),
+                inset -5px 0 10px rgba(0,0,0,0.05);
+            border-radius: 4px;
+            border: 1px solid #E5E7EB;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 2000px;
+        }
+
+        /* Stack of pages effect */
+        .book-spread::before, .book-spread::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            border-radius: 2px;
+            z-index: -1;
+        }
+
+        .book-spread::before {
+            top: 4px; left: 4px; right: 4px; bottom: -4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .book-spread::after {
+            top: 8px; left: 8px; right: 8px; bottom: -8px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+        }
+
+        .book-spine {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 40px;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg,
+                rgba(255,255,255,0) 0%,
+                rgba(0,0,0,0.03) 20%,
+                rgba(0,0,0,0.08) 50%,
+                rgba(0,0,0,0.03) 80%,
+                rgba(255,255,255,0) 100%);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+    </style>
 
     <style>
         .polaroid {
@@ -430,38 +488,65 @@
             </div>
         </section>
 
-        <!-- Chapter 1: The Touch of Gentleness -->
-        <section class="min-h-screen relative py-32 px-6 pointer-events-auto flex items-center" id="chapter1">
-            <div class="max-w-6xl mx-auto w-full">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+        <!-- Chapter 1: The Book Spread -->
+        <section class="min-h-screen relative py-32 px-4 md:px-10 pointer-events-auto flex items-center justify-center" id="chapter1">
+            <div class="max-w-6xl mx-auto w-full book-spread gs-reveal p-8 md:p-16">
+                <div class="book-spine hidden md:block"></div>
 
-                    <div class="order-2 md:order-1 relative">
-                        <div class="polaroid w-full max-w-md mx-auto gs-reveal shadow-xl transform -rotate-2">
-                            <div class="tape blue"></div>
-                            <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="Art" class="aspect-[4/5] object-cover">
-                            <p class="text-center font-serif mt-4 text-slate-400 text-sm">喜歡柔軟的線條</p>
-                        </div>
-                        <!-- Background doodle -->
-                        <div class="absolute -bottom-10 -right-10 w-32 h-32 opacity-30 pointer-events-none rotate-12">
-                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20 50 Q 50 10 80 50 T 20 50" stroke="#94A3B8" stroke-width="2" fill="none" stroke-dasharray="4 4"/>
-                                <circle cx="50" cy="50" r="30" stroke="#94A3B8" stroke-width="1" fill="none"/>
-                            </svg>
-                        </div>
-                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 relative z-10">
 
-                    <div class="order-1 md:order-2 text-left gs-reveal">
-                        <p class="font-serif text-sky-600 text-sm mb-2 tracking-widest uppercase"><i class="fa-solid fa-leaf text-emerald-400 mr-2"></i>Chapter 1</p>
-                        <h2 class="font-serif text-4xl md:text-5xl font-bold text-slate-700 mb-8">被放進生活裡的陪伴</h2>
+                    <!-- Left Page: Text -->
+                    <div class="flex flex-col justify-center text-left md:pr-10 relative">
+                        <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-leaf text-emerald-400"></i> 第一章 / 柔軟的線條
+                        </p>
+                        <h2 class="font-serif text-3xl md:text-4xl font-bold text-slate-700 mb-10 leading-relaxed">
+                            作品被放進生活裡，<br>
+                            成為剛剛好的陪伴。
+                        </h2>
 
-                        <div class="note-paper shadow-md transform rotate-1">
-                            <p class="font-serif text-lg leading-loose text-slate-600">
+                        <div class="relative">
+                            <!-- Cute hand-drawn quote mark -->
+                            <svg class="absolute -top-6 -left-6 w-12 h-12 text-sky-200 opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M14,17H17L19,13V7H13V13H16M6,17H9L11,13V7H5V13H8L6,17Z" /></svg>
+
+                            <p class="font-serif text-lg md:text-xl leading-loose text-slate-600 pl-4 border-l-2 border-sky-200">
                                 喜歡柔軟的線條、溫和的顏色，<br>
                                 也喜歡作品被放進生活裡——<br><br>
                                 變成一張明信片、一幅畫，<br>
                                 <span class="highlight-text font-bold text-slate-700">或某天剛好被需要的陪伴。</span><br><br>
-                                <span class="text-sm text-slate-400 mt-4 block">不只是掛在牆上的藝術，而是可以拿在手心裡的溫暖。</span>
+                                <span class="text-sm text-slate-400 mt-4 block flex items-center gap-2">
+                                    <i class="fa-solid fa-heart text-red-300"></i>
+                                    不只是掛在牆上的藝術，而是可以拿在手心裡的溫暖。
+                                </span>
                             </p>
+                        </div>
+
+                        <!-- Hand drawn decorative underline -->
+                        <svg class="w-48 h-6 mt-8 opacity-50" viewBox="0 0 200 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 10 Q 50 20 100 10 T 195 10" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" fill="none"/>
+                            <path d="M10 15 Q 60 5 120 15 T 180 5" stroke="#BAE6FD" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+                        </svg>
+                    </div>
+
+                    <!-- Right Page: Illustration -->
+                    <div class="relative flex items-center justify-center md:pl-10 mt-10 md:mt-0">
+                        <div class="polaroid w-full max-w-[320px] shadow-2xl transform rotate-3 hover:rotate-0 transition-all duration-500 z-10 hover:scale-105">
+                            <div class="tape blue"></div>
+                            <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="Art" class="aspect-[4/5] object-cover rounded-sm">
+                            <p class="text-center font-serif mt-4 text-slate-500 text-sm tracking-widest">生活感</p>
+                        </div>
+
+                        <!-- Page decorations -->
+                        <div class="absolute -top-10 right-0 w-24 h-24 opacity-60 pointer-events-none rotate-12">
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="50" cy="50" r="40" stroke="#FEF08A" stroke-width="2" stroke-dasharray="6 6"/>
+                                <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50" stroke="#FDE047" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+
+                        <!-- Page number -->
+                        <div class="absolute bottom-[-30px] right-0 font-serif text-slate-300 text-sm">
+                            - 01 -
                         </div>
                     </div>
 
@@ -530,48 +615,112 @@
             </div>
         </section>
 
-        <!-- Chapter 3: The Mind & Closure -->
-        <section class="min-h-screen relative flex items-center justify-center py-32 px-6 pointer-events-auto" id="chapter3">
-            <div class="max-w-5xl mx-auto w-full flex flex-col items-center">
+        <!-- Chapter 3: The Memo Wall (腦袋裡的奇特事物) -->
+        <section class="min-h-screen relative flex items-center justify-center py-32 px-4 pointer-events-auto" id="chapter3">
 
-                <p class="font-serif text-sky-600 text-lg mb-6 tracking-widest"><i class="fa-solid fa-seedling text-green-400"></i> Chapter 3</p>
+            <div class="max-w-6xl w-full flex flex-col items-center">
+                <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-seedling text-green-400"></i> 第三章 / 奇特事物
+                </p>
+                <h2 class="font-serif text-3xl md:text-5xl font-bold text-slate-700 mb-16 text-center">
+                    腦袋裡的奇特事物
+                </h2>
 
-                <div class="glass-card p-10 md:p-16 text-center shadow-2xl relative overflow-hidden gs-reveal w-full max-w-3xl">
-                    <!-- Decorative subtle sun (Crisp Illustration version) -->
-                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-yellow-100 rounded-full border-2 border-yellow-200 opacity-80 animate-pulse-glow"></div>
+                <!-- Scrapbook Board Container -->
+                <div class="w-full relative min-h-[600px] border-4 border-dashed border-sky-200/50 rounded-xl p-8 bg-white/20 backdrop-blur-sm gs-reveal">
 
-                    <h3 class="font-serif text-3xl md:text-4xl font-bold text-slate-700 mb-8 relative z-10">在發芽，在曬太陽</h3>
+                    <!-- Decorative Corkboard elements -->
+                    <div class="absolute top-4 left-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute top-4 right-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute bottom-4 left-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute bottom-4 right-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
 
-                    <p class="font-serif text-xl md:text-2xl leading-loose text-slate-600 relative z-10">
-                        腦袋裡住著很多奇特東西，<br>
-                        有些在發芽，有些正在曬太陽。<br><br>
-                        希望我的插畫，<br>
-                        能在世界有點吵的時候，<br>
-                        <span class="font-bold text-sky-700 bg-white/50 px-2 py-1 rounded">替你留下一小塊，剛剛好的溫柔。</span>
-                    </p>
-
-                    <div class="mt-12 flex justify-center gap-6 relative z-10">
-                        <div class="polaroid w-32 md:w-48 transform -rotate-6 hover:rotate-0 transition-all">
-                            <img src="/assets/img/guild/naomiao77/620420206_17907652968337939_396140348163788067_n.webp" alt="Art" class="aspect-square object-cover">
-                        </div>
-                        <div class="polaroid w-32 md:w-48 transform rotate-6 hover:rotate-0 transition-all translate-y-8">
-                            <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" alt="Art" class="aspect-square object-cover">
-                        </div>
-                        <div class="polaroid w-32 md:w-48 transform -rotate-3 hover:rotate-0 transition-all hidden md:block">
-                            <img src="/assets/img/guild/naomiao77/620458519_17907652980337939_9221614729533321159_n.webp" alt="Art" class="aspect-[4/3] object-cover">
-                        </div>
+                    <!-- Central Text Note -->
+                    <div class="note-paper absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 w-80 text-center shadow-xl rotate-1 hover:rotate-0 transition-transform">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-yellow-400 shadow-sm border-2 border-white"></div>
+                        <p class="font-serif text-xl leading-loose text-slate-700">
+                            腦袋裡住著很多<span class="highlight-text">奇特東西</span>，<br>
+                            有些在發芽，<br>
+                            有些正在曬太陽。
+                        </p>
+                        <!-- Doodle -->
+                        <svg class="w-16 h-16 mx-auto mt-4 opacity-50 text-green-500" viewBox="0 0 100 100" fill="none">
+                            <path d="M50 90 C50 60 30 50 30 30 C30 15 45 10 50 25 C55 10 70 15 70 30 C70 50 50 60 50 90 Z" stroke="currentColor" stroke-width="3" fill="none"/>
+                            <path d="M50 90 L50 60" stroke="currentColor" stroke-width="3"/>
+                        </svg>
                     </div>
+
+                    <!-- Surrounding Artworks (Polaroids & Notes) -->
+                    <div class="polaroid absolute top-10 left-10 md:left-24 w-40 md:w-56 -rotate-6 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-lg cursor-pointer">
+                        <div class="tape blue"></div>
+                        <img src="/assets/img/guild/naomiao77/620420206_17907652968337939_396140348163788067_n.webp" alt="Art" class="aspect-[4/3] object-cover">
+                        <p class="text-center font-serif mt-2 text-slate-400 text-xs">發芽中</p>
+                    </div>
+
+                    <div class="polaroid absolute bottom-10 left-10 md:left-40 w-44 md:w-60 rotate-6 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-lg cursor-pointer">
+                        <div class="tape yellow"></div>
+                        <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" alt="Art" class="aspect-square object-cover">
+                    </div>
+
+                    <div class="polaroid absolute top-20 right-10 md:right-24 w-48 md:w-64 rotate-3 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-xl cursor-pointer">
+                        <div class="tape"></div>
+                        <img src="/assets/img/guild/naomiao77/620458519_17907652980337939_9221614729533321159_n.webp" alt="Art" class="aspect-[4/5] object-cover">
+                        <p class="text-center font-serif mt-2 text-slate-400 text-xs">曬太陽</p>
+                    </div>
+
+                    <div class="polaroid absolute bottom-20 right-10 md:right-32 w-40 md:w-48 -rotate-12 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-md cursor-pointer">
+                        <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" alt="Art" class="aspect-square object-cover grayscale-[30%] hover:grayscale-0">
+                    </div>
+
+                    <!-- Decorative floating doodles inside the board -->
+                    <svg class="absolute top-1/3 left-1/4 w-12 h-12 opacity-40 animate-pulse text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" /></svg>
+                    <svg class="absolute bottom-1/3 right-1/4 w-10 h-10 opacity-40 animate-bounce text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter 4: Epilogue (Closure) -->
+        <section class="min-h-[70vh] relative flex flex-col items-center justify-center py-20 px-6 pointer-events-auto border-t border-slate-200/50 bg-white/40 backdrop-blur-sm" id="chapter4">
+
+            <!-- Bookmark Ribbon -->
+            <div class="absolute top-0 right-10 md:right-32 w-12 h-32 bg-sky-300/80 shadow-md shadow-sky-200" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);"></div>
+
+            <div class="max-w-3xl mx-auto w-full text-center relative z-10 gs-reveal">
+
+                <h3 class="font-serif text-2xl md:text-3xl font-bold text-slate-700 mb-8 leading-loose">
+                    希望我的插畫，<br>
+                    能在世界有點吵的時候，<br>
+                    <span class="font-bold text-sky-700 bg-white/60 px-4 py-2 rounded-lg shadow-sm">替你留下一小塊，剛剛好的溫柔。</span>
+                </h3>
+
+                <!-- Cute ending cat illustration -->
+                <div class="w-40 h-40 mx-auto my-12 relative animate-float-slow">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 70 L30 40 L50 55 L70 40 L80 70 C95 90 85 95 50 95 C15 95 5 90 20 70 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="3" stroke-linejoin="round"/>
+                        <circle cx="35" cy="65" r="4" fill="#506055"/>
+                        <circle cx="65" cy="65" r="4" fill="#506055"/>
+                        <path d="M40 75 Q50 85 60 75" stroke="#506055" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="25" cy="75" r="5" fill="#FFC0CB" opacity="0.6"/>
+                        <circle cx="75" cy="75" r="5" fill="#FFC0CB" opacity="0.6"/>
+                        <!-- Flower on head -->
+                        <path d="M50 40 Q 60 30 50 20 Q 40 30 50 40" fill="#FDE047" stroke="#EAB308" stroke-width="1.5"/>
+                    </svg>
                 </div>
 
-                <!-- Footer Sign-off -->
-                <div class="mt-32 text-center text-slate-500 font-serif">
-                    <p class="mb-4">感謝你的停留，慢慢翻閱這本天空裡的插畫書。</p>
-                    <div class="flex justify-center gap-6 text-2xl">
-                        <a href="https://www.threads.net/@naomiao77" target="_blank" class="hover:text-sky-500 transition-colors"><i class="fa-brands fa-threads"></i></a>
-                        <a href="https://www.instagram.com/naomiao77/" target="_blank" class="hover:text-sky-500 transition-colors"><i class="fa-brands fa-instagram"></i></a>
-                        <a href="https://portaly.cc/naomiao77" target="_blank" class="hover:text-sky-500 transition-colors"><i class="fa-solid fa-link"></i></a>
+                <!-- Footer Sign-off & Socials -->
+                <div class="mt-8 text-center text-slate-500 font-serif">
+                    <p class="mb-6 tracking-widest text-sm">感謝你的停留，慢慢翻閱這本天空裡的插畫書。</p>
+                    <div class="flex justify-center gap-8 text-3xl">
+                        <a href="https://www.threads.net/@naomiao77" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://portaly.cc/naomiao77" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-solid fa-link"></i></a>
                     </div>
                 </div>
+            </div>
+
+            <div class="mt-20 text-xs text-slate-400 font-serif opacity-50">
+                - The End -
             </div>
         </section>
     </main>
