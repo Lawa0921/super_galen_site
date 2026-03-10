@@ -1,79 +1,52 @@
-<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>三又一木 | The Ethereal Alchemist</title>
-    <!-- Tailwind CSS -->
+    <title>三又一木 - Astral Temple</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'alabaster': '#f8f6f0',
-                        'raw-umber': '#3a2d24',
-                        'muted-gold': '#c5a880',
-                        'pale-amethyst': '#d1c4e9',
-                        'oxidized-copper': '#4a7c59',
-                        'deep-slate': '#1a1d24',
-                        'soft-pearl': '#fbfaf5'
-                    },
-                    fontFamily: {
-                        serif: ['"Cormorant Garamond"', '"Noto Serif TC"', 'serif'],
-                        sans: ['"Optima"', '"Noto Sans TC"', 'sans-serif'],
-                        display: ['"Cinzel Decorative"', 'serif']
-                    },
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet">
-    <!-- Lenis for smooth scroll -->
-    <script src="https://unpkg.com/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.9/dist/lenis.min.js"></script>
 
     <style>
-        body {
-            background-color: #f8f6f0; /* Alabaster Base */
-            color: #3a2d24; /* Raw Umber Text */
-            font-family: "Noto Serif TC", serif;
-            overflow-x: hidden;
+        :root {
+            --temple-bg: #0a0a0f;
+            --temple-gold: #d4af37;
+            --temple-glow: rgba(212, 175, 55, 0.4);
+            --reiki-blue: #6495ed;
+            --crystal-white: rgba(255, 255, 255, 0.85);
+        }
+
+        body, html {
             margin: 0;
             padding: 0;
-            cursor: none; /* Custom p5 cursor */
+            width: 100vw;
+            height: 100vh;
+            background-color: transparent; /* For Three.js */
+            overflow-x: hidden;
+            font-family: 'Noto Serif TC', serif;
+            color: var(--crystal-white);
+            -webkit-font-smoothing: antialiased;
         }
 
-        ::selection {
-            background: #c5a880; /* Muted Gold */
-            color: #fff;
-        }
-
-        /* The 'Canvas' Texture Overlay */
-        .texture-overlay {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 999;
-            opacity: 0.15;
-            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
-            mix-blend-mode: multiply;
-        }
-
-        /* 3D WebGL Container - The "Soul Geode" */
-        #webgl-container {
+        /* ----- Background Canvases ----- */
+        #webgl-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: -1;
+            z-index: -2;
             pointer-events: none;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #050508 100%);
         }
 
-        /* p5.js Overlay - The "Reiki Aura/Smoke" */
         #p5-container {
             position: fixed;
             top: 0;
@@ -82,459 +55,457 @@
             height: 100vh;
             z-index: 50;
             pointer-events: none;
-            mix-blend-mode: multiply; /* Soft watercolor/smoke effect */
         }
 
-        /* Floating Nav/Back button */
-        .nav-back {
-            position: fixed;
-            top: 2rem;
-            left: 2rem;
-            z-index: 100;
-            background: rgba(248, 246, 240, 0.8);
-            border: 1px solid rgba(197, 168, 128, 0.4);
-            color: #3a2d24;
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            text-decoration: none;
-            backdrop-filter: blur(10px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: "Optima", "Noto Sans TC", sans-serif;
-            font-size: 0.875rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(58, 45, 36, 0.05);
-        }
-        .nav-back:hover {
-            background: #c5a880;
-            color: #fff;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(197, 168, 128, 0.3);
-        }
-
-        /* Typography Elegance */
-        .title-display {
-            font-family: 'Cinzel Decorative', serif;
-            letter-spacing: 0.15em;
-            color: #1a1d24;
-        }
-        .subtitle-elegant {
-            font-family: 'Cormorant Garamond', serif;
-            font-style: italic;
-            letter-spacing: 0.05em;
-            color: #4a7c59; /* Oxidized Copper */
-        }
-        .drop-cap::first-letter {
-            font-family: 'Cinzel Decorative', serif;
-            font-size: 3.5rem;
-            float: left;
-            line-height: 0.8;
-            margin-right: 0.5rem;
-            color: #c5a880;
-        }
-
-        /* Layout specific */
-        .split-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            min-height: 100vh;
-        }
-        @media (min-width: 1024px) {
-            .split-layout {
-                grid-template-columns: 45% 55%;
-            }
-        }
-
-        /* Avatar styling - Editorial frame */
-        .avatar-frame {
-            position: relative;
+        /* ----- 3D Environment Setup ----- */
+        /* The proxy is just invisible height to scroll against */
+        #scroll-proxy {
             width: 100%;
-            max-width: 400px;
-            aspect-ratio: 3/4;
-            margin: 0 auto;
-            border-radius: 100rem 100rem 0 0; /* Arch shape */
-            overflow: hidden;
-            box-shadow:
-                0 20px 50px rgba(26, 29, 36, 0.1),
-                inset 0 0 0 1px rgba(197, 168, 128, 0.3); /* Subtle gold inner line */
+            height: 12000px; /* Determines length of the temple */
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
         }
-        .avatar-img {
+
+        #viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            perspective: 1200px; /* Depth of field */
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        #camera {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            transform-style: preserve-3d;
+            /* Will be translated along Z by GSAP */
+        }
+
+        /* ----- 3D Elements ----- */
+        .temple-element {
+            position: absolute;
+            transform-style: preserve-3d;
+            /* Centers element on its own coordinates */
+            transform: translate(-50%, -50%);
+        }
+
+        /* Windows for Images */
+        .window-frame {
+            width: 280px;
+            height: 420px;
+            border-radius: 140px 140px 0 0; /* Arched window */
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            box-shadow:
+                inset 0 0 40px rgba(0, 0, 0, 0.8),
+                0 0 20px var(--temple-glow),
+                0 0 2px var(--temple-gold);
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(4px);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        /* Subtle glow pulse */
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px var(--temple-glow); border-color: rgba(212, 175, 55, 0.3); }
+            50% { box-shadow: 0 0 35px rgba(212, 175, 55, 0.6); border-color: rgba(212, 175, 55, 0.6); }
+            100% { box-shadow: 0 0 15px var(--temple-glow); border-color: rgba(212, 175, 55, 0.3); }
+        }
+
+        .window-frame:hover {
+            border-color: rgba(212, 175, 55, 0.8);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.8);
+            z-index: 100;
+        }
+
+        .window-frame img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: contrast(0.95) saturate(0.85); /* Slightly muted, vintage feel */
-            transition: transform 1.5s ease-out;
-        }
-        .avatar-frame:hover .avatar-img {
-            transform: scale(1.05);
+            opacity: 0.85;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease;
+            mix-blend-mode: luminosity; /* Mystical old-world feel initially */
         }
 
-        /* The "Altar" - Services */
-        .altar-item {
-            position: relative;
-            padding: 2rem 0;
-            border-bottom: 1px solid rgba(58, 45, 36, 0.1);
-            transition: all 0.4s ease;
-            cursor: pointer;
-            overflow: hidden;
+        .window-frame:hover img {
+            transform: scale(1.05);
+            opacity: 1;
+            mix-blend-mode: normal;
         }
-        .altar-item::before {
+
+        /* Stone Panels for Text */
+        .stone-panel {
+            width: 500px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(20,20,30,0.8) 0%, rgba(10,10,15,0.9) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid rgba(212, 175, 55, 0.4);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 0 20px rgba(212,175,55,0.05);
+            text-align: center;
+        }
+
+        .stone-panel::before {
             content: '';
             position: absolute;
-            left: 0; bottom: 0;
-            width: 0%; height: 2px;
-            background: #c5a880;
-            transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        .altar-item:hover::before {
-            width: 100%;
-        }
-        .altar-item:hover {
-            transform: translateX(10px);
-            padding-left: 1rem;
-        }
-        .altar-icon {
-            font-size: 1.5rem;
-            color: #d1c4e9; /* Pale Amethyst */
-            transition: color 0.4s ease;
-        }
-        .altar-item:hover .altar-icon {
-            color: #c5a880;
+            top: -2px; left: 50%;
+            transform: translateX(-50%);
+            width: 40px; height: 2px;
+            background: var(--temple-gold);
+            box-shadow: 0 0 10px var(--temple-gold);
         }
 
-        /* Horizontal Scroll Exhibition (GSAP Pin) */
-        .exhibition-wrapper {
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
-            background: #1a1d24; /* Dark contrast for the art */
-            color: #f8f6f0;
-        }
-        .exhibition-container {
-            display: flex;
-            width: fit-content;
-            height: 100%;
-            align-items: center;
-            padding: 0 15vw;
-        }
-        .exhibition-panel {
-            width: 45vw;
-            height: 70vh;
-            margin-right: 10vw;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            opacity: 0.4;
-            transition: opacity 0.5s ease;
-        }
-        .exhibition-panel.active {
-            opacity: 1;
-        }
-        .exhibition-img-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            border-radius: 4px;
-            box-shadow: 20px 30px 60px rgba(0,0,0,0.5);
-        }
-        .exhibition-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            /* Parallax subtle scale */
-            transform: scale(1.1);
-        }
-        /* A quiet, elegant caption */
-        .exhibition-caption {
-            position: absolute;
-            bottom: -3rem;
-            left: 0;
-            font-family: 'Optima', sans-serif;
-            font-size: 0.9rem;
-            letter-spacing: 0.2em;
-            color: #c5a880;
+        .stone-panel h2 {
+            font-family: 'Cinzel', serif;
+            color: var(--temple-gold);
+            font-size: 1.8rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
             text-transform: uppercase;
         }
 
-        /* Clean Social Connect */
-        .social-link {
-            position: relative;
-            display: inline-flex;
+        .stone-panel p, .stone-panel li {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 12px;
+        }
+
+        .stone-panel ul {
+            text-align: left;
+            list-style: none;
+            padding: 0;
+        }
+
+        .stone-panel ul li::before {
+            content: '✧';
+            color: var(--temple-gold);
+            margin-right: 10px;
+            font-size: 0.8em;
+        }
+
+        /* Specific Panel Widths */
+        .panel-large { width: 600px; }
+        .panel-narrow { width: 400px; }
+
+        /* Social Hub (End of temple) */
+        .altar {
+            width: 800px;
+            padding: 60px;
+            background: radial-gradient(circle at center, rgba(30,30,45,0.9) 0%, rgba(5,5,10,0.95) 100%);
+            border-radius: 50%;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 1px solid rgba(58, 45, 36, 0.2);
-            color: #3a2d24;
-            font-size: 1.25rem;
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            background: transparent;
-            cursor: pointer;
+            box-shadow: 0 0 100px rgba(212, 175, 55, 0.1);
         }
-        .social-link:hover {
-            background: #3a2d24;
-            color: #f8f6f0;
-            border-color: #3a2d24;
+
+        .social-links a {
+            color: var(--temple-gold);
+            font-size: 2rem;
+            margin: 0 15px;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0);
+        }
+
+        .social-links a:hover {
+            color: #fff;
+            text-shadow: 0 0 15px var(--temple-gold);
             transform: translateY(-5px);
         }
 
-        /* Timline - The Quiet Path */
-        .quiet-path {
-            position: relative;
-            padding-left: 2rem;
-            border-left: 1px solid rgba(197, 168, 128, 0.3);
+        /* Overlay UI */
+        #scroll-hint {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            color: rgba(212, 175, 55, 0.6);
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.2em;
+            font-size: 0.9rem;
+            text-align: center;
+            pointer-events: none;
+            animation: floatUpDown 2s infinite ease-in-out;
         }
-        .quiet-node {
-            position: relative;
-            margin-bottom: 3rem;
-            opacity: 0;
-            transform: translateY(20px);
+
+        @keyframes floatUpDown {
+            0%, 100% { transform: translate(-50%, 0); opacity: 0.4; }
+            50% { transform: translate(-50%, 10px); opacity: 0.8; }
         }
-        .quiet-node::before {
-            content: '';
-            position: absolute;
-            left: -2.35rem; /* align with border */
-            top: 0.5rem;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #f8f6f0;
-            border: 2px solid #c5a880;
-            transition: all 0.3s ease;
+
+        /* Utilities */
+        .text-gold { color: var(--temple-gold); }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #050508;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--temple-gold);
+            font-family: 'Cinzel', serif;
+            transition: opacity 1s ease;
         }
-        .quiet-node:hover::before {
-            background: #c5a880;
-            box-shadow: 0 0 15px rgba(197, 168, 128, 0.5);
-            transform: scale(1.2);
+
+        .sigil {
+            width: 60px; height: 60px;
+            border: 1px solid var(--temple-gold);
+            transform: rotate(45deg);
+            animation: spinSigil 4s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spinSigil {
+            100% { transform: rotate(405deg); }
         }
 
     </style>
 </head>
 <body>
 
-    <div class="texture-overlay"></div>
-    <div id="webgl-container"></div>
+    <!-- Preloader -->
+    <div id="loader">
+        <div class="sigil"></div>
+        <div class="tracking-[0.3em] text-sm">ENTERING THE SANCTUARY</div>
+    </div>
+
+    <!-- WebGL Background -->
+    <canvas id="webgl-bg"></canvas>
+
+    <!-- p5.js Overlay (Reiki Cursor) -->
     <div id="p5-container"></div>
 
-    <a href="/" class="nav-back">
-        <i class="fa-solid fa-arrow-left-long mr-2"></i>Return to Guild
-    </a>
+    <!-- The actual scrollable height -->
+    <div id="scroll-proxy"></div>
 
-    <!-- Introduction / Hero -->
-    <section class="split-layout relative z-10">
-        <!-- Left: The Visual / The Priest -->
-        <div class="relative flex items-center justify-center p-8 lg:p-20 bg-alabaster/40 backdrop-blur-sm border-r border-raw-umber/5">
-            <div class="w-full max-w-md gsap-reveal-slow">
-                <div class="avatar-frame mb-8">
-                    <img src="/assets/img/guild/cornerpi/avatar.webp" alt="三又一木" class="avatar-img gsap-img-parallax">
-                </div>
-                <div class="flex justify-center gap-6 mt-8">
-                    <a href="https://www.instagram.com/cornerpi/" target="_blank" class="social-link">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                    <a href="https://www.threads.com/@cornerpi" target="_blank" class="social-link">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                </div>
-            </div>
+    <!-- UI Overlay -->
+    <div id="scroll-hint">
+        <div class="mb-2">ENTER THE TEMPLE</div>
+        <i class="fa-solid fa-chevron-down"></i>
+    </div>
+
+    <!-- 3D Camera & World -->
+    <div id="viewport">
+        <div id="camera">
+            <!-- Content will be injected here via JS to manage 3D coordinates -->
         </div>
-
-        <!-- Right: The Words / The Sanctuary -->
-        <div class="relative flex flex-col justify-center p-8 lg:p-24 bg-soft-pearl/60 backdrop-blur-md">
-            <div class="max-w-xl">
-                <p class="font-sans text-muted-gold tracking-[0.3em] uppercase text-sm mb-6 gsap-stagger-text">
-                    The Ethereal Alchemist
-                </p>
-                <h1 class="text-6xl md:text-7xl lg:text-8xl title-display mb-4 gsap-stagger-text leading-none">
-                    三又一木
-                </h1>
-                <p class="text-2xl subtitle-elegant mb-12 gsap-stagger-text">
-                    Priest of Angelic Reiki & the Inner Sanctuary
-                </p>
-
-                <div class="space-y-6 text-lg text-raw-umber/80 font-light leading-relaxed gsap-stagger-text">
-                    <p class="drop-cap">
-                        將自身經驗和實驗結果與所學內化，協助探索內在深處的訊息與智慧。用簡單的方式深入內心，靈性與生活結合，讓身心靈不再是神秘難以觸碰。
-                    </p>
-                    <p>
-                        協助你在安全、溫暖且有深度的能量場中，喚醒自我覺知、釋放舊有限制，並重新連結內在的光與靈魂力量。
-                    </p>
-                </div>
-
-                <!-- Expertise 'Altar' -->
-                <div class="mt-16 space-y-2 gsap-stagger-text">
-                    <h3 class="font-sans text-xs tracking-[0.2em] text-raw-umber/50 uppercase mb-6 border-b border-raw-umber/10 pb-2">Sacred Expertise</h3>
-
-                    <div class="altar-item flex items-center justify-between">
-                        <span class="text-xl font-serif text-deep-slate">天使靈氣 & 光頻調整</span>
-                        <i class="fa-solid fa-feather-pointed altar-icon"></i>
-                    </div>
-                    <div class="altar-item flex items-center justify-between">
-                        <span class="text-xl font-serif text-deep-slate">冥想、催眠與潛意識引導</span>
-                        <i class="fa-solid fa-moon altar-icon"></i>
-                    </div>
-                    <div class="altar-item flex items-center justify-between">
-                        <span class="text-xl font-serif text-deep-slate">神諭卡占卜 & 信念轉化</span>
-                        <i class="fa-solid fa-cards-blank altar-icon"></i>
-                    </div>
-                    <div class="altar-item flex items-center justify-between">
-                        <span class="text-xl font-serif text-deep-slate">能量空間噴霧調配</span>
-                        <i class="fa-solid fa-spray-can-sparkles altar-icon"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- The Journey (Vertical Timeline) -->
-    <section class="py-32 px-6 lg:px-24 bg-alabaster relative z-10">
-        <div class="max-w-4xl mx-auto">
-            <div class="mb-20 text-center gsap-fade-up">
-                <i class="fa-solid fa-hourglass-half text-muted-gold text-2xl mb-4"></i>
-                <h2 class="text-4xl md:text-5xl title-display text-deep-slate">Chronicles of the Soul</h2>
-                <div class="h-px w-24 bg-muted-gold mx-auto mt-6"></div>
-            </div>
-
-            <div class="quiet-path mx-auto max-w-2xl font-sans">
-
-                <div class="quiet-node gsap-timeline-item">
-                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2021 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Awakening</span></h3>
-                    <p class="text-raw-umber/70 mb-1">美國IAPC國際催眠師</p>
-                    <p class="text-raw-umber/70">英國AMBMS國際催眠師</p>
-                </div>
-
-                <div class="quiet-node gsap-timeline-item">
-                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2022 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Foundation</span></h3>
-                    <p class="text-xl text-oxidized-copper mb-3">創立木公苑</p>
-                    <ul class="text-raw-umber/70 space-y-2 list-none text-sm tracking-wide">
-                        <li>— 催眠療癒（內在小孩 / 前世回朔 / 信念轉換）</li>
-                        <li>— 歐甘樹文占卜 / 神諭卡占卜</li>
-                        <li>— 心靈諮詢</li>
-                    </ul>
-                </div>
-
-                <div class="quiet-node gsap-timeline-item">
-                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2023 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Creation</span></h3>
-                    <p class="text-xl text-oxidized-copper mb-3">創立緣結社 <span class="text-sm text-raw-umber/50 italic ml-2">日式水引細工創作</span></p>
-                    <ul class="text-raw-umber/70 space-y-2 list-none text-sm tracking-wide">
-                        <li>— 手作體驗</li>
-                        <li>— 客製能量祝福飾品擺件</li>
-                    </ul>
-                </div>
-
-                <div class="quiet-node gsap-timeline-item">
-                    <h3 class="text-3xl font-serif text-raw-umber mb-2">2024 <span class="text-sm font-sans tracking-widest text-muted-gold uppercase ml-4">Expansion</span></h3>
-                    <ul class="text-raw-umber/70 space-y-2 list-none text-sm tracking-wide mt-3">
-                        <li>— 進駐橋頭糖廠白屋藝術村</li>
-                        <li>— 鳳山社區大學 水引創作教學</li>
-                    </ul>
-                </div>
-
-                <div class="quiet-node gsap-timeline-item mt-16">
-                    <div class="p-8 bg-soft-pearl/80 border border-muted-gold/30 rounded-br-3xl shadow-sm">
-                        <h3 class="text-4xl font-serif text-deep-slate mb-2 flex items-center">
-                            2025 <i class="fa-solid fa-star-of-life text-muted-gold text-lg ml-4"></i>
-                        </h3>
-                        <p class="text-2xl text-pale-amethyst font-serif mb-4 drop-shadow-sm">創立天使 LAB.</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-raw-umber/80 text-sm tracking-wider font-sans">
-                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 執行能量療癒</p>
-                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 英國天使靈氣®教學</p>
-                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 靈性落實生活</p>
-                            <p class="flex items-center"><i class="fa-regular fa-circle-dot text-muted-gold mr-2 text-[10px]"></i> 靈性活動串連協辦</p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- Mineral & Metal Alchemy (Horizontal Scroll Exhibition) -->
-    <!-- We switch background to dark to emphasize the art pieces -->
-    <section class="exhibition-wrapper z-10" id="exhibition-section">
-        <div class="absolute top-12 left-1/2 -translate-x-1/2 text-center z-20 text-alabaster w-full px-6">
-            <h2 class="text-3xl md:text-4xl title-display mb-2">Alchemy of Minerals & Metals</h2>
-            <p class="font-sans text-muted-gold tracking-widest text-xs uppercase">"我很喜歡將不同元素融合重新詮釋，最近很愛把礦石和金屬結合"</p>
-        </div>
-
-        <div class="exhibition-container" id="exhibition-container">
-            <!-- Panels injected dynamically or manually -->
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_1.webp" class="exhibition-img" alt="Mineral Art 1"></div>
-                <div class="exhibition-caption">Obj. I</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_3.webp" class="exhibition-img" alt="Mineral Art 3"></div>
-                <div class="exhibition-caption">Obj. II</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_4.webp" class="exhibition-img" alt="Mineral Art 4"></div>
-                <div class="exhibition-caption">Obj. III</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_5.webp" class="exhibition-img" alt="Mineral Art 5"></div>
-                <div class="exhibition-caption">Obj. IV</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_6.webp" class="exhibition-img" alt="Mineral Art 6"></div>
-                <div class="exhibition-caption">Obj. V</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_7.webp" class="exhibition-img" alt="Mineral Art 7"></div>
-                <div class="exhibition-caption">Obj. VI</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_12.webp" class="exhibition-img" alt="Mineral Art 12"></div>
-                <div class="exhibition-caption">Obj. VII</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_14.webp" class="exhibition-img" alt="Mineral Art 14"></div>
-                <div class="exhibition-caption">Obj. VIII</div>
-            </div>
-            <div class="exhibition-panel">
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_17.webp" class="exhibition-img" alt="Mineral Art 17"></div>
-                <div class="exhibition-caption">Obj. IX</div>
-            </div>
-            <div class="exhibition-panel" style="margin-right: 30vw;"> <!-- End spacer -->
-                <div class="exhibition-img-wrapper"><img src="/assets/img/guild/cornerpi/img_19.webp" class="exhibition-img" alt="Mineral Art 19"></div>
-                <div class="exhibition-caption">Obj. X</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="py-16 bg-deep-slate text-center text-alabaster/40 font-sans text-xs uppercase tracking-[0.3em] z-10 relative border-t border-muted-gold/10">
-        <p>天使 LAB. &copy; 2025</p>
-        <p class="mt-2 text-[10px] text-muted-gold/50">The Ethereal Alchemist</p>
-    </footer>
-
-    <!-- Scripts -->
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- p5.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    </div>
 
     <script>
-        // ----------------------------------------------------
-        // 1. Lenis Smooth Scrolling (Gentle & Fluid)
-        // ----------------------------------------------------
+        // --- 1. DATA & DOM GENERATION --- //
+        const images = [
+            '/assets/img/guild/cornerpi/img_1.webp', '/assets/img/guild/cornerpi/img_2.webp',
+            '/assets/img/guild/cornerpi/img_3.webp', '/assets/img/guild/cornerpi/img_4.webp',
+            '/assets/img/guild/cornerpi/img_5.webp', '/assets/img/guild/cornerpi/img_6.webp',
+            '/assets/img/guild/cornerpi/img_7.webp', '/assets/img/guild/cornerpi/img_8.webp',
+            '/assets/img/guild/cornerpi/img_9.webp', '/assets/img/guild/cornerpi/img_10.webp',
+            '/assets/img/guild/cornerpi/img_11.webp', '/assets/img/guild/cornerpi/img_12.webp',
+            '/assets/img/guild/cornerpi/img_13.webp', '/assets/img/guild/cornerpi/img_14.webp',
+            '/assets/img/guild/cornerpi/img_15.webp', '/assets/img/guild/cornerpi/img_16.webp',
+            '/assets/img/guild/cornerpi/img_17.webp', '/assets/img/guild/cornerpi/img_18.webp',
+            '/assets/img/guild/cornerpi/img_19.webp', '/assets/img/guild/cornerpi/img_20.webp'
+        ];
+
+        const avatar = '/assets/img/guild/cornerpi/avatar.webp';
+
+        const camera = document.getElementById('camera');
+
+        // Helper to create a 3D positioned element
+        function create3DElement(html, x, y, z, className = 'temple-element') {
+            const el = document.createElement('div');
+            el.className = className;
+            el.innerHTML = html;
+            // Apply initial 3D transform (Camera translates Z, elements stay still)
+            el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) translate(-50%, -50%)`;
+            camera.appendChild(el);
+            return el;
+        }
+
+        // Generate Text Panels at specific Z depths
+        const Z_SPACING = -1500; // Distance between sections
+        let currentZ = -500;
+
+        // Intro Altar
+        create3DElement(`
+            <div class="stone-panel panel-large">
+                <img src="${avatar}" class="w-32 h-32 rounded-full mx-auto border-2 border-[var(--temple-gold)] mb-6 shadow-[0_0_30px_rgba(212,175,55,0.3)] object-cover" alt="三又一木 Avatar">
+                <h1 class="font-cinzel text-3xl text-gold mb-2 tracking-widest">三又一木</h1>
+                <p class="text-sm tracking-widest text-gray-400 mb-6 uppercase">Hypnotherapist • Spiritual Guide • Alchemist</p>
+                <p class="italic">「將自身經驗和實驗結果與所學內化，<br>協助探索內在深處的訊息與智慧。」</p>
+            </div>
+        `, 0, 0, currentZ);
+
+        currentZ += Z_SPACING;
+
+        // Identity
+        create3DElement(`
+            <div class="stone-panel">
+                <h2>The Calling</h2>
+                <ul class="text-center space-y-2">
+                    <li>英國天使靈氣®教師</li>
+                    <li>美國IAPC / 英國AMBMS 國際催眠師</li>
+                    <li>心靈諮詢師</li>
+                </ul>
+                <p class="mt-6 text-sm">用簡單的方式深入內心，靈性與生活結合，讓身心靈不再是神秘難以觸碰。</p>
+            </div>
+        `, -400, 100, currentZ);
+
+        currentZ += Z_SPACING;
+
+        // Reiki / Energy
+        create3DElement(`
+            <div class="stone-panel panel-narrow">
+                <h2>Energy Shift</h2>
+                <p class="text-gold font-semibold mb-2">運用天使靈氣</p>
+                <p>協助淨化與平衡個人能量場，讓身心靈恢復和諧。<br>協助解讀高維指引，提供清晰的方向，幫助你看見生命與靈性成長的契機。</p>
+            </div>
+        `, 400, -100, currentZ);
+
+        currentZ += Z_SPACING;
+
+        // Alchemy / Spray
+        create3DElement(`
+            <div class="stone-panel">
+                <h2>Space Alchemy</h2>
+                <p class="text-gold font-semibold mb-2">調配專屬能量空間噴霧</p>
+                <p>將振動頻率轉化為可感受的香氣與場域支持，讓居家或工作環境成為高頻共振的空間。<br>喚醒自我覺知、釋放舊有限制，重新連結內在的光與靈魂力量。</p>
+            </div>
+        `, -300, 200, currentZ);
+
+        currentZ += Z_SPACING * 1.5;
+
+        // Timeline / Experience (Split across Z)
+        create3DElement(`
+            <div class="stone-panel panel-narrow border-t-0 border-b-0 border-l-2 border-[var(--temple-gold)]">
+                <h2 class="text-left">2021 - 2022</h2>
+                <ul class="mb-6">
+                    <li>美國IAPC國際催眠師</li>
+                    <li>英國AMBMS國際催眠師</li>
+                </ul>
+                <p class="text-gold font-bold">創立木公苑</p>
+                <ul class="text-sm text-gray-400">
+                    <li>催眠療癒 (內在小孩/前世回朔/信念轉換)</li>
+                    <li>歐甘樹文占卜 / 神諭卡占卜</li>
+                    <li>心靈諮詢</li>
+                </ul>
+            </div>
+        `, 300, -50, currentZ);
+
+        currentZ += Z_SPACING;
+
+        create3DElement(`
+            <div class="stone-panel panel-narrow border-t-0 border-b-0 border-r-2 border-[var(--temple-gold)]">
+                <h2 class="text-right">2023 - 2024</h2>
+                <p class="text-gold font-bold text-right">創立緣結社</p>
+                <p class="text-right text-xs text-gray-400 mb-4">(日式水引細工創作)</p>
+                <ul class="text-sm text-gray-400 text-right w-full flex flex-col items-end">
+                    <li class="before:hidden after:content-['✧'] after:text-[var(--temple-gold)] after:ml-2">手作體驗</li>
+                    <li class="before:hidden after:content-['✧'] after:text-[var(--temple-gold)] after:ml-2">客製能量祝福飾品擺件</li>
+                </ul>
+                <div class="mt-6 text-right text-sm">
+                    <p>進駐橋頭糖廠白屋藝術村</p>
+                    <p>鳳山社區大學-水引創作教學</p>
+                </div>
+            </div>
+        `, -300, 150, currentZ);
+
+        currentZ += Z_SPACING;
+
+        create3DElement(`
+            <div class="stone-panel">
+                <h2>2025: Angel LAB.</h2>
+                <p class="text-gold font-semibold mb-4">創立天使 LAB.</p>
+                <div class="grid grid-cols-2 gap-4 text-sm text-center">
+                    <div>執行能量療癒</div>
+                    <div>英國天使靈氣®教學</div>
+                    <div>靈性落實生活</div>
+                    <div>靈性活動串連協辦</div>
+                </div>
+                <p class="mt-6 italic text-gray-400">"我很喜歡將不同元素融合重新詮釋，<br>最近很愛把礦石和金屬結合"</p>
+            </div>
+        `, 0, 0, currentZ);
+
+        currentZ += Z_SPACING * 1.5;
+
+        // Final Altar (Socials)
+        const FINAL_Z = currentZ;
+        create3DElement(`
+            <div class="altar">
+                <h2 class="font-cinzel text-2xl text-gold mb-6 tracking-widest">Connect with the Sanctuary</h2>
+                <div class="social-links flex space-x-8">
+                    <a href="https://www.instagram.com/cornerpi/" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.com/@cornerpi" target="_blank" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                </div>
+            </div>
+        `, 0, 0, FINAL_Z);
+
+        // --- Generate Image Windows --- //
+        // We want to scatter the 20 images along the Z-axis from roughly -200 to FINAL_Z + 500
+        // We'll place them on the "walls" (wide X) and varying Y.
+
+        images.forEach((src, index) => {
+            // Distribute Z somewhat evenly but with randomness
+            const progress = index / (images.length - 1); // 0 to 1
+            const baseZ = -500 + progress * (FINAL_Z + 1000); // Stretch along the temple
+            const z = baseZ + (Math.random() * 800 - 400); // Jitter Z
+
+            // Scatter X widely to form "walls"
+            const side = index % 2 === 0 ? 1 : -1; // alternate left/right
+            const x = side * (600 + Math.random() * 800); // 600px to 1400px from center
+
+            // Scatter Y
+            const y = (Math.random() * 1000) - 500; // -500 to 500
+
+            // Randomly rotate windows slightly inward toward the path
+            const rotY = side * (15 + Math.random() * 20); // 15 to 35 deg inward
+
+            const el = document.createElement('div');
+            el.className = 'temple-element window-frame';
+            // Specific animation inline so hover isn't overwritten
+            el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) translate(-50%, -50%) rotateY(${rotY}deg)`;
+
+            // To prevent hover from breaking transform-style, we apply hover effect on child
+            el.innerHTML = `<img src="${src}" alt="Temple Memory ${index + 1}" loading="lazy">`;
+
+            // Add a floating animation
+            el.style.animation = `pulseGlow ${4 + Math.random()*3}s infinite alternate`;
+
+            camera.appendChild(el);
+        });
+
+        // --- 2. GSAP & LENIS SETUP --- //
+        gsap.registerPlugin(ScrollTrigger);
+
         const lenis = new Lenis({
             duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Expo ease out
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             direction: 'vertical',
             gestureDirection: 'vertical',
             smooth: true,
             mouseMultiplier: 1,
             smoothTouch: false,
-            touchMultiplier: 2,
         });
 
         function raf(time) {
@@ -543,303 +514,187 @@
         }
         requestAnimationFrame(raf);
 
-        // Connect GSAP
-        gsap.registerPlugin(ScrollTrigger);
-        lenis.on('scroll', ScrollTrigger.update);
-        gsap.ticker.add((time)=>{
-          lenis.raf(time * 1000)
-        });
-        gsap.ticker.lagSmoothing(0);
+        // Main Camera Z-Translation (The Fly-Through)
+        // We want the camera to move from Z=0 to slightly past FINAL_Z
+        // Note: Moving camera POSITIVE Z means moving FORWARD into the negative Z space.
+        const totalTravel = Math.abs(FINAL_Z) + 1000;
 
-        // ----------------------------------------------------
-        // 2. GSAP Animations (Editorial Flow)
-        // ----------------------------------------------------
-        document.addEventListener("DOMContentLoaded", () => {
-            // Hero Intro Sequence
-            const tl = gsap.timeline();
+        // Initial setup
+        gsap.set(camera, { z: 0 });
 
-            tl.from('.gsap-reveal-slow', {
-                y: 50,
-                opacity: 0,
-                duration: 2,
-                ease: "power3.out",
-                filter: "blur(10px)"
-            })
-            .from('.gsap-stagger-text', {
-                y: 30,
-                opacity: 0,
-                duration: 1.5,
-                stagger: 0.15,
-                ease: "power2.out"
-            }, "-=1.5");
-
-            // Hero Image Parallax (tied to scroll)
-            gsap.to('.gsap-img-parallax', {
-                scrollTrigger: {
-                    trigger: '.split-layout',
-                    start: "top top",
-                    end: "bottom top",
-                    scrub: true
-                },
-                y: 100, // Move image down slightly as we scroll away
-                ease: "none"
-            });
-
-            // Timeline items fade up
-            gsap.utils.toArray('.gsap-timeline-item').forEach((item) => {
-                gsap.to(item, {
-                    scrollTrigger: {
-                        trigger: item,
-                        start: "top 85%",
-                        toggleClass: "active"
-                    },
-                    y: 0,
-                    opacity: 1,
-                    duration: 1,
-                    ease: "power2.out"
-                });
-            });
-
-            // Horizontal Scroll for Exhibition
-            const exhibitionContainer = document.getElementById("exhibition-container");
-            const panels = gsap.utils.toArray(".exhibition-panel");
-
-            // Calculate total scroll amount
-            function getScrollAmount() {
-                let panelsWidth = 0;
-                panels.forEach(panel => {
-                    panelsWidth += panel.offsetWidth + parseFloat(window.getComputedStyle(panel).marginRight);
-                });
-                return -(panelsWidth - window.innerWidth + window.innerWidth * 0.15); // Adjust for padding
-            }
-
-            const tween = gsap.to(panels, {
-                x: getScrollAmount,
-                ease: "none"
-            });
-
-            ScrollTrigger.create({
-                trigger: "#exhibition-section",
-                start: "top top",
-                end: () => `+=${getScrollAmount() * -1}`,
-                pin: true,
-                animation: tween,
-                scrub: 1,
-                invalidateOnRefresh: true
-            });
-
-            // Panel Parallax & Opacity effect during horizontal scroll
-            panels.forEach((panel, i) => {
-                // Focus effect
-                ScrollTrigger.create({
-                    trigger: panel,
-                    containerAnimation: tween,
-                    start: "left center",
-                    end: "right center",
-                    toggleClass: {targets: panel, className: "active"}
-                });
-
-                // Image pan effect within wrapper
-                const img = panel.querySelector('.exhibition-img');
-                gsap.to(img, {
-                    xPercent: 15, // pan image to right slightly
+        ScrollTrigger.create({
+            trigger: "#scroll-proxy",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                // Move camera forward into the scene
+                gsap.to(camera, {
+                    z: self.progress * totalTravel,
                     ease: "none",
-                    scrollTrigger: {
-                        trigger: panel,
-                        containerAnimation: tween,
-                        start: "left right",
-                        end: "right left",
-                        scrub: true
-                    }
+                    duration: 0.1
                 });
-            });
+
+                // Hide scroll hint
+                if(self.progress > 0.02) {
+                    gsap.to("#scroll-hint", { opacity: 0, duration: 0.5 });
+                } else {
+                    gsap.to("#scroll-hint", { opacity: 0.8, duration: 0.5 });
+                }
+            }
         });
 
-    </script>
-    <script>
-        // ----------------------------------------------------
-        // 3. Three.js: The 'Soul Geode' / Subconscious Matrix
-        // A soft, floating, organic shape that pulses
-        // ----------------------------------------------------
-        (function initThreeJS() {
-            const container = document.getElementById('webgl-container');
-            const scene = new THREE.Scene();
-            // We use the CSS background, so keep Three.js transparent
-            // but add a very subtle fog for depth
-            scene.fog = new THREE.Fog(0xf8f6f0, 10, 50);
+        // Mouse Parallax for Camera Container (Viewport)
+        const viewport = document.getElementById('viewport');
+        let targetX = 0;
+        let targetY = 0;
+        let currentX = 0;
+        let currentY = 0;
 
-            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.z = 25;
+        window.addEventListener('mousemove', (e) => {
+            // Normalized coordinates -1 to 1
+            targetX = (e.clientX / window.innerWidth - 0.5) * 2;
+            targetY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
 
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            container.appendChild(renderer.domElement);
+        // Smooth interpolate rotation
+        function updateParallax() {
+            currentX += (targetX - currentX) * 0.05;
+            currentY += (targetY - currentY) * 0.05;
 
-            // Lighting (Soft, ethereal)
-            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambient);
-
-            const dirLight = new THREE.DirectionalLight(0xc5a880, 1.5); // Gold
-            dirLight.position.set(5, 10, 5);
-            scene.add(dirLight);
-
-            const pointLight = new THREE.PointLight(0xd1c4e9, 2, 20); // Amethyst
-            pointLight.position.set(-5, -2, 5);
-            scene.add(pointLight);
-
-            // The Geometry - Highly subdivided sphere for vertex displacement
-            const geometry = new THREE.IcosahedronGeometry(8, 32);
-
-            // The Material - Soft, almost liquid/pearl-like
-            const material = new THREE.MeshPhysicalMaterial({
-                color: 0xfbfaf5, // Pearl
-                metalness: 0.1,
-                roughness: 0.2,
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.1,
-                transmission: 0.4, // Slight glassiness
-                ior: 1.4,
-                thickness: 0.5,
-                emissive: 0xc5a880,
-                emissiveIntensity: 0.05
+            // Rotate the entire viewport slightly
+            // We rotate Y based on X mouse, and X based on Y mouse (inverted)
+            gsap.set(viewport, {
+                rotationY: currentX * 10, // max 10 deg
+                rotationX: -currentY * 10,
+                transformOrigin: "center center"
             });
 
-            const sphere = new THREE.Mesh(geometry, material);
-            // Position it to the right, behind the text in the split layout
-            sphere.position.set(10, 0, -5);
-            scene.add(sphere);
+            requestAnimationFrame(updateParallax);
+        }
+        updateParallax();
 
-            // Store original vertices for organic distortion
-            const positions = sphere.geometry.attributes.position;
-            const originalPositions = new Float32Array(positions.count * 3);
-            for(let i=0; i<positions.count*3; i++) {
-                originalPositions[i] = positions.array[i];
+        // --- 3. THREE.JS BACKGROUND (Temple Dust / Fireflies) --- //
+        const canvasBg = document.getElementById('webgl-bg');
+        const rendererBg = new THREE.WebGLRenderer({ canvas: canvasBg, alpha: true, antialias: true });
+        rendererBg.setSize(window.innerWidth, window.innerHeight);
+        rendererBg.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const sceneBg = new THREE.Scene();
+        // Fog to fade out deep Z elements
+        sceneBg.fog = new THREE.FogExp2(0x0a0a0f, 0.001);
+
+        const cameraBg = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        cameraBg.position.z = 500;
+
+        // Particles
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorArray = new Float32Array(particlesCount * 3);
+
+        const colorGold = new THREE.Color(0xd4af37);
+        const colorBlue = new THREE.Color(0x6495ed);
+
+        for(let i = 0; i < particlesCount * 3; i+=3) {
+            // Spread widely
+            posArray[i] = (Math.random() - 0.5) * 3000;     // x
+            posArray[i+1] = (Math.random() - 0.5) * 2000;   // y
+            posArray[i+2] = (Math.random() - 0.5) * 3000;   // z
+
+            // Mix Gold and Reiki Blue
+            const mixRatio = Math.random();
+            const pColor = colorGold.clone().lerp(colorBlue, mixRatio > 0.8 ? 1 : 0); // 20% blue
+
+            // Dim some
+            const dim = 0.3 + Math.random() * 0.7;
+            colorArray[i] = pColor.r * dim;
+            colorArray[i+1] = pColor.g * dim;
+            colorArray[i+2] = pColor.b * dim;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        // Create a soft glowing circle texture
+        const createCircleTexture = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        };
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 15,
+            map: createCircleTexture(),
+            transparent: true,
+            opacity: 0.6,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particleMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        sceneBg.add(particleMesh);
+
+        // Animation Loop
+        let clock = new THREE.Clock();
+        function animateBg() {
+            const elapsedTime = clock.getElapsedTime();
+
+            // Slowly rotate the particle field
+            particleMesh.rotation.y = elapsedTime * 0.02;
+            particleMesh.rotation.x = elapsedTime * 0.01;
+
+            // Slowly drift particles
+            const positions = particleMesh.geometry.attributes.position.array;
+            for(let i = 0; i < particlesCount; i++) {
+                const i3 = i * 3;
+                // Add a subtle sine wave drift to Y
+                positions[i3 + 1] += Math.sin(elapsedTime * 0.5 + positions[i3]) * 0.2;
             }
+            particleMesh.geometry.attributes.position.needsUpdate = true;
 
-            // Interaction
-            let mouseX = 0, mouseY = 0;
-            let targetX = 0, targetY = 0;
-            let scrollY = 0;
+            // Bind BG camera to Scroll to give a slight parallax feeling (much slower than DOM)
+            const scrollProgress = ScrollTrigger.maxScroll(window) > 0 ? window.scrollY / ScrollTrigger.maxScroll(window) : 0;
+            cameraBg.position.z = 500 - (scrollProgress * 1000); // Move forward slightly
 
-            document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-            });
-            window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+            rendererBg.render(sceneBg, cameraBg);
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
 
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-
-            // Animation Loop
-            let time = 0;
-            function animate() {
-                requestAnimationFrame(animate);
-                time += 0.01;
-
-                // Smooth mouse follow
-                targetX += (mouseX - targetX) * 0.05;
-                targetY += (mouseY - targetY) * 0.05;
-
-                // Rotate the sphere
-                sphere.rotation.y = time * 0.2;
-                sphere.rotation.z = time * 0.1;
-
-                // Move sphere based on mouse and scroll
-                // As you scroll down to the dark gallery, the sphere sinks and fades
-                const maxScroll = document.body.scrollHeight - window.innerHeight;
-                const scrollNorm = Math.min(1, scrollY / (maxScroll || 1));
-
-                sphere.position.y = (targetY * 2) - (scrollNorm * 15);
-                sphere.position.x = 10 + (targetX * 2);
-
-                // Dim light when scrolling to dark section
-                dirLight.intensity = 1.5 * (1 - scrollNorm * 0.8);
-
-                // Organic Vertex Displacement (Simulate liquid/breathing mineral)
-                for (let i = 0; i < positions.count; i++) {
-                    const ix = i * 3;
-                    const iy = i * 3 + 1;
-                    const iz = i * 3 + 2;
-
-                    const ox = originalPositions[ix];
-                    const oy = originalPositions[iy];
-                    const oz = originalPositions[iz];
-
-                    // Simple noise approximation using sine waves
-                    const distortion = Math.sin(time * 2 + ox * 0.5) * Math.cos(time * 1.5 + oy * 0.5) * Math.sin(time + oz * 0.5);
-                    const amount = 0.5; // displacement amount
-
-                    positions.array[ix] = ox + ox * distortion * amount;
-                    positions.array[iy] = oy + oy * distortion * amount;
-                    positions.array[iz] = oz + oz * distortion * amount;
-                }
-                positions.needsUpdate = true;
-                sphere.geometry.computeVertexNormals();
-
-                renderer.render(scene, camera);
-            }
-            animate();
-        })();
-    </script>
-    <script>
-        // ----------------------------------------------------
-        // 4. p5.js: "Reiki Energy Spray / Aura Field" Cursor
-        // A soft, watercolor-like fluid that follows the cursor
-        // ----------------------------------------------------
-        const sketch = (p) => {
+        // --- 4. p5.js (Reiki Cursor Aura) --- //
+        new p5((p) => {
             let particles = [];
-            let targetX = 0, targetY = 0;
 
             p.setup = () => {
-                let c = p.createCanvas(p.windowWidth, p.windowHeight);
-                c.parent('p5-container');
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
                 p.noStroke();
             };
 
             p.draw = () => {
                 p.clear();
 
-                // Smooth tracking
-                targetX += (p.mouseX - targetX) * 0.15;
-                targetY += (p.mouseY - targetY) * 0.15;
-
-                // Generate aura particles if mouse moves
-                let mouseDist = p.dist(p.pmouseX, p.pmouseY, p.mouseX, p.mouseY);
-                if (mouseDist > 0.5 && p.mouseX > 0) {
-                    let num = p.map(mouseDist, 0, 100, 1, 3, true);
-                    for(let i=0; i<num; i++){
-                        particles.push(new AuraDrop(targetX, targetY));
-                    }
+                // Add new particle on mouse move
+                if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
+                    // Injecting gold and blue randomly
+                    let isGold = p.random(1) > 0.3;
+                    let c = isGold ? p.color(212, 175, 55, 150) : p.color(100, 149, 237, 100);
+                    particles.push(new AuraParticle(p.mouseX, p.mouseY, c));
                 }
 
-                // Keep drawing a subtle trail even when still
-                if(p.frameCount % 5 === 0 && p.mouseX > 0) {
-                     particles.push(new AuraDrop(targetX, targetY));
-                }
-
-                // Custom Core Cursor (A quiet dot)
-                if(p.mouseX > 0) {
-                    p.fill(197, 168, 128, 200); // Muted gold
-                    p.circle(targetX, targetY, 6);
-
-                    // Outer ring
-                    p.noFill();
-                    p.stroke(197, 168, 128, 100);
-                    p.strokeWeight(1);
-                    p.circle(targetX, targetY, 24 + p.sin(p.frameCount*0.1)*4);
-                    p.noStroke();
-                }
-
-                // Update and draw aura
                 for (let i = particles.length - 1; i >= 0; i--) {
                     particles[i].update();
                     particles[i].display();
-                    if (particles[i].isDead()) {
+                    if (particles[i].alpha <= 0) {
                         particles.splice(i, 1);
                     }
                 }
@@ -849,57 +704,51 @@
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
 
-            class AuraDrop {
-                constructor(x, y) {
-                    // Spread around cursor
-                    this.pos = p.createVector(x + p.random(-15, 15), y + p.random(-15, 15));
-                    // Gentle drifting upward and outward
-                    this.vel = p.createVector(p.random(-0.5, 0.5), p.random(-1, 0));
-                    this.life = 255;
-                    this.maxLife = p.random(100, 200);
-                    this.size = p.random(20, 60);
-
-                    // Colors: Soft Amethyst, Pale Cyan, Muted Gold
-                    let r = p.random();
-                    if(r < 0.4) {
-                        this.color = p.color(209, 196, 233); // pale amethyst
-                    } else if(r < 0.7) {
-                        this.color = p.color(197, 168, 128); // muted gold
-                    } else {
-                        this.color = p.color(180, 220, 220); // pale cyan/water
-                    }
+            class AuraParticle {
+                constructor(x, y, col) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = p.random(-1, 1);
+                    this.vy = p.random(-2, 0); // Drift up like smoke
+                    this.col = col;
+                    this.alpha = p.alpha(col);
+                    this.size = p.random(20, 50);
                 }
 
                 update() {
-                    // Perlin noise for smoke/fluid-like drift
-                    let noiseX = p.map(p.noise(this.pos.x * 0.01, p.frameCount * 0.01), 0, 1, -1, 1);
-                    let noiseY = p.map(p.noise(this.pos.y * 0.01, p.frameCount * 0.01), 0, 1, -1, 0.5);
-
-                    this.vel.x += noiseX * 0.05;
-                    this.vel.y += noiseY * 0.05;
-
-                    // Friction
-                    this.vel.mult(0.98);
-
-                    this.pos.add(this.vel);
-                    this.life -= (255 / this.maxLife);
-                    this.size += 0.2; // Expand as it fades
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.alpha -= 3; // Fade out
+                    this.size += 0.5; // Expand
                 }
 
                 display() {
-                    // Very soft, watercolor-like brush
-                    let alpha = p.map(this.life, 0, 255, 0, 30); // Very low opacity
-                    this.color.setAlpha(alpha);
-                    p.fill(this.color);
-                    p.circle(this.pos.x, this.pos.y, this.size);
-                }
-
-                isDead() {
-                    return this.life <= 0;
+                    let c = p.color(p.red(this.col), p.green(this.col), p.blue(this.col), this.alpha);
+                    p.fill(c);
+                    // Use a soft blur by drawing multiple circles
+                    p.ellipse(this.x, this.y, this.size);
+                    p.fill(p.color(p.red(this.col), p.green(this.col), p.blue(this.col), this.alpha * 0.5));
+                    p.ellipse(this.x, this.y, this.size * 1.5);
                 }
             }
-        };
-        new p5(sketch);
+        });
+
+        // --- Window Resize Handling --- //
+        window.addEventListener('resize', () => {
+            cameraBg.aspect = window.innerWidth / window.innerHeight;
+            cameraBg.updateProjectionMatrix();
+            rendererBg.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Remove Loader --- //
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 1000);
+            }, 1000);
+        });
+
     </script>
 </body>
 </html>
