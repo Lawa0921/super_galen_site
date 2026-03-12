@@ -2,753 +2,759 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>三又一木 - Astral Temple</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>三又一木 — The Sanctuary</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <!-- Core Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script src="https://unpkg.com/lenis@1.1.9/dist/lenis.min.js"></script>
-
     <style>
         :root {
-            --temple-bg: #0a0a0f;
-            --temple-gold: #d4af37;
-            --temple-glow: rgba(212, 175, 55, 0.4);
-            --reiki-blue: #6495ed;
-            --crystal-white: rgba(255, 255, 255, 0.85);
+            --sanctum: #f6f1e7;
+            --wood: #5c3d2e;
+            --wood-mid: #7a5c3e;
+            --wood-light: #a8845c;
+            --gold: #b8941f;
+            --gold-bright: #d4af37;
+            --stone: #c8bca6;
+            --stone-deep: #b0a48e;
+            --text: #3a2a1a;
+            --text-mid: #6b5744;
+            --text-light: #9a8872;
+            --red: #a84032;
+            --violet: #7e5ea0;
         }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: transparent; /* For Three.js */
-            overflow-x: hidden;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { overflow: hidden; }
+        html.page-ready { overflow: auto; }
+        body {
             font-family: 'Noto Serif TC', serif;
-            color: var(--crystal-white);
-            -webkit-font-smoothing: antialiased;
+            color: var(--text);
+            background: #1a1410;
+            overflow-x: hidden;
         }
 
-        /* ----- Background Canvases ----- */
-        #webgl-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -2;
+        /* ===== GATE — refined double-door ===== */
+        .gate-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            pointer-events: all; cursor: pointer;
+        }
+        .gate-door {
+            position: absolute; top: 0; bottom: 0; width: 50%;
+            background:
+                linear-gradient(180deg,
+                    #6b4a35 0%, #5c3d2e 4%, #4e3225 8%,
+                    #5c3d2e 12%, #6b4a35 16%, #5c3d2e 20%,
+                    #4e3225 24%, #5c3d2e 28%, #6b4a35 32%,
+                    #5c3d2e 36%, #4e3225 40%, #5c3d2e 44%,
+                    #6b4a35 48%, #5c3d2e 52%, #4e3225 56%,
+                    #5c3d2e 60%, #6b4a35 64%, #5c3d2e 68%,
+                    #4e3225 72%, #5c3d2e 76%, #6b4a35 80%,
+                    #5c3d2e 84%, #4e3225 88%, #5c3d2e 92%,
+                    #6b4a35 96%, #5c3d2e 100%);
+            display: flex; align-items: center; overflow: hidden;
+        }
+        /* Outer frame */
+        .gate-door::before {
+            content: ''; position: absolute; inset: 16px;
+            border: 3px solid var(--wood-light);
+            box-shadow: inset 0 0 0 1px rgba(212,175,55,0.2), 0 0 0 1px rgba(0,0,0,0.3);
             pointer-events: none;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #050508 100%);
         }
-
-        #p5-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 50;
+        /* Inner panel */
+        .gate-door::after {
+            content: ''; position: absolute; inset: 40px;
+            border: 2px solid rgba(212,175,55,0.2);
+            background: linear-gradient(180deg, rgba(92,61,46,0.3) 0%, rgba(60,40,25,0.5) 50%, rgba(92,61,46,0.3) 100%);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3), inset 0 -2px 8px rgba(0,0,0,0.3);
             pointer-events: none;
         }
+        .gate-left { left: 0; justify-content: flex-end; }
+        .gate-right { right: 0; justify-content: flex-start; }
 
-        /* ----- 3D Environment Setup ----- */
-        /* The proxy is just invisible height to scroll against */
-        #scroll-proxy {
-            width: 100%;
-            height: 12000px; /* Determines length of the temple */
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: -1;
+        /* Corner rosettes */
+        .gate-corner {
+            position: absolute; width: 20px; height: 20px;
+            border: 2px solid var(--gold-bright); border-radius: 50%;
+            box-shadow: 0 0 6px rgba(212,175,55,0.3);
         }
-
-        #viewport {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            perspective: 1200px; /* Depth of field */
-            overflow: hidden;
-            z-index: 10;
+        .gate-corner::after {
+            content: ''; position: absolute; inset: 3px;
+            border: 1px solid rgba(212,175,55,0.4); border-radius: 50%;
         }
+        .gc-tl { top: 50px; }
+        .gc-tr { top: 50px; }
+        .gc-bl { bottom: 50px; }
+        .gc-br { bottom: 50px; }
+        .gate-left .gc-tl, .gate-left .gc-bl { left: 50px; }
+        .gate-left .gc-tr, .gate-left .gc-br { right: 50px; }
+        .gate-right .gc-tl, .gate-right .gc-bl { left: 50px; }
+        .gate-right .gc-tr, .gate-right .gc-br { right: 50px; }
 
-        #camera {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            transform-style: preserve-3d;
-            /* Will be translated along Z by GSAP */
-        }
-
-        /* ----- 3D Elements ----- */
-        .temple-element {
-            position: absolute;
-            transform-style: preserve-3d;
-            /* Centers element on its own coordinates */
-            transform: translate(-50%, -50%);
-        }
-
-        /* Windows for Images */
-        .window-frame {
-            width: 280px;
-            height: 420px;
-            border-radius: 140px 140px 0 0; /* Arched window */
-            border: 2px solid rgba(212, 175, 55, 0.3);
-            box-shadow:
-                inset 0 0 40px rgba(0, 0, 0, 0.8),
-                0 0 20px var(--temple-glow),
-                0 0 2px var(--temple-gold);
-            background: rgba(10, 10, 15, 0.8);
-            backdrop-filter: blur(4px);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Handle */
+        .gate-handle {
+            width: 18px; height: 80px; border-radius: 9px;
+            background: linear-gradient(180deg, #e8c84a, #d4af37 20%, #a8845c 50%, #d4af37 80%, #e8c84a);
+            box-shadow: 0 0 24px rgba(212,175,55,0.4), inset 0 1px 2px rgba(255,255,255,0.3), 2px 4px 10px rgba(0,0,0,0.5);
             position: relative;
-            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+        .gate-left .gate-handle { margin-right: 32px; }
+        .gate-right .gate-handle { margin-left: 32px; }
+        .gate-handle::before {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            width: 10px; height: 10px; border-radius: 50%;
+            background: radial-gradient(circle, #fff8dc 20%, #d4af37 70%, #a8845c 100%);
+            box-shadow: 0 0 8px rgba(212,175,55,0.6);
+        }
+        .gate-handle::after {
+            content: ''; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            width: 8px; height: 4px; border-radius: 2px;
+            background: rgba(255,248,220,0.3);
         }
 
-        /* Subtle glow pulse */
-        @keyframes pulseGlow {
-            0% { box-shadow: 0 0 15px var(--temple-glow); border-color: rgba(212, 175, 55, 0.3); }
-            50% { box-shadow: 0 0 35px rgba(212, 175, 55, 0.6); border-color: rgba(212, 175, 55, 0.6); }
-            100% { box-shadow: 0 0 15px var(--temple-glow); border-color: rgba(212, 175, 55, 0.3); }
+        /* Ornament lines */
+        .gate-ornament-top, .gate-ornament-bottom {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            width: 50%; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.5), transparent);
+        }
+        .gate-ornament-top { top: 30%; }
+        .gate-ornament-bottom { bottom: 30%; }
+        .gate-ornament-top::after, .gate-ornament-bottom::after {
+            content: '◆'; position: absolute; left: 50%; transform: translateX(-50%) translateY(-50%);
+            font-size: 0.35rem; color: rgba(212,175,55,0.5);
         }
 
-        .window-frame:hover {
-            border-color: rgba(212, 175, 55, 0.8);
-            box-shadow: 0 0 40px rgba(212, 175, 55, 0.8);
-            z-index: 100;
+        .gate-enter-hint {
+            position: fixed; bottom: 14%; left: 50%; transform: translateX(-50%);
+            z-index: 10001; text-align: center;
+            font-family: 'Cinzel', serif; font-size: 0.8rem;
+            letter-spacing: 0.3em; color: rgba(212,175,55,0.7);
+            cursor: pointer; transition: color 0.3s;
+            animation: hint-pulse 2s ease-in-out infinite;
+        }
+        .gate-enter-hint:hover { color: rgba(212,175,55,1); }
+        .gate-enter-hint i { display: block; margin-top: 8px; font-size: 0.55rem; }
+
+        @keyframes hint-pulse {
+            0%, 100% { opacity: 0.6; transform: translateX(-50%) translateY(0); }
+            50% { opacity: 1; transform: translateX(-50%) translateY(-4px); }
         }
 
-        .window-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.85;
-            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease;
-            mix-blend-mode: luminosity; /* Mystical old-world feel initially */
+        /* ===== BACK LINK ===== */
+        .back-link {
+            position: fixed; top: 16px; left: 20px; z-index: 100;
+            color: rgba(255,255,255,0.6); font-family: 'Cinzel', serif;
+            font-size: 0.75rem; letter-spacing: 0.1em;
+            text-decoration: none; transition: color 0.3s;
+            mix-blend-mode: difference; opacity: 0;
         }
+        .back-link:hover { color: #fff; }
 
-        .window-frame:hover img {
-            transform: scale(1.05);
-            opacity: 1;
-            mix-blend-mode: normal;
+        /* ===== CHAMBER ===== */
+        .chamber {
+            position: relative; overflow: hidden;
+            padding: 70px 24px 90px;
         }
-
-        /* Stone Panels for Text */
-        .stone-panel {
-            width: 500px;
-            padding: 40px;
-            background: linear-gradient(135deg, rgba(20,20,30,0.8) 0%, rgba(10,10,15,0.9) 100%);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-top: 1px solid rgba(212, 175, 55, 0.4);
-            border-bottom: 1px solid rgba(212, 175, 55, 0.4);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 0 20px rgba(212,175,55,0.05);
-            text-align: center;
+        .chamber::before, .chamber::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 40px;
+            z-index: 2; pointer-events: none;
         }
+        .chamber::before { left: 0; background: linear-gradient(90deg, rgba(0,0,0,0.12), transparent); }
+        .chamber::after { right: 0; background: linear-gradient(-90deg, rgba(0,0,0,0.12), transparent); }
 
-        .stone-panel::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: 50%;
-            transform: translateX(-50%);
-            width: 40px; height: 2px;
-            background: var(--temple-gold);
-            box-shadow: 0 0 10px var(--temple-gold);
+        /* Floor transition */
+        .floor-transition {
+            height: 54px; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(180deg, rgba(30,20,10,0.95), var(--wood) 30%, var(--wood-mid) 50%, var(--wood) 70%, rgba(30,20,10,0.95));
         }
-
-        .stone-panel h2 {
+        .floor-transition .step-label {
             font-family: 'Cinzel', serif;
-            color: var(--temple-gold);
-            font-size: 1.8rem;
-            letter-spacing: 0.1em;
-            margin-bottom: 20px;
-            text-transform: uppercase;
+            font-size: 0.7rem; letter-spacing: 0.4em;
+            color: var(--gold-bright); text-transform: uppercase; opacity: 0.8;
+        }
+        .floor-transition::before { content: ''; position: absolute; top: 10px; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-bright), transparent); opacity: 0.4; }
+        .floor-transition::after { content: ''; position: absolute; bottom: 10px; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-bright), transparent); opacity: 0.4; }
+
+        /* ===== HERO ===== */
+        .hero-chamber {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 60px 24px;
+            background:
+                radial-gradient(ellipse at 50% 30%, rgba(255,250,230,0.9) 0%, rgba(246,241,231,0.7) 40%, rgba(200,188,166,0.5) 70%, rgba(30,20,16,0.9) 100%),
+                linear-gradient(180deg, var(--sanctum) 0%, #c0b498 60%, #4a3828 100%);
+        }
+        .hero-chamber::before {
+            content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+            width: 800px; height: 400px; border-radius: 0 0 400px 400px;
+            border-bottom: 3px solid var(--gold-bright); opacity: 0.35;
+        }
+        .hero-inner { opacity: 0; transform: scale(0.94); }
+
+        .avatar-wrap { position: relative; margin-bottom: 32px; }
+        .avatar-ring {
+            position: absolute; inset: -18px; border-radius: 50%;
+            border: 1px solid rgba(212,175,55,0.3);
+            animation: ring-rotate 20s linear infinite;
+        }
+        .avatar-ring::before {
+            content: '✦'; position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+            font-size: 0.5rem; color: var(--gold-bright);
+        }
+        .avatar-ring-outer {
+            position: absolute; inset: -34px; border-radius: 50%;
+            border: 1px dashed rgba(212,175,55,0.15);
+            animation: ring-rotate 35s linear infinite reverse;
+        }
+        @keyframes ring-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .avatar {
+            width: 200px; height: 200px; border-radius: 50%; object-fit: cover;
+            border: 5px solid var(--wood-light);
+            box-shadow: 0 0 0 10px rgba(246,241,231,0.7), 0 0 100px rgba(212,175,55,0.25);
+            display: block; position: relative; z-index: 1;
+        }
+        .hero-chamber h1 {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 3.6rem; color: var(--wood); letter-spacing: 0.08em; margin-bottom: 6px;
+        }
+        .hero-name-cn {
+            font-size: 1rem; letter-spacing: 0.5em; color: var(--text-light);
+            margin-bottom: 18px;
+        }
+        .subtitle {
+            font-family: 'Cinzel', serif; font-size: 1rem;
+            color: var(--text-light); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 22px;
+        }
+        .hero-sep {
+            width: 60px; height: 1px; margin: 0 auto 22px;
+            background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+        }
+        .badge-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 28px; }
+        .badge { padding: 6px 18px; border: 1px solid var(--wood-light); font-size: 1rem; letter-spacing: 0.08em; color: var(--wood-mid); }
+        .hero-chamber blockquote {
+            font-style: italic; font-size: 1.25rem; color: var(--text-mid); line-height: 2; max-width: 460px;
+            margin-bottom: 30px;
+        }
+        .hero-intro {
+            font-size: 1.1rem; color: var(--text-light); line-height: 2;
+            max-width: 400px; text-align: center;
+        }
+        .hero-intro span { color: var(--wood-mid); font-weight: 600; }
+        .scroll-hint {
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            color: var(--stone); font-family: 'Cinzel', serif;
+            font-size: 0.65rem; letter-spacing: 0.2em; text-align: center;
+            animation: bob 2.5s ease-in-out infinite; opacity: 0;
+        }
+        @keyframes bob { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(5px); } }
+
+        /* ===== GALLERY ROW ===== */
+        .gallery-row {
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 28px; margin-bottom: 50px; position: relative; z-index: 1;
         }
 
-        .stone-panel p, .stone-panel li {
-            font-size: 1.05rem;
-            line-height: 1.8;
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 12px;
+        /* ===== ARCH WINDOW ===== */
+        .arch-window { width: 180px; opacity: 0; transform: translateY(30px); }
+        .arch-frame {
+            border-radius: 90px 90px 0 0; overflow: hidden;
+            border: 9px solid var(--wood); border-bottom-width: 12px;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.35), 0 4px 20px rgba(0,0,0,0.4), 0 0 0 2px var(--wood-mid);
+            position: relative; background: #ddd;
+        }
+        .arch-frame::before {
+            content: ''; position: absolute; inset: 0; border-radius: 80px 80px 0 0;
+            box-shadow: inset 0 0 50px rgba(255,248,220,0.2); pointer-events: none; z-index: 2;
+        }
+        .arch-frame img { width: 100%; height: 250px; object-fit: cover; display: block; }
+        .keystone {
+            width: 20px; height: 14px; background: var(--gold-bright);
+            margin: -2px auto 0; clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+            position: relative; z-index: 3;
+        }
+        .window-sill {
+            height: 6px; background: linear-gradient(180deg, var(--wood), var(--wood-mid));
+            border-radius: 0 0 2px 2px; box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
 
-        .stone-panel ul {
-            text-align: left;
-            list-style: none;
-            padding: 0;
+        /* ===== CONTENT CARD ===== */
+        .content-card {
+            max-width: 600px; width: 100%; margin: 0 auto 44px;
+            padding: 50px 56px; text-align: center; line-height: 2;
+            opacity: 0; transform: translateY(20px);
+        }
+        .content-card:last-child { margin-bottom: 0; }
+        .content-title {
+            font-family: 'Cinzel', serif; font-size: 2.2rem;
+            letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;
+        }
+        .content-sub {
+            font-family: 'Cinzel', serif; font-size: 0.8rem;
+            letter-spacing: 0.3em; margin-bottom: 12px; opacity: 0.5;
+        }
+        .divider { width: 50px; height: 2px; margin: 0 auto 22px; }
+        .content-card p { font-size: 1.2rem; margin-bottom: 12px; opacity: 0.85; }
+        .content-card .hl { font-weight: 700; opacity: 1; }
+        .content-card ul { list-style: none; padding: 0; }
+        .content-card ul li { font-size: 1.2rem; padding: 4px 0; opacity: 0.85; }
+        .content-card ul li::before { content: '✦'; margin-right: 10px; font-size: 0.55em; vertical-align: middle; }
+
+        /* ===== INNER SECTION DIVIDER ===== */
+        .inner-sep {
+            width: 100%; max-width: 380px; height: 1px; margin: 24px auto;
+            background: linear-gradient(90deg, transparent, rgba(212,175,55,0.25), transparent);
+        }
+        .inner-heading {
+            font-family: 'Cinzel', serif; font-size: 0.95rem;
+            letter-spacing: 0.25em; text-transform: uppercase;
+            margin-bottom: 10px; opacity: 0.55;
         }
 
-        .stone-panel ul li::before {
-            content: '✧';
-            color: var(--temple-gold);
-            margin-right: 10px;
-            font-size: 0.8em;
+        /* ===== CHAMBER THEMES ===== */
+
+        .ch-spirit {
+            background: radial-gradient(ellipse at 50% 40%, rgba(232,224,208,0.95) 0%, rgba(200,188,166,0.9) 60%, rgba(100,80,55,0.95) 100%);
         }
-
-        /* Specific Panel Widths */
-        .panel-large { width: 600px; }
-        .panel-narrow { width: 400px; }
-
-        /* Social Hub (End of temple) */
-        .altar {
-            width: 800px;
-            padding: 60px;
-            background: radial-gradient(circle at center, rgba(30,30,45,0.9) 0%, rgba(5,5,10,0.95) 100%);
-            border-radius: 50%;
-            border: 2px solid rgba(212, 175, 55, 0.3);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 100px rgba(212, 175, 55, 0.1);
+        .ch-spirit .content-card {
+            background: rgba(246,241,231,0.9); border: 1px solid var(--stone);
+            box-shadow: 0 8px 40px rgba(60,30,10,0.1); color: var(--text);
         }
+        .ch-spirit .content-title { color: var(--wood); }
+        .ch-spirit .content-sub { color: var(--stone); }
+        .ch-spirit .divider { background: var(--gold-bright); }
+        .ch-spirit .content-card p { color: var(--text-mid); }
+        .ch-spirit .content-card ul li { color: var(--text-mid); }
+        .ch-spirit .content-card ul li::before { color: var(--gold-bright); }
+        .ch-spirit .content-card .hl { color: var(--gold); }
+        .ch-spirit .inner-sep { background: linear-gradient(90deg, transparent, var(--stone-deep), transparent); }
+        .ch-spirit .inner-heading { color: var(--wood-mid); }
 
-        .social-links a {
-            color: var(--temple-gold);
-            font-size: 2rem;
-            margin: 0 15px;
-            transition: all 0.3s ease;
-            text-shadow: 0 0 10px rgba(212, 175, 55, 0);
+        .ch-journey {
+            background:
+                radial-gradient(ellipse at 30% 30%, rgba(255,220,140,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 70%, rgba(255,200,100,0.08) 0%, transparent 50%),
+                linear-gradient(180deg, #3d2e1e 0%, #2a1d12 50%, #1e150d 100%);
         }
-
-        .social-links a:hover {
-            color: #fff;
-            text-shadow: 0 0 15px var(--temple-gold);
-            transform: translateY(-5px);
+        .ch-journey .content-card {
+            background: rgba(50,35,20,0.85); border: 1px solid rgba(168,132,92,0.25);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.3); color: #ddd0be;
         }
+        .ch-journey .content-title { color: var(--gold-bright); }
+        .ch-journey .content-sub { color: var(--wood-light); }
+        .ch-journey .divider { background: var(--gold-bright); }
+        .ch-journey .content-card .hl { color: var(--gold-bright); }
+        .ch-journey .content-card p { color: #bfb09a; }
+        .ch-journey .content-card ul li { color: #bfb09a; }
+        .ch-journey .content-card ul li::before { color: var(--wood-light); }
+        .ch-journey .svc-grid { border-color: rgba(212,175,55,0.2); }
+        .ch-journey .svc-grid span { color: #bfb09a; border-color: rgba(212,175,55,0.12); }
+        .ch-journey .inner-sep { background: linear-gradient(90deg, transparent, rgba(168,132,92,0.3), transparent); }
 
-        /* Overlay UI */
-        #scroll-hint {
-            position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            color: rgba(212, 175, 55, 0.6);
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.2em;
-            font-size: 0.9rem;
-            text-align: center;
-            pointer-events: none;
-            animation: floatUpDown 2s infinite ease-in-out;
+        .ch-craft {
+            background:
+                radial-gradient(ellipse at 40% 40%, rgba(180,60,40,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 60% 70%, rgba(126,94,160,0.05) 0%, transparent 40%),
+                linear-gradient(180deg, #3a2820 0%, #2e1e15 50%, #221510 100%);
         }
-
-        @keyframes floatUpDown {
-            0%, 100% { transform: translate(-50%, 0); opacity: 0.4; }
-            50% { transform: translate(-50%, 10px); opacity: 0.8; }
+        .ch-craft .content-card {
+            background: rgba(55,35,25,0.9); border: 1px solid rgba(168,64,50,0.2);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.3); color: #e0d0c0;
         }
+        .ch-craft .content-title { color: var(--red); }
+        .ch-craft .content-sub { color: rgba(168,64,50,0.6); }
+        .ch-craft .divider { background: var(--red); }
+        .ch-craft .content-card p { color: #c8b8a8; }
+        .ch-craft .content-card ul li { color: #c8b8a8; }
+        .ch-craft .content-card ul li::before { color: var(--red); }
+        .ch-craft .crystal-title { color: #b8a0d8; }
+        .ch-craft .crystal-sub { color: rgba(160,130,200,0.6); }
+        .ch-craft .crystal-badge { border-color: rgba(160,130,200,0.3); color: #c0b0d8; }
+        .ch-craft .inner-sep { background: linear-gradient(90deg, transparent, rgba(168,64,50,0.2), transparent); }
 
-        /* Utilities */
-        .text-gold { color: var(--temple-gold); }
-        .font-cinzel { font-family: 'Cinzel', serif; }
-
-        /* Loading Screen */
-        #loader {
-            position: fixed;
-            inset: 0;
-            background: #050508;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: var(--temple-gold);
-            font-family: 'Cinzel', serif;
-            transition: opacity 1s ease;
+        .ch-gather {
+            background: radial-gradient(ellipse at 50% 40%, rgba(255,252,240,0.92) 0%, rgba(240,235,220,0.88) 40%, rgba(180,165,135,0.9) 70%, rgba(60,45,30,0.95) 100%);
         }
-
-        .sigil {
-            width: 60px; height: 60px;
-            border: 1px solid var(--temple-gold);
-            transform: rotate(45deg);
-            animation: spinSigil 4s linear infinite;
-            margin-bottom: 20px;
+        .ch-gather .content-card {
+            background: rgba(246,241,231,0.92); border: 1px solid var(--stone);
+            box-shadow: 0 8px 40px rgba(60,30,10,0.1); color: var(--text);
         }
+        .ch-gather .content-title { color: var(--wood); }
+        .ch-gather .content-sub { color: var(--stone-deep); }
+        .ch-gather .divider { background: var(--gold-bright); }
+        .ch-gather .content-card .hl { color: var(--gold); }
+        .ch-gather .content-card p { color: var(--text-mid); }
+        .ch-gather .content-card ul li { color: var(--text-mid); }
+        .ch-gather .content-card ul li::before { color: var(--gold-bright); }
 
-        @keyframes spinSigil {
-            100% { transform: rotate(405deg); }
+        /* ===== SPECIAL ELEMENTS ===== */
+        .slogan { font-style: italic; color: var(--red); opacity: 0.85; font-size: 1.2rem; margin-bottom: 12px; }
+        .mizuhiki-ornament { width: 80px; margin: 8px auto 14px; display: flex; align-items: center; }
+        .mizuhiki-ornament::before, .mizuhiki-ornament::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, transparent, var(--red), transparent); }
+        .mizuhiki-ornament .knot { width: 8px; height: 8px; border: 2px solid var(--red); border-radius: 50%; }
+
+        .crystal-badge { display: inline-block; padding: 5px 16px; border: 1px solid rgba(126,94,160,0.3); font-size: 1.05rem; color: var(--violet); margin: 4px; }
+
+        .loc-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+        .loc-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 14px; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px; font-size: 1rem; opacity: 0.8;
         }
+        .loc-tag i { font-size: 0.55rem; }
+        .ch-spirit .loc-tag, .ch-gather .loc-tag { border-color: var(--stone); color: var(--text-mid); background: rgba(255,255,255,0.4); }
+        .ch-spirit .loc-tag i, .ch-gather .loc-tag i { color: var(--gold); }
 
+        .svc-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0; max-width: 420px; margin: 16px auto;
+            border: 1px solid rgba(212,175,55,0.2); overflow: hidden;
+        }
+        .svc-grid span { font-size: 1.1rem; padding: 12px 16px; border-bottom: 1px solid rgba(212,175,55,0.12); border-right: 1px solid rgba(212,175,55,0.12); }
+        .svc-grid span:nth-child(even) { border-right: none; }
+        .svc-grid span:nth-last-child(-n+2) { border-bottom: none; }
+
+        /* Timeline */
+        .timeline { text-align: left; position: relative; padding-left: 24px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
+            width: 2px; background: linear-gradient(180deg, var(--gold-bright), rgba(168,132,92,0.2));
+        }
+        .timeline-item { margin-bottom: 22px; position: relative; }
+        .timeline-item:last-child { margin-bottom: 0; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -28px; top: 7px;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--gold-bright); border: 2px solid rgba(50,35,20,0.85);
+        }
+        .timeline-year { font-weight: 700; font-size: 1.2rem; margin-bottom: 2px; }
+        .timeline-title { font-size: 1.2rem; margin-bottom: 6px; opacity: 0.9; }
+        .timeline-item ul { margin-top: 4px; }
+        .timeline-item ul li { font-size: 1.1rem; padding: 2px 0; opacity: 0.7; }
+
+        .social-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; margin-top: 20px; }
+        .social-item { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: var(--wood-mid); transition: color 0.3s; }
+        .social-item:hover { color: var(--gold); }
+        .social-item i { font-size: 1.9rem; }
+        .social-item span { font-size: 0.85rem; letter-spacing: 0.08em; color: var(--text-light); }
+
+        .footer { text-align: center; padding: 44px 24px; font-size: 0.7rem; color: rgba(200,188,166,0.4); letter-spacing: 0.1em; background: #1a1410; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .arch-window { width: 140px; }
+            .arch-frame img { height: 200px; }
+            .arch-frame { border-width: 7px; border-bottom-width: 10px; border-radius: 70px 70px 0 0; }
+            .content-card { padding: 36px 30px; }
+            .content-title { font-size: 1.8rem; }
+            .avatar { width: 160px; height: 160px; }
+            .avatar-ring { inset: -14px; }
+            .avatar-ring-outer { inset: -26px; }
+            .hero-chamber h1 { font-size: 2.8rem; }
+            .chamber::before, .chamber::after { width: 20px; }
+            .gate-corner { display: none; }
+        }
+        @media (max-width: 480px) {
+            .avatar { width: 140px; height: 140px; }
+            .avatar-ring { inset: -12px; }
+            .avatar-ring-outer { inset: -22px; }
+            .arch-window { width: 110px; }
+            .arch-frame img { height: 155px; }
+            .arch-frame { border-width: 5px; border-bottom-width: 7px; border-radius: 55px 55px 0 0; }
+            .content-card { padding: 28px 20px; }
+            .content-title { font-size: 1.5rem; }
+            .content-card p, .content-card ul li { font-size: 1.05rem; }
+            .svc-grid { grid-template-columns: 1fr; }
+            .svc-grid span { border-right: none; }
+            .gallery-row { gap: 14px; }
+            .chamber { padding: 40px 16px 60px; }
+            .chamber::before, .chamber::after { width: 10px; }
+            .gate-enter-hint { font-size: 0.65rem; }
+            .gate-corner { display: none; }
+            .hero-chamber h1 { font-size: 2.4rem; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Preloader -->
-    <div id="loader">
-        <div class="sigil"></div>
-        <div class="tracking-[0.3em] text-sm">ENTERING THE SANCTUARY</div>
+<!-- ==================== GATE ==================== -->
+<div class="gate-overlay" id="gate">
+    <div class="gate-door gate-left">
+        <div class="gate-corner gc-tl"></div>
+        <div class="gate-corner gc-tr"></div>
+        <div class="gate-corner gc-bl"></div>
+        <div class="gate-corner gc-br"></div>
+        <div class="gate-ornament-top"></div>
+        <div class="gate-ornament-bottom"></div>
+        <div class="gate-handle"></div>
     </div>
-
-    <!-- WebGL Background -->
-    <canvas id="webgl-bg"></canvas>
-
-    <!-- p5.js Overlay (Reiki Cursor) -->
-    <div id="p5-container"></div>
-
-    <!-- The actual scrollable height -->
-    <div id="scroll-proxy"></div>
-
-    <!-- UI Overlay -->
-    <div id="scroll-hint">
-        <div class="mb-2">ENTER THE TEMPLE</div>
-        <i class="fa-solid fa-chevron-down"></i>
+    <div class="gate-door gate-right">
+        <div class="gate-corner gc-tl"></div>
+        <div class="gate-corner gc-tr"></div>
+        <div class="gate-corner gc-bl"></div>
+        <div class="gate-corner gc-br"></div>
+        <div class="gate-ornament-top"></div>
+        <div class="gate-ornament-bottom"></div>
+        <div class="gate-handle"></div>
     </div>
+</div>
+<div class="gate-enter-hint" id="gateHint">
+    ENTER
+    <i class="fa-solid fa-chevron-down"></i>
+</div>
 
-    <!-- 3D Camera & World -->
-    <div id="viewport">
-        <div id="camera">
-            <!-- Content will be injected here via JS to manage 3D coordinates -->
+<a href="/guild/" class="back-link" id="backLink">← ARCHIVE</a>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero-chamber chamber">
+    <div class="hero-inner" id="heroInner">
+        <div class="avatar-wrap">
+            <div class="avatar-ring-outer"></div>
+            <div class="avatar-ring"></div>
+            <img src="/assets/img/guild/cornerpi/avatar.webp" class="avatar" alt="三又一木">
+        </div>
+        <h1>三又一木</h1>
+        <p class="hero-name-cn">Sonny Shih</p>
+        <p class="subtitle">Hypnotherapist · Artist · Spiritual Guide · Alchemist</p>
+        <div class="hero-sep"></div>
+        <div class="badge-row">
+            <span class="badge">藝術家</span>
+            <span class="badge">原生態合作講師</span>
+            <span class="badge">歐甘樹文植引師</span>
+        </div>
+        <blockquote>「將自身經驗和實驗結果與所學內化，<br>協助探索內在深處的訊息與智慧。」</blockquote>
+        <p class="hero-intro">
+            <span>天使靈氣認證教師</span> · <span>國際催眠師</span> · <span>心靈諮詢師</span><br>
+            以靈性與手作為媒介，協助每一位靈魂<br>找到內在的平衡與生命的方向。
+        </p>
+    </div>
+    <div class="scroll-hint" id="scrollHint">SCROLL<br><i class="fa-solid fa-chevron-down" style="margin-top:2px;font-size:0.45rem;"></i></div>
+</section>
+
+<!-- ==================== CHAMBER I ==================== -->
+<div class="floor-transition"><span class="step-label">— I · 靈性修行 —</span></div>
+<section class="chamber ch-spirit">
+    <div class="gallery-row">
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_1.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_3.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_4.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_5.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_6.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+    </div>
+    <div class="content-card">
+        <h2 class="content-title">The Calling</h2>
+        <p class="content-sub">— VOCATION —</p>
+        <div class="divider"></div>
+        <ul>
+            <li>英國天使靈氣®認證教師</li>
+            <li>美國IAPC / 英國AMBMS 國際催眠師</li>
+            <li>心靈諮詢師</li>
+            <li>歐甘樹文植引師</li>
+            <li>原生態合作講師</li>
+        </ul>
+        <p style="margin-top:18px;">用簡單的方式深入內心，靈性與生活結合，<br>讓身心靈不再是神秘難以觸碰。</p>
+        <div class="inner-sep"></div>
+        <p class="inner-heading">Reiki · Energy Shift</p>
+        <p><span class="hl">運用天使靈氣</span>協助淨化與平衡個人能量場，<br>讓身心靈恢復和諧，看見靈性成長的契機。</p>
+        <div class="inner-sep"></div>
+        <p class="inner-heading">Sacred Mist · Space Alchemy</p>
+        <p><span class="hl">調配專屬能量空間噴霧</span><br>將振動頻率轉化為香氣與場域支持，<br>讓居家或工作環境成為高頻共振的空間。</p>
+    </div>
+</section>
+
+<!-- ==================== CHAMBER II ==================== -->
+<div class="floor-transition"><span class="step-label">— II · 旅程與天使 —</span></div>
+<section class="chamber ch-journey">
+    <div class="gallery-row">
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_7.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_8.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_9.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_10.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_11.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+    </div>
+    <div class="content-card" style="max-width:580px;">
+        <h2 class="content-title">Journey</h2>
+        <p class="content-sub">— THE PATH —</p>
+        <div class="divider"></div>
+        <div class="timeline">
+            <div class="timeline-item">
+                <p class="timeline-year hl">2021–22</p>
+                <p class="timeline-title">創立木公苑</p>
+                <ul>
+                    <li>催眠療癒（內在小孩 / 前世回溯 / 信念轉換）</li>
+                    <li>歐甘樹文占卜 / 神諭卡占卜 / 心靈諮詢</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <p class="timeline-year hl">2023–24</p>
+                <p class="timeline-title">創立緣結社（日式水引細工）</p>
+                <ul>
+                    <li>手作體驗 / 客製能量祝福飾品 / 注連繩</li>
+                    <li>進駐橋頭糖廠 · 鳳山社大教學</li>
+                </ul>
+            </div>
+            <div class="timeline-item">
+                <p class="timeline-year hl">2025</p>
+                <p class="timeline-title">創立天使 LAB. — @angellab787</p>
+            </div>
+        </div>
+        <div class="inner-sep"></div>
+        <h3 style="font-family:'Cinzel',serif; font-size:1.5rem; letter-spacing:0.12em; margin-bottom:6px; color:var(--gold-bright);">Angel LAB.</h3>
+        <p style="font-size:0.85rem; letter-spacing:0.25em; opacity:0.5; font-family:'Cinzel',serif; margin-bottom:12px;">@ANGELLAB787</p>
+        <p>運用天使界域傳遞的智慧，協助地球靈魂接地。</p>
+        <div class="svc-grid">
+            <span>神諭卡占卜</span><span>英國天使靈氣®療癒</span>
+            <span>臼井靈氣療癒</span><span>靈魂信念轉化諮詢</span>
+            <span>神聖力量運用</span><span>水晶淨化 / 賦能</span>
+            <span>宇宙祭司傳訊</span><span>靈性活動串連協辦</span>
         </div>
     </div>
+</section>
 
-    <script>
-        // --- 1. DATA & DOM GENERATION --- //
-        const images = [
-            '/assets/img/guild/cornerpi/img_1.webp', '/assets/img/guild/cornerpi/img_2.webp',
-            '/assets/img/guild/cornerpi/img_3.webp', '/assets/img/guild/cornerpi/img_4.webp',
-            '/assets/img/guild/cornerpi/img_5.webp', '/assets/img/guild/cornerpi/img_6.webp',
-            '/assets/img/guild/cornerpi/img_7.webp', '/assets/img/guild/cornerpi/img_8.webp',
-            '/assets/img/guild/cornerpi/img_9.webp', '/assets/img/guild/cornerpi/img_10.webp',
-            '/assets/img/guild/cornerpi/img_11.webp', '/assets/img/guild/cornerpi/img_12.webp',
-            '/assets/img/guild/cornerpi/img_13.webp', '/assets/img/guild/cornerpi/img_14.webp',
-            '/assets/img/guild/cornerpi/img_15.webp', '/assets/img/guild/cornerpi/img_16.webp',
-            '/assets/img/guild/cornerpi/img_17.webp', '/assets/img/guild/cornerpi/img_18.webp',
-            '/assets/img/guild/cornerpi/img_19.webp', '/assets/img/guild/cornerpi/img_20.webp'
-        ];
+<!-- ==================== CHAMBER III ==================== -->
+<div class="floor-transition"><span class="step-label">— III · 手作工坊 —</span></div>
+<section class="chamber ch-craft">
+    <div class="gallery-row">
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_12.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_13.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_14.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_15.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_16.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+    </div>
+    <div class="content-card">
+        <h2 class="content-title">緣結社</h2>
+        <p class="content-sub">— @mizumizuknot —</p>
+        <div class="mizuhiki-ornament"><div class="knot"></div></div>
+        <p class="slogan">「心意成絲　一念不滅　千千成結」</p>
+        <p style="color:#c8b8a8;">將心意實體化的地方，將傳統轉化現代流傳。</p>
+        <div class="loc-row">
+            <span class="loc-tag"><i class="fa-solid fa-location-dot"></i>雨豆村</span>
+            <span class="loc-tag"><i class="fa-solid fa-location-dot"></i>鳳山社大</span>
+        </div>
+        <div class="inner-sep"></div>
+        <h3 class="crystal-title" style="font-family:'Cinzel',serif; font-size:1.5rem; letter-spacing:0.12em; margin-bottom:6px;">Crystal · Mineral</h3>
+        <p class="crystal-sub" style="font-size:0.85rem; letter-spacing:0.25em; font-family:'Cinzel',serif; margin-bottom:12px;">EARTH ENERGY</p>
+        <p>礦石與金屬的融合創作，將大地的能量轉化為可配戴的祝福。</p>
+        <div style="margin:12px 0;">
+            <span class="crystal-badge">水晶淨化</span><span class="crystal-badge">能量賦能</span>
+            <span class="crystal-badge">礦石飾品</span><span class="crystal-badge">金屬結合</span>
+        </div>
+    </div>
+</section>
 
-        const avatar = '/assets/img/guild/cornerpi/avatar.webp';
+<!-- ==================== CHAMBER IV ==================== -->
+<div class="floor-transition"><span class="step-label">— IV · 聚會與連結 —</span></div>
+<section class="chamber ch-gather">
+    <div class="gallery-row">
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_17.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_18.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_19.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+        <div class="arch-window"><div class="keystone"></div><div class="arch-frame"><img src="/assets/img/guild/cornerpi/img_20.webp" alt="" loading="lazy"></div><div class="window-sill"></div></div>
+    </div>
+    <div class="content-card">
+        <h2 class="content-title">Sacred Gatherings</h2>
+        <p class="content-sub">— TOGETHER —</p>
+        <div class="divider"></div>
+        <p><span class="hl">靈性落實生活</span></p>
+        <ul>
+            <li>列穆尼亞水晶冥想手作課</li>
+            <li>野餐冥想 — 太陽冥想引導</li>
+            <li>不插電樂器音樂共響</li>
+            <li>仿真水晶寶石皂手作</li>
+        </ul>
+        <div class="loc-row">
+            <span class="loc-tag"><i class="fa-solid fa-location-dot"></i>橋頭醴堂</span>
+            <span class="loc-tag"><i class="fa-solid fa-location-dot"></i>高雄果嶺自然公園</span>
+            <span class="loc-tag"><i class="fa-solid fa-location-dot"></i>拾藝軒 · 苓雅</span>
+        </div>
+        <div class="inner-sep"></div>
+        <h3 style="font-family:'Cinzel',serif; font-size:1.5rem; letter-spacing:0.12em; margin-bottom:6px; color:var(--wood);">Connect</h3>
+        <p style="font-size:0.85rem; letter-spacing:0.25em; opacity:0.5; font-family:'Cinzel',serif; margin-bottom:16px;">THE SANCTUARY</p>
+        <div class="social-links">
+            <a href="https://www.instagram.com/cornerpi/" target="_blank" class="social-item"><i class="fa-brands fa-instagram"></i><span>@cornerpi</span></a>
+            <a href="https://www.threads.com/@cornerpi" target="_blank" class="social-item"><i class="fa-brands fa-threads"></i><span>@cornerpi</span></a>
+            <a href="https://www.instagram.com/angellab787/" target="_blank" class="social-item"><i class="fa-brands fa-instagram"></i><span>天使 LAB.</span></a>
+            <a href="https://www.instagram.com/mizumizuknot/" target="_blank" class="social-item"><i class="fa-brands fa-instagram"></i><span>緣結社</span></a>
+        </div>
+        <p style="margin-top:16px; font-size:0.85rem; color:var(--text-light);">歡迎私訊</p>
+    </div>
+</section>
 
-        const camera = document.getElementById('camera');
+<footer class="footer">Made with ♥ by SuperGalen's Dungeon</footer>
 
-        // Helper to create a 3D positioned element
-        function create3DElement(html, x, y, z, className = 'temple-element') {
-            const el = document.createElement('div');
-            el.className = className;
-            el.innerHTML = html;
-            // Apply initial 3D transform (Camera translates Z, elements stay still)
-            el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) translate(-50%, -50%)`;
-            camera.appendChild(el);
-            return el;
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+const gate = document.getElementById('gate');
+const gateHint = document.getElementById('gateHint');
+const heroInner = document.getElementById('heroInner');
+const scrollHint = document.getElementById('scrollHint');
+const backLink = document.getElementById('backLink');
+
+let gateOpened = false;
+function openGate() {
+    if (gateOpened) return;
+    gateOpened = true;
+    gate.style.pointerEvents = 'none';
+    const tl = gsap.timeline({
+        onComplete: () => {
+            gate.remove();
+            gateHint.remove();
+            document.documentElement.classList.add('page-ready');
         }
+    });
+    tl.to(gateHint, { opacity: 0, duration: 0.3, ease: 'power2.in' })
+      .to('.gate-left', { xPercent: -100, duration: 1.2, ease: 'power3.inOut' }, 0.2)
+      .to('.gate-right', { xPercent: 100, duration: 1.2, ease: 'power3.inOut' }, 0.2)
+      .to(heroInner, { opacity: 1, scale: 1, duration: 0.9, ease: 'power2.out' }, 0.7)
+      .to(scrollHint, { opacity: 1, duration: 0.6, ease: 'power2.out' }, 1.0)
+      .to(backLink, { opacity: 1, duration: 0.5 }, 1.0);
+}
 
-        // Generate Text Panels at specific Z depths
-        const Z_SPACING = -1500; // Distance between sections
-        let currentZ = -500;
+gateHint.addEventListener('click', openGate);
+gate.addEventListener('click', openGate);
+document.addEventListener('keydown', function handler(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        openGate();
+        document.removeEventListener('keydown', handler);
+    }
+});
 
-        // Intro Altar
-        create3DElement(`
-            <div class="stone-panel panel-large">
-                <img src="${avatar}" class="w-32 h-32 rounded-full mx-auto border-2 border-[var(--temple-gold)] mb-6 shadow-[0_0_30px_rgba(212,175,55,0.3)] object-cover" alt="三又一木 Avatar">
-                <h1 class="font-cinzel text-3xl text-gold mb-2 tracking-widest">三又一木</h1>
-                <p class="text-sm tracking-widest text-gray-400 mb-6 uppercase">Hypnotherapist • Spiritual Guide • Alchemist</p>
-                <p class="italic">「將自身經驗和實驗結果與所學內化，<br>協助探索內在深處的訊息與智慧。」</p>
-            </div>
-        `, 0, 0, currentZ);
+document.querySelectorAll('.content-card').forEach(card => {
+    gsap.to(card, {
+        opacity: 1, y: 0, duration: 0.8, ease: 'power2.out',
+        scrollTrigger: { trigger: card, start: 'top 85%', once: true }
+    });
+});
 
-        currentZ += Z_SPACING;
+document.querySelectorAll('.gallery-row').forEach(gallery => {
+    const wins = gallery.querySelectorAll('.arch-window');
+    gsap.to(wins, {
+        opacity: 1, y: 0, duration: 0.7, ease: 'power2.out', stagger: 0.12,
+        scrollTrigger: { trigger: gallery, start: 'top 80%', once: true }
+    });
+});
 
-        // Identity
-        create3DElement(`
-            <div class="stone-panel">
-                <h2>The Calling</h2>
-                <ul class="text-center space-y-2">
-                    <li>英國天使靈氣®教師</li>
-                    <li>美國IAPC / 英國AMBMS 國際催眠師</li>
-                    <li>心靈諮詢師</li>
-                </ul>
-                <p class="mt-6 text-sm">用簡單的方式深入內心，靈性與生活結合，讓身心靈不再是神秘難以觸碰。</p>
-            </div>
-        `, -400, 100, currentZ);
-
-        currentZ += Z_SPACING;
-
-        // Reiki / Energy
-        create3DElement(`
-            <div class="stone-panel panel-narrow">
-                <h2>Energy Shift</h2>
-                <p class="text-gold font-semibold mb-2">運用天使靈氣</p>
-                <p>協助淨化與平衡個人能量場，讓身心靈恢復和諧。<br>協助解讀高維指引，提供清晰的方向，幫助你看見生命與靈性成長的契機。</p>
-            </div>
-        `, 400, -100, currentZ);
-
-        currentZ += Z_SPACING;
-
-        // Alchemy / Spray
-        create3DElement(`
-            <div class="stone-panel">
-                <h2>Space Alchemy</h2>
-                <p class="text-gold font-semibold mb-2">調配專屬能量空間噴霧</p>
-                <p>將振動頻率轉化為可感受的香氣與場域支持，讓居家或工作環境成為高頻共振的空間。<br>喚醒自我覺知、釋放舊有限制，重新連結內在的光與靈魂力量。</p>
-            </div>
-        `, -300, 200, currentZ);
-
-        currentZ += Z_SPACING * 1.5;
-
-        // Timeline / Experience (Split across Z)
-        create3DElement(`
-            <div class="stone-panel panel-narrow border-t-0 border-b-0 border-l-2 border-[var(--temple-gold)]">
-                <h2 class="text-left">2021 - 2022</h2>
-                <ul class="mb-6">
-                    <li>美國IAPC國際催眠師</li>
-                    <li>英國AMBMS國際催眠師</li>
-                </ul>
-                <p class="text-gold font-bold">創立木公苑</p>
-                <ul class="text-sm text-gray-400">
-                    <li>催眠療癒 (內在小孩/前世回朔/信念轉換)</li>
-                    <li>歐甘樹文占卜 / 神諭卡占卜</li>
-                    <li>心靈諮詢</li>
-                </ul>
-            </div>
-        `, 300, -50, currentZ);
-
-        currentZ += Z_SPACING;
-
-        create3DElement(`
-            <div class="stone-panel panel-narrow border-t-0 border-b-0 border-r-2 border-[var(--temple-gold)]">
-                <h2 class="text-right">2023 - 2024</h2>
-                <p class="text-gold font-bold text-right">創立緣結社</p>
-                <p class="text-right text-xs text-gray-400 mb-4">(日式水引細工創作)</p>
-                <ul class="text-sm text-gray-400 text-right w-full flex flex-col items-end">
-                    <li class="before:hidden after:content-['✧'] after:text-[var(--temple-gold)] after:ml-2">手作體驗</li>
-                    <li class="before:hidden after:content-['✧'] after:text-[var(--temple-gold)] after:ml-2">客製能量祝福飾品擺件</li>
-                </ul>
-                <div class="mt-6 text-right text-sm">
-                    <p>進駐橋頭糖廠白屋藝術村</p>
-                    <p>鳳山社區大學-水引創作教學</p>
-                </div>
-            </div>
-        `, -300, 150, currentZ);
-
-        currentZ += Z_SPACING;
-
-        create3DElement(`
-            <div class="stone-panel">
-                <h2>2025: Angel LAB.</h2>
-                <p class="text-gold font-semibold mb-4">創立天使 LAB.</p>
-                <div class="grid grid-cols-2 gap-4 text-sm text-center">
-                    <div>執行能量療癒</div>
-                    <div>英國天使靈氣®教學</div>
-                    <div>靈性落實生活</div>
-                    <div>靈性活動串連協辦</div>
-                </div>
-                <p class="mt-6 italic text-gray-400">"我很喜歡將不同元素融合重新詮釋，<br>最近很愛把礦石和金屬結合"</p>
-            </div>
-        `, 0, 0, currentZ);
-
-        currentZ += Z_SPACING * 1.5;
-
-        // Final Altar (Socials)
-        const FINAL_Z = currentZ;
-        create3DElement(`
-            <div class="altar">
-                <h2 class="font-cinzel text-2xl text-gold mb-6 tracking-widest">Connect with the Sanctuary</h2>
-                <div class="social-links flex space-x-8">
-                    <a href="https://www.instagram.com/cornerpi/" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.threads.com/@cornerpi" target="_blank" title="Threads"><i class="fa-brands fa-threads"></i></a>
-                </div>
-            </div>
-        `, 0, 0, FINAL_Z);
-
-        // --- Generate Image Windows --- //
-        // We want to scatter the 20 images along the Z-axis from roughly -200 to FINAL_Z + 500
-        // We'll place them on the "walls" (wide X) and varying Y.
-
-        images.forEach((src, index) => {
-            // Distribute Z somewhat evenly but with randomness
-            const progress = index / (images.length - 1); // 0 to 1
-            const baseZ = -500 + progress * (FINAL_Z + 1000); // Stretch along the temple
-            const z = baseZ + (Math.random() * 800 - 400); // Jitter Z
-
-            // Scatter X widely to form "walls"
-            const side = index % 2 === 0 ? 1 : -1; // alternate left/right
-            const x = side * (600 + Math.random() * 800); // 600px to 1400px from center
-
-            // Scatter Y
-            const y = (Math.random() * 1000) - 500; // -500 to 500
-
-            // Randomly rotate windows slightly inward toward the path
-            const rotY = side * (15 + Math.random() * 20); // 15 to 35 deg inward
-
-            const el = document.createElement('div');
-            el.className = 'temple-element window-frame';
-            // Specific animation inline so hover isn't overwritten
-            el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) translate(-50%, -50%) rotateY(${rotY}deg)`;
-
-            // To prevent hover from breaking transform-style, we apply hover effect on child
-            el.innerHTML = `<img src="${src}" alt="Temple Memory ${index + 1}" loading="lazy">`;
-
-            // Add a floating animation
-            el.style.animation = `pulseGlow ${4 + Math.random()*3}s infinite alternate`;
-
-            camera.appendChild(el);
-        });
-
-        // --- 2. GSAP & LENIS SETUP --- //
-        gsap.registerPlugin(ScrollTrigger);
-
-        const lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-            direction: 'vertical',
-            gestureDirection: 'vertical',
-            smooth: true,
-            mouseMultiplier: 1,
-            smoothTouch: false,
-        });
-
-        function raf(time) {
-            lenis.raf(time);
-            requestAnimationFrame(raf);
+document.querySelectorAll('.arch-frame img').forEach(img => {
+    gsap.to(img, {
+        yPercent: -10, ease: 'none',
+        scrollTrigger: {
+            trigger: img.closest('.arch-window'),
+            start: 'top bottom', end: 'bottom top', scrub: 1
         }
-        requestAnimationFrame(raf);
+    });
+});
 
-        // Main Camera Z-Translation (The Fly-Through)
-        // We want the camera to move from Z=0 to slightly past FINAL_Z
-        // Note: Moving camera POSITIVE Z means moving FORWARD into the negative Z space.
-        const totalTravel = Math.abs(FINAL_Z) + 1000;
-
-        // Initial setup
-        gsap.set(camera, { z: 0 });
-
-        ScrollTrigger.create({
-            trigger: "#scroll-proxy",
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1,
-            onUpdate: (self) => {
-                // Move camera forward into the scene
-                gsap.to(camera, {
-                    z: self.progress * totalTravel,
-                    ease: "none",
-                    duration: 0.1
-                });
-
-                // Hide scroll hint
-                if(self.progress > 0.02) {
-                    gsap.to("#scroll-hint", { opacity: 0, duration: 0.5 });
-                } else {
-                    gsap.to("#scroll-hint", { opacity: 0.8, duration: 0.5 });
-                }
-            }
-        });
-
-        // Mouse Parallax for Camera Container (Viewport)
-        const viewport = document.getElementById('viewport');
-        let targetX = 0;
-        let targetY = 0;
-        let currentX = 0;
-        let currentY = 0;
-
-        window.addEventListener('mousemove', (e) => {
-            // Normalized coordinates -1 to 1
-            targetX = (e.clientX / window.innerWidth - 0.5) * 2;
-            targetY = (e.clientY / window.innerHeight - 0.5) * 2;
-        });
-
-        // Smooth interpolate rotation
-        function updateParallax() {
-            currentX += (targetX - currentX) * 0.05;
-            currentY += (targetY - currentY) * 0.05;
-
-            // Rotate the entire viewport slightly
-            // We rotate Y based on X mouse, and X based on Y mouse (inverted)
-            gsap.set(viewport, {
-                rotationY: currentX * 10, // max 10 deg
-                rotationX: -currentY * 10,
-                transformOrigin: "center center"
-            });
-
-            requestAnimationFrame(updateParallax);
-        }
-        updateParallax();
-
-        // --- 3. THREE.JS BACKGROUND (Temple Dust / Fireflies) --- //
-        const canvasBg = document.getElementById('webgl-bg');
-        const rendererBg = new THREE.WebGLRenderer({ canvas: canvasBg, alpha: true, antialias: true });
-        rendererBg.setSize(window.innerWidth, window.innerHeight);
-        rendererBg.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-        const sceneBg = new THREE.Scene();
-        // Fog to fade out deep Z elements
-        sceneBg.fog = new THREE.FogExp2(0x0a0a0f, 0.001);
-
-        const cameraBg = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        cameraBg.position.z = 500;
-
-        // Particles
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 2000;
-        const posArray = new Float32Array(particlesCount * 3);
-        const colorArray = new Float32Array(particlesCount * 3);
-
-        const colorGold = new THREE.Color(0xd4af37);
-        const colorBlue = new THREE.Color(0x6495ed);
-
-        for(let i = 0; i < particlesCount * 3; i+=3) {
-            // Spread widely
-            posArray[i] = (Math.random() - 0.5) * 3000;     // x
-            posArray[i+1] = (Math.random() - 0.5) * 2000;   // y
-            posArray[i+2] = (Math.random() - 0.5) * 3000;   // z
-
-            // Mix Gold and Reiki Blue
-            const mixRatio = Math.random();
-            const pColor = colorGold.clone().lerp(colorBlue, mixRatio > 0.8 ? 1 : 0); // 20% blue
-
-            // Dim some
-            const dim = 0.3 + Math.random() * 0.7;
-            colorArray[i] = pColor.r * dim;
-            colorArray[i+1] = pColor.g * dim;
-            colorArray[i+2] = pColor.b * dim;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-
-        // Create a soft glowing circle texture
-        const createCircleTexture = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const context = canvas.getContext('2d');
-            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
-            gradient.addColorStop(0, 'rgba(255,255,255,1)');
-            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
-            gradient.addColorStop(1, 'rgba(255,255,255,0)');
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, 64, 64);
-            return new THREE.CanvasTexture(canvas);
-        };
-
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 15,
-            map: createCircleTexture(),
-            transparent: true,
-            opacity: 0.6,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-
-        const particleMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        sceneBg.add(particleMesh);
-
-        // Animation Loop
-        let clock = new THREE.Clock();
-        function animateBg() {
-            const elapsedTime = clock.getElapsedTime();
-
-            // Slowly rotate the particle field
-            particleMesh.rotation.y = elapsedTime * 0.02;
-            particleMesh.rotation.x = elapsedTime * 0.01;
-
-            // Slowly drift particles
-            const positions = particleMesh.geometry.attributes.position.array;
-            for(let i = 0; i < particlesCount; i++) {
-                const i3 = i * 3;
-                // Add a subtle sine wave drift to Y
-                positions[i3 + 1] += Math.sin(elapsedTime * 0.5 + positions[i3]) * 0.2;
-            }
-            particleMesh.geometry.attributes.position.needsUpdate = true;
-
-            // Bind BG camera to Scroll to give a slight parallax feeling (much slower than DOM)
-            const scrollProgress = ScrollTrigger.maxScroll(window) > 0 ? window.scrollY / ScrollTrigger.maxScroll(window) : 0;
-            cameraBg.position.z = 500 - (scrollProgress * 1000); // Move forward slightly
-
-            rendererBg.render(sceneBg, cameraBg);
-            requestAnimationFrame(animateBg);
-        }
-        animateBg();
-
-        // --- 4. p5.js (Reiki Cursor Aura) --- //
-        new p5((p) => {
-            let particles = [];
-
-            p.setup = () => {
-                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-container');
-                p.noStroke();
-            };
-
-            p.draw = () => {
-                p.clear();
-
-                // Add new particle on mouse move
-                if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
-                    // Injecting gold and blue randomly
-                    let isGold = p.random(1) > 0.3;
-                    let c = isGold ? p.color(212, 175, 55, 150) : p.color(100, 149, 237, 100);
-                    particles.push(new AuraParticle(p.mouseX, p.mouseY, c));
-                }
-
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    particles[i].update();
-                    particles[i].display();
-                    if (particles[i].alpha <= 0) {
-                        particles.splice(i, 1);
-                    }
-                }
-            };
-
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-            };
-
-            class AuraParticle {
-                constructor(x, y, col) {
-                    this.x = x;
-                    this.y = y;
-                    this.vx = p.random(-1, 1);
-                    this.vy = p.random(-2, 0); // Drift up like smoke
-                    this.col = col;
-                    this.alpha = p.alpha(col);
-                    this.size = p.random(20, 50);
-                }
-
-                update() {
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    this.alpha -= 3; // Fade out
-                    this.size += 0.5; // Expand
-                }
-
-                display() {
-                    let c = p.color(p.red(this.col), p.green(this.col), p.blue(this.col), this.alpha);
-                    p.fill(c);
-                    // Use a soft blur by drawing multiple circles
-                    p.ellipse(this.x, this.y, this.size);
-                    p.fill(p.color(p.red(this.col), p.green(this.col), p.blue(this.col), this.alpha * 0.5));
-                    p.ellipse(this.x, this.y, this.size * 1.5);
-                }
-            }
-        });
-
-        // --- Window Resize Handling --- //
-        window.addEventListener('resize', () => {
-            cameraBg.aspect = window.innerWidth / window.innerHeight;
-            cameraBg.updateProjectionMatrix();
-            rendererBg.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // --- Remove Loader --- //
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const loader = document.getElementById('loader');
-                loader.style.opacity = '0';
-                setTimeout(() => loader.remove(), 1000);
-            }, 1000);
-        });
-
-    </script>
+document.querySelectorAll('.floor-transition').forEach(ft => {
+    gsap.from(ft, {
+        scaleX: 0.7, opacity: 0, duration: 0.5,
+        scrollTrigger: { trigger: ft, start: 'top 90%', once: true }
+    });
+});
+</script>
 </body>
 </html>
