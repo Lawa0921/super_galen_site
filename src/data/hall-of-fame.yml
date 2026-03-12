@@ -1062,6 +1062,18 @@ members:
       - id: "imaginative"
         label: "天馬行空"
 
+  - id: "river_howler"
+    name: "沒川狼雨 River Howler"
+    avatar: "/assets/guild/river_howler/1.webp"
+    page: "/guild/river_howler.html"
+    tags:
+      - id: "necromancer"
+        label: "死靈法師"
+      - id: "druid"
+        label: "群獸守護者"
+      - id: "alchemist"
+        label: "煉金術師"
+
   - id: "12eatpure"
     name: "綠食飯桌"
     avatar: "/assets/img/guild/12eatpure/avatar.webp"
