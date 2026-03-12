@@ -34,7 +34,7 @@ cache/
 *.temp
 .vscode/
 .idea/
-.claude/
+.claude/worktrees/
 
 # Playwright 測試輸出
 playwright-report/

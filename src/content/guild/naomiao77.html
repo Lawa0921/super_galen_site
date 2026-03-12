@@ -1,0 +1,2828 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貓青 naomiao77 | 插畫家的天空畫布</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Serif+TC:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sky: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                        },
+                        text: '#4A5568'
+                    },
+                    fontFamily: {
+                        serif: ['"ZCOOL XiaoWei"', '"Noto Serif TC"', 'serif'],
+                        rounded: ['"ZCOOL KuaiLe"', 'sans-serif'],
+                    },
+                    animation: {
+                        'float-slow': 'float 8s ease-in-out infinite',
+                        'float-medium': 'float 6s ease-in-out infinite',
+                        'float-fast': 'float 4s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.8' },
+                            '50%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+
+    <style>
+        h1, h2, h3 {
+            font-family: 'ZCOOL XiaoWei', 'ZCOOL KuaiLe', serif;
+        }
+
+        body {
+            font-family: 'ZCOOL KuaiLe', 'Noto Serif TC', sans-serif;
+            background: linear-gradient(180deg, #E2E8F0 0%, #ECFDF5 50%, #FDFBF7 100%) fixed;
+            background-color: #e0f2fe;
+            color: #4A5568;
+            overflow-x: hidden;
+        }
+
+        /* Background Illustration Layers */
+        .cloud-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            overflow: visible;
+            will-change: transform;
+        }
+
+        .svg-cloud {
+            position: absolute;
+            opacity: 0.9;
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #BAE6FD;
+            box-shadow: 4px 4px 0px rgba(186, 230, 253, 0.5);
+            border-radius: 16px;
+        }
+
+        .polaroid {
+            background-color: #fffaf0;
+            padding: 8px 8px 30px 8px;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
+            z-index: 2;
+        }
+
+        .polaroid.hover-active {
+            z-index: 50;
+            box-shadow: 0 30px 50px rgba(125, 211, 252, 0.4);
+        }
+
+        /* 3D Glass glare effect on hover */
+        .polaroid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .polaroid.hover-active::before {
+            opacity: 1;
+        }
+
+        .polaroid img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        /* Washi Tape styling */
+        .tape {
+            position: absolute;
+            width: 80px;
+            height: 25px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            z-index: 2;
+            border-left: 2px dashed rgba(200,200,200,0.5);
+            border-right: 2px dashed rgba(200,200,200,0.5);
+        }
+
+        .tape.blue { background-color: rgba(186, 230, 253, 0.6); }
+        .tape.yellow { background-color: rgba(254, 240, 138, 0.6); }
+
+        .note-paper {
+            background-color: #FDFBF7;
+            background-image: linear-gradient(rgba(125, 211, 252, 0.1) 1px, transparent 1px);
+            background-size: 100% 30px;
+            border-left: 4px solid #7dd3fc;
+            padding: 30px 40px;
+            border-radius: 4px 12px 12px 4px;
+            box-shadow: 2px 4px 15px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        /* Typography Enhancements */
+        .title-stroke {
+            color: white;
+            text-shadow:
+                -1px -1px 0 #7dd3fc,
+                 1px -1px 0 #7dd3fc,
+                -1px  1px 0 #7dd3fc,
+                 1px  1px 0 #7dd3fc,
+                 0 4px 8px rgba(125, 211, 252, 0.5);
+        }
+
+        .highlight-text {
+            position: relative;
+            display: inline-block;
+            z-index: 1;
+        }
+
+        .highlight-text::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: -2%;
+            width: 104%;
+            height: 10px;
+            background-color: rgba(254, 240, 138, 0.6); /* Soft yellow */
+            z-index: -1;
+            border-radius: 4px;
+            transform: rotate(-1deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0f2fe;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #7dd3fc;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+
+        /* --- BOOK SPREAD STYLING --- */
+        .book-spread {
+            background-color: #FDFBF7;
+            background-image:
+                linear-gradient(90deg, transparent 49.5%, rgba(0,0,0,0.05) 49.5%, rgba(0,0,0,0.1) 50%, transparent 50.5%),
+                linear-gradient(rgba(186, 230, 253, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 40px;
+            box-shadow:
+                0 20px 40px rgba(0,0,0,0.1),
+                inset 0 0 40px rgba(226, 232, 240, 0.4),
+                inset 5px 0 10px rgba(0,0,0,0.05),
+                inset -5px 0 10px rgba(0,0,0,0.05);
+            border-radius: 4px;
+            border: 1px solid #E5E7EB;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 2000px;
+        }
+
+        /* Stack of pages effect */
+        .book-spread::before, .book-spread::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            border-radius: 2px;
+            z-index: -1;
+        }
+
+        .book-spread::before {
+            top: 4px; left: 4px; right: 4px; bottom: -4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .book-spread::after {
+            top: 8px; left: 8px; right: 8px; bottom: -8px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+        }
+
+        .book-spine {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 40px;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg,
+                rgba(255,255,255,0) 0%,
+                rgba(0,0,0,0.03) 20%,
+                rgba(0,0,0,0.08) 50%,
+                rgba(0,0,0,0.03) 80%,
+                rgba(255,255,255,0) 100%);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* --- MAGIC CARD STYLES --- */
+        .magic-card-wrapper {
+            perspective: 800px;
+            cursor: pointer;
+        }
+
+        .magic-card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 2/3;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .magic-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .magic-card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #BAE6FD;
+            box-shadow: 0 4px 20px rgba(125, 211, 252, 0.2);
+        }
+
+        .magic-card-front {
+            background: linear-gradient(135deg, #E0F2FE 0%, #FEF9C3 50%, #FCE7F3 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .magic-card-front::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border: 1px dashed #BAE6FD;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .magic-card-back {
+            transform: rotateY(180deg);
+            background: #FDFBF7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .magic-card-back::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 2px solid;
+            border-image: linear-gradient(135deg, #BAE6FD, #FDE047, #FCA5A5) 1;
+            pointer-events: none;
+        }
+
+        .magic-card-wrapper:hover .magic-card:not(.flipped) {
+            transform: translateY(-8px) rotateY(5deg);
+        }
+
+        /* --- HIDDEN CAT STYLES --- */
+        .hidden-cat {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.15;
+        }
+
+        .hidden-cat:hover {
+            opacity: 0.6;
+            transform: scale(1.3);
+        }
+
+        .hidden-cat.found {
+            opacity: 1;
+            animation: catFound 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes catFound {
+            0% { transform: scale(0.5); }
+            50% { transform: scale(1.5) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* --- SCROLL COMPANION CAT --- */
+        #companion-cat {
+            position: fixed;
+            bottom: 20px;
+            left: 30px;
+            z-index: 80;
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
+        }
+
+        #companion-cat:hover {
+            transform: scale(1.15);
+        }
+
+        #companion-cat .speech-bubble {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 2px solid #BAE6FD;
+            border-radius: 12px 12px 12px 0;
+            padding: 8px 14px;
+            font-family: 'ZCOOL KuaiLe', 'Noto Serif TC', sans-serif;
+            font-size: 13px;
+            color: #4A5568;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            box-shadow: 2px 4px 10px rgba(186,230,253,0.4);
+        }
+
+        #companion-cat .speech-bubble.show {
+            opacity: 1;
+        }
+
+        /* --- SECTION DIVIDER ILLUSTRATION --- */
+        .section-divider {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            height: 120px;
+            pointer-events: none;
+        }
+
+        .cat-sparkle {
+            position: absolute;
+            pointer-events: none;
+            animation: sparkleUp 1s ease-out forwards;
+        }
+
+        @keyframes sparkleUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(0); }
+        }
+
+        /* --- WATERCOLOR REVEAL ON SCROLL --- */
+        .watercolor-reveal {
+            opacity: 0;
+            filter: blur(8px) saturate(0.3);
+            transform: translateY(40px) scale(0.96);
+            transition: none;
+        }
+
+        .watercolor-reveal.revealed {
+            opacity: 1;
+            filter: blur(0px) saturate(1);
+            transform: translateY(0) scale(1);
+        }
+
+        /* --- ARTWORK LIGHTBOX --- */
+        .artwork-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .artwork-lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .artwork-lightbox .lb-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(253, 251, 247, 0.92);
+            backdrop-filter: blur(20px);
+        }
+
+        .artwork-lightbox .lb-frame {
+            position: relative;
+            max-width: 85vw;
+            max-height: 85vh;
+            transform: scale(0.8) rotate(-2deg);
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .artwork-lightbox.active .lb-frame {
+            transform: scale(1) rotate(0deg);
+        }
+
+        .artwork-lightbox .lb-frame img {
+            max-width: 85vw;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.15), 0 0 0 12px #fffcf5, 0 0 0 14px rgba(186,230,253,0.4);
+        }
+
+        .artwork-lightbox .lb-caption {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Noto Serif TC', serif;
+            color: #64748b;
+            font-size: 14px;
+            letter-spacing: 4px;
+            white-space: nowrap;
+        }
+
+        /* Watercolor edge decoration for lightbox */
+        .artwork-lightbox .lb-watercolor-edge {
+            position: absolute;
+            inset: -40px;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* --- PAINT SPLATTER ON CLICK --- */
+        .paint-splatter {
+            position: fixed;
+            pointer-events: none;
+            z-index: 150;
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        /* --- ENTRANCE WAVE ANIMATION --- */
+        @keyframes waveRide {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            25% { transform: translateY(-12px) rotate(1deg); }
+            50% { transform: translateY(-4px) rotate(-1deg); }
+            75% { transform: translateY(-16px) rotate(2deg); }
+        }
+
+        .wave-ride {
+            animation: waveRide 4s ease-in-out infinite;
+        }
+
+        /* --- WATERCOLOR BRUSH STROKE DECORATION --- */
+        .brush-stroke {
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(125, 211, 252, 0.3) 10%,
+                rgba(186, 230, 253, 0.5) 30%,
+                rgba(253, 224, 71, 0.3) 60%,
+                rgba(167, 243, 208, 0.4) 80%,
+                transparent 100%
+            );
+            border-radius: 3px;
+            filter: blur(1px);
+        }
+
+        /* --- INK DROP RIPPLE --- */
+        @keyframes inkRipple {
+            0% { transform: scale(0); opacity: 0.7; }
+            60% { opacity: 0.3; }
+            100% { transform: scale(4); opacity: 0; }
+        }
+
+        .ink-ripple {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(125,211,252,0.4) 0%, rgba(186,230,253,0.2) 40%, transparent 70%);
+            pointer-events: none;
+            animation: inkRipple 1.2s ease-out forwards;
+        }
+
+        /* --- RWD FIXES --- */
+        @media (max-width: 640px) {
+            /* Nav: stack vertically on very small screens */
+            nav.fixed {
+                padding: 12px;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            nav .glass-card {
+                padding: 8px 12px;
+            }
+            /* Sun: smaller and tucked away on mobile */
+            #illustration-sun-wrapper {
+                width: 60px;
+                height: 60px;
+                top: 8px;
+                right: 8px;
+            }
+            /* Hero polaroids: shorter container */
+            .hero-images {
+                height: 350px;
+            }
+            /* Companion cat: smaller on mobile */
+            #companion-cat {
+                left: 12px;
+                bottom: 12px;
+            }
+            /* Cat counter and scroll button: tighter spacing */
+            #cat-counter {
+                bottom: 12px;
+                right: 12px;
+                padding: 6px 10px;
+            }
+            #scroll-to-bottom {
+                bottom: 56px;
+                right: 12px;
+            }
+            /* Epilogue: less padding */
+            #chapter4 {
+                padding: 40px 16px;
+            }
+        }
+
+        .polaroid::after {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 40px;
+            height: 15px;
+            background-color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+
+    </style>
+
+</head>
+<body class="font-rounded antialiased selection:bg-sky-200 selection:text-sky-900">
+
+    <!-- Artwork Lightbox -->
+    <div class="artwork-lightbox" id="artwork-lightbox">
+        <div class="lb-backdrop"></div>
+        <div class="lb-frame">
+            <div class="lb-watercolor-edge">
+                <svg viewBox="0 0 400 400" fill="none" style="width:100%;height:100%;">
+                    <circle cx="200" cy="200" r="190" stroke="#7DD3FC" stroke-width="3" stroke-dasharray="12 8" opacity="0.4"/>
+                    <circle cx="200" cy="200" r="175" stroke="#FDE047" stroke-width="2" stroke-dasharray="6 12" opacity="0.3"/>
+                    <circle cx="200" cy="200" r="195" stroke="#A7F3D0" stroke-width="2" stroke-dasharray="4 16" opacity="0.3"/>
+                </svg>
+            </div>
+            <img id="lb-image" src="" alt="">
+            <div class="lb-caption" id="lb-caption"></div>
+        </div>
+    </div>
+
+    <!-- Entrance Overlay -->
+    <div id="entrance-overlay" class="fixed inset-0 z-[100] flex flex-col items-center justify-center cursor-pointer overflow-hidden" style="background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 40%, #f0f9ff 100%);">
+        <!-- Watercolor wash background -->
+        <div style="position:absolute; inset:0; opacity:0.3; pointer-events:none;">
+            <div style="position:absolute; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(253,224,71,0.4), transparent 70%); top:10%; left:60%; filter:blur(40px);"></div>
+            <div style="position:absolute; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle, rgba(167,243,208,0.3), transparent 70%); bottom:20%; left:20%; filter:blur(50px);"></div>
+            <div style="position:absolute; width:250px; height:250px; border-radius:50%; background:radial-gradient(circle, rgba(252,165,165,0.2), transparent 70%); top:50%; right:10%; filter:blur(30px);"></div>
+        </div>
+        <!-- Floating watercolor blobs entrance decoration -->
+        <div id="entrance-blobs" style="position:absolute; inset:0; pointer-events:none; overflow:hidden;"></div>
+        <!-- Entrance illustration with wave ride -->
+        <div class="wave-ride mb-6" id="entrance-icon" style="position:relative;">
+            <div style="width:180px; height:180px; border-radius:24px; overflow:hidden; box-shadow: 0 20px 60px rgba(125,211,252,0.3), 0 0 0 4px rgba(255,255,255,0.8);">
+                <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="貓青插畫" class="w-full h-full object-cover">
+            </div>
+            <!-- Ripple rings beneath -->
+            <div style="position:absolute; bottom:-20px; left:50%; transform:translateX(-50%); width:200px; height:30px;">
+                <div style="width:100%; height:100%; border:2px solid rgba(125,211,252,0.3); border-radius:50%; animation: inkRipple 3s ease-out infinite;"></div>
+                <div style="position:absolute; inset:0; width:80%; height:100%; margin:auto; border:2px solid rgba(125,211,252,0.2); border-radius:50%; animation: inkRipple 3s ease-out infinite 1s;"></div>
+            </div>
+        </div>
+        <h2 class="font-serif text-4xl font-bold text-sky-700 tracking-[0.2em] mb-2" id="entrance-title" style="text-shadow: 0 2px 20px rgba(125,211,252,0.3);">貓青</h2>
+        <p class="font-serif text-sky-500/70 text-sm tracking-[0.3em] mb-6" style="letter-spacing:0.3em;">naomiao77</p>
+        <p class="font-rounded text-sky-400 text-lg mt-4" id="entrance-prompt" style="animation: float 3s ease-in-out infinite;">點擊翻開天空畫布</p>
+        <!-- Brush stroke decoration -->
+        <div class="brush-stroke" style="bottom:30%; width:60%; left:20%;"></div>
+    </div>
+
+    <!-- Sun decoration - simple warm glow -->
+    <div class="fixed top-12 right-12 md:top-20 md:right-24 z-[20] cursor-pointer" id="illustration-sun-wrapper" style="width: 100px; height: 100px; pointer-events: auto;">
+        <div class="w-full h-full opacity-80 animate-[spin_60s_linear_infinite]" id="illustration-sun" style="transition: transform 0.3s;">
+            <div style="width:100%; height:100%; border-radius:50%; background: radial-gradient(circle, #FEF08A 30%, #FDE047 60%, transparent 70%); box-shadow: 0 0 40px rgba(253,224,71,0.4), 0 0 80px rgba(253,224,71,0.15);"></div>
+        </div>
+    </div>
+
+    <div class="cloud-layer" id="cloud-layer-back"></div>
+    <div class="cloud-layer" id="cloud-layer-front"></div>
+    <div id="p5-container"></div>
+
+    <!-- Main Content Wrapper -->
+    <!-- Main content needs to let pointer events pass through to background layers where empty -->
+    <main class="relative z-[5] w-full min-h-screen book-container opacity-0 pointer-events-none" id="main-content">
+
+        <!-- SCROLL PROGRESS DRAWING PATH -->
+        <!-- A decorative continuous line drawing that completes as you scroll down -->
+        <div class="fixed top-0 left-10 h-full w-24 pointer-events-none z-0 hidden lg:block opacity-60">
+            <svg viewBox="0 0 100 2000" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                <path id="scroll-path" d="M 50 0 C 80 200 20 400 50 600 C 80 800 20 1000 50 1200 C 80 1400 20 1600 50 1800 C 80 1900 50 2000 50 2000"
+                      fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4 8" stroke-linecap="round" />
+                <path id="scroll-path-fill" d="M 50 0 C 80 200 20 400 50 600 C 80 800 20 1000 50 1200 C 80 1400 20 1600 50 1800 C 80 1900 50 2000 50 2000"
+                      fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" />
+            </svg>
+            <div id="scroll-follower" class="absolute w-6 h-6 -ml-3 -mt-3" style="left: 50%; top: 0;">
+                <div style="width:100%; height:100%; border-radius:50%; background: radial-gradient(circle, #38BDF8, #7DD3FC); box-shadow: 0 0 12px rgba(56,189,248,0.5); animation: pulseGlow 2s ease-in-out infinite;"></div>
+            </div>
+        </div>
+
+        <!-- Navigation / Top bar -->
+        <nav class="fixed top-0 w-full p-3 md:p-6 z-50 flex justify-between items-center pointer-events-none">
+            <div class="flex gap-2 md:gap-3 pointer-events-auto">
+                <a href="/guild/" class="glass-card px-3 py-2 md:px-4 md:py-3 text-sky-600 hover:text-sky-800 font-serif font-bold tracking-wider flex items-center gap-2 hover:bg-white/90 transition-colors shadow-sm text-xs md:text-sm">
+                    <i class="fa-solid fa-arrow-left"></i> ARCHIVE
+                </a>
+                <div class="glass-card px-3 py-2 md:px-6 md:py-3 hover:bg-white/90 transition-colors shadow-sm">
+                    <span class="text-sky-600 font-serif font-bold text-base md:text-xl tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cloud"></i> 貓青
+                    </span>
+                </div>
+            </div>
+            <div class="glass-card px-3 py-2 md:px-4 md:py-3 flex gap-3 md:gap-4 pointer-events-auto shadow-sm">
+                <a href="https://www.threads.net/@naomiao77" target="_blank" class="text-text hover:text-sky-500 transition-colors thread-link group relative inline-block"><i class="fa-brands fa-threads text-xl group-hover:animate-spin-slow"></i><span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">碎碎念的小線頭</span></a>
+                <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-text hover:text-sky-500 transition-colors"><i class="fa-brands fa-instagram text-xl"></i></a>
+                <a href="https://vocus.cc/salon/Naomiao" target="_blank" class="text-text hover:text-sky-500 transition-colors group relative inline-block"><i class="fa-solid fa-pen-fancy text-xl"></i><span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">創作沙龍</span></a>
+                <a href="https://portaly.cc/naomiao77" target="_blank" class="text-text hover:text-sky-500 transition-colors"><i class="fa-solid fa-link text-xl"></i></a>
+            </div>
+        </nav>
+
+        <!-- Prologue: Introduction -->
+        <section class="min-h-screen relative flex items-center justify-center pt-20 pb-32 pointer-events-auto" id="hero">
+            <!-- Decorative clouds - soft CSS blobs -->
+            <div class="svg-cloud w-64 h-24 top-1/4 left-10 animate-float-slow" style="background: radial-gradient(ellipse, rgba(255,255,255,0.7) 0%, transparent 70%); border-radius:50%; filter:blur(8px);"></div>
+            <div class="svg-cloud w-48 h-20 bottom-1/4 right-20 animate-float-fast" style="background: radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, transparent 70%); border-radius:50%; filter:blur(6px);"></div>
+
+            <div class="max-w-6xl w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <!-- Text Content -->
+                <div class="hero-text z-10 text-center lg:text-left">
+                    <p class="font-serif text-sky-600 text-lg mb-4 tracking-widest pl-1 opacity-80"><i class="fa-solid fa-pen-nib text-slate-400 mr-2"></i>Prologue</p>
+                    <h1 class="font-serif text-5xl md:text-7xl font-bold mb-6 text-slate-700 leading-tight">
+                        我是 <span class="title-stroke">貓青。</span>
+                    </h1>
+
+                    <div class="glass-card p-8 md:p-10 text-lg md:text-xl leading-relaxed text-slate-600 font-serif inline-block text-left shadow-xl relative mt-4">
+                        <i class="fa-solid fa-quote-left absolute -top-5 -left-5 text-4xl text-sky-200 opacity-50"></i>
+                        <p class="mb-4">畫貓、畫花、畫天馬行空的瞬間。</p>
+                        <p class="mb-4">不是一路順著走來的創作者，<br>而是慢慢把喜歡的事撿起來，</p>
+                        <p class="font-bold text-slate-700 text-2xl mt-6"><span class="highlight-text">一筆一筆，畫成現在的樣子。</span></p>
+                    </div>
+                </div>
+
+                <!-- Avatar / Floating Polaroids -->
+                <div class="hero-images relative h-[350px] md:h-[500px] w-full flex justify-center items-center">
+                    <!-- Main Avatar -->
+                    <div class="polaroid w-64 md:w-80 absolute z-20 shadow-2xl animate-float-slow group" style="transform: rotate(3deg);">
+                        <div class="tape blue"></div>
+                        <img src="/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" alt="貓青 Avatar" class="aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm pointer-events-none mix-blend-overlay"></div>
+                        <p class="text-center font-serif mt-4 text-slate-500 text-sm italic">「天空裡的畫布」</p>
+                    </div>
+
+                    <!-- Floating Background Images - Real Artwork -->
+                    <div class="polaroid w-32 md:w-48 absolute -left-4 md:-left-16 top-4 md:top-10 z-10 opacity-90 animate-float-medium" style="transform: rotate(-12deg);">
+                        <div class="tape yellow"></div>
+                        <img src="/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp" alt="貓青插畫" class="aspect-square object-cover hover:scale-105 transition-all duration-300">
+                    </div>
+
+                    <div class="polaroid w-40 md:w-56 absolute -right-4 md:-right-12 bottom-4 md:bottom-10 z-30 opacity-95 animate-float-fast" style="transform: rotate(8deg);">
+                        <div class="tape"></div>
+                        <img src="/assets/img/guild/naomiao77/620439760_17907653019337939_277965404648345672_n.webp" alt="貓青手繪" class="aspect-[4/3] object-cover">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce text-slate-400">
+                <span class="font-serif text-sm tracking-widest mb-2 opacity-70">輕輕翻開第一頁</span>
+                <i class="fa-solid fa-angle-down"></i>
+            </div>
+        </section>
+
+        <!-- Section Divider: Illustrated vine between sections -->
+        <div class="section-divider pointer-events-none px-6" id="divider-1">
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px; padding:20px 0; opacity:0.5;">
+                <div style="flex:1; height:1px; background: linear-gradient(90deg, transparent, #BAE6FD, transparent);"></div>
+                <i class="fa-solid fa-paw" style="color:#BAE6FD; font-size:10px;"></i>
+                <i class="fa-solid fa-leaf" style="color:#A7F3D0; font-size:12px;"></i>
+                <i class="fa-solid fa-paw" style="color:#BAE6FD; font-size:10px;"></i>
+                <div style="flex:1; height:1px; background: linear-gradient(90deg, transparent, #BAE6FD, transparent);"></div>
+            </div>
+        </div>
+
+        <!-- Chapter 1: The Book Spread -->
+        <section class="min-h-screen relative py-32 px-4 md:px-10 pointer-events-auto flex items-center justify-center" id="chapter1">
+            <div class="max-w-6xl mx-auto w-full book-spread gs-reveal p-8 md:p-16">
+                <div class="book-spine hidden md:block"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 relative z-10">
+
+                    <!-- Left Page: Text -->
+                    <div class="flex flex-col justify-center text-left md:pr-10 relative">
+                        <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-feather text-sky-400"></i> 第一章 / 柔軟的線條
+                        </p>
+                        <h2 class="font-serif text-3xl md:text-4xl font-bold text-slate-700 mb-10 leading-relaxed">
+                            作品被放進生活裡，<br>
+                            成為剛剛好的陪伴。
+                        </h2>
+
+                        <div class="relative">
+                            <!-- Cute hand-drawn quote mark -->
+                            <svg class="absolute -top-6 -left-6 w-12 h-12 text-sky-200 opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M14,17H17L19,13V7H13V13H16M6,17H9L11,13V7H5V13H8L6,17Z" /></svg>
+
+                            <p class="font-serif text-lg md:text-xl leading-loose text-slate-600 pl-4 border-l-2 border-sky-200">
+                                喜歡柔軟的線條、溫和的顏色，<br>
+                                也喜歡作品被放進生活裡——<br><br>
+                                變成一張明信片、一幅畫，<br>
+                                <span class="highlight-text font-bold text-slate-700">或某天剛好被需要的陪伴。</span><br><br>
+                                <span class="text-sm text-slate-400 mt-4 block">
+                                    不只是掛在牆上的藝術，而是可以拿在手心裡的溫暖。
+                                </span>
+                            </p>
+                        </div>
+
+                        <!-- Hand drawn decorative underline -->
+                        <svg class="w-48 h-6 mt-8 opacity-50" viewBox="0 0 200 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 10 Q 50 20 100 10 T 195 10" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" fill="none"/>
+                            <path d="M10 15 Q 60 5 120 15 T 180 5" stroke="#BAE6FD" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+                        </svg>
+                    </div>
+
+                    <!-- Right Page: Illustration -->
+                    <div class="relative flex items-center justify-center md:pl-10 mt-10 md:mt-0">
+                        <div class="polaroid w-full max-w-[320px] shadow-2xl transform rotate-3 hover:rotate-0 transition-all duration-500 z-10 hover:scale-105">
+                            <div class="tape blue"></div>
+                            <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" alt="貓青手繪" class="aspect-[4/5] object-cover rounded-sm">
+                            <p class="text-center font-serif mt-4 text-slate-500 text-sm tracking-widest">柔軟的線條</p>
+                        </div>
+
+                        <!-- Page decoration - soft glow -->
+                        <div class="absolute -top-10 right-0 w-20 h-20 opacity-40 pointer-events-none rotate-12" style="background: radial-gradient(circle, rgba(253,224,71,0.4), transparent 70%); border-radius:50%;"></div>
+
+                        <!-- Page number -->
+                        <div class="absolute bottom-[-30px] right-0 font-serif text-slate-300 text-sm">
+                            - 01 -
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter 2: Daily Magic & Scrapbook (Horizontal Scroll Section) -->
+        <section class="h-screen relative bg-white/30 backdrop-blur-sm border-y border-slate-200 pointer-events-auto overflow-hidden flex flex-col justify-center" id="chapter2-horizontal">
+            <div class="absolute top-10 left-10 md:left-20 z-10">
+                <p class="font-serif text-sky-600 text-sm mb-2 tracking-widest uppercase"><i class="fa-solid fa-wand-magic-sparkles text-yellow-400 mr-2"></i>Chapter 2</p>
+                <h2 class="font-serif text-4xl md:text-5xl font-bold text-slate-700">日常裡的小小魔法</h2>
+            </div>
+
+            <div class="absolute bottom-10 left-10 text-slate-400 font-serif text-sm flex items-center gap-2 animate-pulse">
+                <i class="fa-solid fa-arrow-right-long"></i> 向旁邊滑動翻頁
+            </div>
+
+            <!-- The wide canvas for horizontal scrolling -->
+            <div class="flex items-center pl-[20vw] pr-[20vw] h-full gap-16 md:gap-32 w-fit" id="horizontal-container">
+
+                <!-- Item 1: Text Intro -->
+                <div class="w-[300px] shrink-0">
+                    <p class="font-serif text-2xl leading-loose text-slate-600">
+                        <span class="highlight-text">養貓，畫畫，偶爾旅行，</span><br>
+                        喜歡動漫，也相信日常裡的小小魔法。<br>
+                    </p>
+                    <div class="mt-8 opacity-40 text-slate-400 text-3xl"><i class="fa-solid fa-cat"></i></div>
+                </div>
+
+                <!-- Item 2: Cat Art -->
+                <div class="w-[350px] shrink-0 relative">
+                    <div class="polaroid shadow-lg transform -rotate-3 hover:rotate-0 transition-transform">
+                        <div class="tape yellow"></div>
+                        <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" alt="彩色立體派貓咪" class="aspect-square object-cover">
+                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">彩色貓咪</p>
+                    </div>
+                    <!-- Cute paw prints trailing from it -->
+                    <div class="absolute -bottom-10 -right-10 flex gap-2 rotate-[20deg] opacity-40 text-slate-400 text-xl">
+                        <i class="fa-solid fa-paw translate-y-2"></i>
+                        <i class="fa-solid fa-paw translate-y-4"></i>
+                        <i class="fa-solid fa-paw translate-y-1"></i>
+                    </div>
+                </div>
+
+                <!-- Item 3: Seahorse Painting -->
+                <div class="w-[400px] shrink-0">
+                    <div class="polaroid shadow-xl transform rotate-2 hover:-translate-y-4 transition-transform">
+                        <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" alt="鬱金香花瓶" class="aspect-square object-cover">
+                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">鬱金香</p>
+                    </div>
+                </div>
+
+                <!-- Item 4: Shop Banner -->
+                <div class="w-[350px] shrink-0 relative">
+                    <div class="polaroid shadow-md transform -rotate-1">
+                        <div class="tape"></div>
+                        <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="花卉明信片展示" class="aspect-[4/3] object-cover">
+                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">花卉明信片</p>
+                    </div>
+                    <!-- decorative stamp -->
+                    <div class="absolute -top-6 -right-6 w-16 h-16 border-4 border-red-300 rounded-full flex items-center justify-center rotate-12 opacity-50">
+                        <span class="font-serif text-red-300 font-bold text-xl">MAGIC</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Chapter 3: The Memo Wall (腦袋裡的奇特事物) -->
+        <section class="min-h-screen relative flex items-center justify-center py-32 px-4 pointer-events-auto" id="chapter3">
+
+            <div class="max-w-6xl w-full flex flex-col items-center">
+                <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-seedling text-green-400"></i> 第三章 / 奇特事物
+                </p>
+                <h2 class="font-serif text-3xl md:text-5xl font-bold text-slate-700 mb-16 text-center">
+                    腦袋裡的奇特事物
+                </h2>
+
+                <!-- Scrapbook Board Container -->
+                <div class="w-full relative md:min-h-[600px] border-4 border-dashed border-sky-200/50 rounded-xl p-6 md:p-8 bg-white/20 backdrop-blur-sm gs-reveal">
+
+                    <!-- Decorative Corkboard elements -->
+                    <div class="absolute top-4 left-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute top-4 right-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute bottom-4 left-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute bottom-4 right-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+
+                    <!-- Mobile: flow layout / Desktop: absolute positioned -->
+                    <div class="flex flex-col items-center gap-6 md:block md:min-h-[600px]">
+                        <!-- Central Text Note -->
+                        <div class="note-paper relative md:absolute md:top-1/2 md:left-1/2 md:transform md:-translate-x-1/2 md:-translate-y-1/2 z-20 w-full max-w-[320px] text-center shadow-xl rotate-0 md:rotate-1 hover:rotate-0 transition-transform">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-yellow-400 shadow-sm border-2 border-white"></div>
+                            <p class="font-serif text-lg md:text-xl leading-loose text-slate-700">
+                                腦袋裡住著很多<span class="highlight-text">奇特東西</span>，<br>
+                                有些在發芽，<br>
+                                有些正在曬太陽。
+                            </p>
+                            <div class="mx-auto mt-4 opacity-40 text-green-400 text-3xl"><i class="fa-solid fa-seedling"></i></div>
+                        </div>
+
+                        <!-- Surrounding Artworks (Real Illustrations) -->
+                        <div class="polaroid relative md:absolute md:top-10 md:left-24 w-[70%] md:w-56 rotate-0 md:-rotate-6 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-lg cursor-pointer">
+                            <div class="tape blue"></div>
+                            <img src="/assets/img/guild/naomiao77/620420206_17907652968337939_396140348163788067_n.webp" alt="招財御守鑰匙圈" class="aspect-[4/3] object-cover">
+                            <p class="text-center font-serif mt-2 text-slate-400 text-xs">招財御守</p>
+                        </div>
+
+                        <div class="polaroid relative md:absolute md:bottom-10 md:left-40 w-[70%] md:w-60 rotate-0 md:rotate-6 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-lg cursor-pointer">
+                            <div class="tape yellow"></div>
+                            <img src="/assets/img/guild/naomiao77/620458519_17907652980337939_9221614729533321159_n.webp" alt="貓青壓克力吊飾" class="aspect-square object-cover">
+                            <p class="text-center font-serif mt-2 text-slate-400 text-xs">貓青吊飾</p>
+                        </div>
+                    </div>
+
+                    <!-- Decorative floating icons inside the board -->
+                    <div class="absolute top-1/3 left-1/4 opacity-30 animate-pulse text-yellow-400 text-2xl hidden md:block"><i class="fa-solid fa-star"></i></div>
+                    <div class="absolute bottom-1/3 right-1/4 opacity-30 animate-bounce text-sky-300 text-xl hidden md:block"><i class="fa-solid fa-cloud"></i></div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider -->
+        <div class="section-divider pointer-events-none px-6" id="divider-3">
+            <div style="display:flex; align-items:center; justify-content:center; gap:16px; padding:20px 0; opacity:0.4;">
+                <div style="flex:1; height:1px; background: linear-gradient(90deg, transparent, #7DD3FC, transparent);"></div>
+                <i class="fa-solid fa-star" style="color:#FDE047; font-size:8px;"></i>
+                <i class="fa-solid fa-wand-sparkles" style="color:#7DD3FC; font-size:11px;"></i>
+                <i class="fa-solid fa-star" style="color:#FDE047; font-size:8px;"></i>
+                <div style="flex:1; height:1px; background: linear-gradient(90deg, transparent, #7DD3FC, transparent);"></div>
+            </div>
+        </div>
+
+        <!-- Chapter 3.5: 日常魔法卡 (Daily Magic Cards) -->
+        <section class="min-h-screen relative flex flex-col items-center justify-center py-32 px-4 pointer-events-auto magic-cards" id="magic-cards">
+            <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                <i class="fa-solid fa-wand-sparkles text-sky-400"></i> 魔法時刻 / Magic Cards
+            </p>
+            <h2 class="font-serif text-3xl md:text-5xl font-bold text-slate-700 mb-6 text-center">
+                相信日常裡的小小魔法
+            </h2>
+            <p class="font-serif text-slate-500 mb-16 text-center max-w-md">點擊翻開一張卡片，收下今天的溫柔魔法。</p>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl w-full" id="magic-card-grid">
+                <!-- Cards will be generated by JS -->
+            </div>
+
+            <!-- Decorative elements -->
+            <div class="absolute top-20 right-10 opacity-20 animate-float-slow text-yellow-300 text-3xl"><i class="fa-solid fa-sparkles"></i></div>
+            <div class="absolute bottom-20 left-10 opacity-20 animate-float-medium text-sky-300 text-2xl"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        </section>
+
+        <!-- Hidden Cat Collection Counter -->
+        <div id="cat-counter" class="fixed bottom-6 right-6 z-[90] glass-card px-4 py-3 pointer-events-auto cursor-pointer shadow-lg hover:shadow-xl transition-all hover:scale-105" style="display: none;">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-paw text-sky-400"></i>
+                <span class="font-serif text-slate-600 text-sm"><span id="cat-found">0</span> / <span id="cat-total">5</span></span>
+            </div>
+        </div>
+
+        <!-- Chapter 3.7: 字畫攤 / Art Gallery with Real Artwork -->
+        <section class="min-h-screen relative py-32 px-4 md:px-10 pointer-events-auto" id="art-gallery">
+            <div class="max-w-6xl mx-auto w-full">
+                <div class="text-center mb-20 gs-reveal">
+                    <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-palette text-sky-400"></i> 字畫攤 / Art Gallery
+                    </p>
+                    <h2 class="font-serif text-3xl md:text-5xl font-bold text-slate-700 mb-6">
+                        歡迎來到貓青的字畫攤
+                    </h2>
+                    <p class="font-serif text-slate-500 max-w-lg mx-auto">膩賀！我是賣字畫的貓青 ฅ(`ꈊ´ฅ)ｼｬｰ!<br>我喜歡畫畫、吃東西、亂聊天。</p>
+                </div>
+
+                <!-- Featured artwork: Cat on Whale -->
+                <div class="gs-reveal mb-20">
+                    <div class="book-spread p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
+                        <div class="book-spine hidden md:block"></div>
+                        <div class="relative">
+                            <div class="polaroid w-full max-w-[400px] mx-auto shadow-2xl transform -rotate-1 hover:rotate-0 transition-all duration-500 hover:scale-105">
+                                <div class="tape blue"></div>
+                                <img src="/assets/img/guild/naomiao77/cat-on-whale.jpg" alt="貓騎鯨魚 - 貓青原創插畫" class="w-full object-cover rounded-sm">
+                                <p class="text-center font-serif mt-4 text-slate-500 text-sm tracking-widest">鯨魚上的貓</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <blockquote class="note-paper relative">
+                                <p class="font-serif text-lg md:text-xl leading-loose text-slate-600">
+                                    每一筆都是溫柔的痕跡，<br>
+                                    貓咪騎在鯨魚上，<br>
+                                    在水彩的海洋裡悠悠前行。
+                                </p>
+                            </blockquote>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Artwork Grid: Real illustrations -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                    <!-- Golden Fish -->
+                    <div class="gs-reveal">
+                        <div class="polaroid shadow-xl transform rotate-1 hover:-translate-y-4 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                            <div class="tape yellow"></div>
+                            <img src="/assets/img/guild/naomiao77/seahorse-painting.jpg" alt="黃金有魚 Golden Abundance" class="w-full object-cover rounded-sm">
+                            <div class="p-3 text-center">
+                                <p class="font-serif text-slate-700 font-bold text-sm">《黃金有魚》</p>
+                                <p class="font-serif text-slate-400 text-xs mt-1">Golden Abundance</p>
+                                <p class="font-serif text-slate-500 text-xs mt-2 leading-relaxed">暖呼呼的鯛魚燒吐出了金元寶<br>金黃色的光芒不只是財富</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Postcards -->
+                    <div class="gs-reveal" style="animation-delay: 0.15s;">
+                        <div class="polaroid shadow-xl transform -rotate-2 hover:-translate-y-4 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                            <div class="tape"></div>
+                            <img src="/assets/img/guild/naomiao77/postcards-illustration.jpg" alt="花朵明信片系列" class="w-full object-cover rounded-sm">
+                            <div class="p-3 text-center">
+                                <p class="font-serif text-slate-700 font-bold text-sm">花朵明信片系列</p>
+                                <p class="font-serif text-slate-400 text-xs mt-1">水仙 · 海芋 · 鬱金香</p>
+                                <p class="font-serif text-slate-500 text-xs mt-2 leading-relaxed">手繪的花朵線條<br>每一朵都有自己的個性</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phoenix Calligraphy -->
+                    <div class="gs-reveal" style="animation-delay: 0.3s;">
+                        <div class="polaroid shadow-xl transform rotate-2 hover:-translate-y-4 hover:rotate-0 transition-all duration-500 cursor-pointer">
+                            <div class="tape blue"></div>
+                            <img src="/assets/img/guild/naomiao77/pop-art-poster.jpg" alt="神鳥鳳凰圖" class="w-full object-cover rounded-sm">
+                            <div class="p-3 text-center">
+                                <p class="font-serif text-slate-700 font-bold text-sm">《神鳥鳳凰圖》</p>
+                                <p class="font-serif text-slate-400 text-xs mt-1">書法 × 插畫</p>
+                                <p class="font-serif text-slate-500 text-xs mt-2 leading-relaxed">有人敲碗就畫一下好了</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shop Products Row -->
+                <div class="gs-reveal">
+                    <div class="glass-card p-8 md:p-10 text-center">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                            <div class="polaroid shadow-lg transform -rotate-1 hover:rotate-0 transition-all duration-300">
+                                <img src="/assets/img/guild/naomiao77/shop-banner.jpg" alt="貓青的小舖" class="w-full object-cover rounded-sm">
+                                <p class="text-center font-serif mt-3 text-slate-400 text-xs">貓青的字畫攤</p>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-serif text-2xl font-bold text-slate-700 mb-4">
+                                    帶一份溫柔回家
+                                </h3>
+                                <p class="font-serif text-slate-500 leading-relaxed mb-4">
+                                    這裡有賣我的明信片，還有一些小周邊～<br>
+                                    如果你喜歡我的創作風格，歡迎來看看！
+                                </p>
+                                <blockquote class="text-slate-400 text-sm font-serif italic border-l-2 border-amber-200 pl-4 mb-6">
+                                    「原畫販售中 — 每幅都附贈親筆簽名介紹卡片，可以收藏可以展示，可以贈友」
+                                </blockquote>
+                                <a href="https://myship.7-11.com.tw/general/detail/GM2507312445614" target="_blank" class="inline-block glass-card px-6 py-3 text-sky-600 hover:text-sky-800 hover:bg-white/90 transition-all text-sm font-bold tracking-wider border-2 border-sky-200 hover:border-sky-400">
+                                    逛逛賣貨便
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Owl Painting -->
+                <div class="gs-reveal mt-20">
+                    <div class="flex flex-col md:flex-row items-center gap-8 max-w-3xl mx-auto">
+                        <div class="polaroid w-48 md:w-64 shadow-lg transform rotate-3 hover:rotate-0 transition-all duration-300 flex-shrink-0">
+                            <img src="/assets/img/guild/naomiao77/owl-painting.jpg" alt="龍牛羊神獸畫布" class="w-full object-cover rounded-sm">
+                            <p class="text-center font-serif mt-3 text-slate-400 text-xs">神獸集合</p>
+                        </div>
+                        <div class="note-paper flex-1">
+                            <p class="font-serif text-lg leading-loose text-slate-600">
+                                「歡迎來到貓青的字畫攤 —<br>
+                                現在有<span class="highlight-text">展品標售開始</span>。」
+                            </p>
+                            <p class="mt-4 text-sm text-slate-400">
+                                尺寸15x15 無框畫，每幅都附贈親筆簽名介紹卡片
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Divider before epilogue -->
+        <div class="section-divider pointer-events-none px-6" id="divider-4">
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px; padding:20px 0; opacity:0.4;">
+                <div style="flex:1; height:1px; background: linear-gradient(90deg, transparent, #A7F3D0, transparent);"></div>
+                <i class="fa-solid fa-heart" style="color:#F9A8D4; font-size:10px;"></i>
+                <i class="fa-solid fa-feather" style="color:#A7F3D0; font-size:12px;"></i>
+                <i class="fa-solid fa-heart" style="color:#F9A8D4; font-size:10px;"></i>
+                <div style="flex:1; height:1px; background: linear-gradient(90deg, transparent, #A7F3D0, transparent);"></div>
+            </div>
+        </div>
+
+        <!-- Chapter 4: Epilogue (Closure) -->
+        <section class="min-h-[70vh] relative flex flex-col items-center justify-center py-20 px-6 pointer-events-auto border-t border-slate-200/50 bg-white/40 backdrop-blur-sm" id="chapter4">
+
+            <!-- Bookmark Ribbon -->
+            <div class="absolute top-0 right-10 md:right-32 w-12 h-32 bg-sky-300/80 shadow-md shadow-sky-200" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);"></div>
+
+            <div class="max-w-3xl mx-auto w-full text-center relative z-10 gs-reveal">
+
+                <h3 class="font-serif text-2xl md:text-3xl font-bold text-slate-700 mb-8 leading-loose">
+                    希望我的插畫，<br>
+                    能在世界有點吵的時候，<br>
+                    <span class="font-bold text-sky-700 bg-white/60 px-4 py-2 rounded-lg shadow-sm">替你留下一小塊，剛剛好的溫柔。</span>
+                </h3>
+
+                <!-- Ending illustration -->
+                <div class="w-40 h-40 mx-auto my-12 relative animate-float-slow">
+                    <div style="width:100%; height:100%; border-radius:50%; overflow:hidden; border:3px solid rgba(125,211,252,0.4); box-shadow: 0 8px 32px rgba(125,211,252,0.2);">
+                        <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="貓青插畫" style="width:100%; height:100%; object-fit:cover; object-position: 35% 62%; transform:scale(2); transform-origin: 35% 62%;">
+                    </div>
+                </div>
+
+                <!-- Footer Sign-off & Socials -->
+                <div class="mt-8 text-center text-slate-500 font-serif">
+                    <p class="mb-6 tracking-widest text-sm">感謝你的停留，慢慢翻閱這本天空裡的插畫書。</p>
+                    <div class="flex justify-center gap-8 text-3xl mb-8">
+                        <a href="https://www.threads.net/@naomiao77" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300 thread-link group relative inline-block"><i class="fa-brands fa-threads group-hover:animate-bounce"></i></a>
+                        <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://vocus.cc/salon/Naomiao" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-solid fa-pen-fancy"></i></a>
+                        <a href="https://portaly.cc/naomiao77" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-solid fa-link"></i></a>
+                    </div>
+                    <a href="https://myship.7-11.com.tw/general/detail/GM2507312445614" target="_blank" class="inline-block glass-card px-6 py-3 text-sky-600 hover:text-sky-800 hover:bg-white/90 transition-all text-sm font-bold tracking-wider">
+                        逛逛貓青的小舖
+                    </a>
+                </div>
+            </div>
+
+            <div class="mt-16 text-center">
+                <div class="text-xs text-slate-400 font-serif opacity-50 mb-2">- The End -</div>
+                <p class="mt-4 text-xs text-slate-300 font-serif">Made with ♥ by <a href="/guild/" class="text-slate-300 hover:text-sky-500 transition-colors">SuperGalen's Dungeon</a></p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Scroll-to-bottom button -->
+    <button id="scroll-to-bottom" class="fixed bottom-20 right-6 z-[85] glass-card w-11 h-11 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow cursor-pointer border-2 border-sky-200 hover:border-sky-400 text-sky-500 hover:text-sky-700" style="border-radius:50%; opacity:0; pointer-events:none;" aria-label="回到頁頂">
+        <i class="fa-solid fa-angles-up text-lg"></i>
+    </button>
+
+    <!-- Companion Cat - cropped from her cat-with-flower illustration (cat face) -->
+    <div id="companion-cat" style="display:none;">
+        <div class="speech-bubble" id="cat-speech"></div>
+        <div style="width:65px; height:65px; border-radius:50%; overflow:hidden; border:3px solid #fff; box-shadow: 2px 4px 12px rgba(0,0,0,0.12); background:#e0f2fe;">
+            <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="" style="width:100%; height:100%; object-fit:cover; object-position: 35% 62%; transform:scale(2.2); transform-origin: 35% 62%;">
+        </div>
+    </div>
+
+    <script>
+                // 2. GSAP Scroll Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Parallax for hero images
+        gsap.to(".hero-images .polaroid", {
+            yPercent: -30,
+            ease: "none",
+            stagger: 0.1,
+            scrollTrigger: {
+                trigger: "#hero",
+                start: "top top",
+                end: "bottom top",
+                scrub: 0.1
+            }
+        });
+
+        // Reveal animations for polaroids in Chapter 2 & 3 (Pop-up Book Effect)
+        const revealElements = document.querySelectorAll('.gs-reveal');
+        revealElements.forEach((el, i) => {
+            // Apply a 3D perspective to the parent to make the fold-out look good
+            gsap.set(el.parentElement, { perspective: 1000 });
+            gsap.set(el, { transformOrigin: "bottom center" });
+
+            gsap.fromTo(el,
+                {
+                    autoAlpha: 0,
+                    rotationX: -80, // Folded down flat
+                    rotationZ: () => Math.random() * 30 - 15,
+                    scale: 0.8,
+                    y: 100
+                },
+                {
+                    duration: 1.0, // Faster animation
+                    autoAlpha: 1,
+                    rotationX: 0, // Stand up
+                    scale: 1,
+                    y: 0,
+                    rotationZ: el.style.transform.match(/rotate\((.*?)deg\)/) ? el.style.transform.match(/rotate\((.*?)deg\)/)[1] : 0,
+                    ease: "back.out(1.5)", // Snappier, less lingering bounce
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 95%", // Start earlier
+                        end: "top 50%",
+                        scrub: 0.2, // Drastically reduce scrub smoothing to make it react immediately
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        // --- ENTRANCE INTERACTION ---
+        const overlay = document.getElementById('entrance-overlay');
+        const mainContent = document.getElementById('main-content');
+
+        // Stop scroll before click
+                document.body.style.overflow = 'hidden';
+
+        overlay.addEventListener('click', () => {
+            const tl = gsap.timeline();
+
+            // Entrance icon zoom and splash
+            gsap.to('#entrance-icon', {
+                scale: 1.2,
+                duration: 0.3,
+                ease: "back.out"
+            });
+
+            // Watercolor splash burst from center
+            const eCx = window.innerWidth / 2;
+            const eCy = window.innerHeight / 2;
+            const splashColors = ['rgba(125,211,252,0.5)', 'rgba(167,243,208,0.4)', 'rgba(253,224,71,0.35)', 'rgba(186,230,253,0.5)', 'rgba(252,165,165,0.3)'];
+            for (let si = 0; si < 12; si++) {
+                const sp = document.createElement('div');
+                sp.style.position = 'fixed';
+                sp.style.zIndex = '101';
+                sp.style.pointerEvents = 'none';
+                const sSize = 30 + Math.random() * 60;
+                sp.style.width = sSize + 'px';
+                sp.style.height = sSize + 'px';
+                sp.style.borderRadius = '50%';
+                sp.style.left = eCx + 'px';
+                sp.style.top = eCy + 'px';
+                sp.style.background = splashColors[si % splashColors.length];
+                sp.style.filter = `blur(${8 + Math.random() * 12}px)`;
+                document.body.appendChild(sp);
+
+                const sAngle = (Math.PI * 2 / 12) * si;
+                const sDist = 150 + Math.random() * 300;
+                gsap.to(sp, {
+                    x: Math.cos(sAngle) * sDist,
+                    y: Math.sin(sAngle) * sDist,
+                    scale: 2 + Math.random() * 2,
+                    opacity: 0,
+                    duration: 1.2 + Math.random() * 0.5,
+                    ease: 'power2.out',
+                    onComplete: () => sp.remove()
+                });
+            }
+
+            tl.to("#entrance-prompt", {
+                y: 30,
+                opacity: 0,
+                duration: 0.3,
+                ease: "power2.in"
+            })
+            .to("#entrance-title", {
+                scale: 1.5,
+                opacity: 0,
+                duration: 0.5,
+                ease: "power2.in"
+            }, "-=0.1")
+            .to("#entrance-icon", {
+                scale: 2,
+                opacity: 0,
+                duration: 0.6,
+                ease: "power2.in"
+            }, "-=0.3")
+            .to(overlay, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    overlay.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            }, "-=0.4")
+            // Fade in main content and make the hero elements pop up
+            .to(mainContent, {
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out"
+            }, "-=0.4")
+            .from(".hero-text > *", {
+                y: 30,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: "back.out(1.5)"
+            }, "-=0.6")
+            .from(".hero-images .polaroid", {
+                y: 50,
+                rotationX: -45,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.15,
+                ease: "back.out(1.5)"
+            }, "-=0.6");
+        });
+
+
+        // 3D Tilt interaction for Polaroids
+        const polaroids = document.querySelectorAll('.polaroid');
+        polaroids.forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left; // x position within the element.
+                const y = e.clientY - rect.top;  // y position within the element.
+
+                // Calculate rotation based on mouse position relative to center
+                const xPct = (x / rect.width) - 0.5; // -0.5 to 0.5
+                const yPct = (y / rect.height) - 0.5; // -0.5 to 0.5
+
+                const rotateX = yPct * -30; // Max 15deg rotation
+                const rotateY = xPct * 30; // Max 15deg rotation
+
+                gsap.to(el, {
+                    rotationX: rotateX,
+                    rotationY: rotateY,
+                    scale: 1.1,
+                    duration: 0.4,
+                    ease: "power2.out",
+                    overwrite: "auto"
+                });
+
+                // Move glare
+                const glareX = xPct * 100;
+                const glareY = yPct * 100;
+                gsap.to(el, {
+                    '--glare-x': `${glareX}%`,
+                    '--glare-y': `${glareY}%`,
+                    duration: 0.1
+                });
+            });
+
+            el.addEventListener('mouseenter', () => {
+                el.classList.add('hover-active');
+            });
+
+            el.addEventListener('mouseleave', () => {
+                el.classList.remove('hover-active');
+                gsap.to(el, {
+                    rotationX: 0,
+                    rotationY: 0,
+                    scale: 1,
+                    duration: 0.6,
+                    ease: "elastic.out(1, 0.3)",
+                    overwrite: "auto"
+                });
+            });
+        });
+
+        // Sun Interaction
+        const sunWrapper = document.getElementById('illustration-sun-wrapper');
+        const sunInner = document.getElementById('illustration-sun');
+        if (sunWrapper && sunInner) {
+            sunWrapper.addEventListener('click', (e) => {
+                // Squish and pop animation
+                gsap.timeline()
+                    .to(sunInner, { scale: 0.8, duration: 0.1, ease: "power2.in" })
+                    .to(sunInner, { scale: 1.3, duration: 0.4, ease: "elastic.out(1, 0.3)" })
+                    .to(sunInner, { scale: 1, duration: 0.2 });
+
+                // Spawn mini suns/stars burst
+                for (let i = 0; i < 5; i++) {
+                    const spark = document.createElement('div');
+                    spark.style.position = 'absolute';
+                    spark.style.left = '50%';
+                    spark.style.top = '50%';
+                    spark.style.width = '20px';
+                    spark.style.height = '20px';
+                    spark.style.transform = 'translate(-50%, -50%)';
+                    spark.style.pointerEvents = 'none';
+                    spark.innerHTML = `<div style="width:100%;height:100%;border-radius:50%;background:radial-gradient(circle,#FEF08A,#FDE047);"></div>`;
+                    sunWrapper.appendChild(spark);
+
+                    const angle = (i / 5) * Math.PI * 2;
+                    const dist = 60 + Math.random() * 40;
+
+                    gsap.to(spark, {
+                        x: Math.cos(angle) * dist,
+                        y: Math.sin(angle) * dist,
+                        rotation: Math.random() * 360,
+                        opacity: 0,
+                        duration: 1 + Math.random(),
+                        ease: "power2.out",
+                        onComplete: () => spark.remove()
+                    });
+                }
+            });
+        }
+
+        // Horizontal Scroll for Chapter 2 Gallery
+        const horizontalContainer = document.getElementById('horizontal-container');
+        if (horizontalContainer) {
+            // Get total scrollable width
+            const scrollWidth = horizontalContainer.scrollWidth - window.innerWidth;
+
+            gsap.to(horizontalContainer, {
+                x: -scrollWidth,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#chapter2-horizontal",
+                    start: "top top",
+                    end: `+=${scrollWidth + window.innerWidth}`, // Scroll distance equivalent to content width
+                    pin: true,
+                    scrub: 0.5,
+                    invalidateOnRefresh: true,
+                    // When scrolling horizontally, add a slight tilt to the polaroids simulating wind/movement
+                    onUpdate: (self) => {
+                        const velocity = self.getVelocity();
+                        const tilt = Math.max(Math.min(velocity / 100, 10), -10); // Cap tilt
+                        gsap.to("#horizontal-container .polaroid", {
+                            rotationZ: (i, el) => {
+                                // Keep base rotation and add tilt
+                                const baseRotation = el._gsap ? el._gsap.rotation || 0 : 0;
+                                return baseRotation + (tilt * 0.2);
+                            },
+                            duration: 0.5,
+                            ease: "power1.out",
+                            overwrite: "auto"
+                        });
+
+                        // Send velocity info to global window for p5.js to access
+                        window.scrollVelocity = velocity;
+                    }
+                }
+            });
+        }
+
+        // SVG Scroll Path Drawing
+        const scrollPathFill = document.getElementById('scroll-path-fill');
+        const scrollFollower = document.getElementById('scroll-follower');
+        if (scrollPathFill && scrollFollower) {
+            const pathLength = scrollPathFill.getTotalLength();
+
+            // Set up initial path drawing state
+            gsap.set(scrollPathFill, {
+                strokeDasharray: pathLength,
+                strokeDashoffset: pathLength
+            });
+
+            // Animate path draw based on overall page scroll
+            gsap.to(scrollPathFill, {
+                strokeDashoffset: 0,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.1
+                }
+            });
+
+            // Follow the path with the follower element
+            gsap.to(scrollFollower, {
+                motionPath: {
+                    path: scrollPathFill,
+                    align: scrollPathFill,
+                    alignOrigin: [0.5, 0.5]
+                },
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.1
+                }
+            });
+        }
+
+        // Add a "page turn" or floating effect to chapter titles
+        const sectionTitles = document.querySelectorAll('h2:not(#entrance-title)');
+        sectionTitles.forEach((title) => {
+            gsap.from(title, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: title,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+
+        // 3. SVG Hand-Drawn Background Elements (Clouds, Cats, Stars, Notes, Flowers)
+        const createBackgroundElements = () => {
+            const backLayer = document.getElementById('cloud-layer-back');
+            const frontLayer = document.getElementById('cloud-layer-front');
+
+            // Removed drop-shadows for performance
+            const cloudSVGs = [
+                // Soft cloud 1
+                `<div style="width:100%; height:auto; aspect-ratio:2/1; background:radial-gradient(ellipse at 50% 60%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.3) 60%, transparent 80%); border-radius:50%; filter:blur(2px);"></div>`,
+                // Soft cloud 2
+                `<div style="width:100%; height:auto; aspect-ratio:2.2/1; background:radial-gradient(ellipse at 40% 50%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.2) 65%, transparent 80%); border-radius:50%; filter:blur(3px);"></div>`,
+                // Warm glow dot
+                `<div style="width:100%; height:auto; aspect-ratio:1/1; background:radial-gradient(circle, #FEF08A 20%, rgba(253,224,71,0.3) 50%, transparent 70%); border-radius:50%;"></div>`,
+                // Sky blue dot
+                `<div style="width:100%; height:auto; aspect-ratio:1/1; background:radial-gradient(circle, rgba(186,230,253,0.7) 20%, rgba(186,230,253,0.2) 50%, transparent 70%); border-radius:50%;"></div>`,
+                // Pink glow dot
+                `<div style="width:100%; height:auto; aspect-ratio:1/1; background:radial-gradient(circle, rgba(252,231,243,0.7) 20%, rgba(249,168,212,0.2) 50%, transparent 70%); border-radius:50%;"></div>`
+            ];
+
+            // Floating artwork face bubbles - cropped circles showing cat/animal faces from her illustrations
+            const faceBubbles = [
+                { url: "/assets/img/guild/naomiao77/cat-on-whale.jpg", pos: "42% 28%", zoom: "2" },       // 貓騎鯨魚 - 貓臉在上方偏左
+                { url: "/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp", pos: "35% 62%", zoom: "2.2" },  // 貓拿花 - 貓臉在左下
+                { url: "/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp", pos: "45% 38%", zoom: "1.7" },  // 彩色立體派貓 - 貓臉佔滿中央
+                { url: "/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp", pos: "50% 25%", zoom: "1.7" },  // 鬱金香花瓶 - 花朵在上半
+                { url: "/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp", pos: "25% 28%", zoom: "2" },  // 兩貓+金元寶 - 貓臉在左上
+                { url: "/assets/img/guild/naomiao77/owl-painting.jpg", pos: "50% 42%", zoom: "1.8" },       // 多動物畫布(龍牛羊) - 動物們在中央
+                { url: "/assets/img/guild/naomiao77/seahorse-painting.jpg", pos: "50% 45%", zoom: "1.7" },  // 鯛魚燒畫布 - 魚在中央
+                { url: "/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp", pos: "50% 42%", zoom: "1.7" },  // Hello貓畫布 - 貓臉在中央
+            ];
+            function makeFaceBubble() {
+                const face = faceBubbles[Math.floor(Math.random() * faceBubbles.length)];
+                const size = 45 + Math.floor(Math.random() * 25); // 45-70px
+                const zoom = face.zoom || "1.8";
+                return `<div style="width:${size}px; height:${size}px; border-radius:50%; overflow:hidden; border:2px solid rgba(255,255,255,0.8); box-shadow: 0 2px 10px rgba(125,211,252,0.3); opacity:0.7;">
+                    <img src="${face.url}" style="width:100%; height:100%; object-fit:cover; object-position:${face.pos}; transform:scale(${zoom}); transform-origin:${face.pos};" alt="">
+                </div>`;
+            }
+
+            // Note paper with real quotes from naomiao77
+            const noteQuotes = [
+                '畫貓、畫花、\n畫天馬行空的瞬間',
+                '一筆一筆，\n畫成現在的樣子。',
+                '喜歡柔軟的線條、\n溫和的顏色。',
+                '膩賀！\n我是賣字畫的貓青',
+                '養貓，畫畫，\n偶爾旅行。',
+                '剛好被需要的\n陪伴。',
+                '腦袋裡住著\n很多奇特東西',
+                '超愛綠色\nENFJ / 雙子座',
+            ];
+            function makeNoteSVG() {
+                const quote = noteQuotes[Math.floor(Math.random() * noteQuotes.length)];
+                const lines = quote.split('\n');
+                const rotation = Math.random() * 10 - 5;
+                return `
+                <div style="position:relative; transform:rotate(${rotation}deg); background:#FEF9C3; border:1px solid #FDE047; padding:18px 14px 14px; border-radius:2px; box-shadow:2px 3px 8px rgba(0,0,0,0.06); width:100%; min-height:80px;">
+                    <div style="position:absolute; top:-8px; left:50%; transform:translateX(-50%) rotate(2deg); width:50px; height:14px; background:rgba(186,230,253,0.7); border:1px solid rgba(186,230,253,0.3);"></div>
+                    <p style="font-family:'Zhi Mang Xing',cursive; font-size:14px; color:#64748b; line-height:1.5; margin:0; white-space:pre-line;">${lines.join('\n')}</p>
+                    <span style="position:absolute; bottom:4px; right:6px; font-size:12px; opacity:0.25;">🐾</span>
+                </div>
+                `;
+            }
+
+            const spawnElements = (layer, count, isFront) => {
+                for (let i = 0; i < count; i++) {
+                    const elWrapper = document.createElement('div');
+                    elWrapper.style.position = 'absolute';
+                    elWrapper.style.pointerEvents = 'auto'; // Make interactive
+                    elWrapper.style.cursor = 'pointer'; // Give affordance
+                    elWrapper.classList.add('parallax-bg-el'); // Class for scrolltrigger
+
+                    // Hover and Click interaction for background elements
+                    elWrapper.addEventListener('mouseenter', () => {
+                        gsap.to(elWrapper, { scale: 1.1, duration: 0.3, ease: "power2.out", overwrite: "auto" });
+                    });
+
+                    elWrapper.addEventListener('mouseleave', () => {
+                        gsap.to(elWrapper, { scale: 1, duration: 0.3, ease: "power2.in", overwrite: "auto" });
+                    });
+
+                    elWrapper.addEventListener('click', (e) => {
+                        // Prevent the click from bubbling to the background canvas
+                        e.stopPropagation();
+
+                        // Fun bounce animation
+                        gsap.timeline()
+                            .to(elWrapper, { scale: 0.9, duration: 0.1, ease: "power2.in", overwrite: "auto" })
+                            .to(elWrapper, { scale: 1.2, rotation: "+=15", duration: 0.4, ease: "elastic.out(1, 0.4)" })
+                            .to(elWrapper, { scale: 1, rotation: "-=15", duration: 0.3 });
+
+                        // Spawn mini music notes or stars
+                        for (let j = 0; j < 3; j++) {
+                            const spark = document.createElement('div');
+                            spark.style.position = 'absolute';
+                            spark.style.left = '50%';
+                            spark.style.top = '50%';
+                            spark.style.width = '15px';
+                            spark.style.height = '15px';
+                            spark.style.pointerEvents = 'none';
+                            spark.style.zIndex = '5';
+                            // A simple music note or star
+                            const icons = [
+                                `<div style="width:100%;height:100%;border-radius:50%;background:radial-gradient(circle,#FEF08A,#FDE047);"></div>`,
+                                `<div style="width:100%;height:100%;border-radius:50%;background:radial-gradient(circle,#bae6fd,#7dd3fc);"></div>`
+                            ];
+                            spark.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+                            elWrapper.appendChild(spark);
+
+                            gsap.to(spark, {
+                                y: -50 - Math.random() * 50,
+                                x: (Math.random() - 0.5) * 60,
+                                opacity: 0,
+                                rotation: Math.random() * 180,
+                                duration: 1 + Math.random(),
+                                ease: "power2.out",
+                                onComplete: () => spark.remove()
+                            });
+                        }
+                    });
+
+                    const rand = Math.random();
+                    let scale = 1;
+
+                    if (rand > 0.85 && isFront) {
+                        elWrapper.innerHTML = makeNoteSVG();
+                        scale = 0.8 + Math.random() * 0.4;
+                        elWrapper.style.width = `${130 * scale}px`;
+                        elWrapper.dataset.speed = "1.5";
+                    } else if (rand > 0.65) {
+                        // Artwork face bubbles - floating circular crops of her illustrations
+                        elWrapper.innerHTML = makeFaceBubble();
+                        elWrapper.style.width = 'auto';
+                        elWrapper.dataset.speed = isFront ? "1.8" : "0.7";
+                    } else {
+                        const typeIndex = Math.floor(Math.random() * cloudSVGs.length);
+                        elWrapper.innerHTML = cloudSVGs[typeIndex];
+
+                        if (typeIndex === 0 || typeIndex === 1) { // Clouds
+                            scale = 1.0 + Math.random() * 2;
+                            elWrapper.style.width = `${150 * scale}px`;
+                            elWrapper.style.opacity = isFront ? (0.8 + Math.random() * 0.2) : (0.4 + Math.random() * 0.3);
+                            elWrapper.dataset.speed = isFront ? "1.2" : "0.5";
+                            elWrapper.style.zIndex = isFront ? 0 : -1;
+                        } else { // Decorative (Stars, Flowers, Paws)
+                            scale = 0.4 + Math.random() * 0.5;
+                            elWrapper.style.width = `${80 * scale}px`;
+                            elWrapper.dataset.speed = isFront ? "2.0" : "0.8";
+                            elWrapper.style.opacity = isFront ? 0.9 : 0.5;
+                        }
+                    }
+
+                    // Distribute vertically across the document height
+                    const startY = Math.random() * 350; // 0-350vh
+                    // Start from right off-screen or randomly within screen for initial population
+                    // Use a wide range so clouds start at different times and wrap around seamlessly
+                    const startX = Math.random() * 200; // 0 to 200vw
+
+                    elWrapper.style.left = `${startX}vw`;
+                    elWrapper.style.top = `${startY}vh`;
+
+                    layer.appendChild(elWrapper);
+
+                    // Right to Left drift animation
+                    // Faster for front layer, slower for back layer
+                    const duration = (30 + Math.random() * 20) / (parseFloat(elWrapper.dataset.speed) || 1);
+
+                    // Simple infinite wrapping animation from right to left using modifiers
+                    gsap.to(elWrapper, {
+                        x: "-=200vw", // Move left by 200vw
+                        duration: duration,
+                        ease: "none",
+                        repeat: -1,
+                        modifiers: {
+                            // Once a cloud goes far left, wrap it back to the far right (+150vw roughly)
+                            // We use modulo to keep the x value in bounds
+                            x: gsap.utils.unitize(x => parseFloat(x) % 200, "vw")
+                        }
+                    });
+
+                    // Subtle bobbing up and down
+                    gsap.to(elWrapper, {
+                        y: `-=${10 + Math.random() * 15}`,
+                        rotation: -1 + Math.random() * 2,
+                        duration: 2 + Math.random() * 3,
+                        ease: "sine.inOut",
+                        yoyo: true,
+                        repeat: -1,
+                        delay: Math.random() * 2
+                    });
+                }
+            };
+
+            backLayer.style.position = 'fixed';
+            backLayer.style.height = '100vh';
+            frontLayer.style.position = 'fixed';
+            frontLayer.style.height = '100vh';
+
+            // Spawn elements for horizontal drift
+            spawnElements(backLayer, 15, false);
+            spawnElements(frontLayer, 12, true);
+
+        };
+
+        // Ensure body height is mostly calculated before spawning
+        setTimeout(createBackgroundElements, 100);
+
+        // Include MotionPathPlugin for the scroll tracker
+        gsap.registerPlugin(MotionPathPlugin);
+
+        // ==========================================
+        // COMPANION CAT
+        // ==========================================
+        const companionCat = document.getElementById('companion-cat');
+        const catSpeech = document.getElementById('cat-speech');
+        let lastSpeechTime = 0;
+        function showSpeech(text, duration = 2500) {
+            if (!catSpeech) return;
+            catSpeech.textContent = text;
+            catSpeech.classList.add('show');
+            setTimeout(() => catSpeech.classList.remove('show'), duration);
+        }
+        if (companionCat) {
+            // Show cat after entrance
+            const showCatAfterEntrance = () => {
+                setTimeout(() => {
+                    companionCat.style.display = 'block';
+                    gsap.from(companionCat, {
+                        y: 100, opacity: 0, duration: 0.8,
+                        ease: 'back.out(1.5)'
+                    });
+                    showSpeech('膩賀！歡迎來到貓青的字畫攤', 3000);
+                }, 1500);
+            };
+
+            // Hook into existing entrance click
+            const origOverlay = document.getElementById('entrance-overlay');
+            if (origOverlay) {
+                origOverlay.addEventListener('click', showCatAfterEntrance, { once: true });
+            }
+
+            const speeches = {
+                idle: ['在想什麼呢～', '今天天氣好適合畫畫', '要不要翻翻看那些卡片？', '喵～ฅ(`ꈊ´ฅ)ｼｬｰ!', '陪你看到最後喔', '超愛綠色', '去逛逛字畫攤？'],
+                fast: ['等等我啦！', '好快！頭好暈～', '喵嗚～慢一點！'],
+                top: ['回到最上面了！', '要再看一次嗎？'],
+                magic: ['每張卡都有魔法喔', '選一張，收下今天的溫柔！'],
+            };
+
+            let scrollIdleTimer;
+            let isScrolling = false;
+
+            // Scroll behavior
+            ScrollTrigger.create({
+                trigger: 'body',
+                start: 'top top',
+                end: 'bottom bottom',
+                onUpdate: (self) => {
+                    const velocity = Math.abs(self.getVelocity());
+                    const direction = self.direction;
+                    const progress = self.progress;
+                    const now = Date.now();
+
+
+                    isScrolling = true;
+                    clearTimeout(scrollIdleTimer);
+                    scrollIdleTimer = setTimeout(() => {
+                        isScrolling = false;
+
+                    }, 2000);
+
+                    // Slight bounce on scroll
+                    if (velocity > 100) {
+                        gsap.to(companionCat, {
+                            y: direction === 1 ? -5 : 5,
+                            duration: 0.15,
+                            ease: 'power2.out',
+                            overwrite: 'auto'
+                        });
+                        gsap.to(companionCat, {
+                            y: 0,
+                            duration: 0.3,
+                            delay: 0.15,
+                            ease: 'elastic.out(1, 0.5)',
+                            overwrite: false
+                        });
+                    }
+
+                    // Speed-based reactions
+                    if (velocity > 3000 && now - lastSpeechTime > 4000) {
+                        const msg = speeches.fast[Math.floor(Math.random() * speeches.fast.length)];
+                        showSpeech(msg, 2000);
+
+                        lastSpeechTime = now;
+                    }
+
+                    // Section-specific speech
+                    if (progress < 0.05 && direction === -1 && now - lastSpeechTime > 5000) {
+                        showSpeech(speeches.top[Math.floor(Math.random() * speeches.top.length)], 2500);
+                        lastSpeechTime = now;
+                    }
+                }
+            });
+
+            // Magic cards section trigger
+            ScrollTrigger.create({
+                trigger: '#magic-cards',
+                start: 'top 80%',
+                onEnter: () => {
+                    if (Date.now() - lastSpeechTime > 3000) {
+                        showSpeech(speeches.magic[Math.floor(Math.random() * speeches.magic.length)], 3000);
+
+                        lastSpeechTime = Date.now();
+                    }
+                }
+            });
+
+            // Idle timer - cat gets sleepy
+            let idleTimer;
+            function resetIdleTimer() {
+                clearTimeout(idleTimer);
+                // idle reset
+                idleTimer = setTimeout(() => {
+
+                    if (Date.now() - lastSpeechTime > 8000) {
+                        showSpeech(speeches.idle[Math.floor(Math.random() * speeches.idle.length)], 3000);
+                        lastSpeechTime = Date.now();
+                    }
+                }, 8000);
+            }
+
+            document.addEventListener('mousemove', resetIdleTimer);
+            document.addEventListener('scroll', resetIdleTimer);
+            resetIdleTimer();
+
+            // Click to pet
+            let petCount = 0;
+            companionCat.addEventListener('click', (e) => {
+                e.stopPropagation();
+                petCount++;
+
+                // Bounce animation
+                gsap.timeline()
+                    .to(companionCat, { y: -15, scale: 1.1, duration: 0.15, ease: 'power2.out' })
+                    .to(companionCat, { y: 0, scale: 1, duration: 0.4, ease: 'elastic.out(1, 0.3)' });
+
+                // Heart particles
+                for (let i = 0; i < 3; i++) {
+                    const heart = document.createElement('div');
+                    heart.textContent = ['*', '+', '.'][i];
+                    heart.style.position = 'fixed';
+                    heart.style.left = (companionCat.getBoundingClientRect().left + 40) + 'px';
+                    heart.style.top = (companionCat.getBoundingClientRect().top) + 'px';
+                    heart.style.fontSize = '18px';
+                    heart.style.pointerEvents = 'none';
+                    heart.style.zIndex = '90';
+                    document.body.appendChild(heart);
+
+                    gsap.to(heart, {
+                        y: -40 - Math.random() * 30,
+                        x: (Math.random() - 0.5) * 50,
+                        opacity: 0,
+                        duration: 1,
+                        ease: 'power2.out',
+                        onComplete: () => heart.remove()
+                    });
+                }
+
+                const petMsgs = ['嗯嗯好舒服～', '呼嚕呼嚕...', '再摸一下嘛！', '你好溫柔', '喵嗚～開心'];
+                showSpeech(petMsgs[petCount % petMsgs.length], 2500);
+                lastSpeechTime = Date.now();
+
+            });
+        }
+
+        // ==========================================
+        // MAGIC CARDS SYSTEM
+        // ==========================================
+        const magicCardData = [
+            { title: '貓青的日常', message: '我喜歡畫畫、吃東西、亂聊天，\n看我分享我的日常。' },
+            { title: '鯨魚上的貓', message: '還是有在畫畫的，\n羨慕一直有靈感的創作者。' },
+            { title: '字畫攤開張', message: '歡迎來到貓青的字畫攤，\n如果你喜歡我的創作風格，\n歡迎來看看！' },
+            { title: '柔軟的線條', message: '喜歡柔軟的線條、溫和的顏色，\n也喜歡作品被放進生活裡——\n變成剛好被需要的陪伴。' },
+            { title: '黃金有魚', message: '暖呼呼的鯛魚燒吐出了金元寶，\n金黃色的光芒不只是財富，\n更是努力獲得的甜蜜獎勵。' },
+            { title: '發芽中的腦袋', message: '腦袋裡住著很多奇特東西，\n有些在發芽，\n有些正在曬太陽。' },
+            { title: '貓青的最愛', message: '超愛綠色，\nENFJ / O型 / 雙子座。' },
+            { title: '日常小確幸', message: '不只是掛在牆上的藝術，\n而是可以拿在手心裡的溫暖。\n一筆一筆，畫成現在的樣子。' },
+        ];
+
+        const cardGrid = document.getElementById('magic-card-grid');
+        if (cardGrid) {
+            // Shuffle and pick 4 cards
+            const shuffled = magicCardData.sort(() => Math.random() - 0.5).slice(0, 4);
+
+            shuffled.forEach((card, i) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'magic-card-wrapper';
+                const frontIcons = [
+                    `<i class="fa-solid fa-star" style="font-size:36px; color:#FDE047; opacity:0.35;"></i>`,
+                    `<i class="fa-solid fa-sun" style="font-size:36px; color:#BAE6FD; opacity:0.35;"></i>`,
+                    `<i class="fa-solid fa-heart" style="font-size:36px; color:#F9A8D4; opacity:0.35;"></i>`,
+                    `<i class="fa-solid fa-clover" style="font-size:36px; color:#A7F3D0; opacity:0.35;"></i>`,
+                ];
+                wrapper.innerHTML = `
+                    <div class="magic-card">
+                        <div class="magic-card-face magic-card-front">
+                            ${frontIcons[i % frontIcons.length]}
+                            <span class="font-serif text-slate-500 text-sm tracking-widest">翻開看看</span>
+                            <i class="fa-solid fa-sparkles opacity-30" style="font-size:14px; color:#FDE047;"></i>
+                        </div>
+                        <div class="magic-card-face magic-card-back">
+                            <h3 class="font-serif text-xl text-slate-700 mb-3">${card.title}</h3>
+                            <p class="font-serif text-slate-500 leading-relaxed whitespace-pre-line">${card.message}</p>
+                        </div>
+                    </div>
+                `;
+
+                wrapper.addEventListener('click', () => {
+                    const cardEl = wrapper.querySelector('.magic-card');
+                    cardEl.classList.toggle('flipped');
+
+                    // Sparkle burst on first flip
+                    if (cardEl.classList.contains('flipped')) {
+                        for (let j = 0; j < 6; j++) {
+                            const spark = document.createElement('div');
+                            spark.style.position = 'absolute';
+                            spark.style.left = '50%';
+                            spark.style.top = '50%';
+                            spark.style.fontSize = '16px';
+                            spark.style.pointerEvents = 'none';
+                            spark.style.zIndex = '20';
+                            spark.textContent = ['*', '+', '.', '~'][Math.floor(Math.random() * 4)];
+                            wrapper.style.position = 'relative';
+                            wrapper.appendChild(spark);
+
+                            gsap.to(spark, {
+                                x: (Math.random() - 0.5) * 100,
+                                y: -30 - Math.random() * 60,
+                                opacity: 0,
+                                duration: 0.8 + Math.random() * 0.5,
+                                ease: "power2.out",
+                                onComplete: () => spark.remove()
+                            });
+                        }
+                    }
+                });
+
+                cardGrid.appendChild(wrapper);
+
+                // Entrance animation
+                gsap.from(wrapper, {
+                    y: 60,
+                    opacity: 0,
+                    rotationY: -30,
+                    duration: 0.8,
+                    delay: i * 0.15,
+                    ease: "back.out(1.5)",
+                    scrollTrigger: {
+                        trigger: '#magic-cards',
+                        start: 'top 75%',
+                        toggleActions: 'play none none reverse'
+                    }
+                });
+            });
+        }
+
+        // ==========================================
+        // HIDDEN CAT COLLECTION GAME
+        // ==========================================
+        const catPositions = [
+            { section: '#hero', x: '85%', y: '20%', size: 28, hint: '天空的角落' },
+            { section: '#chapter1', x: '10%', y: '80%', size: 24, hint: '書頁的邊緣' },
+            { section: '#chapter2-horizontal', x: '90%', y: '15%', size: 22, hint: '魔法的入口' },
+            { section: '#chapter3', x: '50%', y: '10%', size: 26, hint: '奇特事物堆裡' },
+            { section: '#magic-cards', x: '5%', y: '70%', size: 20, hint: '卡片的旁邊' },
+        ];
+
+        let catsFound = 0;
+        const catCounter = document.getElementById('cat-counter');
+        const catFoundEl = document.getElementById('cat-found');
+        const catTotalEl = document.getElementById('cat-total');
+        let firstCatFound = false;
+
+        if (catTotalEl) catTotalEl.textContent = catPositions.length;
+
+        catPositions.forEach((pos, i) => {
+            const section = document.querySelector(pos.section);
+            if (!section) return;
+
+            section.style.position = 'relative';
+
+            const cat = document.createElement('div');
+            cat.className = 'hidden-cat';
+            cat.style.position = 'absolute';
+            cat.style.left = pos.x;
+            cat.style.top = pos.y;
+            cat.style.width = pos.size + 'px';
+            cat.style.height = pos.size + 'px';
+            cat.style.zIndex = '40';
+            cat.setAttribute('data-cat-index', i);
+            cat.innerHTML = `
+    <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; opacity:0.35; cursor:pointer; transition: opacity 0.3s, transform 0.3s; color:#94a3b8;" onmouseover="this.style.opacity='0.7';this.style.transform='scale(1.15)'" onmouseout="this.style.opacity='0.35';this.style.transform='scale(1)'">
+        <i class="fa-solid fa-cat" style="font-size:${pos.size * 0.6}px;"></i>
+    </div>
+            `;
+
+            cat.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (cat.classList.contains('found')) return;
+
+                cat.classList.add('found');
+                catsFound++;
+                if (catFoundEl) catFoundEl.textContent = catsFound;
+
+                if (!firstCatFound && catCounter) {
+                    catCounter.style.display = 'block';
+                    gsap.from(catCounter, { y: 50, opacity: 0, duration: 0.5, ease: 'back.out(1.5)' });
+                    firstCatFound = true;
+                }
+
+                // Sparkle effect
+                for (let j = 0; j < 5; j++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'cat-sparkle';
+                    sparkle.style.left = (pos.size / 2) + 'px';
+                    sparkle.style.top = (pos.size / 2) + 'px';
+                    sparkle.textContent = ['*', '+', '.'][Math.floor(Math.random() * 3)];
+                    sparkle.style.fontSize = '14px';
+                    cat.appendChild(sparkle);
+
+                    gsap.to(sparkle, {
+                        x: (Math.random() - 0.5) * 60,
+                        y: -20 - Math.random() * 40,
+                        opacity: 0,
+                        duration: 1,
+                        ease: 'power2.out',
+                        onComplete: () => sparkle.remove()
+                    });
+                }
+
+                // Check if all found
+                if (catsFound === catPositions.length) {
+                    setTimeout(() => {
+                        if (catCounter) {
+                            catCounter.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-paw text-sky-400"></i>
+                                    <span class="font-serif text-slate-600 text-sm">全部找到了！你有一雙發現溫柔的眼睛。</span>
+                                </div>
+                            `;
+                            gsap.fromTo(catCounter, { scale: 0.8 }, { scale: 1.05, duration: 0.3, yoyo: true, repeat: 2, ease: 'power2.inOut' });
+                        }
+                    }, 500);
+                }
+            });
+
+            section.appendChild(cat);
+        });
+
+        // 4. p5.js — Diverse floating objects that fall when clicked
+        // Shared array so click handler can access items
+        window._p5Items = [];
+        const sketch = (p) => {
+            const items = window._p5Items;
+            const ITEM_COUNT = 40;
+            // type 0=petal, 1=star, 2=paw, 3=note, 4=leaf, 5=heart, 6=fish, 7=sparkle, 8=cloud, 9=butterfly
+
+            let trailParticles = []; // fire + smoke trail particles
+
+            function makeItem(forceY) {
+                const type = p.floor(p.random(10));
+                const isCloud = type === 8;
+                return {
+                    x: p.random(p.width),
+                    y: forceY !== undefined ? forceY : p.random(p.height),
+                    size: isCloud ? p.random(50, 90) : p.random(10, 20),
+                    speedX: isCloud ? p.random(0.15, 0.5) : p.random(-0.4, 0.4),
+                    speedY: isCloud ? p.random(-0.08, 0.08) : p.random(-0.5, -0.1),
+                    rotation: isCloud ? 0 : p.random(p.TWO_PI),
+                    rotSpeed: isCloud ? 0 : p.random(-0.02, 0.02),
+                    type: type,
+                    opacity: isCloud ? p.random(60, 110) : p.random(50, 110),
+                    falling: false,
+                    fallSpeed: 0,
+                    fallRotSpeed: 0,
+                    wobble: p.random(0.5, 1.5),
+                    wobbleOffset: p.random(p.TWO_PI),
+                };
+            }
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                canvas.style('pointer-events', 'none');
+                p.frameRate(30);
+                items.length = 0;
+                for (let i = 0; i < ITEM_COUNT; i++) items.push(makeItem());
+            };
+
+            function drawItem(it) {
+                const s = it.size;
+                const a = it.opacity;
+
+                switch (it.type) {
+                    case 0: // cherry blossom petal
+                        p.noStroke();
+                        p.fill(252, 182, 199, a);
+                        p.ellipse(0, 0, s, s * 0.6);
+                        p.fill(255, 200, 210, a * 0.7);
+                        p.ellipse(s * 0.25, -s * 0.15, s * 0.6, s * 0.45);
+                        break;
+                    case 1: // twinkling star
+                        p.stroke(253, 224, 71, a);
+                        p.strokeWeight(1.2);
+                        for (let i = 0; i < 4; i++) {
+                            const ang = (p.PI / 4) * i;
+                            p.line(p.cos(ang) * -s * 0.5, p.sin(ang) * -s * 0.5,
+                                   p.cos(ang) * s * 0.5, p.sin(ang) * s * 0.5);
+                        }
+                        p.noStroke();
+                        p.fill(253, 224, 71, a * 0.5);
+                        p.circle(0, 0, s * 0.3);
+                        break;
+                    case 2: // cat paw print
+                        p.noStroke();
+                        p.fill(148, 163, 184, a);
+                        p.ellipse(0, s * 0.12, s * 0.5, s * 0.4);
+                        p.circle(-s * 0.22, -s * 0.18, s * 0.25);
+                        p.circle(s * 0.22, -s * 0.18, s * 0.25);
+                        p.circle(-s * 0.08, -s * 0.35, s * 0.2);
+                        p.circle(s * 0.08, -s * 0.35, s * 0.2);
+                        break;
+                    case 3: // music note
+                        p.stroke(167, 243, 208, a);
+                        p.strokeWeight(1.5);
+                        p.noFill();
+                        p.line(s * 0.18, -s * 0.45, s * 0.18, s * 0.15);
+                        p.fill(167, 243, 208, a);
+                        p.noStroke();
+                        p.ellipse(0, s * 0.15, s * 0.38, s * 0.28);
+                        break;
+                    case 4: // leaf
+                        p.noStroke();
+                        p.fill(134, 239, 172, a * 0.8);
+                        p.beginShape();
+                        p.vertex(0, -s * 0.5);
+                        p.bezierVertex(s * 0.4, -s * 0.2, s * 0.4, s * 0.3, 0, s * 0.5);
+                        p.bezierVertex(-s * 0.4, s * 0.3, -s * 0.4, -s * 0.2, 0, -s * 0.5);
+                        p.endShape();
+                        p.stroke(134, 239, 172, a * 0.5);
+                        p.strokeWeight(0.8);
+                        p.line(0, -s * 0.3, 0, s * 0.3);
+                        break;
+                    case 5: // heart
+                        p.noStroke();
+                        p.fill(252, 165, 165, a * 0.7);
+                        p.beginShape();
+                        p.vertex(0, s * 0.3);
+                        p.bezierVertex(-s * 0.5, 0, -s * 0.5, -s * 0.35, 0, -s * 0.15);
+                        p.bezierVertex(s * 0.5, -s * 0.35, s * 0.5, 0, 0, s * 0.3);
+                        p.endShape(p.CLOSE);
+                        break;
+                    case 6: // tiny fish
+                        p.noStroke();
+                        p.fill(125, 211, 252, a * 0.7);
+                        p.ellipse(0, 0, s * 0.65, s * 0.3);
+                        p.triangle(s * 0.28, 0, s * 0.5, -s * 0.18, s * 0.5, s * 0.18);
+                        p.fill(255, 255, 255, a * 0.6);
+                        p.circle(-s * 0.13, -s * 0.04, s * 0.09);
+                        break;
+                    case 7: // sparkle diamond
+                        p.noStroke();
+                        p.fill(186, 230, 253, a);
+                        p.beginShape();
+                        p.vertex(0, -s * 0.5);
+                        p.vertex(s * 0.08, -s * 0.08);
+                        p.vertex(s * 0.5, 0);
+                        p.vertex(s * 0.08, s * 0.08);
+                        p.vertex(0, s * 0.5);
+                        p.vertex(-s * 0.08, s * 0.08);
+                        p.vertex(-s * 0.5, 0);
+                        p.vertex(-s * 0.08, -s * 0.08);
+                        p.endShape(p.CLOSE);
+                        break;
+                    case 8: // fluffy cloud
+                        p.noStroke();
+                        // soft shadow underneath
+                        p.fill(186, 230, 253, a * 0.35);
+                        p.ellipse(0, s * 0.1, s * 0.95, s * 0.4);
+                        // main cloud body — multiple overlapping lumps
+                        p.fill(255, 255, 255, a);
+                        p.ellipse(0, 0, s, s * 0.55);
+                        p.ellipse(-s * 0.3, 0, s * 0.6, s * 0.5);
+                        p.ellipse(s * 0.3, 0, s * 0.55, s * 0.45);
+                        p.ellipse(-s * 0.12, -s * 0.18, s * 0.55, s * 0.45);
+                        p.ellipse(s * 0.15, -s * 0.15, s * 0.5, s * 0.4);
+                        // bright highlight on top
+                        p.fill(255, 255, 255, a * 0.6);
+                        p.ellipse(0, -s * 0.12, s * 0.4, s * 0.25);
+                        // subtle outline
+                        p.noFill();
+                        p.stroke(186, 230, 253, a * 0.3);
+                        p.strokeWeight(0.8);
+                        p.ellipse(0, 0, s * 1.02, s * 0.57);
+                        break;
+                    case 9: // butterfly
+                        p.noStroke();
+                        // left wing
+                        p.fill(186, 230, 253, a * 0.8);
+                        p.ellipse(-s * 0.2, -s * 0.1, s * 0.45, s * 0.55);
+                        p.fill(167, 243, 208, a * 0.6);
+                        p.ellipse(-s * 0.15, s * 0.15, s * 0.3, s * 0.35);
+                        // right wing
+                        p.fill(186, 230, 253, a * 0.8);
+                        p.ellipse(s * 0.2, -s * 0.1, s * 0.45, s * 0.55);
+                        p.fill(167, 243, 208, a * 0.6);
+                        p.ellipse(s * 0.15, s * 0.15, s * 0.3, s * 0.35);
+                        // body
+                        p.fill(100, 116, 139, a);
+                        p.ellipse(0, 0, s * 0.08, s * 0.4);
+                        break;
+                }
+            }
+
+            p.draw = () => {
+                p.clear();
+                const scrollV = window.scrollVelocity || 0;
+                const windForce = p.constrain(scrollV * 0.01, -3, 3);
+                const t = p.frameCount * 0.03;
+
+                // --- Draw trail particles first (behind items) ---
+                for (let ti = trailParticles.length - 1; ti >= 0; ti--) {
+                    const tp = trailParticles[ti];
+                    tp.x += tp.vx;
+                    tp.y += tp.vy;
+                    tp.life -= tp.decay;
+                    tp.size *= 1.02; // expand slowly
+
+                    if (tp.life <= 0) {
+                        trailParticles.splice(ti, 1);
+                        continue;
+                    }
+
+                    p.noStroke();
+                    if (tp.kind === 'fire') {
+                        // Fire: orange-yellow core → red edge, shrinks as it fades
+                        const fa = tp.life * 180;
+                        p.fill(255, 140 + tp.life * 80, 30, fa);
+                        p.ellipse(tp.x, tp.y, tp.size, tp.size * 0.8);
+                        p.fill(255, 220, 50, fa * 0.6);
+                        p.ellipse(tp.x, tp.y, tp.size * 0.5, tp.size * 0.4);
+                    } else {
+                        // Smoke: gray puff that drifts up and expands
+                        const sa = tp.life * 80;
+                        p.fill(160, 170, 180, sa);
+                        p.ellipse(tp.x, tp.y, tp.size, tp.size * 0.85);
+                    }
+                }
+
+                // --- Update and draw items ---
+                for (let i = items.length - 1; i >= 0; i--) {
+                    const it = items[i];
+
+                    if (it.falling) {
+                        it.fallSpeed += 0.3;
+                        it.y += it.fallSpeed;
+                        it.x += p.sin(t + it.wobbleOffset) * it.wobble;
+                        it.rotation += it.fallRotSpeed;
+                        it.opacity *= 0.98;
+
+                        // Spawn fire + smoke trail behind the falling item
+                        if (it.fallSpeed > 1 && p.frameCount % 2 === 0) {
+                            // Fire particle — near the item, moving slightly up/out
+                            trailParticles.push({
+                                x: it.x + p.random(-it.size * 0.3, it.size * 0.3),
+                                y: it.y - it.size * 0.3,
+                                vx: p.random(-0.5, 0.5),
+                                vy: p.random(-2.5, -0.8),
+                                size: p.random(4, 8 + it.size * 0.3),
+                                life: 1.0,
+                                decay: p.random(0.06, 0.1),
+                                kind: 'fire'
+                            });
+                            // Smoke particle — spawns slightly above fire, drifts up more
+                            if (p.frameCount % 4 === 0) {
+                                trailParticles.push({
+                                    x: it.x + p.random(-it.size * 0.4, it.size * 0.4),
+                                    y: it.y - it.size * 0.5,
+                                    vx: p.random(-0.3, 0.3),
+                                    vy: p.random(-1.5, -0.5),
+                                    size: p.random(6, 12 + it.size * 0.2),
+                                    life: 1.0,
+                                    decay: p.random(0.02, 0.04),
+                                    kind: 'smoke'
+                                });
+                            }
+                        }
+
+                        if (it.y > p.height + 80) {
+                            items[i] = makeItem(-p.random(20, 80));
+                        }
+                    } else {
+                        it.x += it.speedX + p.sin(t + it.wobbleOffset) * 0.15;
+                        it.y += it.speedY - (windForce * 1.5);
+                        it.rotation += it.rotSpeed;
+
+                        if (it.y < -60) it.y = p.height + 60;
+                        if (it.y > p.height + 60) it.y = -60;
+                        if (it.x < -60) it.x = p.width + 60;
+                        if (it.x > p.width + 60) it.x = -60;
+                    }
+
+                    p.push();
+                    p.translate(it.x, it.y);
+                    p.rotate(it.rotation);
+                    drawItem(it);
+                    p.pop();
+                }
+
+                // Cap trail particles to prevent memory issues
+                if (trailParticles.length > 150) {
+                    trailParticles.splice(0, trailParticles.length - 150);
+                }
+            };
+
+            p.windowResized = () => { p.resizeCanvas(p.windowWidth, p.windowHeight); };
+        };
+        new p5(sketch);
+
+        // Click anywhere on the page → nearby floating items tumble and fall
+        // Uses a large blast radius so it always hits something satisfying
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('a, button, .polaroid, .magic-card-wrapper, #companion-cat, .hidden-cat, #entrance-overlay, #artwork-lightbox, nav, input, select, .note-paper')) return;
+            const cx = e.clientX, cy = e.clientY;
+            const items = window._p5Items;
+            if (!items || !items.length) return;
+            const blastRadius = 100;
+            let hitCount = 0;
+            for (const it of items) {
+                if (it.falling) continue;
+                const dx = it.x - cx, dy = it.y - cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < blastRadius + it.size) {
+                    it.falling = true;
+                    it.fallSpeed = -1.5 - Math.random() * 3;
+                    it.fallRotSpeed = (Math.random() - 0.5) * 0.2;
+                    it.wobble = 1 + Math.random() * 2.5;
+                    // Push outward from click point
+                    if (dist > 1) {
+                        it.speedX = (dx / dist) * 2;
+                    }
+                    hitCount++;
+                }
+            }
+            // If nothing was close enough, find the 3 nearest and make them fall
+            if (hitCount === 0) {
+                const sorted = items
+                    .filter(it => !it.falling)
+                    .map(it => ({ it, dist: Math.sqrt((it.x - cx) ** 2 + (it.y - cy) ** 2) }))
+                    .sort((a, b) => a.dist - b.dist)
+                    .slice(0, 3);
+                for (const { it, dist } of sorted) {
+                    it.falling = true;
+                    it.fallSpeed = -1 - Math.random() * 2;
+                    it.fallRotSpeed = (Math.random() - 0.5) * 0.15;
+                    it.wobble = 1 + Math.random() * 2;
+                    if (dist > 1) {
+                        it.speedX = ((it.x - cx) / dist) * 1.5;
+                    }
+                }
+            }
+        });
+
+        // ==========================================
+        // WATERCOLOR REVEAL ON SCROLL
+        // ==========================================
+        const revealSections = document.querySelectorAll('section:not(#hero)');
+        revealSections.forEach(section => {
+            // Add watercolor-reveal class
+            section.classList.add('watercolor-reveal');
+
+            ScrollTrigger.create({
+                trigger: section,
+                start: 'top 90%',
+                onEnter: () => {
+                    gsap.to(section, {
+                        opacity: 1,
+                        filter: 'blur(0px) saturate(1)',
+                        y: 0,
+                        scale: 1,
+                        duration: 1.2,
+                        ease: 'power2.out',
+                        onStart: () => {
+                            section.classList.add('revealed');
+                            // Spawn watercolor splash at section top
+                            spawnWatercolorSplash(section);
+                        }
+                    });
+                },
+                onLeaveBack: () => {
+                    section.classList.remove('revealed');
+                    gsap.set(section, {
+                        opacity: 0,
+                        filter: 'blur(8px) saturate(0.3)',
+                        y: 40,
+                        scale: 0.96
+                    });
+                }
+            });
+        });
+
+        function spawnWatercolorSplash(section) {
+            const colors = [
+                'rgba(125,211,252,0.15)',
+                'rgba(167,243,208,0.12)',
+                'rgba(253,224,71,0.10)',
+            ];
+            for (let i = 0; i < 2; i++) {
+                const splash = document.createElement('div');
+                splash.style.cssText = `position:absolute; top:${Math.random() * 20}%; left:${10 + Math.random() * 80}%; width:${150 + Math.random() * 150}px; height:${150 + Math.random() * 150}px; border-radius:50%; background:radial-gradient(circle, ${colors[i % colors.length]}, transparent 70%); pointer-events:none; filter:blur(25px); z-index:0; will-change:transform,opacity;`;
+                section.style.position = 'relative';
+                section.appendChild(splash);
+
+                gsap.fromTo(splash,
+                    { scale: 0, opacity: 0 },
+                    { scale: 1, opacity: 1, duration: 1.5, ease: 'power2.out', delay: i * 0.3 }
+                );
+                gsap.to(splash, { opacity: 0, duration: 1.5, delay: 3, onComplete: () => splash.remove() });
+            }
+        }
+
+        // ==========================================
+        // ARTWORK LIGHTBOX
+        // ==========================================
+        const lightbox = document.getElementById('artwork-lightbox');
+        const lbImage = document.getElementById('lb-image');
+        const lbCaption = document.getElementById('lb-caption');
+
+        if (lightbox && lbImage) {
+            // Make all polaroid images clickable for lightbox
+            document.querySelectorAll('.polaroid img').forEach(img => {
+                img.style.cursor = 'zoom-in';
+                img.style.pointerEvents = 'auto';
+
+                img.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const src = img.src;
+                    const alt = img.alt || '';
+                    lbImage.src = src;
+                    lbCaption.textContent = alt;
+                    lightbox.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+
+                    // Ink ripple at click position
+                    const ripple = document.createElement('div');
+                    ripple.className = 'ink-ripple';
+                    ripple.style.left = (e.clientX - 40) + 'px';
+                    ripple.style.top = (e.clientY - 40) + 'px';
+                    ripple.style.position = 'fixed';
+                    ripple.style.zIndex = '201';
+                    document.body.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 1200);
+                });
+            });
+
+            lightbox.addEventListener('click', () => {
+                lightbox.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Close on Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                    lightbox.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        }
+
+        // ==========================================
+        // PAINT SPLATTER ON ARTWORK CLICK
+        // ==========================================
+        document.querySelectorAll('.polaroid').forEach(polaroid => {
+            polaroid.addEventListener('click', (e) => {
+                const rect = polaroid.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+
+                const splatColors = [
+                    'rgba(125,211,252,0.4)',
+                    'rgba(167,243,208,0.35)',
+                    'rgba(253,224,71,0.3)',
+                    'rgba(186,230,253,0.4)',
+                    'rgba(252,165,165,0.25)'
+                ];
+
+                for (let i = 0; i < 6; i++) {
+                    const splat = document.createElement('div');
+                    splat.className = 'paint-splatter';
+                    const size = 15 + Math.random() * 30;
+                    const angle = (Math.PI * 2 / 6) * i + Math.random() * 0.5;
+                    const dist = 30 + Math.random() * 60;
+                    splat.style.width = size + 'px';
+                    splat.style.height = size + 'px';
+                    splat.style.left = cx + 'px';
+                    splat.style.top = cy + 'px';
+                    splat.style.background = splatColors[Math.floor(Math.random() * splatColors.length)];
+                    splat.style.filter = `blur(${2 + Math.random() * 4}px)`;
+                    document.body.appendChild(splat);
+
+                    gsap.to(splat, {
+                        x: Math.cos(angle) * dist,
+                        y: Math.sin(angle) * dist,
+                        scale: 0.3 + Math.random() * 0.5,
+                        opacity: 0,
+                        duration: 0.8 + Math.random() * 0.4,
+                        ease: 'power2.out',
+                        onComplete: () => splat.remove()
+                    });
+                }
+            });
+        });
+
+        // ==========================================
+        // ENTRANCE FLOATING WATERCOLOR BLOBS
+        // ==========================================
+        const entranceBlobContainer = document.getElementById('entrance-blobs');
+        if (entranceBlobContainer) {
+            const blobColors = [
+                'rgba(125,211,252,0.15)',
+                'rgba(167,243,208,0.12)',
+                'rgba(253,224,71,0.10)',
+                'rgba(186,230,253,0.18)',
+                'rgba(252,165,165,0.08)',
+            ];
+            for (let i = 0; i < 8; i++) {
+                const blob = document.createElement('div');
+                const size = 100 + Math.random() * 250;
+                blob.style.position = 'absolute';
+                blob.style.width = size + 'px';
+                blob.style.height = size + 'px';
+                blob.style.borderRadius = '50%';
+                blob.style.background = `radial-gradient(circle, ${blobColors[i % blobColors.length]}, transparent 70%)`;
+                blob.style.left = `${Math.random() * 100}%`;
+                blob.style.top = `${Math.random() * 100}%`;
+                blob.style.filter = `blur(${30 + Math.random() * 20}px)`;
+                entranceBlobContainer.appendChild(blob);
+
+                // Gentle floating animation
+                gsap.to(blob, {
+                    x: (Math.random() - 0.5) * 100,
+                    y: (Math.random() - 0.5) * 80,
+                    duration: 4 + Math.random() * 4,
+                    ease: 'sine.inOut',
+                    yoyo: true,
+                    repeat: -1,
+                    delay: Math.random() * 2
+                });
+            }
+        }
+
+        // ==========================================
+        // PAW PRINT STAMP ON DOUBLE-CLICK (leave your mark like a cat)
+        // ==========================================
+        document.addEventListener('dblclick', (e) => {
+            // Don't stamp on interactive elements
+            if (e.target.closest('a, button, .polaroid, .magic-card-wrapper, #companion-cat, .hidden-cat')) return;
+
+            const paw = document.createElement('div');
+            paw.style.position = 'fixed';
+            paw.style.left = (e.clientX - 18) + 'px';
+            paw.style.top = (e.clientY - 18) + 'px';
+            paw.style.width = '36px';
+            paw.style.height = '36px';
+            paw.style.pointerEvents = 'none';
+            paw.style.zIndex = '80';
+            paw.style.opacity = '0';
+            paw.innerHTML = `<i class="fa-solid fa-paw" style="font-size:28px; color:rgba(148,163,184,0.5);"></i>`;
+            document.body.appendChild(paw);
+
+            gsap.timeline()
+                .to(paw, { opacity: 0.7, scale: 1.2, duration: 0.15, ease: 'back.out(2)' })
+                .to(paw, { opacity: 0, scale: 0.8, duration: 3, delay: 1.5, ease: 'power2.in', onComplete: () => paw.remove() });
+
+            // Cat notices
+            if (companionCat && typeof showSpeech === 'function' && typeof lastSpeechTime !== 'undefined' && Date.now() - lastSpeechTime > 2000) {
+                const pawMsgs = ['喵！你也會蓋肉球章？', '這裡也留個記號～', '到此一遊！'];
+                showSpeech(pawMsgs[Math.floor(Math.random() * pawMsgs.length)], 2500);
+                lastSpeechTime = Date.now();
+            }
+        });
+
+        // ==========================================
+        // ARTWORK HOVER — WATERCOLOR BLEED BORDER
+        // ==========================================
+        document.querySelectorAll('.polaroid').forEach(pol => {
+            const bleed = document.createElement('div');
+            bleed.style.cssText = 'position:absolute; inset:-8px; border-radius:8px; pointer-events:none; opacity:0; transition:opacity 0.4s ease; z-index:-1;';
+            bleed.style.background = 'radial-gradient(ellipse at 30% 20%, rgba(125,211,252,0.25) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(167,243,208,0.2) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(253,224,71,0.15) 0%, transparent 45%)';
+            bleed.style.filter = 'blur(6px)';
+            pol.style.position = 'relative';
+            pol.appendChild(bleed);
+
+            pol.addEventListener('mouseenter', () => { bleed.style.opacity = '1'; });
+            pol.addEventListener('mouseleave', () => { bleed.style.opacity = '0'; });
+        });
+
+        // ==========================================
+        // CAT REACTS TO ARTWORK HOVER
+        // ==========================================
+        const artworkReactions = [
+            '這幅是我畫的喔！',
+            '我最喜歡這張了～',
+            '這是上次的新作品！',
+            '有沒有很可愛？',
+            '歡迎帶一份回家～',
+            '每張都是手繪的喔',
+            '這張花了好多時間呢',
+        ];
+        let lastArtHoverTime = 0;
+        document.querySelectorAll('#art-gallery .polaroid, #chapter3 .polaroid, #chapter2-horizontal .polaroid').forEach(pol => {
+            pol.addEventListener('mouseenter', () => {
+                const now = Date.now();
+                if (companionCat && now - lastArtHoverTime > 5000 && now - lastSpeechTime > 3000) {
+                    showSpeech(artworkReactions[Math.floor(Math.random() * artworkReactions.length)], 3000);
+                    lastArtHoverTime = now;
+                    lastSpeechTime = now;
+                }
+            });
+        });
+
+        // ==========================================
+        // PARALLAX MOUSE DEPTH ON SECTIONS (throttled)
+        // ==========================================
+        {
+            const backLayer = document.getElementById('cloud-layer-back');
+            const frontLayer = document.getElementById('cloud-layer-front');
+            const heroPolaroids = document.querySelectorAll('.hero-images .polaroid');
+            let parallaxRAF = null;
+
+            document.addEventListener('mousemove', (e) => {
+                if (parallaxRAF) return;
+                parallaxRAF = requestAnimationFrame(() => {
+                    const xRatio = (e.clientX / window.innerWidth - 0.5) * 2;
+                    const yRatio = (e.clientY / window.innerHeight - 0.5) * 2;
+
+                    if (backLayer) {
+                        gsap.to(backLayer, { x: xRatio * -5, y: yRatio * -3, duration: 1, ease: 'power1.out', overwrite: 'auto' });
+                    }
+                    if (frontLayer) {
+                        gsap.to(frontLayer, { x: xRatio * -10, y: yRatio * -6, duration: 0.8, ease: 'power1.out', overwrite: 'auto' });
+                    }
+
+                    heroPolaroids.forEach((p, i) => {
+                        const depth = (i + 1) * 3;
+                        gsap.to(p, {
+                            x: xRatio * depth,
+                            y: yRatio * depth * 0.5,
+                            duration: 0.6,
+                            ease: 'power1.out',
+                            overwrite: 'auto'
+                        });
+                    });
+                    parallaxRAF = null;
+                });
+            });
+        }
+
+        // ==========================================
+        // SUN CLICK — SHOW HER RANDOM QUOTE
+        // ==========================================
+        const sunQuoteBubble = document.createElement('div');
+        sunQuoteBubble.style.cssText = 'position:fixed; top:160px; right:20px; z-index:60; background:#fffcf5; border:2px solid #FDE047; border-radius:12px 12px 12px 0; padding:12px 18px; font-family:"Zhi Mang Xing",cursive; font-size:16px; color:#64748b; max-width:180px; box-shadow:2px 4px 12px rgba(253,224,71,0.2); opacity:0; pointer-events:none; transition:opacity 0.3s;';
+        document.body.appendChild(sunQuoteBubble);
+
+        const sunQuotes = [
+            '今天天氣好適合畫畫',
+            '暖暖的陽光，\n暖暖的心情',
+            '太陽公公也來看畫了',
+            '記得曬曬太陽喔～',
+            '陽光是最好的顏料',
+            '金黃色的光芒，\n不只是財富',
+        ];
+        let sunClickCount = 0;
+        if (sunWrapper) {
+            sunWrapper.addEventListener('click', () => {
+                sunQuoteBubble.textContent = sunQuotes[sunClickCount % sunQuotes.length];
+                sunQuoteBubble.style.whiteSpace = 'pre-line';
+                sunQuoteBubble.style.opacity = '1';
+                sunClickCount++;
+                setTimeout(() => { sunQuoteBubble.style.opacity = '0'; }, 3000);
+            });
+        }
+
+        // ==========================================
+        // SCROLL-TRIGGERED INK WASH TRANSITIONS
+        // ==========================================
+        // Between major sections, paint a watercolor wash across the screen
+        const washSections = ['#chapter1', '#chapter3', '#art-gallery', '#chapter4'];
+        washSections.forEach(sel => {
+            const section = document.querySelector(sel);
+            if (!section) return;
+
+            ScrollTrigger.create({
+                trigger: section,
+                start: 'top 95%',
+                onEnter: () => {
+                    // Create a full-width watercolor wash stripe
+                    const wash = document.createElement('div');
+                    wash.style.cssText = 'position:fixed; top:0; left:-10%; width:120%; height:100vh; pointer-events:none; z-index:55; opacity:0;';
+
+                    // Random wash color
+                    const washColors = [
+                        'linear-gradient(180deg, transparent 0%, rgba(125,211,252,0.08) 40%, rgba(186,230,253,0.12) 60%, transparent 100%)',
+                        'linear-gradient(180deg, transparent 0%, rgba(167,243,208,0.08) 40%, rgba(209,250,229,0.10) 60%, transparent 100%)',
+                        'linear-gradient(180deg, transparent 0%, rgba(253,224,71,0.06) 40%, rgba(254,240,138,0.08) 60%, transparent 100%)',
+                    ];
+                    wash.style.background = washColors[Math.floor(Math.random() * washColors.length)];
+                    document.body.appendChild(wash);
+
+                    gsap.timeline()
+                        .to(wash, { opacity: 1, duration: 0.6, ease: 'power2.out' })
+                        .to(wash, { opacity: 0, duration: 1.5, delay: 0.3, ease: 'power2.in', onComplete: () => wash.remove() });
+                },
+                once: true
+            });
+        });
+
+        // ==========================================
+        // MAGIC CARD FLIP — INK SPLASH ANIMATION
+        // ==========================================
+        document.querySelectorAll('.magic-card-wrapper').forEach(wrapper => {
+            wrapper.addEventListener('click', () => {
+                const card = wrapper.querySelector('.magic-card');
+                if (!card || !card.classList.contains('flipped')) return;
+
+                // Create ink splash behind the card
+                const rect = wrapper.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+
+                for (let i = 0; i < 4; i++) {
+                    const ink = document.createElement('div');
+                    ink.style.cssText = `position:fixed; pointer-events:none; z-index:15; border-radius:50%;`;
+                    const size = 20 + Math.random() * 40;
+                    ink.style.width = size + 'px';
+                    ink.style.height = size + 'px';
+                    ink.style.left = cx + 'px';
+                    ink.style.top = cy + 'px';
+                    const colors = ['rgba(125,211,252,0.35)', 'rgba(253,224,71,0.3)', 'rgba(252,165,165,0.25)', 'rgba(167,243,208,0.3)'];
+                    ink.style.background = colors[i % colors.length];
+                    ink.style.filter = `blur(${4 + Math.random() * 6}px)`;
+                    document.body.appendChild(ink);
+
+                    const angle = (Math.PI * 2 / 4) * i + Math.random() * 0.8;
+                    gsap.to(ink, {
+                        x: Math.cos(angle) * (40 + Math.random() * 50),
+                        y: Math.sin(angle) * (40 + Math.random() * 50),
+                        scale: 1.5,
+                        opacity: 0,
+                        duration: 1 + Math.random() * 0.5,
+                        ease: 'power2.out',
+                        onComplete: () => ink.remove()
+                    });
+                }
+            });
+        });
+
+        // ==========================================
+        // SCROLL-TO-BOTTOM BUTTON
+        // ==========================================
+        const scrollToBottomBtn = document.getElementById('scroll-to-bottom');
+        if (scrollToBottomBtn) {
+            // Show/hide based on scroll position
+            ScrollTrigger.create({
+                trigger: 'body',
+                start: 'top top',
+                end: 'bottom bottom',
+                onUpdate: (self) => {
+                    // Hide when near bottom (last 10%), show otherwise
+                    if (self.progress > 0.9) {
+                        gsap.to(scrollToBottomBtn, { opacity: 0, pointerEvents: 'none', duration: 0.3, overwrite: 'auto' });
+                    } else if (self.progress > 0.01) {
+                        gsap.to(scrollToBottomBtn, { opacity: 1, pointerEvents: 'auto', duration: 0.3, overwrite: 'auto' });
+                    }
+                }
+            });
+
+            scrollToBottomBtn.addEventListener('click', () => {
+                // Bounce the button
+                gsap.timeline()
+                    .to(scrollToBottomBtn, { scale: 0.85, duration: 0.1, ease: 'power2.in' })
+                    .to(scrollToBottomBtn, { scale: 1, duration: 0.3, ease: 'elastic.out(1, 0.4)' });
+
+                // Smooth scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>River Howler | 沒川狼雨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@400;700;900&family=Creepster&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blood: #880808;
+            --blood-dark: #4a0404;
+            --bone: #e2e2d5;
+            --bone-dim: #8b8c7a;
+            --necro-green: #2ecc71;
+            --necro-dark: #0f3d24;
+            --void: #050505;
+
+            --font-title: 'Creepster', 'Cinzel', serif;
+            --font-body: 'Noto Serif TC', serif;
+            --font-serif: 'Cinzel', serif;
+        }
+
+        .border-blood { border-color: rgba(139, 0, 0, 0.8); }
+        .border-necro-green { border-color: rgba(0, 255, 128, 0.8); }
+        .border-blood-dark { border-color: rgba(139, 0, 0, 0.4); }
+
+        body {
+            background-color: var(--void);
+            color: var(--bone);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            margin: 0;
+            cursor: crosshair;
+        }
+
+        /* WebGL Background */
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        /* Interactive Canvas */
+        #p5-container {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 99; /* Above content for bloody interactions */
+            pointer-events: none;
+            mix-blend-mode: color-dodge;
+        }
+
+        /* Layout Structure */
+        .content-layer {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Typography & Magic */
+        h1, h2, h3, h4 {
+            font-family: var(--font-title);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .text-blood { color: var(--blood); text-shadow: 0 0 10px rgba(136, 8, 8, 0.5); transition: color 1.5s, text-shadow 1.5s; }
+        .text-bone { color: var(--bone); }
+        .text-necro { color: var(--necro-green); text-shadow: 0 0 10px rgba(46, 204, 113, 0.5); transition: color 1.5s, text-shadow 1.5s; }
+
+        .magic-glow {
+            animation: breathe 4s infinite alternate;
+        }
+
+        @keyframes breathe {
+            0% { filter: drop-shadow(0 0 5px var(--blood)); }
+            100% { filter: drop-shadow(0 0 20px var(--blood)) drop-shadow(0 0 40px var(--blood-dark)); }
+        }
+
+        body.beast-mode .magic-glow {
+            animation: breathe-beast 4s infinite alternate;
+        }
+
+        @keyframes breathe-beast {
+            0% { filter: drop-shadow(0 0 5px var(--necro-green)); }
+            100% { filter: drop-shadow(0 0 20px var(--necro-green)) drop-shadow(0 0 40px var(--necro-dark)); }
+        }
+
+        /* Themed Borders & Containers */
+        .grimoire-page {
+            background: radial-gradient(circle at center, rgba(10, 10, 10, 0.8) 0%, rgba(0, 0, 0, 0.95) 100%);
+            border: 1px solid rgba(136, 8, 8, 0.3);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(136, 8, 8, 0.1);
+            backdrop-filter: blur(5px);
+            position: relative;
+            transition: border-color 1.5s, box-shadow 1.5s;
+        }
+
+        .grimoire-page::before, .grimoire-page::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border: 2px solid var(--blood); opacity: 0.5;
+            transition: border-color 1.5s;
+        }
+        .grimoire-page::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .grimoire-page::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        body.beast-mode .grimoire-page {
+            border-color: rgba(46, 204, 113, 0.3);
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(46, 204, 113, 0.1);
+        }
+        body.beast-mode .grimoire-page::before, body.beast-mode .grimoire-page::after {
+            border-color: var(--necro-green);
+        }
+
+        /* Avatar */
+        .avatar-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 0 auto;
+            border-radius: 50%;
+            padding: 8px;
+            background: conic-gradient(from 0deg, transparent 0%, var(--blood) 25%, transparent 50%, var(--blood) 75%, transparent 100%);
+            transition: background 1.5s;
+        }
+
+        body.beast-mode .avatar-container {
+            background: conic-gradient(from 0deg, transparent 0%, var(--necro-green) 25%, transparent 50%, var(--necro-green) 75%, transparent 100%);
+        }
+
+        .avatar-inner {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: var(--void);
+            position: relative;
+            box-shadow: inset 0 0 50px #000;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: grayscale(20%) contrast(120%);
+            transition: all 0.5s;
+        }
+
+        /* Lists */
+        .blood-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.5rem;
+            transition: transform 0.3s, color 0.5s;
+        }
+        .blood-list li:hover { transform: translateX(10px); color: var(--blood); }
+        body.beast-mode .blood-list li:hover { color: var(--necro-green); }
+
+        .blood-list li::before {
+            content: '🩸';
+            position: absolute; left: 0; top: 2px;
+            font-size: 0.8rem; opacity: 0.7;
+            transition: content 1s;
+        }
+        body.beast-mode .blood-list li::before { content: '☠️'; }
+
+        /* Socials */
+        .social-link {
+            color: var(--bone-dim);
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+        .social-link:hover { color: var(--blood); transform: scale(1.2) translateY(-5px); text-shadow: 0 0 10px var(--blood); }
+        body.beast-mode .social-link:hover { color: var(--necro-green); text-shadow: 0 0 10px var(--necro-green); }
+
+        /* Image Gallery Masonry */
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--blood-dark);
+            filter: grayscale(40%) sepia(20%) hue-rotate(-50deg);
+            transition: all 0.5s;
+        }
+        .gallery-item:hover {
+            filter: grayscale(0%) sepia(0%);
+            border-color: var(--blood);
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 0 30px rgba(136, 8, 8, 0.4);
+        }
+        body.beast-mode .gallery-item { border-color: var(--necro-dark); filter: grayscale(40%) sepia(20%) hue-rotate(90deg); }
+        body.beast-mode .gallery-item:hover { border-color: var(--necro-green); box-shadow: 0 0 30px rgba(46, 204, 113, 0.4); }
+
+        .overlay-icon {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 4rem; color: rgba(255,255,255,0.1); pointer-events: none;
+            transition: all 0.5s;
+        }
+        .gallery-item:hover .overlay-icon { color: rgba(255,255,255,0.4); transform: translate(-50%, -50%) scale(1.2); }
+
+        /* Avatar Wings (Hidden initially) */
+        .avatar-wings {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            width: 800px; height: 800px;
+            background: url('/assets/guild/river_howler/7.webp') no-repeat center center;
+            background-size: contain;
+            opacity: 0;
+            z-index: -1;
+            pointer-events: none;
+            filter: drop-shadow(0 0 20px var(--necro-green)) hue-rotate(90deg) grayscale(50%) contrast(150%);
+            mix-blend-mode: color-dodge;
+            transition: opacity 1.5s, transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        body.beast-mode .avatar-wings {
+            opacity: 0.8;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        @keyframes violent-shake {
+            0% { transform: translate(0, 0) rotate(0deg); filter: blur(0px); }
+            20% { transform: translate(-10px, 10px) rotate(-2deg); filter: invert(0.2) blur(2px) hue-rotate(90deg); }
+            40% { transform: translate(10px, -10px) rotate(2deg); filter: invert(0.5) blur(0px) hue-rotate(-90deg); }
+            60% { transform: translate(-15px, -15px) rotate(-1deg); filter: invert(0.1) blur(4px) hue-rotate(180deg); }
+            80% { transform: translate(15px, 15px) rotate(1deg); filter: invert(0.8) blur(1px) hue-rotate(-180deg); }
+            100% { transform: translate(0, 0) rotate(0deg); filter: blur(0px); }
+        }
+
+        body.transforming {
+            animation: violent-shake 1.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+            overflow: hidden; /* Prevent scroll bars during shake */
+        }
+
+        /* Smooth Full Screen Flash */
+        #transformation-flash {
+            position: fixed; inset: 0;
+            background-color: #0f3d24;
+            mix-blend-mode: overlay;
+            opacity: 0; pointer-events: none; z-index: 1000;
+            transition: opacity 1.5s ease-in-out, background-color 1.5s ease-in-out;
+        }
+
+        /* Floating Motifs & Relics */
+        .floating-motif {
+            position: absolute;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .relic-img {
+            width: 150px;
+            opacity: 0.15;
+            filter: grayscale(100%) contrast(150%) blur(1px);
+            transition: opacity 1.5s, filter 1.5s;
+            mix-blend-mode: screen;
+        }
+
+        @media (min-width: 768px) {
+            .relic-img {
+                width: 300px;
+            }
+        }
+
+        body.beast-mode .relic-img {
+            filter: grayscale(100%) contrast(150%) hue-rotate(90deg) drop-shadow(0 0 10px rgba(46, 204, 113, 0.5));
+            opacity: 0.25;
+            mix-blend-mode: color-dodge;
+        }
+
+        /* Scroll Progress */
+        .scroll-line {
+            position: fixed; top: 0; left: 0; width: 3px; height: 100vh;
+            background: linear-gradient(to bottom, var(--blood), transparent);
+            z-index: 50; transform-origin: top; transform: scaleY(0);
+            transition: background 1.5s;
+        }
+        body.beast-mode .scroll-line { background: linear-gradient(to bottom, var(--necro-green), transparent); }
+
+    </style>
+</head>
+<body class="antialiased selection:bg-red-900 selection:text-white pb-32"> <!-- Added pb-32 for extra scroll bottom space -->
+
+    <div id="webgl-container"></div>
+    <div id="p5-container"></div>
+    <div id="transformation-flash"></div>
+    <div class="scroll-line" id="scroll-line"></div>
+
+    <nav class="fixed top-0 left-0 w-full p-6 flex justify-between items-center z-50 mix-blend-difference">
+        <a href="/guild" class="text-bone-dim hover:text-white transition-colors font-serif text-sm tracking-widest flex items-center gap-2">
+            <i class="fa-solid fa-chevron-left text-xs"></i> THE CATACOMBS
+        </a>
+        <div class="flex gap-6">
+            <a href="https://www.threads.net/@river_howler" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/river_howler/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.facebook.com/riverhowler" target="_blank" class="social-link"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://linktr.ee/River_Howler" target="_blank" class="social-link"><i class="fa-solid fa-link"></i></a>
+        </div>
+    </nav>
+
+    <main class="content-layer">
+
+        <!-- HERO SECTION -->
+        <section class="min-h-screen flex flex-col justify-center items-center relative py-32 overflow-hidden px-4">
+
+            <div class="floating-motif top-20 left-[-5%]" data-speed="-1">
+                <img src="/assets/guild/river_howler/6.webp" alt="Skull Relic" class="relic-img transform -rotate-12">
+            </div>
+            <div class="floating-motif bottom-32 right-[-5%]" data-speed="1.5">
+                <img src="/assets/guild/river_howler/4.webp" alt="Bone Relic" class="relic-img transform rotate-45">
+            </div>
+
+            <div class="gs-reveal text-center relative z-10 w-full max-w-4xl mt-10">
+
+                <div class="avatar-wings"></div>
+                <div class="avatar-container magic-glow mb-12">
+                    <div class="avatar-inner">
+                        <!-- Using 1.webp as the main avatar based on user request -->
+                        <img src="/assets/guild/river_howler/1.webp" alt="River Howler" id="hero-avatar" class="avatar-img">
+                    </div>
+                </div>
+
+                <h1 class="text-6xl md:text-8xl font-black mb-4 text-bone drop-shadow-lg" id="title-name">
+                    RIVER HOWLER
+                </h1>
+
+                <div class="flex items-center justify-center gap-4 mb-8 text-sm md:text-base tracking-widest text-bone-dim font-serif uppercase" id="title-roles">
+                    <span class="text-blood role-text"><i class="fa-solid fa-paw mr-2"></i>Druid</span>
+                    <span>×</span>
+                    <span class="text-blood role-text"><i class="fa-solid fa-skull mr-2"></i>Necromancer</span>
+                    <span>×</span>
+                    <span class="text-blood role-text"><i class="fa-solid fa-flask mr-2"></i>Alchemist</span>
+                </div>
+
+                <p class="text-lg md:text-xl text-bone leading-relaxed max-w-2xl mx-auto font-bold opacity-90 drop-shadow-md">
+                    嗨，我是身兼三職的龍狼混血德魯伊—沒川狼雨。<br>
+                    同時從事群獸守護者、死靈法師，以及煉金術師。<br>
+                </p>
+                <p class="text-md text-bone-dim leading-relaxed max-w-2xl mx-auto font-serif italic mt-6 opacity-80 drop-shadow-md">
+                    "在生與死的交界處，我編織骨血，喚醒沉睡的野獸。我的工作室是一座祭壇，每一次的煉金與標本製作，都是對生命無常的最高敬意。踏入我的領域，準備迎接奇幻與獵奇的交響曲。"
+                </p>
+                <div class="mt-8 text-xs text-bone-dim font-mono tracking-[0.3em] opacity-50 uppercase">
+                    Press <kbd class="px-2 py-1 border border-bone-dim rounded text-white bg-black/50 transition-colors duration-1000 role-border">SPACE</kbd> or <kbd class="px-2 py-1 border border-bone-dim rounded text-white bg-black/50 transition-colors duration-1000 role-border">T</kbd> to transform
+                </div>
+            </div>
+        </section>
+
+        <!-- PERSONAS SECTION -->
+        <section class="py-32 px-4 relative">
+
+            <div class="floating-motif top-1/2 left-10" data-speed="2.5">
+                <img src="/assets/guild/river_howler/2.webp" alt="Feather/Claw Relic" class="relic-img transform -rotate-45" style="width: 200px;">
+            </div>
+            <div class="floating-motif bottom-10 right-20" data-speed="-1.5">
+                <img src="/assets/guild/river_howler/9.webp" alt="Wolf/Beast Relic" class="relic-img transform rotate-12" style="width: 250px;">
+            </div>
+
+            <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
+
+                <!-- DRUID -->
+                <div class="gs-reveal grimoire-page p-8 flex flex-col items-center text-center group">
+                    <div class="text-5xl mb-6 text-blood role-icon transition-transform duration-500 group-hover:scale-110">
+                        <i class="fa-solid fa-crow"></i>
+                    </div>
+                    <h2 class="text-2xl mb-2 text-white border-b border-blood pb-2 w-full role-border">群獸守護者</h2>
+                    <h3 class="text-sm font-serif text-bone-dim mb-6 uppercase tracking-widest">Pet Breeder</h3>
+                    <p class="text-sm mb-6 text-bone leading-loose">做為一名血脈中流淌著龍狼之息的德魯伊，我能聽見那些奇異生命的低語。如果你想飼養特殊的靈魂，可以在我的聖所中尋找牠們的身影。我守護的群獸有：</p>
+                    <ul class="blood-list text-left text-sm w-full font-bold">
+                        <li>各種花色的蘆丁雞</li>
+                        <li>加州冠鵪鶉</li>
+                        <li>摩登那鴿</li>
+                        <li>東方鴿</li>
+                        <li>花枝鼠</li>
+                    </ul>
+                </div>
+
+                <!-- NECROMANCER -->
+                <div class="gs-reveal grimoire-page p-8 flex flex-col items-center text-center group translate-y-0 md:translate-y-12">
+                    <div class="text-5xl mb-6 text-blood role-icon transition-transform duration-500 group-hover:scale-110">
+                        <i class="fa-solid fa-bone"></i>
+                    </div>
+                    <h2 class="text-2xl mb-2 text-white border-b border-blood pb-2 w-full role-border">死靈法師</h2>
+                    <h3 class="text-sm font-serif text-bone-dim mb-6 uppercase tracking-widest">Taxidermist</h3>
+                    <p class="text-sm mb-6 text-bone leading-loose">死亡不是終點，而是另一種形式的藝術。如果你想為逝去的生命訂製永恆的容器，我提供的死靈復甦儀式有：</p>
+                    <ul class="blood-list text-left text-sm w-full font-bold">
+                        <li>小型鳥類剝製標本</li>
+                        <li>小型動物骨胳標本</li>
+                        <li>翅膀、爪、蛋標本</li>
+                        <li>模型混合標本</li>
+                        <li>可拆可組裝的磁吸標本</li>
+                    </ul>
+                </div>
+
+                <!-- ALCHEMIST -->
+                <div class="gs-reveal grimoire-page p-8 flex flex-col items-center text-center group">
+                    <div class="text-5xl mb-6 text-blood role-icon transition-transform duration-500 group-hover:scale-110">
+                        <i class="fa-solid fa-vial-virus"></i>
+                    </div>
+                    <h2 class="text-2xl mb-2 text-white border-b border-blood pb-2 w-full role-border">煉金術師</h2>
+                    <h3 class="text-sm font-serif text-bone-dim mb-6 uppercase tracking-widest">Model Maker</h3>
+                    <p class="text-sm mb-6 text-bone leading-loose">血肉苦弱，模型飛昇。從泥土、樹脂到骨骸，我將妄想具象化。如果你想訂製異端造物，我提供的煉金術服務有：</p>
+                    <ul class="blood-list text-left text-sm w-full font-bold">
+                        <li>寵物、動物模型</li>
+                        <li>內臟模型</li>
+                        <li>恐怖噁心獵奇模型、怪物模型</li>
+                        <li>樹脂眼球、娃頭</li>
+                        <li>標本混合模型</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- DARK ARCHIVES (GALLERY) -->
+        <section class="py-40 px-4 relative max-w-7xl mx-auto flex flex-col justify-center min-h-[120vh]">
+
+            <div class="floating-motif top-20 right-[-10%]" data-speed="2">
+                <img src="/assets/guild/river_howler/3.webp" alt="Specimen Relic" class="relic-img transform -rotate-12" style="width: 350px; opacity: 0.1;">
+            </div>
+
+            <div class="floating-motif bottom-40 left-[-5%]" data-speed="-1">
+                <img src="/assets/guild/river_howler/1.webp" alt="Bone Specimen" class="relic-img transform rotate-6" style="width: 280px; opacity: 0.15;">
+            </div>
+
+            <h2 class="gs-reveal text-4xl md:text-6xl text-center mb-24 text-bone font-black tracking-widest drop-shadow-lg relative z-10">
+                <i class="fa-solid fa-book-skull mr-4 text-blood role-text"></i>
+                THE DARK ARCHIVES
+                <i class="fa-solid fa-book-skull ml-4 text-blood role-text"></i>
+            </h2>
+
+            <!-- Expanded Masonry Grid for a longer scroll to show off the moving ground effect -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 auto-rows-[300px]">
+                <!-- Item 1: Wide -->
+                <div class="gs-reveal gallery-item col-span-2 row-span-1 rounded-lg">
+                    <img src="/assets/guild/river_howler/1.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-eye overlay-icon"></i>
+                </div>
+                <!-- Item 2: Square -->
+                <div class="gs-reveal gallery-item col-span-1 row-span-1 rounded-lg">
+                    <img src="/assets/guild/river_howler/2.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-feather overlay-icon"></i>
+                </div>
+                <!-- Item 3: Tall -->
+                <div class="gs-reveal gallery-item col-span-1 row-span-2 rounded-lg">
+                    <img src="/assets/guild/river_howler/5.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-dragon overlay-icon"></i>
+                </div>
+                <!-- Item 4: Square -->
+                <div class="gs-reveal gallery-item col-span-1 row-span-1 rounded-lg">
+                    <img src="/assets/guild/river_howler/6.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-skull overlay-icon"></i>
+                </div>
+                <!-- Item 5: Wide -->
+                <div class="gs-reveal gallery-item col-span-2 row-span-1 rounded-lg">
+                    <img src="/assets/guild/river_howler/3.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-spider overlay-icon"></i>
+                </div>
+                <!-- Item 6: Tall -->
+                <div class="gs-reveal gallery-item col-span-1 row-span-2 rounded-lg">
+                    <img src="/assets/guild/river_howler/8.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-crow overlay-icon"></i>
+                </div>
+                <!-- Item 7: Square -->
+                <div class="gs-reveal gallery-item col-span-1 row-span-1 rounded-lg">
+                    <img src="/assets/guild/river_howler/4.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-bone overlay-icon"></i>
+                </div>
+                <!-- Item 8: Wide -->
+                <div class="gs-reveal gallery-item col-span-2 row-span-1 rounded-lg">
+                    <img src="/assets/guild/river_howler/9.webp" alt="Work" class="w-full h-full object-cover">
+                    <i class="fa-solid fa-tooth overlay-icon"></i>
+                </div>
+            </div>
+
+            <div class="mt-32 text-center text-bone-dim opacity-40 font-serif tracking-widest text-sm max-w-xl mx-auto">
+                "We walk the line between the living and the dead, molding flesh, bone, and soul into eternal forms."
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="py-16 text-center relative z-10 border-t border-blood-dark mt-20 bg-black/60 backdrop-blur-lg transition-colors duration-1000" id="footer-border">
+            <p class="font-serif text-sm text-bone-dim tracking-[0.2em] mb-4 uppercase">"Into the wild, through the bones, crafted by blood."</p>
+            <p class="text-xs text-bone-dim opacity-50 font-mono tracking-widest">© 沒川狼雨 River Howler. All rights reserved.</p>
+        </footer>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        const APP_STATE = {
+            isBeastMode: false,
+            scrollProgress: 0,
+            groundOffset: 0
+        };
+
+        // ═══════════════════════════════════════════
+        // THREE.JS - Necromancer's Palace amidst a pile of skulls & moving ground
+        // ═══════════════════════════════════════════
+        const initThreeJS = () => {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050101, 0.02); // Softer atmospheric fog
+
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 8, 40);
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            window.THREE_SCENE_COLORS = { r: 0.4, g: 0.05, b: 0.05 }; // Softer blood red
+
+            // --- 1. Grand Necromancer Palace Architecture ---
+            const palaceGroup = new THREE.Group();
+
+            // Grand Staircase leading to Altar
+            const steps = 15;
+            const stairMaterial = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, metalness: 0.5 });
+            for(let i = 0; i < steps; i++) {
+                const stepGeo = new THREE.BoxGeometry(40 - (i * 1.5), 1, 3);
+                const stepMesh = new THREE.Mesh(stepGeo, stairMaterial);
+                stepMesh.position.set(0, -10 + i, -20 - (i * 2));
+                palaceGroup.add(stepMesh);
+            }
+
+            // Central Altar
+            const altarGeo = new THREE.BoxGeometry(10, 3, 8);
+            const altarMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.8, metalness: 0.8 });
+            const altar = new THREE.Mesh(altarGeo, altarMat);
+            altar.position.set(0, -10 + steps + 1.5, -20 - (steps * 2) - 5);
+            palaceGroup.add(altar);
+
+            // Massive Gothic Arches behind Altar
+            const archMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 1.0 });
+            for(let i = -1; i <= 1; i++) {
+                const archGeo = new THREE.TorusGeometry(15, 2, 16, 100, Math.PI);
+                const archMesh = new THREE.Mesh(archGeo, archMaterial);
+                archMesh.position.set(i * 25, -10 + steps, -20 - (steps * 2) - 20);
+
+                // Arch Pillars
+                const pGeo = new THREE.CylinderGeometry(2, 2, 40, 8);
+                const p1 = new THREE.Mesh(pGeo, archMaterial);
+                p1.position.set(-15, -20, 0);
+                const p2 = new THREE.Mesh(pGeo, archMaterial);
+                p2.position.set(15, -20, 0);
+
+                archMesh.add(p1);
+                archMesh.add(p2);
+                palaceGroup.add(archMesh);
+            }
+
+            // Giant glowing summoning portal/moon behind everything
+            const moonGeo = new THREE.CircleGeometry(50, 64);
+            const moonMat = new THREE.MeshBasicMaterial({ color: 0x880000, side: THREE.DoubleSide });
+            const moon = new THREE.Mesh(moonGeo, moonMat);
+            moon.position.set(0, 20, -120);
+            window.THREE_MOON = moon;
+            window.THREE_MOON_MAT = moonMat;
+            palaceGroup.add(moon);
+
+            scene.add(palaceGroup);
+
+            // --- 2. The Skull Pile (Using Sprites) ---
+            const skullPileGroup = new THREE.Group();
+
+            // Create a simple skull texture via canvas
+            const skullCanvas = document.createElement('canvas');
+            skullCanvas.width = 64; skullCanvas.height = 64;
+            const ctx = skullCanvas.getContext('2d');
+            ctx.fillStyle = '#e2e2d5'; // Bone color
+            ctx.beginPath();
+            ctx.arc(32, 28, 20, 0, Math.PI * 2); // Skull top
+            ctx.fill();
+            ctx.fillRect(22, 40, 20, 15); // Jaw
+            ctx.fillStyle = '#050505'; // Eyes & Nose
+            ctx.beginPath();
+            ctx.arc(22, 30, 6, 0, Math.PI * 2); // Left Eye
+            ctx.arc(42, 30, 6, 0, Math.PI * 2); // Right Eye
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(32, 35); ctx.lineTo(28, 42); ctx.lineTo(36, 42); ctx.fill(); // Nose
+            // Teeth lines
+            ctx.strokeStyle = '#050505'; ctx.lineWidth = 2;
+            for(let i=0; i<4; i++) {
+                ctx.beginPath(); ctx.moveTo(25 + i*5, 40); ctx.lineTo(25 + i*5, 55); ctx.stroke();
+            }
+
+            const skullTexture = new THREE.CanvasTexture(skullCanvas);
+            const skullMat = new THREE.SpriteMaterial({ map: skullTexture, color: 0xffffff });
+
+            // Generate a smaller mound of skulls around the altar steps for better performance
+            const numSkulls = 150;
+            const skullSprites = [];
+            for(let i=0; i<numSkulls; i++) {
+                const sprite = new THREE.Sprite(skullMat);
+
+                // Mound distribution math
+                const radius = Math.random() * 20;
+                const angle = Math.random() * Math.PI * 2;
+
+                // Scattered mostly on the ground, forming part of the environment
+                const heightBase = Math.random() > 0.8 ? (Math.random() * 2) : (Math.random() * 0.5); // Occasional small bump
+
+                sprite.position.set(
+                    Math.cos(angle) * (radius * 2.5), // Wider scatter radius
+                    -10 + heightBase,                 // Mostly flat on the floor (y = -10 is the floor base)
+                    -30 + Math.sin(angle) * (radius * 2) // Pushed slightly further back to frame the scene
+                );
+
+                const scale = Math.random() * 1.5 + 1.0;
+                sprite.scale.set(scale, scale, 1);
+
+                skullPileGroup.add(sprite);
+                skullSprites.push(sprite);
+            }
+            scene.add(skullPileGroup);
+            window.THREE_SKULLS = skullSprites;
+
+            // --- 3. Floating Bone/Crystal Fragments (Alchemical Debris) ---
+            const debris = [];
+            const debrisGeo = new THREE.OctahedronGeometry(0.5, 0); // Sharp crystal/bone shape
+            const debrisMat = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                roughness: 0.4,
+                metalness: 0.6,
+                flatShading: true
+            });
+
+            // Reduced debris count to improve performance
+            for(let i=0; i<40; i++) {
+                const mesh = new THREE.Mesh(debrisGeo, debrisMat);
+                mesh.position.set(
+                    (Math.random() - 0.5) * 80,
+                    Math.random() * 60 - 10,
+                    (Math.random() - 0.5) * 80 - 20
+                );
+
+                // Random scale
+                const scale = Math.random() * 1.5 + 0.5;
+                mesh.scale.set(scale, scale, scale);
+
+                mesh.userData = {
+                    speedRot: new THREE.Vector3(Math.random() * 0.05, Math.random() * 0.05, Math.random() * 0.05),
+                    speedY: Math.random() * 0.02 + 0.01,
+                    baseY: mesh.position.y,
+                    offset: Math.random() * Math.PI * 2
+                };
+
+                scene.add(mesh);
+                debris.push(mesh);
+            }
+
+            // --- 4. Lighting ---
+            const ambientLight = new THREE.AmbientLight(0x404040); // Brighter ambient
+            scene.add(ambientLight);
+
+            // Central altar spotlight (Much brighter to highlight skulls)
+            const centralLight = new THREE.PointLight(0xff0000, 5, 200); // Softer central light
+            centralLight.position.set(0, 20, -10);
+            scene.add(centralLight);
+
+            // Backlight behind the gothic arches
+            const rimLight = new THREE.PointLight(0x440000, 10, 300);
+            rimLight.position.set(0, 40, -100);
+            scene.add(rimLight);
+
+            window.updateThreeColors = () => {
+                const c = window.THREE_SCENE_COLORS;
+                const hexColor = new THREE.Color(c.r, c.g, c.b);
+
+                centralLight.color.copy(hexColor);
+                rimLight.color.copy(hexColor);
+
+                if (window.THREE_MOON_MAT) {
+                    window.THREE_MOON_MAT.color.copy(hexColor).multiplyScalar(1.5); // Moon glow
+                }
+
+                // Make fog thicker and correctly colored
+                scene.fog.color.setHex(hexColor.getHex()).multiplyScalar(0.15);
+                scene.fog.density = APP_STATE.isBeastMode ? 0.025 : 0.015; // Denser fog in beast mode
+            };
+
+            // Initial color setup
+            window.updateThreeColors();
+
+            // --- 5. Animation Loop ---
+            let time = 0;
+            let currentCameraZ = 40;
+            let currentCameraY = 8;
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+                time += 0.01;
+
+                // Dynamic fog pulsing based on mode
+                const targetDensity = APP_STATE.isBeastMode ? 0.03 : 0.012;
+                scene.fog.density += (targetDensity - scene.fog.density) * 0.05;
+
+                // Move Moon/Portal slightly
+                if (window.THREE_MOON) {
+                    window.THREE_MOON.position.y = 30 + Math.sin(time * 0.5) * 5;
+                    window.THREE_MOON.scale.set(1 + Math.sin(time)*0.05, 1 + Math.sin(time)*0.05, 1);
+                }
+
+                // Pulsate central light
+                centralLight.intensity = APP_STATE.isBeastMode ? 10 + Math.random() * 3 : 4 + Math.sin(time * 2) * 1.5;
+
+                // Animate floating debris (faster and chaotic in Beast Mode)
+                const debrisSpeedMult = APP_STATE.isBeastMode ? 5 : 1;
+                debris.forEach((d, i) => {
+                    d.rotation.x += d.userData.speedRot.x * debrisSpeedMult;
+                    d.rotation.y += d.userData.speedRot.y * debrisSpeedMult;
+                    d.rotation.z += d.userData.speedRot.z * debrisSpeedMult;
+
+                    if (APP_STATE.isBeastMode) {
+                        d.position.y += Math.sin(time * 5 + i) * 0.5;
+                        d.position.x += Math.cos(time * 4 + i) * 0.2;
+                    } else {
+                        d.position.y = d.userData.baseY + Math.sin(time * 2 + d.userData.offset) * 2;
+                    }
+                });
+
+                // Float skulls slowly in beast mode
+                if (window.THREE_SKULLS && APP_STATE.isBeastMode) {
+                    window.THREE_SKULLS.forEach((s, i) => {
+                         if (i % 3 === 0) { // Only float a third of them to look like magic lifting them
+                             s.position.y += Math.sin(time * 3 + i) * 0.1;
+                         }
+                    });
+                }
+
+                // Camera movement mapped to scroll
+                // As the user scrolls, the camera descends slightly and moves into the center of the summoning circle
+                const scrollFactor = APP_STATE.scrollProgress;
+
+                const targetCameraZ = 40 - (scrollFactor * 30); // Move from z=40 to z=10
+                const targetCameraY = 8 - (scrollFactor * 4);   // Move from y=8 to y=4
+
+                currentCameraZ += (targetCameraZ - currentCameraZ) * 0.05;
+                currentCameraY += (targetCameraY - currentCameraY) * 0.05;
+
+                camera.position.z = currentCameraZ;
+                camera.position.y = currentCameraY + Math.sin(time) * 0.5; // add breathing
+                camera.position.x = Math.sin(time * 0.5) * 1;
+
+                camera.lookAt(0, 0, -20); // Always look towards the center/back of the palace
+
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // ═══════════════════════════════════════════
+        // P5.JS - Violent Blood & Spectral Poison Cursor Splatter
+        // ═══════════════════════════════════════════
+        const initP5 = () => {
+            new p5((sk) => {
+                let particles = [];
+                let splatters = [];
+                let beastChaos = 0;
+                let runes = ['☠️', '🩸', '🦴', '🦅', '🐺', '🐉', '🔮', '🕸️'];
+
+                sk.setup = () => {
+                    let cnv = sk.createCanvas(window.innerWidth, window.innerHeight);
+                    cnv.parent('p5-container');
+                    sk.pixelDensity(1);
+                    sk.textAlign(sk.CENTER, sk.CENTER);
+                    sk.blendMode(sk.ADD);
+                };
+
+                sk.draw = () => {
+                    sk.clear();
+
+                    beastChaos = sk.lerp(beastChaos, APP_STATE.isBeastMode ? 1 : 0, 0.05); // Smooth chaos transition
+
+                    const speed = sk.dist(sk.mouseX, sk.mouseY, sk.pmouseX, sk.pmouseY);
+                    const isMoving = speed > 2;
+
+                    // Continuous bloody/spectral trail
+                    // Throttled to reduce lag (only spawn every few frames when moving)
+                    if ((isMoving && sk.frameCount % 2 === 0) || (APP_STATE.isBeastMode && sk.frameCount % 8 === 0)) {
+                        const spawnCount = 1;
+
+                        // Draw connecting splatter line between frames
+                        if (isMoving) {
+                            splatters.push({
+                                x1: sk.pmouseX, y1: sk.pmouseY,
+                                x2: sk.mouseX, y2: sk.mouseY,
+                                life: 255,
+                                weight: sk.random(5, 15) * (1 + beastChaos * 1.5),
+                                isBeast: APP_STATE.isBeastMode
+                            });
+                        }
+
+                        // Spawn mist/blood particles
+                        for(let i=0; i<spawnCount; i++) {
+                            let isRune = sk.random() > 0.90;
+                            let r = runes[sk.floor(sk.random(runes.length))];
+
+                            const isGreen = APP_STATE.isBeastMode ? sk.random() > 0.3 : sk.random() > 0.8;
+
+                            particles.push({
+                                x: sk.mouseX + sk.random(-10, 10) * (1 + beastChaos * 5),
+                                y: sk.mouseY + sk.random(-10, 10) * (1 + beastChaos * 5),
+                                vx: sk.random(-2, 2) * (1 + beastChaos * 3),
+                                vy: sk.random(-3, 1) * (1 + beastChaos * 3),
+                                life: 255,
+                                size: sk.random(10, 40) * (1 + beastChaos * 1.5),
+                                color: isGreen ? [0, 255, 100] : [255, 20, 20],
+                                isRune: isRune,
+                                text: r,
+                                rot: sk.random(sk.TWO_PI),
+                                rotSpeed: sk.random(-0.1, 0.1)
+                            });
+                        }
+                    }
+
+                    // Render splatters
+                    for (let i = splatters.length - 1; i >= 0; i--) {
+                        let s = splatters[i];
+                        s.life -= 15;
+
+                        if (s.life <= 0) {
+                            splatters.splice(i, 1);
+                        } else {
+                            sk.strokeWeight(s.weight * (s.life / 255));
+                            if (s.isBeast) {
+                                sk.stroke(0, 255, 100, s.life * 0.8);
+                            } else {
+                                sk.stroke(200, 0, 0, s.life * 0.8);
+                            }
+                            sk.strokeCap(sk.ROUND);
+                            sk.line(s.x1, s.y1, s.x2, s.y2);
+                        }
+                    }
+
+                    sk.noStroke();
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        let p = particles[i];
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.life -= (3 + beastChaos * 5);
+                        p.rot += p.rotSpeed;
+
+                        // Chaotic Perlin noise drift
+                        p.vx += (sk.noise(p.x * 0.005, p.y * 0.005, sk.frameCount * 0.02) - 0.5) * 1.5;
+                        p.vy += (sk.noise(p.y * 0.005, p.x * 0.005, sk.frameCount * 0.02) - 0.5) * 1.5;
+
+                        if (p.life <= 0) {
+                            particles.splice(i, 1);
+                        } else {
+                            if (p.isRune && APP_STATE.isBeastMode) {
+                                sk.push();
+                                sk.translate(p.x, p.y);
+                                sk.rotate(p.rot);
+                                sk.textSize(p.size * 2);
+                                sk.fill(255, p.life);
+                                sk.text(p.text, 0, 0);
+                                sk.pop();
+                            } else {
+                                sk.fill(p.color[0], p.color[1], p.color[2], p.life * 0.6);
+                                sk.ellipse(p.x, p.y, p.size * (p.life / 255));
+                            }
+                        }
+                    }
+                };
+
+                // Expose a method to burst particles
+                window.burstParticles = () => {
+                    for(let i=0; i<40; i++) {
+                        particles.push({
+                            x: window.innerWidth/2 + sk.random(-100, 100),
+                            y: window.innerHeight/2 + sk.random(-100, 100),
+                            vx: sk.random(-20, 20),
+                            vy: sk.random(-20, 20),
+                            life: 200,
+                            size: sk.random(10, 30),
+                            color: [46, 204, 113],
+                            isRune: sk.random() > 0.5,
+                            text: runes[sk.floor(sk.random(runes.length))],
+                            rot: sk.random(sk.TWO_PI)
+                        });
+                    }
+                };
+
+                sk.windowResized = () => {
+                    sk.resizeCanvas(window.innerWidth, window.innerHeight);
+                };
+            });
+        };
+
+        // Initialize WebGL & P5
+        initThreeJS();
+        initP5();
+
+        // ═══════════════════════════════════════════
+        // GSAP Animations & Layout Interactions
+        // ═══════════════════════════════════════════
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Scroll Line
+        window.addEventListener('scroll', () => {
+            const maxScroll = Math.max(1, document.body.scrollHeight - window.innerHeight);
+            APP_STATE.scrollProgress = window.scrollY / maxScroll;
+            gsap.to('#scroll-line', { scaleY: APP_STATE.scrollProgress, duration: 0.1 });
+        });
+
+        // Parallax Floating Motifs
+        document.querySelectorAll('.floating-motif').forEach(motif => {
+            const speed = motif.getAttribute('data-speed');
+            gsap.to(motif, {
+                y: () => (document.body.scrollHeight - window.innerHeight) * speed * 0.1,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: document.body,
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+        });
+
+        // Reveal Animations
+        setTimeout(() => {
+            gsap.fromTo('.gs-reveal',
+                { opacity: 0, y: 50, rotationX: -10 },
+                {
+                    opacity: 1, y: 0, rotationX: 0,
+                    duration: 1.5, stagger: 0.2, ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: "body",
+                        start: "top top",
+                    }
+                }
+            );
+
+            document.querySelectorAll('.grimoire-page').forEach((section, i) => {
+                gsap.fromTo(section,
+                    { opacity: 0, y: 100, scale: 0.9 },
+                    {
+                        opacity: 1, y: i % 2 !== 0 && window.innerWidth > 768 ? 48 : 0, scale: 1, // Staggered middle column
+                        duration: 1.2,
+                        ease: 'back.out(1.5)',
+                        scrollTrigger: {
+                            trigger: section,
+                            start: "top 85%",
+                        }
+                    }
+                );
+            });
+
+            document.querySelectorAll('.gallery-item').forEach((item) => {
+                gsap.fromTo(item,
+                    { opacity: 0, scale: 0.8, rotationY: 45 },
+                    {
+                        opacity: 1, scale: 1, rotationY: 0,
+                        duration: 1.5,
+                        ease: 'power2.out',
+                        scrollTrigger: {
+                            trigger: item,
+                            start: "top 90%",
+                        }
+                    }
+                );
+            });
+
+            ScrollTrigger.refresh();
+        }, 500);
+
+        // ═══════════════════════════════════════════
+        // DRUID BEAST TRANSFORMATION LOGIC (Smooth Version)
+        // ═══════════════════════════════════════════
+        let isAnimatingTransformation = false;
+
+        const triggerTransformation = () => {
+            if (APP_STATE.isBeastMode || isAnimatingTransformation) return;
+            APP_STATE.isBeastMode = true;
+            isAnimatingTransformation = true;
+
+            const body = document.body;
+            const flash = document.getElementById('transformation-flash');
+            const mainAvatar = document.getElementById('hero-avatar');
+
+            if (window.burstParticles) window.burstParticles();
+
+            // Smooth full screen flash (fade in and out)
+            gsap.to(flash, {
+                opacity: 0.8, duration: 1.5, ease: "power2.inOut",
+                onComplete: () => {
+                    gsap.to(flash, { opacity: 0, duration: 2, ease: "power2.inOut" });
+                }
+            });
+
+            // Add violent shake class
+            body.classList.add('transforming');
+            setTimeout(() => body.classList.remove('transforming'), 1500);
+
+            // Mutate Three.js environment smoothly (Blood -> Necro Green/Toxic)
+            if (window.THREE_SCENE_COLORS) {
+                gsap.to(window.THREE_SCENE_COLORS, {
+                    r: 0.05, g: 1.0, b: 0.1, // Toxic vibrant green
+                    duration: 3,
+                    ease: "power2.inOut",
+                    onUpdate: window.updateThreeColors
+                });
+            }
+
+            // CSS classes
+            body.classList.add('beast-mode');
+
+            // UI Color swaps
+            document.querySelectorAll('.role-text, .role-icon').forEach(el => {
+                el.classList.remove('text-blood');
+                el.classList.add('text-necro');
+            });
+            document.querySelectorAll('.role-border').forEach(el => {
+                el.classList.remove('border-blood');
+                el.classList.add('border-necro-green');
+            });
+
+            // Avatar 3D Flip Swap
+            if (mainAvatar) {
+                gsap.to(mainAvatar, {
+                    scale: 0.8, opacity: 0, rotationY: 180, duration: 1.5, ease: "power2.in",
+                    onComplete: () => {
+                        mainAvatar.src = "/assets/guild/river_howler/3.webp";
+                        mainAvatar.style.filter = "none";
+                        gsap.to(mainAvatar, {
+                            scale: 1.1, opacity: 1, rotationY: 360, duration: 2, ease: "power2.out",
+                            onComplete: () => isAnimatingTransformation = false
+                        });
+                    }
+                });
+            } else {
+                isAnimatingTransformation = false;
+            }
+        };
+
+        const revertTransformation = () => {
+            if (!APP_STATE.isBeastMode || isAnimatingTransformation) return;
+            APP_STATE.isBeastMode = false;
+            isAnimatingTransformation = true;
+
+            const body = document.body;
+            const flash = document.getElementById('transformation-flash');
+            const mainAvatar = document.getElementById('hero-avatar');
+
+            // Flash revert
+            gsap.to(flash, {
+                opacity: 0.8, backgroundColor: "#4a0404", duration: 1.5, ease: "power2.inOut",
+                onComplete: () => {
+                    gsap.to(flash, { opacity: 0, backgroundColor: "#0f3d24", duration: 2, ease: "power2.inOut" });
+                }
+            });
+
+            // Add violent shake class for reverting too
+            body.classList.add('transforming');
+            setTimeout(() => body.classList.remove('transforming'), 1500);
+
+            // Revert Three.js environment smoothly (Necro Green -> Blood Red)
+            if (window.THREE_SCENE_COLORS) {
+                gsap.to(window.THREE_SCENE_COLORS, {
+                    r: 0.6, g: 0.05, b: 0.05,
+                    duration: 3,
+                    ease: "power2.inOut",
+                    onUpdate: window.updateThreeColors
+                });
+            }
+
+            body.classList.remove('beast-mode');
+
+            // Revert DOM Styles
+            document.querySelectorAll('.role-text, .role-icon').forEach(el => {
+                el.classList.add('text-blood');
+                el.classList.remove('text-necro');
+            });
+            document.querySelectorAll('.role-border').forEach(el => {
+                el.classList.add('border-blood');
+                el.classList.remove('border-necro-green');
+            });
+
+            // Revert avatar
+            if (mainAvatar) {
+                gsap.to(mainAvatar, {
+                    scale: 0.8, opacity: 0, rotationY: 180, duration: 1.5, ease: "power2.in",
+                    onComplete: () => {
+                        mainAvatar.src = "/assets/guild/river_howler/1.webp";
+                        mainAvatar.style.filter = "grayscale(20%) contrast(120%)";
+                        gsap.to(mainAvatar, {
+                            scale: 1, opacity: 1, rotationY: 0, duration: 2, ease: "power2.out",
+                            onComplete: () => isAnimatingTransformation = false
+                        });
+                    }
+                });
+            } else {
+                isAnimatingTransformation = false;
+            }
+        };
+
+        // Keyboard listener for Transformation
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 't' || e.key === 'T' || e.code === 'Space')) {
+                e.preventDefault();
+                if (!APP_STATE.isBeastMode) {
+                    triggerTransformation();
+                } else {
+                    revertTransformation();
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
