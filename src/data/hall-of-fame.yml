@@ -1047,8 +1047,6 @@ members:
         label: "N8N 自動化"
       - id: "slashie"
         label: "全能斜槓"
-#     - id: "cat_parent"
-#       label: "貓奴"
 
   - id: "joanna_army"
     name: "Joanna"
@@ -1061,6 +1059,18 @@ members:
         label: "混沌藝術"
       - id: "imaginative"
         label: "天馬行空"
+
+  - id: "raven_office"
+    name: "Raven"
+    avatar: "/assets/raven_office/profile.webp"
+    page: "/guild/raven_office.html"
+    tags:
+      - id: "mystic"
+        label: "密契主義"
+      - id: "witch"
+        label: "女巫"
+      - id: "alchemy"
+        label: "煉金"
 
   - id: "river_howler"
     name: "沒川狼雨 River Howler"
