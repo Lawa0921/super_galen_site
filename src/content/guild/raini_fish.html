@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yu Fan | raini_fish — 雨中之魚</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Noto+Serif+TC:wght@300;400;600;700&family=Zen+Maru+Gothic:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --rain: #5B7F95;
+            --rain-light: #8FB8CC;
+            --rain-glow: 91,127,149;
+            --amber: #D4A574;
+            --amber-light: #E8C9A0;
+            --amber-glow: 212,165,116;
+            --mist: #F0EDE8;
+            --mist-dim: #C8C3BA;
+            --ink-deep: #0D1820;
+            --font-display: 'Cormorant Garamond', serif;
+            --font-body: 'Noto Serif TC', serif;
+            --font-soft: 'Zen Maru Gothic', sans-serif;
+        }
+
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth}
+        body{background:var(--ink-deep);color:var(--mist);font-family:var(--font-body);overflow-x:hidden;cursor:none}
+        ::selection{background:var(--rain);color:#fff}
+
+        /* ── Custom Cursor ── */
+        .cursor-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(var(--rain-glow),.4);border-radius:50%;pointer-events:none;z-index:9999;transition:width .3s,height .3s,border-color .3s;transform:translate(-50%,-50%)}
+        .cursor-dot{position:fixed;width:5px;height:5px;background:var(--amber);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%)}
+
+        /* ── Three.js Canvas ── */
+        #water-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+        /* ── p5.js Rain ── */
+        #rain-canvas{position:fixed;inset:0;z-index:1;pointer-events:none}
+
+        /* ── Noise ── */
+        body::after{content:'';position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.03;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size:256px 256px}
+
+        /* ── Water Level Indicator ── */
+        .water-level{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:90;width:3px;height:120px;background:rgba(var(--rain-glow),.1);border-radius:3px;overflow:hidden}
+        .water-level-fill{position:absolute;bottom:0;width:100%;height:0%;background:linear-gradient(to top,var(--amber),var(--rain));border-radius:3px;transition:height .1s}
+        .water-level-dot{position:absolute;bottom:0;left:50%;width:9px;height:9px;background:var(--amber);border-radius:50%;transform:translate(-50%,50%);box-shadow:0 0 12px rgba(var(--amber-glow),.4);transition:bottom .1s}
+        .water-level-label{position:absolute;right:14px;font-family:var(--font-display);font-size:.75rem;color:var(--mist-dim);letter-spacing:.1em;white-space:nowrap;opacity:.4;transform:translateY(50%)}
+        .water-level-label.top{top:0;transform:translateY(-50%)}
+        .water-level-label.bot{bottom:0;transform:translateY(50%)}
+
+        /* ── NAV ── */
+        nav{position:fixed;top:0;left:0;right:0;padding:1.2rem 2rem;display:flex;justify-content:space-between;align-items:center;z-index:90;background:linear-gradient(to bottom,rgba(13,24,32,.6),transparent);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+        nav a,.slink{color:var(--mist-dim);text-decoration:none;font-family:var(--font-display);font-size:.9rem;letter-spacing:.15em;transition:color .3s,text-shadow .3s}
+        nav a:hover,.slink:hover{color:var(--amber-light);text-shadow:0 0 12px rgba(var(--amber-glow),.3)}
+        .slinks{display:flex;gap:1.2rem;align-items:center}
+        .slink{font-size:1.1rem}
+
+        /* ── Scroll Progress ── */
+        .scroll-progress{position:fixed;top:0;left:0;width:0;height:2px;background:linear-gradient(90deg,var(--rain),var(--amber),var(--rain-light));z-index:100;transition:width 50ms}
+
+        /* ── CONTENT ── */
+        .content{position:relative;z-index:5}
+
+        /* ── Floating Kanji ── */
+        .float-kanji{position:fixed;font-family:var(--font-body);font-weight:300;font-size:clamp(1.2rem,3vw,2rem);color:rgba(var(--rain-glow),.06);pointer-events:none;z-index:1;will-change:transform}
+        .float-kanji:nth-child(1){top:12%;left:5%;animation:fk1 20s ease-in-out infinite}
+        .float-kanji:nth-child(2){top:30%;right:8%;animation:fk2 25s ease-in-out infinite}
+        .float-kanji:nth-child(3){top:55%;left:3%;animation:fk1 22s ease-in-out infinite reverse}
+        .float-kanji:nth-child(4){top:72%;right:4%;animation:fk2 28s ease-in-out infinite}
+        .float-kanji:nth-child(5){top:88%;left:7%;animation:fk1 18s ease-in-out infinite}
+        .float-kanji:nth-child(6){top:45%;right:2%;animation:fk2 24s ease-in-out infinite reverse}
+        @keyframes fk1{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-30px);opacity:1}}
+        @keyframes fk2{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(20px);opacity:.8}}
+
+        /* ═══ HERO ═══ */
+        .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:6rem 1.5rem 4rem;position:relative}
+        .hero::before{content:'';position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(to bottom,transparent,var(--ink-deep));pointer-events:none}
+
+        .avatar-wrap{position:relative;width:180px;height:180px;margin-bottom:2.5rem}
+        .avatar-ripple{position:absolute;inset:-15px;border:1px solid rgba(var(--rain-glow),.2);border-radius:50%;animation:av-ripple 3s ease-out infinite}
+        .avatar-ripple:nth-child(2){inset:-30px;animation-delay:1s}
+        .avatar-ripple:nth-child(3){inset:-45px;animation-delay:2s}
+        @keyframes av-ripple{0%{transform:scale(.95);opacity:.4}100%{transform:scale(1.15);opacity:0}}
+        .avatar-img{width:180px;height:180px;border-radius:50%;object-fit:cover;border:3px solid var(--rain);box-shadow:0 0 40px rgba(var(--rain-glow),.25),0 0 80px rgba(var(--rain-glow),.1);position:relative;z-index:1;transition:border-color .8s,box-shadow .8s}
+        .avatar-img:hover{border-color:var(--amber);box-shadow:0 0 40px rgba(var(--amber-glow),.3),0 0 80px rgba(var(--amber-glow),.15)}
+
+        .hero-title{font-family:var(--font-display);font-weight:300;font-size:clamp(3rem,8vw,5.5rem);color:var(--mist);line-height:1.1;margin-bottom:.3rem;letter-spacing:.05em;text-shadow:0 0 60px rgba(var(--rain-glow),.3),0 4px 30px rgba(0,0,0,.6)}
+        .hero-title .char{display:inline-block;opacity:0;transform:translateY(40px) rotateX(-40deg);transform-origin:bottom center}
+        .hero-kanji{font-family:var(--font-body);font-weight:300;font-size:clamp(1rem,2.5vw,1.4rem);color:var(--amber);letter-spacing:.4em;margin-bottom:2rem;opacity:.8}
+        .hero-sub{font-family:var(--font-display);font-weight:300;font-style:italic;font-size:clamp(1rem,1.8vw,1.2rem);color:var(--mist-dim);letter-spacing:.1em;margin-bottom:2rem}
+        .badges{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center;margin-bottom:2.5rem}
+        .badge{display:flex;align-items:center;gap:.5rem;padding:.5rem 1.2rem;border:1px solid rgba(var(--rain-glow),.25);border-radius:30px;font-family:var(--font-soft);font-size:.9rem;letter-spacing:.08em;color:var(--rain-light);transition:all .4s;cursor:default;background:rgba(var(--rain-glow),.05);backdrop-filter:blur(8px)}
+        .badge:hover{border-color:var(--amber);color:var(--amber-light);background:rgba(var(--amber-glow),.08);transform:translateY(-3px);box-shadow:0 8px 25px rgba(var(--amber-glow),.15)}
+        .hero-quote{max-width:560px;font-family:var(--font-body);font-weight:300;font-size:1.1rem;line-height:2.2;color:var(--mist);opacity:.85}
+        .scroll-hint{margin-top:3rem;font-family:var(--font-display);font-size:.85rem;color:var(--mist-dim);letter-spacing:.3em;opacity:.4;animation:float-hint 2s ease-in-out infinite}
+        .scroll-hint i{display:block;margin-top:.5rem;font-size:1rem}
+        @keyframes float-hint{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+        /* ═══ PHILOSOPHY ═══ */
+        .philosophy{padding:8rem 1.5rem;max-width:800px;margin:0 auto;text-align:center;position:relative}
+        .phil-icon{font-size:2.5rem;color:var(--amber);margin-bottom:2rem;opacity:.6}
+        .phil-title{font-family:var(--font-display);font-weight:300;font-size:clamp(1.8rem,4vw,2.8rem);color:var(--mist);margin-bottom:1rem;letter-spacing:.08em}
+        .phil-title .split-char{display:inline-block;opacity:0;transform:translateY(30px)}
+        .phil-sub{font-family:var(--font-display);font-style:italic;font-size:1rem;color:var(--rain-light);letter-spacing:.15em;margin-bottom:3rem;opacity:.6}
+        .phil-text{font-weight:300;font-size:1.15rem;line-height:2.4;color:var(--mist);opacity:.85;text-align:justify}
+        .phil-text .highlight{color:var(--amber);font-weight:400;position:relative}
+        .phil-text .highlight::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:.4}
+        .phil-divider{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);margin:3rem auto;opacity:.5}
+        .phil-quote{font-family:var(--font-display);font-style:italic;font-size:1.25rem;color:var(--amber-light);opacity:.7;letter-spacing:.05em}
+
+        /* ═══ VALUES (NEW) ═══ */
+        .values{padding:6rem 1.5rem;max-width:1000px;margin:0 auto}
+        .values-header{text-align:center;margin-bottom:4rem}
+        .values-title{font-family:var(--font-display);font-weight:300;font-size:clamp(1.6rem,3.5vw,2.5rem);color:var(--mist);letter-spacing:.1em;margin-bottom:.5rem}
+        .values-sub{font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--rain-light);letter-spacing:.2em;opacity:.5}
+        .values-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem}
+        .value-card{position:relative;text-align:center;padding:2.5rem 1.5rem;border:1px solid rgba(var(--rain-glow),.1);border-radius:16px;background:rgba(var(--rain-glow),.02);overflow:hidden;transition:all .5s cubic-bezier(.23,1,.32,1)}
+        .value-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:conic-gradient(from 0deg,transparent,rgba(var(--amber-glow),.06),transparent 30%);animation:none;opacity:0;transition:opacity .6s}
+        .value-card:hover::before{animation:spin-glow 4s linear infinite;opacity:1}
+        @keyframes spin-glow{to{transform:rotate(360deg)}}
+        .value-card:hover{border-color:rgba(var(--amber-glow),.25);transform:translateY(-6px);box-shadow:0 16px 50px rgba(0,0,0,.25)}
+        .value-icon{font-size:2rem;margin-bottom:1.2rem;color:var(--rain-light);transition:color .4s,transform .4s}
+        .value-card:hover .value-icon{color:var(--amber);transform:scale(1.15) rotate(-5deg)}
+        .value-kanji{font-family:var(--font-body);font-size:1.6rem;font-weight:300;color:var(--mist);margin-bottom:.3rem;letter-spacing:.15em}
+        .value-label{font-family:var(--font-display);font-style:italic;font-size:.85rem;color:var(--rain-light);letter-spacing:.15em;text-transform:uppercase;margin-bottom:1rem;opacity:.5}
+        .value-desc{font-family:var(--font-soft);font-weight:300;font-size:.95rem;line-height:1.9;color:var(--mist-dim)}
+
+        /* ═══ THREE ROOMS ═══ */
+        .rooms{padding:6rem 1.5rem;max-width:1100px;margin:0 auto}
+        .rooms-header{text-align:center;margin-bottom:4rem}
+        .rooms-title{font-family:var(--font-display);font-weight:300;font-size:clamp(1.6rem,3.5vw,2.5rem);color:var(--mist);letter-spacing:.1em;margin-bottom:.5rem}
+        .rooms-sub{font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--rain-light);letter-spacing:.2em;opacity:.5}
+        .room-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem}
+        .room{position:relative;border:1px solid rgba(var(--rain-glow),.15);border-radius:16px;padding:2.5rem 2rem;background:linear-gradient(145deg,rgba(var(--rain-glow),.04),rgba(18,32,45,.6));backdrop-filter:blur(12px);overflow:hidden;transition:all .6s cubic-bezier(.23,1,.32,1);cursor:default}
+        .room::before{content:'';position:absolute;inset:0;border-radius:16px;background:radial-gradient(circle at 50% 0%,rgba(var(--rain-glow),.1),transparent 70%);opacity:0;transition:opacity .6s}
+        .room:hover{border-color:rgba(var(--amber-glow),.3);transform:translateY(-8px);box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 40px rgba(var(--amber-glow),.08)}
+        .room:hover::before{opacity:1}
+        .room-icon{font-size:2.5rem;margin-bottom:1.5rem;background:linear-gradient(135deg,var(--rain-light),var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .room-name{font-family:var(--font-display);font-weight:600;font-size:1.3rem;color:var(--mist);margin-bottom:.4rem;letter-spacing:.05em}
+        .room-en{font-family:var(--font-display);font-style:italic;font-size:.9rem;color:var(--rain-light);letter-spacing:.15em;opacity:.5;margin-bottom:1.5rem;text-transform:uppercase}
+        .room-desc{font-family:var(--font-body);font-weight:300;font-size:1rem;line-height:2;color:var(--mist-dim)}
+        .room-accent{width:40px;height:2px;background:linear-gradient(90deg,var(--amber),transparent);margin-top:1.5rem;transition:width .6s}
+        .room:hover .room-accent{width:80px}
+        .room-detail{max-height:0;overflow:hidden;transition:max-height .6s cubic-bezier(.23,1,.32,1),opacity .4s;opacity:0;margin-top:0}
+        .room:hover .room-detail{max-height:200px;opacity:1;margin-top:1.2rem}
+        .room-detail-text{font-family:var(--font-soft);font-size:.9rem;line-height:1.8;color:var(--rain-light);padding-top:.5rem;border-top:1px solid rgba(var(--rain-glow),.1)}
+        .room .drop{position:absolute;width:6px;height:6px;background:rgba(var(--rain-glow),.2);border-radius:50%;opacity:0}
+        .room:hover .drop{animation:drop-fall 1.5s ease-in infinite}
+        .room .drop:nth-child(1){top:0;left:20%;animation-delay:0s}
+        .room .drop:nth-child(2){top:0;left:50%;animation-delay:.4s}
+        .room .drop:nth-child(3){top:0;left:75%;animation-delay:.8s}
+        @keyframes drop-fall{0%{transform:translateY(0);opacity:0}20%{opacity:.6}100%{transform:translateY(100px);opacity:0}}
+
+        /* ═══ BREATHING SPACE (NEW) ═══ */
+        .breathing{padding:10rem 1.5rem;text-align:center;position:relative;overflow:hidden}
+        .breathing-container{max-width:700px;margin:0 auto;position:relative}
+        .breath-ring{position:absolute;left:50%;top:50%;width:300px;height:300px;border:1px solid rgba(var(--rain-glow),.08);border-radius:50%;transform:translate(-50%,-50%);animation:breathe 6s ease-in-out infinite;pointer-events:none}
+        .breath-ring:nth-child(2){width:400px;height:400px;animation-delay:1s;border-color:rgba(var(--amber-glow),.05)}
+        .breath-ring:nth-child(3){width:500px;height:500px;animation-delay:2s;border-color:rgba(var(--rain-glow),.03)}
+        @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.4}50%{transform:translate(-50%,-50%) scale(1.08);opacity:.15}}
+        .breathing-icon{font-size:3rem;color:var(--rain-light);opacity:.3;margin-bottom:2rem}
+        .breathing-text{font-family:var(--font-body);font-weight:300;font-size:clamp(1.2rem,3vw,1.8rem);line-height:2.4;color:var(--mist);position:relative;z-index:2}
+        .breathing-text em{font-style:normal;color:var(--amber);font-weight:400}
+        .breathing-hint{margin-top:3rem;font-family:var(--font-soft);font-size:.85rem;color:var(--mist-dim);opacity:.3;letter-spacing:.15em}
+
+        /* ═══ JOURNEY ═══ */
+        .journey{padding:6rem 1.5rem;max-width:700px;margin:0 auto;position:relative}
+        .journey-header{text-align:center;margin-bottom:4rem}
+        .journey-title{font-family:var(--font-display);font-weight:300;font-size:clamp(1.6rem,3.5vw,2.5rem);color:var(--mist);letter-spacing:.1em;margin-bottom:.5rem}
+        .journey-sub{font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--rain-light);letter-spacing:.2em;opacity:.5}
+        .flow-line{position:absolute;left:50%;top:120px;bottom:0;width:1px;background:linear-gradient(to bottom,var(--rain),rgba(var(--amber-glow),.3),transparent);transform:translateX(-50%)}
+        .flow-item{position:relative;padding:2rem 0;display:flex;align-items:flex-start;gap:2rem}
+        .flow-item:nth-child(even){flex-direction:row-reverse;text-align:right}
+        .flow-dot{position:absolute;left:50%;top:2.5rem;width:12px;height:12px;background:var(--ink-deep);border:2px solid var(--rain);border-radius:50%;transform:translateX(-50%);z-index:2;transition:all .4s}
+        .flow-item:hover .flow-dot{background:var(--amber);border-color:var(--amber);box-shadow:0 0 20px rgba(var(--amber-glow),.4)}
+        .flow-content{width:calc(50% - 2rem);padding:1.5rem;background:rgba(var(--rain-glow),.04);border:1px solid rgba(var(--rain-glow),.1);border-radius:12px;transition:all .4s}
+        .flow-item:hover .flow-content{border-color:rgba(var(--amber-glow),.2);background:rgba(var(--rain-glow),.08)}
+        .flow-label{font-family:var(--font-display);font-size:.85rem;letter-spacing:.2em;color:var(--amber);text-transform:uppercase;margin-bottom:.5rem;opacity:.7}
+        .flow-text{font-weight:300;font-size:1rem;line-height:1.9;color:var(--mist-dim)}
+
+        /* ═══ QUOTE WALL (NEW) ═══ */
+        .quote-wall{padding:6rem 1.5rem;position:relative;overflow:hidden}
+        .quote-wall-inner{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;align-items:start}
+        .qw-card{padding:2rem;border-radius:14px;background:rgba(var(--rain-glow),.03);border:1px solid rgba(var(--rain-glow),.08);position:relative;overflow:hidden;transition:all .5s}
+        .qw-card:hover{background:rgba(var(--rain-glow),.07);border-color:rgba(var(--amber-glow),.15);transform:translateY(-4px)}
+        .qw-card.tall{grid-row:span 2}
+        .qw-card.accent{background:linear-gradient(135deg,rgba(var(--amber-glow),.06),rgba(var(--rain-glow),.04));border-color:rgba(var(--amber-glow),.12)}
+        .qw-mark{font-family:var(--font-display);font-size:3rem;color:rgba(var(--amber-glow),.15);line-height:1;margin-bottom:.5rem}
+        .qw-text{font-family:var(--font-body);font-weight:300;font-size:1.05rem;line-height:2.2;color:var(--mist);opacity:.8}
+        .qw-text em{font-style:normal;color:var(--amber);font-weight:400}
+        .qw-source{margin-top:1rem;font-family:var(--font-display);font-style:italic;font-size:.85rem;color:var(--mist-dim);letter-spacing:.1em;opacity:.4}
+
+        /* ═══ MANTRA ═══ */
+        .mantra{padding:8rem 1.5rem;text-align:center;position:relative;overflow:hidden}
+        .mantra::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(var(--rain-glow),.08),transparent 70%);pointer-events:none}
+        .mantra-text{font-family:var(--font-body);font-weight:300;font-size:clamp(1.1rem,2.5vw,1.5rem);line-height:2.6;color:var(--mist);max-width:600px;margin:0 auto;position:relative}
+        .mantra-text .word{display:inline-block;opacity:0;transform:translateY(20px)}
+        .mantra-sig{margin-top:3rem;font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--amber);opacity:.5;letter-spacing:.15em}
+
+        /* ═══ KOI BG (full page) ═══ */
+        #koi-bg{position:fixed;inset:0;z-index:3;pointer-events:none}
+
+        /* ═══ Click Ripple Canvas ═══ */
+        #click-ripple{position:fixed;inset:0;z-index:4;pointer-events:none}
+
+        /* ═══ PARALLAX SECTIONS ═══ */
+        [data-parallax]{transition:transform .1s linear}
+
+        /* ═══ HORIZONTAL MARQUEE ═══ */
+        .marquee{overflow:hidden;padding:3rem 0;position:relative;white-space:nowrap}
+        .marquee::before,.marquee::after{content:'';position:absolute;top:0;width:120px;height:100%;z-index:2;pointer-events:none}
+        .marquee::before{left:0;background:linear-gradient(to right,var(--ink-deep),transparent)}
+        .marquee::after{right:0;background:linear-gradient(to left,var(--ink-deep),transparent)}
+        .marquee-track{display:inline-flex;gap:3rem;animation:marquee-scroll 30s linear infinite}
+        .marquee-word{font-family:var(--font-display);font-weight:300;font-size:clamp(2rem,5vw,4rem);color:rgba(var(--rain-glow),.08);letter-spacing:.2em;text-transform:uppercase}
+        .marquee-word.accent{color:rgba(var(--amber-glow),.12)}
+        @keyframes marquee-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        .marquee-reverse .marquee-track{animation-direction:reverse}
+
+        /* ═══ CONTACT ═══ */
+        .contact{padding:6rem 1.5rem;max-width:600px;margin:0 auto;text-align:center}
+        .contact-title{font-family:var(--font-display);font-weight:300;font-size:clamp(1.4rem,3vw,2rem);color:var(--mist);letter-spacing:.1em;margin-bottom:.5rem}
+        .contact-sub{font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--rain-light);letter-spacing:.2em;opacity:.5;margin-bottom:3rem}
+        .c-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+        .c-item{display:flex;align-items:center;gap:.8rem;padding:1.2rem 1.5rem;border:1px solid rgba(var(--rain-glow),.15);border-radius:12px;text-decoration:none;color:var(--mist-dim);font-family:var(--font-soft);font-size:.95rem;transition:all .4s;background:rgba(var(--rain-glow),.03)}
+        .c-item i{font-size:1.2rem;color:var(--rain-light);transition:color .4s}
+        .c-item:hover{border-color:var(--amber);color:var(--amber-light);background:rgba(var(--amber-glow),.06);transform:translateY(-3px);box-shadow:0 8px 25px rgba(0,0,0,.2)}
+        .c-item:hover i{color:var(--amber)}
+
+        /* ═══ FOOTER ═══ */
+        footer{padding:4rem 1.5rem 2rem;text-align:center;border-top:1px solid rgba(var(--rain-glow),.1);margin-top:2rem}
+        footer .q{font-family:var(--font-display);font-style:italic;font-size:.95rem;color:var(--mist-dim);letter-spacing:.1em;margin-bottom:1rem;opacity:.5}
+        footer .cr{font-size:.8rem;color:var(--mist-dim);opacity:.3;letter-spacing:.1em}
+        footer .sig{font-size:.75rem;color:var(--mist-dim);opacity:.25;margin-top:.8rem;letter-spacing:.15em}
+
+        /* ═══ RESPONSIVE ═══ */
+        @media(max-width:768px){
+            nav{padding:.8rem 1rem}
+            .room-grid{grid-template-columns:1fr;gap:1.5rem}
+            .values-grid{grid-template-columns:1fr 1fr;gap:1rem}
+            .quote-wall-inner{grid-template-columns:1fr;gap:1rem}
+            .qw-card.tall{grid-row:auto}
+            .flow-line{display:none}
+            .flow-item,.flow-item:nth-child(even){flex-direction:column;text-align:left}
+            .flow-content{width:100%}
+            .flow-dot{display:none}
+            .flow-item>[style]{display:none}
+            .c-grid{grid-template-columns:1fr}
+            .hero{min-height:auto;padding:5rem 1.2rem 3rem}
+            .hero-title{font-size:clamp(2.5rem,10vw,4rem)}
+            .avatar-wrap{width:140px;height:140px}
+            .avatar-img{width:140px;height:140px}
+            .cursor-ring,.cursor-dot{display:none}
+            body{cursor:auto}
+            .water-level{display:none}
+            .float-kanji{display:none}
+            .breath-ring{display:none}
+            #koi-bg{opacity:.3}
+            #click-ripple{display:none}
+            [data-parallax]{transform:none!important}
+            .philosophy,.journey,.breathing,.mantra{padding:4rem 1.2rem}
+            .values,.rooms{padding:4rem 1.2rem}
+            .contact{padding:4rem 1.2rem}
+            .marquee{padding:2rem 0}
+        }
+        @media(max-width:480px){
+            .values-grid{grid-template-columns:1fr}
+            .badges{gap:.5rem}
+            .badge{padding:.4rem .8rem;font-size:.85rem}
+        }
+
+        /* ═══ PAGE ENTRANCE ═══ */
+        .page-veil{position:fixed;inset:0;z-index:9000;background:var(--ink-deep);pointer-events:none;opacity:1;transition:opacity 1.2s cubic-bezier(.4,0,.2,1)}
+        .page-veil.lifted{opacity:0}
+        nav{opacity:0;transform:translateY(-20px);transition:opacity .8s .3s,transform .8s .3s}
+        body.entered nav{opacity:1;transform:translateY(0)}
+        .water-level{opacity:0;transition:opacity 1s 1.5s}
+        body.entered .water-level{opacity:1}
+
+        /* ═══ REVEAL ═══ */
+        .reveal{opacity:0;transform:translateY(40px)}
+    </style>
+</head>
+<body>
+    <div class="page-veil" id="page-veil"></div>
+
+    <div class="scroll-progress" id="scroll-progress"></div>
+    <div class="cursor-ring" id="cursor-ring"></div>
+    <div class="cursor-dot" id="cursor-dot"></div>
+
+    <!-- Water Level Indicator -->
+    <div class="water-level" id="water-level">
+        <div class="water-level-fill" id="wl-fill"></div>
+        <div class="water-level-dot" id="wl-dot"></div>
+        <span class="water-level-label top">SURFACE</span>
+        <span class="water-level-label bot">DEEP</span>
+    </div>
+
+    <canvas id="water-bg"></canvas>
+    <div id="rain-canvas"></div>
+    <canvas id="koi-bg"></canvas>
+    <canvas id="click-ripple"></canvas>
+
+    <!-- Floating Kanji -->
+    <div class="float-kanji">雨</div>
+    <div class="float-kanji">魚</div>
+    <div class="float-kanji">伴</div>
+    <div class="float-kanji">柔</div>
+    <div class="float-kanji">家</div>
+    <div class="float-kanji">息</div>
+
+    <nav>
+        <a href="/guild/"><i class="fa-solid fa-chevron-left" style="margin-right:.4rem;font-size:.6rem"></i>GUILD ARCHIVE</a>
+        <div class="slinks">
+            <a href="https://www.threads.net/@raini_fish" target="_blank" class="slink" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/raini_fish/" target="_blank" class="slink" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+    </nav>
+
+    <main class="content">
+
+        <!-- ═══ HERO ═══ -->
+        <section class="hero">
+            <div class="avatar-wrap reveal">
+                <div class="avatar-ripple"></div>
+                <div class="avatar-ripple"></div>
+                <div class="avatar-ripple"></div>
+                <img src="/assets/img/guild/raini_fish/avatar.webp" alt="Yu Fan @raini_fish" class="avatar-img">
+            </div>
+            <h1 class="hero-title" id="hero-title">Yu Fan</h1>
+            <p class="hero-kanji reveal">雨 中 之 魚</p>
+            <p class="hero-sub reveal">Life might be sucks, but show must go on ✨</p>
+            <div class="badges reveal">
+                <span class="badge"><i class="fa-solid fa-wand-magic-sparkles"></i>整理師</span>
+                <span class="badge"><i class="fa-solid fa-couch"></i>軟裝師</span>
+                <span class="badge"><i class="fa-solid fa-paw"></i>寵物保姆</span>
+            </div>
+            <p class="hero-quote reveal">願溫柔的我們被世界溫柔以待。</p>
+            <div class="scroll-hint reveal">
+                DIVE DEEPER
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+        </section>
+
+        <!-- ═══ PHILOSOPHY ═══ -->
+        <section class="philosophy">
+            <div class="phil-icon reveal"><i class="fa-solid fa-droplet"></i></div>
+            <h2 class="phil-title" data-split>陪 伴 的 力 量</h2>
+            <p class="phil-sub reveal">THE ESSENCE OF COMPANIONSHIP</p>
+            <p class="phil-text reveal">
+                我一直相信，理想的生活並非追求極致的完美，而是在一段段<span class="highlight">有溫度的關係</span>中，找回讓自己安心的節奏。或許是因為這份初心，我將「<span class="highlight">陪伴</span>」作為服務核心，在整理師、軟裝師與寵物保姆的角色間流動，陪著人們梳理空間、安置情感，也陪著生命度過日常。
+            </p>
+            <div class="phil-divider reveal"></div>
+            <p class="phil-quote reveal">"不急著推促你改變，而是願意站在原地陪你，看清生活的樣子。"</p>
+        </section>
+
+        <!-- ═══ MARQUEE ═══ -->
+        <div class="marquee marquee-reverse" aria-hidden="true">
+            <div class="marquee-track">
+                <span class="marquee-word">雨</span>
+                <span class="marquee-word accent">魚</span>
+                <span class="marquee-word">伴</span>
+                <span class="marquee-word accent">柔</span>
+                <span class="marquee-word">家</span>
+                <span class="marquee-word accent">息</span>
+                <span class="marquee-word">雨</span>
+                <span class="marquee-word accent">魚</span>
+                <span class="marquee-word">伴</span>
+                <span class="marquee-word accent">柔</span>
+                <span class="marquee-word">家</span>
+                <span class="marquee-word accent">息</span>
+            </div>
+        </div>
+
+        <!-- ═══ VALUES ═══ -->
+        <section class="values" data-parallax="0.03">
+            <div class="values-header">
+                <h2 class="values-title reveal">信 念 之 水</h2>
+                <p class="values-sub reveal">CURRENTS OF BELIEF</p>
+            </div>
+            <div class="values-grid">
+                <div class="value-card reveal">
+                    <div class="value-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                    <p class="value-kanji">溫度</p>
+                    <p class="value-label">Warmth</p>
+                    <p class="value-desc">在每一段關係中注入真誠的溫暖，讓人們感受到被理解與接納的安心。</p>
+                </div>
+                <div class="value-card reveal">
+                    <div class="value-icon"><i class="fa-solid fa-water"></i></div>
+                    <p class="value-kanji">流動</p>
+                    <p class="value-label">Flow</p>
+                    <p class="value-desc">如水般自在穿梭於不同角色之間，在整理、佈置與陪伴中找到平衡。</p>
+                </div>
+                <div class="value-card reveal">
+                    <div class="value-icon"><i class="fa-solid fa-lungs"></i></div>
+                    <p class="value-kanji">呼吸</p>
+                    <p class="value-label">Breathe</p>
+                    <p class="value-desc">為空間注入可以自由呼吸的氣息，讓家成為承接疲憊的溫柔容器。</p>
+                </div>
+                <div class="value-card reveal">
+                    <div class="value-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                    <p class="value-kanji">耐心</p>
+                    <p class="value-label">Patience</p>
+                    <p class="value-desc">不急著推促改變，願意在原地等待，陪你慢慢看清生活的模樣。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ THREE ROOMS ═══ -->
+        <section class="rooms" data-parallax="0.02">
+            <div class="rooms-header">
+                <h2 class="rooms-title reveal">三 間 房 間</h2>
+                <p class="rooms-sub reveal">THREE ROOMS OF CARE</p>
+            </div>
+            <div class="room-grid">
+                <div class="room reveal">
+                    <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+                    <div class="room-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <h3 class="room-name">整理師</h3>
+                    <p class="room-en">Life Organizer</p>
+                    <p class="room-desc">整理的不只是物品，更是過去的生命經驗。有些物品承載著複雜的情緒，需要有人陪你溫柔告別，才能清出空間迎向未來。</p>
+                    <div class="room-accent"></div>
+                    <div class="room-detail">
+                        <p class="room-detail-text"><i class="fa-solid fa-quote-left" style="opacity:.3;margin-right:.3rem"></i>在整聊的過程中，那些被遺忘在角落的物品，往往藏著最深的記憶。我們不急著丟棄，而是一起面對、一起決定。</p>
+                    </div>
+                </div>
+                <div class="room reveal">
+                    <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+                    <div class="room-icon"><i class="fa-solid fa-couch"></i></div>
+                    <h3 class="room-name">軟裝師</h3>
+                    <p class="room-en">Interior Stylist</p>
+                    <p class="room-desc">專注於規劃合理的動線，讓家不只是漂亮，更是一個能承接你疲憊、讓你自由呼吸的容器。</p>
+                    <div class="room-accent"></div>
+                    <div class="room-detail">
+                        <p class="room-detail-text"><i class="fa-solid fa-quote-left" style="opacity:.3;margin-right:.3rem"></i>好的空間設計，是讓你不需要思考就能感到舒適。每一個轉角、每一處燈光，都在默默守護你的日常。</p>
+                    </div>
+                </div>
+                <div class="room reveal">
+                    <span class="drop"></span><span class="drop"></span><span class="drop"></span>
+                    <div class="room-icon"><i class="fa-solid fa-paw"></i></div>
+                    <h3 class="room-name">寵物保姆</h3>
+                    <p class="room-en">Pet Companion</p>
+                    <p class="room-desc">在毛孩的純粹與陪伴裡，更專注地感受和處理當下的需求，守護家中最純粹的陪伴者，提供更圓滿的生命體驗。</p>
+                    <div class="room-accent"></div>
+                    <div class="room-detail">
+                        <p class="room-detail-text"><i class="fa-solid fa-quote-left" style="opacity:.3;margin-right:.3rem"></i>毛孩教會我們的，是最原始的陪伴——不需要言語，只需要在場。每一次呼嚕、每一次搖尾，都是最純粹的信任。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ BREATHING SPACE ═══ -->
+        <section class="breathing" data-parallax="0.04">
+            <div class="breathing-container">
+                <div class="breath-ring"></div>
+                <div class="breath-ring"></div>
+                <div class="breath-ring"></div>
+                <div class="breathing-icon reveal"><i class="fa-solid fa-wind"></i></div>
+                <p class="breathing-text reveal">
+                    家，不只是一個地址。<br>
+                    它是能<em>承接你疲憊</em>的容器，<br>
+                    是讓你<em>自由呼吸</em>的空間，<br>
+                    是你與世界之間，<br>
+                    最溫柔的<em>緩衝地帶</em>。
+                </p>
+                <p class="breathing-hint reveal">— 深呼吸，你值得擁有這份安寧 —</p>
+            </div>
+        </section>
+
+        <!-- ═══ JOURNEY ═══ -->
+        <section class="journey">
+            <div class="journey-header">
+                <h2 class="journey-title reveal">生 命 的 流 動</h2>
+                <p class="journey-sub reveal">THE FLOW OF LIFE</p>
+            </div>
+            <div class="flow-line"></div>
+
+            <div class="flow-item reveal">
+                <div class="flow-dot"></div>
+                <div class="flow-content">
+                    <p class="flow-label">初心 · Origin</p>
+                    <p class="flow-text">在有溫度的關係中找回安心的節奏，這份初心成為一切的起點。相信理想的生活不在於完美，而在於每一段真實的連結。</p>
+                </div>
+                <div style="width:calc(50% - 2rem)"></div>
+            </div>
+            <div class="flow-item reveal">
+                <div class="flow-dot"></div>
+                <div style="width:calc(50% - 2rem)"></div>
+                <div class="flow-content">
+                    <p class="flow-label">覺察 · Awareness</p>
+                    <p class="flow-text">發現整理的不只是物品，更是過去的生命經驗。每一件物品都承載著需要被看見的情緒，每一次告別都是重新出發的勇氣。</p>
+                </div>
+            </div>
+            <div class="flow-item reveal">
+                <div class="flow-dot"></div>
+                <div class="flow-content">
+                    <p class="flow-label">容器 · Container</p>
+                    <p class="flow-text">家不只是漂亮的空間，更是能承接疲憊、讓人自由呼吸的容器。從動線規劃到氛圍營造，每個細節都在訴說「歡迎回家」。</p>
+                </div>
+                <div style="width:calc(50% - 2rem)"></div>
+            </div>
+            <div class="flow-item reveal">
+                <div class="flow-dot"></div>
+                <div style="width:calc(50% - 2rem)"></div>
+                <div class="flow-content">
+                    <p class="flow-label">純粹 · Purity</p>
+                    <p class="flow-text">在毛孩的世界中學會更專注地感受當下。牠們不需要言語，只需要你在場——這是最純粹的陪伴形式。</p>
+                </div>
+            </div>
+            <div class="flow-item reveal">
+                <div class="flow-dot"></div>
+                <div class="flow-content">
+                    <p class="flow-label">流動 · Flow</p>
+                    <p class="flow-text">在三個角色之間自在切換，如同雨水在不同容器間流動。每一個身份都是陪伴的不同面向，每一次服務都是一段新的相遇。</p>
+                </div>
+                <div style="width:calc(50% - 2rem)"></div>
+            </div>
+            <div class="flow-item reveal">
+                <div class="flow-dot"></div>
+                <div style="width:calc(50% - 2rem)"></div>
+                <div class="flow-content">
+                    <p class="flow-label">信念 · Belief</p>
+                    <p class="flow-text">不急著推促改變，願意站在原地陪你，慢慢把每一天過得更好。因為真正的改變，從來都是從被理解開始的。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ QUOTE WALL ═══ -->
+        <section class="quote-wall">
+            <div class="quote-wall-inner">
+                <div class="qw-card tall reveal">
+                    <div class="qw-mark">"</div>
+                    <p class="qw-text">理想的生活並非追求極致的完美，而是在一段段<em>有溫度的關係</em>中，找回讓自己安心的節奏。</p>
+                    <p class="qw-source">— 關於理想生活</p>
+                </div>
+                <div class="qw-card accent reveal">
+                    <div class="qw-mark">"</div>
+                    <p class="qw-text">有些物品承載著複雜的情緒，需要有人陪你<em>溫柔告別</em>，才能清出空間迎向未來。</p>
+                    <p class="qw-source">— 關於整理</p>
+                </div>
+                <div class="qw-card reveal">
+                    <div class="qw-mark">"</div>
+                    <p class="qw-text">家不只是漂亮，更是一個能<em>承接你疲憊</em>、讓你自由呼吸的容器。</p>
+                    <p class="qw-source">— 關於空間</p>
+                </div>
+                <div class="qw-card reveal">
+                    <div class="qw-mark">"</div>
+                    <p class="qw-text">在毛孩的純粹與陪伴裡，我留意到需要更專注地<em>感受和處理當下</em>的需求。</p>
+                    <p class="qw-source">— 關於陪伴</p>
+                </div>
+                <div class="qw-card tall accent reveal">
+                    <div class="qw-mark">"</div>
+                    <p class="qw-text">我不會急著推促你改變，而是<em>願意站在原地陪你</em>，看清生活的樣子。期待在每一次的相遇中，能將這份細心與理解放進生活的縫隙裡。</p>
+                    <p class="qw-source">— 關於信念</p>
+                </div>
+                <div class="qw-card reveal">
+                    <div class="qw-mark">"</div>
+                    <p class="qw-text"><em>Life might be sucks, but show must go on</em> ✨</p>
+                    <p class="qw-source">— Instagram Bio</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ MANTRA ═══ -->
+        <section class="mantra">
+            <div class="mantra-text" id="mantra">
+                無論是釐清你與所有物的糾結、重新定義空間的輪廓，還是守護家中最純粹的陪伴者，我不只是提供技術服務，更是你生活轉机中的支持力量。
+            </div>
+            <p class="mantra-sig reveal">— Yu Fan · raini_fish</p>
+        </section>
+
+        <!-- ═══ MARQUEE DIVIDER ═══ -->
+        <div class="marquee" aria-hidden="true">
+            <div class="marquee-track">
+                <span class="marquee-word">raini_fish</span>
+                <span class="marquee-word accent">陪伴</span>
+                <span class="marquee-word">整理</span>
+                <span class="marquee-word accent">溫柔</span>
+                <span class="marquee-word">空間</span>
+                <span class="marquee-word accent">呼吸</span>
+                <span class="marquee-word">毛孩</span>
+                <span class="marquee-word accent">流動</span>
+                <span class="marquee-word">raini_fish</span>
+                <span class="marquee-word accent">陪伴</span>
+                <span class="marquee-word">整理</span>
+                <span class="marquee-word accent">溫柔</span>
+                <span class="marquee-word">空間</span>
+                <span class="marquee-word accent">呼吸</span>
+                <span class="marquee-word">毛孩</span>
+                <span class="marquee-word accent">流動</span>
+            </div>
+        </div>
+
+        <!-- ═══ CONTACT ═══ -->
+        <section class="contact">
+            <h2 class="contact-title reveal">與 我 相 遇</h2>
+            <p class="contact-sub reveal">FIND ME IN THE RAIN</p>
+            <div class="c-grid">
+                <a href="https://www.threads.net/@raini_fish" target="_blank" class="c-item reveal">
+                    <i class="fa-brands fa-threads"></i>Threads · 日常分享
+                </a>
+                <a href="https://www.instagram.com/raini_fish/" target="_blank" class="c-item reveal">
+                    <i class="fa-brands fa-instagram"></i>Instagram · 生活紀錄
+                </a>
+            </div>
+        </section>
+
+        <footer>
+            <p class="q">"期待在每一次的相遇中，把細心與理解放進生活的縫隙裡。"</p>
+            <p class="cr">© Yu Fan · raini_fish. All rights reserved.</p>
+            <p class="sig">Made with ♥ by SuperGalen's Dungeon</p>
+        </footer>
+    </main>
+
+    <!-- ═══ SCRIPTS ═══ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script>
+    /* ═══════════════════════════════════════════
+       THREE.JS — Underwater Caustics Background
+       ═══════════════════════════════════════════ */
+    const isMobile=window.innerWidth<=768;
+    (function(){
+        const canvas = document.getElementById('water-bg');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isMobile });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(isMobile?1:Math.min(window.devicePixelRatio, 2));
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        const waterMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                uScrollY: { value: 0 },
+                uColorDeep: { value: new THREE.Color(0x0D1820) },
+                uColorMid: { value: new THREE.Color(0x1A2A3A) },
+                uColorLight: { value: new THREE.Color(0x2E4A5A) },
+                uColorAccent: { value: new THREE.Color(0x5B7F95) }
+            },
+            vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
+            fragmentShader: `
+                uniform float uTime;uniform vec2 uMouse;uniform vec2 uResolution;uniform float uScrollY;
+                uniform vec3 uColorDeep;uniform vec3 uColorMid;uniform vec3 uColorLight;uniform vec3 uColorAccent;
+                varying vec2 vUv;
+                vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+                vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;}
+                vec3 permute(vec3 x){return mod289(((x*34.0)+1.0)*x);}
+                float snoise(vec2 v){
+                    const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+                    vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);
+                    vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
+                    vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod289(i);
+                    vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
+                    vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
+                    m=m*m;m=m*m;
+                    vec3 x=2.0*fract(p*C.www)-1.0;vec3 h=abs(x)-0.5;
+                    vec3 ox=floor(x+0.5);vec3 a0=x-ox;
+                    m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
+                    vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;
+                    return 130.0*dot(m,g);
+                }
+                void main(){
+                    vec2 uv=vUv;float t=uTime*0.15;float scroll=uScrollY*0.0003;
+                    float c1=snoise(uv*3.0+vec2(t,t*0.7))*0.5+0.5;
+                    float c2=snoise(uv*5.0-vec2(t*0.8,t*0.5)+10.0)*0.5+0.5;
+                    float c3=snoise(uv*2.0+vec2(t*0.3,-t*0.4)+20.0)*0.5+0.5;
+                    float caustic=pow(c1*c2,1.5)+pow(c2*c3,2.0)*0.5;
+                    caustic=smoothstep(0.1,0.9,caustic)*0.15;
+                    float mouseDist=length(uv-uMouse);float mouseGlow=exp(-mouseDist*4.0)*0.08;
+                    float depth=mix(0.3,1.0,uv.y+scroll*0.5);
+                    vec3 baseColor=mix(uColorMid,uColorDeep,depth);
+                    vec3 color=baseColor+uColorAccent*caustic+uColorLight*mouseGlow;
+                    float vig=1.0-smoothstep(0.4,1.4,length(uv-0.5)*1.5);
+                    color*=vig;
+                    gl_FragColor=vec4(color,1.0);
+                }
+            `,
+            transparent: false
+        });
+
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), waterMaterial));
+        let mouseX=0.5,mouseY=0.5;
+        document.addEventListener('mousemove',e=>{mouseX=e.clientX/window.innerWidth;mouseY=1.0-e.clientY/window.innerHeight});
+        function animate(time){
+            waterMaterial.uniforms.uTime.value=time*0.001;
+            waterMaterial.uniforms.uMouse.value.set(mouseX,mouseY);
+            waterMaterial.uniforms.uScrollY.value=window.scrollY;
+            renderer.render(scene,camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+        window.addEventListener('resize',()=>{renderer.setSize(window.innerWidth,window.innerHeight);waterMaterial.uniforms.uResolution.value.set(window.innerWidth,window.innerHeight)});
+    })();
+
+    /* ═══════════════════════════════════════
+       P5.JS — Rain Particles
+       ═══════════════════════════════════════ */
+    new p5(function(p){
+        let drops=[],splashes=[];
+        const NUM=isMobile?40:120;
+        p.setup=function(){let c=p.createCanvas(p.windowWidth,p.windowHeight);c.parent('rain-canvas');c.style('pointer-events','none');for(let i=0;i<NUM;i++)drops.push(mk())};
+        function mk(){return{x:p.random(p.width),y:p.random(-p.height,0),speed:p.random(4,9),len:p.random(10,25),op:p.random(15,50),th:p.random(.5,1.5),w:p.random(-.3,.3)}}
+        p.draw=function(){
+            p.clear();
+            for(let d of drops){p.stroke(140,180,200,d.op);p.strokeWeight(d.th);p.line(d.x,d.y,d.x+d.w*d.len,d.y+d.len);d.y+=d.speed;d.x+=d.w;
+                if(d.y>p.height){if(p.random()<.3)splashes.push({x:d.x,y:p.height-p.random(5,20),r:0,mr:p.random(3,8),op:40,sp:p.random(.3,.8)});Object.assign(d,mk());d.y=p.random(-100,-10)}}
+            p.noFill();
+            for(let i=splashes.length-1;i>=0;i--){let s=splashes[i];p.stroke(140,180,200,s.op);p.strokeWeight(.5);p.ellipse(s.x,s.y,s.r*2,s.r*.6);s.r+=s.sp;s.op-=1.5;if(s.op<=0)splashes.splice(i,1)}
+        };
+        p.windowResized=function(){p.resizeCanvas(p.windowWidth,p.windowHeight)};
+    });
+
+    /* ═══════════════════════════════════════
+       KOI — Full-page background swimming
+       ═══════════════════════════════════════ */
+    (function(){
+        const canvas=document.getElementById('koi-bg'),ctx=canvas.getContext('2d');
+        let W,H,koiFish=[],bubbles=[],mousePos={x:-9999,y:-9999};
+        function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}
+        resize();
+        class Koi{
+            constructor(){
+                this.x=Math.random()*W;this.y=Math.random()*H;
+                this.angle=Math.random()*Math.PI*2;
+                this.speed=.4+Math.random()*.6;
+                this.turnSpeed=0;
+                this.targetTurn=0;
+                this.turnTimer=0;
+                this.turnInterval=120+Math.random()*200;
+                this.length=35+Math.random()*30;this.width=this.length*.28;
+                this.tailAngle=0;this.tailSpeed=.04+Math.random()*.02;
+                this.history=[];this.maxHistory=8;
+                const t=[
+                    {b:'#C45C3E',f:'#E8734F',bl:'#F0EDE8'},
+                    {b:'#D4A574',f:'#E8C9A0',bl:'#F0EDE8'},
+                    {b:'#5B7F95',f:'#8FB8CC',bl:'#C8C3BA'},
+                    {b:'#E8C9A0',f:'#D4A574',bl:'#fff'},
+                    {b:'#9B4D3A',f:'#C45C3E',bl:'#E8C9A0'}
+                ];
+                this.c=t[Math.floor(Math.random()*t.length)];
+                this.opacity=.35+Math.random()*.3;
+                this.depthScale=.6+Math.random()*.6;
+            }
+            update(){
+                // Smooth wandering: pick a new gentle turn target periodically
+                this.turnTimer++;
+                if(this.turnTimer>=this.turnInterval){
+                    this.targetTurn=(Math.random()-.5)*.02;
+                    this.turnInterval=120+Math.random()*200;
+                    this.turnTimer=0;
+                }
+                this.turnSpeed+=(this.targetTurn-this.turnSpeed)*.02;
+                this.angle+=this.turnSpeed;
+                // Mouse avoidance
+                let dx=this.x-mousePos.x,dy=this.y-mousePos.y,d=Math.sqrt(dx*dx+dy*dy);
+                let fleeX=0,fleeY=0;
+                if(d<120&&d>0){fleeX=(dx/d)*.15;fleeY=(dy/d)*.08}
+                this.x+=Math.cos(this.angle)*this.speed+fleeX;
+                this.y+=Math.sin(this.angle)*this.speed*.6+fleeY;
+                // Wrap around
+                if(this.x<-this.length*2)this.x=W+this.length;
+                if(this.x>W+this.length*2)this.x=-this.length;
+                if(this.y<-this.length*2)this.y=H+this.length;
+                if(this.y>H+this.length*2)this.y=-this.length;
+                this.tailAngle+=this.tailSpeed;
+                this.history.push({x:this.x,y:this.y});
+                if(this.history.length>this.maxHistory)this.history.shift();
+            }
+            draw(){
+                const a=this.angle,tw=Math.sin(this.tailAngle)*.35;
+                const s=this.depthScale;
+                ctx.save();ctx.globalAlpha=this.opacity;
+                // Trail
+                for(let i=0;i<this.history.length-1;i++){
+                    const p=this.history[i];const alpha=i/this.history.length*.15*this.opacity;
+                    ctx.beginPath();ctx.arc(p.x,p.y,this.width*.3*s*(i/this.history.length),0,Math.PI*2);
+                    ctx.fillStyle=this.c.f;ctx.globalAlpha=alpha;ctx.fill();
+                }
+                ctx.globalAlpha=this.opacity;
+                ctx.translate(this.x,this.y);ctx.rotate(a);ctx.scale(s,s);
+                // Body glow
+                ctx.shadowColor=this.c.f;ctx.shadowBlur=20;
+                ctx.beginPath();ctx.ellipse(0,0,this.length*.5,this.width*.5,0,0,Math.PI*2);
+                let g=ctx.createLinearGradient(-this.length*.5,-this.width*.3,this.length*.5,this.width*.3);
+                g.addColorStop(0,this.c.b);g.addColorStop(.5,this.c.bl);g.addColorStop(1,this.c.b);ctx.fillStyle=g;ctx.fill();
+                ctx.shadowColor='transparent';
+                // Tail
+                ctx.beginPath();ctx.moveTo(-this.length*.4,0);
+                ctx.quadraticCurveTo(-this.length*.7,this.width*tw,-this.length*.85,this.width*.45+this.width*tw*.8);
+                ctx.quadraticCurveTo(-this.length*.6,this.width*tw*.3,-this.length*.4,0);
+                ctx.moveTo(-this.length*.4,0);
+                ctx.quadraticCurveTo(-this.length*.7,-this.width*tw,-this.length*.85,-this.width*.45-this.width*tw*.8);
+                ctx.quadraticCurveTo(-this.length*.6,-this.width*tw*.3,-this.length*.4,0);
+                ctx.fillStyle=this.c.f;ctx.globalAlpha=this.opacity*.7;ctx.fill();
+                // Dorsal fin
+                ctx.globalAlpha=this.opacity*.4;ctx.beginPath();
+                ctx.moveTo(this.length*.1,-this.width*.5);
+                ctx.quadraticCurveTo(0,-this.width*.9,-this.length*.15,-this.width*.5);
+                ctx.fillStyle=this.c.f;ctx.fill();
+                ctx.globalAlpha=this.opacity;
+                // Eye
+                ctx.beginPath();ctx.arc(this.length*.28,-this.width*.14,2.5*s,0,Math.PI*2);ctx.fillStyle='#1A2A3A';ctx.fill();
+                ctx.beginPath();ctx.arc(this.length*.29,-this.width*.13,1*s,0,Math.PI*2);ctx.fillStyle='rgba(240,237,232,.6)';ctx.fill();
+                ctx.restore();
+            }
+        }
+        for(let i=0;i<(isMobile?4:9);i++)koiFish.push(new Koi());
+        // Bubbles
+        class Bubble{
+            constructor(){this.reset()}
+            reset(){this.x=Math.random()*W;this.y=H+Math.random()*100;this.r=1.5+Math.random()*3;this.speed=.3+Math.random()*.5;this.wobble=Math.random()*Math.PI*2;this.wobbleSpeed=.01+Math.random()*.02;this.opacity=.08+Math.random()*.12}
+            update(){this.y-=this.speed;this.wobble+=this.wobbleSpeed;this.x+=Math.sin(this.wobble)*.3;if(this.y<-20)this.reset()}
+            draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);ctx.strokeStyle=`rgba(143,184,204,${this.opacity})`;ctx.lineWidth=.5;ctx.stroke();
+                ctx.beginPath();ctx.arc(this.x-.5,this.y-1,this.r*.3,0,Math.PI*2);ctx.fillStyle=`rgba(240,237,232,${this.opacity*.5})`;ctx.fill()}
+        }
+        for(let i=0;i<(isMobile?10:25);i++){const b=new Bubble();b.y=Math.random()*H;bubbles.push(b)}
+        document.addEventListener('mousemove',e=>{mousePos.x=e.clientX;mousePos.y=e.clientY});
+        function draw(){
+            ctx.clearRect(0,0,W,H);
+            bubbles.forEach(b=>{b.update();b.draw()});
+            koiFish.forEach(k=>{k.update();k.draw()});
+            requestAnimationFrame(draw);
+        }
+        draw();
+        window.addEventListener('resize',resize);
+    })();
+
+    /* ═══════════════════════════════════════
+       CLICK RIPPLE — Water ripple on click
+       ═══════════════════════════════════════ */
+    (function(){
+        if('ontouchstart' in window)return;
+        const canvas=document.getElementById('click-ripple'),ctx=canvas.getContext('2d');
+        let W,H,ripples=[],animating=false;
+        function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}
+        resize();
+        document.addEventListener('click',e=>{
+            for(let i=0;i<3;i++){
+                ripples.push({x:e.clientX,y:e.clientY,radius:i*8,opacity:.3-i*.08,speed:1.5+i*.5});
+            }
+            if(!animating){animating=true;draw()}
+        });
+        function draw(){
+            ctx.clearRect(0,0,W,H);
+            for(let i=ripples.length-1;i>=0;i--){
+                const r=ripples[i];
+                ctx.beginPath();ctx.ellipse(r.x,r.y,r.radius,r.radius*.5,0,0,Math.PI*2);
+                ctx.strokeStyle=`rgba(143,184,204,${r.opacity})`;ctx.lineWidth=1.5;ctx.stroke();
+                r.radius+=r.speed;r.opacity-=.004;
+                if(r.opacity<=0)ripples.splice(i,1);
+            }
+            if(ripples.length>0){requestAnimationFrame(draw)}
+            else{animating=false}
+        }
+        window.addEventListener('resize',resize);
+    })();
+
+    /* ═══════════════════════════════════════
+       MOUSE PARALLAX on sections
+       ═══════════════════════════════════════ */
+    (function(){
+        if(window.innerWidth<=768)return;
+        const sections=document.querySelectorAll('[data-parallax]');
+        let mx=0,my=0,cx=0,cy=0,raf=0;
+        document.addEventListener('mousemove',e=>{
+            mx=(e.clientX/window.innerWidth-.5)*2;
+            my=(e.clientY/window.innerHeight-.5)*2;
+            if(!raf)raf=requestAnimationFrame(update);
+        });
+        function update(){
+            cx+=(mx-cx)*.08;cy+=(my-cy)*.08;
+            sections.forEach(s=>{
+                const intensity=parseFloat(s.dataset.parallax)||.02;
+                s.style.transform=`translate(${cx*intensity*40}px,${cy*intensity*20}px)`;
+            });
+            if(Math.abs(mx-cx)>.001||Math.abs(my-cy)>.001){raf=requestAnimationFrame(update)}
+            else{raf=0}
+        }
+    })();
+
+    /* ═══════════════════════════════════════
+       CUSTOM CURSOR
+       ═══════════════════════════════════════ */
+    (function(){
+        if('ontouchstart' in window)return;
+        const ring=document.getElementById('cursor-ring'),dot=document.getElementById('cursor-dot');
+        let mx=0,my=0,rx=0,ry=0;
+        document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px'});
+        function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop)}loop();
+        document.querySelectorAll('a,button,.room,.badge,.c-item,.value-card,.qw-card').forEach(el=>{
+            el.addEventListener('mouseenter',()=>{ring.style.width='50px';ring.style.height='50px';ring.style.borderColor='rgba(212,165,116,.5)'});
+            el.addEventListener('mouseleave',()=>{ring.style.width='36px';ring.style.height='36px';ring.style.borderColor='rgba(91,127,149,.4)'})});
+    })();
+
+    /* ═══════════════════════════════════════
+       GSAP — Advanced Scroll Animations
+       ═══════════════════════════════════════ */
+    gsap.registerPlugin(ScrollTrigger);
+
+    // ── Scroll progress + Water Level ──
+    window.addEventListener('scroll',()=>{
+        const p=(document.documentElement.scrollTop/(document.documentElement.scrollHeight-window.innerHeight))*100;
+        document.getElementById('scroll-progress').style.width=p+'%';
+        document.getElementById('wl-fill').style.height=p+'%';
+        document.getElementById('wl-dot').style.bottom=p+'%';
+    });
+
+    // ── Page entrance sequence ──
+    (function(){
+        const veil=document.getElementById('page-veil');
+        const title=document.getElementById('hero-title');
+        const text=title.textContent;
+        title.innerHTML='';
+        [...text].forEach(ch=>{
+            const span=document.createElement('span');
+            span.classList.add('char');
+            span.textContent=ch===' '?'\u00A0':ch;
+            title.appendChild(span);
+        });
+
+        // Step 1: Lift the veil after a brief pause (let canvases initialize)
+        requestAnimationFrame(()=>{
+            setTimeout(()=>{
+                veil.classList.add('lifted');
+                document.body.classList.add('entered');
+                // Remove veil from DOM after transition
+                veil.addEventListener('transitionend',()=>veil.remove(),{once:true});
+            },300);
+        });
+
+        // Step 2: Hero title characters fly in (after veil starts lifting)
+        gsap.to('.hero-title .char',{
+            opacity:1,y:0,rotateX:0,
+            duration:.8,ease:'back.out(1.5)',
+            stagger:.06,delay:.8
+        });
+
+        // Step 3: Hero sub-elements stagger in
+        gsap.fromTo('.hero .reveal',
+            {opacity:0,y:50},
+            {opacity:1,y:0,duration:1.2,ease:'power3.out',stagger:.15,delay:1.6}
+        );
+    })();
+
+    // ── Section title split-char animation ──
+    document.querySelectorAll('[data-split]').forEach(el=>{
+        const text=el.textContent;
+        el.innerHTML='';
+        [...text].forEach(ch=>{
+            const s=document.createElement('span');
+            s.classList.add('split-char');
+            s.textContent=ch===' '?'\u00A0':ch;
+            el.appendChild(s);
+        });
+        gsap.to(el.querySelectorAll('.split-char'),{
+            opacity:1,y:0,
+            duration:.6,ease:'power3.out',stagger:.04,
+            scrollTrigger:{trigger:el,start:'top 80%',once:true}
+        });
+    });
+
+    // ── Reveal elements (skip hero — handled by entrance sequence) ──
+    gsap.utils.toArray('.reveal').forEach(el=>{
+        if(el.closest('.hero'))return;
+        gsap.fromTo(el,{opacity:0,y:40},{
+            opacity:1,y:0,duration:1,ease:'power3.out',
+            scrollTrigger:{trigger:el,start:'top 85%',once:true}
+        });
+    });
+
+    // ── Rooms: stagger + scale ──
+    gsap.utils.toArray('.room').forEach((room,i)=>{
+        gsap.fromTo(room,
+            {opacity:0,y:60,scale:.92,rotateY:-5},
+            {opacity:1,y:0,scale:1,rotateY:0,duration:.9,ease:'power2.out',
+             scrollTrigger:{trigger:room,start:'top 85%',once:true},delay:i*.18});
+    });
+
+    // ── Values: stagger with rotation ──
+    gsap.utils.toArray('.value-card').forEach((card,i)=>{
+        gsap.fromTo(card,
+            {opacity:0,y:50,scale:.9,rotate:-3},
+            {opacity:1,y:0,scale:1,rotate:0,duration:.7,ease:'back.out(1.2)',
+             scrollTrigger:{trigger:card,start:'top 85%',once:true},delay:i*.12});
+    });
+
+    // ── Flow items: slide from alternating sides ──
+    gsap.utils.toArray('.flow-item').forEach((item,i)=>{
+        const content=item.querySelector('.flow-content');
+        const isEven=i%2===1;
+        gsap.fromTo(content,
+            {opacity:0,x:isEven?50:-50,scale:.95},
+            {opacity:1,x:0,scale:1,duration:.8,ease:'power2.out',
+             scrollTrigger:{trigger:item,start:'top 80%',once:true}});
+        const dot=item.querySelector('.flow-dot');
+        if(dot){gsap.fromTo(dot,{scale:0},{scale:1,duration:.4,ease:'back.out(2)',
+            scrollTrigger:{trigger:item,start:'top 80%',once:true},delay:.2})}
+    });
+
+    // ── Quote wall: masonry stagger ──
+    gsap.utils.toArray('.qw-card').forEach((card,i)=>{
+        gsap.fromTo(card,
+            {opacity:0,y:30+Math.random()*30,scale:.95},
+            {opacity:1,y:0,scale:1,duration:.8,ease:'power2.out',
+             scrollTrigger:{trigger:card,start:'top 88%',once:true},delay:i*.1});
+    });
+
+    // ── Breathing section: parallax + scale ──
+    gsap.fromTo('.breathing-text',{scale:.9,opacity:0},{
+        scale:1,opacity:1,duration:1.5,ease:'power2.out',
+        scrollTrigger:{trigger:'.breathing',start:'top 60%',once:true}
+    });
+
+    // ── Mantra: word-by-word reveal ──
+    (function(){
+        const mantra=document.getElementById('mantra');
+        const text=mantra.textContent.trim();
+        mantra.innerHTML='';
+        [...text].forEach(ch=>{
+            const span=document.createElement('span');
+            span.classList.add('word');
+            span.textContent=ch===' '?'\u00A0':ch;
+            mantra.appendChild(span);
+        });
+        ScrollTrigger.create({
+            trigger:'.mantra',start:'top 70%',once:true,
+            onEnter:()=>{
+                gsap.to('.mantra-text .word',{
+                    opacity:1,y:0,duration:.3,ease:'power2.out',stagger:.03
+                });
+            }
+        });
+    })();
+
+    // ── Footer fade ──
+    gsap.fromTo('footer',{opacity:0,y:30},{
+        opacity:1,y:0,duration:1,ease:'power3.out',
+        scrollTrigger:{trigger:'footer',start:'top 90%',once:true}
+    });
+
+    // ── Parallax floating kanji ──
+    gsap.utils.toArray('.float-kanji').forEach((k,i)=>{
+        gsap.to(k,{yPercent:-50-i*30,ease:'none',
+            scrollTrigger:{trigger:'body',start:'top top',end:'bottom bottom',scrub:1}});
+    });
+
+    // ── Breathing rings pulse on scroll ──
+    gsap.to('.breath-ring',{
+        scale:1.15,opacity:.1,
+        scrollTrigger:{trigger:'.breathing',start:'top bottom',end:'bottom top',scrub:2}
+    });
+
+    // ── Magnetic hover on value cards (desktop only) ──
+    if(!isMobile) document.querySelectorAll('.value-card,.room').forEach(card=>{
+        card.addEventListener('mousemove',e=>{
+            const r=card.getBoundingClientRect();
+            const x=(e.clientX-r.left-r.width/2)/r.width*8;
+            const y=(e.clientY-r.top-r.height/2)/r.height*8;
+            gsap.to(card,{rotateY:x,rotateX:-y,duration:.4,ease:'power2.out',transformPerspective:600});
+        });
+        card.addEventListener('mouseleave',()=>{
+            gsap.to(card,{rotateY:0,rotateX:0,duration:.6,ease:'elastic.out(1,0.5)'});
+        });
+    });
+
+    // ── Marquee: speed shift on scroll ──
+    gsap.utils.toArray('.marquee').forEach(m=>{
+        const track=m.querySelector('.marquee-track');
+        gsap.fromTo(m,{opacity:0},{opacity:1,duration:1,
+            scrollTrigger:{trigger:m,start:'top 90%',once:true}});
+        ScrollTrigger.create({
+            trigger:m,start:'top bottom',end:'bottom top',
+            onUpdate:self=>{
+                const v=1+self.progress*1.5;
+                track.style.animationDuration=(30/v)+'s';
+            }
+        });
+    });
+
+    // ── Contact cards: slide-up stagger ──
+    gsap.utils.toArray('.c-item').forEach((item,i)=>{
+        gsap.fromTo(item,
+            {opacity:0,y:40,rotateX:-10},
+            {opacity:1,y:0,rotateX:0,duration:.7,ease:'power2.out',
+             scrollTrigger:{trigger:item,start:'top 88%',once:true},delay:i*.15});
+    });
+    </script>
+</body>
+</html>

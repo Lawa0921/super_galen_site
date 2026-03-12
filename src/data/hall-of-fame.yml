@@ -1158,6 +1158,18 @@ members:
       - id: "late_night_radio"
         label: "深夜電台"
 
+  - id: "raini_fish"
+    name: "Yu Fan"
+    avatar: "/assets/img/guild/raini_fish/avatar.webp"
+    page: "/guild/raini_fish.html"
+    tags:
+      - id: "life_organizer"
+        label: "整理師"
+      - id: "interior_stylist"
+        label: "軟裝師"
+      - id: "pet_companion"
+        label: "寵物保姆"
+
   - id: "ddddearth4444"
     name: "邪教教主 ddddearth"
     avatar: "/assets/img/guild/ddddearth4444/avatar.webp"
