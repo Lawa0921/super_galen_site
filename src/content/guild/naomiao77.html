@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貓青 naomiao77 | 插畫家的天空畫布</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sky: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                        },
+                        cream: '#FDFBF7',
+                        cloud: '#FFFFFF',
+                        text: '#4A5568',
+                        accent: '#FFB347' // Soft sun orange
+                    },
+                    fontFamily: {
+                        serif: ['"Shippori Mincho"', 'serif'],
+                        rounded: ['"M PLUS Rounded 1c"', 'sans-serif'],
+                    },
+                    animation: {
+                        'float-slow': 'float 8s ease-in-out infinite',
+                        'float-medium': 'float 6s ease-in-out infinite',
+                        'float-fast': 'float 4s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.8' },
+                            '50%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        h1, h2, h3, .font-handwriting {
+            font-family: 'Zhi Mang Xing', cursive;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #e0f2fe; /* Light sky blue fallback */
+            color: #4A5568;
+            overflow-x: hidden;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%234A5568" d="M12 2L9 9H2L7 14L5 22L12 17L19 22L17 14L22 9H15L12 2Z"/></svg>') 12 12, auto;
+            /* Removed noise texture to fix blurriness and ensure crisp illustration style */
+        }
+
+        /* Replaced WebGL with SVG layers for Pop-up book feel, but keep container for gradient background */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -3; /* Move further back */
+            pointer-events: none;
+            /* Update to match requested colors: Grayish blue -> Pale green -> Cream */
+            background: linear-gradient(180deg, #E2E8F0 0%, #ECFDF5 50%, #FDFBF7 100%);
+        }
+
+        /* Background Illustration Layers */
+        .cloud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            z-index: -2;
+            pointer-events: none;
+            overflow: hidden;
+            will-change: transform; /* Hint for performance */
+        }
+
+        .svg-cloud {
+            position: absolute;
+            opacity: 0.9;
+            /* Removed heavy drop-shadow for performance */
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            /* Removed blur for crisp illustration style */
+            border: 2px solid #BAE6FD;
+            box-shadow: 4px 4px 0px rgba(186, 230, 253, 0.5);
+            border-radius: 16px;
+        }
+
+        .polaroid {
+            background: #fffcf5; /* Creamy paper color */
+            padding: 12px 12px 40px 12px;
+            box-shadow: 2px 8px 25px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 4px; /* Less round, more like cut paper */
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
+            border: 1px solid rgba(0,0,0,0.03);
+            z-index: 2; /* Ensure above clouds */
+        }
+
+        .polaroid::after {
+            /* Tape effect */
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-3deg);
+            width: 40px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            z-index: 3;
+        }
+
+        .polaroid.hover-active {
+            z-index: 50;
+            box-shadow: 0 30px 50px rgba(125, 211, 252, 0.4);
+        }
+
+        /* 3D Glass glare effect on hover */
+        .polaroid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .polaroid.hover-active::before {
+            opacity: 1;
+        }
+
+        .polaroid img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .polaroid::after {
+            content: '';
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 1px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+
+        /* Washi Tape styling */
+        .tape {
+            position: absolute;
+            width: 80px;
+            height: 25px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            z-index: 2;
+            /* Removed blur */
+            border-left: 2px dashed rgba(200,200,200,0.5);
+            border-right: 2px dashed rgba(200,200,200,0.5);
+        }
+
+        .tape.blue { background-color: rgba(186, 230, 253, 0.6); }
+        .tape.yellow { background-color: rgba(254, 240, 138, 0.6); }
+
+        .note-paper {
+            background-color: #FDFBF7;
+            background-image: linear-gradient(rgba(125, 211, 252, 0.1) 1px, transparent 1px);
+            background-size: 100% 30px;
+            border-left: 4px solid #7dd3fc;
+            padding: 30px 40px;
+            border-radius: 4px 12px 12px 4px;
+            box-shadow: 2px 4px 15px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        /* SVG Clouds purely for decorative overlay */
+        /* Typography Enhancements */
+        .title-stroke {
+            color: white;
+            text-shadow:
+                -1px -1px 0 #7dd3fc,
+                 1px -1px 0 #7dd3fc,
+                -1px  1px 0 #7dd3fc,
+                 1px  1px 0 #7dd3fc,
+                 0 4px 8px rgba(125, 211, 252, 0.5);
+        }
+
+        .highlight-text {
+            position: relative;
+            display: inline-block;
+            z-index: 1;
+        }
+
+        .highlight-text::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: -2%;
+            width: 104%;
+            height: 10px;
+            background-color: rgba(254, 240, 138, 0.6); /* Soft yellow */
+            z-index: -1;
+            border-radius: 4px;
+            transform: rotate(-1deg);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0f2fe;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #7dd3fc;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+
+        @keyframes jump {
+            0%, 100% { transform: translateY(0) scale(1, 1); }
+            40% { transform: translateY(-30px) scale(0.9, 1.1); }
+            50% { transform: translateY(-35px) scale(1, 1); }
+            60% { transform: translateY(-30px) scale(1.1, 0.9); }
+        }
+
+        /* --- BOOK SPREAD STYLING --- */
+        .book-spread {
+            background-color: #FDFBF7;
+            background-image:
+                linear-gradient(90deg, transparent 49.5%, rgba(0,0,0,0.05) 49.5%, rgba(0,0,0,0.1) 50%, transparent 50.5%),
+                linear-gradient(rgba(186, 230, 253, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 40px;
+            box-shadow:
+                0 20px 40px rgba(0,0,0,0.1),
+                inset 0 0 40px rgba(226, 232, 240, 0.4),
+                inset 5px 0 10px rgba(0,0,0,0.05),
+                inset -5px 0 10px rgba(0,0,0,0.05);
+            border-radius: 4px;
+            border: 1px solid #E5E7EB;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 2000px;
+        }
+
+        /* Stack of pages effect */
+        .book-spread::before, .book-spread::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            border: 1px solid #E5E7EB;
+            border-radius: 2px;
+            z-index: -1;
+        }
+
+        .book-spread::before {
+            top: 4px; left: 4px; right: 4px; bottom: -4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .book-spread::after {
+            top: 8px; left: 8px; right: 8px; bottom: -8px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+        }
+
+        .book-spine {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 40px;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg,
+                rgba(255,255,255,0) 0%,
+                rgba(0,0,0,0.03) 20%,
+                rgba(0,0,0,0.08) 50%,
+                rgba(0,0,0,0.03) 80%,
+                rgba(255,255,255,0) 100%);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+    </style>
+
+    <style>
+        .polaroid {
+            background-color: #fffaf0; /* warmer paper white */
+            padding: 8px 8px 30px 8px;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
+            position: relative;
+        }
+        .polaroid::after {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-2deg);
+            width: 40px;
+            height: 15px;
+            background-color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+            /* Masking tape effect */
+        }
+    </style>
+
+</head>
+<body class="font-rounded antialiased selection:bg-sky-200 selection:text-sky-900">
+
+    <!-- Entrance Overlay -->
+    <div id="entrance-overlay" class="fixed inset-0 z-[100] bg-sky-100 flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-sky-50">
+        <!-- Cute sleeping cat SVG -->
+        <div class="w-32 h-32 mb-6 animate-pulse" id="entrance-icon">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 60 C20 40 40 30 50 30 C60 30 80 40 80 60 C80 75 60 85 50 85 C40 85 20 75 20 60 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
+                <!-- Ears -->
+                <path d="M25 45 L20 20 L40 35 M75 45 L80 20 L60 35" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
+                <!-- Closed Eyes -->
+                <path d="M35 55 Q40 60 45 55 M55 55 Q60 60 65 55" stroke="#506055" stroke-width="3" stroke-linecap="round"/>
+                <!-- Snout/Nose -->
+                <circle cx="50" cy="65" r="3" fill="#FFC0CB"/>
+                <!-- Zzz -->
+                <path d="M65 25 L75 25 L65 35 L75 35" stroke="#A8B4A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce" style="animation-delay: 0.5s;"/>
+                <path d="M75 15 L82 15 L75 22 L82 22" stroke="#A8B4A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-bounce"/>
+            </svg>
+        </div>
+        <h2 class="font-serif text-3xl font-bold text-sky-700 tracking-widest mb-2" id="entrance-title">貓青</h2>
+        <p class="font-rounded text-sky-500 text-lg animate-bounce mt-4" id="entrance-prompt">點擊翻開天空畫布 <i class="fa-solid fa-arrow-pointer ml-1"></i></p>
+    </div>
+
+    <!-- Background Layers -->
+    <div id="webgl-container"></div>
+
+    <!-- Hand-drawn Illustration Sun -->
+    <div class="fixed top-12 right-12 md:top-20 md:right-24 z-[20] cursor-pointer" id="illustration-sun-wrapper" style="width: 120px; height: 120px; pointer-events: auto;">
+        <div class="w-full h-full opacity-90 animate-[spin_60s_linear_infinite]" id="illustration-sun">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full transition-transform duration-300 hover:scale-110">
+                <!-- Sun Core -->
+                <circle cx="50" cy="50" r="25" fill="#FEF08A" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
+                <path d="M50 25 C65 25 75 35 75 50 C75 65 65 75 50 75 C35 75 25 65 25 50 C25 35 35 25 50 25 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="2" opacity="0.5" stroke-dasharray="4 4"/>
+                <!-- Sun Rays (Hand-drawn style) -->
+                <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50 M22 22 L29 29 M71 71 L78 78 M22 78 L29 71 M71 22 L78 29" stroke="#FDE047" stroke-width="3" stroke-linecap="round"/>
+                <!-- Cute Blush -->
+                <circle cx="42" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
+                <circle cx="58" cy="52" r="4" fill="#FFC0CB" opacity="0.6"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="cloud-layer" id="cloud-layer-back"></div>
+    <div class="cloud-layer" id="cloud-layer-front"></div>
+    <div id="p5-container"></div>
+
+    <!-- Main Content Wrapper -->
+    <!-- Main content needs to let pointer events pass through to background layers where empty -->
+    <main class="relative z-10 w-full min-h-screen pb-32 book-container opacity-0 pointer-events-none" id="main-content">
+
+        <!-- SCROLL PROGRESS DRAWING PATH -->
+        <!-- A decorative continuous line drawing that completes as you scroll down -->
+        <div class="fixed top-0 left-10 h-full w-24 pointer-events-none z-0 hidden lg:block opacity-60">
+            <svg viewBox="0 0 100 2000" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                <path id="scroll-path" d="M 50 0 C 80 200 20 400 50 600 C 80 800 20 1000 50 1200 C 80 1400 20 1600 50 1800 C 80 1900 50 2000 50 2000"
+                      fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4 8" stroke-linecap="round" />
+                <path id="scroll-path-fill" d="M 50 0 C 80 200 20 400 50 600 C 80 800 20 1000 50 1200 C 80 1400 20 1600 50 1800 C 80 1900 50 2000 50 2000"
+                      fill="none" stroke="#38BDF8" stroke-width="3" stroke-linecap="round" />
+            </svg>
+            <div id="scroll-follower" class="absolute w-8 h-8 -ml-4 -mt-4" style="left: 50%; top: 0;">
+                <svg viewBox="0 0 100 100" class="animate-[spin_4s_linear_infinite]">
+                    <path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="3"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Navigation / Top bar -->
+        <nav class="fixed top-0 w-full p-6 z-50 flex justify-between items-center pointer-events-none">
+            <div class="glass-card px-6 py-3 pointer-events-auto hover:bg-white/90 transition-colors shadow-sm">
+                <a href="/" class="text-sky-600 font-serif font-bold text-xl tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-cloud"></i> 貓青
+                </a>
+            </div>
+            <div class="glass-card px-4 py-3 flex gap-4 pointer-events-auto shadow-sm">
+                <a href="https://www.threads.net/@naomiao77" target="_blank" class="text-text hover:text-sky-500 transition-colors thread-link group relative inline-block"><i class="fa-brands fa-threads text-xl group-hover:animate-spin-slow"></i><span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">碎碎念的小線頭</span></a>
+                <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-text hover:text-sky-500 transition-colors"><i class="fa-brands fa-instagram text-xl"></i></a>
+                <a href="https://portaly.cc/naomiao77" target="_blank" class="text-text hover:text-sky-500 transition-colors"><i class="fa-solid fa-link text-xl"></i></a>
+            </div>
+        </nav>
+
+        <!-- Prologue: Introduction -->
+        <section class="min-h-screen relative flex items-center justify-center pt-20 pb-32 pointer-events-auto" id="hero">
+            <!-- Decorative SVG Clouds -->
+            <svg class="svg-cloud w-64 h-32 top-1/4 left-10 animate-float-slow" viewBox="0 0 24 24"><path d="M6.5,17.5C4.57,17.5 3,15.93 3,14C3,12.3 4.22,10.87 5.86,10.58C6.54,7.88 9,6 12,6C14.78,6 17.15,7.67 18.06,10.1C18.23,10.08 18.39,10.06 18.57,10.06C21.03,10.06 23,12.06 23,14.5C23,16.96 21.04,18.96 18.57,18.96L6.5,17.5Z"/></svg>
+            <svg class="svg-cloud w-48 h-24 bottom-1/4 right-20 animate-float-fast" viewBox="0 0 24 24"><path d="M6.5,17.5C4.57,17.5 3,15.93 3,14C3,12.3 4.22,10.87 5.86,10.58C6.54,7.88 9,6 12,6C14.78,6 17.15,7.67 18.06,10.1C18.23,10.08 18.39,10.06 18.57,10.06C21.03,10.06 23,12.06 23,14.5C23,16.96 21.04,18.96 18.57,18.96L6.5,17.5Z"/></svg>
+
+            <div class="max-w-6xl w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <!-- Text Content -->
+                <div class="hero-text z-10 text-center lg:text-left">
+                    <p class="font-serif text-sky-600 text-lg mb-4 tracking-widest pl-1 opacity-80"><i class="fa-solid fa-pen-nib text-slate-400 mr-2"></i>Prologue</p>
+                    <h1 class="font-serif text-5xl md:text-7xl font-bold mb-6 text-slate-700 leading-tight">
+                        我是 <span class="title-stroke">貓青。</span>
+                    </h1>
+
+                    <div class="glass-card p-8 md:p-10 text-lg md:text-xl leading-relaxed text-slate-600 font-serif inline-block text-left shadow-xl relative mt-4">
+                        <i class="fa-solid fa-quote-left absolute -top-5 -left-5 text-4xl text-sky-200 opacity-50"></i>
+                        <p class="mb-4">畫貓、畫花、畫天馬行空的瞬間。</p>
+                        <p class="mb-4">不是一路順著走來的創作者，<br>而是慢慢把喜歡的事撿起來，</p>
+                        <p class="font-bold text-slate-700 text-2xl mt-6"><span class="highlight-text">一筆一筆，畫成現在的樣子。</span></p>
+                    </div>
+                </div>
+
+                <!-- Avatar / Floating Polaroids -->
+                <div class="hero-images relative h-[500px] w-full flex justify-center items-center">
+                    <!-- Main Avatar -->
+                    <div class="polaroid w-64 md:w-80 absolute z-20 shadow-2xl animate-float-slow group" style="transform: rotate(3deg);">
+                        <div class="tape blue"></div>
+                        <img src="/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" alt="貓青 Avatar" class="aspect-[3/4] object-cover transition-transform duration-500 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-sm pointer-events-none mix-blend-overlay"></div>
+                        <p class="text-center font-serif mt-4 text-slate-500 text-sm italic">「天空裡的畫布」</p>
+                    </div>
+
+                    <!-- Floating Background Images -->
+                    <div class="polaroid w-32 md:w-48 absolute -left-4 md:-left-16 top-4 md:top-10 z-10 opacity-90 animate-float-medium" style="transform: rotate(-12deg);">
+                        <div class="tape yellow"></div>
+                        <img src="/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp" alt="Artwork" class="aspect-square object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-300">
+                    </div>
+
+                    <div class="polaroid w-40 md:w-56 absolute -right-4 md:-right-12 bottom-4 md:bottom-10 z-30 opacity-95 animate-float-fast" style="transform: rotate(8deg);">
+                        <div class="tape"></div>
+                        <img src="/assets/img/guild/naomiao77/620439760_17907653019337939_277965404648345672_n.webp" alt="Artwork" class="aspect-[4/3] object-cover">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce text-slate-400">
+                <span class="font-serif text-sm tracking-widest mb-2 opacity-70">輕輕翻開第一頁</span>
+                <i class="fa-solid fa-angle-down"></i>
+            </div>
+        </section>
+
+        <!-- Chapter 1: The Book Spread -->
+        <section class="min-h-screen relative py-32 px-4 md:px-10 pointer-events-auto flex items-center justify-center" id="chapter1">
+            <div class="max-w-6xl mx-auto w-full book-spread gs-reveal p-8 md:p-16">
+                <div class="book-spine hidden md:block"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 relative z-10">
+
+                    <!-- Left Page: Text -->
+                    <div class="flex flex-col justify-center text-left md:pr-10 relative">
+                        <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-leaf text-emerald-400"></i> 第一章 / 柔軟的線條
+                        </p>
+                        <h2 class="font-serif text-3xl md:text-4xl font-bold text-slate-700 mb-10 leading-relaxed">
+                            作品被放進生活裡，<br>
+                            成為剛剛好的陪伴。
+                        </h2>
+
+                        <div class="relative">
+                            <!-- Cute hand-drawn quote mark -->
+                            <svg class="absolute -top-6 -left-6 w-12 h-12 text-sky-200 opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M14,17H17L19,13V7H13V13H16M6,17H9L11,13V7H5V13H8L6,17Z" /></svg>
+
+                            <p class="font-serif text-lg md:text-xl leading-loose text-slate-600 pl-4 border-l-2 border-sky-200">
+                                喜歡柔軟的線條、溫和的顏色，<br>
+                                也喜歡作品被放進生活裡——<br><br>
+                                變成一張明信片、一幅畫，<br>
+                                <span class="highlight-text font-bold text-slate-700">或某天剛好被需要的陪伴。</span><br><br>
+                                <span class="text-sm text-slate-400 mt-4 block flex items-center gap-2">
+                                    <i class="fa-solid fa-heart text-red-300"></i>
+                                    不只是掛在牆上的藝術，而是可以拿在手心裡的溫暖。
+                                </span>
+                            </p>
+                        </div>
+
+                        <!-- Hand drawn decorative underline -->
+                        <svg class="w-48 h-6 mt-8 opacity-50" viewBox="0 0 200 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 10 Q 50 20 100 10 T 195 10" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" fill="none"/>
+                            <path d="M10 15 Q 60 5 120 15 T 180 5" stroke="#BAE6FD" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6"/>
+                        </svg>
+                    </div>
+
+                    <!-- Right Page: Illustration -->
+                    <div class="relative flex items-center justify-center md:pl-10 mt-10 md:mt-0">
+                        <div class="polaroid w-full max-w-[320px] shadow-2xl transform rotate-3 hover:rotate-0 transition-all duration-500 z-10 hover:scale-105">
+                            <div class="tape blue"></div>
+                            <img src="/assets/img/guild/naomiao77/620422744_17907653037337939_2307974712027943490_n.webp" alt="Art" class="aspect-[4/5] object-cover rounded-sm">
+                            <p class="text-center font-serif mt-4 text-slate-500 text-sm tracking-widest">生活感</p>
+                        </div>
+
+                        <!-- Page decorations -->
+                        <div class="absolute -top-10 right-0 w-24 h-24 opacity-60 pointer-events-none rotate-12">
+                            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="50" cy="50" r="40" stroke="#FEF08A" stroke-width="2" stroke-dasharray="6 6"/>
+                                <path d="M50 10 L50 20 M50 80 L50 90 M10 50 L20 50 M80 50 L90 50" stroke="#FDE047" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+
+                        <!-- Page number -->
+                        <div class="absolute bottom-[-30px] right-0 font-serif text-slate-300 text-sm">
+                            - 01 -
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter 2: Daily Magic & Scrapbook (Horizontal Scroll Section) -->
+        <section class="h-screen relative bg-white/30 backdrop-blur-sm border-y border-slate-200 pointer-events-auto overflow-hidden flex flex-col justify-center" id="chapter2-horizontal">
+            <div class="absolute top-10 left-10 md:left-20 z-10">
+                <p class="font-serif text-sky-600 text-sm mb-2 tracking-widest uppercase"><i class="fa-solid fa-wand-magic-sparkles text-yellow-400 mr-2"></i>Chapter 2</p>
+                <h2 class="font-serif text-4xl md:text-5xl font-bold text-slate-700">日常裡的小小魔法</h2>
+            </div>
+
+            <div class="absolute bottom-10 left-10 text-slate-400 font-serif text-sm flex items-center gap-2 animate-pulse">
+                <i class="fa-solid fa-arrow-right-long"></i> 向旁邊滑動翻頁
+            </div>
+
+            <!-- The wide canvas for horizontal scrolling -->
+            <div class="flex items-center pl-[20vw] pr-[20vw] h-full gap-16 md:gap-32 w-fit" id="horizontal-container">
+
+                <!-- Item 1: Text Intro -->
+                <div class="w-[300px] shrink-0">
+                    <p class="font-serif text-2xl leading-loose text-slate-600">
+                        <span class="highlight-text">養貓，畫畫，偶爾旅行，</span><br>
+                        喜歡動漫，也相信日常裡的小小魔法。<br>
+                    </p>
+                    <svg class="w-20 h-20 mt-8 opacity-50 text-slate-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,19.93C7.05,19.43 4,16.05 4,12C4,7.95 7.05,4.57 11,4.07V19.93M13,4.07C16.95,4.57 20,7.95 20,12C20,16.05 16.95,19.43 13,19.93V4.07Z" /></svg>
+                </div>
+
+                <!-- Item 2: Cat Art -->
+                <div class="w-[350px] shrink-0 relative">
+                    <div class="polaroid shadow-lg transform -rotate-3 hover:rotate-0 transition-transform">
+                        <div class="tape yellow"></div>
+                        <img src="/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp" alt="Cat Art" class="aspect-square object-cover">
+                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">貓與日常</p>
+                    </div>
+                    <!-- Cute paw prints trailing from it -->
+                    <div class="absolute -bottom-10 -right-10 flex gap-2 rotate-[20deg] opacity-40 text-slate-400 text-xl">
+                        <i class="fa-solid fa-paw translate-y-2"></i>
+                        <i class="fa-solid fa-paw translate-y-4"></i>
+                        <i class="fa-solid fa-paw translate-y-1"></i>
+                    </div>
+                </div>
+
+                <!-- Item 3: Anime/Fantasy Art -->
+                <div class="w-[400px] shrink-0">
+                    <div class="polaroid shadow-xl transform rotate-2 hover:-translate-y-4 transition-transform">
+                        <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" alt="Fantasy Art" class="aspect-square object-cover">
+                    </div>
+                </div>
+
+                <!-- Item 4: Travel/Hobby -->
+                <div class="w-[350px] shrink-0 relative">
+                    <div class="polaroid shadow-md transform -rotate-1">
+                        <div class="tape"></div>
+                        <img src="/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp" alt="Hobby Art" class="aspect-[4/3] object-cover">
+                        <p class="text-center font-serif mt-3 text-slate-400 text-sm">喜歡動漫</p>
+                    </div>
+                    <!-- decorative stamp -->
+                    <div class="absolute -top-6 -right-6 w-16 h-16 border-4 border-red-300 rounded-full flex items-center justify-center rotate-12 opacity-50">
+                        <span class="font-serif text-red-300 font-bold text-xl">MAGIC</span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Chapter 3: The Memo Wall (腦袋裡的奇特事物) -->
+        <section class="min-h-screen relative flex items-center justify-center py-32 px-4 pointer-events-auto" id="chapter3">
+
+            <div class="max-w-6xl w-full flex flex-col items-center">
+                <p class="font-serif text-sky-600 text-sm mb-4 tracking-widest uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-seedling text-green-400"></i> 第三章 / 奇特事物
+                </p>
+                <h2 class="font-serif text-3xl md:text-5xl font-bold text-slate-700 mb-16 text-center">
+                    腦袋裡的奇特事物
+                </h2>
+
+                <!-- Scrapbook Board Container -->
+                <div class="w-full relative min-h-[600px] border-4 border-dashed border-sky-200/50 rounded-xl p-8 bg-white/20 backdrop-blur-sm gs-reveal">
+
+                    <!-- Decorative Corkboard elements -->
+                    <div class="absolute top-4 left-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute top-4 right-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute bottom-4 left-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+                    <div class="absolute bottom-4 right-4 w-4 h-4 rounded-full bg-red-300 shadow-md"></div>
+
+                    <!-- Central Text Note -->
+                    <div class="note-paper absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 w-80 text-center shadow-xl rotate-1 hover:rotate-0 transition-transform">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-yellow-400 shadow-sm border-2 border-white"></div>
+                        <p class="font-serif text-xl leading-loose text-slate-700">
+                            腦袋裡住著很多<span class="highlight-text">奇特東西</span>，<br>
+                            有些在發芽，<br>
+                            有些正在曬太陽。
+                        </p>
+                        <!-- Doodle -->
+                        <svg class="w-16 h-16 mx-auto mt-4 opacity-50 text-green-500" viewBox="0 0 100 100" fill="none">
+                            <path d="M50 90 C50 60 30 50 30 30 C30 15 45 10 50 25 C55 10 70 15 70 30 C70 50 50 60 50 90 Z" stroke="currentColor" stroke-width="3" fill="none"/>
+                            <path d="M50 90 L50 60" stroke="currentColor" stroke-width="3"/>
+                        </svg>
+                    </div>
+
+                    <!-- Surrounding Artworks (Polaroids & Notes) -->
+                    <div class="polaroid absolute top-10 left-10 md:left-24 w-40 md:w-56 -rotate-6 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-lg cursor-pointer">
+                        <div class="tape blue"></div>
+                        <img src="/assets/img/guild/naomiao77/620420206_17907652968337939_396140348163788067_n.webp" alt="Art" class="aspect-[4/3] object-cover">
+                        <p class="text-center font-serif mt-2 text-slate-400 text-xs">發芽中</p>
+                    </div>
+
+                    <div class="polaroid absolute bottom-10 left-10 md:left-40 w-44 md:w-60 rotate-6 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-lg cursor-pointer">
+                        <div class="tape yellow"></div>
+                        <img src="/assets/img/guild/naomiao77/620421558_17907653028337939_3158135374030148284_n.webp" alt="Art" class="aspect-square object-cover">
+                    </div>
+
+                    <div class="polaroid absolute top-20 right-10 md:right-24 w-48 md:w-64 rotate-3 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-xl cursor-pointer">
+                        <div class="tape"></div>
+                        <img src="/assets/img/guild/naomiao77/620458519_17907652980337939_9221614729533321159_n.webp" alt="Art" class="aspect-[4/5] object-cover">
+                        <p class="text-center font-serif mt-2 text-slate-400 text-xs">曬太陽</p>
+                    </div>
+
+                    <div class="polaroid absolute bottom-20 right-10 md:right-32 w-40 md:w-48 -rotate-12 hover:rotate-0 hover:z-30 transition-all duration-300 shadow-md cursor-pointer">
+                        <img src="/assets/img/guild/naomiao77/620406912_17907653010337939_7151256081839897556_n.webp" alt="Art" class="aspect-square object-cover grayscale-[30%] hover:grayscale-0">
+                    </div>
+
+                    <!-- Decorative floating doodles inside the board -->
+                    <svg class="absolute top-1/3 left-1/4 w-12 h-12 opacity-40 animate-pulse text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z" /></svg>
+                    <svg class="absolute bottom-1/3 right-1/4 w-10 h-10 opacity-40 animate-bounce text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter 4: Epilogue (Closure) -->
+        <section class="min-h-[70vh] relative flex flex-col items-center justify-center py-20 px-6 pointer-events-auto border-t border-slate-200/50 bg-white/40 backdrop-blur-sm" id="chapter4">
+
+            <!-- Bookmark Ribbon -->
+            <div class="absolute top-0 right-10 md:right-32 w-12 h-32 bg-sky-300/80 shadow-md shadow-sky-200" style="clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);"></div>
+
+            <div class="max-w-3xl mx-auto w-full text-center relative z-10 gs-reveal">
+
+                <h3 class="font-serif text-2xl md:text-3xl font-bold text-slate-700 mb-8 leading-loose">
+                    希望我的插畫，<br>
+                    能在世界有點吵的時候，<br>
+                    <span class="font-bold text-sky-700 bg-white/60 px-4 py-2 rounded-lg shadow-sm">替你留下一小塊，剛剛好的溫柔。</span>
+                </h3>
+
+                <!-- Cute ending cat illustration -->
+                <div class="w-40 h-40 mx-auto my-12 relative animate-float-slow">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 70 L30 40 L50 55 L70 40 L80 70 C95 90 85 95 50 95 C15 95 5 90 20 70 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="3" stroke-linejoin="round"/>
+                        <circle cx="35" cy="65" r="4" fill="#506055"/>
+                        <circle cx="65" cy="65" r="4" fill="#506055"/>
+                        <path d="M40 75 Q50 85 60 75" stroke="#506055" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="25" cy="75" r="5" fill="#FFC0CB" opacity="0.6"/>
+                        <circle cx="75" cy="75" r="5" fill="#FFC0CB" opacity="0.6"/>
+                        <!-- Flower on head -->
+                        <path d="M50 40 Q 60 30 50 20 Q 40 30 50 40" fill="#FDE047" stroke="#EAB308" stroke-width="1.5"/>
+                    </svg>
+                </div>
+
+                <!-- Footer Sign-off & Socials -->
+                <div class="mt-8 text-center text-slate-500 font-serif">
+                    <p class="mb-6 tracking-widest text-sm">感謝你的停留，慢慢翻閱這本天空裡的插畫書。</p>
+                    <div class="flex justify-center gap-8 text-3xl">
+                        <a href="https://www.threads.net/@naomiao77" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300 thread-link group relative inline-block"><i class="fa-brands fa-threads group-hover:animate-bounce"></i></a>
+                        <a href="https://www.instagram.com/naomiao77/" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://portaly.cc/naomiao77" target="_blank" class="text-slate-400 hover:text-sky-500 hover:-translate-y-2 transition-all duration-300"><i class="fa-solid fa-link"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-20 text-xs text-slate-400 font-serif opacity-50">
+                - The End -
+            </div>
+        </section>
+    </main>
+
+    <script>
+                // 2. GSAP Scroll Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Parallax for hero images
+        gsap.to(".hero-images .polaroid", {
+            yPercent: -30,
+            ease: "none",
+            stagger: 0.1,
+            scrollTrigger: {
+                trigger: "#hero",
+                start: "top top",
+                end: "bottom top",
+                scrub: 0.1
+            }
+        });
+
+        // Reveal animations for polaroids in Chapter 2 & 3 (Pop-up Book Effect)
+        const revealElements = document.querySelectorAll('.gs-reveal');
+        revealElements.forEach((el, i) => {
+            // Apply a 3D perspective to the parent to make the fold-out look good
+            gsap.set(el.parentElement, { perspective: 1000 });
+            gsap.set(el, { transformOrigin: "bottom center" });
+
+            gsap.fromTo(el,
+                {
+                    autoAlpha: 0,
+                    rotationX: -80, // Folded down flat
+                    rotationZ: () => Math.random() * 30 - 15,
+                    scale: 0.8,
+                    y: 100
+                },
+                {
+                    duration: 1.0, // Faster animation
+                    autoAlpha: 1,
+                    rotationX: 0, // Stand up
+                    scale: 1,
+                    y: 0,
+                    rotationZ: el.style.transform.match(/rotate\((.*?)deg\)/) ? el.style.transform.match(/rotate\((.*?)deg\)/)[1] : 0,
+                    ease: "back.out(1.5)", // Snappier, less lingering bounce
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 95%", // Start earlier
+                        end: "top 50%",
+                        scrub: 0.2, // Drastically reduce scrub smoothing to make it react immediately
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        // --- ENTRANCE INTERACTION ---
+        const overlay = document.getElementById('entrance-overlay');
+        const mainContent = document.getElementById('main-content');
+
+        // Stop scroll before click
+                document.body.style.overflow = 'hidden';
+
+        overlay.addEventListener('click', () => {
+            const tl = gsap.timeline();
+
+            // Cat wakes up (eyes open)
+            gsap.to(overlay.querySelector('svg'), {
+                scale: 1.1,
+                rotation: -5,
+                duration: 0.3,
+                ease: "back.out"
+            });
+
+            tl.to("#entrance-title, #entrance-prompt, #entrance-icon", {
+                y: -50,
+                opacity: 0,
+                duration: 0.5,
+                stagger: 0.1,
+                ease: "power2.in"
+            })
+            .to(overlay, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    overlay.style.display = 'none';
+                                        document.body.style.overflow = '';
+                }
+            }, "-=0.2")
+            // Fade in main content and make the hero elements pop up
+            .to(mainContent, {
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out"
+            }, "-=0.4")
+            .from(".hero-text > *", {
+                y: 30,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: "back.out(1.5)"
+            }, "-=0.6")
+            .from(".hero-images .polaroid", {
+                y: 50,
+                rotationX: -45,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.15,
+                ease: "back.out(1.5)"
+            }, "-=0.6");
+        });
+
+
+        // 3D Tilt interaction for Polaroids
+        const polaroids = document.querySelectorAll('.polaroid');
+        polaroids.forEach(el => {
+            el.addEventListener('mousemove', (e) => {
+                const rect = el.getBoundingClientRect();
+                const x = e.clientX - rect.left; // x position within the element.
+                const y = e.clientY - rect.top;  // y position within the element.
+
+                // Calculate rotation based on mouse position relative to center
+                const xPct = (x / rect.width) - 0.5; // -0.5 to 0.5
+                const yPct = (y / rect.height) - 0.5; // -0.5 to 0.5
+
+                const rotateX = yPct * -30; // Max 15deg rotation
+                const rotateY = xPct * 30; // Max 15deg rotation
+
+                gsap.to(el, {
+                    rotationX: rotateX,
+                    rotationY: rotateY,
+                    scale: 1.1,
+                    duration: 0.4,
+                    ease: "power2.out",
+                    overwrite: "auto"
+                });
+
+                // Move glare
+                const glareX = xPct * 100;
+                const glareY = yPct * 100;
+                gsap.to(el, {
+                    '--glare-x': `${glareX}%`,
+                    '--glare-y': `${glareY}%`,
+                    duration: 0.1
+                });
+            });
+
+            el.addEventListener('mouseenter', () => {
+                el.classList.add('hover-active');
+            });
+
+            el.addEventListener('mouseleave', () => {
+                el.classList.remove('hover-active');
+                gsap.to(el, {
+                    rotationX: 0,
+                    rotationY: 0,
+                    scale: 1,
+                    duration: 0.6,
+                    ease: "elastic.out(1, 0.3)",
+                    overwrite: "auto"
+                });
+            });
+        });
+
+        // Sun Interaction
+        const sunWrapper = document.getElementById('illustration-sun-wrapper');
+        const sunInner = document.getElementById('illustration-sun');
+        if (sunWrapper && sunInner) {
+            sunWrapper.addEventListener('click', (e) => {
+                // Squish and pop animation
+                gsap.timeline()
+                    .to(sunInner, { scale: 0.8, duration: 0.1, ease: "power2.in" })
+                    .to(sunInner, { scale: 1.3, duration: 0.4, ease: "elastic.out(1, 0.3)" })
+                    .to(sunInner, { scale: 1, duration: 0.2 });
+
+                // Spawn mini suns/stars burst
+                for (let i = 0; i < 5; i++) {
+                    const spark = document.createElement('div');
+                    spark.style.position = 'absolute';
+                    spark.style.left = '50%';
+                    spark.style.top = '50%';
+                    spark.style.width = '20px';
+                    spark.style.height = '20px';
+                    spark.style.transform = 'translate(-50%, -50%)';
+                    spark.style.pointerEvents = 'none';
+                    spark.innerHTML = `<svg viewBox="0 0 100 100" fill="none"><path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="4"/></svg>`;
+                    sunWrapper.appendChild(spark);
+
+                    const angle = (i / 5) * Math.PI * 2;
+                    const dist = 60 + Math.random() * 40;
+
+                    gsap.to(spark, {
+                        x: Math.cos(angle) * dist,
+                        y: Math.sin(angle) * dist,
+                        rotation: Math.random() * 360,
+                        opacity: 0,
+                        duration: 1 + Math.random(),
+                        ease: "power2.out",
+                        onComplete: () => spark.remove()
+                    });
+                }
+            });
+        }
+
+        // Horizontal Scroll for Chapter 2 Gallery
+        const horizontalContainer = document.getElementById('horizontal-container');
+        if (horizontalContainer) {
+            // Get total scrollable width
+            const scrollWidth = horizontalContainer.scrollWidth - window.innerWidth;
+
+            gsap.to(horizontalContainer, {
+                x: -scrollWidth,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#chapter2-horizontal",
+                    start: "top top",
+                    end: `+=${scrollWidth + window.innerWidth}`, // Scroll distance equivalent to content width
+                    pin: true,
+                    scrub: 0.5,
+                    invalidateOnRefresh: true,
+                    // When scrolling horizontally, add a slight tilt to the polaroids simulating wind/movement
+                    onUpdate: (self) => {
+                        const velocity = self.getVelocity();
+                        const tilt = Math.max(Math.min(velocity / 100, 10), -10); // Cap tilt
+                        gsap.to("#horizontal-container .polaroid", {
+                            rotationZ: (i, el) => {
+                                // Keep base rotation and add tilt
+                                const baseRotation = el._gsap ? el._gsap.rotation || 0 : 0;
+                                return baseRotation + (tilt * 0.2);
+                            },
+                            duration: 0.5,
+                            ease: "power1.out",
+                            overwrite: "auto"
+                        });
+
+                        // Send velocity info to global window for p5.js to access
+                        window.scrollVelocity = velocity;
+                    }
+                }
+            });
+        }
+
+        // SVG Scroll Path Drawing
+        const scrollPathFill = document.getElementById('scroll-path-fill');
+        const scrollFollower = document.getElementById('scroll-follower');
+        if (scrollPathFill && scrollFollower) {
+            const pathLength = scrollPathFill.getTotalLength();
+
+            // Set up initial path drawing state
+            gsap.set(scrollPathFill, {
+                strokeDasharray: pathLength,
+                strokeDashoffset: pathLength
+            });
+
+            // Animate path draw based on overall page scroll
+            gsap.to(scrollPathFill, {
+                strokeDashoffset: 0,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.1
+                }
+            });
+
+            // Follow the path with the follower element
+            gsap.to(scrollFollower, {
+                motionPath: {
+                    path: scrollPathFill,
+                    align: scrollPathFill,
+                    alignOrigin: [0.5, 0.5]
+                },
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.1
+                }
+            });
+        }
+
+        // Add a "page turn" or floating effect to chapter titles
+        const sectionTitles = document.querySelectorAll('h2:not(#entrance-title)');
+        sectionTitles.forEach((title) => {
+            gsap.from(title, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: title,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+
+        // 3. SVG Hand-Drawn Background Elements (Clouds, Cats, Stars, Notes, Flowers)
+        const createBackgroundElements = () => {
+            const backLayer = document.getElementById('cloud-layer-back');
+            const frontLayer = document.getElementById('cloud-layer-front');
+
+            // Reduced document height assumption for elements
+            const documentHeight = Math.max(document.body.scrollHeight, window.innerHeight * 4);
+            const vh = window.innerHeight;
+
+            // Removed drop-shadows for performance
+            const cloudSVGs = [
+                `<svg viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
+                    <path d="M50 85 C20 85 10 55 30 35 C30 15 70 5 90 25 C110 -5 160 -5 180 25 C200 45 190 85 160 85 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`,
+                `<svg viewBox="0 0 220 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
+                    <path d="M40 90 C10 90 5 60 25 40 C35 20 65 10 85 30 C105 0 155 0 175 30 C195 10 230 40 210 70 C225 90 190 90 170 90 Z" fill="#ffffff" stroke="#E5E0D5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>`,
+                // Star element
+                `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; opacity: 0.9;">
+                    <path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="3" stroke-linejoin="round"/>
+                </svg>`,
+                // Flower Element
+                `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; opacity: 0.8; animation: float 6s ease-in-out infinite alternate;">
+                    <circle cx="50" cy="50" r="15" fill="#FDE047" />
+                    <!-- Petals -->
+                    <circle cx="50" cy="20" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="80" cy="50" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="50" cy="80" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="20" cy="50" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <!-- Diagonal Petals -->
+                    <circle cx="70" cy="30" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="70" cy="70" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="30" cy="70" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <circle cx="30" cy="30" r="18" fill="#ffffff" stroke="#E5E0D5" stroke-width="2"/>
+                    <!-- Re-draw center to be on top -->
+                    <circle cx="50" cy="50" r="15" fill="#FEF08A" stroke="#FDE047" stroke-width="2"/>
+                </svg>`,
+                // Small Paw Print
+                `<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; opacity: 0.6; transform: rotate(-15deg);">
+                    <path d="M50 80 C 30 80, 25 60, 25 50 C 25 40, 40 30, 50 30 C 60 30, 75 40, 75 50 C 75 60, 70 80, 50 80 Z" fill="#A8B4A5" />
+                    <circle cx="30" cy="25" r="10" fill="#A8B4A5" />
+                    <circle cx="50" cy="15" r="12" fill="#A8B4A5" />
+                    <circle cx="70" cy="25" r="10" fill="#A8B4A5" />
+                </svg>`
+            ];
+
+            const catCharacterSVG = `
+                <div class="cloud-character" style="position: absolute; bottom: 60%; left: 30%; width: 60px; height: 60px;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: jump 2.5s ease-in-out infinite;">
+                        <!-- Cute Cat Body -->
+                        <path d="M20 50 L30 20 L50 35 L70 20 L80 50 C95 70 85 95 50 95 C15 95 5 70 20 50 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="4" stroke-linejoin="round"/>
+                        <!-- Eyes -->
+                        <circle cx="35" cy="55" r="4" fill="#506055"/>
+                        <circle cx="65" cy="55" r="4" fill="#506055"/>
+                        <!-- Blush -->
+                        <circle cx="25" cy="65" r="6" fill="#FFC0CB" opacity="0.7"/>
+                        <circle cx="75" cy="65" r="6" fill="#FFC0CB" opacity="0.7"/>
+                        <!-- Smile -->
+                        <path d="M40 65 Q50 75 60 65" stroke="#506055" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            `;
+
+            const sleepCatSVG = `
+                <div class="cloud-character" style="position: absolute; bottom: 50%; left: 40%; width: 70px; height: 70px;">
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; animation: float 3s ease-in-out infinite alternate;">
+                        <path d="M20 60 C20 40 40 30 50 30 C60 30 80 40 80 60 C80 75 60 85 50 85 C40 85 20 75 20 60 Z" fill="#ffffff" stroke="#A8B4A5" stroke-width="3" stroke-linejoin="round"/>
+                        <!-- Ears -->
+                        <path d="M25 45 L20 25 L40 35 M75 45 L80 25 L60 35" fill="#ffffff" stroke="#A8B4A5" stroke-width="3" stroke-linejoin="round"/>
+                        <!-- Closed Eyes -->
+                        <path d="M35 55 Q40 60 45 55 M55 55 Q60 60 65 55" stroke="#506055" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="50" cy="62" r="2.5" fill="#FFC0CB"/>
+                        <path d="M65 25 L75 25 L65 35 L75 35" stroke="#A8B4A5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="animation: jump 2s infinite;"/>
+                    </svg>
+                </div>
+            `;
+
+            // Array of user's illustration URLs to put on the clouds
+            const illustrationURLs = [
+                "/assets/img/guild/naomiao77/620409813_17907653001337939_2290403989441980246_n.webp",
+                "/assets/img/guild/naomiao77/620439760_17907653019337939_277965404648345672_n.webp",
+                "/assets/img/guild/naomiao77/620499359_17907652992337939_6528454010671634174_n.webp",
+                "/assets/img/guild/naomiao77/620409677_17907653046337939_1618235295928074439_n.webp",
+                "/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp" // Avatar
+            ];
+
+            // Note paper decoration
+            const noteSVG = `
+                <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; transform: rotate(-5deg);">
+                    <rect x="10" y="20" width="100" height="90" fill="#FEF9C3" stroke="#FDE047" stroke-width="1"/>
+                    <!-- Tape -->
+                    <rect x="40" y="10" width="40" height="15" fill="#BAE6FD" opacity="0.8" transform="rotate(3 60 17)"/>
+                    <!-- Lines -->
+                    <line x1="20" y1="40" x2="100" y2="40" stroke="#FDE047" stroke-width="1"/>
+                    <line x1="20" y1="60" x2="100" y2="60" stroke="#FDE047" stroke-width="1"/>
+                    <line x1="20" y1="80" x2="80" y2="80" stroke="#FDE047" stroke-width="1"/>
+                    <!-- Doodle (Cat paw) -->
+                    <circle cx="85" cy="90" r="5" fill="#9CA3AF"/>
+                    <circle cx="75" cy="80" r="3" fill="#9CA3AF"/>
+                    <circle cx="85" cy="75" r="3" fill="#9CA3AF"/>
+                    <circle cx="95" cy="80" r="3" fill="#9CA3AF"/>
+                </svg>
+            `;
+
+            const spawnElements = (layer, count, isFront) => {
+                for (let i = 0; i < count; i++) {
+                    const elWrapper = document.createElement('div');
+                    elWrapper.style.position = 'absolute';
+                    elWrapper.style.pointerEvents = 'auto'; // Make interactive
+                    elWrapper.style.cursor = 'pointer'; // Give affordance
+                    elWrapper.classList.add('parallax-bg-el'); // Class for scrolltrigger
+
+                    // Hover and Click interaction for background elements
+                    elWrapper.addEventListener('mouseenter', () => {
+                        gsap.to(elWrapper, { scale: 1.1, duration: 0.3, ease: "power2.out", overwrite: "auto" });
+                    });
+
+                    elWrapper.addEventListener('mouseleave', () => {
+                        gsap.to(elWrapper, { scale: 1, duration: 0.3, ease: "power2.in", overwrite: "auto" });
+                    });
+
+                    elWrapper.addEventListener('click', (e) => {
+                        // Prevent the click from bubbling to the background canvas
+                        e.stopPropagation();
+
+                        // Fun bounce animation
+                        gsap.timeline()
+                            .to(elWrapper, { scale: 0.9, duration: 0.1, ease: "power2.in", overwrite: "auto" })
+                            .to(elWrapper, { scale: 1.2, rotation: "+=15", duration: 0.4, ease: "elastic.out(1, 0.4)" })
+                            .to(elWrapper, { scale: 1, rotation: "-=15", duration: 0.3 });
+
+                        // Spawn mini music notes or stars
+                        for (let j = 0; j < 3; j++) {
+                            const spark = document.createElement('div');
+                            spark.style.position = 'absolute';
+                            spark.style.left = '50%';
+                            spark.style.top = '50%';
+                            spark.style.width = '15px';
+                            spark.style.height = '15px';
+                            spark.style.pointerEvents = 'none';
+                            spark.style.zIndex = '5';
+                            // A simple music note or star
+                            const icons = [
+                                `<svg viewBox="0 0 100 100" fill="none"><path d="M50 10 L60 40 L90 50 L60 60 L50 90 L40 60 L10 50 L40 40 Z" fill="#FEF08A" stroke="#FDE047" stroke-width="4"/></svg>`,
+                                `<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="30" fill="#bae6fd" stroke="#7dd3fc" stroke-width="4"/></svg>`
+                            ];
+                            spark.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+                            elWrapper.appendChild(spark);
+
+                            gsap.to(spark, {
+                                y: -50 - Math.random() * 50,
+                                x: (Math.random() - 0.5) * 60,
+                                opacity: 0,
+                                rotation: Math.random() * 180,
+                                duration: 1 + Math.random(),
+                                ease: "power2.out",
+                                onComplete: () => spark.remove()
+                            });
+                        }
+                    });
+
+                    const rand = Math.random();
+                    let scale = 1;
+
+                    if (rand > 0.85 && isFront) {
+                        elWrapper.innerHTML = noteSVG;
+                        scale = 0.8 + Math.random() * 0.5;
+                        elWrapper.style.width = `${120 * scale}px`;
+                        elWrapper.dataset.speed = "1.5"; // Scroll Parallax Speed
+                    } else {
+                        const typeIndex = Math.floor(Math.random() * cloudSVGs.length);
+                        elWrapper.innerHTML = cloudSVGs[typeIndex];
+
+                        if (typeIndex === 0 || typeIndex === 1) { // Clouds
+                            scale = 1.0 + Math.random() * 2;
+                            elWrapper.style.width = `${150 * scale}px`;
+                            elWrapper.style.opacity = isFront ? (0.8 + Math.random() * 0.2) : (0.4 + Math.random() * 0.3);
+                            elWrapper.dataset.speed = isFront ? "1.2" : "0.5";
+                            elWrapper.style.zIndex = isFront ? 0 : -1;
+
+                            if (isFront && Math.random() > 0.4) {
+                                // 60% chance to have a passenger on the cloud if it's a front cloud
+                                const passengerType = Math.random();
+                                let passengerHTML = '';
+
+                                if (passengerType < 0.33) {
+                                    passengerHTML = catCharacterSVG;
+                                } else if (passengerType < 0.66) {
+                                    passengerHTML = sleepCatSVG;
+                                } else {
+                                    // Small illustration frame
+                                    const imgUrl = illustrationURLs[Math.floor(Math.random() * illustrationURLs.length)];
+                                    passengerHTML = `
+                                        <div class="cloud-character" style="position: absolute; bottom: 60%; left: 20%; width: 80px; height: auto; transform: rotate(${Math.random() * 20 - 10}deg); background: white; padding: 4px; border: 1px solid #bae6fd; box-shadow: 2px 2px 0 rgba(186,230,253,0.5); border-radius: 4px;">
+                                            <img src="${imgUrl}" style="width: 100%; height: auto; display: block;" alt="illustration" />
+                                        </div>
+                                    `;
+                                }
+
+                                elWrapper.insertAdjacentHTML('beforeend', passengerHTML);
+                            }
+                        } else { // Decorative (Stars, Flowers, Paws)
+                            scale = 0.4 + Math.random() * 0.5;
+                            elWrapper.style.width = `${80 * scale}px`;
+                            elWrapper.dataset.speed = isFront ? "2.0" : "0.8";
+                            elWrapper.style.opacity = isFront ? 0.9 : 0.5;
+                        }
+                    }
+
+                    // Distribute vertically across the document height
+                    const startY = Math.random() * 350; // 0-350vh
+                    // Start from right off-screen or randomly within screen for initial population
+                    // Use a wide range so clouds start at different times and wrap around seamlessly
+                    const startX = Math.random() * 200; // 0 to 200vw
+
+                    elWrapper.style.left = `${startX}vw`;
+                    elWrapper.style.top = `${startY}vh`;
+
+                    layer.appendChild(elWrapper);
+
+                    // Right to Left drift animation
+                    // Faster for front layer, slower for back layer
+                    const duration = (30 + Math.random() * 20) / (parseFloat(elWrapper.dataset.speed) || 1);
+
+                    // Simple infinite wrapping animation from right to left using modifiers
+                    gsap.to(elWrapper, {
+                        x: "-=200vw", // Move left by 200vw
+                        duration: duration,
+                        ease: "none",
+                        repeat: -1,
+                        modifiers: {
+                            // Once a cloud goes far left, wrap it back to the far right (+150vw roughly)
+                            // We use modulo to keep the x value in bounds
+                            x: gsap.utils.unitize(x => parseFloat(x) % 200, "vw")
+                        }
+                    });
+
+                    // Subtle bobbing up and down
+                    gsap.to(elWrapper, {
+                        y: `-=${10 + Math.random() * 15}`,
+                        rotation: -1 + Math.random() * 2,
+                        duration: 2 + Math.random() * 3,
+                        ease: "sine.inOut",
+                        yoyo: true,
+                        repeat: -1,
+                        delay: Math.random() * 2
+                    });
+                }
+            };
+
+            backLayer.style.position = 'absolute';
+            backLayer.style.height = '400vh';
+            frontLayer.style.position = 'absolute';
+            frontLayer.style.height = '400vh';
+
+            // Spawn elements for horizontal drift
+            spawnElements(backLayer, 15, false);
+            spawnElements(frontLayer, 12, true);
+
+            // Added Thematic Growing Flowers on Scroll along the edges
+            const spawnFlowers = () => {
+                const flowerSVG = `
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+                        <path d="M50 90 Q 55 70 50 50 Q 45 70 50 90" fill="none" stroke="#A7F3D0" stroke-width="4"/>
+                        <circle cx="50" cy="40" r="10" fill="#FDE047"/>
+                        <ellipse cx="30" cy="40" rx="15" ry="10" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <ellipse cx="70" cy="40" rx="15" ry="10" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <ellipse cx="50" cy="20" rx="10" ry="15" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <ellipse cx="50" cy="60" rx="10" ry="15" fill="#ffffff" stroke="#e0f2fe" stroke-width="2"/>
+                        <path d="M50 60 Q 30 70 40 80 Q 50 70 50 60" fill="#A7F3D0" opacity="0.8"/>
+                    </svg>
+                `;
+                const contentHeight = document.body.scrollHeight;
+                const numFlowers = Math.floor(contentHeight / 400); // 1 flower per 400px of scroll height
+                const container = document.createElement('div');
+                container.style.position = 'absolute';
+                container.style.top = '0';
+                container.style.left = '0';
+                container.style.width = '100%';
+                container.style.height = `${contentHeight}px`;
+                container.style.pointerEvents = 'none';
+                container.style.zIndex = '0';
+                document.getElementById('cloud-layer-front').appendChild(container);
+
+                for (let i = 0; i < numFlowers; i++) {
+                    const flower = document.createElement('div');
+                    flower.innerHTML = flowerSVG;
+                    flower.style.position = 'absolute';
+                    flower.style.width = `${50 + Math.random() * 40}px`;
+                    // Alternate left/right edges
+                    if (i % 2 === 0) {
+                        flower.style.left = `${5 + Math.random() * 10}%`;
+                    } else {
+                        flower.style.right = `${5 + Math.random() * 10}%`;
+                    }
+                    flower.style.top = `${200 + i * (contentHeight / numFlowers)}px`;
+                    flower.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
+                    flower.classList.add('thematic-flower');
+                    container.appendChild(flower);
+
+                    gsap.fromTo(flower,
+                        { scale: 0, opacity: 0, rotation: -30 },
+                        {
+                            scale: 1,
+                            opacity: 1,
+                            rotation: 0,
+                            duration: 1.5,
+                            ease: "elastic.out(1, 0.5)",
+                            scrollTrigger: {
+                                trigger: flower,
+                                start: "top 80%",
+                                toggleActions: "play none none reverse"
+                            }
+                        }
+                    );
+                }
+            };
+
+            // Need a slight delay to ensure body height is accurate for flower distribution
+            setTimeout(spawnFlowers, 500);
+
+        };
+
+        // Ensure body height is mostly calculated before spawning
+        setTimeout(createBackgroundElements, 100);
+
+        // Include MotionPathPlugin for the scroll tracker
+        gsap.registerPlugin(MotionPathPlugin);
+
+        // 4. p5.js Magic Drawing / Continuous Interactive Trails & Stamps
+        const sketch = (p) => {
+            let inkLines = [];
+            let stamps = []; // Stamps to leave on click
+            let isDrawing = false;
+            let currentLine = [];
+            let floatingPetals = []; // Scroll-reactive particles
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.strokeJoin(p.ROUND);
+                p.strokeCap(p.ROUND);
+
+                // Initialize some ambient petals
+                for(let i=0; i<30; i++) {
+                    floatingPetals.push({
+                        x: p.random(p.width),
+                        y: p.random(p.height),
+                        size: p.random(3, 8),
+                        speedX: p.random(-0.5, 0.5),
+                        speedY: p.random(-1, -0.2),
+                        rotation: p.random(p.TWO_PI),
+                        rotSpeed: p.random(-0.05, 0.05),
+                        type: p.floor(p.random(2)) // 0: dust, 1: small leaf
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Get scroll velocity injected by GSAP
+                let scrollV = window.scrollVelocity || 0;
+                let windForce = p.constrain(scrollV * 0.01, -5, 5); // Scroll up creates updraft, down creates downdraft
+
+                // Draw and update ambient floating elements (reactive to scroll)
+                for (let petal of floatingPetals) {
+                    petal.x += petal.speedX;
+                    // Apply scroll wind force to vertical speed
+                    petal.y += petal.speedY - (windForce * 2);
+                    petal.rotation += petal.rotSpeed + (windForce * 0.01);
+
+                    // Wrap around edges
+                    if (petal.y < -50) petal.y = p.height + 50;
+                    if (petal.y > p.height + 50) petal.y = -50;
+                    if (petal.x < -50) petal.x = p.width + 50;
+                    if (petal.x > p.width + 50) petal.x = -50;
+
+                    p.push();
+                    p.translate(petal.x, petal.y);
+                    p.rotate(petal.rotation);
+                    p.noFill();
+
+                    // Add slight horizontal drift based on scroll to simulate 3D depth wind
+                    let horizontalWind = p.abs(windForce) * 0.5 * p.sign(petal.speedX);
+                    petal.x += horizontalWind;
+
+                    if (petal.type === 0) {
+                        // Dust mote (small circle)
+                        p.stroke(148, 163, 184, 80); // slate-400 with low opacity
+                        p.strokeWeight(1);
+                        p.circle(0, 0, petal.size);
+                    } else {
+                        // Tiny leaf/dash
+                        p.stroke(167, 243, 208, 100); // emerald-200
+                        p.strokeWeight(2);
+                        p.line(-petal.size, 0, petal.size, 0);
+                    }
+                    p.pop();
+                }
+
+                // Draw trailing pencil lines (hand-drawn feel instead of glowing magic)
+                for (let i = inkLines.length - 1; i >= 0; i--) {
+                    let lineObj = inkLines[i];
+                    lineObj.life -= 1.0; // slower fade rate
+
+                    if (lineObj.life <= 0) {
+                        inkLines.splice(i, 1);
+                        continue;
+                    }
+
+                    p.noFill();
+                    p.strokeWeight(lineObj.thickness);
+                    let alpha = p.map(lineObj.life, 0, 255, 0, 120);
+                    // Pencil color (grayish blue / slate-400)
+                    p.stroke(148, 163, 184, alpha);
+
+                    p.beginShape();
+                    for (let pt of lineObj.points) {
+                        // Add slight jitter for hand-drawn pencil look
+                        let nX = p.noise(pt.x * 0.1, pt.y * 0.1, i) * 2 - 1;
+                        let nY = p.noise(pt.x * 0.1 + 100, pt.y * 0.1 + 100, i) * 2 - 1;
+                        p.vertex(pt.x + nX, pt.y + nY);
+                    }
+                    p.endShape();
+                }
+
+                // Draw stamps (clicks)
+                for (let i = stamps.length - 1; i >= 0; i--) {
+                    let stamp = stamps[i];
+                    stamp.life -= 0.6; // slow fade, stays like a book marking
+
+                    if (stamp.life <= 0) {
+                        stamps.splice(i, 1);
+                        continue;
+                    }
+
+                    // Apply intense scroll wind to stamps causing them to drift slightly and fade faster
+                    if (p.abs(windForce) > 1) {
+                        stamp.y -= windForce * 0.5;
+                        stamp.x += p.random(-0.5, 0.5) * windForce;
+                        stamp.rotation += windForce * 0.01;
+                        stamp.life -= p.abs(windForce) * 0.5; // fast scrolling blows them away
+                    }
+
+                    let alpha = p.map(stamp.life, 0, 300, 0, 200);
+
+                    p.push();
+                    p.translate(stamp.x, stamp.y);
+                    p.rotate(stamp.rotation);
+                    p.scale(stamp.scale); // Keep scale constant to feel like a real stamp
+
+                    p.noFill();
+                    if (stamp.type === 0) {
+                        // Star - Cream/Soft Yellow
+                        p.stroke(253, 230, 138, alpha); // amber-200
+                        p.strokeWeight(3);
+                        p.beginShape();
+                        for (let a = 0; a < p.TWO_PI; a += p.TWO_PI / 5) {
+                            let r = 10;
+                            p.vertex(p.cos(a) * r, p.sin(a) * r);
+                            p.vertex(p.cos(a + p.PI / 5) * (r * 0.4), p.sin(a + p.PI / 5) * (r * 0.4));
+                        }
+                        p.endShape(p.CLOSE);
+                    } else if (stamp.type === 1) {
+                        // Paw - Grayish Blue
+                        p.fill(148, 163, 184, alpha); // slate-400
+                        p.noStroke();
+                        p.ellipse(0, 0, 15, 12);
+                        p.ellipse(-10, -10, 8, 8);
+                        p.ellipse(0, -15, 8, 8);
+                        p.ellipse(10, -10, 8, 8);
+                    } else {
+                        // Leaf/Sprout - Light Green
+                        p.stroke(167, 243, 208, alpha); // emerald-200
+                        p.strokeWeight(3);
+                        p.fill(209, 250, 229, alpha * 0.5); // emerald-100
+                        p.beginShape();
+                        p.vertex(0, -10);
+                        p.bezierVertex(10, -10, 10, 10, 0, 10);
+                        p.bezierVertex(-10, 10, -10, -10, 0, -10);
+                        p.endShape();
+                        p.line(0, 10, 0, 15);
+                    }
+
+                    p.pop();
+                }
+
+                // If mouse is held down/moving fast, create a current line
+                if (currentLine.length > 0) {
+                    p.noFill();
+                    p.stroke(255, 255, 255, 200);
+                    p.strokeWeight(8);
+                    p.beginShape();
+                    for (let pt of currentLine) {
+                        p.vertex(pt.x, pt.y);
+                    }
+                    p.endShape();
+
+                    // Gradually fade current line into inkLines array if too long or mouse stops
+                    if (currentLine.length > 20 || !isDrawing) {
+                        inkLines.push({
+                            points: [...currentLine],
+                            life: 255,
+                            thickness: p.random(6, 12)
+                        });
+                        currentLine = currentLine.slice(currentLine.length - 5); // Keep tail attached
+                    }
+                }
+            };
+
+            p.mouseMoved = () => {
+                if (p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY) > 5) {
+                    isDrawing = true;
+                    currentLine.push({x: p.mouseX, y: p.mouseY});
+                } else {
+                    isDrawing = false;
+                }
+            };
+
+            p.mouseDragged = () => {
+                isDrawing = true;
+                currentLine.push({x: p.mouseX, y: p.mouseY});
+
+                // Burst effect on drag
+                if (p.frameCount % 5 === 0) {
+                   createBurst(p.mouseX, p.mouseY);
+                }
+            };
+
+            p.mouseReleased = () => {
+                isDrawing = false;
+                if (currentLine.length > 0) {
+                    inkLines.push({
+                        points: [...currentLine],
+                        life: 255,
+                        thickness: p.random(6, 12)
+                    });
+                    currentLine = [];
+                }
+            };
+
+            p.mouseClicked = () => {
+                // Prevent capturing clicks on DOM elements
+                // p5 triggers mouseClicked globally, but we only want stamps if the user clicks the background
+                // Or we can just limit to when the user is moving/clicking
+                createBurst(p.mouseX, p.mouseY);
+
+                // Add a permanent-feeling (but fading) stamp
+                stamps.push({
+                    x: p.mouseX,
+                    y: p.mouseY,
+                    rotation: p.random(p.TWO_PI),
+                    scale: p.random(0.8, 1.5),
+                    type: p.floor(p.random(3)), // 0: Star, 1: Paw, 2: Leaf
+                    life: 300 // Longer life for book marks
+                });
+            };
+
+            function createBurst(x, y) {
+                // Create a small, rapid splash of short pencil lines
+                for(let i=0; i<4; i++) {
+                    let angle = p.random(p.TWO_PI);
+                    let radius = p.random(10, 30);
+                    inkLines.push({
+                        points: [
+                            {x: x, y: y},
+                            {x: x + p.cos(angle)*radius, y: y + p.sin(angle)*radius}
+                        ],
+                        life: 150,
+                        thickness: p.random(1, 3)
+                    });
+                }
+            }
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+        };
+        new p5(sketch);
+
+    </script>
+</body>
+</html>
