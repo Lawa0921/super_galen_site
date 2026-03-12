@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>璐璐 LULU — 羔羊冒險者 | Monopoly of Adventures</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --gold:         #D4A574;
+            --gold-bright:  #FFD700;
+            --purple:       #6B3FA0;
+            --purple-bright:#9B59B6;
+            --cream:        #F5E6D3;
+            --card-bg:      rgba(26, 16, 10, 0.94);
+            --deep-bg:      #0A0610;
+            --red:          #CD5C5C;
+            --blue:         #4A90D9;
+            --font-display: 'Cinzel Decorative', serif;
+            --font-accent:  'Cinzel', serif;
+            --font-body:    'Noto Serif TC', serif;
+        }
+
+        html { scroll-behavior: auto; font-size: 16px; }
+
+        body {
+            background: var(--deep-bg);
+            color: var(--cream);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+        }
+
+        /* ── Loading Screen ── */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: #0A0610;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .loading-title {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            color: var(--gold);
+            letter-spacing: 0.15em;
+            text-align: center;
+        }
+
+        .loading-subtitle {
+            font-family: var(--font-accent);
+            font-size: 0.8rem;
+            color: var(--purple-bright);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+        }
+
+        .loading-bar-wrap {
+            width: 240px;
+            height: 4px;
+            background: rgba(212,165,116,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--purple), var(--gold));
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        /* ── Canvas ── */
+        #board-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Darken overlay behind cards so content is never obstructed */
+        #card-dim-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(10,6,16,0.7) 0%, rgba(10,6,16,0.45) 60%, transparent 100%);
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        #card-dim-overlay.visible {
+            opacity: 1;
+        }
+
+        /* ── Back Nav ── */
+        #back-nav {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+
+        #back-nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(10, 6, 16, 0.75);
+            border: 1px solid rgba(212,165,116,0.4);
+            border-radius: 6px;
+            color: var(--gold);
+            text-decoration: none;
+            font-family: var(--font-accent);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            backdrop-filter: blur(8px);
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        #back-nav a:hover {
+            background: rgba(107,63,160,0.5);
+            border-color: var(--gold);
+        }
+
+        /* ── Scroll Dot Nav ── */
+        #scroll-dots {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .scroll-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(212,165,116,0.35);
+            border: 1px solid rgba(212,165,116,0.5);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .scroll-dot.active {
+            background: var(--gold);
+            transform: scale(1.35);
+        }
+
+        /* ── Section Label ── */
+        #section-label {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            font-family: var(--font-accent);
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            color: rgba(212,165,116,0.6);
+            pointer-events: none;
+            text-transform: uppercase;
+            transition: opacity 0.3s;
+        }
+
+        /* ── Content Cards ── */
+        .content-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            max-width: 780px;
+            width: 92%;
+            background: var(--card-bg);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 34px 38px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 60px rgba(107,63,160,0.15);
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            overflow-y: auto;
+            max-height: 88vh;
+        }
+
+        .content-card.active {
+            pointer-events: auto;
+        }
+
+        .card-strip {
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 22px;
+        }
+
+        .card-strip.gold   { background: linear-gradient(90deg, var(--gold-bright), var(--gold)); }
+        .card-strip.purple { background: linear-gradient(90deg, var(--purple), var(--purple-bright)); }
+        .card-strip.blue   { background: linear-gradient(90deg, #1A3D8B, var(--blue)); }
+        .card-strip.red    { background: linear-gradient(90deg, #8B1A1A, var(--red)); }
+        .card-strip.green  { background: linear-gradient(90deg, #1A3320, #3CB371); }
+
+        .card-badge {
+            display: inline-block;
+            font-family: var(--font-accent);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 3px;
+            background: rgba(212,165,116,0.12);
+            border: 1px solid rgba(212,165,116,0.3);
+            color: rgba(212,165,116,0.7);
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--gold);
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+
+        .card-subtitle {
+            font-family: var(--font-accent);
+            font-size: 0.8rem;
+            color: rgba(212,165,116,0.65);
+            letter-spacing: 0.12em;
+            margin-bottom: 18px;
+        }
+
+        /* Hero card */
+        .hero-avatar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            margin-bottom: 20px;
+        }
+
+        .hero-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .hero-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .tag {
+            font-family: var(--font-accent);
+            font-size: 0.62rem;
+            letter-spacing: 0.1em;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: rgba(107,63,160,0.3);
+            border: 1px solid rgba(155,89,182,0.4);
+            color: var(--purple-bright);
+        }
+
+        .hero-quote {
+            border-left: 3px solid var(--gold);
+            padding-left: 14px;
+            font-size: 0.9rem;
+            color: rgba(245,230,211,0.8);
+            line-height: 1.6;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .scroll-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 22px;
+            color: rgba(212,165,116,0.5);
+            font-family: var(--font-accent);
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+        }
+
+        .scroll-hint-arrow {
+            animation: bounce-down 1.5s infinite;
+        }
+
+        @keyframes bounce-down {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(5px); }
+        }
+
+        /* Character sheet card */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 20px;
+            margin-bottom: 18px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-label {
+            font-family: var(--font-accent);
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            color: rgba(212,165,116,0.55);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 0.85rem;
+            color: var(--cream);
+        }
+
+        .stat-bars { display: flex; flex-direction: column; gap: 10px; }
+
+        .bar-row { display: flex; flex-direction: column; gap: 4px; }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: rgba(245,230,211,0.75);
+        }
+
+        .bar-track {
+            height: 6px;
+            background: rgba(212,165,116,0.15);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--purple), var(--purple-bright));
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+
+        /* Riftwalker card */
+        .character-image {
+            width: 100%;
+            max-height: 360px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid rgba(212,165,116,0.3);
+            margin-bottom: 16px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .character-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .char-tag {
+            font-family: var(--font-accent);
+            font-size: 0.62rem;
+            letter-spacing: 0.1em;
+            padding: 3px 10px;
+            border-radius: 3px;
+            background: rgba(74,144,217,0.2);
+            border: 1px solid rgba(74,144,217,0.4);
+            color: var(--blue);
+        }
+
+        .char-desc {
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: rgba(245,230,211,0.8);
+            margin-bottom: 12px;
+        }
+
+        .char-quote {
+            border-left: 3px solid var(--blue);
+            padding-left: 12px;
+            font-size: 0.82rem;
+            color: rgba(245,230,211,0.7);
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        /* Quest log card */
+        .quest-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .quest-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(212,165,116,0.15);
+            border-radius: 6px;
+            gap: 12px;
+        }
+
+        .quest-name { font-size: 0.82rem; color: var(--cream); flex: 1; }
+        .quest-system {
+            font-family: var(--font-accent);
+            font-size: 0.6rem;
+            color: rgba(212,165,116,0.55);
+        }
+
+        .quest-status {
+            font-family: var(--font-accent);
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .quest-status.ongoing {
+            background: rgba(60,179,113,0.2);
+            border: 1px solid rgba(60,179,113,0.4);
+            color: #3CB371;
+        }
+
+        .quest-status.done {
+            background: rgba(212,165,116,0.12);
+            border: 1px solid rgba(212,165,116,0.25);
+            color: rgba(212,165,116,0.6);
+        }
+
+        /* Gallery card */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 0;
+        }
+
+        .gallery-item { display: flex; flex-direction: column; gap: 6px; }
+
+        .gallery-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: contain;
+            border-radius: 6px;
+            border: 1px solid rgba(212,165,116,0.2);
+            background: rgba(0,0,0,0.3);
+        }
+
+        .gallery-caption {
+            font-size: 0.68rem;
+            color: rgba(212,165,116,0.6);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .gallery-dots {
+            display: none;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .gallery-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(212,165,116,0.3);
+            border: 1px solid rgba(212,165,116,0.4);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .gallery-dot.active {
+            background: var(--gold);
+            transform: scale(1.3);
+        }
+
+        /* Footer card */
+        .footer-quote {
+            text-align: center;
+            font-size: 1rem;
+            color: rgba(245,230,211,0.85);
+            font-style: italic;
+            line-height: 1.7;
+            margin-bottom: 22px;
+            padding: 0 10px;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(107,63,160,0.25);
+            border: 1px solid rgba(155,89,182,0.4);
+            color: var(--purple-bright);
+            text-decoration: none;
+            font-size: 1rem;
+            transition: background 0.2s, border-color 0.2s, transform 0.2s;
+        }
+
+        .social-link:hover {
+            background: rgba(107,63,160,0.55);
+            border-color: var(--purple-bright);
+            transform: translateY(-2px);
+        }
+
+        .footer-credit {
+            text-align: center;
+            font-family: var(--font-accent);
+            font-size: 0.65rem;
+            letter-spacing: 0.15em;
+            color: rgba(212,165,116,0.4);
+        }
+
+        /* ── Dice Roll Overlay ── */
+        #dice-overlay {
+            position: fixed;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            color: var(--gold-bright);
+            text-shadow: 0 0 30px rgba(255,215,0,0.6), 0 0 60px rgba(107,63,160,0.4);
+            opacity: 0;
+            pointer-events: none;
+            letter-spacing: 0.15em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #dice-overlay .dice-face {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            border: 2px solid var(--gold-bright);
+            border-radius: 8px;
+            background: rgba(26, 10, 48, 0.85);
+            font-size: 1.6rem;
+            animation: dice-spin 0.4s ease-out;
+        }
+
+        @keyframes dice-spin {
+            0% { transform: rotateX(0deg) rotateZ(0deg) scale(0.3); }
+            40% { transform: rotateX(360deg) rotateZ(180deg) scale(1.2); }
+            70% { transform: rotateX(540deg) rotateZ(270deg) scale(1.0); }
+            100% { transform: rotateX(720deg) rotateZ(360deg) scale(1.0); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .content-card { padding: 20px; max-width: 96%; }
+            .card-title { font-size: 1.15rem; }
+            .gallery-grid {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+                gap: 0;
+                scrollbar-width: none;
+            }
+            .gallery-grid::-webkit-scrollbar { display: none; }
+            .gallery-item {
+                flex: 0 0 100%;
+                scroll-snap-align: center;
+            }
+            .gallery-img { aspect-ratio: auto; max-height: 50vh; }
+            .gallery-dots { display: flex; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .hero-avatar-wrap { flex-direction: column; text-align: center; }
+            .hero-tags { justify-content: center; }
+            .character-image { max-height: 260px; }
+            #scroll-dots { right: 10px; gap: 10px; }
+            .scroll-dot { width: 8px; height: 8px; }
+            #section-label { bottom: 16px; font-size: 0.6rem; }
+            #back-nav { top: 12px; left: 12px; }
+            #back-nav a { padding: 6px 12px; font-size: 0.65rem; backdrop-filter: none; }
+            .quest-item { padding: 8px 10px; }
+            .quest-name { font-size: 0.75rem; }
+            #dice-overlay { font-size: 1.6rem; }
+            #dice-overlay .dice-face { width: 40px; height: 40px; font-size: 1.2rem; }
+        }
+
+        @media (max-width: 480px) {
+            .content-card { padding: 16px 14px; max-height: 82vh; }
+            .card-title { font-size: 1rem; }
+            .card-subtitle { font-size: 0.7rem; }
+            .hero-avatar { width: 70px; height: 70px; }
+            .footer-quote { font-size: 0.88rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .scroll-hint-arrow { animation: none; }
+            @keyframes dice-spin { 0%, 100% { transform: none; } }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+    <div class="loading-title">璐璐 LULU</div>
+    <div class="loading-subtitle">Monopoly of Adventures · Loading Board</div>
+    <div class="loading-bar-wrap">
+        <div class="loading-bar" id="loading-bar"></div>
+    </div>
+</div>
+
+<!-- Three.js Canvas -->
+<canvas id="board-canvas"></canvas>
+
+<!-- Dim overlay behind cards -->
+<div id="card-dim-overlay"></div>
+
+<!-- Back Nav -->
+<nav id="back-nav">
+    <a href="/guild/">
+        <i class="fa fa-chevron-left"></i>
+        <span>公會大廳</span>
+    </a>
+</nav>
+
+<!-- Scroll Dot Nav -->
+<div id="scroll-dots">
+    <div class="scroll-dot active" title="START"></div>
+    <div class="scroll-dot" title="角色屬性"></div>
+    <div class="scroll-dot" title="Riftwalker"></div>
+    <div class="scroll-dot" title="冒險日誌"></div>
+    <div class="scroll-dot" title="寶藏格"></div>
+    <div class="scroll-dot" title="結語"></div>
+</div>
+
+<!-- Section Label -->
+<div id="section-label">↓ Scroll to Advance</div>
+
+<!-- Dice Roll Overlay -->
+<div id="dice-overlay"></div>
+
+<!-- ══ CONTENT CARDS ══ -->
+
+<!-- Card 0: Hero -->
+<div class="content-card" id="card-0">
+    <div class="card-strip gold"></div>
+    <div class="card-badge">START · 出發點</div>
+    <div class="hero-avatar-wrap">
+        <img class="hero-avatar" src="/assets/img/guild/lulu_gamer_trpg/avatar.webp" alt="璐璐 LULU">
+        <div>
+            <div class="card-title">璐璐 LULU</div>
+            <div class="card-subtitle">羔羊冒險者 / The Adventuring Lamb</div>
+            <div class="hero-tags">
+                <span class="tag">TRPG 冒險者</span>
+                <span class="tag">繪圖學徒</span>
+                <span class="tag">手作職人</span>
+            </div>
+        </div>
+    </div>
+    <div class="hero-quote">
+        「我是璐璐，工作一切都是為了能繼續跑 TRPG 團務而下去的！歡迎來到我的冒險棋盤。」
+    </div>
+    <div class="scroll-hint">
+        <span>向下捲動開始冒險</span>
+        <span class="scroll-hint-arrow"><i class="fa fa-chevron-down"></i></span>
+    </div>
+</div>
+
+<!-- Card 1: Character Sheet -->
+<div class="content-card" id="card-1">
+    <div class="card-strip purple"></div>
+    <div class="card-badge">命運卡 · CHANCE CARD</div>
+    <div class="card-title">我的角色卡</div>
+    <div class="card-subtitle">My Character Sheet</div>
+
+    <div class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-label">種族</span>
+            <span class="stat-value">羔羊人</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">職業</span>
+            <span class="stat-value">冒險者 / 繪師</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">陣營</span>
+            <span class="stat-value">混亂善良</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">主要系統</span>
+            <span class="stat-value">D&amp;D 5e &amp; CoC</span>
+        </div>
+        <div class="stat-item" style="grid-column: 1/-1;">
+            <span class="stat-label">特技</span>
+            <span class="stat-value">我永遠都在找團跑！</span>
+        </div>
+    </div>
+
+    <div class="stat-bars">
+        <div class="bar-row">
+            <div class="bar-label"><span>我的 TRPG 狂熱度</span><span>99%</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="99%" style="background:linear-gradient(90deg,#6B3FA0,#9B59B6);"></div></div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label"><span>繪圖技能</span><span>成長中</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="62%" style="background:linear-gradient(90deg,#1A3D8B,#4A90D9);"></div></div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label"><span>手作能力</span><span>進步中</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="55%" style="background:linear-gradient(90deg,#1A6B3C,#3CB371);"></div></div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label"><span>冒險精神</span><span>MAX</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="100%" style="background:linear-gradient(90deg,#D4A574,#FFD700);"></div></div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label"><span>百合之力</span><span>賽高!</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="88%" style="background:linear-gradient(90deg,#8B1A1A,#CD5C5C);"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Card 2: Riftwalker -->
+<div class="content-card" id="card-2">
+    <div class="card-strip blue"></div>
+    <div class="card-badge">黯潮環野 · RIFTWALKER</div>
+    <img class="character-image" src="/assets/img/guild/lulu_gamer_trpg/character_shawn.webp" alt="邵予晨 Dawn Shawn">
+    <div class="card-title">我的角色：邵予晨</div>
+    <div class="card-subtitle">遊俠 / Ranger · 18歲 · ISTP</div>
+    <div class="character-meta">
+        <span class="char-tag">黯潮環野 Riftwalker</span>
+        <span class="char-tag">原創 TRPG</span>
+        <span class="char-tag">D&amp;D 5e 改</span>
+    </div>
+    <p class="char-desc">
+        這是我在黯潮環野 Riftwalker 跑團企劃中飾演的角色——年輕遊俠邵予晨。他在成熟與稚嫩之間搖擺，帶著獵人的敏銳，懷著少年的懵懂，穿越裂痕之地。我很享受扮演他的過程。
+    </p>
+    <div class="char-quote">
+        「這是一個如何在成熟以及稚嫩之間搖擺的角色，很難，但我很喜歡。」
+    </div>
+</div>
+
+<!-- Card 3: Quest Log -->
+<div class="content-card" id="card-3">
+    <div class="card-strip red"></div>
+    <div class="card-badge">冒險日誌 · QUEST LOG</div>
+    <div class="card-title">我的冒險記錄</div>
+    <div class="card-subtitle">My Campaign Records</div>
+
+    <div class="quest-list">
+        <div class="quest-item">
+            <div>
+                <div class="quest-name">被遺忘國度末日 — 崛起篇</div>
+                <div class="quest-system">D&amp;D 5e</div>
+            </div>
+            <span class="quest-status ongoing">進行中</span>
+        </div>
+        <div class="quest-item">
+            <div>
+                <div class="quest-name">黯潮環野 Riftwalker</div>
+                <div class="quest-system">原創 TRPG</div>
+            </div>
+            <span class="quest-status ongoing">進行中</span>
+        </div>
+        <div class="quest-item">
+            <div>
+                <div class="quest-name">巫光嘉年華 Witchlight</div>
+                <div class="quest-system">D&amp;D 5e</div>
+            </div>
+            <span class="quest-status done">已完成</span>
+        </div>
+        <div class="quest-item">
+            <div>
+                <div class="quest-name">斯特拉德的詛咒 Curse of Strahd</div>
+                <div class="quest-system">D&amp;D 5e</div>
+            </div>
+            <span class="quest-status done">已完成</span>
+        </div>
+        <div class="quest-item">
+            <div>
+                <div class="quest-name">CoC 克蘇魯 — 無盡食慾</div>
+                <div class="quest-system">CoC</div>
+            </div>
+            <span class="quest-status done">已完成</span>
+        </div>
+        <div class="quest-item">
+            <div>
+                <div class="quest-name">CoC 小尖針系列</div>
+                <div class="quest-system">CoC</div>
+            </div>
+            <span class="quest-status done">已完成</span>
+        </div>
+    </div>
+</div>
+
+<!-- Card 4: Gallery -->
+<div class="content-card" id="card-4">
+    <div class="card-strip green"></div>
+    <div class="card-badge">寶藏格 · TREASURE CHEST</div>
+    <div class="card-title">我的冒險收藏</div>
+    <div class="card-subtitle">My Treasure Trove</div>
+
+    <div class="gallery-grid" id="gallery-grid">
+        <div class="gallery-item">
+            <img class="gallery-img" src="/assets/img/guild/lulu_gamer_trpg/ig_ffxiv.webp" alt="FF14 降神祭">
+            <div class="gallery-caption">FF14 降神祭</div>
+        </div>
+        <div class="gallery-item">
+            <img class="gallery-img" src="/assets/img/guild/lulu_gamer_trpg/ig_post4.webp" alt="繪圖練習紀錄">
+            <div class="gallery-caption">繪圖練習紀錄</div>
+        </div>
+        <div class="gallery-item">
+            <img class="gallery-img" src="/assets/img/guild/lulu_gamer_trpg/ig_post6.webp" alt="羊毛氈手作 — 柯基">
+            <div class="gallery-caption">羊毛氈手作 — 柯基</div>
+        </div>
+    </div>
+    <div class="gallery-dots" id="gallery-dots">
+        <span class="gallery-dot active" data-idx="0"></span>
+        <span class="gallery-dot" data-idx="1"></span>
+        <span class="gallery-dot" data-idx="2"></span>
+    </div>
+</div>
+
+<!-- Card 5: Footer -->
+<div class="content-card" id="card-5">
+    <div class="card-strip gold"></div>
+    <div class="card-badge">FINISH · 終點格</div>
+    <div class="card-title" style="text-align:center;margin-bottom:16px;">我的冒險不曾終止</div>
+    <p class="footer-quote">
+        「對我來說，每一場跑團都是一段不可複製的冒險。感謝你走到了終點格！」
+    </p>
+    <div class="social-links">
+        <a class="social-link" href="https://www.threads.net/@lulu_gamer_trpg" target="_blank" rel="noopener" title="Threads">
+            <i class="fa-brands fa-threads"></i>
+        </a>
+        <a class="social-link" href="https://www.instagram.com/lulu_gamer_trpg/" target="_blank" rel="noopener" title="Instagram">
+            <i class="fa-brands fa-instagram"></i>
+        </a>
+        <a class="social-link" href="https://www.youtube.com/channel/UCCBFa5ijqo2HZCXbbyx1MGQ" target="_blank" rel="noopener" title="YouTube">
+            <i class="fa-brands fa-youtube"></i>
+        </a>
+        <a class="social-link" href="https://www.twitch.tv/lamblulu" target="_blank" rel="noopener" title="Twitch">
+            <i class="fa-brands fa-twitch"></i>
+        </a>
+    </div>
+    <div class="footer-credit">Made with ♥ by SuperGalen's Dungeon</div>
+</div>
+
+<!-- Scroll Spacer -->
+<div id="scroll-spacer" style="height: 600vh;"></div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ════════════════════════════════════════════════
+       LOADING
+    ════════════════════════════════════════════════ */
+    var loadingBar = document.getElementById('loading-bar');
+    var loadingScreen = document.getElementById('loading-screen');
+
+    function setLoadingProgress(pct) {
+        if (loadingBar) loadingBar.style.width = pct + '%';
+    }
+
+    /* ════════════════════════════════════════════════
+       THREE.JS SETUP
+    ════════════════════════════════════════════════ */
+    var canvas = document.getElementById('board-canvas');
+    var W = window.innerWidth;
+    var H = window.innerHeight;
+    var isMobile = W <= 768;
+
+    var renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: !isMobile,
+        alpha: false
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(W, H);
+    renderer.setClearColor(0x0A0610, 1);
+
+    var scene = new THREE.Scene();
+
+    var camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 100);
+    camera.position.set(0, 12, 12);
+    camera.lookAt(0, 0, 0);
+
+    setLoadingProgress(20);
+
+    /* ────── Lighting ────── */
+    var ambientLight = new THREE.AmbientLight(0x404060, 1.5);
+    scene.add(ambientLight);
+
+    var dirLight = new THREE.DirectionalLight(0xFFE4B5, 1.5);
+    dirLight.position.set(5, 10, 5);
+    scene.add(dirLight);
+
+    var purpleLight = new THREE.PointLight(0x9B59B6, 0.8, 20);
+    purpleLight.position.set(-5, 5, -5);
+    scene.add(purpleLight);
+
+    // Spotlight that follows the token (illuminates active area)
+    var spotLight = new THREE.PointLight(0xFFD700, 2, 8);
+    spotLight.position.set(0, 3, 0);
+    scene.add(spotLight);
+
+    setLoadingProgress(35);
+
+    /* ────── Board Base (multi-layer) ────── */
+    var boardGroup = new THREE.Group();
+    scene.add(boardGroup);
+
+    // Bottom frame (wider, darker — like the box the board sits in)
+    var frameMat = new THREE.MeshPhongMaterial({ color: 0x1A0E08 });
+    var frameMesh = new THREE.Mesh(new THREE.BoxGeometry(12.8, 0.18, 12.8), frameMat);
+    frameMesh.position.set(0, -0.12, 0);
+    boardGroup.add(frameMesh);
+
+    // Main board body
+    var baseMat = new THREE.MeshPhongMaterial({ color: 0x2A1810 });
+    var baseMesh = new THREE.Mesh(new THREE.BoxGeometry(12, 0.35, 12), baseMat);
+    baseMesh.position.set(0, 0.02, 0);
+    boardGroup.add(baseMesh);
+
+    // Green felt surface (slightly inset)
+    var surfaceMat = new THREE.MeshPhongMaterial({ color: 0x1A3320 });
+    var surfaceMesh = new THREE.Mesh(new THREE.PlaneGeometry(10.4, 10.4), surfaceMat);
+    surfaceMesh.rotation.x = -Math.PI / 2;
+    surfaceMesh.position.set(0, 0.205, 0);
+    boardGroup.add(surfaceMesh);
+
+    // Felt subtle texture overlay (slightly different shade, slight offset)
+    var feltOverlay = new THREE.Mesh(
+        new THREE.PlaneGeometry(10.2, 10.2),
+        new THREE.MeshPhongMaterial({ color: 0x1E3B25, transparent: true, opacity: 0.4 })
+    );
+    feltOverlay.rotation.x = -Math.PI / 2;
+    feltOverlay.position.set(0, 0.207, 0);
+    boardGroup.add(feltOverlay);
+
+    // Raised border rails (3D wood rails around the board)
+    var borderMat = new THREE.MeshPhongMaterial({
+        color: 0xD4A574,
+        specular: 0x554433,
+        shininess: 60
+    });
+
+    // Rails: BoxGeometry(length, height, depth)
+    var railH = 0.28; // tall rail
+    var railD = 0.25; // deep rail
+
+    var bN = new THREE.Mesh(new THREE.BoxGeometry(12.5, railH, railD), borderMat);
+    bN.position.set(0, 0.14, -5.88);
+    boardGroup.add(bN);
+
+    var bS = new THREE.Mesh(new THREE.BoxGeometry(12.5, railH, railD), borderMat);
+    bS.position.set(0, 0.14, 5.88);
+    boardGroup.add(bS);
+
+    var bW = new THREE.Mesh(new THREE.BoxGeometry(railD, railH, 12.5), borderMat);
+    bW.position.set(-5.88, 0.14, 0);
+    boardGroup.add(bW);
+
+    var bE = new THREE.Mesh(new THREE.BoxGeometry(railD, railH, 12.5), borderMat);
+    bE.position.set(5.88, 0.14, 0);
+    boardGroup.add(bE);
+
+    // Gold inlay strip on top of rails
+    var inlayMat = new THREE.MeshPhongMaterial({
+        color: 0xFFD700,
+        emissive: 0xD4A574,
+        emissiveIntensity: 0.2,
+        shininess: 80
+    });
+
+    var inlayN = new THREE.Mesh(new THREE.BoxGeometry(12.6, 0.03, 0.12), inlayMat);
+    inlayN.position.set(0, 0.29, -5.88);
+    boardGroup.add(inlayN);
+    var inlayS = new THREE.Mesh(new THREE.BoxGeometry(12.6, 0.03, 0.12), inlayMat);
+    inlayS.position.set(0, 0.29, 5.88);
+    boardGroup.add(inlayS);
+    var inlayW = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 12.6), inlayMat);
+    inlayW.position.set(-5.88, 0.29, 0);
+    boardGroup.add(inlayW);
+    var inlayE = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 12.6), inlayMat);
+    inlayE.position.set(5.88, 0.29, 0);
+    boardGroup.add(inlayE);
+
+    // Corner pillars (decorative posts)
+    var pillarMat = new THREE.MeshPhongMaterial({
+        color: 0xC4955A,
+        specular: 0x665533,
+        shininess: 70
+    });
+    var pillarGeo = new THREE.CylinderGeometry(0.22, 0.26, 0.50, 12);
+    var pillarCapGeo = new THREE.SphereGeometry(0.18, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+    var corners = [[-6.0, -6.0], [6.0, -6.0], [-6.0, 6.0], [6.0, 6.0]];
+    for (var c = 0; c < 4; c++) {
+        var pillar = new THREE.Mesh(pillarGeo, pillarMat);
+        pillar.position.set(corners[c][0], 0.22, corners[c][1]);
+        boardGroup.add(pillar);
+        var cap = new THREE.Mesh(pillarCapGeo, inlayMat);
+        cap.position.set(corners[c][0], 0.48, corners[c][1]);
+        boardGroup.add(cap);
+    }
+
+    // ── Center Magic Circle (elaborate arcane pattern) ──
+    var magicCircle = new THREE.Group();
+    magicCircle.position.set(0, 0.22, 0);
+    boardGroup.add(magicCircle);
+
+    // Dark base disc
+    var mcDisc = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.2, 2.2, 0.012, 48),
+        new THREE.MeshPhongMaterial({ color: 0x080E08 })
+    );
+    magicCircle.add(mcDisc);
+
+    // Concentric torus rings
+    var mcRingMat = new THREE.MeshPhongMaterial({ color: 0xD4A574, emissive: 0x8B6B3A, emissiveIntensity: 0.3, shininess: 80 });
+    var mcRingGold = new THREE.MeshPhongMaterial({ color: 0xFFD700, emissive: 0xD4A574, emissiveIntensity: 0.3, transparent: true, opacity: 0.7 });
+    var mcRingPurple = new THREE.MeshPhongMaterial({ color: 0x9B59B6, emissive: 0x6B3FA0, emissiveIntensity: 0.5, transparent: true, opacity: 0.5 });
+    var mcRingSizes = [2.1, 1.6, 1.1, 0.6];
+    for (var ri = 0; ri < mcRingSizes.length; ri++) {
+        var mcR = new THREE.Mesh(
+            new THREE.TorusGeometry(mcRingSizes[ri], ri === 0 ? 0.06 : 0.035, 8, 48),
+            ri % 2 === 0 ? mcRingMat : mcRingGold
+        );
+        mcR.rotation.x = -Math.PI / 2;
+        mcR.position.y = 0.015;
+        magicCircle.add(mcR);
+    }
+
+    // Hexagram spokes (6 radial lines through center)
+    for (var si = 0; si < 6; si++) {
+        var spoke = new THREE.Mesh(
+            new THREE.BoxGeometry(4.0, 0.006, 0.018),
+            mcRingGold
+        );
+        spoke.rotation.y = (si / 6) * Math.PI * 2;
+        spoke.position.y = 0.015;
+        magicCircle.add(spoke);
+    }
+
+    // Rune markers (12 octahedrons around outer ring)
+    var mcRunePositions = [];
+    for (var rk = 0; rk < 12; rk++) {
+        var rAngle = (rk / 12) * Math.PI * 2;
+        var rDist = (rk % 2 === 0) ? 1.95 : 1.35;
+        var rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.055, 0), mcRingPurple);
+        rune.position.set(Math.cos(rAngle) * rDist, 0.06, Math.sin(rAngle) * rDist);
+        magicCircle.add(rune);
+        mcRunePositions.push(rune);
+    }
+
+    // Inner hexagram (two overlapping triangles)
+    var triMat = new THREE.MeshPhongMaterial({ color: 0x9B59B6, emissive: 0x6B3FA0, emissiveIntensity: 0.3, transparent: true, opacity: 0.4 });
+    for (var ti = 0; ti < 2; ti++) {
+        for (var tj = 0; tj < 3; tj++) {
+            var tAngle = (tj / 3) * Math.PI * 2 + ti * (Math.PI / 3);
+            var tAngleNext = ((tj + 1) / 3) * Math.PI * 2 + ti * (Math.PI / 3);
+            var tx1 = Math.cos(tAngle) * 0.9, tz1 = Math.sin(tAngle) * 0.9;
+            var tx2 = Math.cos(tAngleNext) * 0.9, tz2 = Math.sin(tAngleNext) * 0.9;
+            var edgeLen = Math.sqrt((tx2 - tx1) * (tx2 - tx1) + (tz2 - tz1) * (tz2 - tz1));
+            var edgeMesh = new THREE.Mesh(new THREE.BoxGeometry(edgeLen, 0.005, 0.02), triMat);
+            edgeMesh.position.set((tx1 + tx2) / 2, 0.016, (tz1 + tz2) / 2);
+            edgeMesh.rotation.y = -Math.atan2(tz2 - tz1, tx2 - tx1);
+            magicCircle.add(edgeMesh);
+        }
+    }
+
+    // Center gem (floating octahedron)
+    var centerGem = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.15, 0),
+        new THREE.MeshPhongMaterial({
+            color: 0x9B59B6, emissive: 0x6B3FA0, emissiveIntensity: 0.6,
+            transparent: true, opacity: 0.85, shininess: 120, specular: 0xFFAAFF
+        })
+    );
+    centerGem.position.y = 0.18;
+    magicCircle.add(centerGem);
+
+    // Gem glow halo
+    var gemHalo = new THREE.Mesh(
+        new THREE.RingGeometry(0.08, 0.22, 16),
+        new THREE.MeshPhongMaterial({ color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.5, transparent: true, opacity: 0.25, side: THREE.DoubleSide })
+    );
+    gemHalo.rotation.x = -Math.PI / 2;
+    gemHalo.position.y = 0.18;
+    magicCircle.add(gemHalo);
+
+    setLoadingProgress(50);
+
+    /* ────── Tiles (3D boxes with depth) ────── */
+    var TILE_COLORS = [0x9B59B6, 0x3CB371, 0x4A90D9, 0xCD5C5C];
+    var CORNER_COLOR = 0xFFD700;
+
+    // 3D tiles with visible thickness
+    var tileGeo = new THREE.BoxGeometry(0.92, 0.08, 1.2);
+    var cornerGeo = new THREE.BoxGeometry(1.22, 0.08, 1.22);
+
+    // Thinner stripe overlay on each tile
+    var stripeGeo = new THREE.BoxGeometry(0.88, 0.005, 0.35);
+
+    function makeTileMat(hex) {
+        return new THREE.MeshPhongMaterial({
+            color: hex,
+            transparent: true,
+            opacity: 0.88,
+            specular: 0x222222,
+            shininess: 30
+        });
+    }
+
+    function makeTileStripeMat(hex) {
+        // Lighter version of the tile color for the stripe
+        var c = new THREE.Color(hex);
+        c.lerp(new THREE.Color(0xFFFFFF), 0.35);
+        return new THREE.MeshPhongMaterial({ color: c, transparent: true, opacity: 0.5 });
+    }
+
+    var tilePositions = [];
+    var tileMaterialCache = {};
+    var stripeMaterialCache = {};
+
+    var sideStep = 1.1;
+    var edgeZ = 5.2;
+    var edgeN = -5.2;
+    var edgeW = -5.2;
+    var edgeE = 5.2;
+
+    // South side
+    tilePositions.push({ x: -4.9, z: edgeZ, isCorner: true });
+    for (var i = 0; i < 8; i++) {
+        tilePositions.push({ x: -3.85 + i * sideStep, z: edgeZ, isCorner: false });
+    }
+    tilePositions.push({ x: 4.9, z: edgeZ, isCorner: true });
+
+    // East side
+    for (var i = 0; i < 8; i++) {
+        tilePositions.push({ x: edgeE, z: 3.85 - i * sideStep, isCorner: false });
+    }
+    tilePositions.push({ x: 4.9, z: edgeN, isCorner: true });
+
+    // North side
+    for (var i = 0; i < 8; i++) {
+        tilePositions.push({ x: 3.85 - i * sideStep, z: edgeN, isCorner: false });
+    }
+    tilePositions.push({ x: -4.9, z: edgeN, isCorner: true });
+
+    // West side
+    for (var i = 0; i < 8; i++) {
+        tilePositions.push({ x: edgeW, z: -3.85 + i * sideStep, isCorner: false });
+    }
+
+    // Create tile meshes with 3D depth + stripe overlay
+    for (var t = 0; t < tilePositions.length; t++) {
+        var tp = tilePositions[t];
+        var geo = tp.isCorner ? cornerGeo : tileGeo;
+        var colorHex;
+        if (tp.isCorner) {
+            colorHex = CORNER_COLOR;
+        } else {
+            var sideIdx = Math.floor(t / 10) % 4;
+            colorHex = TILE_COLORS[sideIdx];
+        }
+        if (!tileMaterialCache[colorHex]) tileMaterialCache[colorHex] = makeTileMat(colorHex);
+        var mesh = new THREE.Mesh(geo, tileMaterialCache[colorHex]);
+        mesh.position.set(tp.x, 0.24, tp.z);
+        boardGroup.add(mesh);
+
+        // Stripe overlay on top of tile
+        if (!tp.isCorner) {
+            if (!stripeMaterialCache[colorHex]) stripeMaterialCache[colorHex] = makeTileStripeMat(colorHex);
+            var stripe = new THREE.Mesh(stripeGeo, stripeMaterialCache[colorHex]);
+            stripe.position.set(tp.x, 0.286, tp.z);
+            boardGroup.add(stripe);
+        }
+    }
+
+    // Glow ring (flat circle on active tile)
+    var glowGeo = new THREE.PlaneGeometry(1.8, 1.8);
+    var glowMat = new THREE.MeshPhongMaterial({
+        color: 0xFFD700,
+        emissive: 0xFFD700,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0.0
+    });
+    var glowMesh = new THREE.Mesh(glowGeo, glowMat);
+    glowMesh.rotation.x = -Math.PI / 2;
+    glowMesh.position.set(0, 0.30, 0);
+    boardGroup.add(glowMesh);
+
+    // ── Miniature Board Objects ──
+    // Helper: create positioned mesh
+    function mk(geo, mat, px, py, pz) {
+        var m = new THREE.Mesh(geo, mat);
+        m.position.set(px || 0, py || 0, pz || 0);
+        return m;
+    }
+    function placeOnTile(obj, tileIdx, yOff) {
+        var tp = tilePositions[tileIdx];
+        obj.position.set(tp.x, 0.32 + (yOff || 0), tp.z);
+        boardGroup.add(obj);
+    }
+
+    var goldTrimMat = new THREE.MeshPhongMaterial({ color: 0xFFD700, emissive: 0xD4A574, emissiveIntensity: 0.2 });
+
+    // 1. Treasure Chest (SE corner, tile 9) — detailed
+    var chestGroup = new THREE.Group();
+    var chestBodyMat = new THREE.MeshPhongMaterial({ color: 0x8B4513, specular: 0x444433, shininess: 35 });
+    var chestDarkMat = new THREE.MeshPhongMaterial({ color: 0x5C2D0E, shininess: 20 });
+    // Body
+    chestGroup.add(mk(new THREE.BoxGeometry(0.28, 0.16, 0.2), chestBodyMat, 0, 0, 0));
+    // Lid (half cylinder)
+    var chestLid = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.28, 12, 1, false, 0, Math.PI), chestBodyMat);
+    chestLid.rotation.z = Math.PI / 2;
+    chestLid.position.y = 0.08;
+    chestGroup.add(chestLid);
+    // Gold trim bands
+    chestGroup.add(mk(new THREE.BoxGeometry(0.30, 0.02, 0.22), goldTrimMat, 0, 0, 0));
+    chestGroup.add(mk(new THREE.BoxGeometry(0.30, 0.02, 0.22), goldTrimMat, 0, 0.08, 0));
+    // Front latch
+    chestGroup.add(mk(new THREE.BoxGeometry(0.04, 0.08, 0.012), goldTrimMat, 0, 0.03, 0.107));
+    // Keyhole
+    chestGroup.add(mk(new THREE.CylinderGeometry(0.012, 0.012, 0.013, 8), chestDarkMat, 0, 0.02, 0.113));
+    // Corner reinforcements
+    var cornerMat = new THREE.MeshPhongMaterial({ color: 0xB8860B, shininess: 60 });
+    [-1, 1].forEach(function(sx) {
+        [-1, 1].forEach(function(sz) {
+            chestGroup.add(mk(new THREE.BoxGeometry(0.03, 0.17, 0.03), cornerMat, sx * 0.125, 0, sz * 0.085));
+        });
+    });
+    // Gems inside (peaking out)
+    chestGroup.add(mk(new THREE.OctahedronGeometry(0.02, 0), new THREE.MeshPhongMaterial({ color: 0xFF4444, emissive: 0xFF2222, emissiveIntensity: 0.4 }), 0.04, 0.12, 0));
+    chestGroup.add(mk(new THREE.OctahedronGeometry(0.015, 0), new THREE.MeshPhongMaterial({ color: 0x44FF44, emissive: 0x22FF22, emissiveIntensity: 0.4 }), -0.03, 0.13, 0.02));
+    chestGroup.scale.set(0.65, 0.65, 0.65);
+    placeOnTile(chestGroup, 9);
+
+    // 2. Potion Bottle (tile 5)
+    var potionGroup = new THREE.Group();
+    var potionGlassMat = new THREE.MeshPhongMaterial({ color: 0x2255CC, transparent: true, opacity: 0.75, shininess: 90 });
+    potionGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.14, 8), potionGlassMat));
+    potionGroup.add(mk(new THREE.CylinderGeometry(0.025, 0.035, 0.05, 8), potionGlassMat, 0, 0.095, 0));
+    potionGroup.add(mk(new THREE.CylinderGeometry(0.03, 0.025, 0.03, 8), new THREE.MeshPhongMaterial({ color: 0xC4955A }), 0, 0.13, 0));
+    var potionGlow = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 8, 6),
+        new THREE.MeshPhongMaterial({ color: 0x44AAFF, emissive: 0x2288FF, emissiveIntensity: 0.8, transparent: true, opacity: 0.5 })
+    );
+    potionGlow.position.y = -0.01;
+    potionGroup.add(potionGlow);
+    placeOnTile(potionGroup, 5);
+
+    // 3. Sword (tile 18) — detailed with fuller and gem
+    var swordGroup = new THREE.Group();
+    var swordBladeMat = new THREE.MeshPhongMaterial({ color: 0xD0D0D0, specular: 0xFFFFFF, shininess: 140 });
+    var swordEdgeMat = new THREE.MeshPhongMaterial({ color: 0xE8E8E8, specular: 0xFFFFFF, shininess: 150 });
+    // Blade body (tapered)
+    swordGroup.add(mk(new THREE.BoxGeometry(0.035, 0.26, 0.006), swordBladeMat, 0, 0.16, 0));
+    // Blade edges (thin strips on sides for bevel effect)
+    swordGroup.add(mk(new THREE.BoxGeometry(0.004, 0.26, 0.008), swordEdgeMat, 0.017, 0.16, 0));
+    swordGroup.add(mk(new THREE.BoxGeometry(0.004, 0.26, 0.008), swordEdgeMat, -0.017, 0.16, 0));
+    // Blade tip
+    swordGroup.add(mk(new THREE.ConeGeometry(0.018, 0.07, 4), swordBladeMat, 0, 0.325, 0));
+    // Fuller groove (dark line down center)
+    swordGroup.add(mk(new THREE.BoxGeometry(0.008, 0.20, 0.003), new THREE.MeshPhongMaterial({ color: 0x888899 }), 0, 0.16, 0.005));
+    // Cross-guard (wider with curved ends)
+    swordGroup.add(mk(new THREE.BoxGeometry(0.12, 0.018, 0.018), goldTrimMat, 0, 0.035, 0));
+    swordGroup.add(mk(new THREE.SphereGeometry(0.012, 6, 4), goldTrimMat, 0.06, 0.035, 0));
+    swordGroup.add(mk(new THREE.SphereGeometry(0.012, 6, 4), goldTrimMat, -0.06, 0.035, 0));
+    // Grip (leather wrapped)
+    var gripMat = new THREE.MeshPhongMaterial({ color: 0x5C3310, shininess: 15 });
+    swordGroup.add(mk(new THREE.CylinderGeometry(0.014, 0.016, 0.09, 8), gripMat, 0, -0.015, 0));
+    // Grip wrapping rings
+    for (var gi = 0; gi < 4; gi++) {
+        swordGroup.add(mk(new THREE.TorusGeometry(0.016, 0.003, 4, 8), goldTrimMat, 0, -0.035 + gi * 0.018, 0));
+    }
+    // Pommel
+    swordGroup.add(mk(new THREE.SphereGeometry(0.022, 8, 6), goldTrimMat, 0, -0.065, 0));
+    // Gem on cross-guard
+    swordGroup.add(mk(new THREE.OctahedronGeometry(0.01, 0),
+        new THREE.MeshPhongMaterial({ color: 0xFF3333, emissive: 0xFF0000, emissiveIntensity: 0.5 }), 0, 0.035, 0.012));
+    swordGroup.rotation.z = 0.2;
+    swordGroup.scale.set(0.75, 0.75, 0.75);
+    placeOnTile(swordGroup, 18, 0.05);
+
+    // Shield (tile 17)
+    var shieldGroup = new THREE.Group();
+    var shieldBody = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.1, 0.08, 0.015, 6),
+        new THREE.MeshPhongMaterial({ color: 0x8B0000, specular: 0x333333, shininess: 40 })
+    );
+    shieldBody.rotation.x = Math.PI / 2;
+    shieldGroup.add(shieldBody);
+    shieldGroup.add(mk(new THREE.SphereGeometry(0.025, 8, 6), goldTrimMat, 0, 0, 0.012));
+    shieldGroup.rotation.x = -0.3;
+    placeOnTile(shieldGroup, 17, 0.02);
+
+    // 4. Scroll (tile 24)
+    var scrollGroup = new THREE.Group();
+    var scrollMat = new THREE.MeshPhongMaterial({ color: 0xF5E6D3, specular: 0x222222, shininess: 20 });
+    var scrollCapMat = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+    var scrollBody = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8), scrollMat);
+    scrollBody.rotation.z = Math.PI / 2;
+    scrollGroup.add(scrollBody);
+    var sCap1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.018, 8), scrollCapMat);
+    sCap1.position.x = -0.11; sCap1.rotation.z = Math.PI / 2;
+    scrollGroup.add(sCap1);
+    var sCap2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.018, 8), scrollCapMat);
+    sCap2.position.x = 0.11; sCap2.rotation.z = Math.PI / 2;
+    scrollGroup.add(sCap2);
+    var scrollPaper = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.14, 0.10),
+        new THREE.MeshPhongMaterial({ color: 0xF5E6D3, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+    );
+    scrollPaper.position.set(0, -0.035, 0.025);
+    scrollPaper.rotation.x = -0.3;
+    scrollGroup.add(scrollPaper);
+    scrollGroup.scale.set(0.7, 0.7, 0.7);
+    placeOnTile(scrollGroup, 24);
+
+    // 5. Crystal Cluster (NW corner, tile 27)
+    var crystalMat = new THREE.MeshPhongMaterial({
+        color: 0x9B59B6, emissive: 0x6B3FA0, emissiveIntensity: 0.5,
+        transparent: true, opacity: 0.75, shininess: 120, specular: 0xFFAAFF
+    });
+    var crystalGroup = new THREE.Group();
+    var crystalDefs = [
+        { r: 0.04, h: 0.18, x: 0, z: 0, rz: 0 },
+        { r: 0.028, h: 0.13, x: 0.04, z: 0.02, rz: -0.3 },
+        { r: 0.022, h: 0.10, x: -0.035, z: -0.02, rz: 0.35 },
+        { r: 0.018, h: 0.08, x: 0.01, z: 0.04, rz: -0.15 }
+    ];
+    for (var ci = 0; ci < crystalDefs.length; ci++) {
+        var cd = crystalDefs[ci];
+        var cr = new THREE.Mesh(new THREE.ConeGeometry(cd.r, cd.h, 5), crystalMat);
+        cr.position.set(cd.x, cd.h / 2, cd.z);
+        cr.rotation.z = cd.rz;
+        crystalGroup.add(cr);
+    }
+    var crystalBase = new THREE.Mesh(new THREE.DodecahedronGeometry(0.06, 0), new THREE.MeshPhongMaterial({ color: 0x444444, shininess: 10 }));
+    crystalBase.scale.set(1, 0.5, 1);
+    crystalGroup.add(crystalBase);
+    placeOnTile(crystalGroup, 27);
+
+    // 6. Monopoly Houses (4 tiles)
+    function makeHouse(col) {
+        var hg = new THREE.Group();
+        hg.add(mk(new THREE.BoxGeometry(0.08, 0.07, 0.08), new THREE.MeshPhongMaterial({ color: col }), 0, 0.035, 0));
+        var roof = mk(new THREE.ConeGeometry(0.065, 0.05, 4), new THREE.MeshPhongMaterial({ color: 0x8B0000 }), 0, 0.095, 0);
+        roof.rotation.y = Math.PI / 4;
+        hg.add(roof);
+        return hg;
+    }
+    placeOnTile(makeHouse(0x228B22), 3);
+    placeOnTile(makeHouse(0x4A90D9), 14);
+    placeOnTile(makeHouse(0xCD5C5C), 22);
+    placeOnTile(makeHouse(0x9B59B6), 31);
+
+    // 7. Gold Coin Stacks (near treasure)
+    var coinMat = new THREE.MeshPhongMaterial({ color: 0xFFD700, emissive: 0xD4A574, emissiveIntensity: 0.15, shininess: 90 });
+    var coinGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.01, 12);
+    function makeCoinStack(n) {
+        var cg = new THREE.Group();
+        for (var ci = 0; ci < n; ci++) {
+            var coin = new THREE.Mesh(coinGeo, coinMat);
+            coin.position.y = ci * 0.012;
+            coin.rotation.z = Math.random() * 0.2;
+            cg.add(coin);
+        }
+        return cg;
+    }
+    placeOnTile(makeCoinStack(4), 8);
+    placeOnTile(makeCoinStack(3), 10);
+
+    // 8. Lanterns on rail corners (4 mini lanterns)
+    var lanternMat = new THREE.MeshPhongMaterial({ color: 0xB8860B, shininess: 60 });
+    var lanternGlowMat = new THREE.MeshPhongMaterial({ color: 0xFFAA33, emissive: 0xFF8800, emissiveIntensity: 0.8, transparent: true, opacity: 0.7 });
+    function makeLantern() {
+        var lg = new THREE.Group();
+        // Post
+        lg.add(mk(new THREE.CylinderGeometry(0.015, 0.018, 0.2, 6), lanternMat, 0, 0.1, 0));
+        // Lantern body (octagonal cage)
+        lg.add(mk(new THREE.CylinderGeometry(0.04, 0.035, 0.06, 8), lanternMat, 0, 0.23, 0));
+        // Glow inside
+        lg.add(mk(new THREE.SphereGeometry(0.025, 8, 6), lanternGlowMat, 0, 0.23, 0));
+        // Top cap
+        lg.add(mk(new THREE.ConeGeometry(0.035, 0.025, 8), lanternMat, 0, 0.265, 0));
+        return lg;
+    }
+    // Place lanterns between corners on each rail midpoint
+    var lanternPositions = [
+        { x: 0, z: 5.88 }, { x: 0, z: -5.88 },
+        { x: 5.88, z: 0 }, { x: -5.88, z: 0 }
+    ];
+    var lanternMeshes = [];
+    lanternPositions.forEach(function(lp) {
+        var l = makeLantern();
+        l.position.set(lp.x, 0.28, lp.z);
+        boardGroup.add(l);
+        lanternMeshes.push(l);
+    });
+
+    // Card Decks (on center area)
+    var deckGroup = new THREE.Group();
+    var cardMat = new THREE.MeshPhongMaterial({ color: 0xF5E6D3 });
+    var cardBackMat = new THREE.MeshPhongMaterial({ color: 0x6B3FA0 });
+    for (var di = 0; di < 6; di++) {
+        var card = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.005, 0.30), di < 3 ? cardBackMat : cardMat);
+        card.position.set((Math.random() - 0.5) * 0.03, di * 0.006, (Math.random() - 0.5) * 0.03);
+        card.rotation.y = (Math.random() - 0.5) * 0.15;
+        deckGroup.add(card);
+    }
+    deckGroup.position.set(2.5, 0.24, 2.5);
+    boardGroup.add(deckGroup);
+    var deckGroup2 = deckGroup.clone();
+    deckGroup2.position.set(-2.5, 0.24, -2.5);
+    boardGroup.add(deckGroup2);
+
+    // ── Light Beam (follows active tile) ──
+    var beamGeo = new THREE.CylinderGeometry(0.06, 0.5, 3.5, 8, 1, true);
+    var beamMat = new THREE.MeshPhongMaterial({
+        color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.3,
+        transparent: true, opacity: 0.0, side: THREE.DoubleSide
+    });
+    var lightBeam = new THREE.Mesh(beamGeo, beamMat);
+    lightBeam.position.set(0, 2.0, 0);
+    scene.add(lightBeam);
+
+    // ── Floating Rune Markers (above corner tiles) ──
+    var floatingRunes = [];
+    var runeFloatMat = new THREE.MeshPhongMaterial({
+        color: 0xFFD700, emissive: 0xD4A574, emissiveIntensity: 0.5,
+        transparent: true, opacity: 0.6
+    });
+    [0, 9, 18, 27].forEach(function(tIdx) {
+        var rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.09, 0), runeFloatMat);
+        var tp = tilePositions[tIdx];
+        rune.position.set(tp.x, 0.7, tp.z);
+        scene.add(rune);
+        floatingRunes.push(rune);
+    });
+
+    // ── Token Trail (dots left behind as token moves) ──
+    var TRAIL_COUNT = isMobile ? 8 : 20;
+    var trailDots = [];
+    var trailGeo = new THREE.SphereGeometry(0.06, 6, 4);
+    for (var td = 0; td < TRAIL_COUNT; td++) {
+        var dot = new THREE.Mesh(trailGeo, new THREE.MeshPhongMaterial({
+            color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.6,
+            transparent: true, opacity: 0.0
+        }));
+        dot.position.set(0, -10, 0);
+        scene.add(dot);
+        trailDots.push({ mesh: dot, life: 0 });
+    }
+    var trailTimer = 0;
+    var trailIdx = 0;
+
+    setLoadingProgress(65);
+
+    /* ────── Token (Lathe pawn piece) ────── */
+    var tokenGroup = new THREE.Group();
+    scene.add(tokenGroup);
+
+    // Build pawn silhouette using LatheGeometry (high-detail profile)
+    var pawnProfile = [
+        new THREE.Vector2(0,    0),
+        // Wide base with beveled edge
+        new THREE.Vector2(0.30, 0),
+        new THREE.Vector2(0.33, 0.01),
+        new THREE.Vector2(0.34, 0.03),
+        new THREE.Vector2(0.33, 0.06),
+        new THREE.Vector2(0.30, 0.08),
+        // Base lip detail
+        new THREE.Vector2(0.28, 0.09),
+        new THREE.Vector2(0.26, 0.10),
+        new THREE.Vector2(0.24, 0.11),
+        // Tapered waist
+        new THREE.Vector2(0.14, 0.18),
+        new THREE.Vector2(0.10, 0.22),
+        new THREE.Vector2(0.09, 0.28),
+        // Slim shaft
+        new THREE.Vector2(0.085, 0.35),
+        new THREE.Vector2(0.09, 0.40),
+        // First collar ring
+        new THREE.Vector2(0.13, 0.43),
+        new THREE.Vector2(0.15, 0.445),
+        new THREE.Vector2(0.13, 0.46),
+        // Neck
+        new THREE.Vector2(0.09, 0.48),
+        new THREE.Vector2(0.08, 0.50),
+        // Second collar ring
+        new THREE.Vector2(0.10, 0.52),
+        new THREE.Vector2(0.11, 0.535),
+        new THREE.Vector2(0.10, 0.55),
+        // Upper body flares out
+        new THREE.Vector2(0.12, 0.58),
+        new THREE.Vector2(0.16, 0.62),
+        new THREE.Vector2(0.19, 0.66),
+        new THREE.Vector2(0.21, 0.70),
+        // Head sphere
+        new THREE.Vector2(0.22, 0.74),
+        new THREE.Vector2(0.215, 0.78),
+        new THREE.Vector2(0.20, 0.81),
+        new THREE.Vector2(0.17, 0.84),
+        new THREE.Vector2(0.13, 0.86),
+        new THREE.Vector2(0.08, 0.88),
+        new THREE.Vector2(0.04, 0.89),
+        new THREE.Vector2(0,    0.90)
+    ];
+    var tokenGeo = new THREE.LatheGeometry(pawnProfile, 32);
+    var tokenMat = new THREE.MeshPhongMaterial({
+        color: 0xFFD700,
+        emissive: 0xD4A574,
+        emissiveIntensity: 0.4,
+        specular: 0xFFFFAA,
+        shininess: 120
+    });
+    var token = new THREE.Mesh(tokenGeo, tokenMat);
+    tokenGroup.add(token);
+
+    // Base ring detail (double ring)
+    var baseRingMat = new THREE.MeshPhongMaterial({ color: 0xFFE066, shininess: 90 });
+    var baseRing = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.025, 10, 24), baseRingMat);
+    baseRing.rotation.x = -Math.PI / 2;
+    baseRing.position.y = 0.04;
+    tokenGroup.add(baseRing);
+
+    var baseRing2 = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.015, 8, 24), baseRingMat);
+    baseRing2.rotation.x = -Math.PI / 2;
+    baseRing2.position.y = 0.08;
+    tokenGroup.add(baseRing2);
+
+    // Crown indicator on top of head
+    var crownMat = new THREE.MeshPhongMaterial({ color: 0xFFD700, emissive: 0xFFAA00, emissiveIntensity: 0.3, shininess: 100 });
+    var crownBase = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 12), crownMat);
+    crownBase.rotation.x = -Math.PI / 2;
+    crownBase.position.y = 0.89;
+    tokenGroup.add(crownBase);
+
+    // Crown prongs (4 small pyramids)
+    for (var cp = 0; cp < 4; cp++) {
+        var cpAngle = (cp / 4) * Math.PI * 2;
+        var prong = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.04, 4), crownMat);
+        prong.position.set(Math.cos(cpAngle) * 0.06, 0.92, Math.sin(cpAngle) * 0.06);
+        tokenGroup.add(prong);
+    }
+
+    var tokenLight = new THREE.PointLight(0xFFD700, 1.2, 5);
+    tokenLight.position.set(0, 1.4, 0);
+    tokenGroup.add(tokenLight);
+
+    tokenGroup.position.set(tilePositions[0].x, 0.3, tilePositions[0].z);
+
+    /* ────── Dice (D6 cubes with pips) ────── */
+    var d6Size = 0.38;
+    var d6HS = d6Size / 2;
+    var d6CubeGeo = new THREE.BoxGeometry(d6Size, d6Size, d6Size);
+    var d6EdgeGeo = new THREE.CylinderGeometry(0.018, 0.018, d6Size + 0.02, 6);
+    var d6PipGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.01, 10);
+    var d6CornerGemGeo = new THREE.OctahedronGeometry(0.022, 0);
+    var d6EdgeMat = new THREE.MeshPhongMaterial({
+        color: 0xFFD700, emissive: 0xD4A574, emissiveIntensity: 0.2, shininess: 80
+    });
+
+    function buildD6(bodyColor, emitColor, pipColor) {
+        var dg = new THREE.Group();
+
+        var cubeMat = new THREE.MeshPhongMaterial({
+            color: bodyColor, emissive: emitColor, emissiveIntensity: 0.3,
+            specular: 0x666666, shininess: 60
+        });
+        dg.add(new THREE.Mesh(d6CubeGeo, cubeMat));
+
+        var hs = d6HS;
+        // 4 vertical edges
+        [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(c) {
+            var e = new THREE.Mesh(d6EdgeGeo, d6EdgeMat);
+            e.position.set(c[0]*hs, 0, c[1]*hs);
+            dg.add(e);
+        });
+        // 4 horizontal edges (X-axis)
+        [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(c) {
+            var e = new THREE.Mesh(d6EdgeGeo, d6EdgeMat);
+            e.rotation.z = Math.PI/2;
+            e.position.set(0, c[0]*hs, c[1]*hs);
+            dg.add(e);
+        });
+        // 4 horizontal edges (Z-axis)
+        [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(c) {
+            var e = new THREE.Mesh(d6EdgeGeo, d6EdgeMat);
+            e.rotation.x = Math.PI/2;
+            e.position.set(c[0]*hs, c[1]*hs, 0);
+            dg.add(e);
+        });
+
+        // Pip (dot) positions for each face of a standard D6
+        var pipMat = new THREE.MeshPhongMaterial({
+            color: pipColor, emissive: pipColor, emissiveIntensity: 0.5, shininess: 100
+        });
+        var offset = hs + 0.005;
+        var sp = 0.09; // pip spacing
+
+        // Face layouts: [normal axis, normal sign, pip count, positions]
+        var faces = [
+            // Top (Y+): 1 pip - center
+            { axis: 'y', sign: 1, pips: [[0,0]] },
+            // Bottom (Y-): 6 pips
+            { axis: 'y', sign: -1, pips: [[-sp,-sp],[-sp,0],[-sp,sp],[sp,-sp],[sp,0],[sp,sp]] },
+            // Front (Z+): 2 pips
+            { axis: 'z', sign: 1, pips: [[-sp,-sp],[sp,sp]] },
+            // Back (Z-): 5 pips
+            { axis: 'z', sign: -1, pips: [[-sp,-sp],[-sp,sp],[0,0],[sp,-sp],[sp,sp]] },
+            // Right (X+): 3 pips
+            { axis: 'x', sign: 1, pips: [[-sp,-sp],[0,0],[sp,sp]] },
+            // Left (X-): 4 pips
+            { axis: 'x', sign: -1, pips: [[-sp,-sp],[-sp,sp],[sp,-sp],[sp,sp]] }
+        ];
+
+        faces.forEach(function(face) {
+            face.pips.forEach(function(pp) {
+                var pip = new THREE.Mesh(d6PipGeo, pipMat);
+                if (face.axis === 'y') {
+                    pip.position.set(pp[0], face.sign * offset, pp[1]);
+                    // Default cylinder orientation is Y-up, which is correct for Y faces
+                } else if (face.axis === 'z') {
+                    pip.rotation.x = Math.PI / 2;
+                    pip.position.set(pp[0], pp[1], face.sign * offset);
+                } else {
+                    pip.rotation.z = Math.PI / 2;
+                    pip.position.set(face.sign * offset, pp[0], pp[1]);
+                }
+                dg.add(pip);
+            });
+        });
+
+        // Corner gems (8 corners)
+        var cornerGemMat = new THREE.MeshPhongMaterial({
+            color: 0xFFD700, emissive: 0xD4A574, emissiveIntensity: 0.3, shininess: 100
+        });
+        [[-1,-1,-1],[1,-1,-1],[-1,1,-1],[1,1,-1],[-1,-1,1],[1,-1,1],[-1,1,1],[1,1,1]].forEach(function(c) {
+            var gem = new THREE.Mesh(d6CornerGemGeo, cornerGemMat);
+            gem.position.set(c[0]*hs, c[1]*hs, c[2]*hs);
+            dg.add(gem);
+        });
+
+        return dg;
+    }
+
+    var dice1 = buildD6(0x1A0A30, 0x6B3FA0, 0xFFD700);
+    dice1.position.set(-1.0, 1.8, 0);
+    scene.add(dice1);
+
+    var dice2 = buildD6(0x0A1A30, 0x3F6BA0, 0xFFD700);
+    dice2.position.set(0.6, 2.2, -0.5);
+    scene.add(dice2);
+
+    setLoadingProgress(78);
+
+    /* ────── Particles ────── */
+    var particleCount = isMobile ? 60 : 200;
+    var pPositions = new Float32Array(particleCount * 3);
+
+    for (var p = 0; p < particleCount; p++) {
+        pPositions[p * 3 + 0] = (Math.random() - 0.5) * 16;
+        pPositions[p * 3 + 1] = Math.random() * 6;
+        pPositions[p * 3 + 2] = (Math.random() - 0.5) * 16;
+    }
+
+    var pGeo = new THREE.BufferGeometry();
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+
+    var pMat = new THREE.PointsMaterial({
+        color: 0x9B59B6,
+        size: 0.06,
+        transparent: true,
+        opacity: 0.7
+    });
+
+    var particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    setLoadingProgress(88);
+
+    /* ════════════════════════════════════════════════
+       CAMERA POSITIONS PER SECTION
+       Each section has a camera angle that looks at
+       the relevant part of the board
+    ════════════════════════════════════════════════ */
+    var CAMERA_VIEWS = [
+        // Section 0: START - overview from south, slightly high
+        { x: 0, y: 13, z: 13, lookX: 0, lookY: 0, lookZ: 1 },
+        // Section 1: CHANCE - rotated east, closer, lower angle
+        { x: 10, y: 8, z: 6, lookX: 2, lookY: 0, lookZ: 2 },
+        // Section 2: RIFTWALKER - east side, dramatic low angle
+        { x: 10, y: 6, z: -3, lookX: 3, lookY: 0, lookZ: -2 },
+        // Section 3: QUEST LOG - north side
+        { x: 2, y: 9, z: -12, lookX: 0, lookY: 0, lookZ: -3 },
+        // Section 4: TREASURE - west side, bird's eye angled
+        { x: -10, y: 10, z: -2, lookX: -3, lookY: 0, lookZ: 0 },
+        // Section 5: FINISH - pull back to grand overview
+        { x: -4, y: 14, z: 10, lookX: -1, lookY: 0, lookZ: 1 }
+    ];
+
+    /* ════════════════════════════════════════════════
+       SECTION & SCROLL LOGIC
+    ════════════════════════════════════════════════ */
+    var SECTIONS = [
+        { start: 0.00, end: 0.17, label: '↓ START — 出發點',         tileStart: 0 },
+        { start: 0.17, end: 0.34, label: '↓ CHANCE — 命運卡',         tileStart: 5 },
+        { start: 0.34, end: 0.51, label: '↓ RIFTWALKER — 裂痕之地',   tileStart: 12 },
+        { start: 0.51, end: 0.68, label: '↓ QUEST LOG — 冒險日誌',    tileStart: 19 },
+        { start: 0.68, end: 0.85, label: '↓ TREASURE — 寶藏格',       tileStart: 26 },
+        { start: 0.85, end: 1.00, label: 'FINISH — 終點',             tileStart: 33 }
+    ];
+
+    var currentSection = -1;
+    var allCards = document.querySelectorAll('.content-card');
+    var allDots = document.querySelectorAll('.scroll-dot');
+    var sectionLabel = document.getElementById('section-label');
+    var diceOverlay = document.getElementById('dice-overlay');
+    var cardDimOverlay = document.getElementById('card-dim-overlay');
+
+    // Camera state (lerp targets)
+    var camTarget = { x: 0, y: 13, z: 13, lx: 0, ly: 0, lz: 1 };
+    var camCurrent = { x: 0, y: 13, z: 13, lx: 0, ly: 0, lz: 1 };
+
+    // Token movement state — tile-by-tile stepping
+    var tokenTileCurrent = 0; // integer tile index where token IS
+    var tokenTileTarget = 0;  // integer tile index where token wants to be
+    var tokenHopProgress = 1; // 0→1 progress of current single-tile hop (1 = arrived)
+    var tokenHopFromX = tilePositions[0].x;
+    var tokenHopFromZ = tilePositions[0].z;
+    var tokenHopToX = tilePositions[0].x;
+    var tokenHopToZ = tilePositions[0].z;
+    var tokenHopSpeed = 6.0; // hops per second
+    var tokenSpinOnHop = 0;
+
+    // 3D dice roll animation state
+    var diceRolling = false;
+    var diceRollStart = 0;
+    var diceRollDuration = 1.2;
+    // Save dice rest positions
+    var dice1RestPos = { x: -1.0, y: 1.8, z: 0 };
+    var dice2RestPos = { x: 0.6, y: 2.2, z: -0.5 };
+    // Random target rotation for each roll (so dice lands on a face)
+    var dice1RollTarget = { rx: 0, ry: 0, rz: 0 };
+    var dice2RollTarget = { rx: 0, ry: 0, rz: 0 };
+
+    function randomFaceRotation() {
+        // D6 face-up rotations (90-degree multiples to land flat)
+        var faceRots = [
+            { rx: 0, rz: 0 },                            // 1 up
+            { rx: Math.PI, rz: 0 },                      // 6 up
+            { rx: Math.PI/2, rz: 0 },                    // 2 up
+            { rx: -Math.PI/2, rz: 0 },                   // 5 up
+            { rx: 0, rz: Math.PI/2 },                    // 3 up
+            { rx: 0, rz: -Math.PI/2 }                    // 4 up
+        ];
+        var f = faceRots[Math.floor(Math.random() * faceRots.length)];
+        // Add full rotations for dramatic spin
+        var spins = 2 + Math.floor(Math.random() * 3);
+        return {
+            rx: f.rx + spins * Math.PI * 2,
+            ry: (Math.random() - 0.5) * Math.PI * 4,
+            rz: f.rz + spins * Math.PI * 2
+        };
+    }
+
+    function showDiceRoll(fromTile, toTile) {
+        var steps = Math.abs(toTile - fromTile);
+        if (steps <= 0 || steps > 12) return;
+
+        // Trigger 3D dice roll in scene
+        diceRolling = true;
+        diceRollStart = clock.elapsedTime;
+        dice1RollTarget = randomFaceRotation();
+        dice2RollTarget = randomFaceRotation();
+
+        // Save start rotations
+        dice1RollTarget.startRx = dice1.rotation.x;
+        dice1RollTarget.startRy = dice1.rotation.y;
+        dice1RollTarget.startRz = dice1.rotation.z;
+        dice2RollTarget.startRx = dice2.rotation.x;
+        dice2RollTarget.startRy = dice2.rotation.y;
+        dice2RollTarget.startRz = dice2.rotation.z;
+
+        // HTML overlay with dice face
+        diceOverlay.innerHTML = '<span class="dice-face">' + steps + '</span><span>ROLL</span>';
+        gsap.fromTo(diceOverlay,
+            { opacity: 0, scale: 0.5, y: 20 },
+            { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: 'back.out(2)',
+              onComplete: function() {
+                  gsap.to(diceOverlay, { opacity: 0, y: -20, duration: 0.35, delay: 0.8 });
+              }
+            }
+        );
+    }
+
+    function showSection(idx) {
+        if (idx === currentSection) return;
+        var prevSection = currentSection;
+        currentSection = idx;
+
+        // Show dice roll overlay
+        if (prevSection >= 0 && prevSection !== idx) {
+            var fromTile = SECTIONS[prevSection].tileStart;
+            var toTile = SECTIONS[idx].tileStart;
+            showDiceRoll(fromTile, toTile);
+        }
+
+        // Show dim overlay behind active card
+        if (cardDimOverlay) cardDimOverlay.classList.add('visible');
+
+        // Animate cards: outgoing card flies down, incoming card rises from board
+        allCards.forEach(function (card, i) {
+            if (i === idx) {
+                card.classList.add('active');
+                // Card emerges from the board: scale up from tiny + arc upward + rotate into view
+                gsap.killTweensOf(card);
+                gsap.fromTo(card,
+                    { opacity: 0, scale: 0.15, xPercent: -50, yPercent: 60, rotationX: 50 },
+                    { opacity: 1, scale: 1, xPercent: -50, yPercent: -50, rotationX: 0,
+                      duration: 0.8, ease: 'back.out(1.7)' }
+                );
+                // Animate bar fills for card-1
+                if (i === 1) {
+                    var fills = card.querySelectorAll('.bar-fill');
+                    fills.forEach(function(fill) {
+                        var w = fill.getAttribute('data-width');
+                        fill.style.width = w;
+                        gsap.fromTo(fill,
+                            { scaleX: 0 },
+                            { scaleX: 1, duration: 0.8, delay: 0.4, ease: 'power2.out' }
+                        );
+                    });
+                }
+            } else {
+                card.classList.remove('active');
+                gsap.killTweensOf(card);
+                gsap.to(card, {
+                    opacity: 0, scale: 0.4, xPercent: -50, yPercent: 60, rotationX: 30,
+                    duration: 0.4, ease: 'power3.in'
+                });
+            }
+        });
+
+        allDots.forEach(function (dot, i) {
+            dot.classList.toggle('active', i === idx);
+        });
+
+        if (sectionLabel && SECTIONS[idx]) {
+            sectionLabel.textContent = SECTIONS[idx].label;
+        }
+
+        // Update camera target for this section
+        var view = CAMERA_VIEWS[idx];
+        camTarget.x = view.x;
+        camTarget.y = view.y;
+        camTarget.z = view.z;
+        camTarget.lx = view.lookX;
+        camTarget.ly = view.lookY;
+        camTarget.lz = view.lookZ;
+    }
+
+    // Dot click navigation
+    allDots.forEach(function (dot, i) {
+        dot.addEventListener('click', function () {
+            var docH = document.documentElement.scrollHeight - window.innerHeight;
+            var target = SECTIONS[i].start * docH;
+            window.scrollTo({ top: target, behavior: 'smooth' });
+        });
+    });
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function onScroll() {
+        var docH = document.documentElement.scrollHeight - window.innerHeight;
+        if (docH <= 0) return;
+        var progress = Math.min(1, Math.max(0, window.scrollY / docH));
+
+        // Calculate which tile from scroll progress
+        var totalTiles = tilePositions.length;
+        var rawTile = progress * totalTiles;
+        var tileIndex = Math.floor(rawTile);
+        if (tileIndex >= totalTiles) tileIndex = totalTiles - 1;
+
+        // Set the target tile — the animation loop handles stepping
+        tokenTileTarget = tileIndex;
+
+        // Glow on target tile
+        var tp = tilePositions[tileIndex];
+        glowMesh.position.x = tp.x;
+        glowMesh.position.z = tp.z;
+
+        // Spotlight follows target
+        spotLight.position.x = tp.x;
+        spotLight.position.z = tp.z;
+
+        // Section detection
+        for (var s = 0; s < SECTIONS.length; s++) {
+            if (progress >= SECTIONS[s].start && progress < SECTIONS[s].end) {
+                showSection(s);
+                break;
+            }
+        }
+        if (progress >= SECTIONS[SECTIONS.length - 1].start) {
+            showSection(SECTIONS.length - 1);
+        }
+
+        // Camera interpolation within section (smooth sub-section movement)
+        // Find current section and compute local progress within it
+        for (var s = 0; s < SECTIONS.length; s++) {
+            if (progress >= SECTIONS[s].start && progress <= SECTIONS[s].end) {
+                var localP = (progress - SECTIONS[s].start) / (SECTIONS[s].end - SECTIONS[s].start);
+                var nextS = Math.min(s + 1, SECTIONS.length - 1);
+                var viewA = CAMERA_VIEWS[s];
+                var viewB = CAMERA_VIEWS[nextS];
+                // Blend 80% current section, 20% toward next at localP=1
+                var blend = localP * 0.2;
+                camTarget.x = lerp(viewA.x, viewB.x, blend);
+                camTarget.y = lerp(viewA.y, viewB.y, blend);
+                camTarget.z = lerp(viewA.z, viewB.z, blend);
+                camTarget.lx = lerp(viewA.lookX, viewB.lookX, blend);
+                camTarget.ly = lerp(viewA.lookY, viewB.lookY, blend);
+                camTarget.lz = lerp(viewA.lookZ, viewB.lookZ, blend);
+                break;
+            }
+        }
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    /* ════════════════════════════════════════════════
+       MOUSE PARALLAX
+    ════════════════════════════════════════════════ */
+    var mouseX = 0;
+    var mouseY = 0;
+
+    if (!isMobile) {
+        window.addEventListener('mousemove', function (e) {
+            mouseX = (e.clientX / W - 0.5) * 2;
+            mouseY = (e.clientY / H - 0.5) * 2;
+        });
+    }
+
+    /* ════════════════════════════════════════════════
+       ANIMATION LOOP
+    ════════════════════════════════════════════════ */
+    var clock = new THREE.Clock();
+    var glowPulse = 0;
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        var dt = clock.getDelta();
+        var t = clock.elapsedTime;
+
+        // ── Dice rotation + roll on section change ──
+        if (diceRolling) {
+            var rollElapsed = t - diceRollStart;
+            if (rollElapsed < diceRollDuration) {
+                var rollP = rollElapsed / diceRollDuration;
+                // Ease out cubic — fast start, slow landing
+                var easeOut = 1.0 - Math.pow(1.0 - rollP, 3);
+
+                // Rotation: spin from start toward target (multiple full rotations)
+                dice1.rotation.x = dice1RollTarget.startRx + (dice1RollTarget.rx - dice1RollTarget.startRx) * easeOut;
+                dice1.rotation.y = dice1RollTarget.startRy + (dice1RollTarget.ry - dice1RollTarget.startRy) * easeOut;
+                dice1.rotation.z = dice1RollTarget.startRz + (dice1RollTarget.rz - dice1RollTarget.startRz) * easeOut;
+                dice2.rotation.x = dice2RollTarget.startRx + (dice2RollTarget.rx - dice2RollTarget.startRx) * easeOut;
+                dice2.rotation.y = dice2RollTarget.startRy + (dice2RollTarget.ry - dice2RollTarget.startRy) * easeOut;
+                dice2.rotation.z = dice2RollTarget.startRz + (dice2RollTarget.rz - dice2RollTarget.startRz) * easeOut;
+
+                // Bounce: throw up then multiple diminishing bounces
+                var bounceDecay = 1.0 - rollP;
+                var bouncePeriod = rollP * 4.0; // 4 bounces across duration
+                var bounceHeight = Math.abs(Math.sin(bouncePeriod * Math.PI)) * bounceDecay * 1.8;
+                dice1.position.y = dice1RestPos.y + bounceHeight;
+                dice2.position.y = dice2RestPos.y + bounceHeight * 0.7;
+
+                // Lateral scatter: dice fly apart then settle back
+                var scatter = Math.sin(rollP * Math.PI) * 0.6;
+                dice1.position.x = dice1RestPos.x - scatter;
+                dice1.position.z = dice1RestPos.z + scatter * 0.5;
+                dice2.position.x = dice2RestPos.x + scatter;
+                dice2.position.z = dice2RestPos.z - scatter * 0.5;
+            } else {
+                diceRolling = false;
+                // Dice settle at rest positions (keep final rotation)
+                dice1.position.set(dice1RestPos.x, dice1RestPos.y, dice1RestPos.z);
+                dice2.position.set(dice2RestPos.x, dice2RestPos.y, dice2RestPos.z);
+            }
+        } else {
+            // Idle: gentle slow tumble
+            dice1.rotation.x += dt * 0.4;
+            dice1.rotation.y += dt * 0.3;
+            dice2.rotation.x -= dt * 0.3;
+            dice2.rotation.y += dt * 0.5;
+        }
+
+        // ── Particle drift ──
+        var pos = pGeo.attributes.position;
+        for (var p = 0; p < particleCount; p++) {
+            var py = pos.getY(p) + 0.003;
+            if (py > 7) py = 0;
+            pos.setY(p, py);
+        }
+        pos.needsUpdate = true;
+
+        // ── Token hop animation (tile-by-tile stepping) ──
+        // Step one tile at a time toward target
+        if (tokenTileCurrent !== tokenTileTarget && tokenHopProgress >= 1.0) {
+            // Start a new single-tile hop
+            var dir = tokenTileTarget > tokenTileCurrent ? 1 : -1;
+            var nextTile = tokenTileCurrent + dir;
+            if (nextTile < 0) nextTile = 0;
+            if (nextTile >= tilePositions.length) nextTile = tilePositions.length - 1;
+
+            tokenHopFromX = tilePositions[tokenTileCurrent].x;
+            tokenHopFromZ = tilePositions[tokenTileCurrent].z;
+            tokenHopToX = tilePositions[nextTile].x;
+            tokenHopToZ = tilePositions[nextTile].z;
+            tokenTileCurrent = nextTile;
+            tokenHopProgress = 0;
+            tokenSpinOnHop = 1;
+        }
+
+        // Advance hop progress
+        if (tokenHopProgress < 1.0) {
+            tokenHopProgress += dt * tokenHopSpeed;
+            if (tokenHopProgress > 1.0) tokenHopProgress = 1.0;
+        }
+
+        // Ease function for smooth motion
+        var eased = tokenHopProgress < 0.5
+            ? 2 * tokenHopProgress * tokenHopProgress
+            : 1 - Math.pow(-2 * tokenHopProgress + 2, 2) / 2;
+
+        // Interpolate XZ position
+        var txNow = tokenHopFromX + (tokenHopToX - tokenHopFromX) * eased;
+        var tzNow = tokenHopFromZ + (tokenHopToZ - tokenHopFromZ) * eased;
+        tokenGroup.position.x = txNow;
+        tokenGroup.position.z = tzNow;
+
+        // Parabolic arc for Y (hop height)
+        var hopArc = Math.sin(tokenHopProgress * Math.PI) * 0.8;
+        // Idle gentle bob
+        var idleBob = Math.sin(t * 2.0) * 0.03;
+        tokenGroup.position.y = 0.3 + hopArc + idleBob;
+
+        // Spin during hop
+        if (tokenSpinOnHop > 0 && tokenHopProgress < 1.0) {
+            token.rotation.y += dt * 8.0;
+        }
+
+        // Squash & stretch
+        if (tokenHopProgress < 1.0) {
+            // Stretch at peak, squash at ends
+            var stretchY = 1.0 + hopArc * 0.3;
+            var squashXZ = 1.0 - hopArc * 0.12;
+            token.scale.set(squashXZ, stretchY, squashXZ);
+        } else {
+            // Landing squash then recover
+            token.scale.x = lerp(token.scale.x, 1, 0.15);
+            token.scale.y = lerp(token.scale.y, 1, 0.15);
+            token.scale.z = lerp(token.scale.z, 1, 0.15);
+            tokenSpinOnHop = 0;
+        }
+
+        // ── Glow pulse ──
+        glowPulse = (Math.sin(t * 3) + 1) * 0.5;
+        glowMat.opacity = 0.15 + glowPulse * 0.2;
+        glowMat.emissiveIntensity = 0.5 + glowPulse * 0.5;
+
+        // ── Magic circle rotation ──
+        magicCircle.rotation.y = t * 0.12;
+        centerGem.rotation.y = t * 1.5;
+        centerGem.position.y = 0.18 + Math.sin(t * 1.5) * 0.05;
+        gemHalo.rotation.z = t * 0.4;
+        gemHalo.scale.setScalar(0.9 + Math.sin(t * 2) * 0.15);
+        // Rune markers shimmer
+        for (var rmi = 0; rmi < mcRunePositions.length; rmi++) {
+            mcRunePositions[rmi].position.y = 0.06 + Math.sin(t * 2 + rmi * 0.5) * 0.03;
+            mcRunePositions[rmi].rotation.y = t * 0.8;
+        }
+
+        // ── Light beam follows token ──
+        lightBeam.position.x = txNow;
+        lightBeam.position.z = tzNow;
+        beamMat.opacity = 0.04 + glowPulse * 0.06;
+        lightBeam.rotation.y = t * 0.5;
+
+        // ── Floating runes bob & spin ──
+        for (var fri = 0; fri < floatingRunes.length; fri++) {
+            floatingRunes[fri].position.y = 0.7 + Math.sin(t * 1.2 + fri * 1.5) * 0.12;
+            floatingRunes[fri].rotation.y = t * 0.8 + fri;
+            floatingRunes[fri].rotation.x = Math.sin(t * 0.5 + fri) * 0.3;
+        }
+
+        // ── Token trail ──
+        trailTimer += dt;
+        if (tokenHopProgress < 1.0 && trailTimer > 0.05) {
+            trailTimer = 0;
+            var td = trailDots[trailIdx % TRAIL_COUNT];
+            td.mesh.position.set(txNow, 0.35, tzNow);
+            td.life = 1.0;
+            td.mesh.material.opacity = 0.6;
+            td.mesh.scale.setScalar(1);
+            trailIdx++;
+        }
+        for (var tdi = 0; tdi < TRAIL_COUNT; tdi++) {
+            var trd = trailDots[tdi];
+            if (trd.life > 0) {
+                trd.life -= 0.015;
+                trd.mesh.material.opacity = trd.life * 0.5;
+                trd.mesh.scale.setScalar(trd.life * 0.8 + 0.2);
+                trd.mesh.position.y += 0.004;
+                if (trd.life <= 0) {
+                    trd.mesh.position.y = -10;
+                    trd.mesh.material.opacity = 0;
+                }
+            }
+        }
+
+        // ── Potion glow pulse ──
+        potionGlow.scale.setScalar(0.9 + Math.sin(t * 3) * 0.15);
+
+        // ── Lantern flicker ──
+        for (var li = 0; li < lanternMeshes.length; li++) {
+            var lGlow = lanternMeshes[li].children[2]; // glow sphere
+            if (lGlow && lGlow.material) {
+                lGlow.material.emissiveIntensity = 0.6 + Math.sin(t * 4 + li * 1.7) * 0.3;
+            }
+        }
+
+        // ── Camera smooth follow ──
+        var camLerp = 0.035;
+        camCurrent.x = lerp(camCurrent.x, camTarget.x + mouseX * 0.8, camLerp);
+        camCurrent.y = lerp(camCurrent.y, camTarget.y - mouseY * 0.4, camLerp);
+        camCurrent.z = lerp(camCurrent.z, camTarget.z, camLerp);
+        camCurrent.lx = lerp(camCurrent.lx, camTarget.lx, camLerp);
+        camCurrent.ly = lerp(camCurrent.ly, camTarget.ly, camLerp);
+        camCurrent.lz = lerp(camCurrent.lz, camTarget.lz, camLerp);
+
+        camera.position.set(camCurrent.x, camCurrent.y, camCurrent.z);
+        camera.lookAt(camCurrent.lx, camCurrent.ly, camCurrent.lz);
+
+        renderer.render(scene, camera);
+    }
+
+    /* ════════════════════════════════════════════════
+       RESIZE
+    ════════════════════════════════════════════════ */
+    window.addEventListener('resize', function () {
+        W = window.innerWidth;
+        H = window.innerHeight;
+        camera.aspect = W / H;
+        camera.updateProjectionMatrix();
+        renderer.setSize(W, H);
+    });
+
+    /* ════════════════════════════════════════════════
+       INIT
+    ════════════════════════════════════════════════ */
+    setLoadingProgress(100);
+
+    // Init camera position
+    camCurrent.x = CAMERA_VIEWS[0].x;
+    camCurrent.y = CAMERA_VIEWS[0].y;
+    camCurrent.z = CAMERA_VIEWS[0].z;
+    camCurrent.lx = CAMERA_VIEWS[0].lookX;
+    camCurrent.ly = CAMERA_VIEWS[0].lookY;
+    camCurrent.lz = CAMERA_VIEWS[0].lookZ;
+
+    showSection(0);
+
+    // Hide loading screen
+    setTimeout(function () {
+        gsap.to(loadingScreen, {
+            opacity: 0,
+            duration: 0.6,
+            ease: 'power2.inOut',
+            onComplete: function () {
+                loadingScreen.style.display = 'none';
+            }
+        });
+    }, 400);
+
+    animate();
+
+    // ── Gallery carousel dots (mobile) ──
+    var galleryGrid = document.getElementById('gallery-grid');
+    var galleryDots = document.querySelectorAll('.gallery-dot');
+    if (galleryGrid && galleryDots.length > 0) {
+        galleryGrid.addEventListener('scroll', function() {
+            var scrollLeft = galleryGrid.scrollLeft;
+            var itemWidth = galleryGrid.offsetWidth;
+            var activeIdx = Math.round(scrollLeft / itemWidth);
+            galleryDots.forEach(function(dot, i) {
+                dot.classList.toggle('active', i === activeIdx);
+            });
+        }, { passive: true });
+
+        galleryDots.forEach(function(dot) {
+            dot.addEventListener('click', function() {
+                var idx = parseInt(dot.getAttribute('data-idx'), 10);
+                galleryGrid.scrollTo({ left: idx * galleryGrid.offsetWidth, behavior: 'smooth' });
+            });
+        });
+    }
+
+}());
+</script>
+</body>
+</html>

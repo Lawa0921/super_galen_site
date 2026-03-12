@@ -1096,6 +1096,18 @@ members:
       - id: "alchemist"
         label: "煉金術師"
 
+  - id: "lulu_gamer_trpg"
+    name: "羔羊璐璐 Lulu"
+    avatar: "/assets/img/guild/lulu_gamer_trpg/avatar.webp"
+    page: "/guild/lulu_gamer_trpg.html"
+    tags:
+      - id: "trpg_adventurer"
+        label: "TRPG 冒險者"
+      - id: "illustrator_apprentice"
+        label: "繪圖學徒"
+      - id: "handcraft"
+        label: "手作職人"
+
   - id: "12eatpure"
     name: "綠食飯桌"
     avatar: "/assets/img/guild/12eatpure/avatar.webp"
