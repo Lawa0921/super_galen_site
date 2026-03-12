@@ -1146,6 +1146,18 @@ members:
       - id: "tarot_guide"
         label: "塔羅引導"
 
+  - id: "shih_yeee"
+    name: "shih_yeee"
+    avatar: "/assets/img/guild/shih_yeee/avatar.webp"
+    page: "/guild/shih_yeee.html"
+    tags:
+      - id: "voice_streamer"
+        label: "聲播主播"
+      - id: "butterfly_hunter"
+        label: "鳳蝶獵人"
+      - id: "late_night_radio"
+        label: "深夜電台"
+
   - id: "ddddearth4444"
     name: "邪教教主 ddddearth"
     avatar: "/assets/img/guild/ddddearth4444/avatar.webp"
