@@ -1060,6 +1060,18 @@ members:
       - id: "imaginative"
         label: "天馬行空"
 
+  - id: "cornerpi"
+    name: "三又一木"
+    avatar: "/assets/img/guild/cornerpi/avatar.webp"
+    page: "/guild/cornerpi.html"
+    tags:
+      - id: "angelic_reiki"
+        label: "天使靈氣"
+      - id: "spiritual_guide"
+        label: "心靈諮詢"
+      - id: "crystal_mineral"
+        label: "礦石金屬"
+
   - id: "raven_office"
     name: "Raven"
     avatar: "/assets/raven_office/profile.webp"

@@ -1,0 +1,754 @@
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三又一木 - Astral Temple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.9/dist/lenis.min.js"></script>
+
+    <style>
+        :root {
+            --temple-bg: #0a0a0f;
+            --temple-gold: #d4af37;
+            --temple-glow: rgba(212, 175, 55, 0.4);
+            --reiki-blue: #6495ed;
+            --crystal-white: rgba(255, 255, 255, 0.85);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: transparent; /* For Three.js */
+            overflow-x: hidden;
+            font-family: 'Noto Serif TC', serif;
+            color: var(--crystal-white);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ----- Background Canvases ----- */
+        #webgl-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            pointer-events: none;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #050508 100%);
+        }
+
+        #p5-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        /* ----- 3D Environment Setup ----- */
+        /* The proxy is just invisible height to scroll against */
+        #scroll-proxy {
+            width: 100%;
+            height: 12000px; /* Determines length of the temple */
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        #viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            perspective: 1200px; /* Depth of field */
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        #camera {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            transform-style: preserve-3d;
+            /* Will be translated along Z by GSAP */
+        }
+
+        /* ----- 3D Elements ----- */
+        .temple-element {
+            position: absolute;
+            transform-style: preserve-3d;
+            /* Centers element on its own coordinates */
+            transform: translate(-50%, -50%);
+        }
+
+        /* Windows for Images */
+        .window-frame {
+            width: 280px;
+            height: 420px;
+            border-radius: 140px 140px 0 0; /* Arched window */
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            box-shadow:
+                inset 0 0 40px rgba(0, 0, 0, 0.8),
+                0 0 20px var(--temple-glow),
+                0 0 2px var(--temple-gold);
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(4px);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        /* Subtle glow pulse */
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 15px var(--temple-glow); border-color: rgba(212, 175, 55, 0.3); }
+            50% { box-shadow: 0 0 35px rgba(212, 175, 55, 0.6); border-color: rgba(212, 175, 55, 0.6); }
+            100% { box-shadow: 0 0 15px var(--temple-glow); border-color: rgba(212, 175, 55, 0.3); }
+        }
+
+        .window-frame:hover {
+            border-color: rgba(212, 175, 55, 0.8);
+            box-shadow: 0 0 40px rgba(212, 175, 55, 0.8);
+            z-index: 100;
+        }
+
+        .window-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.85;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease;
+            mix-blend-mode: luminosity; /* Mystical old-world feel initially */
+        }
+
+        .window-frame:hover img {
+            transform: scale(1.05);
+            opacity: 1;
+            mix-blend-mode: normal;
+        }
+
+        /* Stone Panels for Text */
+        .stone-panel {
+            width: 500px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(20,20,30,0.8) 0%, rgba(10,10,15,0.9) 100%);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-top: 1px solid rgba(212, 175, 55, 0.4);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8), inset 0 0 20px rgba(212,175,55,0.05);
+            text-align: center;
+        }
+
+        .stone-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: 50%;
+            transform: translateX(-50%);
+            width: 40px; height: 2px;
+            background: var(--temple-gold);
+            box-shadow: 0 0 10px var(--temple-gold);
+        }
+
+        .stone-panel h2 {
+            font-family: 'Cinzel', serif;
+            color: var(--temple-gold);
+            font-size: 1.8rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .stone-panel p, .stone-panel li {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 12px;
+        }
+
+        .stone-panel ul {
+            text-align: left;
+            list-style: none;
+            padding: 0;
+        }
+
+        .stone-panel ul li::before {
+            content: '✧';
+            color: var(--temple-gold);
+            margin-right: 10px;
+            font-size: 0.8em;
+        }
+
+        /* Specific Panel Widths */
+        .panel-large { width: 600px; }
+        .panel-narrow { width: 400px; }
+
+        /* Social Hub (End of temple) */
+        .altar {
+            width: 800px;
+            padding: 60px;
+            background: radial-gradient(circle at center, rgba(30,30,45,0.9) 0%, rgba(5,5,10,0.95) 100%);
+            border-radius: 50%;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 100px rgba(212, 175, 55, 0.1);
+        }
+
+        .social-links a {
+            color: var(--temple-gold);
+            font-size: 2rem;
+            margin: 0 15px;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0);
+        }
+
+        .social-links a:hover {
+            color: #fff;
+            text-shadow: 0 0 15px var(--temple-gold);
+            transform: translateY(-5px);
+        }
+
+        /* Overlay UI */
+        #scroll-hint {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            color: rgba(212, 175, 55, 0.6);
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.2em;
+            font-size: 0.9rem;
+            text-align: center;
+            pointer-events: none;
+            animation: floatUpDown 2s infinite ease-in-out;
+        }
+
+        @keyframes floatUpDown {
+            0%, 100% { transform: translate(-50%, 0); opacity: 0.4; }
+            50% { transform: translate(-50%, 10px); opacity: 0.8; }
+        }
+
+        /* Utilities */
+        .text-gold { color: var(--temple-gold); }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #050508;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--temple-gold);
+            font-family: 'Cinzel', serif;
+            transition: opacity 1s ease;
+        }
+
+        .sigil {
+            width: 60px; height: 60px;
+            border: 1px solid var(--temple-gold);
+            transform: rotate(45deg);
+            animation: spinSigil 4s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spinSigil {
+            100% { transform: rotate(405deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Preloader -->
+    <div id="loader">
+        <div class="sigil"></div>
+        <div class="tracking-[0.3em] text-sm">ENTERING THE SANCTUARY</div>
+    </div>
+
+    <!-- WebGL Background -->
+    <canvas id="webgl-bg"></canvas>
+
+    <!-- p5.js Overlay (Reiki Cursor) -->
+    <div id="p5-container"></div>
+
+    <!-- The actual scrollable height -->
+    <div id="scroll-proxy"></div>
+
+    <!-- UI Overlay -->
+    <div id="scroll-hint">
+        <div class="mb-2">ENTER THE TEMPLE</div>
+        <i class="fa-solid fa-chevron-down"></i>
+    </div>
+
+    <!-- 3D Camera & World -->
+    <div id="viewport">
+        <div id="camera">
+            <!-- Content will be injected here via JS to manage 3D coordinates -->
+        </div>
+    </div>
+
+    <script>
+        // --- 1. DATA & DOM GENERATION --- //
+        const images = [
+            '/assets/img/guild/cornerpi/img_1.webp', '/assets/img/guild/cornerpi/img_2.webp',
+            '/assets/img/guild/cornerpi/img_3.webp', '/assets/img/guild/cornerpi/img_4.webp',
+            '/assets/img/guild/cornerpi/img_5.webp', '/assets/img/guild/cornerpi/img_6.webp',
+            '/assets/img/guild/cornerpi/img_7.webp', '/assets/img/guild/cornerpi/img_8.webp',
+            '/assets/img/guild/cornerpi/img_9.webp', '/assets/img/guild/cornerpi/img_10.webp',
+            '/assets/img/guild/cornerpi/img_11.webp', '/assets/img/guild/cornerpi/img_12.webp',
+            '/assets/img/guild/cornerpi/img_13.webp', '/assets/img/guild/cornerpi/img_14.webp',
+            '/assets/img/guild/cornerpi/img_15.webp', '/assets/img/guild/cornerpi/img_16.webp',
+            '/assets/img/guild/cornerpi/img_17.webp', '/assets/img/guild/cornerpi/img_18.webp',
+            '/assets/img/guild/cornerpi/img_19.webp', '/assets/img/guild/cornerpi/img_20.webp'
+        ];
+
+        const avatar = '/assets/img/guild/cornerpi/avatar.webp';
+
+        const camera = document.getElementById('camera');
+
+        // Helper to create a 3D positioned element
+        function create3DElement(html, x, y, z, className = 'temple-element') {
+            const el = document.createElement('div');
+            el.className = className;
+            el.innerHTML = html;
+            // Apply initial 3D transform (Camera translates Z, elements stay still)
+            el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) translate(-50%, -50%)`;
+            camera.appendChild(el);
+            return el;
+        }
+
+        // Generate Text Panels at specific Z depths
+        const Z_SPACING = -1500; // Distance between sections
+        let currentZ = -500;
+
+        // Intro Altar
+        create3DElement(`
+            <div class="stone-panel panel-large">
+                <img src="${avatar}" class="w-32 h-32 rounded-full mx-auto border-2 border-[var(--temple-gold)] mb-6 shadow-[0_0_30px_rgba(212,175,55,0.3)] object-cover" alt="三又一木 Avatar">
+                <h1 class="font-cinzel text-3xl text-gold mb-2 tracking-widest">三又一木</h1>
+                <p class="text-sm tracking-widest text-gray-400 mb-6 uppercase">Hypnotherapist • Spiritual Guide • Alchemist</p>
+                <p class="italic">「將自身經驗和實驗結果與所學內化，<br>協助探索內在深處的訊息與智慧。」</p>
+            </div>
+        `, 0, 0, currentZ);
+
+        currentZ += Z_SPACING;
+
+        // Identity
+        create3DElement(`
+            <div class="stone-panel">
+                <h2>The Calling</h2>
+                <ul class="text-center space-y-2">
+                    <li>英國天使靈氣®教師</li>
+                    <li>美國IAPC / 英國AMBMS 國際催眠師</li>
+                    <li>心靈諮詢師</li>
+                </ul>
+                <p class="mt-6 text-sm">用簡單的方式深入內心，靈性與生活結合，讓身心靈不再是神秘難以觸碰。</p>
+            </div>
+        `, -400, 100, currentZ);
+
+        currentZ += Z_SPACING;
+
+        // Reiki / Energy
+        create3DElement(`
+            <div class="stone-panel panel-narrow">
+                <h2>Energy Shift</h2>
+                <p class="text-gold font-semibold mb-2">運用天使靈氣</p>
+                <p>協助淨化與平衡個人能量場，讓身心靈恢復和諧。<br>協助解讀高維指引，提供清晰的方向，幫助你看見生命與靈性成長的契機。</p>
+            </div>
+        `, 400, -100, currentZ);
+
+        currentZ += Z_SPACING;
+
+        // Alchemy / Spray
+        create3DElement(`
+            <div class="stone-panel">
+                <h2>Space Alchemy</h2>
+                <p class="text-gold font-semibold mb-2">調配專屬能量空間噴霧</p>
+                <p>將振動頻率轉化為可感受的香氣與場域支持，讓居家或工作環境成為高頻共振的空間。<br>喚醒自我覺知、釋放舊有限制，重新連結內在的光與靈魂力量。</p>
+            </div>
+        `, -300, 200, currentZ);
+
+        currentZ += Z_SPACING * 1.5;
+
+        // Timeline / Experience (Split across Z)
+        create3DElement(`
+            <div class="stone-panel panel-narrow border-t-0 border-b-0 border-l-2 border-[var(--temple-gold)]">
+                <h2 class="text-left">2021 - 2022</h2>
+                <ul class="mb-6">
+                    <li>美國IAPC國際催眠師</li>
+                    <li>英國AMBMS國際催眠師</li>
+                </ul>
+                <p class="text-gold font-bold">創立木公苑</p>
+                <ul class="text-sm text-gray-400">
+                    <li>催眠療癒 (內在小孩/前世回朔/信念轉換)</li>
+                    <li>歐甘樹文占卜 / 神諭卡占卜</li>
+                    <li>心靈諮詢</li>
+                </ul>
+            </div>
+        `, 300, -50, currentZ);
+
+        currentZ += Z_SPACING;
+
+        create3DElement(`
+            <div class="stone-panel panel-narrow border-t-0 border-b-0 border-r-2 border-[var(--temple-gold)]">
+                <h2 class="text-right">2023 - 2024</h2>
+                <p class="text-gold font-bold text-right">創立緣結社</p>
+                <p class="text-right text-xs text-gray-400 mb-4">(日式水引細工創作)</p>
+                <ul class="text-sm text-gray-400 text-right w-full flex flex-col items-end">
+                    <li class="before:hidden after:content-['✧'] after:text-[var(--temple-gold)] after:ml-2">手作體驗</li>
+                    <li class="before:hidden after:content-['✧'] after:text-[var(--temple-gold)] after:ml-2">客製能量祝福飾品擺件</li>
+                </ul>
+                <div class="mt-6 text-right text-sm">
+                    <p>進駐橋頭糖廠白屋藝術村</p>
+                    <p>鳳山社區大學-水引創作教學</p>
+                </div>
+            </div>
+        `, -300, 150, currentZ);
+
+        currentZ += Z_SPACING;
+
+        create3DElement(`
+            <div class="stone-panel">
+                <h2>2025: Angel LAB.</h2>
+                <p class="text-gold font-semibold mb-4">創立天使 LAB.</p>
+                <div class="grid grid-cols-2 gap-4 text-sm text-center">
+                    <div>執行能量療癒</div>
+                    <div>英國天使靈氣®教學</div>
+                    <div>靈性落實生活</div>
+                    <div>靈性活動串連協辦</div>
+                </div>
+                <p class="mt-6 italic text-gray-400">"我很喜歡將不同元素融合重新詮釋，<br>最近很愛把礦石和金屬結合"</p>
+            </div>
+        `, 0, 0, currentZ);
+
+        currentZ += Z_SPACING * 1.5;
+
+        // Final Altar (Socials)
+        const FINAL_Z = currentZ;
+        create3DElement(`
+            <div class="altar">
+                <h2 class="font-cinzel text-2xl text-gold mb-6 tracking-widest">Connect with the Sanctuary</h2>
+                <div class="social-links flex space-x-8">
+                    <a href="https://www.instagram.com/cornerpi/" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.com/@cornerpi" target="_blank" title="Threads"><i class="fa-brands fa-threads"></i></a>
+                </div>
+            </div>
+        `, 0, 0, FINAL_Z);
+
+        // --- Generate Image Windows --- //
+        // We want to scatter the 20 images along the Z-axis from roughly -200 to FINAL_Z + 500
+        // We'll place them on the "walls" (wide X) and varying Y.
+
+        images.forEach((src, index) => {
+            // Distribute Z somewhat evenly but with randomness
+            const progress = index / (images.length - 1); // 0 to 1
+            const baseZ = -500 + progress * (FINAL_Z + 1000); // Stretch along the temple
+            const z = baseZ + (Math.random() * 800 - 400); // Jitter Z
+
+            // Scatter X widely to form "walls"
+            const side = index % 2 === 0 ? 1 : -1; // alternate left/right
+            const x = side * (600 + Math.random() * 800); // 600px to 1400px from center
+
+            // Scatter Y
+            const y = (Math.random() * 1000) - 500; // -500 to 500
+
+            // Randomly rotate windows slightly inward toward the path
+            const rotY = side * (15 + Math.random() * 20); // 15 to 35 deg inward
+
+            const el = document.createElement('div');
+            el.className = 'temple-element window-frame';
+            // Specific animation inline so hover isn't overwritten
+            el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) translate(-50%, -50%) rotateY(${rotY}deg)`;
+
+            // To prevent hover from breaking transform-style, we apply hover effect on child
+            el.innerHTML = `<img src="${src}" alt="Temple Memory ${index + 1}" loading="lazy">`;
+
+            // Add a floating animation
+            el.style.animation = `pulseGlow ${4 + Math.random()*3}s infinite alternate`;
+
+            camera.appendChild(el);
+        });
+
+        // --- 2. GSAP & LENIS SETUP --- //
+        gsap.registerPlugin(ScrollTrigger);
+
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+
+        // Main Camera Z-Translation (The Fly-Through)
+        // We want the camera to move from Z=0 to slightly past FINAL_Z
+        // Note: Moving camera POSITIVE Z means moving FORWARD into the negative Z space.
+        const totalTravel = Math.abs(FINAL_Z) + 1000;
+
+        // Initial setup
+        gsap.set(camera, { z: 0 });
+
+        ScrollTrigger.create({
+            trigger: "#scroll-proxy",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                // Move camera forward into the scene
+                gsap.to(camera, {
+                    z: self.progress * totalTravel,
+                    ease: "none",
+                    duration: 0.1
+                });
+
+                // Hide scroll hint
+                if(self.progress > 0.02) {
+                    gsap.to("#scroll-hint", { opacity: 0, duration: 0.5 });
+                } else {
+                    gsap.to("#scroll-hint", { opacity: 0.8, duration: 0.5 });
+                }
+            }
+        });
+
+        // Mouse Parallax for Camera Container (Viewport)
+        const viewport = document.getElementById('viewport');
+        let targetX = 0;
+        let targetY = 0;
+        let currentX = 0;
+        let currentY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            // Normalized coordinates -1 to 1
+            targetX = (e.clientX / window.innerWidth - 0.5) * 2;
+            targetY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+
+        // Smooth interpolate rotation
+        function updateParallax() {
+            currentX += (targetX - currentX) * 0.05;
+            currentY += (targetY - currentY) * 0.05;
+
+            // Rotate the entire viewport slightly
+            // We rotate Y based on X mouse, and X based on Y mouse (inverted)
+            gsap.set(viewport, {
+                rotationY: currentX * 10, // max 10 deg
+                rotationX: -currentY * 10,
+                transformOrigin: "center center"
+            });
+
+            requestAnimationFrame(updateParallax);
+        }
+        updateParallax();
+
+        // --- 3. THREE.JS BACKGROUND (Temple Dust / Fireflies) --- //
+        const canvasBg = document.getElementById('webgl-bg');
+        const rendererBg = new THREE.WebGLRenderer({ canvas: canvasBg, alpha: true, antialias: true });
+        rendererBg.setSize(window.innerWidth, window.innerHeight);
+        rendererBg.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const sceneBg = new THREE.Scene();
+        // Fog to fade out deep Z elements
+        sceneBg.fog = new THREE.FogExp2(0x0a0a0f, 0.001);
+
+        const cameraBg = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        cameraBg.position.z = 500;
+
+        // Particles
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorArray = new Float32Array(particlesCount * 3);
+
+        const colorGold = new THREE.Color(0xd4af37);
+        const colorBlue = new THREE.Color(0x6495ed);
+
+        for(let i = 0; i < particlesCount * 3; i+=3) {
+            // Spread widely
+            posArray[i] = (Math.random() - 0.5) * 3000;     // x
+            posArray[i+1] = (Math.random() - 0.5) * 2000;   // y
+            posArray[i+2] = (Math.random() - 0.5) * 3000;   // z
+
+            // Mix Gold and Reiki Blue
+            const mixRatio = Math.random();
+            const pColor = colorGold.clone().lerp(colorBlue, mixRatio > 0.8 ? 1 : 0); // 20% blue
+
+            // Dim some
+            const dim = 0.3 + Math.random() * 0.7;
+            colorArray[i] = pColor.r * dim;
+            colorArray[i+1] = pColor.g * dim;
+            colorArray[i+2] = pColor.b * dim;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        // Create a soft glowing circle texture
+        const createCircleTexture = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        };
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 15,
+            map: createCircleTexture(),
+            transparent: true,
+            opacity: 0.6,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particleMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        sceneBg.add(particleMesh);
+
+        // Animation Loop
+        let clock = new THREE.Clock();
+        function animateBg() {
+            const elapsedTime = clock.getElapsedTime();
+
+            // Slowly rotate the particle field
+            particleMesh.rotation.y = elapsedTime * 0.02;
+            particleMesh.rotation.x = elapsedTime * 0.01;
+
+            // Slowly drift particles
+            const positions = particleMesh.geometry.attributes.position.array;
+            for(let i = 0; i < particlesCount; i++) {
+                const i3 = i * 3;
+                // Add a subtle sine wave drift to Y
+                positions[i3 + 1] += Math.sin(elapsedTime * 0.5 + positions[i3]) * 0.2;
+            }
+            particleMesh.geometry.attributes.position.needsUpdate = true;
+
+            // Bind BG camera to Scroll to give a slight parallax feeling (much slower than DOM)
+            const scrollProgress = ScrollTrigger.maxScroll(window) > 0 ? window.scrollY / ScrollTrigger.maxScroll(window) : 0;
+            cameraBg.position.z = 500 - (scrollProgress * 1000); // Move forward slightly
+
+            rendererBg.render(sceneBg, cameraBg);
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // --- 4. p5.js (Reiki Cursor Aura) --- //
+        new p5((p) => {
+            let particles = [];
+
+            p.setup = () => {
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noStroke();
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Add new particle on mouse move
+                if (p.pmouseX !== p.mouseX || p.pmouseY !== p.mouseY) {
+                    // Injecting gold and blue randomly
+                    let isGold = p.random(1) > 0.3;
+                    let c = isGold ? p.color(212, 175, 55, 150) : p.color(100, 149, 237, 100);
+                    particles.push(new AuraParticle(p.mouseX, p.mouseY, c));
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].display();
+                    if (particles[i].alpha <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class AuraParticle {
+                constructor(x, y, col) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = p.random(-1, 1);
+                    this.vy = p.random(-2, 0); // Drift up like smoke
+                    this.col = col;
+                    this.alpha = p.alpha(col);
+                    this.size = p.random(20, 50);
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.alpha -= 3; // Fade out
+                    this.size += 0.5; // Expand
+                }
+
+                display() {
+                    let c = p.color(p.red(this.col), p.green(this.col), p.blue(this.col), this.alpha);
+                    p.fill(c);
+                    // Use a soft blur by drawing multiple circles
+                    p.ellipse(this.x, this.y, this.size);
+                    p.fill(p.color(p.red(this.col), p.green(this.col), p.blue(this.col), this.alpha * 0.5));
+                    p.ellipse(this.x, this.y, this.size * 1.5);
+                }
+            }
+        });
+
+        // --- Window Resize Handling --- //
+        window.addEventListener('resize', () => {
+            cameraBg.aspect = window.innerWidth / window.innerHeight;
+            cameraBg.updateProjectionMatrix();
+            rendererBg.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Remove Loader --- //
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 1000);
+            }, 1000);
+        });
+
+    </script>
+</body>
+</html>
