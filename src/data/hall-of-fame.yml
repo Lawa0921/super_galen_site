@@ -1062,6 +1062,18 @@ members:
       - id: "imaginative"
         label: "天馬行空"
 
+  - id: "12eatpure"
+    name: "綠食飯桌"
+    avatar: "/assets/img/guild/12eatpure/avatar.webp"
+    page: "/guild/12eatpure.html"
+    tags:
+      - id: "eco_bento"
+        label: "綠色友善餐盒"
+      - id: "sustainable"
+        label: "循環永續"
+      - id: "nutrition"
+        label: "營養師認證"
+
   - id: "naomiao77"
     name: "貓青"
     avatar: "/assets/img/guild/naomiao77/621171952_17907652830337939_579185702190144366_n.webp"
